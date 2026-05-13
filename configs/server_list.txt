@@ -1,0 +1,7 @@
+# Server List - One server per line
+# Format: server_name or server_name.domain.com
+server1.example.com
+server2.example.com
+server3.example.com
+proliant-server-01
+proliant-server-02

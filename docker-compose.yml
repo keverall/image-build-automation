@@ -1,0 +1,180 @@
+# Docker Compose for HPE ProLiant Windows Server ISO Automation
+# Designed for regulated environments with MS MCM and HPe iLO 5 integration
+
+version: '3.8'
+
+services:
+  hpe-iso-automation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        VCS_REF: ${VCS_REF:-$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')}
+        VERSION: ${VERSION:-latest}
+    image: hpe-iso-automation:${VERSION:-latest}
+
+    # Use Windows containers for Windows Server compatibility
+    platform: windows
+
+    # Security configuration for regulated environment
+    security_opt:
+      - credentialspec=file://./credentials.json  # For Windows authentication
+    cap_drop:
+      - ALL
+    read_only: false  # Allow writes to mounted volumes
+
+    # Environment variables for MS MCM and HPe iLO integration
+    environment:
+      # Python configuration
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+
+      # MS MCM (Microsoft Configuration Manager) settings
+      - MS_MCM_SERVER=${MS_MCM_SERVER:-mcm-server.example.com}
+      - MS_MCM_SITE_CODE=${MS_MCM_SITE_CODE:-PS1}
+      - MS_MCM_USERNAME=${MS_MCM_USERNAME}
+      - MS_MCM_PASSWORD=${MS_MCM_PASSWORD}
+
+      # HPe iLO 5 settings
+      - ILO_DEFAULT_USERNAME=${ILO_DEFAULT_USERNAME:-Administrator}
+      - ILO_DEFAULT_PASSWORD=${ILO_DEFAULT_PASSWORD}
+      - ILO_CERTIFICATE_VALIDATION=${ILO_CERTIFICATE_VALIDATION:-strict}
+
+      # HPE repository credentials
+      - HPE_DOWNLOAD_USER=${HPE_DOWNLOAD_USER}
+      - HPE_DOWNLOAD_PASS=${HPE_DOWNLOAD_PASS}
+
+      # OpsRamp integration (optional)
+      - OPSRAMP_CLIENT_ID=${OPSRAMP_CLIENT_ID}
+      - OPSRAMP_CLIENT_SECRET=${OPSRAMP_CLIENT_SECRET}
+      - OPSRAMP_TENANT_ID=${OPSRAMP_TENANT_ID}
+      - OPSRAMP_ENABLED=${OPSRAMP_ENABLED:-false}
+
+      # Security and compliance
+      - REGULATION_COMPLIANT=true
+      - AUDIT_LOG_LEVEL=${AUDIT_LOG_LEVEL:-INFO}
+      - TLS_VERIFY=${TLS_VERIFY:-true}
+
+      # Build configuration
+      - BASE_ISO_PATH=${BASE_ISO_PATH:-/isos/Windows_Server_2022.iso}
+      - OUTPUT_DIR=/app/output
+      - CONFIG_DIR=/app/configs
+
+    # Volume mounts for ISOs, outputs, and persistent data
+    volumes:
+      # Input ISOs and base images
+      - ${BASE_ISO_MOUNT:-./isos}:/isos:ro
+
+      # Output directories (read-write)
+      - ${OUTPUT_MOUNT:-./output}:/app/output:rw
+      - ${LOGS_MOUNT:-./logs}:/app/logs:rw
+
+      # Configuration (read-only, can be overridden)
+      - ${CONFIG_MOUNT:-./configs}:/app/configs:ro
+
+      # MS MCM share (if using network share for OS deployment)
+      - ${MCM_SHARE_MOUNT:-//mcm-server.example.com/mcm-share}:/mcm-share:rw
+
+      # Temporary working directory
+      - temp_data:/tmp:rw
+
+    # Network configuration
+    networks:
+      - regulated-network
+
+    # Resource limits for regulated environment
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "powershell", "-Command", "Test-Path 'C:\\app\\logs\\audit_trail.log'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        labels: "compliance.regulation,gdpr.enabled"
+      # In regulated environment, consider using syslog driver
+      # driver: syslog
+      # options:
+      #   syslog-address: "tcp://syslog.example.com:514"
+      #   syslog-facility: "local0"
+      #   tag: "hpe-iso-automation"
+
+    # Command to run
+    command: ["python", "C:\\app\\scripts\\build_iso.py", "--server-list", "C:\\app\\configs\\server_list.txt"]
+
+    # Labels for compliance and management
+    labels:
+      compliance.regulation: "gdpr"
+      compliance.audit: "enabled"
+      security.level: "high"
+      environment: "regulated"
+      owner: "platform-engineering"
+      project: "hpe-iso-automation"
+      vendor: "hpe"
+      os: "windows-server"
+
+# Named volumes for persistent data
+volumes:
+  temp_data:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+
+# Network configuration for regulated environment
+networks:
+  regulated-network:
+    driver: bridge
+    internal: false  # Allow external access for MS MCM and HPe iLO
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    labels:
+      compliance.regulation: "gdpr"
+      security.isolated: "false"  # External access required for HPE/iLO
+
+# Configuration for building with specific secrets
+secrets:
+  mcm_credentials:
+    file: ./secrets/mcm_credentials.json
+  ilo_credentials:
+    file: ./secrets/ilo_credentials.json
+
+# Usage examples:
+#
+# Build and run with basic configuration:
+# docker-compose up --build
+#
+# Run with custom server list:
+# SERVER_LIST=custom_servers.txt docker-compose up
+#
+# Run in test mode:
+# docker-compose run --rm hpe-iso-automation python C:\app\scripts\generate_uuid.py test-server
+#
+# Build for specific environment:
+# VERSION=2025.11 BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) docker-compose build
+#
+# Run MS MCM integration test:
+# docker-compose run --rm hpe-iso-automation powershell -File C:\app\docker-entrypoint.ps1 test
+#
+# Clean up:
+# docker-compose down -v --rmi all
