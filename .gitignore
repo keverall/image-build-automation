@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs and reports
+logs/
+*.log
+build_reports/
+
+# Configuration secrets (example files only - real ones should be outside repo)
+configs/opsramp_config.json
+configs/hpe_firmware_drivers_nov2025.json
+configs/windows_patches.json
+
+# Windows tools
+tools/hpe_sut.exe
+tools/dism.exe
+
+# Temporary files
+*.tmp
+*.bak
+*.iso
+
+# OS
+Thumbs.db
