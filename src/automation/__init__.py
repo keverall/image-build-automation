@@ -18,6 +18,7 @@ __author__ = "Platform Engineering Team"
 
 __all__ = [
     "cli",
+    "control",
     "core",
     "core",
     "utils",
