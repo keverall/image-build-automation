@@ -27,12 +27,7 @@ class AutomationBase:
     OUTPUT_DIR = Path("output")
     LOG_DIR = Path("logs")
 
-    def __init__(
-        self,
-        config_dir: Optional[Path] = None,
-        output_dir: Optional[Path] = None,
-        dry_run: bool = False
-    ):
+    def __init__(self, config_dir: Optional[Path] = None, output_dir: Optional[Path] = None, dry_run: bool = False):
         """
         Initialize base automation class.
 
@@ -57,14 +52,11 @@ class AutomationBase:
         self.logger.info(f"{self.__class__.__name__} initialized")
 
         # Audit logger
-        self.audit = AuditLogger(
-            category=self.__class__.__name__.lower(),
-            log_dir=self.LOG_DIR
-        )
+        self.audit = AuditLogger(category=self.__class__.__name__.lower(), log_dir=self.LOG_DIR)
         self.audit.log(
             action="initialization",
             status="INFO",
-            details=f"Config dir: {self.config_dir}, Output dir: {self.output_dir}, Dry run: {dry_run}"
+            details=f"Config dir: {self.config_dir}, Output dir: {self.output_dir}, Dry run: {dry_run}",
         )
 
     def load_config(self, filename: str, required: bool = True) -> dict[str, Any]:
@@ -87,18 +79,10 @@ class AutomationBase:
         filepath = out_dir / filename
         return save_json(data, filepath)
 
-    def log_and_audit(
-        self,
-        action: str,
-        status: str,
-        server: str = "",
-        details: str = "",
-        **extra
-    ) -> None:
+    def log_and_audit(self, action: str, status: str, server: str = "", details: str = "", **extra) -> None:
         """Combined logging and audit entry."""
         self.logger.info(f"[{status}] {action} | {server} | {details}")
-        self.audit.log(action=action, status=status, server=server,
-                       details=details, **extra)
+        self.audit.log(action=action, status=status, server=server, details=details, **extra)
 
     def save_audit(self, filename: Optional[str] = None) -> Path:
         """Save accumulated audit entries to file and append to master log."""

@@ -18,12 +18,7 @@ class AuditLogger:
     Supports both per-action audit files and a master append-only log.
     """
 
-    def __init__(
-        self,
-        category: str,
-        log_dir: Path = Path("logs"),
-        master_log: str = "audit.log"
-    ):
+    def __init__(self, category: str, log_dir: Path = Path("logs"), master_log: str = "audit.log"):
         """
         Initialize an audit logger for a specific category/component.
 
@@ -38,14 +33,7 @@ class AuditLogger:
         self.master_log_path = self.log_dir / master_log
         self.entries: list[dict] = []
 
-    def log(
-        self,
-        action: str,
-        status: str,
-        server: str = "",
-        details: str = "",
-        **extra
-    ) -> dict:
+    def log(self, action: str, status: str, server: str = "", details: str = "", **extra) -> dict:
         """
         Record an audit event.
 
@@ -60,13 +48,13 @@ class AuditLogger:
             The audit entry dict that was recorded
         """
         entry = {
-            'timestamp': datetime.now().isoformat(),
-            'category': self.category,
-            'action': action,
-            'status': status,
-            'server': server,
-            'details': details,
-            **extra
+            "timestamp": datetime.now().isoformat(),
+            "category": self.category,
+            "action": action,
+            "status": status,
+            "server": server,
+            "details": details,
+            **extra,
         }
         self.entries.append(entry)
         logger.info(f"[{status}] {action} | {server} | {details}")
@@ -87,19 +75,20 @@ class AuditLogger:
             filename = f"{self.category}_{timestamp}.json"
 
         filepath = self.log_dir / filename
-        with open(filepath, 'w') as f:
-            json.dump({
-                'category': self.category,
-                'generated_at': datetime.now().isoformat(),
-                'entries': self.entries
-            }, f, indent=2, default=str)
+        with open(filepath, "w") as f:
+            json.dump(
+                {"category": self.category, "generated_at": datetime.now().isoformat(), "entries": self.entries},
+                f,
+                indent=2,
+                default=str,
+            )
 
         logger.debug(f"Audit log saved to {filepath}")
         return filepath
 
     def append_to_master(self) -> None:
         """Append all entries to the master audit log (line-delimited JSON)."""
-        with open(self.master_log_path, 'a') as f:
+        with open(self.master_log_path, "a") as f:
             for entry in self.entries:
                 f.write(json.dumps(entry, default=str) + "\n")
         logger.debug(f"Appended {len(self.entries)} entries to master log")
@@ -110,10 +99,7 @@ class AuditLogger:
 
 
 def save_audit_record(
-    audit_data: dict,
-    log_dir: Path = Path("logs"),
-    subdir: Optional[str] = None,
-    prefix: str = ""
+    audit_data: dict, log_dir: Path = Path("logs"), subdir: Optional[str] = None, prefix: str = ""
 ) -> Path:
     """
     Standalone function to save an audit record (maintenance style).
@@ -139,12 +125,12 @@ def save_audit_record(
     filename = f"{prefix}audit_{timestamp}.json" if prefix else f"audit_{timestamp}.json"
     filepath = base_dir / filename
 
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         json.dump(audit_data, f, indent=2, default=str)
 
     # Append to master log
     master_log = log_dir / "audit.log"
-    with open(master_log, 'a') as f:
+    with open(master_log, "a") as f:
         f.write(json.dumps(audit_data, default=str) + "\n")
 
     logger.debug(f"Audit record saved: {filepath}")

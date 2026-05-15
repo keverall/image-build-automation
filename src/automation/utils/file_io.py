@@ -36,7 +36,7 @@ def save_json(data: dict[str, Any], path: Path, indent: int = 2) -> Path:
         Path to saved file
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         json.dump(data, f, indent=indent, default=str)
     logger.debug(f"Saved JSON to {path}")
     return path
@@ -67,10 +67,7 @@ def load_json(path: Path, required: bool = True) -> dict[str, Any]:
 
 
 def save_result_json(
-    data: dict[str, Any],
-    base_name: str,
-    output_dir: Path = Path("logs"),
-    category: Optional[str] = None
+    data: dict[str, Any], base_name: str, output_dir: Path = Path("logs"), category: Optional[str] = None
 ) -> Path:
     """
     Save result JSON with standardized naming.

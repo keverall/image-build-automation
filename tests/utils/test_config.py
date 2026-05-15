@@ -54,7 +54,7 @@ class TestLoadJsonConfig:
         data = {
             "servers": [
                 {"name": "server1", "endpoint": "https://${HOST}/api"},
-                {"name": "server2", "endpoint": "https://${HOST}:8080"}
+                {"name": "server2", "endpoint": "https://${HOST}:8080"},
             ]
         }
         path = tmp_path / "config.json"
@@ -151,7 +151,7 @@ nested:
         path.touch()
 
         # Simulate PyYAML not being available
-        with patch.dict('sys.modules', {'yaml': None}), pytest.raises(ImportError):
+        with patch.dict("sys.modules", {"yaml": None}), pytest.raises(ImportError):
             load_yaml_config(path)
 
     def test_load_yaml_config_missing_file_required(self, tmp_path):

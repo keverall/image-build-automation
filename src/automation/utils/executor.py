@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CommandResult:
     """Result of a subprocess execution."""
+
     returncode: int
     stdout: str
     stderr: str
@@ -30,7 +31,7 @@ def run_command(
     capture_output: bool = True,
     timeout: int = 300,
     check: bool = False,
-    cwd: Optional[Path] = None
+    cwd: Optional[Path] = None,
 ) -> CommandResult:
     """
     Execute a command and return structured result.
@@ -51,19 +52,9 @@ def run_command(
         subprocess.TimeoutExpired: If command times out
     """
     try:
-        result = subprocess.run(
-            cmd,
-            shell=shell,
-            capture_output=capture_output,
-            text=True,
-            timeout=timeout,
-            cwd=cwd
-        )
+        result = subprocess.run(cmd, shell=shell, capture_output=capture_output, text=True, timeout=timeout, cwd=cwd)
         cr = CommandResult(
-            returncode=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
-            success=(result.returncode == 0)
+            returncode=result.returncode, stdout=result.stdout, stderr=result.stderr, success=(result.returncode == 0)
         )
 
         if not cr.success:
@@ -77,22 +68,14 @@ def run_command(
     except subprocess.TimeoutExpired:
         logger.error(f"Command timed out after {timeout}s: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
         return CommandResult(
-            returncode=-1,
-            stdout="",
-            stderr=f"Command timed out after {timeout} seconds",
-            success=False
+            returncode=-1, stdout="", stderr=f"Command timed out after {timeout} seconds", success=False
         )
     except subprocess.CalledProcessError:
         # Re-raise if check=True triggered
         raise
     except Exception as e:
         logger.error(f"Command execution error: {e}")
-        return CommandResult(
-            returncode=-1,
-            stdout="",
-            stderr=str(e),
-            success=False
-        )
+        return CommandResult(returncode=-1, stdout="", stderr=str(e), success=False)
 
 
 def run_with_retry(
@@ -101,7 +84,7 @@ def run_with_retry(
     delay: float = 5.0,
     shell: bool = False,
     timeout: int = 300,
-    check: bool = False
+    check: bool = False,
 ) -> CommandResult:
     """
     Run a command with retry logic for transient failures.

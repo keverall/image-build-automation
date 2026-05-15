@@ -15,7 +15,7 @@ class TestWindowsPatcher:
         patches_config.write_text('{"patches": []}')
         output_dir = tmp_path / "patched_output"
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), output_dir=str(output_dir))
 
         assert patcher.patches_config_path == patches_config
@@ -27,13 +27,13 @@ class TestWindowsPatcher:
         config_data = {
             "patches": [
                 {"kb_number": "KB123456", "severity": "Critical"},
-                {"kb_number": "KB789012", "severity": "Important"}
+                {"kb_number": "KB789012", "severity": "Important"},
             ]
         }
         config_path = tmp_path / "patches.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(config_path))
 
         assert patcher.patches_config == config_data
@@ -44,7 +44,7 @@ class TestWindowsPatcher:
         patches_config.write_text('{"patches": []}')
         base_iso_dir = tmp_path / "base_iso"
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir))
 
         result = patcher._setup_base_iso("/nonexistent/path/iso.iso", dry_run=False)
@@ -56,7 +56,7 @@ class TestWindowsPatcher:
         patches_config.write_text('{"patches": []}')
         base_iso_dir = tmp_path / "base_iso"
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir))
 
         result = patcher._setup_base_iso("/any/path.iso", dry_run=True)
@@ -71,7 +71,7 @@ class TestWindowsPatcher:
         patch_dir = base_iso_dir / "patches"
         patch_dir.mkdir()
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir))
 
         result = patcher._apply_patches_dism(dry_run=True)
@@ -79,18 +79,14 @@ class TestWindowsPatcher:
 
     def test_apply_patches_dism_with_missing_patch(self, tmp_path, caplog):
         """Test _apply_patches_dism skips missing patch files."""
-        config_data = {
-            "patches": [
-                {"kb_number": "KB123456", "severity": "Critical"}
-            ]
-        }
+        config_data = {"patches": [{"kb_number": "KB123456", "severity": "Critical"}]}
         patches_config = tmp_path / "patches.json"
         patches_config.write_text(json.dumps(config_data))
         base_iso_dir = tmp_path / "base_iso"
         (base_iso_dir / "patches").mkdir(parents=True)
         # No actual .msu file present
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir))
 
         result = patcher._apply_patches_dism(dry_run=False)
@@ -104,7 +100,7 @@ class TestWindowsPatcher:
         base_iso_dir = tmp_path / "base_iso"
         base_iso_dir.mkdir()
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir))
 
         result = patcher._apply_patches_powershell(dry_run=True)
@@ -117,7 +113,7 @@ class TestWindowsPatcher:
         base_iso_dir = tmp_path / "base_iso"
         base_iso_dir.mkdir()
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir))
 
         result = patcher._apply_patches_powershell(dry_run=False)
@@ -130,7 +126,7 @@ class TestWindowsPatcher:
         patches_config.write_text('{"patches": []}')
         output_dir = tmp_path / "output"
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), output_dir=str(output_dir))
 
         result = patcher.build("/path/to/base.iso", "test-server", dry_run=True)
@@ -148,7 +144,7 @@ class TestWindowsPatcher:
         base_iso_dir.mkdir()
         output_dir = tmp_path / "output"
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir), output_dir=str(output_dir))
 
         result = patcher.build("/nonexistent/iso.iso", "test-server", dry_run=False)
@@ -165,7 +161,7 @@ class TestWindowsPatcher:
         (base_iso_dir / "base.iso").touch()
         output_dir = tmp_path / "output"
 
-        with patch('automation.utils.logging_setup.init_logging'):
+        with patch("automation.utils.logging_setup.init_logging"):
             patcher = WindowsPatcher(str(patches_config), base_iso_dir=str(base_iso_dir), output_dir=str(output_dir))
 
         result = patcher.build(str(base_iso_dir / "base.iso"), "server1", method="unknown")

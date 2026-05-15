@@ -60,11 +60,7 @@ class TestComputeNextWorkStart:
 
     def test_compute_next_work_start_same_day(self):
         """Test computation when next work start is same day."""
-        schedule = {
-            "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
-            "work_start": "09:00",
-            "work_end": "17:00"
-        }
+        schedule = {"work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"], "work_start": "09:00", "work_end": "17:00"}
         # Wednesday at 10:00 AM, next work start is still Wednesday at 9:00? No that's before 10:00
         # Let's test: Wednesday 8:00 AM -> Wednesday 9:00 AM
         after_dt = datetime(2025, 5, 14, 8, 0)  # Wed 8:00
@@ -123,6 +119,7 @@ class TestFormatDatetimeForAPI:
     def test_format_datetime_for_api_with_timezone(self):
         """Test formatting timezone-aware datetime."""
         from datetime import timedelta, timezone
+
         tz = timezone(timedelta(hours=2))
         dt = datetime(2025, 5, 15, 14, 30, 0, tzinfo=tz)
         result = format_datetime_for_api(dt)
@@ -137,11 +134,7 @@ class TestSCOMManager:
 
     def test_initialization(self):
         """Test SCOMManager initialization."""
-        config = {
-            "management_server": "scom.example.com",
-            "powershell_module": "OperationsManager",
-            "use_winrm": False
-        }
+        config = {"management_server": "scom.example.com", "powershell_module": "OperationsManager", "use_winrm": False}
         mgr = SCOMManager(config)
         assert mgr.mgmt_server == "scom.example.com"
         assert mgr.module_name == "OperationsManager"
@@ -152,7 +145,7 @@ class TestSCOMManager:
         config = {"use_winrm": False}
         mgr = SCOMManager(config)
 
-        with patch('automation.cli.maintenance_mode.run_powershell') as mock_ps:
+        with patch("automation.cli.maintenance_mode.run_powershell") as mock_ps:
             mock_ps.return_value = (True, "output")
             success, output = mgr._run_ps("Get-Service")
 
@@ -161,34 +154,23 @@ class TestSCOMManager:
 
     def test_run_ps_winrm(self):
         """Test _run_ps uses WinRM when configured."""
-        config = {
-            "use_winrm": True,
-            "credentials": {
-                "username_env": "SCOM_USER",
-                "password_env": "SCOM_PASS"
-            }
-        }
+        config = {"use_winrm": True, "credentials": {"username_env": "SCOM_USER", "password_env": "SCOM_PASS"}}
         mgr = SCOMManager(config)
         # Manually set cred since env not available in test
         mgr.cred = {"username": "user", "password": "pass"}
 
-        with patch('automation.cli.maintenance_mode.run_powershell_winrm') as mock_winrm:
+        with patch("automation.cli.maintenance_mode.run_powershell_winrm") as mock_winrm:
             mock_winrm.return_value = (True, "output")
             success, output = mgr._run_ps("Get-Service")
 
-        mock_winrm.assert_called_once_with(
-            "Get-Service",
-            server=mgr.mgmt_server,
-            username="user",
-            password="pass"
-        )
+        mock_winrm.assert_called_once_with("Get-Service", server=mgr.mgmt_server, username="user", password="pass")
 
     def test_get_group_members(self):
         """Test get_group_members returns server list."""
         config = {"management_server": "scom.example.com", "use_winrm": False}
         mgr = SCOMManager(config)
 
-        with patch('automation.cli.maintenance_mode.run_powershell') as mock_ps:
+        with patch("automation.cli.maintenance_mode.run_powershell") as mock_ps:
             mock_ps.return_value = (True, "server1\nserver2\nserver3\n")
             success, servers = mgr.get_group_members("TestGroup")
 
@@ -201,10 +183,7 @@ class TestSCOMManager:
         mgr = SCOMManager(config)
 
         result = mgr.enter_maintenance(
-            group_display_name="TestGroup",
-            duration=timedelta(hours=2),
-            comment="Test maintenance",
-            dry_run=True
+            group_display_name="TestGroup", duration=timedelta(hours=2), comment="Test maintenance", dry_run=True
         )
 
         assert result[0] is True  # success
@@ -224,12 +203,7 @@ class TestILOManager:
 
     def test_initialization(self):
         """Test ILOManager initialization."""
-        cluster_def = {
-            "ilo_addresses": {
-                "server1": "192.168.1.100",
-                "server2": "192.168.1.101"
-            }
-        }
+        cluster_def = {"ilo_addresses": {"server1": "192.168.1.100", "server2": "192.168.1.101"}}
         mgr = ILOManager(cluster_def)
         assert mgr.cluster_def == cluster_def
         assert mgr.method == "rest"
@@ -237,12 +211,7 @@ class TestILOManager:
 
     def test_get_ilo_ip(self):
         """Test _get_ilo_ip retrieves correct IP."""
-        cluster_def = {
-            "ilo_addresses": {
-                "server1": "1.1.1.1",
-                "server2": "2.2.2.2"
-            }
-        }
+        cluster_def = {"ilo_addresses": {"server1": "1.1.1.1", "server2": "2.2.2.2"}}
         mgr = ILOManager(cluster_def)
         assert mgr._get_ilo_ip("server1") == "1.1.1.1"
         assert mgr._get_ilo_ip("server2") == "2.2.2.2"
@@ -273,15 +242,14 @@ class TestILOManager:
 
     def test_set_maintenance_window(self):
         """Test set_maintenance_window coordinates multiple servers."""
-        cluster_def = {
-            "servers": ["s1", "s2"],
-            "ilo_addresses": {"s1": "1.1.1.1", "s2": "2.2.2.2"}
-        }
+        cluster_def = {"servers": ["s1", "s2"], "ilo_addresses": {"s1": "1.1.1.1", "s2": "2.2.2.2"}}
         mgr = ILOManager(cluster_def)
 
         # Patch _get_ilo_credentials to return valid credentials
-        with patch.object(mgr, '_get_ilo_credentials', return_value=("user", "pass")), \
-             patch.object(mgr, '_create_window_rest') as mock_create:
+        with (
+            patch.object(mgr, "_get_ilo_credentials", return_value=("user", "pass")),
+            patch.object(mgr, "_create_window_rest") as mock_create,
+        ):
             mock_create.return_value = (True, "Window created")
             success, details = mgr.set_maintenance_window(cluster_def, datetime.now(), datetime.now(), dry_run=False)
 
@@ -291,10 +259,7 @@ class TestILOManager:
 
     def test_set_maintenance_window_no_ilo_addresses(self):
         """Test set_maintenance_window handles missing iLO addresses."""
-        cluster_def = {
-            "servers": ["s1", "s2"],
-            "ilo_addresses": {}
-        }
+        cluster_def = {"servers": ["s1", "s2"], "ilo_addresses": {}}
         mgr = ILOManager(cluster_def)
         success, details = mgr.set_maintenance_window(cluster_def, datetime.now(), datetime.now())
         assert success is True
@@ -329,11 +294,7 @@ class TestOpenViewClient:
         client = OpenViewClient(config, cluster_def)
 
         success, msg = client._set_maintenance_cli(
-            ["node1"],
-            datetime(2025, 5, 15, 10, 0),
-            datetime(2025, 5, 15, 12, 0),
-            "TestCluster",
-            dry_run=True
+            ["node1"], datetime(2025, 5, 15, 10, 0), datetime(2025, 5, 15, 12, 0), "TestCluster", dry_run=True
         )
         assert success is True
         assert "[DRY RUN]" in msg
@@ -375,7 +336,7 @@ class TestEmailNotifier:
             servers=["s1", "s2"],
             start_time=datetime(2025, 5, 15, 10, 0),
             end_time=datetime(2025, 5, 15, 12, 0),
-            dry_run=True
+            dry_run=True,
         )
         # No recipients configured, returns False
         assert result is False

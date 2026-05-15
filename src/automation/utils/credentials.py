@@ -7,11 +7,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-def get_credential(
-    env_var_name: str,
-    default: Optional[str] = None,
-    required: bool = False
-) -> Optional[str]:
+def get_credential(env_var_name: str, default: Optional[str] = None, required: bool = False) -> Optional[str]:
     """
     Fetch a credential from an environment variable.
 
@@ -36,7 +32,7 @@ def get_ilo_credentials(
     username_env: str = "ILO_USER",
     password_env: str = "ILO_PASSWORD",
     default_username: str = "Administrator",
-    default_password: str = ""
+    default_password: str = "",
 ) -> tuple[str, str]:
     """
     Get iLO credentials from environment.
@@ -50,27 +46,19 @@ def get_ilo_credentials(
 
 
 def get_scom_credentials(
-    username_env: str = "SCOM_ADMIN_USER",
-    password_env: str = "SCOM_ADMIN_PASSWORD"
+    username_env: str = "SCOM_ADMIN_USER", password_env: str = "SCOM_ADMIN_PASSWORD"
 ) -> tuple[str, str]:
     """Get SCOM admin credentials from environment."""
-    return get_credential(username_env, required=True), \
-           get_credential(password_env, required=True)
+    return get_credential(username_env, required=True), get_credential(password_env, required=True)
 
 
-def get_openview_credentials(
-    user_env: str = "OPENVIEW_USER",
-    pass_env: str = "OPENVIEW_PASSWORD"
-) -> tuple[str, str]:
+def get_openview_credentials(user_env: str = "OPENVIEW_USER", pass_env: str = "OPENVIEW_PASSWORD") -> tuple[str, str]:
     """Get OpenView API credentials from environment."""
-    return get_credential(user_env, required=False), \
-           get_credential(pass_env, required=False)
+    return get_credential(user_env, required=False), get_credential(pass_env, required=False)
 
 
 def get_smtp_credentials(
-    user_env: str = "SMTP_USER",
-    pass_env: str = "SMTP_PASSWORD"
+    user_env: str = "SMTP_USER", pass_env: str = "SMTP_PASSWORD"
 ) -> tuple[Optional[str], Optional[str]]:
     """Get SMTP credentials (optional)."""
-    return get_credential(user_env, required=False), \
-           get_credential(pass_env, required=False)
+    return get_credential(user_env, required=False), get_credential(pass_env, required=False)

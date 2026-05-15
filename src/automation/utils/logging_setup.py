@@ -25,7 +25,7 @@ def init_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> N
     if root.hasHandlers():
         root.handlers.clear()
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
@@ -34,7 +34,7 @@ def init_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> N
     if log_file:
         log_path = Path("logs") / log_file
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_path, mode='a')
+        file_handler = logging.FileHandler(log_path, mode="a")
         file_handler.setFormatter(formatter)
         root.addHandler(file_handler)
 

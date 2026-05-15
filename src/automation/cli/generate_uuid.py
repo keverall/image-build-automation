@@ -30,7 +30,7 @@ def generate_unique_uuid(server_name: str, timestamp: str = None) -> str:
     base_string = f"{server_name}-{timestamp}"
 
     # Create SHA256 hash
-    hash_obj = hashlib.sha256(base_string.encode('utf-8'))
+    hash_obj = hashlib.sha256(base_string.encode("utf-8"))
 
     # Use first 32 hex characters for UUID
     hash_hex = hash_obj.hexdigest()[:32]
@@ -38,23 +38,13 @@ def generate_unique_uuid(server_name: str, timestamp: str = None) -> str:
     # Convert to UUID (ensures valid format)
     return str(uuid.UUID(hash_hex))
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate deterministic UUID for HPE ProLiant servers"
-    )
+    parser = argparse.ArgumentParser(description="Generate deterministic UUID for HPE ProLiant servers")
+    parser.add_argument("server_name", help="Server name or hostname")
+    parser.add_argument("--output", "-o", help="Output file path (default: stdout)", default=None)
     parser.add_argument(
-        "server_name",
-        help="Server name or hostname"
-    )
-    parser.add_argument(
-        "--output", "-o",
-        help="Output file path (default: stdout)",
-        default=None
-    )
-    parser.add_argument(
-        "--timestamp", "-t",
-        help="Custom timestamp in ISO format (default: current time)",
-        default=None
+        "--timestamp", "-t", help="Custom timestamp in ISO format (default: current time)", default=None
     )
 
     args = parser.parse_args()
@@ -74,6 +64,7 @@ def main():
     except Exception as e:
         print(f"Error generating UUID: {e}", file=sys.stderr)
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

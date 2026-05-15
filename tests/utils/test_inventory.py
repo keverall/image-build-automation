@@ -28,10 +28,7 @@ class TestServerInfo:
     def test_server_info_with_optional_fields(self):
         """Test ServerInfo with all optional fields."""
         server = ServerInfo(
-            hostname="server1.example.com",
-            ipmi_ip="192.168.1.100",
-            ilo_ip="192.168.1.101",
-            line_number=5
+            hostname="server1.example.com", ipmi_ip="192.168.1.100", ilo_ip="192.168.1.101", line_number=5
         )
         assert server.hostname == "server1.example.com"
         assert server.ipmi_ip == "192.168.1.100"
@@ -90,12 +87,7 @@ class TestLoadServerList:
     def test_load_server_list_ignores_comments(self, tmp_path):
         """Test that comment lines are ignored."""
         path = tmp_path / "servers.txt"
-        path.write_text(
-            "# This is a comment\n"
-            "server1\n"
-            "# Another comment\n"
-            "server2\n"
-        )
+        path.write_text("# This is a comment\nserver1\n# Another comment\nserver2\n")
 
         result = load_server_list(path, include_details=False)
         assert result == ["server1", "server2"]
@@ -119,11 +111,7 @@ class TestLoadServerList:
     def test_load_server_list_line_numbers_preserved(self, tmp_path):
         """Test that line numbers are tracked correctly in details mode."""
         path = tmp_path / "servers.txt"
-        path.write_text(
-            "# Comment on line 1\n"
-            "server1\n"
-            "server2\n"
-        )
+        path.write_text("# Comment on line 1\nserver1\nserver2\n")
 
         result = load_server_list(path, include_details=True)
         assert result[0].line_number == 2
@@ -172,50 +160,32 @@ class TestValidateClusterDefinition:
             "display_name": "Test Cluster",
             "servers": ["server1", "server2"],
             "scom_group": "TestGroup",
-            "environment": "test"
+            "environment": "test",
         }
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert errors == []
 
     def test_validate_cluster_definition_missing_display_name(self):
         """Test missing display_name field."""
-        cluster_def = {
-            "servers": ["server1"],
-            "scom_group": "TestGroup",
-            "environment": "test"
-        }
+        cluster_def = {"servers": ["server1"], "scom_group": "TestGroup", "environment": "test"}
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert "Missing required field 'display_name'" in errors[0]
 
     def test_validate_cluster_definition_missing_servers(self):
         """Test missing servers field."""
-        cluster_def = {
-            "display_name": "Test",
-            "scom_group": "Group",
-            "environment": "test"
-        }
+        cluster_def = {"display_name": "Test", "scom_group": "Group", "environment": "test"}
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert "Missing required field 'servers'" in errors[0]
 
     def test_validate_cluster_definition_servers_not_list(self):
         """Test servers field is not a list."""
-        cluster_def = {
-            "display_name": "Test",
-            "servers": "not-a-list",
-            "scom_group": "Group",
-            "environment": "test"
-        }
+        cluster_def = {"display_name": "Test", "servers": "not-a-list", "scom_group": "Group", "environment": "test"}
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert "'servers' must be a non-empty list" in errors[0]
 
     def test_validate_cluster_definition_servers_empty_list(self):
         """Test servers field is an empty list."""
-        cluster_def = {
-            "display_name": "Test",
-            "servers": [],
-            "scom_group": "Group",
-            "environment": "test"
-        }
+        cluster_def = {"display_name": "Test", "servers": [], "scom_group": "Group", "environment": "test"}
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert "'servers' must be a non-empty list" in errors[0]
 
@@ -226,7 +196,7 @@ class TestValidateClusterDefinition:
             "servers": ["server1"],
             "scom_group": "Group",
             "environment": "test",
-            "ilo_addresses": "not-a-dict"
+            "ilo_addresses": "not-a-dict",
         }
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert any("'ilo_addresses' must be a dictionary" in e for e in errors)
@@ -238,7 +208,7 @@ class TestValidateClusterDefinition:
             "servers": ["server1"],
             "scom_group": "Group",
             "environment": "test",
-            "ilo_addresses": {"server1": 12345}  # IP should be string
+            "ilo_addresses": {"server1": 12345},  # IP should be string
         }
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert any("Invalid iLO IP for server server1" in e for e in errors)
@@ -250,7 +220,7 @@ class TestValidateClusterDefinition:
             "servers": ["server1"],
             "scom_group": "Group",
             "environment": "test",
-            "openview_node_ids": ["node1", "node2"]  # should be dict
+            "openview_node_ids": ["node1", "node2"],  # should be dict
         }
         errors = validate_cluster_definition(cluster_def, "TEST")
         assert any("'openview_node_ids' must be a dictionary" in e for e in errors)

@@ -13,6 +13,7 @@ class TestGenerateUniqueUUID:
     def test_generate_uuid_returns_valid_uuid_format(self):
         """Test that generated UUID is valid UUID format."""
         import uuid as uuid_module
+
         generated = generate_unique_uuid("test-server")
         # Should be valid UUID, any version is fine
         try:
@@ -41,8 +42,9 @@ class TestGenerateUniqueUUID:
         base_string = f"{server_name}-{timestamp}"
 
         import hashlib
-        hash_hex = hashlib.sha256(base_string.encode('utf-8')).hexdigest()[:32]
-        expected_uuid = str(__import__('uuid').UUID(hash_hex))
+
+        hash_hex = hashlib.sha256(base_string.encode("utf-8")).hexdigest()[:32]
+        expected_uuid = str(__import__("uuid").UUID(hash_hex))
 
         result = generate_unique_uuid(server_name, timestamp)
         assert result == expected_uuid
@@ -50,6 +52,7 @@ class TestGenerateUniqueUUID:
     def test_generate_uuid_default_timestamp_is_current(self):
         """Test that default timestamp is approximately current time."""
         import time
+
         time.time()
         uuid1 = generate_unique_uuid("server1")
         time.time()
@@ -66,12 +69,13 @@ class TestMain:
 
     def test_main_prints_uuid(self, capsys):
         """Test main prints UUID to stdout."""
-        with patch('sys.exit'):
+        with patch("sys.exit"):
             main()
 
         captured = capsys.readouterr()
         # Should print a UUID string
         import uuid
+
         try:
             uuid.UUID(captured.out.strip())
             assert True
@@ -80,7 +84,11 @@ class TestMain:
 
     def test_main_with_custom_timestamp(self, capsys):
         """Test main with custom timestamp."""
-        with patch('sys.exit'), patch('automation.cli.generate_uuid.generate_unique_uuid', return_value="test-uuid-1234"), patch('sys.argv', ['generate_uuid.py', 'server1', '--timestamp', '2024-01-01T00:00:00']):
+        with (
+            patch("sys.exit"),
+            patch("automation.cli.generate_uuid.generate_unique_uuid", return_value="test-uuid-1234"),
+            patch("sys.argv", ["generate_uuid.py", "server1", "--timestamp", "2024-01-01T00:00:00"]),
+        ):
             main()
 
         captured = capsys.readouterr()
@@ -89,7 +97,11 @@ class TestMain:
     def test_main_writes_to_file(self, tmp_path, capsys):
         """Test main writes UUID to file when --output specified."""
         output_file = tmp_path / "uuid.txt"
-        with patch('sys.exit'), patch('automation.cli.generate_uuid.generate_unique_uuid', return_value="fixed-uuid"), patch('sys.argv', ['generate_uuid.py', 'server1', '--output', str(output_file)]):
+        with (
+            patch("sys.exit"),
+            patch("automation.cli.generate_uuid.generate_unique_uuid", return_value="fixed-uuid"),
+            patch("sys.argv", ["generate_uuid.py", "server1", "--output", str(output_file)]),
+        ):
             main()
 
         assert output_file.exists()
@@ -98,14 +110,21 @@ class TestMain:
     def test_main_creates_parent_directories(self, tmp_path, capsys):
         """Test main creates parent directories for output file."""
         output_file = tmp_path / "deep" / "nested" / "uuid.txt"
-        with patch('sys.exit'), patch('automation.cli.generate_uuid.generate_unique_uuid', return_value="uuid"), patch('sys.argv', ['generate_uuid.py', 'srv', '--output', str(output_file)]):
+        with (
+            patch("sys.exit"),
+            patch("automation.cli.generate_uuid.generate_unique_uuid", return_value="uuid"),
+            patch("sys.argv", ["generate_uuid.py", "srv", "--output", str(output_file)]),
+        ):
             main()
 
         assert output_file.exists()
 
     def test_main_handles_exception(self, capsys):
         """Test main handles exceptions gracefully."""
-        with patch('sys.argv', ['generate_uuid.py', 'server1']), patch('automation.cli.generate_uuid.generate_unique_uuid', side_effect=RuntimeError("test error")):
+        with (
+            patch("sys.argv", ["generate_uuid.py", "server1"]),
+            patch("automation.cli.generate_uuid.generate_unique_uuid", side_effect=RuntimeError("test error")),
+        ):
             # main returns exit code rather than calling sys.exit
             exit_code = main()
         assert exit_code == 1

@@ -29,16 +29,13 @@ from automation.utils.logging_setup import init_logging
 # Module logger
 logger = logging.getLogger(__name__)
 
+
 class ISODeployer:
     """Deploys ISOs to HPE ProLiant servers via various methods."""
 
-    DEPLOY_METHODS = ['ilo', 'redfish']
+    DEPLOY_METHODS = ["ilo", "redfish"]
 
-    def __init__(
-        self,
-        server_list_file: str = "configs/server_list.txt",
-        iso_dir: str = "output/combined"
-    ):
+    def __init__(self, server_list_file: str = "configs/server_list.txt", iso_dir: str = "output/combined"):
         """
         Initialize deployer.
 
@@ -62,23 +59,18 @@ class ISODeployer:
     def _log(self, action: str, status: str, server: str, details: str = ""):
         """Log deployment action."""
         entry = {
-            'timestamp': datetime.now().isoformat(),
-            'action': action,
-            'status': status,
-            'server': server,
-            'details': details
+            "timestamp": datetime.now().isoformat(),
+            "action": action,
+            "status": status,
+            "server": server,
+            "details": details,
         }
         self.deploy_log.append(entry)
         logger.info(f"[{status}] {action} | {server} | {details}")
 
     def _find_server_package(self, server_name: str) -> Optional[Path]:
         """Find deployment package for a server."""
-        server_variants = [
-            server_name,
-            server_name.lower(),
-            server_name.replace('.', '_'),
-            server_name.split('.')[0]
-        ]
+        server_variants = [server_name, server_name.lower(), server_name.replace(".", "_"), server_name.split(".")[0]]
 
         for variant in server_variants:
             server_dir = self.iso_dir / variant
@@ -94,7 +86,7 @@ class ISODeployer:
                     try:
                         with open(metadata) as f:
                             data = json.load(f)
-                        if data.get('server_name') == server_name:
+                        if data.get("server_name") == server_name:
                             return item
                     except (json.JSONDecodeError, KeyError):
                         continue
@@ -124,7 +116,7 @@ class ISODeployer:
         with open(metadata_file) as f:
             metadata = json.load(f)
 
-        iso_name = metadata.get('patched_iso')
+        iso_name = metadata.get("patched_iso")
         if not iso_name:
             logger.error("No patched ISO in metadata")
             return False
@@ -139,7 +131,7 @@ class ISODeployer:
         base_url = f"http://{ilo_ip}/rest/v1"
         session = requests.Session()
         session.auth = (username, password)
-        session.headers.update({'Content-Type': 'application/json'})
+        session.headers.update({"Content-Type": "application/json"})
 
         try:
             # Login
@@ -175,7 +167,7 @@ class ISODeployer:
         with open(metadata_file) as f:
             metadata = json.load(f)
 
-        iso_name = metadata.get('patched_iso')
+        iso_name = metadata.get("patched_iso")
         if not iso_name:
             logger.error("No patched ISO in metadata")
             return False
@@ -194,7 +186,7 @@ class ISODeployer:
         self._log("deploy_redfish", "INFO", server.hostname, "Redfish deployment requires HTTP-accessible ISO URL")
         return False
 
-    def deploy(self, server: ServerInfo, method: str = 'ilo', dry_run: bool = False) -> bool:
+    def deploy(self, server: ServerInfo, method: str = "ilo", dry_run: bool = False) -> bool:
         """Deploy ISO to a single server."""
         server_name = server.hostname
         package_dir = self._find_server_package(server_name)
@@ -204,9 +196,9 @@ class ISODeployer:
             return False
 
         success = False
-        if method == 'ilo':
+        if method == "ilo":
             success = self.deploy_via_ilo(server, package_dir, dry_run)
-        elif method == 'redfish':
+        elif method == "redfish":
             success = self.deploy_via_redfish(server, package_dir, dry_run)
         else:
             logger.error(f"Unknown deployment method: {method}")
@@ -217,10 +209,10 @@ class ISODeployer:
 
         return success
 
-    def deploy_all(self, method: str = 'ilo', dry_run: bool = False) -> dict:
+    def deploy_all(self, method: str = "ilo", dry_run: bool = False) -> dict:
         """Deploy to all servers in server list."""
         logger.info(f"\nDeploying to {len(self.server_details)} servers via {method}")
-        logger.info(f"{'='*60}")
+        logger.info(f"{'=' * 60}")
 
         results = []
 
@@ -229,36 +221,33 @@ class ISODeployer:
             logger.info(f"\nDeploying to: {server_name}")
 
             success = self.deploy(server, method, dry_run)
-            results.append({
-                'server': server_name,
-                'success': success,
-                'method': method
-            })
+            results.append({"server": server_name, "success": success, "method": method})
 
             status = "✓" if success else "✗"
             logger.info(f"{status} {server_name}")
 
-        success_count = sum(1 for r in results if r['success'])
+        success_count = sum(1 for r in results if r["success"])
         summary = {
-            'timestamp': datetime.now().isoformat(),
-            'method': method,
-            'total': len(results),
-            'successful': success_count,
-            'failed': len(results) - success_count,
-            'results': results
+            "timestamp": datetime.now().isoformat(),
+            "method": method,
+            "total": len(results),
+            "successful": success_count,
+            "failed": len(results) - success_count,
+            "results": results,
         }
 
         # Save deployment log
         log_dir = Path("logs")
         ensure_dir(log_dir)
         log_file = log_dir / f"deploy_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(log_file, 'w') as f:
-            json.dump({'summary': summary, 'log': self.deploy_log}, f, indent=2)
+        with open(log_file, "w") as f:
+            json.dump({"summary": summary, "log": self.deploy_log}, f, indent=2)
 
         logger.info(f"\nDeployment Summary: {success_count}/{len(results)} successful")
         logger.info(f"Log saved to: {log_file}")
 
         return summary
+
 
 def main():
     # Initialize root logging
@@ -286,11 +275,12 @@ def main():
             return 0 if success else 1
         else:
             summary = deployer.deploy_all(args.method, args.dry_run)
-            return 0 if summary['successful'] == summary['total'] else 1
+            return 0 if summary["successful"] == summary["total"] else 1
 
     except Exception as e:
         logger.error(f"Deployment failed: {e}", exc_info=True)
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

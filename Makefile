@@ -90,21 +90,18 @@ coverage-xml: ## Generate XML coverage report (for CI)
 
 # ─── Linting & Formatting ────────────────────────────────────────────────────
 lint: ## Run all linting and code quality checks
-	@echo "$(CYAN)[lint]$(NC) Running ruff..."
-	$(PYTHON) -m ruff check $(SRC) --output-format=concise
-	@echo "$(CYAN)[lint]$(NC) Checking formatting..."
-	$(PYTHON) -m ruff format $(SRC) --check
-	@echo "$(CYAN)[lint]$(NC) Running mypy..."
-	$(PYTHON) -m mypy $(SRC) --ignore-missing-imports
-	@echo "$(CYAN)[lint]$(NC) Analyzing complexity..."
-	$(PYTHON) -m radon mi $(SRC) -s
-	$(PYTHON) -m radon cc $(SRC) -nc
-	@echo "$(GREEN)[lint]$(NC) All checks passed"
+	@set -e; \
+	$(PYTHON) -m ruff check $(SRC) --output-format=concise; \
+	$(PYTHON) -m ruff format $(SRC) --check; \
+	$(PYTHON) -m mypy $(SRC) --ignore-missing-imports; \
+	$(PYTHON) -m radon mi $(SRC) -s; \
+	$(PYTHON) -m radon cc $(SRC) -nc; \
+	echo "$(GREEN)[lint]$(NC) All checks passed"
 
 lint-fix: ## Run ruff auto-fix and format
 	@echo "$(CYAN)[lint-fix]$(NC) Auto-fixing with ruff..."
-	$(PYTHON) -m ruff check $(SRC) --fix
-	$(PYTHON) -m ruff format $(SRC)
+	@$(PYTHON) -m ruff check $(SRC) --fix
+	@$(PYTHON) -m ruff format $(SRC)
 	@echo "$(GREEN)[lint-fix]$(NC) Done"
 
 lint-test: ## Run linting on test files
@@ -115,8 +112,8 @@ lint-test: ## Run linting on test files
 
 format: ## Format all Python files
 	@echo "$(CYAN)[format]$(NC) Formatting code..."
-	$(PYTHON) -m ruff format $(SRC) $(TESTS)
-	$(PYTHON) -m ruff check $(SRC) $(TESTS) --fix
+	@$(PYTHON) -m ruff format $(SRC) $(TESTS)
+	@$(PYTHON) -m ruff check $(SRC) $(TESTS) --fix
 	@echo "$(GREEN)[format]$(NC) Done"
 
 # ─── Security Scanning ───────────────────────────────────────────────────────

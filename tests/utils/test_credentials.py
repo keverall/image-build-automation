@@ -1,6 +1,5 @@
 """Tests for automation.utils.credentials module."""
 
-
 import pytest
 
 from automation.utils.credentials import (
@@ -65,10 +64,7 @@ class TestGetILOCredentials:
         """Test with custom environment variable names."""
         monkeypatch.setenv("CUSTOM_ILO_USER", "custom_user")
         monkeypatch.setenv("CUSTOM_ILO_PASS", "custom_pass")
-        username, password = get_ilo_credentials(
-            username_env="CUSTOM_ILO_USER",
-            password_env="CUSTOM_ILO_PASS"
-        )
+        username, password = get_ilo_credentials(username_env="CUSTOM_ILO_USER", password_env="CUSTOM_ILO_PASS")
         assert username == "custom_user"
         assert password == "custom_pass"
 
