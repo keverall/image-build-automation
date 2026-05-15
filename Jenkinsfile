@@ -42,6 +42,16 @@ pipeline {
             defaultValue: false,
             description: 'Skip firmware/driver download (use existing)'
         )
+        booleanParam(
+            name: 'SKIP_CODE_SCAN',
+            defaultValue: false,
+            description: 'Skip code quality and security scanning stages'
+        )
+        booleanParam(
+            name: 'FAIL_ON_CODE_ISSUES',
+            defaultValue: false,
+            description: 'Fail build on code quality issues (strict mode)'
+        )
     }
 
     environment {
@@ -89,7 +99,11 @@ pipeline {
                 python -m pip install --upgrade pip
                 pip install -r requirements.txt
 
-                # Verify Python syntax
+                # Install code quality & security scanning tools
+                pip install ruff radon bandit safety
+
+                # Verify Python syntax for all scripts
+                echo [INFO] Verifying Python syntax...
                 python -m py_compile scripts\\generate_uuid.py
                 python -m py_compile scripts\\build_iso.py
                 python -m py_compile scripts\\update_firmware_drivers.py
@@ -97,12 +111,187 @@ pipeline {
                 python -m py_compile scripts\\deploy_to_server.py
                 python -m py_compile scripts\\monitor_install.py
                 python -m py_compile scripts\\opsramp_integration.py
+                python -m py_compile scripts\\maintenance_mode.py
+                Get-ChildItem scripts\\utils\\*.py | ForEach-Object { python -m py_compile $_.FullName }
 
                 # Validate JSON configs
+                echo [INFO] Validating JSON configs...
                 python -c "import json; json.load(open('configs/hpe_firmware_drivers_nov2025.json'))"
                 python -c "import json; json.load(open('configs/windows_patches.json'))"
                 python -c "import json; json.load(open('configs/opsramp_config.json'))"
+                python -c "import json; json.load(open('configs/clusters_catalogue.json'))"
+                python -c "import json; json.load(open('configs/scom_config.json'))"
+                python -c "import json; json.load(open('configs/openview_config.json'))"
+                python -c "import json; json.load(open('configs/email_distribution_lists.json'))"
                 '''
+            }
+        }
+
+        stage('Code Quality & Security Scan') {
+            when {
+                expression { !params.SKIP_CODE_SCAN }
+            }
+            steps {
+                powershell '''
+                echo [STAGE] Code Quality & Security Scanning
+                $scanDir = "code_scan_results"
+                if (Test-Path $scanDir) { Remove-Item -Recurse -Force $scanDir }
+                New-Item -ItemType Directory -Force -Path $scanDir | Out-Null
+
+                # Strict mode flag
+                $strict = $env.FAIL_ON_CODE_ISSUES -eq 'true'
+
+                # ============================================
+                # 1. RUFF — Fast linting + auto-fix check
+                # ============================================
+                echo [INFO] [1/6] Running ruff lint check...
+                ruff check scripts\\ --output-format=json --output=code_scan_results\\ruff_issues.json
+                if ($LASTEXITCODE -ne 0) {
+                    echo "ruff found style issues"
+                    if ($strict) { exit 1 }
+                }
+                # Ensure auto-fixes applied
+                ruff check scripts\\ --fix
+                # Check formatting
+                ruff format --check scripts\ > code_scan_results\ruff_format.txt 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    echo "ruff format check failed"
+                    if ($strict) { exit 1 }
+                }
+
+                # ============================================
+                # 2. PYLINT — Traditional comprehensive lint
+                # ============================================
+                echo [INFO] [2/6] Running pylint...
+                pip install pylint 2>$null | Out-Null
+                if (Get-Command pylint -ErrorAction SilentlyContinue) {
+                    pylint --output-format=json scripts\\ > code_scan_results\\pylint_report.json 2>&1
+                    $pylintExit = $LASTEXITCODE
+                    pylint scripts\\ > code_scan_results\\pylint_report.txt 2>&1
+                    if ($pylintExit -ne 0 -and $strict) { exit 1 }
+                } else {
+                    "pylint not available" | Out-File code_scan_results\\pylint_report.txt -Encoding utf8
+                }
+
+                # ============================================
+                # 3. RADON — Maintainability & Complexity
+                # ============================================
+                echo [INFO] [3/6] Running radon complexity analysis...
+                radon mi scripts\\ -s -j > code_scan_results\\radon_maintainability.json
+                radon cc scripts\\ -s -j > code_scan_results\\radon_cyclomatic.json
+                # Warn on complex functions (CC > 10)
+                $ccWarnings = radon cc scripts\\ -nc
+                $ccWarnings | Out-File code_scan_results\\radon_complexity_warnings.txt -Encoding utf8
+                if ($ccWarnings -match "C") {
+                    echo "WARNING: High cyclomatic complexity detected (C grade)"
+                    if ($strict) { exit 1 }
+                }
+
+                # ============================================
+                # 4. BANDIT — Security vulnerabilities (Python)
+                # ============================================
+                echo [INFO] [4/6] Running bandit security scan...
+                bandit -r scripts\\ -f json -o code_scan_results\\bandit_report.json
+                $banditExit = $LASTEXITCODE
+                bandit -r scripts\\ -f txt -o code_scan_results\\bandit_report.txt
+                if ($banditExit -ne 0) {
+                    echo "bandit found potential security issues"
+                    # Parse JSON for HIGH/CRITICAL
+                    try {
+                        $banditData = Get-Content code_scan_results\\bandit_report.json | ConvertFrom-Json
+                        $highIssues = $banditData.results | Where-Object { $_.issue_severity -in 'HIGH', 'CRITICAL' }
+                        if ($highIssues) {
+                            echo "FOUND HIGH/CRITICAL bandit issues: $($highIssues.Count)"
+                            if ($strict) { exit 1 }
+                        }
+                    } catch {
+                        echo "Could not parse bandit JSON; check report manually"
+                    }
+                }
+
+                # ============================================
+                # 5. SAFETY — Dependency vulnerability check
+                # ============================================
+                echo [INFO] [5/6] Checking dependencies with safety...
+                safety check --json --output code_scan_results\\safety_report.json
+                $safetyExit = $LASTEXITCODE
+                safety check --output code_scan_results\\safety_report.txt
+                if ($safetyExit -ne 0) {
+                    echo "safety found vulnerable dependencies"
+                    try {
+                        $safetyData = Get-Content code_scan_results\\safety_report.json | ConvertFrom-Json
+                        $highVulns = $safetyData.vulnerabilities | Where-Object { $_.vulnerability_id -match 'CVE-' }
+                        if ($highVulns) {
+                            echo "FOUND HIGH/CRITICAL vulnerabilities: $($highVulns.Count)"
+                            if ($strict) { exit 1 }
+                        }
+                    } catch {
+                        echo "Could not parse safety JSON; check report manually"
+                    }
+                }
+
+                # ============================================
+                # 6. GITLEAKS — Detect committed secrets
+                # ============================================
+                echo [INFO] [6/6] Scanning for secrets with gitleaks...
+                if (-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
+                    echo "gitleaks not installed; attempting local download..."
+                    try {
+                        if (-not (Test-Path "tools")) { New-Item -ItemType Directory -Force -Path "tools" | Out-Null }
+                        if (-not (Test-Path "tools\\gitleaks.exe")) {
+                            Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v8.18.1/gitleaks_8.18.1_windows_x64.zip" -OutFile "tools\\gitleaks.zip" -TimeoutSec 30
+                            Expand-Archive -Path "tools\\gitleaks.zip" -DestinationPath "tools" -Force
+                            Remove-Item "tools\\gitleaks.zip" -Force
+                        }
+                        $gitleaksPath = ".\\tools\\gitleaks.exe"
+                    } catch {
+                        echo "WARNING: Could not download gitleaks: $_"
+                        echo "Skipping gitleaks scan (non-fatal)"
+                        $gitleaksPath = $null
+                    }
+                } else {
+                    $gitleaksPath = "gitleaks"
+                }
+
+                if ($gitleaksPath) {
+                    & $gitleaksPath detect --source=. --report-path=code_scan_results\\gitleaks_report.json --report-format json --no-banner
+                    $gitleaksExit = $LASTEXITCODE
+                    if ($gitleaksExit -ne 0) {
+                        echo "gitleaks found potential secrets!"
+                        try {
+                            $glData = Get-Content code_scan_results\\gitleaks_report.json | ConvertFrom-Json
+                            if ($glData.Findings) {
+                                echo "Found $($glData.Findings.Count) potential secret(s)"
+                                if ($strict) { exit 1 }
+                            }
+                        } catch {
+                            echo "Gitleaks reported issues; check report"
+                            if ($strict) { exit 1 }
+                        }
+                    }
+                }
+
+                # ============================================
+                # Summary
+                # ============================================
+                echo ''
+                echo [SUMMARY] Code scan complete. Reports in code_scan_results/
+                echo Files generated:
+                Get-ChildItem code_scan_results\\ | ForEach-Object { "  - $($_.Name)" }
+                echo ''
+                echo "To fail build on issues, enable 'FAIL_ON_CODE_ISSUES' parameter."
+                '''
+            }
+            post {
+                always {
+                    // Archive all scan reports
+                    archiveArtifacts artifacts: 'code_scan_results/**', allowEmptyArchive: false
+                }
+                failure {
+                    mail to: 'security-alerts@yourcompany.com',
+                         subject: "⚠️ Code Quality/Scan FAILED: Build #${BUILD_NUMBER}",
+                         body: "One or more code quality or security scans failed. Review artifacts in build #${BUILD_NUMBER}.\n\nReports: code_scan_results/"
+                }
             }
         }
 
@@ -112,7 +301,6 @@ pipeline {
             }
             steps {
                 powershell '''
-                # Generate UUIDs for filtered servers
                 $servers = Get-Content configs\\server_list.txt | Where-Object { $_ -and -not $_.StartsWith('#') }
 
                 if (params.SERVER_FILTER) {
@@ -123,7 +311,6 @@ pipeline {
                 foreach ($server in $servers) {
                     $uuid = python scripts\\generate_uuid.py $server
                     Write-Host "[INFO] UUID for $server`: $uuid"
-                    # Store UUID for later stages
                     $uuid | Out-File -FilePath "output\\${server}.uuid" -Encoding ascii
                 }
                 '''
@@ -143,14 +330,12 @@ pipeline {
                   --dry-run:${{ params.DRY_RUN }}
                 '''
 
-                // Archive results
                 archiveArtifacts artifacts: 'output/firmware/**/*.json', allowEmptyArchive: true
                 archiveArtifacts artifacts: 'output/firmware/**/*.iso', allowEmptyArchive: true
             }
             post {
                 always {
                     powershell '''
-                    # Collect build results
                     if (Test-Path "output\\firmware\\results") {
                         Get-ChildItem "output\\firmware\\results\\*.json" | ForEach-Object {
                             $content = Get-Content $_.FullName | ConvertFrom-Json
@@ -168,14 +353,12 @@ pipeline {
             }
             steps {
                 powershell '''
-                # Validate base ISO
                 $baseIso = "${params.BASE_ISO_PATH}"
                 if (-not (Test-Path $baseIso)) {
                     Write-Error "Base ISO not found: $baseIso"
                     exit 1
                 }
 
-                # Build for each server
                 $servers = Get-Content configs\\server_list.txt | Where-Object { $_ -and -not $_.StartsWith('#') }
 
                 if (params.SERVER_FILTER) {
@@ -210,7 +393,6 @@ pipeline {
                   --dry-run:${{ params.DRY_RUN }}
                 '''
 
-                // Create deployment bundle
                 powershell '''
                 $date = Get-Date -Format "yyyyMMdd_HHmmss"
                 $bundleName = "deployment_bundle_$date"
@@ -245,7 +427,6 @@ pipeline {
             }
             steps {
                 powershell '''
-                # Scan patched ISOs
                 python -c "
 import sys
 from pathlib import Path
@@ -254,7 +435,6 @@ import json
 reports_dir = Path('logs/scan_reports')
 reports_dir.mkdir(parents=True, exist_ok=True)
 
-# Placeholder scan - integrate Nessus/OpenVAS CLI here
 print('[INFO] Vulnerability scanning placeholder')
 print('[INFO] Configure Nessus or OpenVAS in Jenkins environment')
 "
@@ -273,7 +453,6 @@ print('[INFO] Configure Nessus or OpenVAS in Jenkins environment')
             }
             steps {
                 powershell '''
-                # Send build metrics to OpsRamp
                 python -c "
 from pathlib import Path
 import json
@@ -292,18 +471,15 @@ if results_dir.exists():
         stage('Audit & Reporting') {
             steps {
                 powershell '''
-                # Generate daily audit report
                 $date = Get-Date -Format "yyyy-MM-dd"
                 $reportDir = "logs\\build_reports\\$date"
                 if (-not (Test-Path $reportDir)) { New-Item -ItemType Directory -Force -Path $reportDir }
 
-                # Copy all JSON results to report directory
                 Copy-Item -Path "output\\results\\*.json" -Destination $reportDir -ErrorAction SilentlyContinue
                 Copy-Item -Path "logs\\monitoring_sessions\\*.json" -Destination $reportDir -ErrorAction SilentlyContinue
 
                 Write-Host "Audit report generated at: $reportDir"
 
-                # Generate summary
                 $summary = @{
                     build_date = $date
                     total_servers = 0
@@ -312,7 +488,6 @@ if results_dir.exists():
                     stages_completed = params.BUILD_STAGE
                 }
 
-                # Count results
                 $resultFiles = Get-ChildItem "output\\results\\*.json" -ErrorAction SilentlyContinue
                 if ($resultFiles) {
                     $summary.total_servers = $resultFiles.Count
