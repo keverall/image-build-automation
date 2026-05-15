@@ -13,9 +13,7 @@ Provides real-time progress, alerts, and completion confirmation.
 """
 
 import argparse
-import json
 import logging
-import subprocess
 import sys
 import time
 from datetime import datetime
@@ -436,7 +434,7 @@ class InstallationMonitor:
         summary_file = Path("logs") / f"monitor_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         save_json(summary, summary_file)
 
-        logger.info(f"\nMonitoring Summary:")
+        logger.info("\nMonitoring Summary:")
         logger.info(f"  Completed: {completed}")
         logger.info(f"  Failed: {failed}")
         logger.info(f"  Timeout: {timed_out}")

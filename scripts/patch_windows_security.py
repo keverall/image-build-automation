@@ -7,15 +7,11 @@ Creates patched ISOs with November 2025 security updates.
 """
 
 import argparse
-import json
 import logging
-import os
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
-import shutil
 
 # Import utilities
 sys.path.insert(0, str(Path(__file__).parent))
@@ -133,12 +129,6 @@ class WindowsPatcher:
             logger.info("[DRY RUN] Would apply patches with PowerShell")
             return True
 
-        # PowerShell script to mount and patch
-        ps_script = f"""
-$ImagePath = '{self.base_iso_dir}'
-$patches = @({', '.join([f'"{p}"' for p in self.patches_config.get('patches', [])])})
-# Use Add-WindowsPackage
-"""
         # Not fully implemented; would need proper DISM on Windows
         self._log_step("apply_patches_ps", "SKIPPED", "Not implemented")
         return True

@@ -3,7 +3,9 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
+
+from .config import load_json_config
 
 logger = logging.getLogger(__name__)
 

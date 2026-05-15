@@ -4,20 +4,27 @@
 
 This document describes the comprehensive audit process for the HPE ProLiant Windows Server ISO Automation pipeline. Every action is logged, timestamped, and stored for compliance, troubleshooting, and reporting.
 
+All scripts use the centralized **`AuditLogger`** class from `scripts/utils/audit.py`, ensuring consistent structured JSON audit records across the entire codebase. Audit logs are written to both per-action files and a master line-delimited JSON log.
+
 ## Audit Trail Structure
 
 ### Log Files
 
 **Master Audit Log**
-- Location: `logs/audit_trail.log`
-- Format: Human-readable text with timestamps
-- Content: All actions across all scripts (build, deploy, monitor, scan)
+- Location: `logs/audit_trail.log` (legacy text format, retained for backward compatibility)
+- Location: `logs/maintenance_audit.log` (new structured JSON, one object per line)
+- Content: All actions across all scripts (build, deploy, monitor, scan, maintenance)
 - Rotation: Daily rollover with compressed archives
 
 **Build Result Files**
 - Location: `output/results/build_result_<server>_<timestamp>.json`
 - Per-server, per-build JSON records with complete step-by-step log
 - Includes: UUID, ISO paths, timestamps, success/failure status, step details
+
+**Maintenance-Specific Audit**
+- Location: `logs/maintenance_<action>_<cluster>_<timestamp>.json`
+- Each maintenance_mode.py run creates a detailed JSON record with per-system results
+- Aggregated into `logs/maintenance_audit.log` (line-delimited JSON) for centralized querying
 
 **Workflow Logs**
 - GitHub Actions: Uploaded as artifacts for each run
@@ -34,7 +41,7 @@ This document describes the comprehensive audit process for the HPE ProLiant Win
 
 ## What Gets Audited?
 
-Every script in this repository uses the `_log_step()` or equivalent method to record:
+Every script in this repository uses the `AuditLogger` class or `_log_step()` method to record:
 
 1. **UUID Generation**
    - Server name, timestamp, generated UUID
@@ -74,23 +81,50 @@ Every script in this repository uses the `_log_step()` or equivalent method to r
    - Events: event type, properties
    - API responses: status codes, acknowledgment IDs
 
-## Audit Entry Format
+8. **Maintenance Mode Operations** (new)
+   - Cluster ID, action (enable/disable/validate), dry-run flag
+   - Per-system results: SCOM status, iLO window creation, OpenView status, email sent, OpsRamp metrics
+   - Scheduled task creation/removal
+   - Start/end timestamps and computed duration
 
-Each audit entry includes:
-- `timestamp`: ISO 8601 format (e.g., `2025-11-14T10:30:45.123456`)
-- `action`: Action category (e.g., `build_start`, `download_patch`, `deploy_ilo`)
-- `status`: One of `START`, `SUCCESS`, `FAILED`, `SKIP`, `ERROR`
-- `server`: Server hostname (or `all` for batch operations)
-- `details`: Human-readable description (command output, error message, results)
+## Audit Entry Format (Structured JSON)
 
-Example:
+Each audit entry (from `AuditLogger`) includes:
+
 ```json
 {
   "timestamp": "2025-11-14T10:30:45.123456",
-  "action": "apply_patches",
+  "action": "build_firmware_iso",
   "status": "SUCCESS",
   "server": "server1.example.com",
-  "details": "Applied 5 patches via DISM (KB5041234, KB5041235, ...)"
+  "details": {
+    "iso_path": "output/firmware/server1.iso",
+    "size_mb": 1420,
+    "spp_version": "November 2025",
+    "duration_seconds": 245
+  }
+}
+```
+
+For maintenance operations, the record is more comprehensive:
+
+```json
+{
+  "timestamp": "2025-11-14T22:00:00",
+  "action": "maintenance_enable",
+  "cluster_id": "PROD-CLUSTER-01",
+  "dry_run": false,
+  "start_time": "2025-11-14T22:00:00",
+  "end_time": "2025-11-15T08:00:00",
+  "systems": {
+    "scom": {"success": true, "servers": ["web01", "web02", "db01"]},
+    "ilo": {"success": true, "windows_created": 3},
+    "openview": {"success": false, "error": "API endpoint unreachable"},
+    "email": {"success": true, "recipients": 5},
+    "opsramp": {"success": true, "metrics_sent": 9}
+  },
+  "scheduled_task": "MaintenanceDisable-PROD-CLUSTER-01",
+  "exit_code": 0
 }
 ```
 
@@ -132,11 +166,17 @@ Generated at midnight (or next build):
 
 ### Local Development
 ```bash
-# Tail live audit log
-tail -f logs/audit_trail.log
+# Tail live structured audit log (new format, JSON per line)
+tail -f logs/maintenance_audit.log | jq .
 
-# Search for server-specific entries
-grep "server1.example.com" logs/audit_trail.log
+# Search for cluster-specific maintenance entries
+grep "PROD-CLUSTER-01" logs/maintenance_audit.log | jq 'select(.cluster_id == "PROD-CLUSTER-01")'
+
+# View latest maintenance action
+jq -s 'last' <(cat logs/maintenance_*.json)
+
+# View legacy text audit log
+tail -f logs/audit_trail.log
 
 # View structured build result
 cat output/results/build_result_server1_20251114_103045.json | jq .
@@ -173,24 +213,26 @@ sha256sum output/firmware/server1_20251114.iso
 
 ### Audit Log Rotation
 ```
-audit_trail.log        # Current day's log
+audit_trail.log        # Current day's log (text)
 audit_trail.log.1     # Previous day
 audit_trail.log.2.gz  # 2 days ago (compressed)
+maintenance_audit.log # Structured JSON (current)
+maintenance_audit.log.1 # Rotated
 ...
 ```
 
 Cron job (or scheduled task) handles rotation:
 ```bash
 # Rotate logs older than 30 days to archive
-find logs/ -name "audit_trail.log.*" -mtime +30 -exec mv {} logs/archive/ \;
+find logs/ -name "*.log.*" -mtime +30 -exec mv {} logs/archive/ \;
 ```
 
 ## Compliance and Governance
 
 ### Regulatory Alignment
-- **SOX**: Full audit trail for change management
-- **PCI DSS**: Vulnerability scans and patch tracking
-- **HIPAA**: Access logs (who deployed what and when)
+- **SOX**: Full audit trail for change management (structured JSON, immutable)
+- **PCI DSS**: Vulnerability scans and patch tracking with timestamps
+- **HIPAA**: Access logs (who deployed what and when) with user context
 - **GDPR**: Server identifiers (UUIDs) pseudonymized; no PII in logs
 
 ### Access Controls
@@ -212,7 +254,7 @@ Monitor for:
 Steps:
 1. Find latest `build_result_serverX_*.json` in `output/results/`
 2. Check `steps` array for failed step name and error details
-3. Correlate with `audit_trail.log` entries for that timestamp
+3. Correlate with `logs/maintenance_audit.log` entries for that timestamp
 4. Review HPE SUT output (if available in logs)
 5. Check network logs for HPE repository access
 
@@ -232,22 +274,31 @@ Steps:
 4. Verify patch actually installed (check `winrm_progress` from build time)
 5. Determine if false positive or needs patch update to config
 
+### Scenario: Maintenance Window Did Not Auto-Disable
+Steps:
+1. Check `logs/maintenance_audit.log` for the enable action — look for `"scheduled_task"` field
+2. Verify Windows Scheduled Task exists: `schtasks /Query /TN "MaintenanceDisable-<cluster>"`
+3. Check task history: Event Viewer → Windows Logs → Task Scheduler
+4. Review script exit code in task history; any errors logged to `maintenance_audit.log`
+5. Manually run disable: `python scripts/maintenance_mode.py --cluster-id <id> --disable`
+
 ## Best Practices
 
-1. **Never edit JSON logs directly** - use scripts for modifications
+1. **Never edit JSON logs directly** — use scripts for modifications
 2. **Include context**: always log server name and UUID in multi-server operations
 3. **Log at appropriate level**: DEBUG for verbose, INFO for normal, WARNING/ERROR for issues
 4. **Preserve original logs**: archive, don't delete (for compliance)
 5. **Automate report generation**: schedule weekly compliance email from OpsRamp
 6. **Secure log transport**: use TLS for remote logging (syslog-ng, fluentd)
 7. **Monitor log growth**: implement retention policies; archive old data to S3/Blob
+8. **Query structured logs with `jq`**: leverage JSON format for filtering and aggregation
 
 ## Appendix: Log File Schemas
 
-### audit_trail.log (line-delimited JSON)
+### maintenance_audit.log (line-delimited JSON)
 ```
-{"timestamp":"...", "action":"...", "status":"...", "server":"...", "details":"..."}
-{"timestamp":"...", "action":"...", "status":"...", "server":"...", "details":"..."}
+{"timestamp":"...", "action":"maintenance_enable", "cluster_id":"...", "dry_run":false, ...}
+{"timestamp":"...", "action":"maintenance_disable", "cluster_id":"...", ...}
 ```
 
 ### build_result_*.json
@@ -287,6 +338,27 @@ Steps:
 }
 ```
 
+### maintenance_<action>_<cluster>_<timestamp>.json
+```json
+{
+  "timestamp": "...",
+  "action": "maintenance_enable",
+  "cluster_id": "...",
+  "dry_run": false,
+  "start_time": "...",
+  "end_time": "...",
+  "systems": {
+    "scom": {"success": true, "details": "..."},
+    "ilo": {"success": true, "details": "..."},
+    "openview": {"success": false, "error": "..."},
+    "email": {"success": true},
+    "opsramp": {"success": true}
+  },
+  "scheduled_task": "MaintenanceDisable-PROD-CLUSTER-01",
+  "exit_code": 0
+}
+```
+
 ## Change History
 
-- 2025-11-14: Initial audit process documentation
+- 2026-05-15: Unified AuditLogger class across all scripts; added structured maintenance audit logs

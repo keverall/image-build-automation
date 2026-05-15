@@ -1,12 +1,9 @@
 """Base class for automation scripts providing common functionality."""
 
-import argparse
-import json
 import logging
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from .logging_setup import get_logger
 from .config import load_json_config

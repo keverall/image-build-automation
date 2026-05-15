@@ -17,35 +17,50 @@ iRequest / Manual Call
        ↓
 maintenance_mode.py (enable)
        ↓
-  ├─ SCOM       → PowerShell cmdlets → group maintenance mode (duration-based)
-  ├─ iLO        → REST / ilorest → maintenance windows
-  ├─ OpenView   → HTTP API / CLI → node maintenance
-  ├─ OpsRamp    → metrics + alerts
-  ├─ Email      → distribution list notification
-  └─ schtasks   → schedule disable at end time
+   ├─ SCOM       → PowerShell cmdlets → group maintenance mode (duration-based)
+   ├─ iLO        → REST / ilorest → maintenance windows
+   ├─ OpenView   → HTTP API / CLI → node maintenance
+   ├─ OpsRamp    → metrics + alerts
+   ├─ Email      → distribution list notification
+   └─ schtasks   → schedule disable at end time
        ↓
 ... maintenance window ...
        ↓
 schtasks triggers maintenance_mode.py (disable) at end time
        ↓
-  ├─ Email disabled notification
-  ├─ OpsRamp metrics = 0
-  └─ (SCOM/iLO auto-expire via duration)
+   ├─ Email disabled notification
+   ├─ OpsRamp metrics = 0
+   └─ (SCOM/iLO auto-expire via duration)
 ```
+
+## Shared Utilities (DRY)
+
+`maintenance_mode.py` uses the `scripts/utils/` package for all common operations:
+
+- **logging_setup** — Root logger initialization with console + rotating file handlers
+- **config** — `load_json_config()` loads JSON with `${VAR}` environment substitution
+- **inventory** — `load_cluster_catalogue()`, `ServerInfo` validation, cluster ID checks
+- **audit** — `AuditLogger` writes per-action JSON files and appends to master log
+- **executor** — `run_command()` wraps subprocess; `run_with_retry()` for flaky network operations
+- **credentials** — `get_ilo_credentials()`, `get_scom_credentials()` from environment
+- **powershell** — `run_powershell()` local, `run_powershell_winrm()` remote; `build_scom_*()` script generators
+- **file_io** — `ensure_dir()` creates log/output directories automatically
+
+All scripts follow the same pattern: subclass `AutomationBase` (or use standalone functions) and call `init_logging()` once in `main()` to avoid duplicate handlers.
 
 ## Prerequisites
 
-1. **Windows Server 2016** with:
-   - Python 3.9+ (includes `zoneinfo` for TZ handling) – or install `pytz` if using older Python
+1. **Windows Server 2016/2019/2022** with:
+   - Python 3.9+ (includes `zoneinfo` for TZ handling) – or install `backports.zoneinfo` on older Python
    - PowerShell 5.1+
-   - SCOM 2015 console & OperationsManager module installed
-   - HPE iLO PowerShell module (`HPiLOCmdlets`) *optional* – REST fallback uses `requests`
+   - SCOM 2015 console & OperationsManager module installed (if SCOM integration used)
+   - HPE iLO PowerShell module (`HPiLOCmdlets`) *optional* — REST fallback uses `requests`
    - HPE OpenView client utilities or API access *optional*
 2. **Credentials** set as environment variables on the system where the script runs:
    - `SCOM_ADMIN_USER`, `SCOM_ADMIN_PASSWORD` (if WinRM or explicit credentials required)
-   - `ILO_USER`, `ILO_PASSWORD` (global iLO credentials; per-cluster overrides supported)
+   - `ILO_USER`, `ILO_PASSWORD` (global iLO credentials; per-cluster overrides supported via env vars)
    - `OPENVIEW_USER`, `OPENVIEW_PASSWORD` (if OpenView requires auth)
-   - `SMTP_USER`, `SMTP_PASSWORD` (if SMTP auth needed)
+   - `SMTP_USER`, `SMTP_PASSWORD` (if SMTP auth needed; often not required on internal servers)
 3. **Python dependencies** installed:
    ```bash
    pip install -r requirements.txt
@@ -68,6 +83,7 @@ schtasks triggers maintenance_mode.py (disable) at end time
 | `openview_config.json` | OpenView API URL, auth, optional CLI path. |
 | `email_distribution_lists.json` | SMTP settings and distribution lists for enabled/disabled/failure events. |
 | `opsramp_config.json` | Existing OpsRamp integration (used unchanged). |
+| `maintenance_distribution_list.txt` | Optional override: one email per line takes precedence over JSON lists. |
 
 ### Example: clusters_catalogue.json
 
@@ -171,6 +187,8 @@ Audit includes:
 - Start and end timestamps
 - Any error messages
 
+Audit records use the `AuditLogger` class from `scripts/utils/audit.py`, ensuring consistent structured JSON across all automation scripts.
+
 ## OpsRamp Integration
 
 Automatically sends:
@@ -260,6 +278,6 @@ iRequest should capture the script's exit code (0 = success, non-zero = failure)
 
 - Add rollback logic: if any subsystem fails, attempt to revert successful ones.
 - Add status query to report current maintenance state across systems.
-- Add integration with SCOM for automated exit notification.
+- Add integration with SCOM for automated exit notification via SCOM alerts.
 - Support per-server individual windows within a cluster.
-- Add more sophisticated iLO/Redfish detection and fallback.
+- Add more sophisticated iLO/Redfish detection and automatic fallback.

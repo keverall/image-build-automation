@@ -9,12 +9,12 @@ and reporting on ISO build, deployment, and installation status.
 import json
 import logging
 import requests
-from requests.auth import HTTPBasicAuth
+import sys
+import argparse
 from requests.exceptions import RequestException
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 import os
-
 from pathlib import Path
 
 
@@ -485,7 +485,6 @@ def main():
         help="Alert/event message"
     )
 
-    import argparse
     args = parser.parse_args()
 
     client = OpsRampClient(args.config)
