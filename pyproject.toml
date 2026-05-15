@@ -84,3 +84,16 @@ warn_unused_configs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Configure test coverage
+addopts = """
+    --verbose
+    --cov=automation
+    --cov-report=term-missing
+    --cov-report=xml
+    --cov-report=html
+    --cov-fail-under=50
+"""
+markers = [
+    "unit: Unit tests for individual functions/classes",
+    "integration: Integration tests (may require external services)",
+]

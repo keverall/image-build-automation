@@ -82,6 +82,9 @@ def run_command(
             stderr=f"Command timed out after {timeout} seconds",
             success=False
         )
+    except subprocess.CalledProcessError:
+        # Re-raise if check=True triggered
+        raise
     except Exception as e:
         logger.error(f"Command execution error: {e}")
         return CommandResult(
