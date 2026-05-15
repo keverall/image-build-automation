@@ -7,15 +7,6 @@ Automated build pipelines for creating customized Windows Server installation IS
 ```
 hpe-windows-iso-automation/
 ├── Jenkinsfile                                  # CI/CD pipeline definition
-├── scripts/                                     # Backwards-compatible CLI wrappers
-│   ├── build_iso.py                            # → calls automation.cli.build_iso
-│   ├── update_firmware_drivers.py              # → calls automation.cli.update_firmware_drivers
-│   ├── patch_windows_security.py               # → calls automation.cli.patch_windows_security
-│   ├── deploy_to_server.py                     # → calls automation.cli.deploy_to_server
-│   ├── monitor_install.py                      # → calls automation.cli.monitor_install
-│   ├── opsramp_integration.py                  # → calls automation.cli.opsramp_integration
-│   ├── maintenance_mode.py                     # → calls automation.cli.maintenance_mode
-│   └── generate_uuid.py                        # → calls automation.cli.generate_uuid
 ├── src/                                         # Main package (python -m automation.cli.*)
 │   └── automation/
 │       ├── __init__.py                         # Package metadata, __version__
@@ -129,58 +120,57 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-After `pip install -e .`, all commands are available as:
+After `pip install -e .`, all commands use the package namespace:
 ```bash
 python -m automation.cli.build_iso [args...]
 python -m automation.cli.update_firmware_drivers [args...]
-# ... or use wrapper scripts/ for backwards compatibility
-python scripts/build_iso.py [args...]
+python -m automation.cli.deploy_to_server [args...]
 ```
 
 ### 5. Manual Build (Single Server)
 ```bash
 # Generate UUID
-python scripts/generate_uuid.py server1.example.com --output output/server1.uuid
+python -m automation.cli.generate_uuid server1.example.com --output output/server1.uuid
 
 # Build firmware/driver ISO
-python scripts/update_firmware_drivers.py --server server1.example.com
+python -m automation.cli.update_firmware_drivers --server server1.example.com
 
 # Build patched Windows ISO (requires base Windows ISO)
-python scripts/patch_windows_security.py \
+python -m automation.cli.patch_windows_security \
   --base-iso /path/to/Windows_Server_2022.iso \
   --server server1.example.com
 
 # Or use orchestrator for complete build
-python scripts/build_iso.py \
+python -m automation.cli.build_iso \
   --base-iso /path/to/Windows_Server_2022.iso \
   --server server1.example.com
 
 # Deploy to server (via iLO)
-python scripts/deploy_to_server.py --server server1.example.com --method ilo
+python -m automation.cli.deploy_to_server --server server1.example.com --method ilo
 
 # Monitor installation
-python scripts/monitor_install.py --server server1.example.com --timeout 7200
+python -m automation.cli.monitor_install --server server1.example.com --timeout 7200
 ```
 
 ### 6. Build for All Servers
 ```bash
 # Complete pipeline for all servers in server_list.txt
-python scripts/build_iso.py --base-iso /isos/Windows_Server_2022.iso
+python -m automation.cli.build_iso --base-iso /isos/Windows_Server_2022.iso
 
 # With dry-run to test without making changes
-python scripts/build_iso.py --base-iso /isos/Windows_Server_2022.iso --dry-run
+python -m automation.cli.build_iso --base-iso /isos/Windows_Server_2022.iso --dry-run
 ```
 
 ### 7. Maintenance Mode (SCOM/iLO/OpenView)
 ```bash
 # Enable maintenance for a cluster
-python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --start now
+python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --start now
 
 # Validate cluster configuration
-python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --action validate
+python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --action validate
 
 # Disable maintenance manually (scheduled task auto-disables at end time)
-python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --disable
+python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --disable
 ```
 
 ### 8. Code Quality & Security Scan (Local)
@@ -189,15 +179,15 @@ python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --disable
 pip install ruff radon bandit safety gitleaks
 
 # Ruff lint + auto-fix
-ruff check scripts/ --fix
-ruff format scripts/
+ruff check src/automation/ --fix
+ruff format src/automation/
 
 # Radon maintainability & complexity
-radon mi scripts/ -s
-radon cc scripts/ -nc  # warn on CC > 10
+radon mi src/automation/ -s
+radon cc src/automation/ -nc  # warn on CC > 10
 
 # Bandit security vulnerabilities
-bandit -r scripts/
+bandit -r src/automation/
 
 # Safety dependency vulnerabilities
 safety check
@@ -211,7 +201,7 @@ gitleaks detect --source=.
 
 This project follows **DRY (Don't Repeat Yourself)** principles through a shared utilities package:
 
-- `scripts/utils/` — Common functionality extracted from all automation scripts:
+- `src/automation/utils/` — Common functionality extracted from all automation scripts:
   - **logging_setup** — Centralized logging with console + file handlers
   - **config** — `load_json_config()` with environment variable substitution for secrets
   - **inventory** — `load_server_list()`, `load_cluster_catalogue()`, `ServerInfo` dataclass
@@ -228,17 +218,17 @@ All main scripts (`build_iso.py`, `update_firmware_drivers.py`, `patch_windows_s
 
 ```bash
 # Fast linting with auto-fix
-ruff check scripts/ --fix
+ruff check src/automation/ --fix
 
 # Format code
-ruff format scripts/
+ruff format src/automation/
 
 # Complexity analysis
-radon mi scripts/ -s        # maintainability index (A–F)
-radon cc scripts/ -nc       # cyclomatic complexity (warn >10)
+radon mi src/automation/ -s        # maintainability index (A–F)
+radon cc src/automation/ -nc       # cyclomatic complexity (warn >10)
 
 # Type checking (optional)
-mypy scripts/ --ignore-missing-imports
+mypy src/automation/ --ignore-missing-imports
 ```
 
 ### Pre-commit (optional)
@@ -253,11 +243,11 @@ pre-commit run --all-files
 ### Adding New Features
 
 1. **Prefer utils first**: Check if functionality fits existing utils module before writing new code
-2. Create/modify scripts in `scripts/` directory
+2. Create/modify modules in `src/automation/cli/` or `src/automation/utils/`
 3. Update unit tests (if present)
 4. Update documentation (`docs/`)
-5. Run linting: `ruff check scripts/ --fix`
-6. Run complexity check: `radon cc scripts/ -nc` (functions >10 require refactoring)
+5. Run linting: `ruff check src/automation/ --fix`
+6. Run complexity check: `radon cc src/automation/ -nc` (functions >10 require refactoring)
 7. Test in development environment before PR
 
 ### Code Style
@@ -273,13 +263,13 @@ pre-commit run --all-files
 
 ```bash
 # Run a single test script
-python scripts/generate_uuid.py test-server
+python -m automation.cli.generate_uuid test-server
 
 # Dry run entire pipeline
-python scripts/build_iso.py --dry-run --server test-server
+python -m automation.cli.build_iso --dry-run --server test-server
 
 # Validate all configurations
-python scripts/maintenance_mode.py --cluster-id TEST --action validate
+python -m automation.cli.maintenance_mode --cluster-id TEST --action validate
 
 # Check configuration syntax
 python -c "import json; json.load(open('configs/clusters_catalogue.json'))"
@@ -326,7 +316,7 @@ MIT License - See LICENSE file for details.
 ## Changelog
 
 ### 2026-05-15 — DRY Refactor & Maintenance Mode
-- Added `scripts/utils/` package (9 modules) to eliminate code duplication across all automation scripts
+- Added `src/automation/utils/` package (9 modules) to eliminate code duplication across all automation scripts
 - Refactored all main scripts to use shared utilities (logging, config, audit, executor, credentials, PowerShell)
 - Fixed import errors and unused code across `opsramp_integration.py`, `patch_windows_security.py`, `utils/file_io.py`, `utils/inventory.py`
 - Implemented `maintenance_mode.py` orchestrator for SCOM 2015, HPE iLO, and OpenView with scheduled auto-disable

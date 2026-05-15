@@ -35,7 +35,7 @@ schtasks triggers maintenance_mode.py (disable) at end time
 
 ## Shared Utilities (DRY)
 
-`maintenance_mode.py` uses the `scripts/utils/` package for all common operations:
+`maintenance_mode.py` uses the `src/automation/utils/` package for all common operations:
 
 - **logging_setup** — Root logger initialization with console + rotating file handlers
 - **config** — `load_json_config()` loads JSON with `${VAR}` environment substitution
@@ -130,13 +130,13 @@ All scripts follow the same pattern: subclass `AutomationBase` (or use standalon
 
 ```bash
 # Using explicit start/end
-python scripts/maintenance_mode.py \
+python -m automation.cli.maintenance_mode \
   --cluster-id PROD-CLUSTER-01 \
   --start "2025-05-15 22:00:00" \
   --end "2025-05-16 08:00:00"
 
 # Use now as start; let end be computed from cluster schedule
-python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --start now
+python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --start now
 ```
 
 When `--end` is omitted, script uses the cluster's `schedule.work_start` on the next workday after start.
@@ -146,19 +146,19 @@ When `--end` is omitted, script uses the cluster's `schedule.work_start` on the 
 While the scheduled task automatically runs disable at the end time, you can also manually trigger:
 
 ```bash
-python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --disable
+python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --disable
 ```
 
 ### Validate Cluster Configuration
 
 ```bash
-python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --action validate
+python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --action validate
 ```
 
 ### Dry Run
 
 ```bash
-python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --start now --dry-run
+python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --start now --dry-run
 ```
 
 No changes are made to SCOM/iLO/OpenView, but logs, audit records, and emails (if configured) are still generated as simulated.
@@ -187,7 +187,7 @@ Audit includes:
 - Start and end timestamps
 - Any error messages
 
-Audit records use the `AuditLogger` class from `scripts/utils/audit.py`, ensuring consistent structured JSON across all automation scripts.
+Audit records use the `AuditLogger` class from `src/automation/utils/audit.py`, ensuring consistent structured JSON across all automation scripts.
 
 ## OpsRamp Integration
 

@@ -28,12 +28,12 @@ pip install -r requirements.txt
 pip install ruff radon bandit safety gitleaks
 ```
 
-Validates Python syntax for all scripts (including `scripts/utils/*.py`) and JSON configuration files.
+Validates Python syntax for all scripts (including `src/automation/utils/*.py`) and JSON configuration files.
 
 ### 2. Code Quality & Security Scan (new)
 
 This stage runs immediately after Setup and before any build/deploy operations. It:
-- Lints all Python code (`scripts/` and `scripts/utils/`)
+- Lints all Python code (`src/automation/`))
 - Checks for security anti-patterns (hardcoded secrets, unsafe functions)
 - Analyzes code complexity (functions >10 CC flagged)
 - Scans dependencies for known CVEs
@@ -51,8 +51,8 @@ Unaffected; code scanning runs as a pre-check.
 
 **Command**:
 ```bash
-ruff check scripts/ --format=json --output=ruff_issues.json
-ruff format --check scripts/ --output=ruff_format.txt
+ruff check src/automation/ --format=json --output=ruff_issues.json
+ruff format --check src/automation/ --output=ruff_format.txt
 ```
 
 **Checks**:
@@ -72,8 +72,8 @@ ruff format --check scripts/ --output=ruff_format.txt
 
 **Command**:
 ```bash
-pylint --output-format=json scripts/ > pylint_report.json
-pylint scripts/ > pylint_report.txt
+pylint --output-format=json src/automation/ > pylint_report.json
+pylint src/automation/ > pylint_report.txt
 ```
 
 **Scoring**:
@@ -97,8 +97,8 @@ pylint scripts/ > pylint_report.txt
 
 **Example**:
 ```
-scripts/build_iso.py - A (54.36)
-scripts/maintenance_mode.py - A (19.16)
+src/automation/cli/build_iso.py - A (54.36)
+src/automation/cli/maintenance_mode.py - A (19.16)
 ```
 
 ---
@@ -107,7 +107,7 @@ scripts/maintenance_mode.py - A (19.16)
 
 **Command**:
 ```bash
-bandit -r scripts/ -f json -o bandit_report.json
+bandit -r src/automation/ -f json -o bandit_report.json
 ```
 
 **Checks for**:
@@ -257,7 +257,7 @@ The build **does not fail** on code quality issues by default (to avoid blocking
 **To fail the build on violations**, wrap each command:
 
 ```powershell
-ruff check scripts/ --format=json --output=ruff_issues.json
+ruff check src/automation/ --format=json --output=ruff_issues.json
 if ($LASTEXITCODE -ne 0) { exit 1 }
 ```
 
@@ -272,15 +272,15 @@ Run all scans locally before pushing:
 pip install ruff radon bandit safety gitleaks
 
 # Lint + format check
-ruff check scripts/ --fix
-ruff format scripts/
+ruff check src/automation/ --fix
+ruff format src/automation/
 
 # Complexity
-radon mi scripts/ -s
-radon cc scripts/ -nc
+radon mi src/automation/ -s
+radon cc src/automation/ -nc
 
 # Security
-bandit -r scripts/
+bandit -r src/automation/
 safety check
 
 # Secrets
@@ -299,7 +299,7 @@ repos:
     rev: 1.7.8
     hooks:
       - id: bandit
-        args: [-r, scripts/]
+        args: [-r, src/automation/]
 ```
 
 ---

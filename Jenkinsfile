@@ -105,7 +105,7 @@ pipeline {
                 # Install automation package in editable mode
                 pip install -e .
 
-                # Verify Python syntax for all scripts
+                # Verify Python syntax for all modules
                 echo [INFO] Verifying Python syntax...
                 # Verify package structure and imports (ruff handles syntax + import checks)
                 pip install ruff
@@ -143,15 +143,15 @@ pipeline {
                 # 1. RUFF — Fast linting + auto-fix check
                 # ============================================
                 echo [INFO] [1/6] Running ruff lint check...
-                ruff check scripts\\ --output-format=json --output=code_scan_results\\ruff_issues.json
+                ruff check src\automation\\ --output-format=json --output=code_scan_results\\ruff_issues.json
                 if ($LASTEXITCODE -ne 0) {
                     echo "ruff found style issues"
                     if ($strict) { exit 1 }
                 }
                 # Ensure auto-fixes applied
-                ruff check scripts\\ --fix
+                ruff check src\automation\\ --fix
                 # Check formatting
-                ruff format --check scripts\ > code_scan_results\ruff_format.txt 2>&1
+                ruff format --check src\automation\ > code_scan_results\ruff_format.txt 2>&1
                 if ($LASTEXITCODE -ne 0) {
                     echo "ruff format check failed"
                     if ($strict) { exit 1 }
@@ -163,9 +163,9 @@ pipeline {
                 echo [INFO] [2/6] Running pylint...
                 pip install pylint 2>$null | Out-Null
                 if (Get-Command pylint -ErrorAction SilentlyContinue) {
-                    pylint --output-format=json scripts\\ > code_scan_results\\pylint_report.json 2>&1
+                    pylint --output-format=json src\automation\\ > code_scan_results\\pylint_report.json 2>&1
                     $pylintExit = $LASTEXITCODE
-                    pylint scripts\\ > code_scan_results\\pylint_report.txt 2>&1
+                    pylint src\automation\\ > code_scan_results\\pylint_report.txt 2>&1
                     if ($pylintExit -ne 0 -and $strict) { exit 1 }
                 } else {
                     "pylint not available" | Out-File code_scan_results\\pylint_report.txt -Encoding utf8
@@ -175,10 +175,10 @@ pipeline {
                 # 3. RADON — Maintainability & Complexity
                 # ============================================
                 echo [INFO] [3/6] Running radon complexity analysis...
-                radon mi scripts\\ -s -j > code_scan_results\\radon_maintainability.json
-                radon cc scripts\\ -s -j > code_scan_results\\radon_cyclomatic.json
+                radon mi src\automation\\ -s -j > code_scan_results\\radon_maintainability.json
+                radon cc src\automation\\ -s -j > code_scan_results\\radon_cyclomatic.json
                 # Warn on complex functions (CC > 10)
-                $ccWarnings = radon cc scripts\\ -nc
+                $ccWarnings = radon cc src\automation\\ -nc
                 $ccWarnings | Out-File code_scan_results\\radon_complexity_warnings.txt -Encoding utf8
                 if ($ccWarnings -match "C") {
                     echo "WARNING: High cyclomatic complexity detected (C grade)"
@@ -189,9 +189,9 @@ pipeline {
                 # 4. BANDIT — Security vulnerabilities (Python)
                 # ============================================
                 echo [INFO] [4/6] Running bandit security scan...
-                bandit -r scripts\\ -f json -o code_scan_results\\bandit_report.json
+                bandit -r src\automation\\ -f json -o code_scan_results\\bandit_report.json
                 $banditExit = $LASTEXITCODE
-                bandit -r scripts\\ -f txt -o code_scan_results\\bandit_report.txt
+                bandit -r src\automation\\ -f txt -o code_scan_results\\bandit_report.txt
                 if ($banditExit -ne 0) {
                     echo "bandit found potential security issues"
                     # Parse JSON for HIGH/CRITICAL
