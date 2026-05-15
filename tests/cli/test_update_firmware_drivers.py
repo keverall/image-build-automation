@@ -18,8 +18,10 @@ class TestFirmwareUpdater:
         config_path.write_text('{"hpe_repository_url": "https://test.example.com/repo"}')
         output_dir = tmp_path / "firmware_output"
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake/sut')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+        ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 
         assert updater.config_path == config_path
@@ -33,15 +35,17 @@ class TestFirmwareUpdater:
             "components": {
                 "gen10_plus": {
                     "firmware": [{"component": "BIOS", "version": "2.0"}],
-                    "drivers": [{"component": "NIC", "version": "1.0"}]
+                    "drivers": [{"component": "NIC", "version": "1.0"}],
                 }
-            }
+            },
         }
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake/sut')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+        ):
             updater = FirmwareUpdater(str(config_path))
 
         config = updater._load_config()
@@ -55,10 +59,12 @@ class TestFirmwareUpdater:
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/tools/hpe_sut.exe')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/tools/hpe_sut.exe")),
+        ):
             updater = FirmwareUpdater(str(config_path))
-            assert updater.sut_path == Path('/tools/hpe_sut.exe')
+            assert updater.sut_path == Path("/tools/hpe_sut.exe")
 
     def test_find_sut_not_found_raises_error(self, tmp_path, monkeypatch):
         """Test _find_sut raises FileNotFoundError when SUT not found."""
@@ -66,8 +72,12 @@ class TestFirmwareUpdater:
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch.object(FirmwareUpdater, '_find_sut', side_effect=FileNotFoundError("HPE Smart Update Tool not found")), \
-             pytest.raises(FileNotFoundError):
+        with (
+            patch.object(
+                FirmwareUpdater, "_find_sut", side_effect=FileNotFoundError("HPE Smart Update Tool not found")
+            ),
+            pytest.raises(FileNotFoundError),
+        ):
             FirmwareUpdater(str(config_path))
 
     def test_determine_server_gen_gen10_plus(self, tmp_path):
@@ -76,8 +86,10 @@ class TestFirmwareUpdater:
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+        ):
             updater = FirmwareUpdater(str(config_path))
 
         assert updater._determine_server_gen("server-gen10plus") == "gen10_plus"
@@ -90,8 +102,10 @@ class TestFirmwareUpdater:
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+        ):
             updater = FirmwareUpdater(str(config_path))
 
         assert updater._determine_server_gen("server1") == "gen10"
@@ -103,15 +117,17 @@ class TestFirmwareUpdater:
             "components": {
                 "gen10": {
                     "firmware": [{"component": "BIOS", "version": "1.0"}],
-                    "drivers": [{"component": "HBA", "version": "2.0"}]
+                    "drivers": [{"component": "HBA", "version": "2.0"}],
                 }
             }
         }
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+        ):
             updater = FirmwareUpdater(str(config_path))
 
         components = updater._get_component_list("gen10")
@@ -122,18 +138,15 @@ class TestFirmwareUpdater:
     def test_get_component_list_gen10_plus(self, tmp_path):
         """Test _get_component_list for gen10_plus."""
         config_data = {
-            "components": {
-                "gen10_plus": {
-                    "firmware": [{"component": "BIOS", "version": "2.0"}],
-                    "drivers": []
-                }
-            }
+            "components": {"gen10_plus": {"firmware": [{"component": "BIOS", "version": "2.0"}], "drivers": []}}
         }
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+        ):
             updater = FirmwareUpdater(str(config_path))
 
         components = updater._get_component_list("gen10_plus")
@@ -148,8 +161,10 @@ class TestFirmwareUpdater:
 
         output_dir = tmp_path / "output"
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake/sut')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+        ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 
         result = updater.build("test-server", dry_run=True)
@@ -161,27 +176,28 @@ class TestFirmwareUpdater:
 
     def test_build_creates_output_directory(self, tmp_path):
         """Test build creates server-specific output directory."""
-        config_data = {
-            "hpe_repository_url": "https://test",
-            "components": {"gen10": {"firmware": [], "drivers": []}}
-        }
+        config_data = {"hpe_repository_url": "https://test", "components": {"gen10": {"firmware": [], "drivers": []}}}
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
         output_dir = tmp_path / "output"
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake/sut')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+        ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 
-        with patch('automation.cli.update_firmware_drivers.run_command') as mock_run:
+        with patch("automation.cli.update_firmware_drivers.run_command") as mock_run:
             mock_run.return_value.success = True
             mock_run.return_value.stdout = str(output_dir / "test-server_firmware.iso")
+
             # Simulate SUT creating the file
             def create_file(*args, **kwargs):
                 iso_path = output_dir / "test-server_firmware.iso"
                 iso_path.parent.mkdir(parents=True, exist_ok=True)
                 iso_path.touch()
+
             mock_run.side_effect = create_file
 
             updater.build("test-server", dry_run=False)
@@ -191,20 +207,19 @@ class TestFirmwareUpdater:
 
     def test_build_with_sut_failure(self, tmp_path):
         """Test build handles SUT failure."""
-        config_data = {
-            "hpe_repository_url": "https://test",
-            "components": {"gen10": {"firmware": [], "drivers": []}}
-        }
+        config_data = {"hpe_repository_url": "https://test", "components": {"gen10": {"firmware": [], "drivers": []}}}
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps(config_data))
 
         output_dir = tmp_path / "output"
 
-        with patch('automation.utils.logging_setup.init_logging'), \
-             patch.object(FirmwareUpdater, '_find_sut', return_value=Path('/fake/sut')):
+        with (
+            patch("automation.utils.logging_setup.init_logging"),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+        ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 
-        with patch('automation.cli.update_firmware_drivers.run_command') as mock_run:
+        with patch("automation.cli.update_firmware_drivers.run_command") as mock_run:
             mock_run.return_value.success = False
             mock_run.return_value.stderr = "SUT error"
             mock_run.return_value.stdout = ""

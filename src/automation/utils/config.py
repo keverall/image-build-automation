@@ -8,11 +8,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def load_json_config(
-    path: Path,
-    required: bool = True,
-    auto_env_var_replace: bool = True
-) -> dict[str, Any]:
+def load_json_config(path: Path, required: bool = True, auto_env_var_replace: bool = True) -> dict[str, Any]:
     """
     Load a JSON configuration file with consistent error handling.
 
@@ -93,7 +89,7 @@ def _replace_env_vars(config: dict[str, Any]) -> dict[str, Any]:
     import os
     import re
 
-    pattern = re.compile(r'\$\{([^}]+)\}')
+    pattern = re.compile(r"\$\{([^}]+)\}")
 
     def replace_value(value):
         if isinstance(value, str):

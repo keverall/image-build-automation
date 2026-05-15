@@ -112,12 +112,7 @@ class TestSaveAuditRecord:
 
     def test_save_audit_record_creates_file(self, tmp_path):
         """Test save_audit_record creates audit file."""
-        audit_data = {
-            "cluster_id": "TEST-CLUSTER",
-            "action": "enable",
-            "success": True,
-            "steps": {}
-        }
+        audit_data = {"cluster_id": "TEST-CLUSTER", "action": "enable", "success": True, "steps": {}}
         log_dir = tmp_path / "logs"
         filepath = save_audit_record(audit_data, log_dir=log_dir)
 

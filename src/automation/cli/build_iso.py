@@ -25,6 +25,7 @@ from automation.utils.logging_setup import init_logging
 # Module-level logger (uses root configured in main())
 logger = logging.getLogger(__name__)
 
+
 class ISOOrchestrator(AutomationBase):
     """Orchestrates the complete ISO build pipeline."""
 
@@ -42,9 +43,7 @@ class ISOOrchestrator(AutomationBase):
             output_dir: Root output directory
             dry_run: Simulate mode
         """
-        super().__init__(
-            config_dir=Path(config_dir), output_dir=Path(output_dir), dry_run=dry_run
-        )
+        super().__init__(config_dir=Path(config_dir), output_dir=Path(output_dir), dry_run=dry_run)
 
         # Resolve config file paths
         self.fw_config = self.config_dir / "hpe_firmware_drivers_nov2025.json"
@@ -73,9 +72,7 @@ class ISOOrchestrator(AutomationBase):
         # type: ignore - we get List[str] when include_details=False
         return servers_objs  # type: ignore
 
-    def build_for_server(
-        self, server_name: str, base_iso_path: Optional[str] = None
-    ) -> dict:
+    def build_for_server(self, server_name: str, base_iso_path: Optional[str] = None) -> dict:
         """
         Complete ISO build for a single server.
 
@@ -86,9 +83,7 @@ class ISOOrchestrator(AutomationBase):
         Returns:
             Build result dictionary
         """
-        self.log_and_audit(
-            "build_start", "START", f"Building ISOs for {server_name}", server_name
-        )
+        self.log_and_audit("build_start", "START", f"Building ISOs for {server_name}", server_name)
 
         result = {
             "server": server_name,
@@ -109,9 +104,7 @@ class ISOOrchestrator(AutomationBase):
                 generated_uuid = generate_unique_uuid(server_name)
             result["uuid"] = generated_uuid
             result["steps"].append({"step": "automation.cli.generate_uuid", "uuid": generated_uuid})
-            self.log_and_audit(
-                "automation.cli.generate_uuid", "SUCCESS", f"UUID: {generated_uuid}", server_name
-            )
+            self.log_and_audit("automation.cli.generate_uuid", "SUCCESS", f"UUID: {generated_uuid}", server_name)
 
             # Step 2: Build firmware/driver ISO
             fw_output = self.output_dir / "firmware" / server_name
@@ -127,24 +120,16 @@ class ISOOrchestrator(AutomationBase):
                     server_name,
                 )
             else:
-                self.log_and_audit(
-                    "firmware_iso", "FAILED", "Firmware ISO build failed", server_name
-                )
+                self.log_and_audit("firmware_iso", "FAILED", "Firmware ISO build failed", server_name)
             result["steps"].append({"step": "firmware_iso", "status": "done"})
 
             # Step 3: Build patched Windows ISO
             if not base_iso_path:
-                self.logger.warning(
-                    "No base Windows ISO provided, skipping Windows patching"
-                )
+                self.logger.warning("No base Windows ISO provided, skipping Windows patching")
             else:
                 patch_output = self.output_dir / "patched" / server_name
-                patcher = WindowsPatcher(
-                    str(self.patch_config), output_dir=str(patch_output)
-                )
-                patch_result = patcher.build(
-                    base_iso_path, server_name, dry_run=self.dry_run
-                )
+                patcher = WindowsPatcher(str(self.patch_config), output_dir=str(patch_output))
+                patch_result = patcher.build(base_iso_path, server_name, dry_run=self.dry_run)
 
                 if patch_result.get("success") and patch_result.get("patched_iso"):
                     result["patched_iso"] = patch_result["patched_iso"]
@@ -155,9 +140,7 @@ class ISOOrchestrator(AutomationBase):
                         server_name,
                     )
                 else:
-                    self.log_and_audit(
-                        "patched_iso", "FAILED", "Windows patching failed", server_name
-                    )
+                    self.log_and_audit("patched_iso", "FAILED", "Windows patching failed", server_name)
 
             result["steps"].append({"step": "patched_iso", "status": "done"})
 
@@ -182,14 +165,8 @@ class ISOOrchestrator(AutomationBase):
                 "server_name": server_name,
                 "uuid": result["uuid"],
                 "build_timestamp": result["timestamp"],
-                "firmware_iso": (
-                    Path(result["firmware_iso"]).name
-                    if result["firmware_iso"]
-                    else None
-                ),
-                "patched_iso": (
-                    Path(result["patched_iso"]).name if result["patched_iso"] else None
-                ),
+                "firmware_iso": (Path(result["firmware_iso"]).name if result["firmware_iso"] else None),
+                "patched_iso": (Path(result["patched_iso"]).name if result["patched_iso"] else None),
                 "config_version": "nov2025",
             }
             with open(combined_dir / "deployment_metadata.json", "w") as f:
@@ -209,9 +186,7 @@ class ISOOrchestrator(AutomationBase):
         except Exception as e:
             error_msg = str(e)
             self.log_and_audit("build", "FAILED", error_msg, server_name)
-            self.logger.error(
-                f"Build failed for {server_name}: {error_msg}", exc_info=True
-            )
+            self.logger.error(f"Build failed for {server_name}: {error_msg}", exc_info=True)
             result["error"] = error_msg
 
         # Save per-server result
@@ -235,9 +210,9 @@ class ISOOrchestrator(AutomationBase):
         results = []
 
         for server in servers:
-            self.logger.info(f"\n{'='*70}")
+            self.logger.info(f"\n{'=' * 70}")
             self.logger.info(f"Processing: {server}")
-            self.logger.info(f"{'='*70}")
+            self.logger.info(f"{'=' * 70}")
 
             result = self.build_for_server(server, base_iso_path)
             results.append(result)
@@ -264,38 +239,27 @@ class ISOOrchestrator(AutomationBase):
 
         return summary
 
+
 def main():
     # Initialize root logging to console + file
     init_logging("build_orchestrator.log")
 
-    parser = argparse.ArgumentParser(
-        description="Orchestrate ISO builds for HPE ProLiant servers"
-    )
+    parser = argparse.ArgumentParser(description="Orchestrate ISO builds for HPE ProLiant servers")
     parser.add_argument(
         "--base-iso",
         "-b",
         help="Path to base Windows Server ISO (required for Windows patching)",
     )
-    parser.add_argument(
-        "--config-dir", "-c", default="configs", help="Configuration directory"
-    )
+    parser.add_argument("--config-dir", "-c", default="configs", help="Configuration directory")
     parser.add_argument("--output-dir", "-o", default="output", help="Output directory")
-    parser.add_argument(
-        "--server", "-s", help="Build for specific server (default: all servers)"
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Simulate without executing commands"
-    )
-    parser.add_argument(
-        "--skip-audit", action="store_true", help="Skip audit logging (for testing)"
-    )
+    parser.add_argument("--server", "-s", help="Build for specific server (default: all servers)")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate without executing commands")
+    parser.add_argument("--skip-audit", action="store_true", help="Skip audit logging (for testing)")
 
     args = parser.parse_args()
 
     try:
-        orchestrator = ISOOrchestrator(
-            config_dir=args.config_dir, output_dir=args.output_dir, dry_run=args.dry_run
-        )
+        orchestrator = ISOOrchestrator(config_dir=args.config_dir, output_dir=args.output_dir, dry_run=args.dry_run)
 
         if args.server:
             result = orchestrator.build_for_server(args.server, args.base_iso)
@@ -313,6 +277,7 @@ def main():
     except Exception as e:
         logger.error(f"Orchestrator failed: {e}", exc_info=True)
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -64,6 +64,7 @@ class TestSaveJson:
     def test_save_json_serializes_non_standard_types(self, tmp_path):
         """Test that non-standard types use default=str."""
         from datetime import datetime
+
         data = {"timestamp": datetime(2024, 1, 1, 12, 0, 0)}
         filepath = tmp_path / "out.json"
         save_json(data, filepath)

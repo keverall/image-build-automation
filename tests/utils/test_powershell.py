@@ -62,6 +62,7 @@ class TestRunPowerShell:
 
     def test_run_powershell_timeout(self, monkeypatch):
         """Test PowerShell timeout."""
+
         def raise_timeout(*args, **kwargs):
             raise subprocess.TimeoutExpired(cmd="powershell", timeout=30)
 
@@ -88,9 +89,9 @@ class TestRunPowerShellWinRM:
     def test_run_powershell_winrm_missing_pywinrm(self, monkeypatch):
         """Test behavior when pywinrm is not installed."""
         # Ensure pywinrm is not importable
-        monkeypatch.setitem(sys.modules, 'winrm', None)
+        monkeypatch.setitem(sys.modules, "winrm", None)
 
-        with patch.dict('sys.modules', {'winrm': None}):
+        with patch.dict("sys.modules", {"winrm": None}):
             success, output = run_powershell_winrm("test", "server", "user", "pass")
             assert success is False
             assert "pywinrm module not installed" in output
@@ -107,9 +108,9 @@ class TestRunPowerShellWinRM:
         mock_session.run_ps.return_value = mock_result
         mock_winrm.Session.return_value = mock_session
 
-        monkeypatch.setitem(sys.modules, 'winrm', mock_winrm)
+        monkeypatch.setitem(sys.modules, "winrm", mock_winrm)
 
-        with patch.dict('sys.modules', {'winrm': mock_winrm}):
+        with patch.dict("sys.modules", {"winrm": mock_winrm}):
             success, output = run_powershell_winrm("Write-Host test", "server1", "user", "pass")
 
         assert success is True
@@ -126,9 +127,9 @@ class TestRunPowerShellWinRM:
         mock_session.run_ps.return_value = mock_result
         mock_winrm.Session.return_value = mock_session
 
-        monkeypatch.setitem(sys.modules, 'winrm', mock_winrm)
+        monkeypatch.setitem(sys.modules, "winrm", mock_winrm)
 
-        with patch.dict('sys.modules', {'winrm': mock_winrm}):
+        with patch.dict("sys.modules", {"winrm": mock_winrm}):
             success, output = run_powershell_winrm("bad", "server", "user", "pass")
 
         assert success is False
@@ -139,9 +140,9 @@ class TestRunPowerShellWinRM:
         mock_winrm = MagicMock()
         mock_winrm.Session.side_effect = Exception("Connection failed")
 
-        monkeypatch.setitem(sys.modules, 'winrm', mock_winrm)
+        monkeypatch.setitem(sys.modules, "winrm", mock_winrm)
 
-        with patch.dict('sys.modules', {'winrm': mock_winrm}):
+        with patch.dict("sys.modules", {"winrm": mock_winrm}):
             success, output = run_powershell_winrm("test", "server", "user", "pass")
 
         assert success is False
@@ -166,10 +167,7 @@ class TestBuildScomMaintenanceScript:
     def test_build_maintenance_script_start(self):
         """Test generating start maintenance script."""
         script = build_scom_maintenance_script(
-            group_display_name="TestGroup",
-            duration_seconds=3600,
-            comment="Test comment",
-            operation="start"
+            group_display_name="TestGroup", duration_seconds=3600, comment="Test comment", operation="start"
         )
 
         assert "TestGroup" in script
@@ -180,10 +178,7 @@ class TestBuildScomMaintenanceScript:
     def test_build_maintenance_script_stop(self):
         """Test generating stop maintenance script."""
         script = build_scom_maintenance_script(
-            group_display_name="TestGroup",
-            duration_seconds=3600,
-            comment="Test",
-            operation="stop"
+            group_display_name="TestGroup", duration_seconds=3600, comment="Test", operation="stop"
         )
 
         assert "Stop-SCOMMaintenanceMode" in script
@@ -192,10 +187,7 @@ class TestBuildScomMaintenanceScript:
     def test_build_maintenance_script_escapes_quotes(self):
         """Test that single quotes in comment are escaped."""
         script = build_scom_maintenance_script(
-            group_display_name="TestGroup",
-            duration_seconds=3600,
-            comment="User's comment",
-            operation="start"
+            group_display_name="TestGroup", duration_seconds=3600, comment="User's comment", operation="start"
         )
 
         # Single quotes should be doubled
@@ -205,9 +197,6 @@ class TestBuildScomMaintenanceScript:
         """Test with unknown operation returns None (no script generated)."""
         # The function does not handle unknown operations, returns None
         script = build_scom_maintenance_script(
-            group_display_name="TestGroup",
-            duration_seconds=3600,
-            comment="Test",
-            operation="invalid"
+            group_display_name="TestGroup", duration_seconds=3600, comment="Test", operation="invalid"
         )
         assert script is None

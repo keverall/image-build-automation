@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ServerInfo:
     """Represents a server with its network addresses."""
+
     hostname: str
     ipmi_ip: Optional[str] = None
     ilo_ip: Optional[str] = None
@@ -21,13 +22,10 @@ class ServerInfo:
     @property
     def name(self) -> str:
         """Return the server's primary identifier."""
-        return self.hostname.split('.')[0]
+        return self.hostname.split(".")[0]
 
 
-def load_server_list(
-    path: Path,
-    include_details: bool = False
-) -> list[ServerInfo] | list[str]:
+def load_server_list(path: Path, include_details: bool = False) -> list[ServerInfo] | list[str]:
     """
     Load server list from a text file.
 
@@ -54,10 +52,10 @@ def load_server_list(
     with open(path) as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
-            parts = [p.strip() for p in line.split(',')]
+            parts = [p.strip() for p in line.split(",")]
             hostname = parts[0]
 
             if include_details:
@@ -65,7 +63,7 @@ def load_server_list(
                     hostname=hostname,
                     ipmi_ip=parts[1] if len(parts) > 1 else None,
                     ilo_ip=parts[2] if len(parts) > 2 else None,
-                    line_number=line_num
+                    line_number=line_num,
                 )
                 servers.append(server)
             else:
@@ -98,7 +96,7 @@ def load_cluster_catalogue(path: Path) -> dict[str, dict]:
         Dictionary mapping cluster_id -> cluster definition
     """
     config = load_json_config(path, required=True)
-    clusters = config.get('clusters', {})
+    clusters = config.get("clusters", {})
 
     if not clusters:
         logger.warning(f"No clusters defined in {path}")
@@ -117,19 +115,19 @@ def validate_cluster_definition(cluster_def: dict, cluster_id: str) -> list[str]
     Returns:
         List of missing/invalid field names (empty if valid)
     """
-    required_fields = ['display_name', 'servers', 'scom_group', 'environment']
+    required_fields = ["display_name", "servers", "scom_group", "environment"]
     errors = []
 
     for field in required_fields:
         if field not in cluster_def:
             errors.append(f"Missing required field '{field}'")
 
-    servers = cluster_def.get('servers', [])
+    servers = cluster_def.get("servers", [])
     if not isinstance(servers, list) or len(servers) == 0:
         errors.append("'servers' must be a non-empty list")
 
-    if 'ilo_addresses' in cluster_def:
-        ilo_map = cluster_def['ilo_addresses']
+    if "ilo_addresses" in cluster_def:
+        ilo_map = cluster_def["ilo_addresses"]
         if not isinstance(ilo_map, dict):
             errors.append("'ilo_addresses' must be a dictionary")
         else:
@@ -137,8 +135,8 @@ def validate_cluster_definition(cluster_def: dict, cluster_id: str) -> list[str]
                 if not isinstance(ip, str):
                     errors.append(f"Invalid iLO IP for server {server}")
 
-    if 'openview_node_ids' in cluster_def:
-        ov_map = cluster_def['openview_node_ids']
+    if "openview_node_ids" in cluster_def:
+        ov_map = cluster_def["openview_node_ids"]
         if not isinstance(ov_map, dict):
             errors.append("'openview_node_ids' must be a dictionary")
 

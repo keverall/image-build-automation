@@ -21,9 +21,9 @@ class TestRouteRequest:
     def test_route_request_module_import_error(self, monkeypatch):
         """Test handling of module import failure."""
         # Remove a critical module from sys.modules to force import error
-        monkeypatch.setitem(sys.modules, 'automation.cli.build_iso', None)
+        monkeypatch.setitem(sys.modules, "automation.cli.build_iso", None)
 
-        with patch('importlib.import_module', side_effect=ImportError("No module named 'automation.cli.build_iso'")):
+        with patch("importlib.import_module", side_effect=ImportError("No module named 'automation.cli.build_iso'")):
             result = route_request("build_iso", {})
 
         assert result["success"] is False
@@ -34,10 +34,12 @@ class TestRouteRequest:
         mock_module = MagicMock()
         mock_module.main.return_value = None  # main() returns None, we simulate exit
 
-        with patch('importlib.import_module', return_value=mock_module), \
-             patch('sys.argv', ['maintenance_mode.py']), \
-             patch('automation.cli.maintenance_mode.main', return_value=0), \
-             patch('sys.exit'):
+        with (
+            patch("importlib.import_module", return_value=mock_module),
+            patch("sys.argv", ["maintenance_mode.py"]),
+            patch("automation.cli.maintenance_mode.main", return_value=0),
+            patch("sys.exit"),
+        ):
             # Let's directly test that the function routes properly
             result = route_request("maintenance_enable", {"cluster_id": "test"})
 
@@ -50,7 +52,7 @@ class TestRouteRequest:
         mock_module = MagicMock()
         mock_module.main.return_value = 0  # Success exit code
 
-        with patch('importlib.import_module', return_value=mock_module):
+        with patch("importlib.import_module", return_value=mock_module):
             result = route_request("build_iso", {})
 
         assert result["success"] is True
@@ -61,7 +63,7 @@ class TestRouteRequest:
         mock_module = MagicMock()
         mock_module.main.side_effect = SystemExit(1)
 
-        with patch('importlib.import_module', return_value=mock_module):
+        with patch("importlib.import_module", return_value=mock_module):
             result = route_request("build_iso", {})
 
         assert result["success"] is False
@@ -72,7 +74,7 @@ class TestRouteRequest:
         mock_module = MagicMock()
         mock_module.main.side_effect = RuntimeError("Something went wrong")
 
-        with patch('importlib.import_module', return_value=mock_module):
+        with patch("importlib.import_module", return_value=mock_module):
             result = route_request("build_iso", {})
 
         assert result["success"] is False
@@ -82,7 +84,7 @@ class TestRouteRequest:
         """Test routing to module without main() function."""
         mock_module = MagicMock(spec=[])  # No main attribute
 
-        with patch('importlib.import_module', return_value=mock_module):
+        with patch("importlib.import_module", return_value=mock_module):
             result = route_request("build_iso", {})
 
         assert result["success"] is False

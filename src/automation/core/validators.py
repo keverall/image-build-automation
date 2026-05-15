@@ -30,6 +30,7 @@ def validate_cluster_id(
         return None
 
     import json
+
     with open(catalogue_path) as f:
         catalogue = json.load(f)
 

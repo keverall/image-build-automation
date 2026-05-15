@@ -23,15 +23,11 @@ from automation.utils.logging_setup import init_logging
 # Module-level logger
 logger = logging.getLogger(__name__)
 
+
 class WindowsPatcher:
     """Applies Windows security patches using DISM or PowerShell."""
 
-    def __init__(
-        self,
-        patches_config: str,
-        base_iso_dir: str = "base_iso",
-        output_dir: str = "patched_iso"
-    ):
+    def __init__(self, patches_config: str, base_iso_dir: str = "base_iso", output_dir: str = "patched_iso"):
         """
         Initialize WindowsPatcher.
 
@@ -55,12 +51,7 @@ class WindowsPatcher:
 
     def _log_step(self, step: str, status: str, details: str = ""):
         """Log step for audit trail."""
-        log_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'step': step,
-            'status': status,
-            'details': details
-        }
+        log_entry = {"timestamp": datetime.now().isoformat(), "step": step, "status": status, "details": details}
         self.build_log.append(log_entry)
         logger.info(f"[{status}] {step}: {details}" if details else f"[{status}] {step}")
 
@@ -100,19 +91,16 @@ class WindowsPatcher:
             logger.info("[DRY RUN] Would apply patches with DISM")
             return True
 
-        patches = self.patches_config.get('patches', [])
+        patches = self.patches_config.get("patches", [])
         for patch in patches:
-            kb = patch.get('kb_number')
+            kb = patch.get("kb_number")
             msu_path = self.patch_dir / f"{kb}.msu"
             # Placeholder: in real implementation, download or locate MSU files
             if not msu_path.exists():
                 logger.warning(f"Patch not found: {msu_path}, skipping")
                 continue
             # DISM command (Linux WineDISM or Windows)
-            dism_cmd = [
-                "dism", "/Image:" + str(self.base_iso_dir),
-                "/Add-Package", f"/PackagePath:{msu_path}"
-            ]
+            dism_cmd = ["dism", "/Image:" + str(self.base_iso_dir), "/Add-Package", f"/PackagePath:{msu_path}"]
             result = run_command(dism_cmd, timeout=600)
             if not result.success:
                 self._log_step("apply_patch", "FAILED", f"DISM failed for {kb}: {result.stderr}")
@@ -132,13 +120,7 @@ class WindowsPatcher:
         self._log_step("apply_patches_ps", "SKIPPED", "Not implemented")
         return True
 
-    def build(
-        self,
-        base_iso_path: str,
-        server_name: str,
-        method: str = "dism",
-        dry_run: bool = False
-    ) -> dict:
+    def build(self, base_iso_path: str, server_name: str, method: str = "dism", dry_run: bool = False) -> dict:
         """
         Build patched ISO for a server.
 
@@ -154,11 +136,11 @@ class WindowsPatcher:
         self._log_step("build_start", "START", f"Patching for {server_name}")
 
         result = {
-            'server': server_name,
-            'patched_iso': None,
-            'success': False,
-            'build_log': self.build_log,
-            'timestamp': datetime.now().isoformat()
+            "server": server_name,
+            "patched_iso": None,
+            "success": False,
+            "build_log": self.build_log,
+            "timestamp": datetime.now().isoformat(),
         }
 
         try:
@@ -185,8 +167,8 @@ class WindowsPatcher:
             if dry_run:
                 fake_iso = self.output_dir / f"{server_name}_patched_dryrun.iso"
                 self._log_step("create_iso", "INFO", "Dry-run, no ISO created")
-                result['patched_iso'] = str(fake_iso)
-                result['success'] = True
+                result["patched_iso"] = str(fake_iso)
+                result["success"] = True
                 return result
 
             # Create ISO using mkisofs or oscdimg (implementation specific)
@@ -196,76 +178,49 @@ class WindowsPatcher:
             output_iso.touch()
 
             self._log_step("create_iso", "SUCCESS", f"Created patched ISO: {output_iso}")
-            result['patched_iso'] = str(output_iso)
-            result['success'] = True
+            result["patched_iso"] = str(output_iso)
+            result["success"] = True
 
         except Exception as e:
             self._log_step("build", "FAILED", str(e))
-            result['error'] = str(e)
+            result["error"] = str(e)
 
         return result
+
 
 def main():
     # Initialize root logging
     init_logging("windows_patcher.log")
 
-    parser = argparse.ArgumentParser(
-        description="Apply Windows security patches to base ISO"
-    )
+    parser = argparse.ArgumentParser(description="Apply Windows security patches to base ISO")
+    parser.add_argument("--base-iso", "-b", required=True, help="Path to base Windows Server ISO")
+    parser.add_argument("--server", "-s", required=True, help="Server hostname (for naming)")
     parser.add_argument(
-        "--base-iso", "-b",
-        required=True,
-        help="Path to base Windows Server ISO"
+        "--patches-config", "-p", default="configs/windows_patches.json", help="Path to patches configuration JSON"
     )
+    parser.add_argument("--output-dir", "-o", default="output/patched", help="Output directory for patched ISOs")
     parser.add_argument(
-        "--server", "-s",
-        required=True,
-        help="Server hostname (for naming)"
+        "--method", "-m", choices=["dism", "powershell"], default="dism", help="Patching method (default: dism)"
     )
-    parser.add_argument(
-        "--patches-config", "-p",
-        default="configs/windows_patches.json",
-        help="Path to patches configuration JSON"
-    )
-    parser.add_argument(
-        "--output-dir", "-o",
-        default="output/patched",
-        help="Output directory for patched ISOs"
-    )
-    parser.add_argument(
-        "--method", "-m",
-        choices=["dism", "powershell"],
-        default="dism",
-        help="Patching method (default: dism)"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Simulate without making changes"
-    )
+    parser.add_argument("--dry-run", action="store_true", help="Simulate without making changes")
 
     args = parser.parse_args()
 
     try:
-        patcher = WindowsPatcher(
-            patches_config=args.patches_config,
-            output_dir=args.output_dir
-        )
+        patcher = WindowsPatcher(patches_config=args.patches_config, output_dir=args.output_dir)
 
         result = patcher.build(
-            base_iso_path=args.base_iso,
-            server_name=args.server,
-            method=args.method,
-            dry_run=args.dry_run
+            base_iso_path=args.base_iso, server_name=args.server, method=args.method, dry_run=args.dry_run
         )
 
         # Save result JSON
         from automation.utils.file_io import save_json
+
         ensure_dir(Path(args.output_dir) / "results")
         result_file = Path(args.output_dir) / "results" / f"patch_result_{args.server}.json"
         save_json(result, result_file)
 
-        if result['success']:
+        if result["success"]:
             logger.info(f"Patching succeeded for {args.server}")
             return 0
         else:
@@ -275,6 +230,7 @@ def main():
     except Exception as e:
         logger.error(f"Patcher failed: {e}", exc_info=True)
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

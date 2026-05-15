@@ -13,11 +13,7 @@ class TestAutomationOrchestrator:
     def test_init_creates_logs_directory(self, tmp_path):
         """Test that initialization creates logs directory."""
         logs_dir = tmp_path / "logs"
-        orchestrator = AutomationOrchestrator(
-            config_dir=tmp_path / "configs",
-            logs_dir=logs_dir,
-            dry_run=False
-        )
+        orchestrator = AutomationOrchestrator(config_dir=tmp_path / "configs", logs_dir=logs_dir, dry_run=False)
 
         assert logs_dir.exists()
         assert orchestrator.dry_run is False
@@ -29,10 +25,7 @@ class TestAutomationOrchestrator:
 
     def test_execute_unknown_request_type(self, tmp_path):
         """Test execute with unknown request type."""
-        orchestrator = AutomationOrchestrator(
-            config_dir=tmp_path / "configs",
-            logs_dir=tmp_path / "logs"
-        )
+        orchestrator = AutomationOrchestrator(config_dir=tmp_path / "configs", logs_dir=tmp_path / "logs")
 
         result = orchestrator.execute("unknown_request", {})
 
@@ -42,10 +35,7 @@ class TestAutomationOrchestrator:
 
     def test_execute_build_with_validation_errors(self, tmp_path):
         """Test execute with build request that fails validation."""
-        orchestrator = AutomationOrchestrator(
-            config_dir=tmp_path / "configs",
-            logs_dir=tmp_path / "logs"
-        )
+        orchestrator = AutomationOrchestrator(config_dir=tmp_path / "configs", logs_dir=tmp_path / "logs")
 
         # Missing base_iso path should not cause validation error (it's optional)
         result = orchestrator.execute("build_iso", {})
@@ -61,10 +51,7 @@ class TestAutomationOrchestrator:
         configs_dir.mkdir()
         (configs_dir / "clusters_catalogue.json").write_text('{"clusters": {}}')
 
-        orchestrator = AutomationOrchestrator(
-            config_dir=configs_dir,
-            logs_dir=tmp_path / "logs"
-        )
+        orchestrator = AutomationOrchestrator(config_dir=configs_dir, logs_dir=tmp_path / "logs")
 
         result = orchestrator.execute("maintenance_enable", {"cluster_id": "NONEXISTENT"})
 
@@ -77,8 +64,10 @@ class TestAutomationOrchestrator:
         orchestrator = AutomationOrchestrator(dry_run=True)
 
         # Patch validation to bypass
-        with patch.object(orchestrator, '_validate', return_value=None), \
-             patch('automation.core.orchestrator.route_request') as mock_route:
+        with (
+            patch.object(orchestrator, "_validate", return_value=None),
+            patch("automation.core.orchestrator.route_request") as mock_route,
+        ):
             mock_route.return_value = {"success": True}
             orchestrator.execute("build_iso", {"base_iso": "/path/to.iso"})
 
@@ -90,7 +79,7 @@ class TestAutomationOrchestrator:
         orchestrator = AutomationOrchestrator(dry_run=False)
         original_params = {"base_iso": "/path/to.iso"}
 
-        with patch('automation.core.router.route_request') as mock_route:
+        with patch("automation.core.router.route_request") as mock_route:
             mock_route.return_value = {"success": True}
             orchestrator.execute("build_iso", original_params)
 
@@ -99,10 +88,7 @@ class TestAutomationOrchestrator:
 
     def test_validate_method_build_params(self, tmp_path):
         """Test _validate method for build_iso request."""
-        orchestrator = AutomationOrchestrator(
-            config_dir=tmp_path / "configs",
-            logs_dir=tmp_path / "logs"
-        )
+        orchestrator = AutomationOrchestrator(config_dir=tmp_path / "configs", logs_dir=tmp_path / "logs")
 
         errors = orchestrator._validate("build_iso", {"base_iso": "/nonexistent.iso"})
         assert len(errors) == 1
@@ -110,10 +96,7 @@ class TestAutomationOrchestrator:
 
     def test_validate_method_patch_windows(self, tmp_path):
         """Test _validate for patch_windows request."""
-        orchestrator = AutomationOrchestrator(
-            config_dir=tmp_path / "configs",
-            logs_dir=tmp_path / "logs"
-        )
+        orchestrator = AutomationOrchestrator(config_dir=tmp_path / "configs", logs_dir=tmp_path / "logs")
 
         errors = orchestrator._validate("patch_windows", {"base_iso": "/missing.iso"})
         assert len(errors) == 1
@@ -123,13 +106,7 @@ class TestAutomationOrchestrator:
         configs_dir = tmp_path / "configs"
         configs_dir.mkdir()
         catalogue = {
-            "clusters": {
-                "TEST-CLUSTER": {
-                    "servers": ["s1"],
-                    "scom_group": "Group",
-                    "ilo_addresses": {"s1": "1.1.1.1"}
-                }
-            }
+            "clusters": {"TEST-CLUSTER": {"servers": ["s1"], "scom_group": "Group", "ilo_addresses": {"s1": "1.1.1.1"}}}
         }
         (configs_dir / "clusters_catalogue.json").write_text(json.dumps(catalogue))
 
@@ -152,12 +129,9 @@ class TestAutomationOrchestrator:
 
     def test_execute_routing_result_includes_metadata(self, tmp_path):
         """Test that execute result includes timestamp and request_type."""
-        orchestrator = AutomationOrchestrator(
-            config_dir=tmp_path / "configs",
-            logs_dir=tmp_path / "logs"
-        )
+        orchestrator = AutomationOrchestrator(config_dir=tmp_path / "configs", logs_dir=tmp_path / "logs")
 
-        with patch('automation.core.router.route_request') as mock_route:
+        with patch("automation.core.router.route_request") as mock_route:
             mock_route.return_value = {"success": True, "output": "test"}
             result = orchestrator.execute("build_iso", {})
 

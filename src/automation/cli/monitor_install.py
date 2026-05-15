@@ -41,6 +41,7 @@ except ImportError:
 # Module logger
 logger = logging.getLogger(__name__)
 
+
 class InstallationMonitor:
     """Monitors Windows Server installation progress on HPE servers."""
 
@@ -48,21 +49,19 @@ class InstallationMonitor:
     INSTALL_TIMEOUT = 7200  # 2 hours max installation time
 
     STATUS_PROGRESS_MAP = {
-        'Not Started': 0,
-        'Initializing': 5,
-        'Copying Files': 15,
-        'Installing Features': 35,
-        'Installing Updates': 60,
-        'Configuring': 80,
-        'Finalizing': 95,
-        'Complete': 100,
-        'Failed': -1
+        "Not Started": 0,
+        "Initializing": 5,
+        "Copying Files": 15,
+        "Installing Features": 35,
+        "Installing Updates": 60,
+        "Configuring": 80,
+        "Finalizing": 95,
+        "Complete": 100,
+        "Failed": -1,
     }
 
     def __init__(
-        self,
-        server_list_file: str = "configs/server_list.txt",
-        opsramp_config: str = "configs/opsramp_config.json"
+        self, server_list_file: str = "configs/server_list.txt", opsramp_config: str = "configs/opsramp_config.json"
     ):
         """
         Initialize monitor.
@@ -105,11 +104,11 @@ class InstallationMonitor:
     def _log(self, action: str, server: str, status: str, details: str = ""):
         """Log monitoring event."""
         entry = {
-            'timestamp': datetime.now().isoformat(),
-            'action': action,
-            'server': server,
-            'status': status,
-            'details': details
+            "timestamp": datetime.now().isoformat(),
+            "action": action,
+            "server": server,
+            "status": status,
+            "details": details,
         }
         self.monitor_log.append(entry)
         logger.info(f"[{status}] {action} | {server} | {details}")
@@ -122,7 +121,7 @@ class InstallationMonitor:
                     resource_id=server,
                     metric_name=metric_name,
                     value=value,
-                    tags={"source": "automation.cli.monitor_install"}
+                    tags={"source": "automation.cli.monitor_install"},
                 )
             except Exception as e:
                 logger.debug(f"OpsRamp metric send failed: {e}")
@@ -132,10 +131,7 @@ class InstallationMonitor:
         if self.opsramp_client:
             try:
                 self.opsramp_client.send_alert(
-                    resource_id=server,
-                    alert_type=alert_type,
-                    severity=severity,
-                    message=message
+                    resource_id=server, alert_type=alert_type, severity=severity, message=message
                 )
             except Exception as e:
                 logger.debug(f"OpsRamp alert send failed: {e}")
@@ -144,52 +140,37 @@ class InstallationMonitor:
         """Check server status via iLO."""
         ilo_ip = server.ilo_ip
         if not ilo_ip:
-            return {'status': 'unknown', 'reason': 'No iLO IP configured'}
+            return {"status": "unknown", "reason": "No iLO IP configured"}
 
         username, password = get_ilo_credentials()
 
         try:
             # Ping iLO
-            result = run_command(
-                ["ping", "-c", "1", "-W", "2", ilo_ip],
-                timeout=10
-            )
+            result = run_command(["ping", "-c", "1", "-W", "2", ilo_ip], timeout=10)
             if not result.success:
-                return {
-                    'status': 'offline',
-                    'power_state': 'unknown',
-                    'boot_source': 'unknown'
-                }
+                return {"status": "offline", "power_state": "unknown", "boot_source": "unknown"}
 
             # Query iLO via Redfish (simplified)
             redfish_url = f"https://{ilo_ip}/redfish/v1/Systems/1"
             try:
-                resp = requests.get(
-                    redfish_url,
-                    auth=HTTPBasicAuth(username, password),
-                    verify=False,
-                    timeout=5
-                )
+                resp = requests.get(redfish_url, auth=HTTPBasicAuth(username, password), verify=False, timeout=5)
                 if resp.status_code == 200:
                     data = resp.json()
-                    power_state = data.get('PowerState', 'unknown')
-                    boot_source = data.get('Boot', {}).get('BootSourceOverrideTarget', 'unknown')
+                    power_state = data.get("PowerState", "unknown")
+                    boot_source = data.get("Boot", {}).get("BootSourceOverrideTarget", "unknown")
                     return {
-                        'status': 'online',
-                        'power_state': power_state,
-                        'boot_source': boot_source,
-                        'ilo_reachable': True
+                        "status": "online",
+                        "power_state": power_state,
+                        "boot_source": boot_source,
+                        "ilo_reachable": True,
                     }
                 else:
-                    return {
-                        'status': 'ilo_error',
-                        'http_status': resp.status_code
-                    }
+                    return {"status": "ilo_error", "http_status": resp.status_code}
             except requests.exceptions.RequestException as e:
-                return {'status': 'ilo_connect_error', 'error': str(e)}
+                return {"status": "ilo_connect_error", "error": str(e)}
 
         except Exception as e:
-            return {'status': 'error', 'error': str(e)}
+            return {"status": "error", "error": str(e)}
 
     def check_winrm(self, server: ServerInfo) -> dict:
         """Check Windows Remote Management (WinRM) connectivity."""
@@ -197,18 +178,15 @@ class InstallationMonitor:
 
         try:
             ps_cmd = f"Test-WSMan -ComputerName {hostname} -ErrorAction SilentlyContinue"
-            result = run_command(
-                ["powershell", "-Command", ps_cmd],
-                timeout=10
-            )
+            result = run_command(["powershell", "-Command", ps_cmd], timeout=10)
 
             if result.returncode == 0:
-                return {'winrm_accessible': True, 'transport': 'WinRM'}
+                return {"winrm_accessible": True, "transport": "WinRM"}
             else:
-                return {'winrm_accessible': False, 'error': result.stderr.strip()}
+                return {"winrm_accessible": False, "error": result.stderr.strip()}
 
         except Exception as e:
-            return {'winrm_accessible': False, 'error': str(e)}
+            return {"winrm_accessible": False, "error": str(e)}
 
     def query_installation_progress_winrm(self, server: ServerInfo) -> dict:
         """Query Windows installation progress via WinRM."""
@@ -231,41 +209,38 @@ class InstallationMonitor:
             """
             result = run_command(
                 ["powershell", "-Command", f"Invoke-Command -ComputerName {hostname} -ScriptBlock {{{ps_script}}}"],
-                timeout=30
+                timeout=30,
             )
 
             progress = {
-                'winrm_accessible': True,
-                'setup_phase': None,
-                'install_state': None,
-                'progress_percent': None,
-                'last_event': None
+                "winrm_accessible": True,
+                "setup_phase": None,
+                "install_state": None,
+                "progress_percent": None,
+                "last_event": None,
             }
 
             if result.success:
-                for line in result.stdout.split('\n'):
+                for line in result.stdout.split("\n"):
                     line = line.strip()
-                    if '=' in line:
-                        key, _, val = line.partition('=')
-                        if key == 'Phase':
-                            progress['setup_phase'] = int(val)
-                        elif key == 'InstallState':
-                            progress['install_state'] = int(val)
-                        elif key == 'Progress':
-                            progress['progress_percent'] = int(val)
-                        elif key == 'LastSetupEvent':
-                            progress['last_event'] = int(val)
+                    if "=" in line:
+                        key, _, val = line.partition("=")
+                        if key == "Phase":
+                            progress["setup_phase"] = int(val)
+                        elif key == "InstallState":
+                            progress["install_state"] = int(val)
+                        elif key == "Progress":
+                            progress["progress_percent"] = int(val)
+                        elif key == "LastSetupEvent":
+                            progress["last_event"] = int(val)
 
             return progress
 
         except Exception as e:
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     def monitor_server(
-        self,
-        server: ServerInfo,
-        timeout: int = INSTALL_TIMEOUT,
-        poll_interval: int = CHECK_INTERVAL
+        self, server: ServerInfo, timeout: int = INSTALL_TIMEOUT, poll_interval: int = CHECK_INTERVAL
     ) -> dict:
         """
         Monitor a single server's installation progress.
@@ -282,16 +257,16 @@ class InstallationMonitor:
         logger.info(f"Starting monitoring for {hostname}")
 
         monitoring_result = {
-            'server': hostname,
-            'start_time': datetime.now().isoformat(),
-            'status': 'monitoring',
-            'progress_percent': 0,
-            'current_phase': 'Not Started',
-            'duration_seconds': 0,
-            'check_count': 0,
-            'ilo_events': [],
-            'winrm_progress': [],
-            'alerts_sent': 0
+            "server": hostname,
+            "start_time": datetime.now().isoformat(),
+            "status": "monitoring",
+            "progress_percent": 0,
+            "current_phase": "Not Started",
+            "duration_seconds": 0,
+            "check_count": 0,
+            "ilo_events": [],
+            "winrm_progress": [],
+            "alerts_sent": 0,
         }
 
         start_time = time.time()
@@ -299,47 +274,47 @@ class InstallationMonitor:
         try:
             while True:
                 check_time = datetime.now().isoformat()
-                monitoring_result['check_count'] += 1
+                monitoring_result["check_count"] += 1
                 elapsed = time.time() - start_time
 
                 if elapsed > timeout:
-                    monitoring_result['status'] = 'timeout'
-                    monitoring_result['error'] = f'Installation exceeded {timeout}s timeout'
-                    self._log('monitor', hostname, 'TIMEOUT', monitoring_result['error'])
-                    self._send_opsramp_alert(hostname, 'install_timeout', 'WARNING', 'Installation timed out')
+                    monitoring_result["status"] = "timeout"
+                    monitoring_result["error"] = f"Installation exceeded {timeout}s timeout"
+                    self._log("monitor", hostname, "TIMEOUT", monitoring_result["error"])
+                    self._send_opsramp_alert(hostname, "install_timeout", "WARNING", "Installation timed out")
                     break
 
                 # 1. iLO status
                 ilo_status = self.check_ilo_status(server)
-                power_state = ilo_status.get('power_state', 'unknown')
-                boot_source = ilo_status.get('boot_source', 'unknown')
-                monitoring_result['ilo_events'].append({
-                    'timestamp': check_time,
-                    'power_state': power_state,
-                    'boot_source': boot_source
-                })
+                power_state = ilo_status.get("power_state", "unknown")
+                boot_source = ilo_status.get("boot_source", "unknown")
+                monitoring_result["ilo_events"].append(
+                    {"timestamp": check_time, "power_state": power_state, "boot_source": boot_source}
+                )
 
                 # 2. WinRM check
                 winrm_status = self.check_winrm(server)
-                winrm_accessible = winrm_status.get('winrm_accessible', False)
+                winrm_accessible = winrm_status.get("winrm_accessible", False)
 
                 # 3. Progress if WinRM accessible
                 if winrm_accessible:
                     progress = self.query_installation_progress_winrm(server)
-                    monitoring_result['winrm_progress'].append({
-                        'timestamp': check_time,
-                        **progress
-                    })
+                    monitoring_result["winrm_progress"].append({"timestamp": check_time, **progress})
 
-                    phase = progress.get('setup_phase')
+                    phase = progress.get("setup_phase")
                     if phase is not None:
-                        phase_names = {0: 'Not Started', 1: 'Generalize', 2: 'Specialize',
-                                       3: 'Running Windows', 4: 'RunPhase'}
-                        monitoring_result['current_phase'] = phase_names.get(phase, f'Phase {phase}')
+                        phase_names = {
+                            0: "Not Started",
+                            1: "Generalize",
+                            2: "Specialize",
+                            3: "Running Windows",
+                            4: "RunPhase",
+                        }
+                        monitoring_result["current_phase"] = phase_names.get(phase, f"Phase {phase}")
 
-                    pct = progress.get('progress_percent')
+                    pct = progress.get("progress_percent")
                     if pct is not None:
-                        monitoring_result['progress_percent'] = pct
+                        monitoring_result["progress_percent"] = pct
 
                 # Log current status
                 logger.info(
@@ -351,37 +326,39 @@ class InstallationMonitor:
                 )
 
                 # Send OpsRamp metrics
-                self._send_opsramp_metric(hostname, 'install.progress.percent', monitoring_result['progress_percent'])
-                self._send_opsramp_metric(hostname, 'install.elapsed_seconds', elapsed)
+                self._send_opsramp_metric(hostname, "install.progress.percent", monitoring_result["progress_percent"])
+                self._send_opsramp_metric(hostname, "install.elapsed_seconds", elapsed)
 
                 # Check for completion
-                if monitoring_result['progress_percent'] == 100:
-                    monitoring_result['status'] = 'completed'
-                    self._log('monitor', hostname, 'COMPLETE', 'Installation finished')
-                    self._send_opsramp_alert(hostname, 'installation_complete', 'INFO', 'Windows installation completed successfully')
+                if monitoring_result["progress_percent"] == 100:
+                    monitoring_result["status"] = "completed"
+                    self._log("monitor", hostname, "COMPLETE", "Installation finished")
+                    self._send_opsramp_alert(
+                        hostname, "installation_complete", "INFO", "Windows installation completed successfully"
+                    )
                     break
 
                 # Check for failure
-                last_winrm = monitoring_result['winrm_progress'][-1] if monitoring_result['winrm_progress'] else {}
-                if last_winrm.get('install_state') == 2:  # Failed
-                    monitoring_result['status'] = 'failed'
-                    monitoring_result['error'] = 'Installation reported failure'
-                    self._log('monitor', hostname, 'FAILED', 'Installation failed')
-                    self._send_opsramp_alert(hostname, 'installation_failed', 'CRITICAL', 'Windows installation failed')
+                last_winrm = monitoring_result["winrm_progress"][-1] if monitoring_result["winrm_progress"] else {}
+                if last_winrm.get("install_state") == 2:  # Failed
+                    monitoring_result["status"] = "failed"
+                    monitoring_result["error"] = "Installation reported failure"
+                    self._log("monitor", hostname, "FAILED", "Installation failed")
+                    self._send_opsramp_alert(hostname, "installation_failed", "CRITICAL", "Windows installation failed")
                     break
 
                 time.sleep(poll_interval)
 
         except KeyboardInterrupt:
-            monitoring_result['status'] = 'interrupted'
+            monitoring_result["status"] = "interrupted"
             logger.warning(f"Monitoring interrupted for {hostname}")
         except Exception as e:
-            monitoring_result['status'] = 'error'
-            monitoring_result['error'] = str(e)
+            monitoring_result["status"] = "error"
+            monitoring_result["error"] = str(e)
             logger.error(f"Monitoring error for {hostname}: {e}")
         finally:
-            monitoring_result['end_time'] = datetime.now().isoformat()
-            monitoring_result['duration_seconds'] = time.time() - start_time
+            monitoring_result["end_time"] = datetime.now().isoformat()
+            monitoring_result["duration_seconds"] = time.time() - start_time
 
             # Save session
             sessions_dir = Path("logs") / "monitoring_sessions"
@@ -395,14 +372,13 @@ class InstallationMonitor:
     def monitor_all(self, timeout: int = INSTALL_TIMEOUT) -> dict:
         """Monitor all servers concurrently."""
         logger.info(f"\nStarting monitoring for {len(self.servers)} servers")
-        logger.info(f"{'='*60}")
+        logger.info(f"{'=' * 60}")
 
         results = []
 
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_server = {
-                executor.submit(self.monitor_server, server, timeout): server
-                for server in self.servers
+                executor.submit(self.monitor_server, server, timeout): server for server in self.servers
             }
             for future in as_completed(future_to_server):
                 server = future_to_server[future]
@@ -411,23 +387,19 @@ class InstallationMonitor:
                     results.append(result)
                 except Exception as e:
                     logger.error(f"Monitoring failed for {server.hostname}: {e}")
-                    results.append({
-                        'server': server.hostname,
-                        'status': 'error',
-                        'error': str(e)
-                    })
+                    results.append({"server": server.hostname, "status": "error", "error": str(e)})
 
-        completed = sum(1 for r in results if r.get('status') == 'completed')
-        failed = sum(1 for r in results if r.get('status') == 'failed')
-        timed_out = sum(1 for r in results if r.get('status') == 'timeout')
+        completed = sum(1 for r in results if r.get("status") == "completed")
+        failed = sum(1 for r in results if r.get("status") == "failed")
+        timed_out = sum(1 for r in results if r.get("status") == "timeout")
 
         summary = {
-            'timestamp': datetime.now().isoformat(),
-            'total': len(results),
-            'completed': completed,
-            'failed': failed,
-            'timeout': timed_out,
-            'details': results
+            "timestamp": datetime.now().isoformat(),
+            "total": len(results),
+            "completed": completed,
+            "failed": failed,
+            "timeout": timed_out,
+            "details": results,
         }
 
         summary_file = Path("logs") / f"monitor_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
@@ -442,13 +414,12 @@ class InstallationMonitor:
 
         return summary
 
+
 def main():
     # Initialize root logging
     init_logging("monitoring.log")
 
-    parser = argparse.ArgumentParser(
-        description="Monitor Windows Server installation progress"
-    )
+    parser = argparse.ArgumentParser(description="Monitor Windows Server installation progress")
     parser.add_argument("--server", "-s", help="Monitor specific server only")
     parser.add_argument("--server-list", default="configs/server_list.txt", help="Path to server list")
     parser.add_argument("--timeout", "-t", type=int, default=7200, help="Monitoring timeout in seconds")
@@ -466,16 +437,17 @@ def main():
                 logger.error(f"Server not found: {args.server}")
                 return 1
             result = monitor.monitor_server(server_obj, args.timeout, args.poll_interval)
-            success = result['status'] == 'completed'
+            success = result["status"] == "completed"
         else:
             summary = monitor.monitor_all(args.timeout)
-            success = summary['completed'] > 0
+            success = summary["completed"] > 0
 
         return 0 if success else 1
 
     except Exception as e:
         logger.error(f"Monitoring failed: {e}", exc_info=True)
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -44,29 +44,32 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 # Setup placeholder logger (will be configured by init_logging in main)
 logger = logging.getLogger(__name__)
 
+
 def save_audit(audit: dict, path: Path):
     """Save audit record to JSON file and append to main log."""
     try:
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(audit, f, indent=2, default=str)
         # Append to master log (line-delimited JSON)
-        with open(LOG_DIR / "maintenance_audit.log", 'a') as f:
+        with open(LOG_DIR / "maintenance_audit.log", "a") as f:
             f.write(json.dumps(audit, default=str) + "\n")
     except Exception as e:
         logger.error(f"Failed to save audit: {e}")
 
+
 def parse_datetime(s: str) -> datetime:
     """Parse a datetime string in ISO-like format or 'now'. Returns naive datetime."""
-    if s.lower() == 'now':
+    if s.lower() == "now":
         return datetime.now()
     # Accept either YYYY-MM-DD HH:MM[:SS] or YYYY-MM-DDTHH:MM[:SS]
-    s = s.replace('T', ' ')
-    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+    s = s.replace("T", " ")
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
         try:
             return datetime.strptime(s, fmt)
         except ValueError:
             continue
     raise ValueError(f"Invalid datetime format '{s}'. Use 'now' or 'YYYY-MM-DD HH:MM[:SS]'")
+
 
 def compute_next_work_start(schedule: dict, after_dt: datetime) -> datetime:
     """
@@ -74,10 +77,10 @@ def compute_next_work_start(schedule: dict, after_dt: datetime) -> datetime:
     Schedule dict keys: work_days (list of Mon,Tue,...), work_start (HH:MM), work_end (HH:MM)
     Times are treated as local server time; ensure server timezone matches schedule expectation.
     """
-    work_start_str = schedule.get('work_start', '08:00')
-    work_start_time = datetime.strptime(work_start_str, '%H:%M').time()
-    day_map = {'Mon':0, 'Tue':1, 'Wed':2, 'Thu':3, 'Fri':4, 'Sat':5, 'Sun':6}
-    work_days = [day_map[d] for d in schedule.get('work_days', ['Mon','Tue','Wed','Thu','Fri'])]
+    work_start_str = schedule.get("work_start", "08:00")
+    work_start_time = datetime.strptime(work_start_str, "%H:%M").time()
+    day_map = {"Mon": 0, "Tue": 1, "Wed": 2, "Thu": 3, "Fri": 4, "Sat": 5, "Sun": 6}
+    work_days = [day_map[d] for d in schedule.get("work_days", ["Mon", "Tue", "Wed", "Thu", "Fri"])]
 
     candidate_date = after_dt.date()
     while True:
@@ -87,9 +90,11 @@ def compute_next_work_start(schedule: dict, after_dt: datetime) -> datetime:
                 return candidate_dt
         candidate_date += timedelta(days=1)
 
+
 def format_datetime_for_scom(dt: datetime) -> str:
     """Format datetime as string suitable for SCOM/PowerShell (culture invariant)."""
-    return dt.strftime('%Y-%m-%dT%H:%M:%S')
+    return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
 
 def format_datetime_for_api(dt: datetime) -> str:
     """Format datetime for REST APIs (ISO format with timezone if present)."""
@@ -98,24 +103,25 @@ def format_datetime_for_api(dt: datetime) -> str:
     else:
         return dt.astimezone().isoformat()
 
+
 class SCOMManager:
     """Manages SCOM 2015 maintenance mode via PowerShell cmdlets."""
 
     def __init__(self, config: dict):
         self.config = config
-        self.mgmt_server = config.get('management_server', 'localhost')
-        self.module_name = config.get('powershell_module', 'OperationsManager')
-        self.use_winrm = config.get('use_winrm', False)
+        self.mgmt_server = config.get("management_server", "localhost")
+        self.module_name = config.get("powershell_module", "OperationsManager")
+        self.use_winrm = config.get("use_winrm", False)
         self.cred = None
-        if config.get('credentials'):
-            user_env = config['credentials'].get('username_env')
-            pass_env = config['credentials'].get('password_env')
+        if config.get("credentials"):
+            user_env = config["credentials"].get("username_env")
+            pass_env = config["credentials"].get("password_env")
             if user_env and pass_env:
                 username = os.environ.get(user_env)
                 password = os.environ.get(pass_env)
                 if username and password:
                     # We will pass as secure string; but we'll embed via script if needed
-                    self.cred = {'username': username, 'password': password}
+                    self.cred = {"username": username, "password": password}
         # For local execution, we assume current user has rights
 
     def _run_ps(self, script: str, capture_output: bool = True) -> tuple[bool, str]:
@@ -125,10 +131,7 @@ class SCOMManager:
                 return False, "WinRM credentials not configured"
             # Use WinRM via utils
             return run_powershell_winrm(
-                script,
-                server=self.mgmt_server,
-                username=self.cred['username'],
-                password=self.cred['password']
+                script, server=self.mgmt_server, username=self.cred["username"], password=self.cred["password"]
             )
         else:
             return run_powershell(script, capture_output=capture_output)
@@ -150,10 +153,12 @@ $instances | ForEach-Object {{ $_.Name }}
         if not success:
             return False, []
         # Output lines are server names
-        servers = [line.strip() for line in output.strip().split('\n') if line.strip()]
+        servers = [line.strip() for line in output.strip().split("\n") if line.strip()]
         return True, servers
 
-    def enter_maintenance(self, group_display_name: str, duration: timedelta, comment: str, dry_run: bool = False) -> tuple[bool, list[str]]:
+    def enter_maintenance(
+        self, group_display_name: str, duration: timedelta, comment: str, dry_run: bool = False
+    ) -> tuple[bool, list[str]]:
         """Place all computers in the given SCOM group into maintenance mode."""
         # Convert duration to total seconds (int)
         total_seconds = int(duration.total_seconds())
@@ -189,7 +194,9 @@ if ($failed.Count -gt 0) {{
 }}
 """
         if dry_run:
-            logger.info(f"[DRY RUN] Would enable SCOM maintenance for group '{group_display_name}', duration={duration}")
+            logger.info(
+                f"[DRY RUN] Would enable SCOM maintenance for group '{group_display_name}', duration={duration}"
+            )
             return True, []
         success, output = self._run_ps(script)
         if success:
@@ -235,6 +242,7 @@ if ($stopped.Count -gt 0) {{
         logger.info(f"SCOM maintenance disable output: {output}")
         return success
 
+
 class ILOManager:
     """Manages HPE iLO maintenance mode via REST API or CLI."""
 
@@ -243,17 +251,17 @@ class ILOManager:
         # Global iLO credentials from env; cluster-specific overrides
         self.global_user, self.global_password = get_ilo_credentials()
         # Determine which method to use: 'rest' or 'ilorest' or 'powershell'
-        self.method = 'rest'  # default; could be overridden by config
+        self.method = "rest"  # default; could be overridden by config
         # Timeout for HTTP requests
         self.timeout = 30
 
     def _get_ilo_credentials(self, server_name: str) -> tuple[str, str]:
         """Get iLO username/password for a given server."""
-        cred_map = self.cluster_def.get('ilo_credentials', {})
+        cred_map = self.cluster_def.get("ilo_credentials", {})
         if server_name in cred_map:
             cred_info = cred_map[server_name]
-            username = cred_info.get('username', self.global_user)
-            password_env = cred_info.get('password_env')
+            username = cred_info.get("username", self.global_user)
+            password_env = cred_info.get("password_env")
             if password_env:
                 password = get_credential(password_env, required=False, default=self.global_password)
             else:
@@ -264,16 +272,18 @@ class ILOManager:
 
     def _get_ilo_ip(self, server_name: str) -> Optional[str]:
         """Get iLO IP address for a server."""
-        ilo_map = self.cluster_def.get('ilo_addresses', {})
+        ilo_map = self.cluster_def.get("ilo_addresses", {})
         return ilo_map.get(server_name)
 
-    def _create_window_rest(self, ilo_ip: str, username: str, password: str,
-                             start_dt: datetime, end_dt: datetime, dry_run: bool = False) -> tuple[bool, str]:
+    def _create_window_rest(
+        self, ilo_ip: str, username: str, password: str, start_dt: datetime, end_dt: datetime, dry_run: bool = False
+    ) -> tuple[bool, str]:
         """Create iLO maintenance window using REST API."""
         if dry_run:
             return True, f"[DRY RUN] Would create iLO maintenance window on {ilo_ip} from {start_dt} to {end_dt}"
         try:
             import requests
+
             # Disable SSL warnings if using self-signed
             requests.packages.urllib3.disable_warnings()
         except ImportError:
@@ -300,21 +310,22 @@ class ILOManager:
             "Name": window_name,
             "StartTime": format_datetime_for_api(start_dt),
             "EndTime": format_datetime_for_api(end_dt),
-            "Repeat": "Once"
+            "Repeat": "Once",
         }
         try:
             resp = session.post(f"{base_url}/maintenancewindows", json=payload, timeout=self.timeout)
             if resp.status_code in (200, 201, 202):
                 data = resp.json()
-                window_id = data.get('Id') or data.get('id')
+                window_id = data.get("Id") or data.get("id")
                 return True, f"Created iLO maintenance window (id={window_id}) on {ilo_ip}"
             else:
                 return False, f"iLO API error {resp.status_code}: {resp.text[:200]}"
         except Exception as e:
             return False, f"iLO window creation failed: {e}"
 
-    def _create_window_ilorest(self, ilo_ip: str, username: str, password: str,
-                               start_dt: datetime, end_dt: datetime, dry_run: bool = False) -> tuple[bool, str]:
+    def _create_window_ilorest(
+        self, ilo_ip: str, username: str, password: str, start_dt: datetime, end_dt: datetime, dry_run: bool = False
+    ) -> tuple[bool, str]:
         """Use HPE ilorest CLI to create maintenance window."""
         if dry_run:
             return True, f"[DRY RUN] Would use ilorest for {ilo_ip}"
@@ -325,8 +336,8 @@ class ILOManager:
         # Let's assume: ilorest set maintwindow --enabled true --start <ISO> --end <ISO>
         # However actual ilorest syntax: set maintwindow --start <date> --duration <min>?
         # We'll try generic approach and catch failure
-        start_str = start_dt.strftime('%Y-%m-%dT%H:%M:%S')
-        end_str = end_dt.strftime('%Y-%m-%dT%H:%M:%S')
+        start_str = start_dt.strftime("%Y-%m-%dT%H:%M:%S")
+        end_str = end_dt.strftime("%Y-%m-%dT%H:%M:%S")
         # Assume ilorest supports: ilorest set maintwindow --enabled true --start <start> --end <end>
         cmd_login = [ilorest_exe, "login", ilo_ip, "-u", username, "-p", password]
         cmd_set = [ilorest_exe, "set", "maintwindow", "--enabled", "true", "--start", start_str, "--end", end_str]
@@ -348,9 +359,11 @@ class ILOManager:
         except Exception as e:
             return False, str(e)
 
-    def set_maintenance_window(self, cluster_def: dict, start_dt: datetime, end_dt: datetime, dry_run: bool = False) -> tuple[bool, dict]:
+    def set_maintenance_window(
+        self, cluster_def: dict, start_dt: datetime, end_dt: datetime, dry_run: bool = False
+    ) -> tuple[bool, dict]:
         """Set maintenance window on all iLO interfaces in the cluster."""
-        servers = cluster_def.get('servers', [])
+        servers = cluster_def.get("servers", [])
         if dry_run:
             logger.info(f"[DRY RUN] Would set iLO maintenance for {len(servers)} servers")
             fake_details = {}
@@ -358,13 +371,13 @@ class ILOManager:
                 fake_details[s] = {
                     "success": True,
                     "message": "[DRY RUN] Simulated iLO window",
-                    "ilo_ip": cluster_def.get('ilo_addresses', {}).get(s, 'N/A')
+                    "ilo_ip": cluster_def.get("ilo_addresses", {}).get(s, "N/A"),
                 }
             return True, fake_details
 
         results = {}
         overall_success = True
-        ilo_addresses = cluster_def.get('ilo_addresses', {})
+        ilo_addresses = cluster_def.get("ilo_addresses", {})
         if not ilo_addresses:
             logger.warning("No iLO addresses defined for cluster; skipping iLO")
             return True, {"skipped": True, "reason": "No iLO addresses"}
@@ -391,48 +404,54 @@ class ILOManager:
                 overall_success = False
         return overall_success, results
 
+
 class OpenViewClient:
     """HPE OpenView maintenance integration via REST/CLI."""
 
     def __init__(self, config: dict, cluster_def: dict):
-        self.config = config.get('openview', {})
+        self.config = config.get("openview", {})
         self.cluster_def = cluster_def
-        self.base_url = self.config.get('default_api_url', 'https://openview.example.com/api')
-        self.api_version = self.config.get('api_version', 'v1')
-        self.endpoint = self.config.get('maintenance_endpoint', '/maintenance')
-        self.timeout = self.config.get('timeout_seconds', 30)
+        self.base_url = self.config.get("default_api_url", "https://openview.example.com/api")
+        self.api_version = self.config.get("api_version", "v1")
+        self.endpoint = self.config.get("maintenance_endpoint", "/maintenance")
+        self.timeout = self.config.get("timeout_seconds", 30)
         # Auth
-        auth_cfg = self.config.get('auth', {})
-        self.auth_type = auth_cfg.get('type', 'basic')
-        user_env = auth_cfg.get('user_env', 'OPENVIEW_USER')
-        pass_env = auth_cfg.get('pass_env', 'OPENVIEW_PASSWORD')
-        self.username = get_credential(user_env, required=False, default='')
-        self.password = get_credential(pass_env, required=False, default='')
+        auth_cfg = self.config.get("auth", {})
+        self.auth_type = auth_cfg.get("type", "basic")
+        user_env = auth_cfg.get("user_env", "OPENVIEW_USER")
+        pass_env = auth_cfg.get("pass_env", "OPENVIEW_PASSWORD")
+        self.username = get_credential(user_env, required=False, default="")
+        self.password = get_credential(pass_env, required=False, default="")
         # Optionally use CLI if configured
-        self.use_cli = self.config.get('use_cli', False)
-        self.cli_path = self.config.get('cli_path', 'ovcall')
+        self.use_cli = self.config.get("use_cli", False)
+        self.cli_path = self.config.get("cli_path", "ovcall")
 
-    def set_maintenance(self, cluster_def: dict, start_dt: datetime, end_dt: datetime, dry_run: bool = False) -> tuple[bool, str]:
+    def set_maintenance(
+        self, cluster_def: dict, start_dt: datetime, end_dt: datetime, dry_run: bool = False
+    ) -> tuple[bool, str]:
         """Set maintenance mode for all OpenView nodes associated with the cluster."""
-        node_ids_map = cluster_def.get('openview_node_ids', {})
+        node_ids_map = cluster_def.get("openview_node_ids", {})
         if not node_ids_map:
             logger.warning("No OpenView node IDs defined for cluster; skipping OpenView")
             return True, "No OpenView nodes configured"
         node_ids = list(node_ids_map.values())
-        cluster_name = cluster_def.get('display_name', cluster_def.get('scom_group'))
+        cluster_name = cluster_def.get("display_name", cluster_def.get("scom_group"))
 
         if self.use_cli:
             return self._set_maintenance_cli(node_ids, start_dt, end_dt, cluster_name, dry_run)
         else:
             return self._set_maintenance_rest(node_ids, start_dt, end_dt, cluster_name, dry_run)
 
-    def _set_maintenance_rest(self, node_ids: list[str], start_dt: datetime, end_dt: datetime, cluster_name: str, dry_run: bool) -> tuple[bool, str]:
+    def _set_maintenance_rest(
+        self, node_ids: list[str], start_dt: datetime, end_dt: datetime, cluster_name: str, dry_run: bool
+    ) -> tuple[bool, str]:
         """Use REST API to put nodes into maintenance."""
         if dry_run:
             return True, f"[DRY RUN] Would set OpenView maintenance for nodes: {node_ids}"
         import requests
+
         session = requests.Session()
-        if self.auth_type == 'basic':
+        if self.auth_type == "basic":
             session.auth = (self.username, self.password)
         else:
             # Could extend for token auth
@@ -443,7 +462,7 @@ class OpenViewClient:
             "start_time": format_datetime_for_api(start_dt),
             "end_time": format_datetime_for_api(end_dt),
             "comment": f"Maintenance for {cluster_name}",
-            "cluster": cluster_name
+            "cluster": cluster_name,
         }
         try:
             resp = session.post(url, json=payload, timeout=self.timeout, verify=False)
@@ -454,17 +473,20 @@ class OpenViewClient:
         except Exception as e:
             return False, f"OpenView REST call failed: {e}"
 
-    def _set_maintenance_cli(self, node_ids: list[str], start_dt: datetime, end_dt: datetime, cluster_name: str, dry_run: bool) -> tuple[bool, str]:
+    def _set_maintenance_cli(
+        self, node_ids: list[str], start_dt: datetime, end_dt: datetime, cluster_name: str, dry_run: bool
+    ) -> tuple[bool, str]:
         """Use legacy ovcall or other CLI to set maintenance."""
         if dry_run:
             return True, f"[DRY RUN] Would use OpenView CLI for nodes: {node_ids}"
         # Example: ovcall -c "set maintenance -nodes node1,node2 -start ... -end ..."
-        start_str = start_dt.strftime('%Y-%m-%d %H:%M:%S')
-        end_str = end_dt.strftime('%Y-%m-%d %H:%M:%S')
-        nodes_str = ','.join(node_ids)
+        start_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
+        end_str = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+        nodes_str = ",".join(node_ids)
         cmd = [
             self.cli_path,
-            "-c", f"set maintenance -nodes {nodes_str} -start '{start_str}' -end '{end_str}' -comment '{cluster_name}'"
+            "-c",
+            f"set maintenance -nodes {nodes_str} -start '{start_str}' -end '{end_str}' -comment '{cluster_name}'",
         ]
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout)
@@ -475,28 +497,29 @@ class OpenViewClient:
         except Exception as e:
             return False, str(e)
 
+
 class EmailNotifier:
     """Sends email notifications to distribution lists."""
 
     def __init__(self, config: dict):
-        self.config = config.get('email', {})
-        self.smtp_server = self.config.get('smtp_server', 'localhost')
-        self.smtp_port = self.config.get('smtp_port', 25)
-        self.use_tls = self.config.get('use_tls', False)
-        self.use_ssl = self.config.get('use_ssl', False)
-        self.username = os.environ.get(self.config.get('username_env')) if self.config.get('username_env') else None
-        self.password = os.environ.get(self.config.get('password_env')) if self.config.get('password_env') else None
-        self.from_addr = self.config.get('from_address', 'maintenance-bot@example.com')
-        self.templates = self.config.get('templates', {})
+        self.config = config.get("email", {})
+        self.smtp_server = self.config.get("smtp_server", "localhost")
+        self.smtp_port = self.config.get("smtp_port", 25)
+        self.use_tls = self.config.get("use_tls", False)
+        self.use_ssl = self.config.get("use_ssl", False)
+        self.username = os.environ.get(self.config.get("username_env")) if self.config.get("username_env") else None
+        self.password = os.environ.get(self.config.get("password_env")) if self.config.get("password_env") else None
+        self.from_addr = self.config.get("from_address", "maintenance-bot@example.com")
+        self.templates = self.config.get("templates", {})
         # Support simple distribution list file in project root (overrides JSON config if present)
         simple_list_path = BASE_DIR / "maintenance_distribution_list.txt"
         if simple_list_path.exists():
             with open(simple_list_path) as f:
-                self.simple_recipients = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+                self.simple_recipients = [line.strip() for line in f if line.strip() and not line.startswith("#")]
             self.use_simple = True
         else:
             self.use_simple = False
-            self.dist_lists = self.config.get('distribution_lists', {})
+            self.dist_lists = self.config.get("distribution_lists", {})
 
     def _get_recipients(self, action: str) -> list[str]:
         """Get recipient list based on action; uses simple list if configured."""
@@ -505,40 +528,51 @@ class EmailNotifier:
         key = f"maintenance_{action}"  # e.g., maintenance_enabled
         return self.dist_lists.get(key, [])
 
-    def send_maintenance_notification(self, action: str, cluster: dict, servers: list[str],
-                                      start_time: Optional[datetime], end_time: Optional[datetime],
-                                      dry_run: bool = False) -> bool:
+    def send_maintenance_notification(
+        self,
+        action: str,
+        cluster: dict,
+        servers: list[str],
+        start_time: Optional[datetime],
+        end_time: Optional[datetime],
+        dry_run: bool = False,
+    ) -> bool:
         """Send email about maintenance mode change."""
         recipients = self._get_recipients(action)
         if not recipients:
             logger.warning(f"No distribution list configured for action '{action}'; skipping email")
             return False
 
-        cluster_name = cluster.get('display_name', cluster.get('scom_group', 'Unknown'))
-        environment = cluster.get('environment', 'unknown')
+        cluster_name = cluster.get("display_name", cluster.get("scom_group", "Unknown"))
+        environment = cluster.get("environment", "unknown")
         # Prepare template variables
         tpl_vars = {
-            'cluster_name': cluster_name,
-            'environment': environment,
-            'servers': ', '.join(servers),
-            'start_time': start_time.strftime('%Y-%m-%d %H:%M:%S') if start_time else 'N/A',
-            'end_time': end_time.strftime('%Y-%m-%d %H:%M:%S') if end_time else 'N/A',
-            'triggered_by': 'iRequest',
-            'additional_info': ''
+            "cluster_name": cluster_name,
+            "environment": environment,
+            "servers": ", ".join(servers),
+            "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S") if start_time else "N/A",
+            "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S") if end_time else "N/A",
+            "triggered_by": "iRequest",
+            "additional_info": "",
         }
-        if action == 'enabled':
-            tpl_vars['additional_info'] = "Maintenance mode is now ACTIVE. Health checks and alerts are suppressed."
-        elif action == 'disabled':
-            tpl_vars['additional_info'] = "Maintenance mode has ended. Health checks are re-enabled. Some transient alerts may occur but are expected during stabilization."
+        if action == "enabled":
+            tpl_vars["additional_info"] = "Maintenance mode is now ACTIVE. Health checks and alerts are suppressed."
+        elif action == "disabled":
+            tpl_vars["additional_info"] = (
+                "Maintenance mode has ended. Health checks are re-enabled. Some transient alerts may occur but are expected during stabilization."
+            )
         else:
-            tpl_vars['additional_info'] = f"Maintenance action: {action}"
+            tpl_vars["additional_info"] = f"Maintenance action: {action}"
 
         # Subject
-        subj_tpl = self.templates.get(f'subject_{action}', "Maintenance {action} - {cluster_name} ({environment})")
+        subj_tpl = self.templates.get(f"subject_{action}", "Maintenance {action} - {cluster_name} ({environment})")
         subject = subj_tpl.format(**tpl_vars)
 
         # Body
-        body_tpl = self.templates.get('body_template', "Dear Team,\n\nMaintenance window for cluster '{cluster_name}' has {action}.\n\nStart: {start_time}\nEnd: {end_time}\nServers: {servers}\n\n{additional_info}\n\nRegards,\nMaintenance Bot")
+        body_tpl = self.templates.get(
+            "body_template",
+            "Dear Team,\n\nMaintenance window for cluster '{cluster_name}' has {action}.\n\nStart: {start_time}\nEnd: {end_time}\nServers: {servers}\n\n{additional_info}\n\nRegards,\nMaintenance Bot",
+        )
         # Need to replace {action} placeholder with past tense
         body_action = {"enabled": "been ENABLED", "disabled": "been DISABLED"}.get(action, action)
         body = body_tpl.format(action=body_action, **tpl_vars)
@@ -554,10 +588,10 @@ class EmailNotifier:
             from email.mime.text import MIMEText
 
             msg = MIMEMultipart()
-            msg['From'] = self.from_addr
-            msg['To'] = ', '.join(recipients)
-            msg['Subject'] = subject
-            msg.attach(MIMEText(body, 'plain'))
+            msg["From"] = self.from_addr
+            msg["To"] = ", ".join(recipients)
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain"))
 
             if self.use_ssl:
                 server = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port, timeout=30)
@@ -574,6 +608,7 @@ class EmailNotifier:
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
             return False
+
 
 def schedule_disable_task(cluster_id: str, end_dt: datetime, script_path: Path, no_schedule: bool) -> bool:
     """Schedule a Windows Scheduled Task to run maintenance disable at end_dt."""
@@ -602,15 +637,23 @@ def schedule_disable_task(cluster_id: str, end_dt: datetime, script_path: Path, 
     sd_date = end_dt.strftime("%Y/%m/%d")
     # Use highest privileges and run as SYSTEM (or could run as specified user)
     create_cmd = [
-        "schtasks", "/Create",
-        "/TN", task_name,
-        "/TR", cmd,
-        "/SC", "ONCE",
-        "/ST", st_time,
-        "/SD", sd_date,
-        "/RL", "HIGHEST",
-        "/RU", "SYSTEM",
-        "/F"
+        "schtasks",
+        "/Create",
+        "/TN",
+        task_name,
+        "/TR",
+        cmd,
+        "/SC",
+        "ONCE",
+        "/ST",
+        st_time,
+        "/SD",
+        sd_date,
+        "/RL",
+        "HIGHEST",
+        "/RU",
+        "SYSTEM",
+        "/F",
     ]
 
     try:
@@ -625,16 +668,28 @@ def schedule_disable_task(cluster_id: str, end_dt: datetime, script_path: Path, 
         logger.error(f"Exception creating task: {e}")
         return False
 
+
 def main():
     parser = argparse.ArgumentParser(description="Maintenance Mode Orchestration for SCOM, HPE iLO, and OpenView.")
-    parser.add_argument("-c", "--cluster-id", required=True, help="Cluster identifier (key from clusters_catalogue.json)")
-    parser.add_argument("-s", "--start", help="Maintenance start datetime (ISO 8601, e.g., 2025-05-15T14:30:00 or 'now')")
-    parser.add_argument("-e", "--end", help="Maintenance end datetime (ISO 8601). If omitted, computed from cluster schedule.")
-    parser.add_argument("-a", "--action", choices=['enable', 'disable', 'validate'], default='enable',
-                        help="Action to perform (default: enable)")
-    parser.add_argument("--dry-run", action='store_true', help="Simulate only, do not make changes")
-    parser.add_argument("--no-schedule", action='store_true', help="Do not create scheduled task for automatic disable")
-    parser.add_argument("--verbose", "-v", action='store_true', help="Enable verbose debug logging")
+    parser.add_argument(
+        "-c", "--cluster-id", required=True, help="Cluster identifier (key from clusters_catalogue.json)"
+    )
+    parser.add_argument(
+        "-s", "--start", help="Maintenance start datetime (ISO 8601, e.g., 2025-05-15T14:30:00 or 'now')"
+    )
+    parser.add_argument(
+        "-e", "--end", help="Maintenance end datetime (ISO 8601). If omitted, computed from cluster schedule."
+    )
+    parser.add_argument(
+        "-a",
+        "--action",
+        choices=["enable", "disable", "validate"],
+        default="enable",
+        help="Action to perform (default: enable)",
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Simulate only, do not make changes")
+    parser.add_argument("--no-schedule", action="store_true", help="Do not create scheduled task for automatic disable")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose debug logging")
     args = parser.parse_args()
 
     # Initialize root logging
@@ -645,11 +700,11 @@ def main():
 
     # Prepare audit base
     audit = {
-        'cluster_id': args.cluster_id,
-        'action': args.action,
-        'dry_run': args.dry_run,
-        'timestamp_start': datetime.now().isoformat(),
-        'steps': {}
+        "cluster_id": args.cluster_id,
+        "action": args.action,
+        "dry_run": args.dry_run,
+        "timestamp_start": datetime.now().isoformat(),
+        "steps": {},
     }
 
     # Load configs using utils (return {} on error, not exception)
@@ -657,7 +712,7 @@ def main():
     if not clusters_cfg:
         logger.error("Failed to load clusters catalogue")
         sys.exit(1)
-    clusters_map = clusters_cfg.get('clusters', {})
+    clusters_map = clusters_cfg.get("clusters", {})
 
     scom_cfg = utils_load_json_config(CONFIG_DIR / "scom_config.json", required=False)
     openview_cfg = utils_load_json_config(CONFIG_DIR / "openview_config.json", required=False)
@@ -673,20 +728,20 @@ def main():
     cluster_def = clusters_map[args.cluster_id]
 
     # Validate required fields in cluster definition
-    required_fields = ['display_name', 'servers', 'scom_group', 'environment']
+    required_fields = ["display_name", "servers", "scom_group", "environment"]
     missing = [f for f in required_fields if f not in cluster_def]
     if missing:
         logger.error(f"Cluster definition missing required fields: {missing}")
         sys.exit(1)
-    if not isinstance(cluster_def['servers'], list) or len(cluster_def['servers']) == 0:
+    if not isinstance(cluster_def["servers"], list) or len(cluster_def["servers"]) == 0:
         logger.error(f"Cluster 'servers' must be a non-empty list for {args.cluster_id}")
         sys.exit(1)
 
     # Ensure cluster is not a server ID: if the cluster_id is actually a server hostname that appears in some cluster's servers list but not a cluster key, we already reject. Additional check could be implemented if needed.
 
-    if args.action == 'validate':
+    if args.action == "validate":
         logger.info(f"Cluster '{args.cluster_id}' validated successfully. Servers: {cluster_def['servers']}")
-        audit['success'] = True
+        audit["success"] = True
         audit_file = LOG_DIR / f"validate_{args.cluster_id}_{int(time.time())}.json"
         save_audit(audit, audit_file)
         sys.exit(0)
@@ -695,7 +750,7 @@ def main():
     start_dt = None
     end_dt = None
 
-    if args.action == 'enable':
+    if args.action == "enable":
         # Start datetime
         if args.start:
             try:
@@ -715,7 +770,7 @@ def main():
                 sys.exit(1)
         else:
             # Compute from cluster schedule
-            schedule = cluster_def.get('schedule')
+            schedule = cluster_def.get("schedule")
             if not schedule:
                 logger.error("No end date provided and cluster has no schedule defined")
                 sys.exit(1)
@@ -734,7 +789,7 @@ def main():
         # Log window duration
         duration = end_dt - start_dt
         logger.info(f"Maintenance window: {start_dt} to {end_dt} (duration: {duration})")
-    elif args.action == 'disable':
+    elif args.action == "disable":
         # No start/end needed
         pass
 
@@ -757,7 +812,7 @@ def main():
         opsramp_client = None
 
     # Execute action
-    if args.action == 'enable':
+    if args.action == "enable":
         overall_success = True
 
         # SCOM maintenance
@@ -767,43 +822,43 @@ def main():
             duration_hours = (end_dt - start_dt).total_seconds() / 3600.0
             comment = f"iRequest Maintenance: {args.cluster_id}"
             scom_success, scom_info = scom_mgr.enter_maintenance(
-                group_display_name=cluster_def['scom_group'],
+                group_display_name=cluster_def["scom_group"],
                 duration=timedelta(hours=duration_hours),
                 comment=comment,
-                dry_run=args.dry_run
+                dry_run=args.dry_run,
             )
             logger.info(f"SCOM maintenance result: {'OK' if scom_success else 'FAILED'}")
         else:
             scom_success = False
             scom_info = "SCOM manager not initialized"
-        audit['steps']['scom'] = {'success': scom_success, 'info': scom_info}
+        audit["steps"]["scom"] = {"success": scom_success, "info": scom_info}
         if not scom_success:
             overall_success = False
 
         # iLO maintenance
         ilo_success, ilo_details = ilo_mgr.set_maintenance_window(cluster_def, start_dt, end_dt, dry_run=args.dry_run)
         logger.info(f"iLO result: {'OK' if ilo_success else 'FAILED'}")
-        audit['steps']['ilo'] = {'success': ilo_success, 'details': ilo_details}
+        audit["steps"]["ilo"] = {"success": ilo_success, "details": ilo_details}
         if not ilo_success:
             overall_success = False
 
         # OpenView maintenance
         ov_success, ov_msg = openview_mgr.set_maintenance(cluster_def, start_dt, end_dt, dry_run=args.dry_run)
         logger.info(f"OpenView result: {'OK' if ov_success else 'FAILED'}: {ov_msg}")
-        audit['steps']['openview'] = {'success': ov_success, 'message': ov_msg}
+        audit["steps"]["openview"] = {"success": ov_success, "message": ov_msg}
         if not ov_success:
             overall_success = False
 
         # Send enable email
         email_sent = emailer.send_maintenance_notification(
-            action='enabled',
+            action="enabled",
             cluster=cluster_def,
-            servers=cluster_def['servers'],
+            servers=cluster_def["servers"],
             start_time=start_dt,
             end_time=end_dt,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
         )
-        audit['steps']['email'] = {'sent': email_sent}
+        audit["steps"]["email"] = {"sent": email_sent}
         if not email_sent:
             overall_success = False  # maybe not critical, but warning
 
@@ -811,12 +866,12 @@ def main():
         if opsramp_client and not args.dry_run:
             try:
                 # Send metric for each server
-                for server in cluster_def['servers']:
+                for server in cluster_def["servers"]:
                     opsramp_client.send_metric(
                         resource_id=server,
                         metric_name="maintenance.mode",
                         value=1,
-                        tags={"cluster": args.cluster_id, "environment": cluster_def.get('environment')}
+                        tags={"cluster": args.cluster_id, "environment": cluster_def.get("environment")},
                     )
                 # Send alert/event
                 opsramp_client.send_alert(
@@ -825,40 +880,37 @@ def main():
                     severity="INFO",
                     message=f"Maintenance enabled for cluster {args.cluster_id}",
                     details={
-                        "cluster": cluster_def.get('display_name'),
-                        "servers": cluster_def['servers'],
+                        "cluster": cluster_def.get("display_name"),
+                        "servers": cluster_def["servers"],
                         "start": start_dt.isoformat(),
-                        "end": end_dt.isoformat()
-                    }
+                        "end": end_dt.isoformat(),
+                    },
                 )
                 opsramp_client.send_event(
                     resource_id=args.cluster_id,
                     event_type="maintenance.enabled",
                     message=f"Maintenance window started for {cluster_def.get('display_name')}",
-                    properties={"cluster": args.cluster_id, "action": "enable"}
+                    properties={"cluster": args.cluster_id, "action": "enable"},
                 )
-                audit['steps']['opsramp'] = {'success': True}
+                audit["steps"]["opsramp"] = {"success": True}
                 logger.info("OpsRamp metrics and events sent")
             except Exception as e:
                 logger.error(f"OpsRamp reporting failed: {e}")
-                audit['steps']['opsramp'] = {'success': False, 'error': str(e)}
+                audit["steps"]["opsramp"] = {"success": False, "error": str(e)}
                 overall_success = False
         else:
-            audit['steps']['opsramp'] = {'skipped': True}
+            audit["steps"]["opsramp"] = {"skipped": True}
 
         # Schedule disable task
         script_abs = Path(__file__).resolve()
         schedule_ok = schedule_disable_task(
-            cluster_id=args.cluster_id,
-            end_dt=end_dt,
-            script_path=script_abs,
-            no_schedule=args.no_schedule
+            cluster_id=args.cluster_id, end_dt=end_dt, script_path=script_abs, no_schedule=args.no_schedule
         )
-        audit['steps']['scheduled_task'] = {'created': schedule_ok}
+        audit["steps"]["scheduled_task"] = {"created": schedule_ok}
         if not schedule_ok:
             overall_success = False
 
-        audit['success'] = overall_success
+        audit["success"] = overall_success
         audit_file = LOG_DIR / f"enable_{args.cluster_id}_{int(time.time())}.json"
         save_audit(audit, audit_file)
 
@@ -869,7 +921,7 @@ def main():
             logger.error("Maintenance enable completed with errors. Check audit log.")
             return 1
 
-    elif args.action == 'disable':
+    elif args.action == "disable":
         # Disable maintenance (or notify end)
         # For completeness, you could try to abort any leftover iLO windows or SCOM, but not strictly necessary.
         # We'll just send notifications and OpsRamp events.
@@ -881,47 +933,47 @@ def main():
 
         # Send disable email
         email_sent = emailer.send_maintenance_notification(
-            action='disabled',
+            action="disabled",
             cluster=cluster_def,
-            servers=cluster_def['servers'],
+            servers=cluster_def["servers"],
             start_time=None,
             end_time=datetime.now(),
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
         )
-        audit['steps']['email'] = {'sent': email_sent}
+        audit["steps"]["email"] = {"sent": email_sent}
         if not email_sent:
             overall_success = False
 
         # OpsRamp
         if opsramp_client and not args.dry_run:
             try:
-                for server in cluster_def['servers']:
+                for server in cluster_def["servers"]:
                     opsramp_client.send_metric(
                         resource_id=server,
                         metric_name="maintenance.mode",
                         value=0,
-                        tags={"cluster": args.cluster_id, "environment": cluster_def.get('environment')}
+                        tags={"cluster": args.cluster_id, "environment": cluster_def.get("environment")},
                     )
                 opsramp_client.send_alert(
                     resource_id=args.cluster_id,
                     alert_type="maintenance.disabled",
                     severity="INFO",
                     message=f"Maintenance disabled for cluster {args.cluster_id}",
-                    details={"completed_at": datetime.now().isoformat()}
+                    details={"completed_at": datetime.now().isoformat()},
                 )
                 opsramp_client.send_event(
                     resource_id=args.cluster_id,
                     event_type="maintenance.disabled",
                     message=f"Maintenance window ended for {cluster_def.get('display_name')}",
-                    properties={"cluster": args.cluster_id, "action": "disable"}
+                    properties={"cluster": args.cluster_id, "action": "disable"},
                 )
-                audit['steps']['opsramp'] = {'success': True}
+                audit["steps"]["opsramp"] = {"success": True}
             except Exception as e:
                 logger.error(f"OpsRamp reporting failed: {e}")
-                audit['steps']['opsramp'] = {'success': False, 'error': str(e)}
+                audit["steps"]["opsramp"] = {"success": False, "error": str(e)}
                 overall_success = False
         else:
-            audit['steps']['opsramp'] = {'skipped': True}
+            audit["steps"]["opsramp"] = {"skipped": True}
 
         # Cleanup: delete the scheduled disable task (if exists) since we are running it now
         task_name = f"MaintenanceDisable-{args.cluster_id}"
@@ -929,15 +981,15 @@ def main():
             try:
                 subprocess.run(["schtasks", "/Delete", "/TN", task_name, "/F"], capture_output=True)
                 logger.info(f"Deleted scheduled task '{task_name}' after completion")
-                audit['steps']['scheduled_task_cleanup'] = {'deleted': True}
+                audit["steps"]["scheduled_task_cleanup"] = {"deleted": True}
             except Exception as e:
                 logger.warning(f"Failed to delete scheduled task {task_name}: {e}")
-                audit['steps']['scheduled_task_cleanup'] = {'deleted': False, 'error': str(e)}
+                audit["steps"]["scheduled_task_cleanup"] = {"deleted": False, "error": str(e)}
         else:
             logger.info("Skipped scheduled task cleanup: not on Windows")
-            audit['steps']['scheduled_task_cleanup'] = {'skipped': True}
+            audit["steps"]["scheduled_task_cleanup"] = {"skipped": True}
 
-        audit['success'] = overall_success
+        audit["success"] = overall_success
         audit_file = LOG_DIR / f"disable_{args.cluster_id}_{int(time.time())}.json"
         save_audit(audit, audit_file)
 
@@ -951,6 +1003,7 @@ def main():
     else:
         logger.error(f"Unsupported action: {args.action}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

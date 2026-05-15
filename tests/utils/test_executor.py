@@ -65,6 +65,7 @@ class TestRunCommand:
 
     def test_run_command_timeout(self, monkeypatch):
         """Test command timeout."""
+
         def raise_timeout(*args, **kwargs):
             raise subprocess.TimeoutExpired(cmd="cmd", timeout=30)
 
@@ -93,7 +94,7 @@ class TestRunCommand:
 
         def mock_run(cmd, **kwargs):
             nonlocal captured_cwd
-            captured_cwd = kwargs.get('cwd')
+            captured_cwd = kwargs.get("cwd")
             mock_result = MagicMock()
             mock_result.returncode = 0
             mock_result.stdout = "ok"
@@ -163,7 +164,7 @@ class TestRunWithRetry:
 
         monkeypatch.setattr("automation.utils.executor.run_command", mock_run_cmd)
 
-        with patch('time.sleep'):  # Speed up test
+        with patch("time.sleep"):  # Speed up test
             result = run_with_retry(["cmd"], max_attempts=3)
 
         assert result.success is True
@@ -171,24 +172,26 @@ class TestRunWithRetry:
 
     def test_run_with_retry_all_attempts_fail(self, monkeypatch):
         """Test all attempts fail."""
+
         def mock_run_cmd(*args, **kwargs):
             return CommandResult(returncode=1, stdout="", stderr="fail", success=False)
 
         monkeypatch.setattr("automation.utils.executor.run_command", mock_run_cmd)
 
-        with patch('time.sleep'):
+        with patch("time.sleep"):
             result = run_with_retry(["cmd"], max_attempts=2)
 
         assert result.success is False
 
     def test_run_with_retry_raises_when_check_true(self, monkeypatch):
         """Test RuntimeError raised when check=True and all attempts fail."""
+
         def mock_run_cmd(*args, **kwargs):
             return CommandResult(returncode=1, stdout="", stderr="fail", success=False)
 
         monkeypatch.setattr("automation.utils.executor.run_command", mock_run_cmd)
 
-        with patch('time.sleep'), pytest.raises(RuntimeError, match="Command failed after"):
+        with patch("time.sleep"), pytest.raises(RuntimeError, match="Command failed after"):
             run_with_retry(["cmd"], max_attempts=1, check=True)
 
     def test_run_with_retry_exponential_backoff(self, monkeypatch):

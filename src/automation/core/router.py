@@ -52,6 +52,7 @@ def route_request(
 
     try:
         import importlib
+
         module = importlib.import_module(module_name)
     except ImportError as e:
         logger.error("Failed to import %s: %s", module_name, e)
@@ -67,6 +68,7 @@ def route_request(
         if hasattr(module, "main"):
             # Convert params to sys.argv-style args for the CLI module
             import sys
+
             original_argv = sys.argv
             sys.argv = ["maintenance_mode.py", "--cluster-id", params.get("cluster_id", "")]
             if action == "enable" and params.get("start"):

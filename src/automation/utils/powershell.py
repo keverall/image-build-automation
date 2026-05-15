@@ -7,46 +7,18 @@ logger = logging.getLogger(__name__)
 
 
 def run_powershell(
-    script: str,
-    capture_output: bool = True,
-    timeout: int = 300,
-    execution_policy: str = "Bypass"
+    script: str, capture_output: bool = True, timeout: int = 300, execution_policy: str = "Bypass"
 ) -> tuple[bool, str]:
-    """
-    Execute a PowerShell script locally.
-
-    Args:
-        script: PowerShell code to execute
-        capture_output: Capture stdout/stderr
-        timeout: Execution timeout in seconds
-        execution_policy: PowerShell execution policy
-
-    Returns:
-        (success: bool, output: str) tuple
-    """
-    cmd = [
-        "powershell",
-        "-ExecutionPolicy", execution_policy,
-        "-NoProfile",
-        "-NonInteractive",
-        "-Command", script
-    ]
+    """Execute a PowerShell script locally."""
+    cmd = ["powershell", "-ExecutionPolicy", execution_policy, "-NoProfile", "-NonInteractive", "-Command", script]
 
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=capture_output,
-            text=True,
-            timeout=timeout
-        )
+        result = subprocess.run(cmd, capture_output=capture_output, text=True, timeout=timeout)
         output = result.stdout + result.stderr
-
         if result.returncode != 0:
             logger.error(f"PowerShell error: {output}")
             return False, output
-
         return True, output
-
     except subprocess.TimeoutExpired:
         return False, f"PowerShell script timed out after {timeout}s"
     except Exception as e:
@@ -54,27 +26,9 @@ def run_powershell(
 
 
 def run_powershell_winrm(
-    script: str,
-    server: str,
-    username: str,
-    password: str,
-    transport: str = "ntlm",
-    timeout: int = 300
+    script: str, server: str, username: str, password: str, transport: str = "ntlm", timeout: int = 300
 ) -> tuple[bool, str]:
-    """
-    Execute PowerShell script on remote server via WinRM.
-
-    Args:
-        script: PowerShell code to execute
-        server: Remote server hostname/IP
-        username: Username for authentication
-        password: Password for authentication
-        transport: WinRM transport protocol (ntlm, kerberos, basic, etc.)
-        timeout: Command timeout in seconds
-
-    Returns:
-        (success: bool, output: str) tuple
-    """
+    """Execute PowerShell script on remote server via WinRM."""
     try:
         import winrm
     except ImportError:
@@ -83,15 +37,12 @@ def run_powershell_winrm(
     try:
         session = winrm.Session(server, auth=(username, password), transport=transport)
         result = session.run_ps(script)
-
         output = (result.std_out.decode() + result.std_err.decode()).strip()
-
         if result.status_code == 0:
             return True, output
         else:
             logger.error(f"WinRM command failed with status {result.status_code}: {output}")
             return False, output
-
     except Exception as e:
         logger.error(f"WinRM connection/execution failed: {e}")
         return False, str(e)
@@ -109,20 +60,9 @@ def build_scom_maintenance_script(
     group_display_name: str,
     duration_seconds: int,
     comment: str,
-    operation: str = "start"  # "start" or "stop"
-) -> str:
-    """
-    Build PowerShell script for SCOM maintenance mode operations.
-
-    Args:
-        group_display_name: SCOM group name
-        duration_seconds: Duration in seconds (for start)
-        comment: Maintenance comment
-        operation: "start" or "stop"
-
-    Returns:
-        PowerShell script
-    """
+    operation: str = "start",  # "start" or "stop"
+) -> str | None:
+    """Build PowerShell script for SCOM maintenance mode operations."""
     safe_comment = comment.replace("'", "''")
 
     if operation.lower() == "start":
@@ -178,3 +118,5 @@ if ($stopped.Count -gt 0) {{
     Write-Host "No instances were in maintenance"
 }}
 """
+
+    return None
