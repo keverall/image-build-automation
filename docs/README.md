@@ -12,7 +12,7 @@ hpe-windows-iso-automation/
 │   ├── update_firmware_drivers.py              # HPE SUT firmware/driver integration
 │   ├── patch_windows_security.py               # DISM-based Windows patching
 │   ├── build_iso.py                            # Main orchestrator
-│   ├── deploy_to_server.py                     # ISO deployment (PXE/iLO)
+│   ├── deploy_to_server.py                     # ISO deployment (iLO Virtual Media)
 │   ├── monitor_install.py                      # Installation monitoring
 │   ├── opsramp_integration.py                  # OpsRamp API integration
 │   ├── maintenance_mode.py                     # SCOM/iLO/OpenView maintenance orchestration

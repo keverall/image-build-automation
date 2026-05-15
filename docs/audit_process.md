@@ -59,9 +59,8 @@ Every script in this repository uses the `AuditLogger` class or `_log_step()` me
    - ISO creation: new ISO path, size, compression ratio
 
 4. **Deployment**
-   - Target server, deployment method (iLO/PXE/Redfish)
+   - Target server, deployment method (iLO/Redfish)
    - iLO connection: IP, credentials check, virtual media mount status
-   - PXE configuration: TFTP path, boot files copied
    - Deployment outcome: success, failure, error message
 
 5. **Monitoring**

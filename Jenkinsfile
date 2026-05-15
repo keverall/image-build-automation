@@ -34,7 +34,7 @@ pipeline {
         )
         choice(
             name: 'DEPLOY_METHOD',
-            choices: ['ilo', 'pxe', 'redfish'],
+            choices: ['ilo', 'redfish'],
             description: 'Deployment method (for deploy stage)'
         )
         booleanParam(
