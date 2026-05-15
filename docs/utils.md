@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `scripts/utils/` package centralizes common functionality used across all automation scripts, enforcing **DRY (Don't Repeat Yourself)** principles and ensuring consistent behavior.
+The `src/automation/utils/` package centralizes common functionality used across all automation scripts, enforcing **DRY (Don't Repeat Yourself)** principles and ensuring consistent behavior.
 
 All utilities feature:
 - **Comprehensive docstrings** (Google-style) with Args, Returns, and Raises
@@ -684,7 +684,7 @@ ruff format src/automation/utils/
 radon cc src/automation/utils/ -nc
 
 # Type checking (optional)
-mypy scripts/utils/ --ignore-missing-imports
+mypy src/automation/utils/ --ignore-missing-imports
 ```
 
 **Before committing**: ensure no `F401` (unused imports), `F841` (unused variables), or `E501` (line too long) errors.
