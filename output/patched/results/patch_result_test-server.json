@@ -1,0 +1,32 @@
+{
+  "server": "test-server",
+  "patched_iso": "output/patched/test-server_patched_dryrun.iso",
+  "success": true,
+  "build_log": [
+    {
+      "timestamp": "2026-05-15T01:07:56.963172",
+      "step": "build_start",
+      "status": "START",
+      "details": "Patching for test-server"
+    },
+    {
+      "timestamp": "2026-05-15T01:07:56.963247",
+      "step": "setup_base_iso",
+      "status": "START",
+      "details": "ISO: /nonexistent.iso"
+    },
+    {
+      "timestamp": "2026-05-15T01:07:56.963290",
+      "step": "apply_patches_dism",
+      "status": "START",
+      "details": "Applying patches via DISM"
+    },
+    {
+      "timestamp": "2026-05-15T01:07:56.963313",
+      "step": "create_iso",
+      "status": "INFO",
+      "details": "Dry-run, no ISO created"
+    }
+  ],
+  "timestamp": "2026-05-15T01:07:56.963244"
+}

@@ -1,0 +1,7 @@
+# Maintenance Mode Distribution List
+# Add email addresses (one per line) that should receive maintenance notifications.
+# Lines starting with # are comments and ignored.
+
+# Example:
+# infrastructure-alerts@example.com
+# support-team@example.com

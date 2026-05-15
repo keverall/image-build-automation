@@ -1,0 +1,16 @@
+{
+  "server": "proliant-server-02",
+  "uuid": "00000000-0000-0000-0000-000000000000",
+  "firmware_iso": null,
+  "patched_iso": null,
+  "combined_iso": null,
+  "success": false,
+  "timestamp": "2026-05-15T01:06:18.694957",
+  "steps": [
+    {
+      "step": "generate_uuid",
+      "uuid": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "error": "HPE Smart Update Tool (hpe_sut) not found. Ensure it's installed and in PATH or placed in tools/ directory."
+}

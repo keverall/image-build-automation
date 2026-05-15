@@ -1,0 +1,24 @@
+{
+  "scom": {
+    "management_server": "scom01.example.com",
+    "powershell_module": "OperationsManager",
+    "use_winrm": false,
+    "winrm": {
+      "transport": "ntlm",
+      "server": "scom01.example.com",
+      "username_env": "SCOM_ADMIN_USER",
+      "password_env": "SCOM_ADMIN_PASSWORD"
+    },
+    "credentials": {
+      "username_env": "SCOM_ADMIN_USER",
+      "password_env": "SCOM_ADMIN_PASSWORD"
+    },
+    "maintenance_settings": {
+      "default_duration_hours": 4,
+      "comment_prefix": "iRequest Maintenance: ",
+      "suppress_alerts": true,
+      "health_state_reset": "green"
+    }
+  },
+  "notes": "The OperationsManager PowerShell module must be installed on the system where commands are executed. If use_winrm is true, pywinrm will be used to remotely execute commands on the management server; otherwise commands run locally. Credentials are read from environment variables."
+}

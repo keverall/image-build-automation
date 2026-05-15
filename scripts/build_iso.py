@@ -9,55 +9,55 @@ complete customized ISOs for HPE ProLiant servers.
 import argparse
 import json
 import logging
-import subprocess
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import uuid as uuid_lib
+from typing import Dict, List, Optional
 
-# Import our custom modules
+# Import our custom modules and utils
 sys.path.insert(0, str(Path(__file__).parent))
 from generate_uuid import generate_unique_uuid
 from update_firmware_drivers import FirmwareUpdater
 from patch_windows_security import WindowsPatcher
+from utils import AutomationBase, ensure_dir, load_server_list
+from utils.logging_setup import init_logging
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('logs/build_orchestrator.log', mode='a')
-    ]
-)
+# Module-level logger (uses root configured in main())
 logger = logging.getLogger(__name__)
 
 
-class ISOOrchestrator:
+class ISOOrchestrator(AutomationBase):
     """Orchestrates the complete ISO build pipeline."""
 
-    def __init__(self, config_dir: str = "configs", output_dir: str = "output"):
+    def __init__(
+        self,
+        config_dir: str = "configs",
+        output_dir: str = "output",
+        dry_run: bool = False
+    ):
         """
         Initialize orchestrator.
 
         Args:
             config_dir: Directory containing configuration files
             output_dir: Root output directory
+            dry_run: Simulate mode
         """
-        self.config_dir = Path(config_dir)
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.audit_log = []
+        super().__init__(
+            config_dir=Path(config_dir),
+            output_dir=Path(output_dir),
+            dry_run=dry_run
+        )
 
-        # Load configurations
+        # Resolve config file paths
         self.fw_config = self.config_dir / "hpe_firmware_drivers_nov2025.json"
         self.patch_config = self.config_dir / "windows_patches.json"
         self.server_list_file = self.config_dir / "server_list.txt"
 
         self._validate_configs()
 
-    def _validate_configs(self):
+    def _validate_configs(self) -> None:
         """Validate all required configuration files exist."""
         required = {
             'Firmware config': self.fw_config,
@@ -69,45 +69,34 @@ class ISOOrchestrator:
             if not path.exists():
                 raise FileNotFoundError(f"{name} not found: {path}")
 
-        logger.info("All configuration files validated")
+        self.logger.info("All configuration files validated")
 
     def _load_servers(self) -> List[str]:
         """Load server list from file."""
-        servers = []
-        with open(self.server_list_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    servers.append(line)
-        logger.info(f"Loaded {len(servers)} servers from {self.server_list_file}")
-        return servers
+        servers_objs = load_server_list(self.server_list_file, include_details=False)
+        # type: ignore - we get List[str] when include_details=False
+        return servers_objs  # type: ignore
 
-    def _audit(self, action: str, status: str, details: str = "", server: str = ""):
-        """Record audit entry."""
-        entry = {
-            'timestamp': datetime.now().isoformat(),
-            'action': action,
-            'status': status,
-            'server': server,
-            'details': details
-        }
-        self.audit_log.append(entry)
-        logger.info(f"[{status}] {action} | {server} | {details}")
-
-    def build_for_server(self, server_name: str, base_iso_path: Optional[str] = None,
-                        dry_run: bool = False) -> Dict:
+    def build_for_server(
+        self,
+        server_name: str,
+        base_iso_path: Optional[str] = None
+    ) -> Dict:
         """
         Complete ISO build for a single server.
 
         Args:
             server_name: Server hostname/identifier
             base_iso_path: Path to base Windows Server ISO (optional)
-            dry_run: If True, don't execute commands
 
         Returns:
             Build result dictionary
         """
-        self._audit("build_start", "START", f"Building ISOs for {server_name}", server_name)
+        self.log_and_audit(
+            "build_start", "START",
+            f"Building ISOs for {server_name}",
+            server_name
+        )
 
         result = {
             'server': server_name,
@@ -122,63 +111,83 @@ class ISOOrchestrator:
 
         try:
             # Step 1: Generate deterministic UUID
-            if dry_run:
+            if self.dry_run:
                 generated_uuid = "00000000-0000-0000-0000-000000000000"
             else:
                 generated_uuid = generate_unique_uuid(server_name)
             result['uuid'] = generated_uuid
             result['steps'].append({'step': 'generate_uuid', 'uuid': generated_uuid})
-            self._audit("generate_uuid", "SUCCESS", f"UUID: {generated_uuid}", server_name)
+            self.log_and_audit("generate_uuid", "SUCCESS", f"UUID: {generated_uuid}", server_name)
 
             # Step 2: Build firmware/driver ISO
             fw_output = self.output_dir / "firmware" / server_name
-            fw_updater = FirmwareUpdater(str(self.fw_config), str(fw_output))
-            fw_result = fw_updater.build(server_name, dry_run=dry_run)
+            fw_updater = FirmwareUpdater(
+                str(self.fw_config),
+                str(fw_output)
+            )
+            fw_result = fw_updater.build(server_name, dry_run=self.dry_run)
 
             if fw_result.get('success') and fw_result.get('firmware_iso'):
                 result['firmware_iso'] = fw_result['firmware_iso']
-                self._audit("firmware_iso", "SUCCESS",
-                           f"ISO: {Path(fw_result['firmware_iso']).name}", server_name)
+                self.log_and_audit(
+                    "firmware_iso", "SUCCESS",
+                    f"ISO: {Path(fw_result['firmware_iso']).name}",
+                    server_name
+                )
             else:
-                self._audit("firmware_iso", "FAILED", "Firmware ISO build failed", server_name)
-                result['steps'].append({'step': 'firmware_iso', 'status': 'failed'})
-                # Continue - firmware ISO might not be strictly required
-
+                self.log_and_audit(
+                    "firmware_iso", "FAILED",
+                    "Firmware ISO build failed",
+                    server_name
+                )
             result['steps'].append({'step': 'firmware_iso', 'status': 'done'})
 
             # Step 3: Build patched Windows ISO
             if not base_iso_path:
-                logger.warning("No base Windows ISO provided, skipping Windows patching")
+                self.logger.warning("No base Windows ISO provided, skipping Windows patching")
             else:
                 patch_output = self.output_dir / "patched" / server_name
-                patcher = WindowsPatcher(str(self.patch_config),
-                                        output_dir=str(patch_output))
-                patch_result = patcher.build(base_iso_path, server_name, dry_run=dry_run)
+                patcher = WindowsPatcher(
+                    str(self.patch_config),
+                    output_dir=str(patch_output)
+                )
+                patch_result = patcher.build(
+                    base_iso_path,
+                    server_name,
+                    dry_run=self.dry_run
+                )
 
                 if patch_result.get('success') and patch_result.get('patched_iso'):
                     result['patched_iso'] = patch_result['patched_iso']
-                    self._audit("patched_iso", "SUCCESS",
-                               f"ISO: {Path(patch_result['patched_iso']).name}", server_name)
+                    self.log_and_audit(
+                        "patched_iso", "SUCCESS",
+                        f"ISO: {Path(patch_result['patched_iso']).name}",
+                        server_name
+                    )
                 else:
-                    self._audit("patched_iso", "FAILED", "Windows patching failed", server_name)
+                    self.log_and_audit(
+                        "patched_iso", "FAILED",
+                        "Windows patching failed",
+                        server_name
+                    )
 
             result['steps'].append({'step': 'patched_iso', 'status': 'done'})
 
             # Step 4: Generate combined deployment package
             combined_dir = self.output_dir / "combined" / server_name
-            combined_dir.mkdir(parents=True, exist_ok=True)
+            ensure_dir(combined_dir)
 
             # Copy firmware ISO
             if result['firmware_iso'] and Path(result['firmware_iso']).exists():
                 fw_dest = combined_dir / Path(result['firmware_iso']).name
                 shutil.copy2(result['firmware_iso'], fw_dest)
-                logger.info(f"Copied firmware ISO to deployment package")
+                self.logger.info(f"Copied firmware ISO to deployment package")
 
             # Copy patched ISO
             if result['patched_iso'] and Path(result['patched_iso']).exists():
                 pw_dest = combined_dir / Path(result['patched_iso']).name
                 shutil.copy2(result['patched_iso'], pw_dest)
-                logger.info(f"Copied patched ISO to deployment package")
+                self.logger.info(f"Copied patched ISO to deployment package")
 
             # Create metadata file
             metadata = {
@@ -193,49 +202,50 @@ class ISOOrchestrator:
                 json.dump(metadata, f, indent=2)
 
             result['combined_iso'] = str(combined_dir)
-            self._audit("deployment_package", "SUCCESS",
-                       f"Combined package at {combined_dir}", server_name)
+            self.log_and_audit(
+                "deployment_package", "SUCCESS",
+                f"Combined package at {combined_dir}",
+                server_name
+            )
 
             result['steps'].append({'step': 'deployment_package', 'status': 'done'})
             result['success'] = True
 
         except Exception as e:
             error_msg = str(e)
-            self._audit("build", "FAILED", error_msg, server_name)
-            logger.error(f"Build failed for {server_name}: {error_msg}", exc_info=True)
+            self.log_and_audit("build", "FAILED", error_msg, server_name)
+            self.logger.error(f"Build failed for {server_name}: {error_msg}", exc_info=True)
             result['error'] = error_msg
 
         # Save per-server result
-        results_dir = self.output_dir / "results"
-        results_dir.mkdir(parents=True, exist_ok=True)
-        result_file = results_dir / f"build_result_{server_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(result_file, 'w') as f:
-            json.dump(result, f, indent=2)
+        self.save_result(result, "build_result", category="results")
 
         return result
 
-    def build_all(self, base_iso_path: Optional[str] = None, dry_run: bool = False) -> Dict:
+    def build_all(
+        self,
+        base_iso_path: Optional[str] = None
+    ) -> Dict:
         """
         Build ISOs for all servers from server list.
 
         Args:
             base_iso_path: Path to base Windows Server ISO
-            dry_run: If True, simulate
 
         Returns:
             Summary dictionary
         """
-        self._audit("build_all", "START", f"Building for all servers")
+        self.log_and_audit("build_all", "START", f"Building for all servers")
 
         servers = self._load_servers()
         results = []
 
         for server in servers:
-            logger.info(f"\n{'='*70}")
-            logger.info(f"Processing: {server}")
-            logger.info(f"{'='*70}")
+            self.logger.info(f"\n{'='*70}")
+            self.logger.info(f"Processing: {server}")
+            self.logger.info(f"{'='*70}")
 
-            result = self.build_for_server(server, base_iso_path, dry_run)
+            result = self.build_for_server(server, base_iso_path)
             results.append(result)
 
         # Summary
@@ -248,23 +258,22 @@ class ISOOrchestrator:
             'results': results
         }
 
-        summary_file = self.output_dir / f"build_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(summary_file, 'w') as f:
-            json.dump(summary, f, indent=2)
+        self.save_result(summary, "build_summary")
+        self.logger.info(f"\nBuild Summary: {success_count}/{len(servers)} successful")
 
-        logger.info(f"\n{'='*70}")
-        logger.info(f"Build Summary: {success_count}/{len(servers)} successful")
-        logger.info(f"Details saved to: {summary_file}")
-        logger.info(f"{'='*70}")
-
-        self._audit("build_all", "COMPLETE",
-                   f"Success: {success_count}/{len(servers)}",
-                   "all_servers")
+        self.log_and_audit(
+            "build_all", "COMPLETE",
+            f"Success: {success_count}/{len(servers)}",
+            "all_servers"
+        )
 
         return summary
 
 
 def main():
+    # Initialize root logging to console + file
+    init_logging("build_orchestrator.log")
+
     parser = argparse.ArgumentParser(
         description="Orchestrate ISO builds for HPE ProLiant servers"
     )
@@ -299,18 +308,23 @@ def main():
 
     args = parser.parse_args()
 
-    # Ensure output and logs directories exist
-    Path("logs").mkdir(exist_ok=True)
-
     try:
-        orchestrator = ISOOrchestrator(args.config_dir, args.output_dir)
+        orchestrator = ISOOrchestrator(
+            config_dir=args.config_dir,
+            output_dir=args.output_dir,
+            dry_run=args.dry_run
+        )
 
         if args.server:
-            result = orchestrator.build_for_server(args.server, args.base_iso, args.dry_run)
+            result = orchestrator.build_for_server(args.server, args.base_iso)
             success = result['success']
         else:
-            summary = orchestrator.build_all(args.base_iso, args.dry_run)
+            summary = orchestrator.build_all(args.base_iso)
             success = summary['successful'] == summary['total_servers']
+
+        # Save master audit unless skipped
+        if not args.skip_audit:
+            orchestrator.save_audit()
 
         return 0 if success else 1
 
