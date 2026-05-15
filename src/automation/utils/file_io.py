@@ -4,7 +4,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def ensure_dir(path: Path) -> Path:
     return path
 
 
-def save_json(data: Dict[str, Any], path: Path, indent: int = 2) -> Path:
+def save_json(data: dict[str, Any], path: Path, indent: int = 2) -> Path:
     """
     Save dictionary to JSON file atomically.
 
@@ -42,7 +42,7 @@ def save_json(data: Dict[str, Any], path: Path, indent: int = 2) -> Path:
     return path
 
 
-def load_json(path: Path, required: bool = True) -> Dict[str, Any]:
+def load_json(path: Path, required: bool = True) -> dict[str, Any]:
     """
     Load JSON from file.
 
@@ -57,7 +57,7 @@ def load_json(path: Path, required: bool = True) -> Dict[str, Any]:
         FileNotFoundError: If required=True and file missing
     """
     try:
-        with open(path, 'r') as f:
+        with open(path) as f:
             return json.load(f)
     except FileNotFoundError:
         if required:
@@ -67,7 +67,7 @@ def load_json(path: Path, required: bool = True) -> Dict[str, Any]:
 
 
 def save_result_json(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     base_name: str,
     output_dir: Path = Path("logs"),
     category: Optional[str] = None

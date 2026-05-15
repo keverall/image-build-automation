@@ -101,18 +101,16 @@ pipeline {
 
                 # Install code quality & security scanning tools
                 pip install ruff radon bandit safety
+                
+                # Install automation package in editable mode
+                pip install -e .
 
                 # Verify Python syntax for all scripts
                 echo [INFO] Verifying Python syntax...
-                python -m py_compile scripts\\generate_uuid.py
-                python -m py_compile scripts\\build_iso.py
-                python -m py_compile scripts\\update_firmware_drivers.py
-                python -m py_compile scripts\\patch_windows_security.py
-                python -m py_compile scripts\\deploy_to_server.py
-                python -m py_compile scripts\\monitor_install.py
-                python -m py_compile scripts\\opsramp_integration.py
-                python -m py_compile scripts\\maintenance_mode.py
-                Get-ChildItem scripts\\utils\\*.py | ForEach-Object { python -m py_compile $_.FullName }
+                # Verify package structure and imports (ruff handles syntax + import checks)
+                pip install ruff
+                ruff check src\\automation --output-format=text
+                Write-Host "[INFO] Package imports validated"
 
                 # Validate JSON configs
                 echo [INFO] Validating JSON configs...
@@ -309,7 +307,7 @@ pipeline {
                 }
 
                 foreach ($server in $servers) {
-                    $uuid = python scripts\\generate_uuid.py $server
+                    $uuid = python -m automation.cli.generate_uuid $server
                     Write-Host "[INFO] UUID for $server`: $uuid"
                     $uuid | Out-File -FilePath "output\\${server}.uuid" -Encoding ascii
                 }
@@ -323,7 +321,7 @@ pipeline {
             }
             steps {
                 powershell '''
-                python scripts\\update_firmware_drivers.py ^
+                python -m automation.cli.update_firmware_drivers ^
                   --server-list configs\\server_list.txt ^
                   --output-dir output\\firmware ^
                   --skip-download:${{ params.SKIP_DOWNLOAD }} ^
@@ -368,7 +366,7 @@ pipeline {
 
                 foreach ($server in $servers) {
                     Write-Host "\\n[INFO] Patching Windows ISO for: $server"
-                    python scripts\\patch_windows_security.py ^
+                    python -m automation.cli.patch_windows_security ^
                       --base-iso $baseIso ^
                       --server $server ^
                       --output-dir output\\patched ^
@@ -387,7 +385,7 @@ pipeline {
             }
             steps {
                 powershell '''
-                python scripts\\build_iso.py ^
+                python -m automation.cli.build_iso ^
                   --config-dir configs ^
                   --output-dir output\\combined ^
                   --dry-run:${{ params.DRY_RUN }}
@@ -409,7 +407,7 @@ pipeline {
             }
             steps {
                 powershell '''
-                python scripts\\deploy_to_server.py ^
+                python -m automation.cli.deploy_to_server ^
                   --method ${params.DEPLOY_METHOD} ^
                   --dry-run:${{ params.DRY_RUN }}
                 '''

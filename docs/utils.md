@@ -17,10 +17,10 @@ The utils package is part of the repository; no separate installation required.
 
 ```python
 # Import specific utilities
-from utils.logging_setup import init_logging
-from utils.config import load_json_config
-from utils.audit import AuditLogger
-from utils.executor import run_command, run_with_retry
+from automation.utils.logging_setup import init_logging
+from automation.utils.config import load_json_config
+from automation.utils.audit import AuditLogger
+from automation.utils.executor import run_command, run_with_retry
 
 # Or import the package for all exports
 from utils import (
@@ -677,11 +677,11 @@ All utils modules must pass:
 
 ```bash
 # Import sorting + formatting
-ruff check scripts/utils/ --fix
-ruff format scripts/utils/
+ruff check src/automation/utils/ --fix
+ruff format src/automation/utils/
 
 # Complexity (no function should exceed CC=10)
-radon cc scripts/utils/ -nc
+radon cc src/automation/utils/ -nc
 
 # Type checking (optional)
 mypy scripts/utils/ --ignore-missing-imports

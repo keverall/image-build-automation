@@ -2,7 +2,6 @@
 
 import logging
 import subprocess
-from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ def run_powershell(
     capture_output: bool = True,
     timeout: int = 300,
     execution_policy: str = "Bypass"
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """
     Execute a PowerShell script locally.
 
@@ -61,7 +60,7 @@ def run_powershell_winrm(
     password: str,
     transport: str = "ntlm",
     timeout: int = 300
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """
     Execute PowerShell script on remote server via WinRM.
 
