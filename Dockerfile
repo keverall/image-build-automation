@@ -40,14 +40,15 @@ RUN Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force; \
     Install-Module -Name HPiLOCmdlets -Force -SkipPublisherCheck
 
 # Copy application code
-COPY scripts/ scripts/
+COPY pyproject.toml .
+COPY src/ src/
 COPY configs/ configs/
 
 # Create output and logs directories
 RUN New-Item -ItemType Directory -Force -Path C:\app\output\firmware, C:\app\output\patched, C:\app\output\combined, C:\app\logs\build_reports, C:\app\logs\monitoring_sessions | Out-Null
 
-# Make scripts executable (PowerShell)
-RUN Get-ChildItem scripts\*.py | ForEach-Object { \
+# Make CLI modules executable (PowerShell)
+RUN Get-ChildItem src\automation\cli\*.py | ForEach-Object { \
     $content = Get-Content $_.FullName; \
     $content = '#!/usr/bin/env python3' + \"`n\" + $content; \
     Set-Content -Path $_.FullName -Value $content -Force \
@@ -58,7 +59,7 @@ RUN New-Item -ItemType File -Force -Path C:\app\logs\audit_trail.log | Out-Null
 
 # Environment variables for MS MCM and HPe iLO integration
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONPATH="C:\app;${PYTHONPATH}" \
+    PYTHONPATH="C:\app\src;${PYTHONPATH}" \
     OUTPUT_DIR="C:\app\output" \
     CONFIG_DIR="C:\app\configs" \
     MS_MCM_SERVER="your-mcm-server.example.com" \
@@ -82,7 +83,7 @@ RUN Add-MpPreference -ExclusionPath 'C:\app'; \
 
 # Health check
 HEALTHCHECK --interval=300s --timeout=30s --start-period=60s --retries=3 \
-    CMD powershell -Command "if (Test-Path 'C:\app\scripts\build_iso.py') { exit 0 } else { exit 1 }"
+    CMD powershell -Command "if (Test-Path 'C:\app\src\automation\cli\build_iso.py') { exit 0 } else { exit 1 }"
 
 # Labels (minimal for regulatory compliance)
 LABEL org.opencontainers.image.title="HPE Windows ISO Automation" \
@@ -113,7 +114,7 @@ RUN Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
 ENTRYPOINT ["powershell", "-File", "C:\\app\\docker-entrypoint.ps1"]
 
 # Default command (can be overridden)
-CMD ["python", "C:\\app\\scripts\\build_iso.py", "--help"]
+CMD ["python", "-m", "automation.cli.build_iso", "--help"]
 
 # Security notes:
 # - Uses Windows Server Core for minimal attack surface

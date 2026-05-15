@@ -21,7 +21,7 @@ function Write-AuditLog {
 Write-AuditLog "Container startup initiated"
 
 # Validate environment
-if (-not (Test-Path "C:\app\scripts\build_iso.py")) {
+if (-not (Test-Path "C:\app\src\automation\cli\build_iso.py")) {
     Write-AuditLog "ERROR: build_iso.py not found - container may not be properly built" "ERROR"
     exit 1
 }
@@ -155,7 +155,7 @@ switch ($Command) {
 
         # Test Python scripts
         try {
-            python C:\app\scripts\generate_uuid.py test-server
+            python -m automation.cli.generate_uuid test-server
             Write-AuditLog "UUID generation test: PASSED"
         } catch {
             Write-AuditLog "UUID generation test: FAILED - $($_.Exception.Message)" "ERROR"
