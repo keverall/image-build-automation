@@ -20,10 +20,12 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual environments (all variants)
+.venv/
 venv/
 ENV/
 env/
+.python-version
 
 # IDE
 .vscode/
@@ -53,6 +55,7 @@ tools/dism.exe
 
 # OS
 Thumbs.db
+
 # Linter cache
 .ruff_cache/
 

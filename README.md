@@ -16,6 +16,8 @@ Automated build pipelines for creating customized Windows Server installation IS
 | [📦 Utilities Package](docs/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
+| [🛠️ Makefile & Setup](#makefile--local-development) | Project Makefile quick reference, virtual environment setup, and common commands |
+| [🚀 CI Runner Setup](#ci-runner-setup) | Automated runner provisioning script for Jenkins/GitLab/GitStash runners |
 
 ---
 
@@ -76,6 +78,203 @@ All CLI scripts import from `utils/` to avoid duplication. See [Utilities Packag
 11. **Monitor Install** *(manual/parameterized)* — Real-time installation tracking
 
 See [Testing Guide](docs/testing.md) for details on PR incremental test execution.
+
+---
+
+## Makefile & Local Development
+
+This project includes a `Makefile` that wraps common development, testing, and CI/CD tasks into single commands. It uses `uv` under the hood for fast Python environment management.
+
+### Quick Start
+
+```bash
+# 1. Create and activate the virtual environment
+make setup
+source .venv/bin/activate
+
+# 2. Run tests
+make test
+
+# 3. Lint and format
+make lint-fix
+```
+
+### Virtual Environment
+
+The project uses `uv` (fast Python package manager) instead of pyenv or pip directly:
+
+```bash
+# Activate the venv (required before running any commands)
+source .venv/bin/activate
+
+# Verify Python version and package
+python --version                    # Should show Python 3.12+
+python -c "import automation; print(automation.__version__)"
+
+# Deactivate when done
+deactivate
+```
+
+### Makefile Command Reference
+
+**Setup & Environment:**
+
+| Command | Description |
+|---|---|
+| `make help` | List all available commands with descriptions |
+| `make setup` | Create venv + install all runtime and dev dependencies |
+| `make install` | Install automation package in editable mode (after setup) |
+| `make deps` | Install runtime dependencies only |
+| `make fresh` | Clean everything and rebuild from scratch |
+
+**Testing:**
+
+| Command | Description |
+|---|---|
+| `make test` | Run full test suite with coverage (generates `htmlcov/`, `coverage.xml`) |
+| `make test-fast` | Run tests without coverage (faster feedback) |
+| `make test-unit` | Run unit tests only (pytest `-m unit`) |
+| `make test-integration` | Run integration tests only |
+| `make coverage-html` | Generate interactive HTML coverage report → `htmlcov/index.html` |
+| `make coverage-xml` | Generate Cobertura XML coverage report for CI |
+
+**Linting & Quality:**
+
+| Command | Description |
+|---|---|
+| `make lint` | Run ruff, mypy, radon complexity analysis |
+| `make lint-fix` | Auto-fix ruff issues and format code |
+| `make lint-test` | Check test file formatting and imports |
+| `make format` | Format all Python files (src + tests) |
+
+**Security:**
+
+| Command | Description |
+|---|---|
+| `make security` | Run bandit, safety, and gitleaks scans |
+| `make security-quick` | Run bandit only (fastest) |
+| `make install-gitleaks` | Download and install gitleaks binary |
+
+**Build & Package:**
+
+| Command | Description |
+|---|---|
+| `make build` | Build distribution packages (`dist/`) |
+| `make clean` | Remove build artifacts, cache, venv, and logs |
+
+**CI/CD:**
+
+| Command | Description |
+|---|---|
+| `make all` | Full pipeline: setup + lint + test + security |
+| `make ci` | Run full CI pipeline locally (lint + test + security) |
+| `make pr-check` | Quick pre-PR checks (lint + test only) |
+
+**CLI Helpers:**
+
+| Command | Description |
+|---|---|
+| `make run-build-iso` | Run build_iso CLI in dry-run mode |
+| `make run-generate-uuid SERVER=server1` | Generate deterministic UUID for a server |
+| `make run-maintenance CLUSTER=PROD-CLUSTER-01` | Enable SCOM maintenance mode for a cluster |
+
+### Makefile + Jenkinsfile Integration
+
+The `Makefile` simplifies Jenkins pipeline stages. Replace long shell blocks with:
+
+```groovy
+stage('Unit Tests & Coverage') {
+    steps {
+        sh '''
+            source .venv/bin/activate
+            make test
+        '''
+    }
+}
+
+stage('Code Quality') {
+    steps {
+        sh '''
+            source .venv/bin/activate
+            make lint
+        '''
+    }
+}
+```
+
+---
+
+## CI Runner Setup
+
+The `scripts/setup-runner.sh` script automates provisioning of CI/CD runner environments. It installs Python 3.14 (via `uv`), all project dependencies, and required tooling in a single pass.
+
+### Supported Platforms
+
+| Platform | Status |
+|---|---|
+| Ubuntu 20.04 / 22.04 / 24.04 | ✅ Tested |
+| Debian 11 / 12 | ✅ Tested |
+| Amazon Linux 2 / 2023 | ✅ Tested |
+| RHEL 8 / 9 / Rocky / AlmaLinux | ✅ Tested |
+| Alpine Linux | ✅ Tested |
+
+### What It Installs
+
+| Component | Method | Purpose |
+|---|---|---|
+| **uv** | Official installer | Fast Python package manager (replaces pyenv) |
+| **Python 3.14** | `uv python install` | Isolated Python version, no system conflicts |
+| **Runtime deps** | `uv pip install -r requirements.txt` | All 11 runtime packages |
+| **Dev deps** | `uv pip install ruff radon bandit safety mypy pytest` | Linting, security, testing tools |
+| **Automation package** | `uv pip install -e .` | Editable install for live development |
+| **gitleaks** | GitHub releases binary | Secret detection for CI pipeline |
+| **System deps** | apt/yum/apk | Build tools, SSL, SQLite, FFI libs |
+
+### Usage
+
+```bash
+# On a fresh runner/jumpbox:
+git clone <repo-url>
+cd hpe-windows-iso-automation
+chmod +x scripts/setup-runner.sh
+./scripts/setup-runner.sh
+
+# Then activate the environment:
+source .venv/bin/activate
+
+# Verify everything works:
+make pr-check
+```
+
+### One-Liner for Remote Provisioning
+
+```bash
+curl -sSL https://raw.githubusercontent.com/<org>/<repo>/main/scripts/setup-runner.sh | bash
+```
+
+### Idempotency
+
+The script is safe to run multiple times:
+- Skips `uv` installation if already present
+- Skips Python install if version already installed via uv
+- Skips venv creation if `.venv` exists with correct Python
+- Skips gitleaks download if already in PATH
+
+### Jenkinsfile Integration
+
+```groovy
+stage('Runner Setup') {
+    steps {
+        sh '''
+            if [ ! -f ".venv/bin/python" ]; then
+                chmod +x scripts/setup-runner.sh
+                ./scripts/setup-runner.sh
+            fi
+            source .venv/bin/activate
+        '''
+    }
+}
+```
 
 ---
 
