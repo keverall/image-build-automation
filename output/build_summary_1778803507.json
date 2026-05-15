@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-05-15T01:05:07.575308",
+  "total_servers": 5,
+  "successful": 0,
+  "failed": 5,
+  "results": [
+    {
+      "server": "server1.example.com",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-15T01:05:07.572835",
+      "steps": [
+        {
+          "step": "generate_uuid",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "FirmwareUpdater.__init__() got an unexpected keyword argument 'config'"
+    },
+    {
+      "server": "server2.example.com",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-15T01:05:07.573298",
+      "steps": [
+        {
+          "step": "generate_uuid",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "FirmwareUpdater.__init__() got an unexpected keyword argument 'config'"
+    },
+    {
+      "server": "server3.example.com",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-15T01:05:07.573648",
+      "steps": [
+        {
+          "step": "generate_uuid",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "FirmwareUpdater.__init__() got an unexpected keyword argument 'config'"
+    },
+    {
+      "server": "proliant-server-01",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-15T01:05:07.574729",
+      "steps": [
+        {
+          "step": "generate_uuid",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "FirmwareUpdater.__init__() got an unexpected keyword argument 'config'"
+    },
+    {
+      "server": "proliant-server-02",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-15T01:05:07.575051",
+      "steps": [
+        {
+          "step": "generate_uuid",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "FirmwareUpdater.__init__() got an unexpected keyword argument 'config'"
+    }
+  ]
+}

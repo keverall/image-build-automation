@@ -1,0 +1,16 @@
+{
+  "openview": {
+    "default_api_url": "https://openview.example.com/api",
+    "api_version": "v1",
+    "auth": {
+      "type": "basic",
+      "username_env": "OPENVIEW_USER",
+      "password_env": "OPENVIEW_PASSWORD"
+    },
+    "maintenance_endpoint": "/maintenance",
+    "node_endpoint": "/nodes",
+    "verify_ssl": true,
+    "timeout_seconds": 30
+  },
+  "notes": "HPE OpenView (now Micro Focus OpenView) API configuration. Adjust endpoints based on your installation. If using legacy ovcall CLI, set 'use_cli': true and 'cli_path': 'C:\\\\Program Files\\\\HP\\\\OpenView\\\\bin\\\\ovcall.exe'."
+}
