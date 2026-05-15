@@ -293,6 +293,80 @@ pipeline {
             }
         }
 
+        stage('Unit Tests & Coverage') {
+            steps {
+                powershell '''
+                # Install pytest if not already installed
+                pip install pytest pytest-cov
+
+                $isPR = $env:CHANGE_ID -ne $null -and $env:CHANGE_ID -ne ''
+                if ($isPR) {
+                    Write-Host "PR build: Determining affected tests..."
+                    $target = $env:CHANGE_TARGET
+                    if ([string]::IsNullOrWhiteSpace($target)) {
+                        $target = "main"
+                    }
+                    # Fetch target branch to ensure it's available
+                    git fetch origin $target 2>$null
+                    # Get list of changed files
+                    $changed = git diff --name-only origin/$target...HEAD
+                    $testFiles = @()
+                    foreach ($file in $changed) {
+                        if ($file.StartsWith('tests/') -and $file.EndsWith('.py')) {
+                            $testFiles += $file
+                        } elseif ($file.StartsWith('src/automation/') -and $file.EndsWith('.py')) {
+                            $relative = $file.Substring(15)  # remove 'src/automation/'
+                            $dir = [System.IO.Path]::GetDirectoryName($relative)
+                            $base = [System.IO.Path]::GetFileNameWithoutExtension($relative)
+                            $testFile = if ($dir) { Join-Path $dir "test_${base}.py" } else { "test_${base}.py" }
+                            $testPath = Join-Path "tests" $testFile
+                            if (Test-Path $testPath) {
+                                $testFiles += $testPath
+                            } else {
+                                Write-Host "Note: No test file for $file (expected $testPath)"
+                            }
+                        }
+                    }
+                    if ($testFiles.Count -eq 0) {
+                        Write-Host "No affected tests detected. Writing empty test results."
+                        # Create minimal JUnit XML with zero tests
+                        $emptyJUnit = '<?xml version="1.0" encoding="UTF-8"?><testsuite name="Empty" tests="0" failures="0" errors="0" skipped="0" time="0.000"></testsuite>'
+                        $emptyJUnit | Out-File -FilePath $junitXml -Encoding utf8
+                        # No coverage file will be generated; archive will be allowed to be empty
+                        exit 0
+                    }
+                    Write-Host "Running affected tests: $($testFiles -join ', ')"
+                    $pytestTarget = $testFiles
+                } else {
+                    Write-Host "Full build: running all unit tests..."
+                    $pytestTarget = "tests"
+                }
+
+                $junitXml = "test-results.xml"
+                $pytestArgs = @('--junitxml', $junitXml)
+                if ($isPR) {
+                    $pytestArgs += '--cov-fail-under=0'
+                }
+                if ($pytestTarget -is [array]) {
+                    python -m pytest @$pytestTarget @pytestArgs
+                } else {
+                    python -m pytest $pytestTarget @pytestArgs
+                }
+                '''
+            }
+            post {
+                always {
+                    junit 'test-results.xml'
+                    archiveArtifacts artifacts: 'coverage.xml', allowEmptyArchive: true
+                }
+                failure {
+                    mail to: 'dev-team@yourcompany.com',
+                         subject: "Unit Tests FAILED: Build #${BUILD_NUMBER}",
+                         body: "One or more unit tests failed. See Jenkins test report."
+                }
+            }
+        }
+
         stage('Generate UUIDs') {
             when {
                 expression { params.BUILD_STAGE in ['firmware', 'windows', 'deploy', 'all'] }
