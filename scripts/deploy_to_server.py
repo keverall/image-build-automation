@@ -3,9 +3,7 @@
 Deployment Automation Script
 
 Deploys generated ISOs to target HPE ProLiant servers via:
-- PXE boot (using iPXE or similar)
-- Virtual Media mount via iLO REST API
-- Direct physical media (USB/DVD)
+- Virtual Media mount via HPE iLO REST API
 
 Supports unattended installation with automated kickstart/unattended.xml.
 """
@@ -34,7 +32,7 @@ logger = logging.getLogger(__name__)
 class ISODeployer:
     """Deploys ISOs to HPE ProLiant servers via various methods."""
 
-    DEPLOY_METHODS = ['pxe', 'ilo', 'rstack', 'manual']
+    DEPLOY_METHODS = ['ilo', 'redfish']
 
     def __init__(
         self,
@@ -163,43 +161,6 @@ class ISODeployer:
             logger.error(f"iLO deployment failed: {e}")
             return False
 
-    def deploy_via_pxe(self, server: ServerInfo, package_dir: Path, tftp_root: str = "/tftpboot", dry_run: bool = False) -> bool:
-        """Configure PXE boot for server."""
-        self._log("deploy_pxe", "START", server.hostname, f"TFTP root: {tftp_root}")
-
-        server_name = server.hostname.split('.')[0]
-
-        if dry_run:
-            logger.info(f"[DRY RUN] Would configure PXE for {server_name}")
-            self._log("deploy_pxe", "SUCCESS", server.hostname, "[DRY RUN] PXE configuration simulated")
-            return True
-
-        metadata_file = package_dir / "deployment_metadata.json"
-        if not metadata_file.exists():
-            logger.error("Metadata not found")
-            return False
-
-        tftproot = Path(tftp_root)
-        if not tftproot.exists():
-            logger.error(f"TFTP root not found: {tftproot}")
-            return False
-
-        pxe_config_dir = tftproot / "pxelinux.cfg"
-        ensure_dir(pxe_config_dir)
-
-        config_content = f"""DEFAULT windows_install
-LABEL windows_install
-    MENU LABEL Windows Server Install - {server_name}
-    KERNEL winpe/wimboot
-    APPEND initrd=winpe/boot.wim
-"""
-
-        config_file = pxe_config_dir / f"01-{server_name}"
-        config_file.write_text(config_content)
-
-        self._log("deploy_pxe", "SUCCESS", server.hostname, f"PXE config written to {config_file}")
-        return True
-
     def deploy_via_redfish(self, server: ServerInfo, package_dir: Path, dry_run: bool = False) -> bool:
         """Deploy using Redfish API (modern HPE iLO)."""
         self._log("deploy_redfish", "START", server.hostname)
@@ -245,8 +206,6 @@ LABEL windows_install
         success = False
         if method == 'ilo':
             success = self.deploy_via_ilo(server, package_dir, dry_run)
-        elif method == 'pxe':
-            success = self.deploy_via_pxe(server, package_dir, dry_run)
         elif method == 'redfish':
             success = self.deploy_via_redfish(server, package_dir, dry_run)
         else:
@@ -311,7 +270,6 @@ def main():
     parser.add_argument("--server", "-s", help="Deploy to specific server only")
     parser.add_argument("--server-list", default="configs/server_list.txt", help="Path to server list file")
     parser.add_argument("--iso-dir", default="output/combined", help="Directory containing deployment packages")
-    parser.add_argument("--tftp-root", default="/tftpboot", help="TFTP root directory for PXE deployment")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without actual deployment")
 
     args = parser.parse_args()
