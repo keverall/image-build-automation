@@ -53,3 +53,8 @@ tools/dism.exe
 
 # OS
 Thumbs.db
+# Linter cache
+.ruff_cache/
+
+# Kilo AI assistant config
+.kilo/
