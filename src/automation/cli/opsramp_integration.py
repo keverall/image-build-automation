@@ -11,7 +11,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -79,7 +79,7 @@ class OpsRampClient:
 
     def _get_token_url(self) -> str:
         """Construct full OAuth token URL."""
-        return f"{self.base_url.rstrip('/')}/{self.api_version.lstrip('/')}{self.TOKEN_URL}"
+        return f"{self.base_url.rstrip('/')}/{self.api_version.lstrip('/')}{self.TOKEN_URL.lstrip('/')}"
 
     def _ensure_token(self) -> bool:
         """
@@ -111,9 +111,9 @@ class OpsRampClient:
             response.raise_for_status()
             token_data = response.json()
             self.access_token = token_data.get('access_token')
-            # Set expiry slightly before actual expiry
+            # Set expiry slightly before actual expiry (store as datetime)
             expires_in = token_data.get('expires_in', 3600)
-            self.token_expiry = datetime.now().timestamp() + (expires_in * 0.9)
+            self.token_expiry = datetime.now() + timedelta(seconds=expires_in * 0.9)
 
             # Update session headers
             self.session.headers.update({
