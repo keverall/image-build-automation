@@ -74,6 +74,7 @@ hpe-windows-iso-automation/
   - Git for version control
 - **SCOM 2015** (optional): OperationsManager PowerShell module installed if maintenance_mode.py is used
 
+
 ## Quick Start
 
 ### 1. Clone Repository
@@ -158,6 +159,30 @@ python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --action validat
 # Disable maintenance manually (scheduled task auto-disables at end time)
 python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --disable
 ```
+
+### 8. Code Quality & Security Scan (Local)
+```bash
+# Install scanning tools
+pip install ruff radon bandit safety gitleaks
+
+# Ruff lint + auto-fix
+ruff check scripts/ --fix
+ruff format scripts/
+
+# Radon maintainability & complexity
+radon mi scripts/ -s
+radon cc scripts/ -nc  # warn on CC > 10
+
+# Bandit security vulnerabilities
+bandit -r scripts/
+
+# Safety dependency vulnerabilities
+safety check
+
+# Gitleaks secret detection
+gitleaks detect --source=.
+```
+
 
 ## Code Quality & DRY Architecture
 
