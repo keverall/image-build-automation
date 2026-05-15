@@ -2,45 +2,62 @@
 # Start-InstallMonitor.ps1 — Windows installation progress monitor
 # Equivalent of Python cli/monitor_install.py (481 lines → ~330 PS lines)
 #
+# Contains: Start-InstallMonitor wrapper function, InstallationMonitor class,
+#           and a script-mode guard for direct pwsh invocation.
+#
 
-<#
+function Start-InstallMonitor {
+    <#
+    .SYNOPSIS
+        Monitor Windows Server installation progress on HPE ProLiant hardware.
+        Callable from the module Router.
 
-.SYNOPSIS
-    Monitors Windows Server installation progress on HPE ProLiant hardware via iLO
-    REST API and WinRM. Supports concurrent multi-server monitoring and OpsRamp reporting.
+    .PARAMETER Server
+        Monitor a single server only.
 
-.PARAMETER Server
-    Monitor a single server only (omit to monitor all servers from server_list.txt).
+    .PARAMETER ServerList
+        Path to server_list.txt (default: configs\server_list.txt).
 
-.PARAMETER ServerList
-    Path to server_list.txt (default: configs\server_list.txt).
+    .PARAMETER TimeoutSeconds
+        Maximum monitoring duration in seconds (default: 7200).
 
-.PARAMETER TimeoutSeconds
-    Maximum monitoring duration in seconds (default: 7200 — 2 hours).
+    .PARAMETER PollIntervalSeconds
+        Seconds between checks (default: 30).
 
-.PARAMETER PollIntervalSeconds
-    Seconds between checks (default: 30).
+    .PARAMETER OpsRampConfig
+        Path to opsramp_config.json.
 
-.PARAMETER OpsRampConfig
-    Path to opsramp_config.json (default: configs\opsramp_config.json).
+    .RETURNS
+        [hashtable] with status, progress, and details.
 
-.EXAMPLE
-    Start-InstallMonitor -Server 'srv01.corp.local' -TimeoutSeconds 3600
-
-#>
-
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
-param(
-    [Parameter(Mandatory = $false)][string] $Server    = $null,
-
-    [Parameter(Mandatory = $false)][string] $ServerList  = 'configs\server_list.txt',
-
-    [Parameter(Mandatory = $false)][int]    $TimeoutSeconds  = 7200,
-
-    [Parameter(Mandatory = $false)][int]    $PollIntervalSeconds = 30,
-
-    [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json'
-)
+    .EXAMPLE
+        Start-InstallMonitor -Server 'srv01.corp.local' -TimeoutSeconds 3600
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)][string] $Server    = $null,
+        [Parameter(Mandatory = $false)][string] $ServerList  = 'configs\server_list.txt',
+        [Parameter(Mandatory = $false)][int]    $TimeoutSeconds  = 7200,
+        [Parameter(Mandatory = $false)][int]    $PollIntervalSeconds = 30,
+        [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json'
+    )
+    try {
+        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig)
+        if ($Server) {
+            $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
+            if (-not $si) { return @{ Success=$false; Error="Server not found: $Server" } }
+            $r = $monitor.MonitorServer($si, $TimeoutSeconds, $PollIntervalSeconds)
+            return @{ Success = ($r.status -eq 'completed'); Status = $r.status; Details = $r }
+        }
+        else {
+            $summary = $monitor.MonitorAll($TimeoutSeconds)
+            return @{ Success = ($summary['completed'] -gt 0); Summary = $summary }
+        }
+    }
+    catch {
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
 
 $Script:LogDir = Join-Path $PSScriptRoot '..\..\logs'
 Initialize-Logging -LogFile 'monitoring.log'
@@ -260,23 +277,25 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
     }
 }
 
-# --- Main ---
-try {
-    $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig)
-    if ($Server) {
-        $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-        if (-not $si) { Write-Error "Server not found: $Server"; exit 1 }
-        $r = $monitor.MonitorServer($si, $TimeoutSeconds, $PollIntervalSeconds)
-        exit (if ($r.status -eq 'completed') { 0 } else { 1 })
+# --- Main (script mode only) ---
+if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+    try {
+        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig)
+        if ($Server) {
+            $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
+            if (-not $si) { Write-Error "Server not found: $Server"; exit 1 }
+            $r = $monitor.MonitorServer($si, $TimeoutSeconds, $PollIntervalSeconds)
+            exit (if ($r.status -eq 'completed') { 0 } else { 1 })
+        }
+        else {
+            $summary = $monitor.MonitorAll($TimeoutSeconds)
+            exit (if ($summary['completed'] -gt 0) { 0 } else { 1 })
+        }
     }
-    else {
-        $summary = $monitor.MonitorAll($TimeoutSeconds)
-        exit (if ($summary['completed'] -gt 0) { 0 } else { 1 })
+    catch {
+        Write-Error "Monitoring failed: $($_.Exception.Message)"
+        exit 1
     }
-}
-catch {
-    Write-Error "Monitoring failed: $($_.Exception.Message)"
-    exit 1
 }
 
 # vim: ts=4 sw=4 et

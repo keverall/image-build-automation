@@ -69,9 +69,63 @@
     #       All Private/*.psm1 and Public/*.psm1 files are dot-sourced by Automation.psm1.
     NestedModules = @()
 
-    # Functions to export from this module.
-    # '*' exports everything — the root psm1 dot-sources all Private/Public modules.
-    FunctionsToExport = '*'
+    # Functions to export from this module — explicit public API surface.
+    # '_'-prefixed names are private helpers dot-sourced by other scripts.
+    FunctionsToExport = @(
+        # ── Orchestrator ────────────────────────────────────────────────────────
+        'Start-AutomationOrchestrator'
+        # ── Entry-point handlers invoked by Invoke-RoutedRequest ────────────────
+        'Invoke-IsoDeploy'
+        'Invoke-WindowsSecurityUpdate'
+        'New-IsoBuild'
+        'Set-MaintenanceMode'
+        'Start-InstallMonitor'
+        'Test-Uuid'
+        'Update-Firmware'
+        # OpsRamp API client
+        'Invoke-OpsRamp'
+        'Invoke-OpsRampClient'
+        # ── PowerShell execution ────────────────────────────────────────────────
+        'Invoke-PowerShellScript'
+        'Invoke-PowerShellWinRM'
+        'New-ScomConnection'
+        'New-ScomMaintenanceScript'
+        # ── Validators ──────────────────────────────────────────────────────────
+        'Test-BuildParams'
+        'Test-ClusterId'
+        'Test-ServerList'
+        # ── Config / credential helpers ─────────────────────────────────────────
+        'Import-JsonConfig'
+        'Import-YamlConfig'
+        'Get-EnvCredential'
+        'Get-IloCredentials'
+        'Get-OpenViewCredentials'
+        'Get-ScomCredentials'
+        'Get-SmtpCredentials'
+        # ── Process execution ───────────────────────────────────────────────────
+        'Invoke-NativeCommand'
+        'Invoke-NativeCommandWithRetry'
+        'New-CommandResult'
+        # ── File I/O ────────────────────────────────────────────────────────────
+        'Ensure-DirectoryExists'
+        'Load-Json'
+        'Save-Json'
+        'Save-JsonResult'
+        'Test-PathEx'
+        # ── Inventory ───────────────────────────────────────────────────────────
+        'Load-ClusterCatalogue'
+        'Load-ServerList'
+        'New-ServerInfo'
+        'Test-ClusterDefinition'
+        # ── Logging / audit ─────────────────────────────────────────────────────
+        'Get-Logger'
+        'Initialize-Logging'
+        'New-AuditLogger'
+        # ── Routing ─────────────────────────────────────────────────────────────
+        'Invoke-RoutedRequest'
+        # ── Base / factories ────────────────────────────────────────────────────
+        'New-AutomationBase'
+    )
 
     # Cmdlets to export from this module
     CmdletsToExport = @()

@@ -1,6 +1,5 @@
 #
-# Executor.psm1 — Process execution utilities with retry support.
-# NOTE: CommandResult class is defined in Automation.psm1 (root) for type-visibility.
+# Private/Executor.ps1 — Process execution utilities with retry support.
 #
 
 function Invoke-NativeCommand {
@@ -27,11 +26,9 @@ function Invoke-NativeCommand {
         [int]    $TimeoutSeconds   = 300,
         [string] $WorkingDirectory = $null
     )
-
     $psi = [System.Diagnostics.ProcessStartInfo]::new()
     $psi.FileName  = $Command[0]
     $psi.Arguments = if ($Command.Count -gt 1) {
-        # Proper argument quoting
         ($Command[1..($Command.Count - 1)] | ForEach-Object { '"' + $_.Replace('"','`"') + '"' }) -join ' '
     } else { '' }
     $psi.UseShellExecute        = $false
@@ -51,12 +48,11 @@ function Invoke-NativeCommand {
         $null = $proc.Start()
         $proc.BeginOutputReadLine()
         $proc.BeginErrorReadLine()
-
         if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
             try { $proc.Kill() } catch { }
             return [CommandResult]::new(-1, '', "Timed out after $TimeoutSeconds s")
         }
-        $proc.WaitForExit()   # flush async reads
+        $proc.WaitForExit()
         return [CommandResult]::new($proc.ExitCode, $stdOut.ToString(), $stdErr.ToString())
     }
     catch {
@@ -80,7 +76,6 @@ function Invoke-NativeCommandWithRetry {
         [double] $DelaySeconds   = 5.0,
         [int]    $TimeoutSeconds = 300
     )
-
     $last = $null
     for ($i = 0; $i -le $MaxAttempts; $i++) {
         if ($i -gt 0) { Start-Sleep -Seconds ([math]::Pow(2, $i - 1) * $DelaySeconds) }
@@ -101,8 +96,3 @@ function New-CommandResult {
     param([int]$ReturnCode, [string]$StandardOutput, [string]$StandardError)
     return [CommandResult]::new($ReturnCode, $StandardOutput, $StandardError)
 }
-
-# Alias matching original name used in CLI scripts
-Set-Alias -Name Invoke-Command -Value Invoke-NativeCommand -Scope Global -ErrorAction SilentlyContinue
-
-# vim: ts=4 sw=4 et

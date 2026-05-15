@@ -1,43 +1,68 @@
 #
-# Invoke-IsoDeploy.ps1 — iLO virtual media deployer
+# Invoke-IsoDeploy.ps1 — iLO virtual media deployer (wrapper function + script mode)
 # Equivalent of Python cli/deploy_to_server.py
 #
 
-<#
+function Invoke-IsoDeploy {
+    <#
+    .SYNOPSIS
+        Deploy generated deployment packages to HPE ProLiant servers via iLO or Redfish.
+        Callable from the module Router.
 
-.SYNOPSIS
-    Deploys generated deployment packages to HPE ProLiant servers via iLO REST API or Redfish.
+    .PARAMETER Method
+        Deployment method: 'ilo' (default) or 'redfish'.
 
-.PARAMETER Method
-    Deployment method: 'ilo' (default) or 'redfish'.
+    .PARAMETER Server
+        Deploy to a single named server only.
 
-.PARAMETER Server
-    Deploy to a single named server only.
+    .PARAMETER ServerList
+        Path to server_list.txt.
 
-.PARAMETER ServerList
-    Path to server_list.txt (default: configs\server_list.txt).
+    .PARAMETER IsoDir
+        Directory containing deployment packages.
 
-.PARAMETER IsoDir
-    Directory containing deployment packages (default: output\combined).
+    .PARAMETER DryRun
+        Simulate — no actual deployment.
 
-.PARAMETER DryRun
-    Simulate — no actual deployment.
+    .RETURNS
+        [hashtable] with Success (bool) and details.
 
-.EXAMPLE
-    Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
-
-#>
+    .EXAMPLE
+        Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory = $false)][ValidateSet('ilo','redfish')][string] $Method     = 'ilo',
+        [Parameter(Mandatory = $false)][string] $Server     = $null,
+        [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
+        [Parameter(Mandatory = $false)][string] $IsoDir     = 'output\combined',
+        [Parameter(Mandatory = $false)][switch] $DryRun
+    )
+    try {
+        $deployer = [ISODeployer]::new($ServerList, $IsoDir)
+        if ($Server) {
+            $si = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
+            if (-not $si) { return @{ Success=$false; Error="Server not found: $Server" } }
+            $ok = $deployer.Deploy($si, $Method, [bool]$DryRun)
+            return @{ Success = $ok; Server = $Server; Method = $Method }
+        }
+        else {
+            $summary = $deployer.DeployAll($Method, [bool]$DryRun)
+            return @{ Success = ($summary['successful'] -eq $summary['total']); Summary = $summary }
+        }
+    }
+    catch {
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
 param(
     [Parameter(Mandatory = $false)][ValidateSet('ilo','redfish')][string] $Method     = 'ilo',
-
     [Parameter(Mandatory = $false)][string] $Server     = $null,
-
     [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
-
     [Parameter(Mandatory = $false)][string] $IsoDir     = 'output\combined',
-
     [Parameter(Mandatory = $false)][switch] $DryRun
 )
 
@@ -170,23 +195,25 @@ class ISODeployer {
     }
 }
 
-# ---- Main ----
-try {
-    $deployer = [ISODeployer]::new($ServerList, $IsoDir)
-    if ($Server) {
-        $si = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-        if (-not $si) { Write-Error "Server not found: $Server"; exit 1 }
-        $ok = $deployer.Deploy($si, $Method, [bool]$DryRun)
-        exit (if ($ok) { 0 } else { 1 })
+# ---- Main (script mode only) ----
+if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+    try {
+        $deployer = [ISODeployer]::new($ServerList, $IsoDir)
+        if ($Server) {
+            $si = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
+            if (-not $si) { Write-Error "Server not found: $Server"; exit 1 }
+            $ok = $deployer.Deploy($si, $Method, [bool]$DryRun)
+            exit (if ($ok) { 0 } else { 1 })
+        }
+        else {
+            $summary = $deployer.DeployAll($Method, [bool]$DryRun)
+            exit (if ($summary['successful'] -eq $summary['total']) { 0 } else { 1 })
+        }
     }
-    else {
-        $summary = $deployer.DeployAll($Method, [bool]$DryRun)
-        exit (if ($summary['successful'] -eq $summary['total']) { 0 } else { 1 })
+    catch {
+        Write-Error "Deployment failed: $($_.Exception.Message)"
+        exit 1
     }
-}
-catch {
-    Write-Error "Deployment failed: $($_.Exception.Message)"
-    exit 1
 }
 
 # vim: ts=4 sw=4 et

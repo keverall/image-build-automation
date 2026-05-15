@@ -1,5 +1,5 @@
 #
-# FileIO.psm1 — File I/O utilities: directory creation, JSON persistence, timestamped results.
+# Private/FileIO.ps1 — File I/O utilities: directory creation, JSON persistence, timestamped results.
 #
 
 function Ensure-DirectoryExists {
@@ -86,7 +86,6 @@ function Test-PathEx {
     }
 }
 
-# Private deep-convert PSCustomObject → hashtable
 function _FileIO_DeepHashtable {
     param([Parameter(ValueFromPipeline)] $Obj)
     process {
@@ -102,5 +101,3 @@ function _FileIO_DeepHashtable {
         return $Obj
     }
 }
-
-# vim: ts=4 sw=4 et

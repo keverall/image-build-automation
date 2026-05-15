@@ -19,7 +19,9 @@ Complete guide to running unit tests manually and via the Jenkins CI/CD pipeline
 
 ## Overview
 
-The project uses **pytest** for comprehensive unit testing of all code in `src/automation/` and its subfolders. Tests are located in `tests/` mirroring the package structure (e.g., `src/automation/cli/build_iso.py` → `tests/cli/test_build_iso.py`). Code coverage is measured with **pytest-cov** and reported in multiple formats (terminal, XML, HTML).
+> **Note:** The PowerShell module (`powershell/Automation/`) has an equivalent Pester test suite under `powershell/Tests/`. See [PowerShell Testing Guide](powershell_testing.md) for the Pester-specific reference.
+>
+> The project uses **pytest** for comprehensive unit testing of all code in `src/automation/` and its subfolders. Tests are located in `tests/` mirroring the package structure (e.g., `src/automation/cli/build_iso.py` → `tests/cli/test_build_iso.py`). Code coverage is measured with **pytest-cov** and reported in multiple formats (terminal, XML, HTML).
 
 **Key Features**
 - Automated test discovery via pytest

@@ -2,65 +2,217 @@
 # Set-MaintenanceMode.ps1 — SCOM / iLO / OpenView maintenance-mode orchestrator
 # Equivalent of Python cli/maintenance_mode.py (~956 lines)
 #
+# Contains: Set-MaintenanceMode wrapper function, helper functions, manager classes,
+#           and a script-mode guard for direct pwsh invocation.
+#
 
-<#
+function Set-MaintenanceMode {
+    <#
+    .SYNOPSIS
+        Enable, disable, or validate maintenance mode for a server cluster.
+        Callable from the module Router.
 
-.SYNOPSIS
-    Enables, disables, or validates maintenance mode for a server cluster across:
-    - SCOM 2015 (PowerShell OperationsManager cmdlets)
-    - HPE iLO (REST API)
-    - HPE OpenView (REST API or CLI)
-    Integrates OpsRamp monitoring and SMTP notifications.
+    .PARAMETER Action
+        'enable', 'disable', or 'validate'.
 
-.PARAMETER Action
-    enable | disable | validate
+    .PARAMETER ClusterId
+        Cluster identifier string.
 
-.PARAMETER ClusterId
-    Cluster identifier key from clusters_catalogue.json (required for all actions).
+    .PARAMETER Start
+        Maintenance start datetime string (default: now).
 
-.PARAMETER Start
-    Maintenance window start datetime (ISO 8601 or the literal string 'now').
+    .PARAMETER End
+        Maintenance end datetime string.
 
-.PARAMETER End
-    Maintenance window end datetime (ISO 8601).  Computed from cluster schedule when omitted.
+    .PARAMETER DryRun
+        Simulate without making changes.
 
-.PARAMETER DryRun
-    Simulate only — no changes are made.
+    .PARAMETER NoSchedule
+        Do not create a Windows Scheduled Task for automatic disable at end time.
 
-.PARAMETER NoSchedule
-    Do not create a Windows Scheduled Task for automatic disable at end time.
+    .PARAMETER VerbosePreference
+        Enable verbose debug logging.
 
-.PARAMETER Verbose
-    Enable verbose debug logging.
+    .RETURNS
+        [hashtable] with Success (bool) and details.
 
-.EXAMPLE
-    Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
+    .EXAMPLE
+        Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
 
-.EXAMPLE
-    Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
+    .EXAMPLE
+        Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateSet('enable','disable','validate')][string] $Action = 'enable',
+        [Parameter(Mandatory, Position = 0)][string] $ClusterId,
+        [string] $Start = $null,
+        [string] $End = $null,
+        [Parameter(Mandatory = $false)][switch] $DryRun,
+        [Parameter(Mandatory = $false)][switch] $NoSchedule,
+        [Parameter(Mandatory = $false)][switch] $VerbosePreference
+    )
 
-#>
+    $ErrorActionPreference = 'Continue'
 
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
-param(
-    [Parameter(Mandatory)][ValidateSet('enable','disable','validate')][string] $Action = 'enable',
+    # Load configs
+    $clustersCfg  = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -Required:$false
+    $scomCfg      = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'scom_config.json')           -Required:$false
+    $openviewCfg  = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'openview_config.json')       -Required:$false
+    $emailCfg     = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'email_distribution_lists.json') -Required:$false
+    $opsrampCfg   = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'opsramp_config.json') -Required:$false
 
-    [Parameter(Mandatory, Position = 0)][string] $ClusterId,
+    $clustersMap = $clustersCfg.Get_Item('clusters')
+    if (-not $clustersMap -or -not $clustersMap.ContainsKey($ClusterId)) {
+        Write-Error "Cluster ID '$ClusterId' not found in catalogue."
+        return @{ Success = $false; Error = "Cluster ID '$ClusterId' not found in catalogue." }
+    }
+    $clusterDef = $clustersMap[$ClusterId]
 
-    [string] $Start = $null,
+    # Validate cluster definition
+    $requiredFields = @('display_name','servers','scom_group','environment')
+    $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
+    if ($missing) { Write-Error "Cluster definition missing required fields: $($missing -join ', ')"; return @{ Success = $false; Error = "Missing fields: $($missing -join ', ')" } }
+    $servers = $clusterDef.Get_Item('servers')
+    if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
+        Write-Error "Cluster 'servers' must be a non-empty list."
+        return @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list." }
+    }
 
-    [string] $End = $null,
+    # VALIDATE action
+    if ($Action -eq 'validate') {
+        Write-Host "Cluster '$ClusterId' validated. Servers: $($servers -join ', ')"
+        $audit = @{ cluster_id=$ClusterId; action=$Action; dry_run=[bool]$DryRun; timestamp_start=(Get-Date).ToString('o'); steps=@{}; success=$true }
+        _Save-AuditRecord $audit (Join-Path $Script:LogDir "validate_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
+        return @{ Success = $true; Message = "Cluster '$ClusterId' validated." }
+    }
 
-    [Parameter(Mandatory = $false)][switch] $DryRun,
+    # Resolve Start / End
+    $startDt = $null; $endDt = $null
+    if ($Action -eq 'enable') {
+        if ($Start)   { $startDt = _Parse-Datetime $Start }
+        else          { $startDt = Get-Date }
+        if ($End)     { $endDt   = _Parse-Datetime $End }
+        else {
+            $schedule = $clusterDef.Get_Item('schedule')
+            if ($schedule) { $endDt = _Compute-NextWorkStart $schedule $startDt }
+            else { Write-Error 'No --end and no schedule defined in cluster.'; return @{ Success = $false; Error = 'No end time or schedule defined.' } }
+        }
+        if ($endDt -le $startDt) { Write-Error 'End time must be after start time.'; return @{ Success = $false; Error = 'End time must be after start time.' } }
+        $duration = $endDt - $startDt
+        Write-Verbose "Maintenance window: $startDt → $endDt (duration: $duration)"
+    }
 
-    [Parameter(Mandatory = $false)][switch] $NoSchedule,
+    # Initialise managers
+    $scomMgr = $null; try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
+    $iloMgr   = [ILOManager]::new($clusterDef)
+    $ovMgr    = [OpenViewClient]::new($openviewCfg, $clusterDef)
+    $emailer  = [EmailNotifier]::new($emailCfg)
 
-    [Parameter(Mandatory = $false)][switch] $VerbosePreference
-)
+    $opsrampClient = $null
+    if ($opsrampCfg) { try { $opsrampClient = [OpsRamp_Client]::new((Join-Path $Script:ConfigDir 'opsramp_config.json')) } catch {} }
 
-# ---- Constants (mirrors Python BASE_DIR / CONFIG_DIR from maintenance_mode.py) ----
-$Script:BaseDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Script:BaseDir  = Resolve-Path (Join-Path $Script:BaseDir '..\..')
+    # Execute action
+    $overallOk = $true
+    $audit     = @{ cluster_id=$ClusterId; action=$Action; dry_run=[bool]$DryRun; timestamp_start=(Get-Date).ToString('o'); steps=@{}; success=$true }
+
+    if ($Action -eq 'enable') {
+        # SCOM
+        $scomOk = $false; $scomInfo = ''
+        if ($scomMgr) {
+            $durHrs  = $duration.TotalSeconds / 3600.0
+            $comment = "iRequest Maintenance: $ClusterId"
+            $scomRes = $scomMgr.EnterMaintenance($clusterDef.Get_Item('scom_group'), $duration, $comment, [bool]$DryRun)
+            $scomOk  = $scomRes[0]; $scomInfo = if ($scomRes[1]) { ($scomRes[1] -join "`n") } else { '' }
+        }
+        $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo }
+        if (-not $scomOk) { $overallOk = $false }
+
+        # iLO
+        $iloRes = $iloMgr.SetMaintenanceWindow($clusterDef, $startDt, $endDt, [bool]$DryRun)
+        $iloOk  = $iloRes.Success
+        $audit.steps['ilo'] = @{ Success = $iloOk; Details = $iloRes.Details }
+        if (-not $iloOk) { $overallOk = $false }
+
+        # OpenView
+        $ovRes  = $ovMgr.SetMaintenance($clusterDef, $startDt, $endDt, [bool]$DryRun)
+        $ovOk   = $ovRes[0];  $ovMsg = $ovRes[1]
+        $audit.steps['openview'] = @{ Success = $ovOk; Message = $ovMsg }
+        if (-not $ovOk) { $overallOk = $false }
+
+        # Email
+        $emailOk = $emailer.SendMaintenanceNotification('enabled', $clusterDef, $servers, $startDt, $endDt, [bool]$DryRun)
+        $audit.steps['email'] = @{ Sent = $emailOk }
+        if (-not $emailOk) { $overallOk = $false }
+
+        # OpsRamp
+        $opsOk = $false
+        if ($opsrampClient -and -not $DryRun) {
+            foreach ($s in $servers) {
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 1, @{ cluster = $ClusterId; environment = $clusterDef.Get_Item('environment') })
+            }
+            $opsOk = $opsrampClient.SendAlert($ClusterId, 'maintenance.enabled', 'INFO',
+                "Maintenance enabled for $ClusterId",
+                @{ cluster=$clusterDef.Get_Item('display_name'); servers=$servers;
+                   start=$startDt.ToString('o'); end=$endDt.ToString('o') })
+            $opsrampClient.SendEvent($ClusterId, 'maintenance.enabled',
+                "Maintenance window started for $($clusterDef.Get_Item('display_name'))",
+                @{ cluster=$ClusterId; action='enable' })
+        }
+        $audit.steps['opsramp'] = @{ Success = $opsOk }
+
+        # Scheduled Task
+        if ($IsWindows -and -not $NoSchedule) {
+            $taskName  = "MaintenanceDisable-$ClusterId"
+            $scriptAbs = (Resolve-Path $PSScriptRoot).Path
+            $stTime    = $endDt.ToString('HH:mm')
+            $sdDate    = $endDt.ToString('yyyy/MM/dd')
+            schtasks /Delete /TN $taskName /F 2>$null | Out-Null
+            try {
+                schtasks /Create /TN $taskName /TR "`"$($PSHOME)\pwsh.exe`" `"$scriptAbs`" -a disable -c $ClusterId --no-schedule" `
+                    /SC ONCE /ST $stTime /SD $sdDate /RL HIGHEST /RU SYSTEM /F 2>&1 | Out-Null
+                $audit.steps.scheduled_task = @{ Created = $true }
+            } catch { $audit.steps.scheduled_task = @{ Created = $false; Error = $_.Exception.Message }; $overallOk = $false }
+        }
+    }
+    elseif ($Action -eq 'disable') {
+        # Email disable notification
+        $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, (Get-Date), [bool]$DryRun)
+        $audit.steps['email'] = @{ Sent = $emailOk }
+        if (-not $emailOk) { $overallOk = $false }
+
+        # OpsRamp
+        if ($opsrampClient -and -not $DryRun) {
+            foreach ($s in $servers) {
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 0, @{ cluster=$ClusterId })
+            }
+            $opsrampClient.SendAlert($ClusterId, 'maintenance.disabled', 'INFO',
+                "Maintenance disabled for $ClusterId",
+                @{ completed_at = (Get-Date -Format o) })
+            $opsrampClient.SendEvent($ClusterId, 'maintenance.disabled',
+                "Maintenance window ended for $($clusterDef.Get_Item('display_name'))",
+                @{ cluster=$ClusterId; action='disable' })
+        }
+
+        # Clean up scheduled task
+        if ($IsWindows) {
+            $taskName = "MaintenanceDisable-$ClusterId"
+            try { schtasks /Delete /TN $taskName /F 2>&1 | Out-Null; $audit.steps.scheduled_task_cleanup = @{ Deleted = $true } }
+            catch { $audit.steps.scheduled_task_cleanup = @{ Deleted = $false; Error = $_.Exception.Message } }
+        }
+    }
+
+    $audit.success = $overallOk
+    $auditFile = Join-Path $Script:LogDir "$($Action)_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+    _Save-AuditRecord $audit $auditFile
+
+    if ($overallOk) { Write-Host "Maintenance $Action completed." }
+    else            { Write-Error "Maintenance $Action finished with errors. Check $auditFile." }
+    return @{ Success = $overallOk; Message = if ($overallOk) { "Maintenance $Action completed." } else { "Maintenance $Action finished with errors." } }
+}
+
+# ---- Constants (always defined so classes referencing them work on dot-source) ----
+$Script:BaseDir  = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $Script:ConfigDir  = Join-Path $Script:BaseDir 'configs'
 $Script:LogDir     = Join-Path $Script:BaseDir 'logs'
 $Script:DistList   = Join-Path $Script:BaseDir 'maintenance_distribution_list.txt'
@@ -465,168 +617,20 @@ function Split-PipelineCmd([string]$CommandString) {
     return ,$CommandString   # fallback: raw string passed through as single command
 }
 
-# ---- Main CLI logic ----
-$ErrorActionPreference = 'Continue'
+# ---- Main CLI logic (script mode only) ----
+if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+    $ErrorActionPreference = 'Continue'
 
-# Load configs
-$clustersCfg  = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -Required:$false
-$scomCfg      = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'scom_config.json')           -Required:$false
-$openviewCfg  = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'openview_config.json')       -Required:$false
-$emailCfg     = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'email_distribution_lists.json') -Required:$false
-$opsrampCfg   = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'opsramp_config.json') -Required:$false
+    # Load configs
+    $clustersCfg  = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -Required:$false
+    $scomCfg      = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'scom_config.json')           -Required:$false
+    $openviewCfg  = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'openview_config.json')       -Required:$false
+    $emailCfg     = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'email_distribution_lists.json') -Required:$false
+    $opsrampCfg   = Import-JsonConfig -Path (Join-Path $Script:ConfigDir 'opsramp_config.json') -Required:$false
 
-$clustersMap = $clustersCfg.Get_Item('clusters')
-if (-not $clustersMap -or -not $clustersMap.ContainsKey($ClusterId)) {
-    Write-Error "Cluster ID '$ClusterId' not found in catalogue."
-    exit 2
+    $result = Set-MaintenanceMode @PSBoundParameters
+
+    exit (if ($result.Success) { 0 } else { 1 })
 }
-$clusterDef = $clustersMap[$ClusterId]
-
-# Validate cluster definition
-$requiredFields = @('display_name','servers','scom_group','environment')
-$missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
-if ($missing) { Write-Error "Cluster definition missing required fields: $($missing -join ', ')"; exit 1 }
-$servers = $clusterDef.Get_Item('servers')
-if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
-    Write-Error "Cluster 'servers' must be a non-empty list."
-    exit 1
-}
-
-# ---- VALIDATE action ----
-if ($Action -eq 'validate') {
-    Write-Host "Cluster '$ClusterId' validated. Servers: $($servers -join ', ')"
-    $audit = @{
-        cluster_id    = $ClusterId; action = $Action; dry_run  = [bool]$DryRun
-        timestamp_start = (Get-Date).ToString('o'); steps = @{}; success = $true
-    }
-    _Save-AuditRecord $audit (Join-Path $Script:LogDir "validate_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
-    exit 0
-}
-
-# ---- Resolve Start / End ----
-$startDt = $null; $endDt = $null
-if ($Action -eq 'enable') {
-    if ($Start)   { $startDt = _Parse-Datetime $Start }
-    else          { $startDt = Get-Date }
-    if ($End)     { $endDt   = _Parse-Datetime $End }
-    else {
-        $schedule = $clusterDef.Get_Item('schedule')
-        if ($schedule) { $endDt = _Compute-NextWorkStart $schedule $startDt }
-        else { Write-Error 'No --end and no schedule defined in cluster.'; exit 1 }
-    }
-    if ($endDt -le $startDt) { Write-Error 'End time must be after start time.'; exit 1 }
-    $duration = $endDt - $startDt
-    Write-Verbose "Maintenance window: $startDt → $endDt (duration: $duration)"
-}
-
-# ---- Initialise managers ----
-$scomMgr = $null; try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
-$iloMgr   = [ILOManager]::new($clusterDef)
-$ovMgr    = [OpenViewClient]::new($openviewCfg, $clusterDef)
-$emailer  = [EmailNotifier]::new($emailCfg)
-
-$opsrampClient = $null
-if ($opsrampCfg) { try { $opsrampClient = [OpsRamp_Client]::new((Join-Path $Script:ConfigDir 'opsramp_config.json')) } catch {} }
-
-# ---- Execute action ----
-$overallOk = $true
-$audit     = @{
-    cluster_id    = $ClusterId; action = $Action; dry_run  = [bool]$DryRun
-    timestamp_start = (Get-Date).ToString('o'); steps = @{}; success = $true
-}
-
-if ($Action -eq 'enable') {
-    # SCOM
-    $scomOk = $false; $scomInfo = ''
-    if ($scomMgr) {
-        $durHrs    = $duration.TotalSeconds / 3600.0
-        $comment   = "iRequest Maintenance: $ClusterId"
-        $scomRes   = $scomMgr.EnterMaintenance($clusterDef.Get_Item('scom_group'), $duration, $comment, [bool]$DryRun)
-        $scomOk    = $scomRes[0]; $scomInfo = if ($scomRes[1]) { ($scomRes[1] -join "`n") } else { '' }
-    }
-    $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo }
-    if (-not $scomOk) { $overallOk = $false }
-
-    # iLO
-    $iloRes  = $iloMgr.SetMaintenanceWindow($clusterDef, $startDt, $endDt, [bool]$DryRun)
-    $iloOk   = $iloRes.Success
-    $audit.steps['ilo'] = @{ Success = $iloOk; Details = $iloRes.Details }
-    if (-not $iloOk) { $overallOk = $false }
-
-    # OpenView
-    $ovRes   = $ovMgr.SetMaintenance($clusterDef, $startDt, $endDt, [bool]$DryRun)
-    $ovOk    = $ovRes[0];  $ovMsg = $ovRes[1]
-    $audit.steps['openview'] = @{ Success = $ovOk; Message = $ovMsg }
-    if (-not $ovOk) { $overallOk = $false }
-
-    # Email
-    $emailOk = $emailer.SendMaintenanceNotification('enabled', $clusterDef, $servers, $startDt, $endDt, [bool]$DryRun)
-    $audit.steps['email'] = @{ Sent = $emailOk }
-    if (-not $emailOk) { $overallOk = $false }
-
-    # OpsRamp
-    $opsOk = $false
-    if ($opsrampClient -and -not $DryRun) {
-        foreach ($s in $servers) {
-            $opsrampClient.SendMetric($s, 'maintenance.mode', 1, @{ cluster = $ClusterId; environment = $clusterDef.Get_Item('environment') })
-        }
-        $opsOk = $opsrampClient.SendAlert($ClusterId, 'maintenance.enabled', 'INFO',
-            "Maintenance enabled for $ClusterId",
-            @{ cluster=$clusterDef.Get_Item('display_name'); servers=$servers;
-               start=$startDt.ToString('o'); end=$endDt.ToString('o') })
-        $opsrampClient.SendEvent($ClusterId, 'maintenance.enabled',
-            "Maintenance window started for $($clusterDef.Get_Item('display_name'))",
-            @{ cluster=$ClusterId; action='enable' })
-    }
-    $audit.steps['opsramp'] = @{ Success = $opsOk }
-
-    # Scheduled Task
-    if ($IsWindows -and -not $NoSchedule) {
-        $taskName  = "MaintenanceDisable-$ClusterId"
-        $scriptAbs = ($MyInvocation.MyCommand.Path | Resolve-Path).Path
-        $stTime    = $endDt.ToString('HH:mm')
-        $sdDate    = $endDt.ToString('yyyy/MM/dd')
-        # Remove existing
-        schtasks /Delete /TN $taskName /F 2>$null | Out-Null
-        try {
-            schtasks /Create /TN $taskName /TR "`"$($PSHOME)\pwsh.exe`" `"$scriptAbs`" -a disable -c $ClusterId --no-schedule" `
-                /SC ONCE /ST $stTime /SD $sdDate /RL HIGHEST /RU SYSTEM /F 2>&1 | Out-Null
-            $audit.steps.scheduled_task = @{ Created = $true }
-        } catch { $audit.steps.scheduled_task = @{ Created = $false; Error = $_.Exception.Message }; $overallOk = $false }
-    }
-}
-elseif ($Action -eq 'disable') {
-    # Email disable notification
-    $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, (Get-Date), [bool]$DryRun)
-    $audit.steps['email'] = @{ Sent = $emailOk }
-    if (-not $emailOk) { $overallOk = $false }
-
-    # OpsRamp
-    if ($opsrampClient -and -not $DryRun) {
-        foreach ($s in $servers) {
-            $opsrampClient.SendMetric($s, 'maintenance.mode', 0, @{ cluster=$ClusterId })
-        }
-        $opsrampClient.SendAlert($ClusterId, 'maintenance.disabled', 'INFO',
-            "Maintenance disabled for $ClusterId",
-            @{ completed_at = (Get-Date -Format o) })
-        $opsrampClient.SendEvent($ClusterId, 'maintenance.disabled',
-            "Maintenance window ended for $($clusterDef.Get_Item('display_name'))",
-            @{ cluster=$ClusterId; action='disable' })
-    }
-
-    # Clean up scheduled task
-    if ($IsWindows) {
-        $taskName = "MaintenanceDisable-$ClusterId"
-        try { schtasks /Delete /TN $taskName /F 2>&1 | Out-Null; $audit.steps.scheduled_task_cleanup = @{ Deleted = $true } }
-        catch { $audit.steps.scheduled_task_cleanup = @{ Deleted = $false; Error = $_.Exception.Message } }
-    }
-}
-
-$audit.success = $overallOk
-$auditFile = Join-Path $Script:LogDir "$($Action)_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
-_Save-AuditRecord $audit $auditFile
-
-if ($overallOk) { Write-Host "Maintenance $Action completed."; exit 0 }
-else            { Write-Error "Maintenance $Action finished with errors. Check $auditFile."; exit 1 }
 
 # vim: ts=4 sw=4 et

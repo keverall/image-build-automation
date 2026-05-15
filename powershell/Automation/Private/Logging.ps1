@@ -1,5 +1,5 @@
 #
-# Logging.psm1 — Centralized logging setup.
+# Private/Logging.ps1 — Centralized logging setup.
 # Mirrors Python logging_setup.py (init_logging / get_logger).
 #
 
@@ -36,7 +36,6 @@ function Initialize-Logging {
         if (-not (Test-Path $dir)) { New-Item -ItemType Directory $dir -Force | Out-Null }
         $Global:__AutomationLogPath = Join-Path $dir $LogFile
     }
-
     $Global:__AutomationLogLevel = $Level
 }
 
@@ -51,28 +50,25 @@ function Get-Logger {
     #>
     [CmdletBinding()]
     param([Parameter(Mandatory, Position = 0)][string] $Name)
-
     if (-not $script:_Configured) { Initialize-Logging }
-
-    # Return a simple PSObject with logging methods
     $logger = [PSCustomObject]@{ Name = $Name }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Info' -Value {
         param([string]$msg)
-        $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
         $line = "$ts - $($this.Name) - INFO - $msg"
         Write-Host $line
         if ($Global:__AutomationLogPath) { $line | Add-Content $Global:__AutomationLogPath }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Warning' -Value {
         param([string]$msg)
-        $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
         $line = "$ts - $($this.Name) - WARNING - $msg"
         Write-Warning $line
         if ($Global:__AutomationLogPath) { $line | Add-Content $Global:__AutomationLogPath }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Error' -Value {
         param([string]$msg)
-        $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
         $line = "$ts - $($this.Name) - ERROR - $msg"
         Write-Error $line
         if ($Global:__AutomationLogPath) { $line | Add-Content $Global:__AutomationLogPath }
@@ -80,7 +76,7 @@ function Get-Logger {
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Debug' -Value {
         param([string]$msg)
         if ($Global:__AutomationLogLevel -in @('Debug','Verbose')) {
-            $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+            $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
             $line = "$ts - $($this.Name) - DEBUG - $msg"
             Write-Verbose $line
             if ($Global:__AutomationLogPath) { $line | Add-Content $Global:__AutomationLogPath }
@@ -88,5 +84,3 @@ function Get-Logger {
     }
     return $logger
 }
-
-# vim: ts=4 sw=4 et

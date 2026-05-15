@@ -1,326 +1,81 @@
-# HPE ProLiant Windows Server ISO Automation
+# HPE ProLiant Windows Server ISO Automation — Documentation Index
 
-Automated build pipelines for creating customized Windows Server installation ISOs tailored for HPE ProLiant hardware. Integrates firmware/driver updates, security patching, vulnerability scanning, complete audit trails, with OpsRamp monitoring and reporting.
+Complete documentation for the Python automation package (`src/automation/`) and
+PowerShell module (`powershell/Automation/`).
+
+---
 
 ## Repository Structure
 
 ```
 hpe-windows-iso-automation/
 ├── Jenkinsfile                                  # CI/CD pipeline definition
-├── src/                                         # Main package (python -m automation.cli.*)
-│   └── automation/
-│       ├── __init__.py                         # Package metadata, __version__
-│       ├── cli/                                # CLI entry points
-│       │   ├── build_iso.py                    # Main orchestrator
-│       │   ├── update_firmware_drivers.py      # HPE SUT firmware/driver integration
-│       │   ├── patch_windows_security.py       # DISM-based Windows patching
-│       │   ├── deploy_to_server.py             # ISO deployment (iLO Virtual Media)
-│       │   ├── monitor_install.py              # Installation monitoring
-│       │   ├── opsramp_integration.py          # OpsRamp API integration
-│       │   ├── maintenance_mode.py             # SCOM/iLO maintenance orchestration
-│       │   └── generate_uuid.py                # Deterministic UUID generation
-│       └── utils/                              # Shared utilities package (DRY)
-│           ├── __init__.py                     # Package exports
-│           ├── logging_setup.py                # Centralized logging configuration
-│           ├── config.py                       # JSON config loading with env var substitution
-│           ├── inventory.py                    # Cluster catalogue and server inventory loading
-│           ├── audit.py                        # Structured audit logging (JSON)
-│           ├── file_io.py                      # Directory creation, JSON persistence
-│           ├── executor.py                     # Subprocess wrapper with retry logic
-│           ├── credentials.py                  # Credential retrieval from environment
-│           ├── powershell.py                   # PowerShell execution (local + WinRM)
-│           └── base.py                         # AutomationBase common class
-├── configs/
-│   ├── server_list.txt                         # Target servers (one per line)
-│   ├── clusters_catalogue.json                 # Cluster definitions (SCOM groups, iLO IPs, schedules)
-│   ├── hpe_firmware_drivers_nov2025.json       # Firmware/driver manifests
-│   ├── windows_patches.json                    # Security patch specifications
-│   ├── scom_config.json                        # SCOM 2015 connection details
-│   ├── openview_config.json                    # HPE OpenView integration settings
-│   ├── email_distribution_lists.json           # SMTP and distribution lists for notifications
-│   ├── opsramp_config.json                     # OpsRamp API configuration
-│   └── maintenance_distribution_list.txt       # Override email list for maintenance events (optional)
-├── tools/
-│   ├── hpe_sut.exe                             # HPE Smart Update Tool (external)
-│   └── dism.exe                                # Windows DISM (system tool)
-├── logs/
-│   ├── audit_trail.log                         # Comprehensive audit logging
-│   ├── maintenance_audit.log                   # Maintenance-specific audit (line-delimited JSON)
-│   ├── maintenance_<action>_<cluster>_<ts>.json # Per-action maintenance records
-│   └── build_reports/                          # Daily build reports
-├── docs/
-│   ├── README.md                               # This file
-│   ├── maintenance_mode.md                     # Maintenance orchestration guide
-│   ├── audit_process.md                        # Detailed audit procedures
-│   ├── gdpr_compliance.md                      # GDPR compliance documentation
-│   └── utils.md                                # Shared utilities package reference (NEW)
-├── Dockerfile                                  # Containerized build environment
-├── requirements.txt                            # Python dependencies
-├── .python-version                             # Pinned Python version (3.9+ recommended)
-├── pyproject.toml                              # Package config + tool settings (ruff, bandit, mypy)
-├── .ruff.toml                                  # Ruff linter configuration
-└── Jenkinsfile                                 # CI/CD pipeline definition
+├── src/automation/                              # Python package
+│   ├── cli/                                     # CLI entry points
+│   └── utils/                                   # Shared utilities
+├── powershell/Automation/                       # PowerShell module
+│   ├── Public/                                  # Exported cmdlets
+│   ├── Private/                                 # Internal helpers
+│   └── Automation.psd1                          # Module manifest
+├── tests/                                       # Python / pytest tests
+├── powershell/Tests/                            # PowerShell / Pester tests
+├── configs/                                     # Server/cluster/patch JSON configs
+├── docs/                                        # This directory
+└── logs/                                        # Audit trails & build reports
 ```
 
-## Prerequisites
-
-- **Access to HPE repositories** for November 2025 firmware and driver updates
-- **Windows Server 2022/2025 base ISO** (evaluation or licensed)
-- **OpsRamp account** with API access for monitoring and alerting
-- **CI/CD runner** with Windows Server support (Jenkins with self-hosted agents, GitLab CI, or Azure DevOps)
-- **Tools**:
-  - Python 3.9+ (all platforms). On Windows Server 2016, install backport: `pip install python -m pip install "backports.zoneinfo[tzdata]"`
-  - HPE Smart Update Tool (SUT) for firmware/driver integration
-  - Windows DISM (Deployment Image Servicing and Management)
-  - Packer (optional, for advanced ISO builds)
-  - Nessus or OpenVAS (for vulnerability scanning)
-  - Git for version control
-- **SCOM 2015** (optional): OperationsManager PowerShell module installed if maintenance_mode.py is used
-
+---
 
 ## Quick Start
 
-### 1. Clone Repository
-```bash
-git clone <repository-url>
-cd hpe-windows-iso-automation
-```
+- **Python** package setup and first build: see the [top-level README](../README.md#quick-start)
+- **PowerShell** module import and first command: see [powershell/README.md](../powershell/README.md#quick-start)
 
-### 2. Configure Environment
-```bash
-# Copy example configurations (if provided)
-cp configs/opsramp_config.json.example configs/opsramp_config.json
+---
 
-# Edit configuration files
-# configs/server_list.txt - one server per line (e.g., server1.example.com)
-# configs/clusters_catalogue.json - define clusters, SCOM groups, iLO IPs, schedules
-# configs/hpe_firmware_drivers_nov2025.json - set HPE repo credentials
-# configs/windows_patches.json - adjust patch list as needed
-# configs/scom_config.json - SCOM management server settings
-# configs/openview_config.json - HPE OpenView API/CLI details (optional)
-# configs/email_distribution_lists.json - SMTP and email recipients
-```
+## Document Index
 
-### 3. Set Environment Variables
-```bash
-export HPE_DOWNLOAD_USER="your_hpe_username"
-export HPE_DOWNLOAD_PASS="your_hpe_password"
-export ILO_USER="Administrator"
-export ILO_PASSWORD="your_ilo_password"
-export OPSRAMP_CLIENT_ID="your_client_id"
-export OPSRAMP_CLIENT_SECRET="your_client_secret"
-# Optional: SCOM, OpenView, SMTP credentials as needed
-```
+### Python
 
-### 4. Install Dependencies
-```bash
-pip install -r requirements.txt
+| Document | Description |
+|---|---|
+| [Testing Guide](testing.md) | Comprehensive pytest / coverage / CI guide — commands, fixtures, PR incremental testing, coverage reports, troubleshooting |
+| [Testing Quick Start](TESTING_QUICKSTART.md) | Cheat sheet for manual pytest runs and Jenkins, common commands, quick-reference table |
+| [Code Quality & Security](code_quality.md) | ruff, pylint, radon, bandit, safety, gitleaks — configuration, usage, Jenkins pipeline integration |
+| [Maintenance Mode](maintenance_mode.md) | SCOM / iLO / OpenView maintenance orchestration — usage, scheduling, SCOM 2015 PowerShell bridge, REST upgrade path |
+| [Audit Process](audit_process.md) | Structured JSON audit logging, master-log append, retention policies, GDPR handling |
+| [GDPR Compliance](gdpr_compliance.md) | Data-minimisation, encryption, retention, residency, user-rights handling |
+| [Utilities Package](utils.md) | Full reference for all modules in `src/automation/utils/` — logging, config, inventory, audit, executor, credentials, PowerShell bridge, base class |
 
-# Install automation package in editable mode (recommended for development)
-pip install -e .
-```
+### PowerShell
 
-After `pip install -e .`, all commands use the package namespace:
-```bash
-python -m automation.cli.build_iso [args...]
-python -m automation.cli.update_firmware_drivers [args...]
-python -m automation.cli.deploy_to_server [args...]
-```
+| Document | Description |
+|---|---|
+| [PowerShell Module README](../powershell/README.md) | Module overview, directory layout, requirements, Python-to-PowerShell design mapping, command quick-reference |
+| [PowerShell Testing Guide](powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
+| [PowerShell Testing Quick Start](TESTING_POWERSHELL_QUICKSTART.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
 
-### 5. Manual Build (Single Server)
-```bash
-# Generate UUID
-python -m automation.cli.generate_uuid server1.example.com --output output/server1.uuid
+---
 
-# Build firmware/driver ISO
-python -m automation.cli.update_firmware_drivers --server server1.example.com
+## Python vs PowerShell Feature Parity
 
-# Build patched Windows ISO (requires base Windows ISO)
-python -m automation.cli.patch_windows_security \
-  --base-iso /path/to/Windows_Server_2022.iso \
-  --server server1.example.com
+| Feature | Python (`src/automation/`) | PowerShell (`powershell/Automation/`) |
+|---|---|---|
+| Unit tests | `tests/` · pytest (254 tests) | `powershell/Tests/` · Pester (11 × `*.Tests.ps1`) |
+| Test runner | `pytest` | `Invoke-Pester` |
+| CI pipeline | Jenkins `Unit Tests & Coverage` stage (only Python) | **No Pester stage yet** — target: add to Jenkinsfile |
+| Fakes / mocking | `unittest.mock` | `Mock` keyword (Pester) |
+| Coverage | `pytest-cov` → `coverage.xml`, `htmlcov/` | Not yet automated |
+| Shared fixture / setup | `tests/conftest.py` | `powershell/Tests/Tests.Tests.ps1` (`BeforeAll`) |
 
-# Or use orchestrator for complete build
-python -m automation.cli.build_iso \
-  --base-iso /path/to/Windows_Server_2022.iso \
-  --server server1.example.com
+---
 
-# Deploy to server (via iLO)
-python -m automation.cli.deploy_to_server --server server1.example.com --method ilo
+## Contributing
 
-# Monitor installation
-python -m automation.cli.monitor_install --server server1.example.com --timeout 7200
-```
+1. Add or update unit tests mirroring the module structure (Python → `tests/`, PowerShell → `powershell/Tests/`)
+2. Update the relevant doc page in `docs/`
+3. Run linting: `ruff check src/automation/ --fix`
+4. Ensure pytest passes: `pytest` (Python) and/or `Invoke-Pester` (PowerShell)
+5. PR description must link to any documentation changes
 
-### 6. Build for All Servers
-```bash
-# Complete pipeline for all servers in server_list.txt
-python -m automation.cli.build_iso --base-iso /isos/Windows_Server_2022.iso
-
-# With dry-run to test without making changes
-python -m automation.cli.build_iso --base-iso /isos/Windows_Server_2022.iso --dry-run
-```
-
-### 7. Maintenance Mode (SCOM/iLO/OpenView)
-```bash
-# Enable maintenance for a cluster
-python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --start now
-
-# Validate cluster configuration
-python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --action validate
-
-# Disable maintenance manually (scheduled task auto-disables at end time)
-python -m automation.cli.maintenance_mode --cluster-id PROD-CLUSTER-01 --disable
-```
-
-### 8. Code Quality & Security Scan (Local)
-```bash
-# Install scanning tools
-pip install ruff radon bandit safety gitleaks
-
-# Ruff lint + auto-fix
-ruff check src/automation/ --fix
-ruff format src/automation/
-
-# Radon maintainability & complexity
-radon mi src/automation/ -s
-radon cc src/automation/ -nc  # warn on CC > 10
-
-# Bandit security vulnerabilities
-bandit -r src/automation/
-
-# Safety dependency vulnerabilities
-safety check
-
-# Gitleaks secret detection
-gitleaks detect --source=.
-```
-
-
-## Code Quality & DRY Architecture
-
-This project follows **DRY (Don't Repeat Yourself)** principles through a shared utilities package:
-
-- `src/automation/utils/` — Common functionality extracted from all automation scripts:
-  - **logging_setup** — Centralized logging with console + file handlers
-  - **config** — `load_json_config()` with environment variable substitution for secrets
-  - **inventory** — `load_server_list()`, `load_cluster_catalogue()`, `ServerInfo` dataclass
-  - **audit** — `AuditLogger` class for structured JSON audit trails + master log append
-  - **file_io** — `ensure_dir()`, `save_json()` helpers
-  - **executor** — `run_command()` wrapper with `run_with_retry()` for flaky operations
-  - **credentials** — `get_ilo_credentials()`, `get_scom_credentials()`, generic `get_credential()`
-  - **powershell** — `run_powershell()`, `run_powershell_winrm()`, SCOM script builders
-  - **base** — `AutomationBase` class for common initialization, config loading, server loading, result saving
-
-All main scripts (`build_iso.py`, `update_firmware_drivers.py`, `patch_windows_security.py`, `deploy_to_server.py`, `monitor_install.py`, `opsramp_integration.py`, `maintenance_mode.py`) inherit from or import utilities, eliminating code duplication and ensuring consistent behavior.
-
-### Linting & Formatting
-
-```bash
-# Fast linting with auto-fix
-ruff check src/automation/ --fix
-
-# Format code
-ruff format src/automation/
-
-# Complexity analysis
-radon mi src/automation/ -s        # maintainability index (A–F)
-radon cc src/automation/ -nc       # cyclomatic complexity (warn >10)
-
-# Type checking (optional)
-mypy src/automation/ --ignore-missing-imports
-```
-
-### Pre-commit (optional)
-
-```bash
-pre-commit install
-pre-commit run --all-files
-```
-
-## Development
-
-### Adding New Features
-
-1. **Prefer utils first**: Check if functionality fits existing utils module before writing new code
-2. Create/modify modules in `src/automation/cli/` or `src/automation/utils/`
-3. Update unit tests (if present)
-4. Update documentation (`docs/`)
-5. Run linting: `ruff check src/automation/ --fix`
-6. Run complexity check: `radon cc src/automation/ -nc` (functions >10 require refactoring)
-7. Test in development environment before PR
-
-### Code Style
-
-- PEP 8 compliance enforced via `ruff`
-- Comprehensive docstrings (Google-style) for all public functions, classes, methods
-- Type hints on all function signatures
-- Centralized logging via `logging` module (never `print`)
-- Result dictionaries standardized: `{"success": bool, "details": str, ...}`
-- Exit codes: 0 for success, non-zero for failures
-
-### Testing
-
-```bash
-# Run a single test script
-python -m automation.cli.generate_uuid test-server
-
-# Dry run entire pipeline
-python -m automation.cli.build_iso --dry-run --server test-server
-
-# Validate all configurations
-python -m automation.cli.maintenance_mode --cluster-id TEST --action validate
-
-# Check configuration syntax
-python -c "import json; json.load(open('configs/clusters_catalogue.json'))"
-```
-
-## Security Considerations
-
-- **Credentials**: Store in environment variables or CI/CD secret stores (Jenkins Credentials, GitLab CI Variables). Never commit to repository.
-- **Network Access**: HPE repositories, OpsRamp API require outbound HTTPS. Whitelist IPs in firewalls if needed.
-- **iLO Access**: Use dedicated service account with minimum required privileges. Rotate credentials regularly.
-- **ISO Storage**: Protect ISOs containing embedded credentials or sensitive metadata.
-- **Audit**: All actions are logged. Review `logs/audit_trail.log` and `logs/maintenance_audit.log` regularly.
-- **SCOM**: Run under account with least privileges needed for maintenance mode operations.
-
-## Compliance
-
-- Follow HPE licensing terms for Smart Update Tool and firmware/driver downloads
-- Microsoft Windows licensing applies to ISO creation and distribution
-- Adhere to organizational change management procedures for production deployments
-- **GDPR Compliance:** This repository implements GDPR-by-design principles. See [GDPR Compliance](./gdpr_compliance.md) for full details. Key measures:
-  - No personal data processed (server hostnames are technical identifiers)
-  - Data minimization: logs stored with 30-day retention, encrypted at rest
-  - Docker image uses non-root user, no secrets in layers
-  - All data residency maintained within EEA
-
-## Support
-
-For issues, questions, or feature requests:
-- Create a pull request or issue in the repository (Bitbucket Server/GitStash)
-- Contact Kev Everall
-- Reference build ID from `logs/build_reports/` or `logs/maintenance_audit.log`
-- For Jenkins pipeline issues: Check Jenkins console output and agent logs
-- For maintenance mode issues: See [Maintenance Mode](./maintenance_mode.md) troubleshooting section
-
-## License
-
-MIT License - See LICENSE file for details.
-
-## Contributors
-
-- Kev Everall
-- Infrastructure Automation Group
-
-## Changelog
-
-### 2026-05-15 — DRY Refactor & Maintenance Mode
-- Added `src/automation/utils/` package (9 modules) to eliminate code duplication across all automation scripts
-- Refactored all main scripts to use shared utilities (logging, config, audit, executor, credentials, PowerShell)
-- Fixed import errors and unused code across `opsramp_integration.py`, `patch_windows_security.py`, `utils/file_io.py`, `utils/inventory.py`
-- Implemented `maintenance_mode.py` orchestrator for SCOM 2015, HPE iLO, and OpenView with scheduled auto-disable
-- Integrated OpsRamp metrics and alerts for maintenance mode transitions
-- Added comprehensive audit logging with JSON per-action records and master log
-- Migrated linting from `pylint` to `ruff` (faster, auto-fixable)
-- Updated documentation to reflect DRY architecture and new configuration files
+See [Code Quality](code_quality.md) for full lint/scan details.
