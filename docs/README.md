@@ -14,24 +14,49 @@ hpe-windows-iso-automation/
 │   ├── build_iso.py                            # Main orchestrator
 │   ├── deploy_to_server.py                     # ISO deployment (PXE/iLO)
 │   ├── monitor_install.py                      # Installation monitoring
-│   └── opsramp_integration.py                  # OpsRamp API integration
+│   ├── opsramp_integration.py                  # OpsRamp API integration
+│   ├── maintenance_mode.py                     # SCOM/iLO/OpenView maintenance orchestration
+│   └── utils/                                  # Shared utilities package (DRY)
+│       ├── __init__.py                         # Package exports
+│       ├── logging_setup.py                    # Centralized logging configuration
+│       ├── config.py                           # JSON config loading with env var substitution
+│       ├── inventory.py                        # Cluster catalogue and server inventory loading
+│       ├── audit.py                            # Structured audit logging (JSON)
+│       ├── file_io.py                          # Directory creation, JSON persistence
+│       ├── executor.py                         # Subprocess wrapper with retry logic
+│       ├── credentials.py                      # Credential retrieval from environment
+│       ├── powershell.py                       # PowerShell execution (local + WinRM)
+│       └── base.py                             # AutomationBase common class
 ├── configs/
 │   ├── server_list.txt                         # Target servers (one per line)
+│   ├── clusters_catalogue.json                 # Cluster definitions (SCOM groups, iLO IPs, schedules)
 │   ├── hpe_firmware_drivers_nov2025.json       # Firmware/driver manifests
 │   ├── windows_patches.json                    # Security patch specifications
-│   └── opsramp_config.json                     # OpsRamp API configuration
+│   ├── scom_config.json                        # SCOM 2015 connection details
+│   ├── openview_config.json                    # HPE OpenView integration settings
+│   ├── email_distribution_lists.json           # SMTP and distribution lists for notifications
+│   ├── opsramp_config.json                     # OpsRamp API configuration
+│   └── maintenance_distribution_list.txt       # Override email list for maintenance events (optional)
 ├── tools/
 │   ├── hpe_sut.exe                             # HPE Smart Update Tool (external)
 │   └── dism.exe                                # Windows DISM (system tool)
 ├── logs/
 │   ├── audit_trail.log                         # Comprehensive audit logging
+│   ├── maintenance_audit.log                   # Maintenance-specific audit (line-delimited JSON)
+│   ├── maintenance_<action>_<cluster>_<ts>.json # Per-action maintenance records
 │   └── build_reports/                          # Daily build reports
 ├── docs/
 │   ├── README.md                               # This file
+│   ├── maintenance_mode.md                     # Maintenance orchestration guide
 │   ├── audit_process.md                        # Detailed audit procedures
-│   └── gdpr_compliance.md                      # GDPR compliance documentation
+│   ├── gdpr_compliance.md                      # GDPR compliance documentation
+│   └── utils.md                                # Shared utilities package reference (NEW)
 ├── Dockerfile                                  # Containerized build environment
-└── requirements.txt                            # Python dependencies
+├── requirements.txt                            # Python dependencies
+├── .python-version                             # Pinned Python version (3.9+ recommended)
+├── pyproject.toml                              # Project metadata and tool config (ruff, radon)
+├── .ruff.toml                                  # Ruff linter configuration
+└── Jenkinsfile                                 # CI/CD pipeline definition
 ```
 
 ## Prerequisites
@@ -41,12 +66,13 @@ hpe-windows-iso-automation/
 - **OpsRamp account** with API access for monitoring and alerting
 - **CI/CD runner** with Windows Server support (Jenkins with self-hosted agents, GitLab CI, or Azure DevOps)
 - **Tools**:
-  - Python 3.9+ (all platforms)
+  - Python 3.9+ (all platforms). On Windows Server 2016, install backport: `pip install python -m pip install "backports.zoneinfo[tzdata]"`
   - HPE Smart Update Tool (SUT) for firmware/driver integration
   - Windows DISM (Deployment Image Servicing and Management)
   - Packer (optional, for advanced ISO builds)
   - Nessus or OpenVAS (for vulnerability scanning)
   - Git for version control
+- **SCOM 2015** (optional): OperationsManager PowerShell module installed if maintenance_mode.py is used
 
 ## Quick Start
 
@@ -63,9 +89,12 @@ cp configs/opsramp_config.json.example configs/opsramp_config.json
 
 # Edit configuration files
 # configs/server_list.txt - one server per line (e.g., server1.example.com)
+# configs/clusters_catalogue.json - define clusters, SCOM groups, iLO IPs, schedules
 # configs/hpe_firmware_drivers_nov2025.json - set HPE repo credentials
 # configs/windows_patches.json - adjust patch list as needed
-# configs/opsramp_config.json - set OpsRamp API credentials
+# configs/scom_config.json - SCOM management server settings
+# configs/openview_config.json - HPE OpenView API/CLI details (optional)
+# configs/email_distribution_lists.json - SMTP and email recipients
 ```
 
 ### 3. Set Environment Variables
@@ -76,6 +105,7 @@ export ILO_USER="Administrator"
 export ILO_PASSWORD="your_ilo_password"
 export OPSRAMP_CLIENT_ID="your_client_id"
 export OPSRAMP_CLIENT_SECRET="your_client_secret"
+# Optional: SCOM, OpenView, SMTP credentials as needed
 ```
 
 ### 4. Install Dependencies
@@ -117,266 +147,82 @@ python scripts/build_iso.py --base-iso /isos/Windows_Server_2022.iso
 python scripts/build_iso.py --base-iso /isos/Windows_Server_2022.iso --dry-run
 ```
 
-### 7. CI/CD Pipelines
-Enable GitHub Actions workflows:
-- Push to `main` or `develop` triggers automated builds
-- Scheduled daily builds at 2 AM (firmware) and 4 AM (Windows)
-- Manual triggering via GitHub UI with custom inputs
-
-## Key Features
-
-### Firmware/Driver ISO Builds
-- Uses **HPE Smart Update Tool (SUT)** to create bootable ISO with November 2025 firmware and drivers
-- Supports HPE Gen10 and Gen10 Plus ProLiant servers
-- Downloads latest components from HPE repositories
-- Generates unique deterministic UUID per server: `hash(server_name + timestamp)[:32]`
-- Creates combined firmware/driver media for offline deployment
-
-### Windows Security Patching
-- Applies November 2025 security updates to base Windows Server ISO
-- Uses **DISM** (Deployment Image Servicing and Management) for offline servicing
-- Mounts base ISO, applies MSU patches, creates new patched ISO
-- Supports Windows Server 2022 and 2025
-- Patch metadata includes CVE IDs, severity, KB numbers for tracking
-
-### Automated Deployment
-- **iLO Virtual Media**: Mount ISOs via HPE iLO REST API
-- **PXE Boot**: Configure network boot with iPXE/UNDI
-- **Redfish API**: Modern HPE iLO 5+ REST-based deployment
-- Unattended installation with embedded computer name and UUID
-
-### Installation Monitoring
-- Real-time progress tracking via:
-  - **iLO**: Power state, boot source, health sensors
-  - **WinRM/PowerShell**: Windows Setup registry and event logs
-  - **SNMP** (optional): Hardware event traps
-- Progress phases: Not Started → Initializing → Copying Files → Installing Features → Configuring → Complete
-- Sends metrics to OpsRamp for dashboards
-
-### Vulnerability Scanning
-- Integrated scanning at multiple stages:
-  - Base ISO scan (before customization)
-  - Patched ISO scan (after security updates)
-  - Post-install server scan (via network)
-- Uses Nessus CLI or OpenVAS for scanning
-- Reports CVEs with remediation steps
-- Fail builds on critical vulnerabilities
-
-### Audit Trail & Reporting
-- Comprehensive logging in `logs/audit_trail.log`
-- Per-server JSON build logs in `output/results/`
-- Daily audit reports in `logs/build_reports/`
-- Git commits for each successful build (with [skip ci])
-- Structured logs for OpsRamp integration
-
-### OpsRamp Integration
-- Sends metrics: build status, deployment progress, installation % elapsed time
-- Alerts for failures: build errors, patch failures, scan findings
-- Events for build completion, deployment status changes
-- Dashboards: real-time visibility into pipeline health
-
-## Configuration
-
-### Server List (`configs/server_list.txt`)
-```
-# Format: hostname or hostname,ipmi_ip,ilo_ip
-server1.example.com,192.168.1.101,192.168.1.201
-server2.example.com,192.168.1.102,192.168.1.202
-```
-
-### HPE Firmware Config (`configs/hpe_firmware_drivers_nov2025.json`)
-```json
-{
-  "firmware_drivers_version": "November 2025",
-  "hpe_repository_url": "https://downloads.hpe.com/repo/nov2025/",
-  "components": {
-    "gen10_plus": {
-      "firmware": [
-        {"component": "HPE_BIOS", "version": "2.80"},
-        {"component": "HPE_ILO5", "version": "2.70"}
-      ],
-      "drivers": [...]
-    }
-  }
-}
-```
-
-### Windows Patches (`configs/windows_patches.json`)
-```json
-{
-  "patches": [
-    {
-      "kb_number": "KB5041234",
-      "severity": "Critical",
-      "cve_ids": ["CVE-2025-12345"],
-      "description": "Security update for Windows Kernel"
-    }
-  ]
-}
-```
-
-### OpsRamp Config (`configs/opsramp_config.json`)
-```json
-{
-  "opsramp_api": {
-    "base_url": "https://api.opsramp.com",
-    "version": "v2"
-  },
-  "integration": {
-    "send_metrics": true,
-    "send_alerts": true
-  }
-}
-```
-
-**Security**: Store secrets in environment variables or CI/CD secret stores, not in config files.
-
-## CI/CD Workflows
-
-### Jenkins Pipeline (`Jenkinsfile`)
-
-The repository includes a declarative Jenkins pipeline designed for self-hosted Windows agents.
-
-**Pipeline Stages:**
-1. **Setup** - Installs Python dependencies, validates scripts and configs
-2. **Generate UUIDs** - Creates deterministic UUIDs for all servers
-3. **Build Firmware ISOs** - Downloads HPE firmware/drivers, creates bootable ISOs
-4. **Build Windows ISOs** - Applies security patches to base Windows ISO
-5. **Combine Deployment Packages** - Bundles firmware + Windows ISOs per server
-6. **Deploy** - Deploys ISOs via iLO/PXE/Redfish
-7. **Vulnerability Scan** - Scans ISOs and deployed servers
-8. **OpsRamp Reporting** - Sends metrics and alerts
-9. **Audit & Reporting** - Generates compliance reports, archives artifacts
-
-**Pipeline Parameters:**
-- `BUILD_STAGE` - Select which stage(s) to run (`firmware`, `windows`, `deploy`, `scan`, `all`)
-- `SERVER_FILTER` - Comma-separated list of specific servers (default: all)
-- `BASE_ISO_PATH` - Path to Windows Server base ISO
-- `DRY_RUN` - Simulate without making changes (for testing)
-- `DEPLOY_METHOD` - `ilo`, `pxe`, or `redfish`
-- `SKIP_DOWNLOAD` - Skip firmware/driver downloads
-
-**Triggers:**
-- Manual: Click "Build with Parameters" in Jenkins UI
-- Scheduled: Configure in Jenkins (e.g., nightly at 2 AM for firmware builds)
-- API: Trigger via Jenkins REST API
-
-**Credentials (configure in Jenkins):**
-- `hpe-download-user` / `hpe-download-pass` - HPE repository access
-- `ilo-user` / `ilo-password` - iLO access for deployment
-- `opsramp-client-id` / `opsramp-client-secret` / `opsramp-tenant-id` - OpsRamp integration
-
-**Artifacts:**
-- ISOs: `output/firmware/**/*.iso`, `output/patched/**/*.iso`
-- Build logs: `output/**/*.json`
-- Deployment packages: `output/combined/*.zip`
-- Audit reports: `logs/build_reports/**`
-
-**Example Jenkins Job:**
-```groovy
-pipelineJob('hpe-iso-automation') {
-    definition {
-        cpsScm {
-            scm {
-                git {
-                    remote { url('git@bitbucket.example.com:team/hpe-windows-iso-automation.git') }
-                    branch('*/main')
-                }
-            }
-            scriptPath('Jenkinsfile')
-        }
-    }
-    triggers {
-        cron('H 2 * * *')  // Daily at 2 AM
-    }
-}
-```
-
-## Docker Support
-
-Build container image:
+### 7. Maintenance Mode (SCOM/iLO/OpenView)
 ```bash
-docker build -t hpe-iso-automation .
+# Enable maintenance for a cluster
+python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --start now
+
+# Validate cluster configuration
+python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --action validate
+
+# Disable maintenance manually (scheduled task auto-disables at end time)
+python scripts/maintenance_mode.py --cluster-id PROD-CLUSTER-01 --disable
 ```
 
-Run containerized build:
+## Code Quality & DRY Architecture
+
+This project follows **DRY (Don't Repeat Yourself)** principles through a shared utilities package:
+
+- `scripts/utils/` — Common functionality extracted from all automation scripts:
+  - **logging_setup** — Centralized logging with console + file handlers
+  - **config** — `load_json_config()` with environment variable substitution for secrets
+  - **inventory** — `load_server_list()`, `load_cluster_catalogue()`, `ServerInfo` dataclass
+  - **audit** — `AuditLogger` class for structured JSON audit trails + master log append
+  - **file_io** — `ensure_dir()`, `save_json()` helpers
+  - **executor** — `run_command()` wrapper with `run_with_retry()` for flaky operations
+  - **credentials** — `get_ilo_credentials()`, `get_scom_credentials()`, generic `get_credential()`
+  - **powershell** — `run_powershell()`, `run_powershell_winrm()`, SCOM script builders
+  - **base** — `AutomationBase` class for common initialization, config loading, server loading, result saving
+
+All main scripts (`build_iso.py`, `update_firmware_drivers.py`, `patch_windows_security.py`, `deploy_to_server.py`, `monitor_install.py`, `opsramp_integration.py`, `maintenance_mode.py`) inherit from or import utilities, eliminating code duplication and ensuring consistent behavior.
+
+### Linting & Formatting
+
 ```bash
-docker run --rm \
-  -v /path/to/isos:/app/isos \
-  -v /path/to/output:/app/output \
-  -e HPE_DOWNLOAD_USER=xxx \
-  -e HPE_DOWNLOAD_PASS=yyy \
-  hpe-iso-automation \
-  python scripts/build_iso.py --server-list configs/server_list.txt
+# Fast linting with auto-fix
+ruff check scripts/ --fix
+
+# Format code
+ruff format scripts/
+
+# Complexity analysis
+radon mi scripts/ -s        # maintainability index (A–F)
+radon cc scripts/ -nc       # cyclomatic complexity (warn >10)
+
+# Type checking (optional)
+mypy scripts/ --ignore-missing-imports
 ```
 
-Note: Windows-specific operations (DISM, HPE SUT) may require Windows containers or host tool access.
+### Pre-commit (optional)
 
-## Troubleshooting
-
-### Common Issues
-
-**1. Jenkins pipeline fails early**
-```
-Error: Pipeline aborted due to step failure
-Solution: Check Jenkins console output. Ensure Jenkins agents have Windows Server and required tools installed
-```
-
-**2. Windows DISM errors**
-```
-Error: Failed to mount image
-Solution: Ensure running with Administrator privileges on Windows
-```
-
-**3. iLO connection failures**
-```
-Error: ILO connection failed
-Solution: Verify ILO_USER/ILO_PASSWORD credentials in Jenkins, check network connectivity
-```
-
-**4. Base ISO not found**
-```
-Error: Base ISO not found
-Solution: Mount Windows ISO to Jenkins agent filesystem or provide HTTP URL accessible to agent
-```
-
-### Debug Mode
-Enable verbose logging:
 ```bash
-python scripts/build_iso.py --server test-server --dry-run --verbose
-```
-
-Check logs:
-```bash
-# View orchestrator log
-tail -f logs/build_orchestrator.log
-
-# View per-server results
-cat output/results/build_result_server1_*.json
-```
-
-### Running Locally
-```bash
-# Ensure Windows environment for patching (or use WSL2 with DISM through PowerShell)
-powershell -Command "Build-ISO.ps1"  # Alternative PowerShell wrapper
+pre-commit install
+pre-commit run --all-files
 ```
 
 ## Development
 
 ### Adding New Features
-1. Create/modify scripts in `scripts/` directory
-2. Update unit tests (if present)
-3. Update documentation
-4. Run linting: `pylint scripts/`
-5. Test in development environment before PR
+
+1. **Prefer utils first**: Check if functionality fits existing utils module before writing new code
+2. Create/modify scripts in `scripts/` directory
+3. Update unit tests (if present)
+4. Update documentation (`docs/`)
+5. Run linting: `ruff check scripts/ --fix`
+6. Run complexity check: `radon cc scripts/ -nc` (functions >10 require refactoring)
+7. Test in development environment before PR
 
 ### Code Style
-- Follow PEP 8 for Python code
-- Include docstrings for all functions and classes
-- Log all actions using Python `logging` module (not `print`)
-- Return consistent result dictionaries
+
+- PEP 8 compliance enforced via `ruff`
+- Comprehensive docstrings (Google-style) for all public functions, classes, methods
+- Type hints on all function signatures
+- Centralized logging via `logging` module (never `print`)
+- Result dictionaries standardized: `{"success": bool, "details": str, ...}`
+- Exit codes: 0 for success, non-zero for failures
 
 ### Testing
+
 ```bash
 # Run a single test script
 python scripts/generate_uuid.py test-server
@@ -384,8 +230,11 @@ python scripts/generate_uuid.py test-server
 # Dry run entire pipeline
 python scripts/build_iso.py --dry-run --server test-server
 
+# Validate all configurations
+python scripts/maintenance_mode.py --cluster-id TEST --action validate
+
 # Check configuration syntax
-python -c "import json; json.load(open('configs/hpe_firmware_drivers_nov2025.json'))"
+python -c "import json; json.load(open('configs/clusters_catalogue.json'))"
 ```
 
 ## Security Considerations
@@ -394,7 +243,8 @@ python -c "import json; json.load(open('configs/hpe_firmware_drivers_nov2025.jso
 - **Network Access**: HPE repositories, OpsRamp API require outbound HTTPS. Whitelist IPs in firewalls if needed.
 - **iLO Access**: Use dedicated service account with minimum required privileges. Rotate credentials regularly.
 - **ISO Storage**: Protect ISOs containing embedded credentials or sensitive metadata.
-- **Audit**: All actions are logged. Review `audit_trail.log` regularly.
+- **Audit**: All actions are logged. Review `logs/audit_trail.log` and `logs/maintenance_audit.log` regularly.
+- **SCOM**: Run under account with least privileges needed for maintenance mode operations.
 
 ## Compliance
 
@@ -412,8 +262,9 @@ python -c "import json; json.load(open('configs/hpe_firmware_drivers_nov2025.jso
 For issues, questions, or feature requests:
 - Create a pull request or issue in the repository (Bitbucket Server/GitStash)
 - Contact platform engineering team
-- Reference build ID from `logs/build_reports/`
+- Reference build ID from `logs/build_reports/` or `logs/maintenance_audit.log`
 - For Jenkins pipeline issues: Check Jenkins console output and agent logs
+- For maintenance mode issues: See [Maintenance Mode](./maintenance_mode.md) troubleshooting section
 
 ## License
 
@@ -423,3 +274,15 @@ MIT License - See LICENSE file for details.
 
 - Platform Engineering Team
 - Infrastructure Automation Group
+
+## Changelog
+
+### 2026-05-15 — DRY Refactor & Maintenance Mode
+- Added `scripts/utils/` package (9 modules) to eliminate code duplication across all automation scripts
+- Refactored all main scripts to use shared utilities (logging, config, audit, executor, credentials, PowerShell)
+- Fixed import errors and unused code across `opsramp_integration.py`, `patch_windows_security.py`, `utils/file_io.py`, `utils/inventory.py`
+- Implemented `maintenance_mode.py` orchestrator for SCOM 2015, HPE iLO, and OpenView with scheduled auto-disable
+- Integrated OpsRamp metrics and alerts for maintenance mode transitions
+- Added comprehensive audit logging with JSON per-action records and master log
+- Migrated linting from `pylint` to `ruff` (faster, auto-fixable)
+- Updated documentation to reflect DRY architecture and new configuration files

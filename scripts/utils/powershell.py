@@ -2,7 +2,7 @@
 
 import logging
 import subprocess
-from typing import Optional, Tuple
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 

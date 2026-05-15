@@ -13,18 +13,16 @@ Supports unattended installation with automated kickstart/unattended.xml.
 import argparse
 import json
 import logging
-import os
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 # Import utilities
 sys.path.insert(0, str(Path(__file__).parent))
 from utils.logging_setup import init_logging
 from utils.inventory import load_server_list, ServerInfo
-from utils.file_io import ensure_dir, save_json
+from utils.file_io import ensure_dir
 from utils.credentials import get_ilo_credentials
 # Note: requests still needed directly
 import requests

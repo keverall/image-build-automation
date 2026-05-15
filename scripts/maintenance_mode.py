@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from opsramp_integration import OpsRampClient
 from utils.logging_setup import init_logging
 from utils.config import load_json_config as utils_load_json_config
-from utils.credentials import get_ilo_credentials, get_openview_credentials, get_credential
+from utils.credentials import get_ilo_credentials, get_credential
 from utils.powershell import run_powershell, run_powershell_winrm
 from utils.executor import run_command
 
