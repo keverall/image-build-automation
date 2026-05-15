@@ -14,7 +14,7 @@ Subpackages:
 from . import cli, core, utils
 
 __version__ = "1.0.0"
-__author__ = "Platform Engineering Team"
+__author__ = "Kev Everall"
 
 __all__ = [
     "cli",
