@@ -7,26 +7,38 @@ Automated build pipelines for creating customized Windows Server installation IS
 ```
 hpe-windows-iso-automation/
 ├── Jenkinsfile                                  # CI/CD pipeline definition
-├── scripts/
-│   ├── generate_uuid.py                        # Generates deterministic UUIDs
-│   ├── update_firmware_drivers.py              # HPE SUT firmware/driver integration
-│   ├── patch_windows_security.py               # DISM-based Windows patching
-│   ├── build_iso.py                            # Main orchestrator
-│   ├── deploy_to_server.py                     # ISO deployment (iLO Virtual Media)
-│   ├── monitor_install.py                      # Installation monitoring
-│   ├── opsramp_integration.py                  # OpsRamp API integration
-│   ├── maintenance_mode.py                     # SCOM/iLO/OpenView maintenance orchestration
-│   └── utils/                                  # Shared utilities package (DRY)
-│       ├── __init__.py                         # Package exports
-│       ├── logging_setup.py                    # Centralized logging configuration
-│       ├── config.py                           # JSON config loading with env var substitution
-│       ├── inventory.py                        # Cluster catalogue and server inventory loading
-│       ├── audit.py                            # Structured audit logging (JSON)
-│       ├── file_io.py                          # Directory creation, JSON persistence
-│       ├── executor.py                         # Subprocess wrapper with retry logic
-│       ├── credentials.py                      # Credential retrieval from environment
-│       ├── powershell.py                       # PowerShell execution (local + WinRM)
-│       └── base.py                             # AutomationBase common class
+├── scripts/                                     # Backwards-compatible CLI wrappers
+│   ├── build_iso.py                            # → calls automation.cli.build_iso
+│   ├── update_firmware_drivers.py              # → calls automation.cli.update_firmware_drivers
+│   ├── patch_windows_security.py               # → calls automation.cli.patch_windows_security
+│   ├── deploy_to_server.py                     # → calls automation.cli.deploy_to_server
+│   ├── monitor_install.py                      # → calls automation.cli.monitor_install
+│   ├── opsramp_integration.py                  # → calls automation.cli.opsramp_integration
+│   ├── maintenance_mode.py                     # → calls automation.cli.maintenance_mode
+│   └── generate_uuid.py                        # → calls automation.cli.generate_uuid
+├── src/                                         # Main package (python -m automation.cli.*)
+│   └── automation/
+│       ├── __init__.py                         # Package metadata, __version__
+│       ├── cli/                                # CLI entry points
+│       │   ├── build_iso.py                    # Main orchestrator
+│       │   ├── update_firmware_drivers.py      # HPE SUT firmware/driver integration
+│       │   ├── patch_windows_security.py       # DISM-based Windows patching
+│       │   ├── deploy_to_server.py             # ISO deployment (iLO Virtual Media)
+│       │   ├── monitor_install.py              # Installation monitoring
+│       │   ├── opsramp_integration.py          # OpsRamp API integration
+│       │   ├── maintenance_mode.py             # SCOM/iLO maintenance orchestration
+│       │   └── generate_uuid.py                # Deterministic UUID generation
+│       └── utils/                              # Shared utilities package (DRY)
+│           ├── __init__.py                     # Package exports
+│           ├── logging_setup.py                # Centralized logging configuration
+│           ├── config.py                       # JSON config loading with env var substitution
+│           ├── inventory.py                    # Cluster catalogue and server inventory loading
+│           ├── audit.py                        # Structured audit logging (JSON)
+│           ├── file_io.py                      # Directory creation, JSON persistence
+│           ├── executor.py                     # Subprocess wrapper with retry logic
+│           ├── credentials.py                  # Credential retrieval from environment
+│           ├── powershell.py                   # PowerShell execution (local + WinRM)
+│           └── base.py                         # AutomationBase common class
 ├── configs/
 │   ├── server_list.txt                         # Target servers (one per line)
 │   ├── clusters_catalogue.json                 # Cluster definitions (SCOM groups, iLO IPs, schedules)
@@ -54,7 +66,7 @@ hpe-windows-iso-automation/
 ├── Dockerfile                                  # Containerized build environment
 ├── requirements.txt                            # Python dependencies
 ├── .python-version                             # Pinned Python version (3.9+ recommended)
-├── pyproject.toml                              # Project metadata and tool config (ruff, radon)
+├── pyproject.toml                              # Package config + tool settings (ruff, bandit, mypy)
 ├── .ruff.toml                                  # Ruff linter configuration
 └── Jenkinsfile                                 # CI/CD pipeline definition
 ```
@@ -112,6 +124,17 @@ export OPSRAMP_CLIENT_SECRET="your_client_secret"
 ### 4. Install Dependencies
 ```bash
 pip install -r requirements.txt
+
+# Install automation package in editable mode (recommended for development)
+pip install -e .
+```
+
+After `pip install -e .`, all commands are available as:
+```bash
+python -m automation.cli.build_iso [args...]
+python -m automation.cli.update_firmware_drivers [args...]
+# ... or use wrapper scripts/ for backwards compatibility
+python scripts/build_iso.py [args...]
 ```
 
 ### 5. Manual Build (Single Server)

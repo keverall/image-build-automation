@@ -3,14 +3,14 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
-from .logging_setup import get_logger
-from .config import load_json_config
-from .inventory import load_server_list, ServerInfo
 from .audit import AuditLogger
+from .config import load_json_config
+from .executor import CommandResult, run_command
 from .file_io import ensure_dir, save_json
-from .executor import run_command, CommandResult
+from .inventory import ServerInfo, load_server_list
+from .logging_setup import get_logger
 
 logger = logging.getLogger(__name__)
 
@@ -67,22 +67,19 @@ class AutomationBase:
             details=f"Config dir: {self.config_dir}, Output dir: {self.output_dir}, Dry run: {dry_run}"
         )
 
-    def load_config(self, filename: str, required: bool = True) -> Dict[str, Any]:
+    def load_config(self, filename: str, required: bool = True) -> dict[str, Any]:
         """Load a JSON config file from config_dir."""
         path = self.config_dir / filename
         return load_json_config(path, required=required)
 
-    def load_servers(self, filename: str = "server_list.txt") -> List[ServerInfo]:
+    def load_servers(self, filename: str = "server_list.txt") -> list[ServerInfo]:
         """Load server list from config_dir."""
         path = self.config_dir / filename
         return load_server_list(path, include_details=True)  # type: ignore
 
-    def save_result(self, data: Dict[str, Any], base_name: str, category: Optional[str] = None) -> Path:
+    def save_result(self, data: dict[str, Any], base_name: str, category: Optional[str] = None) -> Path:
         """Save result JSON to output directory."""
-        if category:
-            out_dir = self.output_dir / category
-        else:
-            out_dir = self.output_dir
+        out_dir = self.output_dir / category if category else self.output_dir
         ensure_dir(out_dir)
 
         timestamp = int(datetime.now().timestamp())

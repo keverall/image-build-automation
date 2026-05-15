@@ -3,7 +3,7 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Optional
 
 from .config import load_json_config
 
@@ -27,7 +27,7 @@ class ServerInfo:
 def load_server_list(
     path: Path,
     include_details: bool = False
-) -> List[ServerInfo] | List[str]:
+) -> list[ServerInfo] | list[str]:
     """
     Load server list from a text file.
 
@@ -49,9 +49,9 @@ def load_server_list(
         logger.error(f"Server list file not found: {path}")
         return []
 
-    servers: List[ServerInfo] = []
+    servers: list[ServerInfo] = []
 
-    with open(path, 'r') as f:
+    with open(path) as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line or line.startswith('#'):
@@ -75,7 +75,7 @@ def load_server_list(
     return servers
 
 
-def load_cluster_catalogue(path: Path) -> Dict[str, Dict]:
+def load_cluster_catalogue(path: Path) -> dict[str, dict]:
     """
     Load cluster catalogue from JSON.
 
@@ -106,7 +106,7 @@ def load_cluster_catalogue(path: Path) -> Dict[str, Dict]:
     return clusters
 
 
-def validate_cluster_definition(cluster_def: Dict, cluster_id: str) -> List[str]:
+def validate_cluster_definition(cluster_def: dict, cluster_id: str) -> list[str]:
     """
     Validate that a cluster definition has all required fields.
 

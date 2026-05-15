@@ -5,7 +5,7 @@ import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class CommandResult:
 
 
 def run_command(
-    cmd: Union[str, List[str]],
+    cmd: Union[str, list[str]],
     shell: bool = False,
     capture_output: bool = True,
     timeout: int = 300,
@@ -93,7 +93,7 @@ def run_command(
 
 
 def run_with_retry(
-    cmd: Union[str, List[str]],
+    cmd: Union[str, list[str]],
     max_attempts: int = 3,
     delay: float = 5.0,
     shell: bool = False,

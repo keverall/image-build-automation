@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ def load_json_config(
     path: Path,
     required: bool = True,
     auto_env_var_replace: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Load a JSON configuration file with consistent error handling.
 
@@ -29,7 +29,7 @@ def load_json_config(
         json.JSONDecodeError: If file contains invalid JSON
     """
     try:
-        with open(path, 'r') as f:
+        with open(path) as f:
             config = json.load(f)
 
         if auto_env_var_replace:
@@ -51,7 +51,7 @@ def load_json_config(
         raise
 
 
-def load_yaml_config(path: Path, required: bool = True) -> Dict[str, Any]:
+def load_yaml_config(path: Path, required: bool = True) -> dict[str, Any]:
     """
     Load a YAML configuration file (if PyYAML is available).
 
@@ -73,7 +73,7 @@ def load_yaml_config(path: Path, required: bool = True) -> Dict[str, Any]:
         raise
 
     try:
-        with open(path, 'r') as f:
+        with open(path) as f:
             config = yaml.safe_load(f)
         logger.debug(f"Loaded YAML configuration from {path}")
         return config or {}
@@ -84,7 +84,7 @@ def load_yaml_config(path: Path, required: bool = True) -> Dict[str, Any]:
         return {}
 
 
-def _replace_env_vars(config: Dict[str, Any]) -> Dict[str, Any]:
+def _replace_env_vars(config: dict[str, Any]) -> dict[str, Any]:
     """
     Recursively replace ${VAR} placeholders in config values with environment variables.
 
