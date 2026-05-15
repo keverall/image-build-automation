@@ -299,7 +299,7 @@ python -c "import json; json.load(open('configs/clusters_catalogue.json'))"
 
 For issues, questions, or feature requests:
 - Create a pull request or issue in the repository (Bitbucket Server/GitStash)
-- Contact platform engineering team
+- Contact Kev Everall
 - Reference build ID from `logs/build_reports/` or `logs/maintenance_audit.log`
 - For Jenkins pipeline issues: Check Jenkins console output and agent logs
 - For maintenance mode issues: See [Maintenance Mode](./maintenance_mode.md) troubleshooting section
@@ -310,7 +310,7 @@ MIT License - See LICENSE file for details.
 
 ## Contributors
 
-- Platform Engineering Team
+- Kev Everall
 - Infrastructure Automation Group
 
 ## Changelog

@@ -7,11 +7,9 @@ name = "hpe-automation"
 version = "1.0.0"
 description = "HPE ProLiant Windows Server ISO Automation Suite"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.9"
-authors = [
-    {name = "Platform Engineering Team"}
-]
+authors = [{ name = "Kev Everall" }]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: System Administrators",
