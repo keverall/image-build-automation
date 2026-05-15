@@ -1,6 +1,5 @@
 #
-# Inventory.psm1 — Server inventory and cluster catalogue helpers.
-# NOTE: ServerInfo class is defined in Automation.psm1 (root) for type-visibility.
+# Private/Inventory.ps1 — Server inventory and cluster catalogue helpers.
 #
 
 function Load-ServerList {
@@ -22,12 +21,10 @@ function Load-ServerList {
         [Parameter(Mandatory, Position = 0)][string] $Path,
         [switch] $IncludeDetails
     )
-
     if (-not (Test-Path $Path -PathType Leaf)) {
         Write-Error "Server list not found: $Path"
         return @()
     }
-
     $results = [System.Collections.Generic.List[object]]::new()
     $lineNum = 0
     Get-Content $Path -Encoding UTF8 | ForEach-Object {
@@ -59,7 +56,6 @@ function Load-ClusterCatalogue {
     #>
     [CmdletBinding()]
     param([Parameter(Mandatory, Position = 0)][string] $Path)
-
     $cfg      = Import-JsonConfig -Path $Path -Required $true
     $clusters = $cfg['clusters']
     if (-not $clusters) { Write-Warning "No clusters defined in $Path" }
@@ -104,5 +100,3 @@ function New-ServerInfo {
     )
     return [ServerInfo]::new($Hostname, $IpmiIp, $IloIp, $LineNumber)
 }
-
-# vim: ts=4 sw=4 et

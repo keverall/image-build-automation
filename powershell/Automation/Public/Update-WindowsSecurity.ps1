@@ -1,55 +1,65 @@
 #
-# Update-WindowsSecurity.ps1 — Windows security patcher / ISO builder
+# Public/Update-WindowsSecurity.ps1 — Windows security patcher / ISO builder
 # Equivalent of Python cli/patch_windows_security.py
 #
 
-<#
+function Invoke-WindowsSecurityUpdate {
+    <#
+    .SYNOPSIS
+        Apply Windows security patches to a base Windows Server ISO and build the patched ISO.
+        Callable from the module Router.
 
-.SYNOPSIS
-    Applies Windows security patches to a base Windows Server ISO image using DISM
-    or PowerShell DISM cmdlets, then creates a patched ISO.
+    .PARAMETER BaseIsoPath
+        Path to the base Windows Server ISO file.
 
-.PARAMETER BaseIsoPath
-    Path to the base Windows Server ISO file (required).
+    .PARAMETER Server
+        Server hostname for output naming.
 
-.PARAMETER Server
-    Server hostname (used for output naming).
+    .PARAMETER PatchesConfig
+        Path to windows_patches.json (default: configs\windows_patches.json).
 
-.PARAMETER PatchesConfig
-    Path to windows_patches.json configuration file (default: configs\windows_patches.json).
+    .PARAMETER OutputDir
+        Output directory (default: output\patched).
 
-.PARAMETER OutputDir
-    Output directory for patched ISOs (default: output\patched).
+    .PARAMETER Method
+        Patching method: 'dism' or 'powershell' (default: dism).
 
-.PARAMETER Method
-    Patching method: 'dism' or 'powershell' (default: dism).
+    .PARAMETER DryRun
+        Simulate without making changes.
 
-.PARAMETER DryRun
-    Simulate without making changes.
+    .RETURNS
+        [hashtable] with Success (bool), PatchedIso (string), and details.
 
-.EXAMPLE
-    Update-WindowsSecurity -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01' -DryRun
+    .EXAMPLE
+        Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01' -DryRun
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)][Alias('BaseIso','b')][string] $BaseIsoPath,
+        [Parameter(Mandatory)][Alias('ServerName','s')][string] $Server,
+        [Parameter(Mandatory = $false)][Alias('PatchesConfig','p')][string] $PatchesConfig = 'configs\windows_patches.json',
+        [Parameter(Mandatory = $false)][Alias('OutputDir','o')][string] $OutputDir = 'output\patched',
+        [ValidateSet('dism','powershell')]
+        [Parameter(Mandatory = $false)][Alias('Method','m')][string] $Method = 'dism',
+        [Parameter(Mandatory = $false)][switch] $DryRun
+    )
+    $Script:LogDir = Join-Path $PSScriptRoot '..\..\logs'
+    Initialize-Logging -LogFile 'windows_patcher.log'
+    $Script:PatchesConfigBuildDir = $OutputDir    # used by WindowsPatcher.Build
+    try {
+        $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)
+        $result  = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
+        $resultsDir = Join-Path $OutputDir 'results'
+        Ensure-DirectoryExists -Path $resultsDir
+        Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
+        return @{ Success = $result.success; PatchedIso = $result.PatchedIso; Error = $result.Get_Item('error') }
+    }
+    catch {
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
 
-#>
-
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
-param(
-    [Parameter(Mandatory)][Alias('BaseIso','b')][string] $BaseIsoPath,
-
-    [Parameter(Mandatory)][Alias('ServerName','s')][string] $Server,
-
-    [Parameter(Mandatory = $false)][Alias('PatchesConfig','p')][string] $PatchesConfig = 'configs\windows_patches.json',
-
-    [Parameter(Mandatory = $false)][Alias('OutputDir','o')][string] $OutputDir = 'output\patched',
-
-    [ValidateSet('dism','powershell')]
-    [Parameter(Mandatory = $false)][Alias('Method','m')][string] $Method = 'dism',
-
-    [Parameter(Mandatory = $false)][switch] $DryRun
-)
-
-$Script:LogDir = Join-Path $PSScriptRoot '..\..\logs'
-Initialize-Logging -LogFile 'windows_patcher.log'
 
 # ---- WindowsPatcher class ----
 class WindowsPatcher {
@@ -172,21 +182,23 @@ class WindowsPatcher {
     }
 }
 
-# ---- Main ----
-try {
-    $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)
-    $result  = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
+# ---- Main (script mode only) ----
+if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+    try {
+        $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)
+        $result  = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
 
-    $resultsDir = Join-Path $OutputDir 'results'
-    Ensure-DirectoryExists -Path $resultsDir
-    Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
+        $resultsDir = Join-Path $OutputDir 'results'
+        Ensure-DirectoryExists -Path $resultsDir
+        Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
 
-    if ($result.success) { Write-Host "Patching succeeded for $Server"; exit 0 }
-    else                  { Write-Error "Patching failed for $Server : $($result.Get_Item('error'))"; exit 1 }
-}
-catch {
-    Write-Error "Patcher failed: $($_.Exception.Message)"
-    exit 1
+        if ($result.success) { Write-Host "Patching succeeded for $Server"; exit 0 }
+        else                  { Write-Error "Patching failed for $Server : $($result.Get_Item('error'))"; exit 1 }
+    }
+    catch {
+        Write-Error "Patcher failed: $($_.Exception.Message)"
+        exit 1
+    }
 }
 
 # vim: ts=4 sw=4 et

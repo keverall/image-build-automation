@@ -1,5 +1,5 @@
 #
-# Credentials.psm1 — Env-var backed credential helpers.
+# Private/Credentials.ps1 — Env-var backed credential helpers.
 # Mirrors Python utils/credentials.py.
 #
 
@@ -81,8 +81,3 @@ function Get-SmtpCredentials {
     )
     return (Get-EnvCredential $UserEnv), (Get-EnvCredential $PassEnv)
 }
-
-# Backwards-compat alias used internally
-Set-Alias -Name Get-CredentialSecret -Value Get-EnvCredential -Scope Global -ErrorAction SilentlyContinue
-
-# vim: ts=4 sw=4 et

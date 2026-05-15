@@ -6,6 +6,7 @@ Automated build pipelines for creating customized Windows Server installation IS
 
 ## Table of Contents
 
+### Internal docs index
 | Document | Description |
 |---|---|
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview with repository structure, quick start, and full feature catalog |
@@ -16,39 +17,154 @@ Automated build pipelines for creating customized Windows Server installation IS
 | [📦 Utilities Package](docs/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
-| [🛠️ Makefile & Setup](#makefile--local-development) | Project Makefile quick reference, virtual environment setup, and common commands |
-| [🚀 CI Runner Setup](#ci-runner-setup) | Automated runner provisioning script for Jenkins/GitLab/GitStash runners |
+| [🧪 PowerShell Testing (Pester)](docs/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |
+| [⚙️ PowerShell Testing Quick Start](docs/TESTING_POWERSHELL_QUICKSTART.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
+
+### In this document
+- [Table of Contents](#table-of-contents)
+- [Project Architecture](#project-architecture)
+- [Quick Links for Common Tasks](#quick-links-for-common-tasks)
+- [Jenkins Pipeline Stages](#jenkins-pipeline-stages)
+- [Makefile & Local Development](#makefile-local-development)
+  - [Quick Start](#quick-start)
+  - [Virtual Environment](#virtual-environment)
+  - [Makefile Command Reference](#makefile-command-reference)
+  - [Makefile + Jenkinsfile Integration](#makefile-jenkinsfile-integration)
+- [CI Runner Setup](#ci-runner-setup)
+  - [Supported Platforms](#supported-platforms)
+  - [What It Installs](#what-it-installs)
+  - [Usage](#usage)
+  - [One-Liner for Remote Provisioning](#one-liner-for-remote-provisioning)
+  - [Idempotency](#idempotency)
+  - [Jenkinsfile Integration](#jenkinsfile-integration)
+- [SCOM 2015 Compliance](#scom-2015-compliance)
+  - [Why Not REST?](#why-not-rest)
+  - [How SCOM Integration Works](#how-scom-integration-works)
+  - [Step 1: The HPE PowerShell Wrapper Scripts](#step-1-the-hpe-powershell-wrapper-scripts)
+  - [Step 2: The Python SCOMManager Class](#step-2-the-python-scommanager-class)
+  - [Step 3: Ensuring REST API Is Not Used for SCOM 2015](#step-3-ensuring-rest-api-is-not-used-for-scom-2015)
+  - [Upgrade Path: SCOM 2025 with REST API](#upgrade-path-scom-2025-with-rest-api)
+    - [Migration Complexity: **Low** (10–17 hours for REST, 30–45 hours with FastAPI/GraphQL)](#migration-complexity-low-10-17-hours-for-rest-30-45-hours-with-fastapi-graphql)
+    - [Phase 1: Add REST Backend (Opt-In)](#phase-1-add-rest-backend-opt-in)
+    - [Phase 2-4: Progressive Rollout](#phase-2-4-progressive-rollout)
+    - [API Options for SCOM 2025](#api-options-for-scom-2025)
+    - [Benefits Comparison](#benefits-comparison)
+- [Contributing](#contributing)
+- [Support](#support)
+- [License](#license)
 
 ---
+
+
 
 ## Project Architecture
 
 ```
-src/automation/
-├── cli/                    # CLI entry points
-│   ├── build_iso.py       # Main orchestrator (combines firmware + Windows patches)
-│   ├── update_firmware_drivers.py  # HPE SUT integration
-│   ├── patch_windows_security.py   # DISM-based patching
-│   ├── deploy_to_server.py         # iLO virtual media deployment
-│   ├── monitor_install.py          # Installation progress monitoring
-│   ├── opsramp_integration.py      # OpsRamp API integration
-│   ├── maintenance_mode.py         # SCOM/iLO/OpenView orchestration
-│   └── generate_uuid.py            # Deterministic UUID generation
-└── utils/                 # Shared utilities (DRY)
-    ├── logging_setup.py   # Centralized logging configuration
-    ├── config.py          # JSON loader + env var substitution
-    ├── inventory.py       # Server/cluster loading
-    ├── audit.py           # Structured audit logging
-    ├── file_io.py         # Directory & JSON helpers
-    ├── executor.py        # Subprocess wrapper with retry
-    ├── credentials.py     # Environment-based credential retrieval
-    ├── powershell.py      # Local + WinRM PowerShell execution
-    └── base.py            # AutomationBase common class
+hpe-windows-iso-automation/
+├── base_iso/                          # Base Windows ISOs (mounted in build)
+│   └── Windows_Server_2022.iso        # Base ISO used by patching pipeline
+├── configs/                           # Server/cluster/patch JSON configs
+│   ├── server_list.txt                # Target servers (one per line)
+│   ├── clusters_catalogue.json        # Cluster/SCOM/iLO definitions
+│   ├── hpe_firmware_drivers_nov2025.json  # Firmware/driver manifests from HPE
+│   ├── windows_patches.json           # Security patch specifications
+│   ├── scom_config.json               # SCOM 2015 server and group config
+│   ├── openview_config.json           # HPE OpenView integration settings
+│   ├── email_distribution_lists.json  # SMTP and distribution list recipients
+│   └── maintenance_distribution_list.txt  # Override email list for maintenance events
+├── docker-compose.yml                 # Containerised build environment
+├── Dockerfile                         # Docker image for build agents
+├── docker-entrypoint.ps1              # Windows-container entrypoint
+├── docs/                              # Full documentation set
+│   └── (see Documentation Index above)
+├── Jenkinsfile                        # CI/CD pipeline — Windows agent
+├── logs/                              # Audit trails and build reports
+│   ├── audit_trail.log
+│   ├── maintenance_audit.log
+│   ├── maintenance_<action>_<cluster>_<ts>.json
+│   └── build_reports/
+├── Makefile                           # Development and CI task shortcuts
+├── output/                            # Build artefacts
+│   ├── combined/
+│   ├── firmware/
+│   └── patched/
+├── patched_iso/                       # Staging for patched Windows ISOs
+├── powershell/                        # PowerShell module (equivalent to Python src/)
+│   ├── Automation/                    # Module root (mirrors src/automation/)
+│   │   ├── Public/                    # Exported cmdlets
+│   │   │   ├── New-Uuid.ps1           # ← src/automation/cli/generate_uuid.py
+│   │   │   ├── New-IsoBuild.ps1       # ← src/automation/cli/build_iso.py
+│   │   │   ├── Update-Firmware.ps1    # ← src/automation/cli/update_firmware_drivers.py
+│   │   │   ├── Update-WindowsSecurity.ps1  # ← src/automation/cli/patch_windows_security.py
+│   │   │   ├── Invoke-IsoDeploy.ps1   # ← src/automation/cli/deploy_to_server.py
+│   │   │   ├── Start-InstallMonitor.ps1     # ← src/automation/cli/monitor_install.py
+│   │   │   ├── Invoke-OpsRampClient.psm1    # ← src/automation/cli/opsramp_integration.py
+│   │   │   ├── Set-MaintenanceMode.ps1  # ← src/automation/cli/maintenance_mode.py
+│   │   │   ├── Invoke-Validator.psm1     # ← src/automation/utils/validators.py
+│   │   │   ├── Invoke-PowerShellScript.ps1   # ← src/automation/utils/powershell.py (local)
+│   │   │   ├── Invoke-PowerShellWinRM.ps1    # ← src/automation/utils/powershell.py (WinRM)
+│   │   │   └── Start-AutomationOrchestrator.ps1  # ← src/automation/core/orchestrator.py
+│   │   └── Private/                    # Internal helpers (mirrors src/automation/utils/)
+│   │       ├── Config.psm1            # ← src/automation/utils/config.py
+│   │       ├── Credentials.psm1       # ← src/automation/utils/credentials.py
+│   │       ├── Executor.psm1          # ← src/automation/utils/executor.py
+│   │       ├── FileIO.psm1            # ← src/automation/utils/file_io.py
+│   │       ├── Inventory.psm1         # ← src/automation/utils/inventory.py
+│   │       ├── Audit.psm1             # ← src/automation/utils/audit.py
+│   │       ├── Logging.psm1           # ← src/automation/utils/logging_setup.py
+│   │       ├── Base.psm1              # ← src/automation/utils/base.py
+│   │       ├── Router.psm1            # ← src/automation/core/router.py
+│   │       └── Automation.psm1        # Module init — dot-sources Public/ and Private/
+│   └── Tests/                          # Pester v5 test suite  ←  mirrors tests/
+│       ├── Tests.Tests.ps1            # Shared BeforeAll / AfterAll  (= conftest.py)
+│       ├── Config.Tests.ps1
+│       ├── Credentials.Tests.ps1
+│       ├── Executor.Tests.ps1
+│       ├── FileIO.Tests.ps1
+│       ├── Inventory.Tests.ps1
+│       ├── Validators.Tests.ps1
+│       ├── Router.Tests.ps1
+│       ├── New-Uuid.Tests.ps1
+│       ├── Audit.Tests.ps1
+│       ├── Set-MaintenanceMode.Tests.ps1
+│       └── Pester.All.api.ps1         # Combined integration run helper
+├── scripts/                            # CI runner provisioning and helpers
+│   └── setup-runner.sh                # Automated Jenkins/GitLab agent setup
+├── src/automation/                     # Python package (primary implementation)
+│   ├── __init__.py
+│   ├── cli/                            # CLI entry points
+│   │   ├── build_iso.py
+│   │   ├── update_firmware_drivers.py
+│   │   ├── patch_windows_security.py
+│   │   ├── deploy_to_server.py
+│   │   ├── monitor_install.py
+│   │   ├── opsramp_integration.py
+│   │   ├── maintenance_mode.py
+│   │   └── generate_uuid.py
+│   └── utils/                          # Shared utilities
+│       ├── __init__.py
+│       ├── logging_setup.py
+│       ├── config.py
+│       ├── inventory.py
+│       ├── audit.py
+│       ├── file_io.py
+│       ├── executor.py
+│       ├── credentials.py
+│       ├── powershell.py               # ← ps equivalent: Invoke-PowerShell*.ps1
+│       └── base.py
+├── tests/                              # Python / pytest tests  ←  mirrors powershell/Tests/
+│   ├── conftest.py
+│   ├── cli/
+│   ├── core/
+│   └── utils/
+├── tools/                              # External tools bundled or fetched at build time
+│   ├── hpe_sut.exe
+│   └── dism.exe
+├── pyproject.toml                      # Package + pytest / ruff / mypy / bandit config
+├── .ruff.toml                          # Ruff linter configuration
+├── requirements.txt                    # Python runtime dependencies
+└── uv.lock                             # Python lock file (uv)
 ```
-
-All CLI scripts import from `utils/` to avoid duplication. See [Utilities Package Reference](docs/utils.md) for full module details.
-
----
 
 ## Quick Links for Common Tasks
 
@@ -382,6 +498,7 @@ foreach ($inst in $instances) {{
 ```
 
 Key design decisions:
+
 - **Dynamic script generation**: PowerShell code is generated at runtime using Python f-strings, making it easy to inject parameters and handle edge cases
 - **Error handling**: Each cmdlet uses `-ErrorAction Stop` so failures propagate as non-zero exit codes
 - **Dry-run support**: `dry_run=True` skips execution and logs intended actions

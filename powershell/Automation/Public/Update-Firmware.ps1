@@ -1,10 +1,65 @@
 #
-# Update-Firmware.ps1 — HPE firmware/driver ISO builder via HPE Smart Update Tool (SUT)
+# Public/Update-Firmware.ps1 — HPE firmware/driver ISO builder via HPE Smart Update Tool (SUT)
 # Mirrors Python cli/update_firmware_drivers.py
-#
 # Usage:  pwsh -File Update-Firmware.ps1 -Server 'srv01.corp.local'
 #         pwsh -File Update-Firmware.ps1 -Config 'configs\hpe_firmware_drivers_nov2025.json'
 #
+
+function Update-Firmware {
+    <#
+    .SYNOPSIS
+        Build HPE firmware/driver ISO for a set of servers. Callable from the module Router.
+
+    .PARAMETER Config
+        Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json).
+
+    .PARAMETER Server
+        Build for a specific server only.
+
+    .PARAMETER ServerList
+        Path to server_list.txt.
+
+    .PARAMETER OutputDir
+        Output directory.
+
+    .PARAMETER SkipDownload
+        Skip component download step.
+
+    .PARAMETER DryRun
+        Simulate without executing.
+
+    .RETURNS
+        [hashtable] with Success (bool) and details.
+
+    .EXAMPLE
+        Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory = $false)][string] $Config     = 'configs\hpe_firmware_drivers_nov2025.json',
+        [Parameter(Mandatory = $false)][string] $Server     = $null,
+        [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
+        [Parameter(Mandatory = $false)][string] $OutputDir  = 'output\firmware',
+        [Parameter(Mandatory = $false)][switch] $SkipDownload,
+        [Parameter(Mandatory = $false)][switch] $DryRun
+    )
+    Initialize-Logging -LogFile 'firmware_updater.log'
+    try {
+        $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $ServerList }
+        $updater = [FirmwareUpdater]::new($Config, $OutputDir)
+        $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
+        $okCount = ($results | Where-Object { $_.success }).Count
+        Write-Host "Firmware build: $okCount/$($servers.Count) succeeded"
+        $resDir  = Join-Path $OutputDir 'results'
+        Ensure-DirectoryExists -Path $resDir
+        foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }
+        return @{ Success = ($okCount -eq $servers.Count); Total = $servers.Count; Succeeded = $okCount; Results = $results }
+    }
+    catch {
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
 
 [CmdletBinding()]
 param(
@@ -136,18 +191,20 @@ class FirmwareUpdater {
     }
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-try {
-    $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $ServerList }
-    $updater = [FirmwareUpdater]::new($Config, $OutputDir)
-    $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
-    $okCount = ($results | Where-Object { $_.success }).Count
-    Write-Host "Firmware build: $okCount/$($servers.Count) succeeded"
-    $resDir  = Join-Path $OutputDir 'results'
-    Ensure-DirectoryExists -Path $resDir
-    foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }
-    exit (if ($okCount -eq $servers.Count) { 0 } else { 1 })
+# ── Main (script mode only) ───────────────────────────────────────────────────
+if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+    try {
+        $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $ServerList }
+        $updater = [FirmwareUpdater]::new($Config, $OutputDir)
+        $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
+        $okCount = ($results | Where-Object { $_.success }).Count
+        Write-Host "Firmware build: $okCount/$($servers.Count) succeeded"
+        $resDir  = Join-Path $OutputDir 'results'
+        Ensure-DirectoryExists -Path $resDir
+        foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }
+        exit (if ($okCount -eq $servers.Count) { 0 } else { 1 })
+    }
+    catch { Write-Error "Firmware build failed: $($_.Exception.Message)"; exit 1 }
 }
-catch { Write-Error "Firmware build failed: $($_.Exception.Message)"; exit 1 }
 
 # vim: ts=4 sw=4 et

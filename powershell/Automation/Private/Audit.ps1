@@ -1,6 +1,5 @@
 #
-# Audit.psm1 — Audit helper functions
-# NOTE: AuditLogger class is defined in Automation.psm1 (root) for type-visibility.
+# Private/Audit.ps1 — Audit helper helpers
 #
 
 function New-AuditLogger {
@@ -19,5 +18,3 @@ function New-AuditLogger {
     )
     return [AuditLogger]::new($Category, $LogDir, $MasterLog)
 }
-
-# vim: ts=4 sw=4 et

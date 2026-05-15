@@ -1,5 +1,5 @@
 #
-# Config.psm1 — JSON/YAML configuration loading with ${VAR} env substitution.
+# Private/Config.ps1 — JSON/YAML configuration loading with ${VAR} env substitution.
 #
 
 function Import-JsonConfig {
@@ -25,12 +25,10 @@ function Import-JsonConfig {
         [bool] $Required           = $true,
         [bool] $AutoEnvVarReplace  = $true
     )
-
     if (-not (Test-Path $Path -PathType Leaf)) {
         if ($Required) { throw "Configuration file not found: $Path" }
         return @{}
     }
-
     try {
         $raw    = Get-Content -Path $Path -Raw -Encoding UTF8
         $parsed = $raw | ConvertFrom-Json -Depth 64
@@ -62,8 +60,6 @@ function Import-YamlConfig {
     }
     return (Get-Content $Path -Raw -Encoding UTF8 | ConvertFrom-Yaml -Depth 64) ?? @{}
 }
-
-# ─── private helpers ──────────────────────────────────────────────────────────
 
 function _PS_ConvertTo-Hashtable {
     param([Parameter(ValueFromPipeline)] $InputObject)
@@ -102,8 +98,6 @@ function _PS_ReplaceEnvVars {
 }
 
 function _PS_SubstituteEnvVars {
-    # Replace ${VARNAME} with the corresponding environment variable value.
-    # Uses a simple while-loop to avoid regex callback syntax issues across PS versions.
     param([string] $Str)
     $result = $Str
     $start  = $result.IndexOf('${')
@@ -112,7 +106,7 @@ function _PS_SubstituteEnvVars {
         if ($end -lt 0) { break }
         $varName = $result.Substring($start + 2, $end - $start - 2)
         $envVal  = [System.Environment]::GetEnvironmentVariable($varName)
-        $token   = $result.Substring($start, $end - $start + 1)   # e.g. "${FOO}"
+        $token   = $result.Substring($start, $end - $start + 1)
         if ($null -ne $envVal) {
             $result = $result.Remove($start, $token.Length).Insert($start, $envVal)
             $start  = $result.IndexOf('${', $start + $envVal.Length)
@@ -122,5 +116,3 @@ function _PS_SubstituteEnvVars {
     }
     return $result
 }
-
-# vim: ts=4 sw=4 et
