@@ -2,15 +2,11 @@
 CLI entry points for HPE ProLiant Windows Server ISO Automation.
 
 Each module provides a ``main()`` function that serves as the entry point
-for command-line execution. Run any module via:
-
-.. code-block:: bash
+for command-line execution. Run any module via::
 
     python -m automation.cli.build_iso [args...]
 
-Or after installing with ``pip install -e .``:
-
-.. code-block:: bash
+Or after installing with ``pip install -e .``::
 
     build-iso [args...]
 
@@ -24,6 +20,17 @@ Available CLI modules:
     - maintenance_mode: SCOM/iLO maintenance orchestration
     - generate_uuid: Deterministic UUID generation
 """
+
+from . import (
+    build_iso,
+    deploy_to_server,
+    generate_uuid,
+    maintenance_mode,
+    monitor_install,
+    opsramp_integration,
+    patch_windows_security,
+    update_firmware_drivers,
+)
 
 __all__ = [
     "build_iso",
