@@ -118,5 +118,5 @@ Tests completed in 450 ms
 ## Next Steps
 
 - Full Pester reference: [`powershell_testing.md`](powershell_testing.md)
-- Module overview: [`../powershell/README.md`](powershell/README.md)
+- Module overview: [`powershell_api_reference.md`](powershell_api_reference.md)
 - Python/pytest reference: [`../testing.md`](../testing.md)
