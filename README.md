@@ -13,11 +13,16 @@ Automated build pipelines for creating customized Windows Server installation IS
 | [🧪 Testing Guide](docs/python/testing.md) | Comprehensive unit testing & code coverage guide — manual pytest commands, Jenkins CI/CD integration, PR incremental testing (turbo-style), coverage report interpretation, and troubleshooting |
 | [⚡ Testing Quick Start](docs/python/testing_quickstart.md) | Concise cheat sheet for running tests locally and in Jenkins, common commands, and quick troubleshooting reference |
 | [🔍 Code Quality & Security](docs/python/code_quality.md) | Automated linting (ruff), complexity analysis (radon), security scanning (bandit, safety, gitleaks) embedded in Jenkins pipeline with configuration details |
-| [🔧 Maintenance Mode](docs/python/maintenance_mode.md) | SCOM/iLO/OpenView maintenance orchestration guide — usage, scheduling, SCOM manager integration, and best practices |
+| [🔧 Maintenance Mode](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables — language-agnostic |
+| [🔧 Maintenance Mode — Python](docs/python/maintenance_mode.md) | Python script usage: CLI args, `clusters_catalogue.json`, `pip install`, and Python-specific troubleshooting |
+| [🔧 Maintenance Mode — PowerShell](docs/powershell/maintenance_mode.md) | PowerShell cmdlet usage: `[CmdletBinding()]` params, module import, `pwsh.exe` auto-disable scheduling, PSScriptAnalyzer Jenkins snippet |
 | [📦 Utilities Package](docs/python/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
-| [🧪 PowerShell Testing (Pester)](docs/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |
+| [📡 Orchestrator & Routing](docs/api_reference.md) | Language-agnostic: request types, call sequence, adding new handlers, rotor and `ROUTE_MAP`/`$script:RouteMap`, return schemas for both Python `dict` and PowerShell `[hashtable]` |
+| [📡 Orchestrator & Routing — Python](docs/python/api_reference.md) | `AutomationOrchestrator`, `validate_build_params()`, `validate_cluster_id()`, source paths, return dicts |
+| [📡 Orchestrator & Routing — PowerShell](docs/powershell/api_reference.md) | `Start-AutomationOrchestrator`, `Invoke-RoutedRequest`, `$script:RouteMap`, `_Validate-Request`, source paths, return schemas |
+| [🧪 PowerShell Testing (Pester)](docs/powershell/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |
 | [⚙️ PowerShell Testing Quick Start](docs/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
 
 ### In this document
