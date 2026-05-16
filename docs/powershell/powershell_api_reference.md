@@ -37,26 +37,34 @@ powershell/
 │   ├── Automation.psd1            # Module manifest
 │   ├── Automation.psm1            # Root init (dot-sources all sub-modules)
 │   ├── Public/                    # User-visible cmdlets & helper classes
-│   │   ├── Invoke-PowerShell.psm1  # Run-PowerShell / WinRM / SCOM templates
-│   │   ├── OpsRampClient.psm1     # OpsRamp REST API client class
-│   │   ├── Invoke-Validator.psm1  # Cluster / build / server-list validators
-│   │   ├── Invoke-Orchestrator.psm1 # Unified request router
-│   │   ├── New-Uuid.ps1           # Deterministic UUID generator (Xorshift32 PRNG)
-│   │   ├── New-IsoBuild.ps1       # Full ISO build orchestrator
-│   │   ├── Update-Firmware.ps1    # HPE SUT firmware / driver ISO builder
-│   │   ├── Update-WindowsSecurity.ps1 # DISM / PS security patcher
-│   │   ├── Invoke-IsoDeploy.ps1   # iLO virtual media deployer
-│   │   └── Start-InstallMonitor.ps1 # Installation progress monitor
+│   │   ├── Invoke-IsoDeploy.ps1          # iLO virtual media deployer
+│   │   ├── Invoke-OpsRampClient.psm1    # OpsRamp REST API client class
+│   │   ├── Invoke-PowerShellScript.ps1  # Run-PowerShell / WinRM / SCOM templates
+│   │   ├── Invoke-PowerShellWinRM.ps1   # Native PowerShell remoting execution
+│   │   ├── New-IsoBuild.ps1             # Full ISO build orchestrator
+│   │   ├── New-ScomConnection.ps1       # SCOM connection factory
+│   │   ├── New-ScomMaintenanceScript.ps1# SCOM maintenance-mode script generator
+│   │   ├── New-Uuid.ps1                 # Deterministic UUID generator (Xorshift32 PRNG)
+│   │   ├── Set-MaintenanceMode.ps1      # SCOM / iLO / OpenView maintenance orchestrator
+│   │   ├── Start-AutomationOrchestrator.ps1 # Unified orchestrator / request router entry point
+│   │   ├── Start-InstallMonitor.ps1     # Installation progress monitor
+│   │   ├── Test-BuildParams.ps1         # Build parameter validators
+│   │   ├── Test-ClusterId.ps1           # Cluster ID validator
+│   │   ├── Test-ServerList.ps1          # Server-list validator
+│   │   ├── Update-Firmware.ps1          # HPE SUT firmware / driver ISO builder
+│   │   ├── Update-WindowsSecurity.ps1  # DISM / PS security patcher
+│   │   └── _Validate-Request.ps1        # Request pre-validation (private, underscore-prefixed)
 │   └── Private/                   # Internal helpers (not exported)
-│       ├── Audit.psm1             # Structured JSON audit logger
-│       ├── Base.psm1              # AutomationBase class (shared logic)
-│       ├── Config.psm1            # JSON / YAML config loader + env-var substitution
-│       ├── Credentials.psm1       # Env-var backed credential helpers
-│       ├── Executor.psm1          # Invoke-Command / retry / CommandResult class
-│       ├── FileIO.psm1            # Save-Json / Load-Json / Ensure-DirectoryExists
-│       ├── Inventory.psm1         # ServerInfo / Load-ServerList / ClusterCatalogue
-│       ├── Logging.psm1           # Initialize-Logging / Get-Logger
-│       └── Router.psm1            # Route-map + Invoke-RoutedRequest
+│       ├── Audit.ps1              # Structured JSON audit logger
+│       ├── Base.ps1               # AutomationBase class (shared logic)
+│       ├── Config.ps1             # JSON / YAML config loader + env-var substitution
+│       ├── Credentials.ps1        # Env-var backed credential helpers
+│       ├── Executor.ps1           # Invoke-Command / retry / CommandResult class
+│       ├── FileIO.ps1             # Save-Json / Load-Json / Ensure-DirectoryExists
+│       ├── Inventory.ps1          # ServerInfo / Load-ServerList / ClusterCatalogue
+│       ├── Logging.ps1            # Initialize-Logging / Get-Logger
+│       ├── _RouteMap.ps1          # Request-type → handler function map (dot-sourced by Router.ps1)
+│       └── Router.ps1             # Invoke-RoutedRequest + $script:RouteMap dispatch table
 └── Tests/                         # Pester test suite (Pester 5+)
     ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
     ├── Config.Tests.ps1
@@ -93,17 +101,49 @@ Test-Uuid -ServerName 'srv01.corp.local'
 New-IsoBuild -BaseIsoPath 'C:\ISOs\WinServer2022.iso'
 ```
 
-### Enable maintenance mode
-
-```powershell
-Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
-```
-
 ### Deploy ISOs via iLO
 
 ```powershell
 Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
 ```
+
+### Maintenance mode
+
+For architecture, prerequisites, configuration (`clusters_catalogue.json`,
+`scom_config.json`, etc.), scheduling, audit logging, OpsRamp integration,
+environment variables, and troubleshooting see
+[`maintenance_mode.md`](maintenance_mode.md).
+
+```powershell
+# Enable immediately (start=now; end computed from cluster schedule)
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
+
+# Enable with explicit timestamps
+Set-MaintenanceMode -Action enable `
+    -ClusterId 'PROD-CLUSTER-01' `
+    -Start   '2026-05-16 22:00' `
+    -End     '2026-05-17 06:00'
+
+# Disable immediately
+Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
+
+# Dry-run — no SCOM/iLO/OpenView changes
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
+```
+
+### Orchestrator (iRequest pattern)
+
+For generic orchestrator architecture, request types, and flow see
+[`../api_reference.md`](../api_reference.md). To dispatch maintenance mode
+through the orchestrator:
+
+```powershell
+$result = Start-AutomationOrchestrator -RequestType 'maintenance_enable' `
+    -Params @{ cluster_id = 'PROD-CLUSTER-01'; start = 'now' }
+```
+
+All orchestrator results use the same envelope: `Success` (bool), `Output` /
+`Errors`, `RequestType`, and a UTC `Timestamp`.
 
 ---
 
@@ -170,9 +210,9 @@ Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'
 | `audit.py` → `Audit.psm1` | 151 | ~130 | ✅ Converted |
 | `logging_setup.py` → `Logging.psm1` | 51 | ~140 | ✅ Converted |
 | `base.py` → `Base.psm1` | 118 | ~130 | ✅ Converted |
-| `validators.py` → `Invoke-Validator.psm1` | 105 | ~140 | ✅ Converted |
+| `validators.py` → `_Validate-Request.ps1` | 105 | ~140 | ✅ Converted |
 | `router.py` → `Router.psm1` | 102 | ~80 | ✅ Converted |
-| `orchestrator.py` → `Invoke-Orchestrator.psm1` | 162 | ~80 | ✅ Converted |
+| `orchestrator.py` → `Start-AutomationOrchestrator.ps1` | 162 | ~80 | ✅ Converted |
 | `generate_uuid.py` → `New-Uuid.ps1` | 79 | ~130 | ✅ Converted |
 | `maintenance_mode.py` → `Set-MaintenanceMode.ps1` | 956 | ~550 | ✅ Converted |
 | `deploy_to_server.py` → `Invoke-IsoDeploy.ps1` | 296 | ~280 | ✅ Converted |
