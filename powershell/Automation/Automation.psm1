@@ -49,6 +49,16 @@ class AuditLogger {
         }
     }
 
+    # 4-arg convenience overload — Extra defaults to $null
+    [hashtable] Log([string]$Action, [string]$Status, [string]$Server, [string]$Details) {
+        return $this.Log($Action, $Status, $Server, $Details, $null)
+    }
+
+    # 2-arg convenience overload — Server and Details default to empty
+    [hashtable] Log([string]$Action, [string]$Status) {
+        return $this.Log($Action, $Status, '', '', $null)
+    }
+
     [hashtable] Log([string]$Action, [string]$Status, [string]$Server,
                     [string]$Details, [hashtable]$Extra) {
         $entry = @{
@@ -92,6 +102,7 @@ class ServerInfo {
     [string] $Hostname
     [string] $IPMI_IP
     [string] $ILO_IP
+    [string] $Name        # short hostname (cached at construction)
     [int]    $LineNumber
 
     ServerInfo([string]$Hostname, [string]$IPMI_IP, [string]$ILO_IP, [int]$LineNumber) {
@@ -99,6 +110,7 @@ class ServerInfo {
         $this.IPMI_IP    = $IPMI_IP
         $this.ILO_IP     = $ILO_IP
         $this.LineNumber = $LineNumber
+        $this.Name       = $this.ShortName()
     }
 
     [string] ShortName() {
@@ -458,6 +470,8 @@ Export-ModuleMember -Function @(
     'New-AuditLogger'
     # Routing
     'Invoke-RoutedRequest'
+    # Debug / introspection
+    'Get-RouteMap'
     # Base / factories
     'New-AutomationBase'
 )

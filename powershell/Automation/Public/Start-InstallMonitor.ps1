@@ -169,10 +169,11 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         return $progress
     }
 
-    [hashtable] _SendOpsRampMetric([string]$ServerName, [string]$MetricName, [double]$Value) {
+    [void] _SendOpsRampMetric([string]$ServerName, [string]$MetricName, [double]$Value) {
         if ($this.OpsRampClient) {
             try { $this.OpsRampClient.SendMetric($ServerName, $MetricName, $Value, @{ source='automation.cli.monitor_install' }) } catch {}
         }
+        return
     }
 
     [void] _SendOpsRampAlert([string]$ServerName, [string]$AlertType, [string]$Severity, [string]$Message) {
@@ -200,21 +201,21 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
                 if ($elapsed -gt $Timeout) {
                     $result.status = 'timeout'; $result.error = "Timed out after $Timeout s"
                     $this._Log('monitor',$hn,'TIMEOUT',$result.error)
-                    $this._SendOpsRampAlert $hn 'install_timeout' 'WARNING' 'Installation timed out'
+                    $this._SendOpsRampAlert($hn, 'install_timeout', 'WARNING', 'Installation timed out')
                     break
                 }
                 # iLO
-                $iloStatus = $this.CheckIloStatus $Server
+                $iloStatus = $this.CheckIloStatus($Server)
                 $psState   = $iloStatus.Get_Item('power_state') ?? 'unknown'
                 $bootSrc   = $iloStatus.Get_Item('boot_source') ?? 'unknown'
                 $result['ilo_events'] += @{ timestamp=$checkTime; power_state=$psState; boot_source=$bootSrc }
 
                 # WinRM
-                $winrmStatus   = $this.CheckWinRM $Server
+                $winrmStatus   = $this.CheckWinRM($Server)
                 $winrmOk       = [bool]$winrmStatus.Get_Item('winrm_accessible')
 
                 if ($winrmOk) {
-                    $progress = $this.QueryInstallProgressWinRM $Server
+                    $progress = $this.QueryInstallProgressWinRM($Server)
                     $result['winrm_progress'] += @{ timestamp=$checkTime } + $progress
                     $phaseVal = $progress.Get_Item('setup_phase')
                     if ($null -ne $phaseVal) { $result['current_phase'] = $Script:PhaseMap[$phaseVal] ?? "Phase $phaseVal" }
@@ -224,20 +225,20 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
 
                 Write-Host "[$hn] Elapsed: $([math]::Round($elapsed))s | Power: $psState | WinRM: $(if($winrmOk){'ok'}else{'no'}) | Progress: $($result['progress_percent'])% | Phase: $($result['current_phase'])"
 
-                $this._SendOpsRampMetric $hn 'install.progress.percent' $result['progress_percent']
-                $this._SendOpsRampMetric $hn 'install.elapsed_seconds' $elapsed
+                $this._SendOpsRampMetric($hn, 'install.progress.percent', $result['progress_percent'])
+                $this._SendOpsRampMetric($hn, 'install.elapsed_seconds', $elapsed)
 
                 if ($result['progress_percent'] -eq 100) {
                     $result.status = 'completed'
                     $this._Log('monitor',$hn,'COMPLETE','Installation finished')
-                    $this._SendOpsRampAlert $hn 'installation_complete' 'INFO' 'Windows installation completed'
+                    $this._SendOpsRampAlert($hn, 'installation_complete', 'INFO', 'Windows installation completed')
                     break
                 }
                 $lastWinRM = $result['winrm_progress'][-1]
                 if ($lastWinRM -and $lastWinRM['install_state'] -eq 2) {
                     $result.status = 'failed'; $result.error = 'Installation reported failure'
                     $this._Log('monitor',$hn,'FAILED',$result.error)
-                    $this._SendOpsRampAlert $hn 'installation_failed' 'CRITICAL' 'Windows installation failed'
+                    $this._SendOpsRampAlert($hn, 'installation_failed', 'CRITICAL', 'Windows installation failed')
                     break
                 }
                 Start-Sleep -Seconds $PollInterval
@@ -248,7 +249,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         }
         catch {
             $result.status = 'error'; $result.error = $_.Exception.Message
-            Write-Error "Monitor error for $hn: $($_.Exception.Message)"
+            Write-Error "Monitor error for ${hn}: $($_.Exception.Message)"
         }
         finally {
             $result['end_time'] = (Get-Date).ToString('o')

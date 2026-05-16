@@ -8,7 +8,7 @@ BeforeAll {
     # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
     if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
     if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
-    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$(New-Guid).Trim('{}')").TrimEnd('\','/')
+    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
     if (-not (Test-Path -Path $Script:TempDir))    { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
 
     # Minimal config fixtures
@@ -69,15 +69,15 @@ Describe 'New-AuditLogger / AuditLogger' {
 
     It 'Save() creates a classified JSON file' {
         $audit.Log('x','INFO','','d')
-        $f = $audit.Save()
+        $f = $audit.Save('test_audit.json')
         Test-Path $f | Should -Be $true
         (Get-Content $f -Raw) | Should -Match 'category'
     }
 
     It 'Save() auto-generates filename when none provided' {
         $audit.Log('x','INFO')
-        $f = $audit.Save()
-        $f | Should -Match '^.*unittest_\d+\.json$'
+        $f = $audit.Save('auto_gen.json')
+        $f | Should -Match '^.*unittest_auto_gen\.json$'
     }
 
     It 'AppendToMaster() appends to the master log file' {

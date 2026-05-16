@@ -1,0 +1,98 @@
+{
+  "successful": 0,
+  "results": [
+    "output/results",
+    "output/results/build_result_1778970891.json",
+    {
+      "server": "s",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "timestamp": "2026-05-16T23:34:51.6279405+01:00",
+      "success": false,
+      "error": "Unable to find type [FirmwareUpdater].",
+      "combined_iso": null,
+      "patched_iso": null,
+      "steps": [
+        {
+          "Uuid": "00000000-0000-0000-0000-000000000000",
+          "Step": "generate_uuid"
+        }
+      ]
+    },
+    "output/results",
+    "output/results/build_result_1778970891.json",
+    {
+      "server": "s",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "timestamp": "2026-05-16T23:34:51.6326137+01:00",
+      "success": false,
+      "error": "Unable to find type [FirmwareUpdater].",
+      "combined_iso": null,
+      "patched_iso": null,
+      "steps": [
+        {
+          "Uuid": "00000000-0000-0000-0000-000000000000",
+          "Step": "generate_uuid"
+        }
+      ]
+    },
+    "output/results",
+    "output/results/build_result_1778970891.json",
+    {
+      "server": "s",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "timestamp": "2026-05-16T23:34:51.6340670+01:00",
+      "success": false,
+      "error": "Unable to find type [FirmwareUpdater].",
+      "combined_iso": null,
+      "patched_iso": null,
+      "steps": [
+        {
+          "Uuid": "00000000-0000-0000-0000-000000000000",
+          "Step": "generate_uuid"
+        }
+      ]
+    },
+    "output/results",
+    "output/results/build_result_1778970891.json",
+    {
+      "server": "p",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "timestamp": "2026-05-16T23:34:51.6354317+01:00",
+      "success": false,
+      "error": "Unable to find type [FirmwareUpdater].",
+      "combined_iso": null,
+      "patched_iso": null,
+      "steps": [
+        {
+          "Uuid": "00000000-0000-0000-0000-000000000000",
+          "Step": "generate_uuid"
+        }
+      ]
+    },
+    "output/results",
+    "output/results/build_result_1778970891.json",
+    {
+      "server": "p",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "firmware_iso": null,
+      "timestamp": "2026-05-16T23:34:51.6367781+01:00",
+      "success": false,
+      "error": "Unable to find type [FirmwareUpdater].",
+      "combined_iso": null,
+      "patched_iso": null,
+      "steps": [
+        {
+          "Uuid": "00000000-0000-0000-0000-000000000000",
+          "Step": "generate_uuid"
+        }
+      ]
+    }
+  ],
+  "timestamp": "2026-05-16T23:34:51.6455847+01:00",
+  "failed": 5,
+  "total_servers": 5
+}

@@ -8,7 +8,7 @@ BeforeAll {
     # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
     if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
     if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
-    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$(New-Guid).Trim('{}')").TrimEnd('\','/')
+    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
     if (-not (Test-Path -Path $Script:TempDir))    { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
 
     # Minimal config fixtures
@@ -42,16 +42,16 @@ srv03
 }
 
 Describe '$RouteMap has all 10 known request types' {
-    It 'Contains build_iso'   { $script:RouteMap.ContainsKey('build_iso')         | Should -Be $true }
-    It 'Contains update_firmware' { $script:RouteMap.ContainsKey('update_firmware') | Should -Be $true }
-    It 'Contains patch_windows' { $script:RouteMap.ContainsKey('patch_windows')   | Should -Be $true }
-    It 'Contains deploy'      { $script:RouteMap.ContainsKey('deploy')            | Should -Be $true }
-    It 'Contains monitor'     { $script:RouteMap.ContainsKey('monitor')           | Should -Be $true }
-    It 'Contains maintenance_enable' { $script:RouteMap.ContainsKey('maintenance_enable') | Should -Be $true }
-    It 'Contains maintenance_disable' { $script:RouteMap.ContainsKey('maintenance_disable') | Should -Be $true }
-    It 'Contains maintenance_validate' { $script:RouteMap.ContainsKey('maintenance_validate') | Should -Be $true }
-    It 'Contains opsramp_report' { $script:RouteMap.ContainsKey('opsramp_report') | Should -Be $true }
-    It 'Contains generate_uuid' { $script:RouteMap.ContainsKey('generate_uuid') | Should -Be $true }
+    It 'Contains build_iso'   { (Get-RouteMap).ContainsKey('build_iso')         | Should -Be $true }
+    It 'Contains update_firmware' { (Get-RouteMap).ContainsKey('update_firmware') | Should -Be $true }
+    It 'Contains patch_windows' { (Get-RouteMap).ContainsKey('patch_windows')   | Should -Be $true }
+    It 'Contains deploy'      { (Get-RouteMap).ContainsKey('deploy')            | Should -Be $true }
+    It 'Contains monitor'     { (Get-RouteMap).ContainsKey('monitor')           | Should -Be $true }
+    It 'Contains maintenance_enable' { (Get-RouteMap).ContainsKey('maintenance_enable') | Should -Be $true }
+    It 'Contains maintenance_disable' { (Get-RouteMap).ContainsKey('maintenance_disable') | Should -Be $true }
+    It 'Contains maintenance_validate' { (Get-RouteMap).ContainsKey('maintenance_validate') | Should -Be $true }
+    It 'Contains opsramp_report' { (Get-RouteMap).ContainsKey('opsramp_report') | Should -Be $true }
+    It 'Contains generate_uuid' { (Get-RouteMap).ContainsKey('generate_uuid') | Should -Be $true }
 }
 
 Describe 'Invoke-RoutedRequest' {

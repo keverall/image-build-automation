@@ -70,6 +70,14 @@ function _PS_ConvertTo-Hashtable {
             foreach ($k in $InputObject.Keys) { $ht[$k] = _PS_ConvertTo-Hashtable $InputObject[$k] }
             return $ht
         }
+        # PS7 ConvertFrom-Json returns PSCustomObject, not IDictionary — handle explicitly
+        if ($InputObject -is [System.Management.Automation.PSCustomObject]) {
+            $ht = @{}
+            foreach ($prop in $InputObject.PSObject.Properties) {
+                $ht[$prop.Name] = _PS_ConvertTo-Hashtable $prop.Value
+            }
+            return $ht
+        }
         if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string]) {
             return ,@($InputObject | ForEach-Object { _PS_ConvertTo-Hashtable $_ })
         }

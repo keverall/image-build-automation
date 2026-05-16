@@ -1,0 +1,16 @@
+{
+  "error": "Invalid JSON in 'configs/hpe_firmware_drivers_nov2025.json': Cannot process argument transformation on parameter 'Config'. Cannot convert value \"@{firmware_drivers_version=November 2025; release_date=2025-11-15; hpe_repository_url=https://downloads.hpe.com/repo/nov2025/; spp_iso=HPE-Service-Pack-ProLiant-2025.11.0.iso; components=; spp_iso_checksum=a1b2c3d4e5f678901234567890abcdef1234567890abcdef1234567890abcdef; download_credentials=}\" to type \"System.Collections.Hashtable\". Error: \"Cannot convert the \"@{firmware_drivers_version=November 2025; release_date=2025-11-15; hpe_repository_url=https://downloads.hpe.com/repo/nov2025/; spp_iso=HPE-Service-Pack-ProLiant-2025.11.0.iso; components=; spp_iso_checksum=a1b2c3d4e5f678901234567890abcdef1234567890abcdef1234567890abcdef; download_credentials=}\" value of type \"System.Management.Automation.PSCustomObject\" to type \"System.Collections.Hashtable\".\"",
+  "steps": [
+    {
+      "Uuid": "00000000-0000-0000-0000-000000000000",
+      "Step": "generate_uuid"
+    }
+  ],
+  "uuid": "00000000-0000-0000-0000-000000000000",
+  "patched_iso": null,
+  "timestamp": "2026-05-16T23:42:58.5231871+01:00",
+  "server": "p",
+  "success": false,
+  "combined_iso": null,
+  "firmware_iso": null
+}

@@ -72,16 +72,6 @@ function Update-Firmware {
     }
 }
 
-[CmdletBinding()]
-param(
-    [string] $Config     = 'configs\hpe_firmware_drivers_nov2025.json',
-    [string] $Server     = $null,
-    [string] $ServerList = 'configs\server_list.txt',
-    [string] $OutputDir  = 'output\firmware',
-    [switch] $SkipDownload,
-    [switch] $DryRun
-)
-
 Initialize-Logging -LogFile 'firmware_updater.log'
 
 class FirmwareUpdater {
