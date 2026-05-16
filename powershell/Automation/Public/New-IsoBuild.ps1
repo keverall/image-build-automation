@@ -8,6 +8,12 @@ function New-IsoBuild {
         Orchestrates the full ISO build pipeline, callable from the module Router.
         Mirrors Python cli/build_iso.py.
 
+    .DESCRIPTION
+        Coordinates firmware/driver ISO creation (via HPE SUT) and Windows security
+        patching (via DISM) to produce ready-to-deploy customized ISOs for every
+        server listed in configs/server_list.txt.  The resulting artifacts are
+        placed under output/combined and can be consumed by Invoke-IsoDeploy.
+
     .PARAMETER BaseIsoPath
         Path to the base Windows Server ISO.
 

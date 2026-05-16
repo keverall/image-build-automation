@@ -13,7 +13,13 @@
 function Update-Firmware {
     <#
     .SYNOPSIS
-        Build HPE firmware/driver ISO for a set of servers. Callable from the module Router.
+        Build HPE firmware/driver ISOs using the Smart Update Tool (SUT).
+        Callable from the module Router.
+
+    .DESCRIPTION
+        Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and
+        invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the
+        Python automation.cli.update_firmware_drivers module.
 
     .PARAMETER Config
         Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json).

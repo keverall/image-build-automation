@@ -12,6 +12,15 @@ function Set-MaintenanceMode {
         Enable, disable, or validate maintenance mode for a server cluster.
         Callable from the module Router.
 
+    .DESCRIPTION
+        Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO,
+        and HPE OpenView for a logical cluster defined in clusters_catalogue.json.
+        Supports immediate enable/disable as well as scheduled windows with
+        automatic disable via Windows Task Scheduler.
+        Integrates with OpsRamp for metric/alert emission and can send email
+        notifications.  The function is the PowerShell equivalent of the Python
+        automation.cli.maintenance_mode module.
+
     .PARAMETER Action
         'enable', 'disable', or 'validate'.
 

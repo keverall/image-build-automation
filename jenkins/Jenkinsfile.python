@@ -141,7 +141,49 @@ print('[SETUP] All JSON configs valid.')
         }
 
         // =========================================================================
-        //  2. CYBERARK — BOOTSTRAP SECRETS
+        //  GENERATE DOCUMENTATION
+        //      1. Python      — scripts/generate_python_docs.py imports each
+        //                        console_scripts entry-point, captures --help output
+        //                        via argparse, and renders Markdown.
+        //      2. PowerShell  — PlatyPS reads comment-based help from every
+        //                        Public/*.ps1 and produces Markdown (Windows agent only).
+        //      Both sets of files are archived as build artifacts so they stay
+        //      in lock-step with the codebase.
+        // =========================================================================
+        stage('Generate Documentation') {
+            steps {
+                sh '''
+                    mkdir -p docs/python/generated
+
+                    # ── 1/2 Python CLI docs ──────────────────────────────────────
+                    echo "[DOCS] Generating Python CLI API reference docs…"
+                    python3 scripts/generate_python_docs.py --force
+                '''
+                powershell '''
+                    $ErrorActionPreference = 'Continue'
+
+                    # ── 2/2 PowerShell docs via PlatyPS ──────────────────────────
+                    Write-Host "[DOCS] Generating PowerShell API reference docs (PlatyPS)…"
+                    try {
+                        pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 -Force
+                        Write-Host "[DOCS] PowerShell docs generated."
+                    }
+                    catch {
+                        Write-Warning "[DOCS] PlatyPS failed: $($_.Exception.Message)"
+                        Write-Warning "[DOCS] Install with: Install-Module PlatyPS -Scope CurrentUser -Force"
+                    }
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'docs/python/generated/**', fingerprint: true, allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'docs/**/INDEX.md',       fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+
+        // =========================================================================
+        //  3. CYBERARK — BOOTSTRAP SECRETS
         //      AIM REST API (PS CLI not available on this Linux agent)
         //      Secrets injected as env vars — same schema as PS pipeline
         // =========================================================================
@@ -179,7 +221,7 @@ print('[SETUP] All JSON configs valid.')
         }
 
         // =========================================================================
-        //  3. CODE QUALITY & SECURITY SCAN
+        //  4. CODE QUALITY & SECURITY SCAN
         //      1. ruff + ruff format   — lint + auto-fix
         //      2. pylint              — comprehensive lint (JSON + text)
         //      3. radon CC/MI         — complexity + maintainability index
@@ -273,7 +315,7 @@ print('[SETUP] All JSON configs valid.')
         }
 
         // =========================================================================
-        //  4. PYTEST UNIT TESTS & COVERAGE
+        //  5. PYTEST UNIT TESTS & COVERAGE
         //      Mirrors PS Pester stage — runs tests/ via pytest with incremental
         //      PR targeting (turbo-style).
         // =========================================================================
@@ -320,7 +362,7 @@ print('[SETUP] All JSON configs valid.')
         }
 
         // =========================================================================
-        //  5. ORCHESTRATOR
+        //  6. ORCHESTRATOR
         //      Uses automation.control (mirrors PS Control.psm1 Run-Jenkins path).
         //      Identical parameter map to the PS pipeline's Orchestrator stage.
         //      Equivalent PS: ctrl = New-JenkinsCtrl -Params $jenkinsParams | Run-Jenkins
@@ -366,7 +408,7 @@ if not result.get('success'):
         }
 
         // =========================================================================
-        //  6. DIRECT CALL / API ENTRY
+        //  7. DIRECT CALL / API ENTRY
         //      Mirrors PS Start-AutomationOrchestrator.
         //      Single entry point for any caller outside Jenkins (cron, ISAPI, API).
         //      Equivalent PS:    Start-AutomationOrchestrator -RequestType … -Params @{…}
@@ -403,7 +445,7 @@ json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, 
         }
 
         // =========================================================================
-        //  7. BUILD FIRMWARE ISOS
+        //  8. BUILD FIRMWARE ISOS
         //      Equivalent PS: Update-Firmware
         // =========================================================================
         stage('Build Firmware ISOs') {
@@ -432,7 +474,7 @@ json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, 
         }
 
         // =========================================================================
-        //  8. BUILD WINDOWS ISOS
+        //  9. BUILD WINDOWS ISOS
         //      Equivalent PS: Update-WindowsSecurity
         // =========================================================================
         stage('Build Windows ISOs') {
@@ -462,7 +504,7 @@ json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, 
         }
 
         // =========================================================================
-        //  9. COMBINE DEPLOYMENT PACKAGES
+        //  10. COMBINE DEPLOYMENT PACKAGES
         //      Equivalent PS: New-IsoBuild + Compress-Archive
         // =========================================================================
         stage('Combine Deployment Packages') {
@@ -483,7 +525,7 @@ json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, 
         }
 
         // =========================================================================
-        //  10. IREQUEST ENTRY (ISAPI / BMC FORM)
+        //  11. IREQUEST ENTRY (ISAPI / BMC FORM)
         //      Mirrors Python control.py from_irequest() / PS Run-IRequest.
         //      Triggered by BUILD_STAGE='irequest' + CLUSTER_ID=<id>.
         //      Form fields: cluster_id=<id>  action=enable  start=now  end=<iso>
@@ -525,7 +567,7 @@ print(f'iRequest OK: {result["request_type"]} cluster={cluster_id}')
         }
 
         // =========================================================================
-        //  11. SCHEDULED TASK (schtasks / cron path)
+        //  12. SCHEDULED TASK (schtasks / cron path)
         //      Mirrors PS: scripts/schedule-jobs.ps1 Invoke-JobMaintenanceDisable
         //                  / cron_jobs.sh Invoke-JobMaintenanceDisable
         //      Equivalent PS:   New-SchedulerCtrl -TaskParams … | Run-Scheduler
@@ -566,7 +608,7 @@ print(f'Scheduled task completed: {result["request_type"]} cluster={cluster_id}'
         }
 
         // =========================================================================
-        //  12. DEPLOY
+        //  13. DEPLOY
         //      Equivalent PS: Invoke-IsoDeploy
         // =========================================================================
         stage('Deploy') {
@@ -584,7 +626,7 @@ print(f'Scheduled task completed: {result["request_type"]} cluster={cluster_id}'
         }
 
         // =========================================================================
-        //  13. VULNERABILITY SCAN
+        //  14. VULNERABILITY SCAN
         //      Placeholder — configure Nessus / OpenVAS per environment
         // =========================================================================
         stage('Vulnerability Scan') {
@@ -604,7 +646,7 @@ print(f'Scheduled task completed: {result["request_type"]} cluster={cluster_id}'
         }
 
         // =========================================================================
-        //  14. OPSRAMP REPORTING
+        //  15. OPSRAMP REPORTING
         //      Reads output/results/*.json and pushes metrics/alerts via OpsRampClient.
         // =========================================================================
         stage('OpsRamp Reporting') {
@@ -630,7 +672,7 @@ if results_dir.exists() and Path(cfg).exists():
         }
 
         // =========================================================================
-        //  15. REPORTING
+        //  16. REPORTING
         //      Cron-scheduled (daily 02:00) — mirrors scripts/schedule-jobs.ps1 -Job reporting
         //      Equivalent PY: scripts/cron_jobs.sh reporting  OR
         //                     python -m automation.control run_jenkins | stage=all
@@ -647,7 +689,7 @@ if results_dir.exists() and Path(cfg).exists():
         }
 
         // =========================================================================
-        //  16. MONITORING
+        //  17. MONITORING
         //      Cron-scheduled (every 5 min) — mirrors scripts/schedule-jobs.ps1 -Job monitoring
         //      Equivalent PY: scripts/cron_jobs.sh monitoring  OR
         //                     python -m automation.control run_jenkins | stage=deploy
@@ -664,7 +706,7 @@ if results_dir.exists() and Path(cfg).exists():
         }
 
         // =========================================================================
-        //  17. AUDIT & REPORTING
+        //  18. AUDIT & REPORTING
         //      Python-native: AuditLogger.save() + JSON summary
         // =========================================================================
         stage('Audit & Reporting') {

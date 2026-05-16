@@ -12,6 +12,11 @@ function Start-InstallMonitor {
         Monitor Windows Server installation progress on HPE ProLiant hardware.
         Callable from the module Router.
 
+    .DESCRIPTION
+        Polls iLO Redfish and WinRM to track installation phases (Generalize,
+        Specialize, Running Windows, etc.).  Sends progress metrics and alerts
+        to OpsRamp.  The PowerShell equivalent of automation.cli.monitor_install.
+
     .PARAMETER Server
         Monitor a single server only.
 

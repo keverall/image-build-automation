@@ -167,7 +167,54 @@ pipeline {
         }
 
         // =========================================================================
-        //  2. CYBERARK — BOOTSTRAP SECRETS
+        //  GENERATE DOCUMENTATION
+        //      1. PowerShell  — PlatyPS reads comment-based help from every
+        //                        Public/*.ps1 and produces Markdown.
+        //      2. Python      — scripts/generate_python_docs.py imports each
+        //                        console_scripts entry-point, captures --help output
+        //                        via argparse, and renders Markdown.
+        //      Both sets of files are archived as build artifacts so they stay
+        //      in lock-step with the codebase.
+        // =========================================================================
+        stage('Generate Documentation') {
+            steps {
+                powershell '''
+                    $ErrorActionPreference = 'Continue'
+
+                    # ── 1/2 PowerShell docs via PlatyPS ───────────────────────────
+                    Write-Host "[DOCS] Generating PowerShell API reference docs (PlatyPS)…"
+                    try {
+                        pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 -Force
+                        Write-Host "[DOCS] PowerShell docs generated."
+                    }
+                    catch {
+                        Write-Warning "[DOCS] PlatyPS failed: $($_.Exception.Message)"
+                        Write-Warning "[DOCS] Install with: Install-Module PlatyPS -Scope CurrentUser -Force"
+                    }
+
+                    # ── 2/2 Python docs via argparse help extractor ───────────────
+                    Write-Host "[DOCS] Generating Python CLI API reference docs…"
+                    if (Test-Path '.venv\\Scripts\\python.exe') {
+                        & '.venv\\Scripts\\python.exe' scripts/generate_python_docs.py --force
+                    }
+                    elseif (Get-Command python -ErrorAction SilentlyContinue) {
+                        python scripts/generate_python_docs.py --force
+                    }
+                    else {
+                        Write-Warning "[DOCS] Python not found. Skipping Python doc generation."
+                    }
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'docs/**/generated/**', fingerprint: true, allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'docs/**/INDEX.md',  fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+
+        // =========================================================================
+        //  3. CYBERARK — BOOTSTRAP SECRETS
         //      CCP CLI first; AIM REST fallback.
         //      Secrets injected as Process-scope env vars — same schema as Python.
         // =========================================================================
@@ -230,7 +277,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  3. CODE QUALITY & SECURITY SCAN
+        //  4. CODE QUALITY & SECURITY SCAN
         //      1. PSScriptAnalyzer  — PowerShell lint
         //      2. Pester unit tests  — PowerShell tests (NUnit XML)
         //      3. gitleaks          — committed secrets
@@ -329,7 +376,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  4. PESTER UNIT TESTS
+        //  5. PESTER UNIT TESTS
         //      Mirrors Python pytest stage — runs powershell/Tests/ via Pester v5
         // =========================================================================
         stage('Pester Unit Tests & Coverage') {
@@ -361,7 +408,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  5. ORCHESTRATOR
+        //  6. ORCHESTRATOR
         //      Single decision point — mirrors Python orchestrator.execute().
         //      Uses the Control.psm1 factory (new-JenkinsCtrl | Run-Jenkins) so
         //      every downstream stage uses the same code path as schedulers and
@@ -399,7 +446,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  6. DIRECT CALL / API ENTRY
+        //  7. DIRECT CALL / API ENTRY
         //      Mirrors Python automation.core.orchestrator.AutomationOrchestrator.
         //      Single entry point for any caller outside Jenkins (cron, ISAPI, API).
         //      Equivalent Python: from automation.control import run_jenkins; run_jenkins(params)
@@ -438,7 +485,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  7. BUILD FIRMWARE ISOS
+        //  8. BUILD FIRMWARE ISOS
         //      PS-native: Update-Firmware
         // =========================================================================
         stage('Build Firmware ISOs') {
@@ -467,7 +514,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  8. BUILD WINDOWS ISOS
+        //  9. BUILD WINDOWS ISOS
         //      PS-native: Update-WindowsSecurity
         // =========================================================================
         stage('Build Windows ISOs') {
@@ -492,7 +539,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  9. COMBINE DEPLOYMENT PACKAGES
+        //  10. COMBINE DEPLOYMENT PACKAGES
         //      PS-native: New-IsoBuild + Compress-Archive
         // =========================================================================
         stage('Combine Deployment Packages') {
@@ -510,7 +557,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  10. IREQUEST (ISAPI / BMC FORM) ENTRY
+        //  11. IREQUEST (ISAPI / BMC FORM) ENTRY
         //       Mirrors Python control.py from_irequest().
         //       Triggered by setting BUILD_STAGE='irequest' and CLUSTER_ID=<id>.
         //       Real BMC iRequest header: Accept: application/json
@@ -545,7 +592,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  11. SCHEDULED TASK CALLER (Windows schtasks / Linux cron)
+        //  12. SCHEDULED TASK CALLER (Windows schtasks / Linux cron)
         //       Mirrors Python control.py from_scheduler().
         //       Registers + runs the maintenance-disable Windows Scheduled Task,
         //       triggered by BUILD_STAGE='scheduled' + CLUSTER_ID=<id>.
@@ -578,7 +625,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  12. DEPLOY
+        //  13. DEPLOY
         //      PS-native: Invoke-IsoDeploy
         // =========================================================================
         stage('Deploy') {
@@ -596,7 +643,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  13. VULNERABILITY SCAN
+        //  14. VULNERABILITY SCAN
         //      Placeholder — configure Nessus / OpenVAS per environment
         // =========================================================================
         stage('Vulnerability Scan') {
@@ -615,7 +662,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  14. OPSRAMP REPORTING
+        //  15. OPSRAMP REPORTING
         //      PS-native: Invoke-OpsRamp reads output/results/*.json
         //      Also the cron/automation entry point via scripts/schedule-jobs.ps1 reporting
         // =========================================================================
@@ -632,7 +679,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  15. REPORTING  (cron-scheduled  → orchestrator/run_job)
+        //  16. REPORTING  (cron-scheduled  → orchestrator/run_job)
         //      Mirrors: cron_jobs.sh reporting  /  scripts/schedule-jobs.ps1 Invoke-JobReporting
         //      24-hour midnight daily batch; pushes audit logs to OpsRamp and archives
         // =========================================================================
@@ -649,7 +696,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  16. MONITORING  (cron-scheduled every 5 min  →  Start-InstallMonitor per server)
+        //  17. MONITORING  (cron-scheduled every 5 min  →  Start-InstallMonitor per server)
         //      Mirrors: cron_jobs.sh monitoring  /  scripts/schedule-jobs.ps1 Invoke-JobMonitoring
         // =========================================================================
         stage('Monitoring') {
@@ -662,7 +709,7 @@ pipeline {
         }
 
         // =========================================================================
-        //  17. AUDIT & REPORTING
+        //  18. AUDIT & REPORTING
         //      PS-native: same AuditLogger / ConvertTo-Json pattern
         // =========================================================================
         stage('Audit & Reporting') {
