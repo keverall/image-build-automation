@@ -19,7 +19,7 @@ Complete guide to running unit tests manually and via the Jenkins CI/CD pipeline
 
 ## Overview
 
-> **Note:** The PowerShell module (`powershell/Automation/`) has an equivalent Pester test suite under `powershell/Tests/`. See [PowerShell Testing Guide](powershell_testing.md) for the Pester-specific reference.
+> **Note:** The PowerShell module (`powershell/Automation/`) has an equivalent Pester test suite under `powershell/Tests/`. See [PowerShell Testing Guide](powershell/powershell_testing.md) for the Pester-specific reference.
 >
 >
 > **Secrets**: All credentials (iLO, SCOM, OpsRamp, SMTP, OpenView, HPE firmware download)

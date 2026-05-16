@@ -39,22 +39,23 @@ hpe-windows-iso-automation/
 
 | Document | Description |
 |---|---|
-| [Testing Guide](testing.md) | Comprehensive pytest / coverage / CI guide — commands, fixtures, PR incremental testing, coverage reports, troubleshooting |
-| [Testing Quick Start](TESTING_QUICKSTART.md) | Cheat sheet for manual pytest runs and Jenkins, common commands, quick-reference table |
-| [Code Quality & Security](code_quality.md) | ruff, pylint, radon, bandit, safety, gitleaks — configuration, usage, Jenkins pipeline integration |
-| [Maintenance Mode](maintenance_mode.md) | SCOM / iLO / OpenView maintenance orchestration — usage, scheduling, SCOM 2015 PowerShell bridge, REST upgrade path |
+| [Testing Guide](python/testing.md) | Comprehensive pytest / coverage / CI guide — commands, fixtures, PR incremental testing, coverage reports, troubleshooting |
+| [Testing Quick Start](python/testing_quickstart.md) | Cheat sheet for manual pytest runs and Jenkins, common commands, quick-reference table |
+| [Code Quality & Security](python/code_quality.md) | ruff, pylint, radon, bandit, safety, gitleaks — configuration, usage, Jenkins pipeline integration |
+| [Maintenance Mode](python/maintenance_mode.md) | SCOM / iLO / OpenView maintenance orchestration — usage, scheduling, SCOM 2015 PowerShell bridge, REST upgrade path |
 | [Audit Process](audit_process.md) | Structured JSON audit logging, master-log append, retention policies, GDPR handling |
 | [GDPR Compliance](gdpr_compliance.md) | Data-minimisation, encryption, retention, residency, user-rights handling |
-| [Utilities Package](utils.md) | Full reference for all modules in `src/automation/utils/` — logging, config, inventory, audit, executor, credentials, PowerShell bridge, base class |
+| [Utilities Package](python/utils.md) | Full reference for all modules in `src/automation/utils/` — logging, config, inventory, audit, executor, credentials, PowerShell bridge, base class |
 
 ### PowerShell
 
 | Document | Description |
 |---|---|
 | [PowerShell Module README](../powershell/README.md) | Module overview, directory layout, requirements, Python-to-PowerShell design mapping, command quick-reference |
-| [PowerShell Testing Guide](powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
-| [PowerShell Testing Quick Start](TESTING_POWERSHELL_QUICKSTART.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
-| [🔧 PowerShell Jenkins Run Requirements](docs/powershell/powershell-jenkins-run-requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
+| [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
+| [PowerShell Testing Quick Start](powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
+| [PowerShell Code Quality & Security](powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, Jenkins pipeline integration, quality gates, comparison with Python tools |
+| [🔧 PowerShell Jenkins Run Requirements](powershell/powershell_jenkins_run_requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
 
 ---
 
@@ -74,9 +75,9 @@ hpe-windows-iso-automation/
 ## Contributing
 
 1. Add or update unit tests mirroring the module structure (Python → `tests/`, PowerShell → `powershell/Tests/`)
-2. Update the relevant doc page in `docs/`
-3. Run linting: `ruff check src/automation/ --fix`
-4. Ensure pytest passes: `pytest` (Python) and/or `Invoke-Pester` (PowerShell)
+2. Update the relevant doc page in `python/` or `powershell/`
+3. Run linting: `ruff check src/automation/ --fix` and `Invoke-ScriptAnalyzer -Path powershell\Automation -Recurse`
+4. Ensure pytest / Pester passes: `pytest` (Python) and/or `Invoke-Pester` (PowerShell)
 5. PR description must link to any documentation changes
 
-See [Code Quality](code_quality.md) for full lint/scan details.
+See [Python Code Quality](python/code_quality.md) / [PowerShell Code Quality](powershell/code_quality.md) for full lint/scan details.

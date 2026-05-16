@@ -10,15 +10,15 @@ Automated build pipelines for creating customized Windows Server installation IS
 | Document | Description |
 |---|---|
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview with repository structure, quick start, and full feature catalog |
-| [🧪 Testing Guide](docs/testing.md) | Comprehensive unit testing & code coverage guide — manual pytest commands, Jenkins CI/CD integration, PR incremental testing (turbo-style), coverage report interpretation, and troubleshooting |
-| [⚡ Testing Quick Start](docs/TESTING_QUICKSTART.md) | Concise cheat sheet for running tests locally and in Jenkins, common commands, and quick troubleshooting reference |
-| [🔍 Code Quality & Security](docs/code_quality.md) | Automated linting (ruff), complexity analysis (radon), security scanning (bandit, safety, gitleaks) embedded in Jenkins pipeline with configuration details |
-| [🔧 Maintenance Mode](docs/maintenance_mode.md) | SCOM/iLO/OpenView maintenance orchestration guide — usage, scheduling, SCOM manager integration, and best practices |
-| [📦 Utilities Package](docs/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
+| [🧪 Testing Guide](docs/python/testing.md) | Comprehensive unit testing & code coverage guide — manual pytest commands, Jenkins CI/CD integration, PR incremental testing (turbo-style), coverage report interpretation, and troubleshooting |
+| [⚡ Testing Quick Start](docs/python/testing_quickstart.md) | Concise cheat sheet for running tests locally and in Jenkins, common commands, and quick troubleshooting reference |
+| [🔍 Code Quality & Security](docs/python/code_quality.md) | Automated linting (ruff), complexity analysis (radon), security scanning (bandit, safety, gitleaks) embedded in Jenkins pipeline with configuration details |
+| [🔧 Maintenance Mode](docs/python/maintenance_mode.md) | SCOM/iLO/OpenView maintenance orchestration guide — usage, scheduling, SCOM manager integration, and best practices |
+| [📦 Utilities Package](docs/python/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
 | [🧪 PowerShell Testing (Pester)](docs/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |
-| [⚙️ PowerShell Testing Quick Start](docs/TESTING_POWERSHELL_QUICKSTART.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
+| [⚙️ PowerShell Testing Quick Start](docs/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
 
 ### In this document
 - [Table of Contents](#table-of-contents)
@@ -193,7 +193,7 @@ hpe-windows-iso-automation/
 10. **Deploy to Server** *(manual/parameterized)* — iLO Virtual Media or Redfish push
 11. **Monitor Install** *(manual/parameterized)* — Real-time installation tracking
 
-See [Testing Guide](docs/testing.md) for details on PR incremental test execution.
+See [Testing Guide](docs/python/testing.md) for details on PR incremental test execution.
 
 ---
 
@@ -611,7 +611,7 @@ All changes should include:
 4. **Coverage** maintained or improved: `pytest --cov=automation --cov-report=term-missing`
 5. **PR description** linking relevant documentation updates
 
-See [Code Quality](docs/code_quality.md) for scanning details.
+See [Code Quality](docs/python/code_quality.md) for scanning details.
 
 ---
 
@@ -621,7 +621,7 @@ See [Code Quality](docs/code_quality.md) for scanning details.
 - Contact **Kev Everall**
 - Reference build ID from `logs/build_reports/` or `logs/maintenance_audit.log`
 - For Jenkins issues: check agent logs and console output
-- For testing questions: see [Testing Guide](docs/testing.md)
+- For testing questions: see [Testing Guide](docs/python/testing.md)
 
 ---
 
