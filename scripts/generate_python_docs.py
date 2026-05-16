@@ -57,7 +57,6 @@ Jenkins
 from __future__ import annotations
 
 import argparse
-import inspect
 import importlib
 import io
 import sys
@@ -197,12 +196,7 @@ def _action_opt_str(action: argparse.Action) -> str:
     # '{c1, c2}' in the type table rather than the generic DEST.upper() string.
     metavar = action.metavar
     if metavar is None:
-        if action.nargs == 0:
-            metavar = None
-        elif action.choices is not None:
-            metavar = _action_inline_choices(action) or action.dest.upper()
-        else:
-            metavar = action.dest.upper()
+        metavar = None if action.nargs == 0 else (action.choices is not None and _action_inline_choices(action)) or action.dest.upper()
 
     type_parts: list[str] = []
 
@@ -267,7 +261,6 @@ def _scan_parser(parser: argparse.ArgumentParser) -> list[dict[str, Any]]:
         help_str      = action.help or ""
         display_name  = _action_name(action)
         has_short     = _action_has_short(action)
-        action_choices = _action_choices(action)
         default_str   = _action_default_str(action)
         choices_str   = _action_inline_choices(action)
 
@@ -310,8 +303,6 @@ def capture_help(fn: Any) -> str:
     parser was created as a local), giving us direct access to the parser as a
     primary source of structured argument metadata.
     """
-    import traceback as tb_module
-
     # ── 1. Capture stdout during fn() execution ────────────────────────────────
     _old_stdout = sys.stdout
     _old_argv = sys.argv[:]
@@ -498,9 +489,8 @@ def extract_args_from_help(help_text: str) -> list[dict[str, Any]]:
     lines = help_text.splitlines()
     current: dict[str, Any] | None = None
 
-    ENTER_OPT = "options"
-    ENTER_POS = "positional arguments"
-    ENTER_ANY = {ENTER_OPT, ENTER_POS}
+    enter_opt = "options"
+    enter_pos = "positional arguments"
 
     def parse_inline_choices(token: str) -> tuple[str | None, str | None]:
         """
@@ -609,8 +599,8 @@ def extract_args_from_help(help_text: str) -> list[dict[str, Any]]:
             continue
 
         sk = _sec_key(stripped)
-        is_enter_opt  = sk == ENTER_OPT or sk == "optional arguments"
-        is_enter_pos  = sk == ENTER_POS
+        is_enter_opt  = sk == enter_opt or sk == "optional arguments"
+        is_enter_pos  = sk == enter_pos
 
         # ── Section header ──────────────────────────────────────────────────────
         if is_enter_opt or is_enter_pos:
@@ -618,7 +608,7 @@ def extract_args_from_help(help_text: str) -> list[dict[str, Any]]:
             prose_group_depth = 0
             in_prose_mode = False
             prose_stack.clear()
-            section_name = ENTER_OPT if is_enter_opt else ENTER_POS
+            section_name = enter_opt if is_enter_opt else enter_pos
             continue
 
         if section_name is None:
@@ -626,11 +616,10 @@ def extract_args_from_help(help_text: str) -> list[dict[str, Any]]:
             continue
 
         # ── Compute indentation ──────────────────────────────────────────────────
-        indent_len = _indent_len(raw)
         is_short_row = raw.startswith(" ")   # space-indented from col 0
 
         # ── Option / prose row ───────────────────────────────────────────────────
-        if section_name in (ENTER_OPT, ENTER_POS) and is_short_row:
+        if section_name in (enter_opt, enter_pos) and is_short_row:
             toks = stripped.split()
             if toks and (toks[0][0] == "-" or toks[0][0] == "{"):
                 # Indented option or bare-choice: treat same as col-0 row below
@@ -659,7 +648,7 @@ def extract_args_from_help(help_text: str) -> list[dict[str, Any]]:
         # In options mode, col-0 words that don't start with '-' or '{'
         # are prose (e.g. RawDescription help prose between section header
         # and first option). Skip them.
-        if section_name == ENTER_OPT and ft[0] != "-" and ft[0] != "{":
+        if section_name == enter_opt and ft[0] != "-" and ft[0] != "{":
             continue
 
         # ── Close any previous entry ────────────────────────────────────────────
@@ -813,8 +802,7 @@ def _fmt_preamble_args(raw_help: str) -> tuple[str | None, str | None]:
         if prog is None:
             if s.startswith("usage:"):
                 prog = s
-        elif desc is None:
-            if not s.startswith("usage:"):
+            elif desc is None and not s.startswith("usage:"):
                 desc = s
         if prog and desc:
             break
@@ -943,8 +931,6 @@ def _fmt_help(raw_help: str) -> list[str]:
 
 
 def render_markdown(cmd: CmdDoc) -> str:
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-
     # ── Collect section fragments ─────────────────────────────────────────────
     sections: list[str] = []
 
