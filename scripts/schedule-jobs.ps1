@@ -1,17 +1,20 @@
 #
 # scripts/schedule-jobs.ps1
 # ────────────────────────────────────────────────────────────────────────────
-# Scheduled-task runner and registration helper for the PowerShell automation module.
+# Thin scheduled-task dispatcher.
 #
-# Wraps three surfaces — each has a PS-native AND a Python equivalent:
+# All real logic lives in the Control surface (Control.psm1 / Start-AutomationOrchestrator).
+# This script only maps simple job names to the canonical Control calls.
 #
-#   Surface           PS entry point                   Python entry point
-#   ─────────────────  ──────────────────────────────  ───────────────────────────────────
-#   Cron reporting    Run-Jenkins -OpsrampReport      python -m automation.control run_jenkins
-#   Cron monitoring   Run-Jenkins -Monitor             same as above (ps BUILDSTAGE=deploy)
-#   Direct / iRequest Run-IRequest -FormData <hTable>   from automation.control import run_irequest
+#   Job               → Control call
+#   reporting         → Run-Jenkins -Params @{ BUILD_STAGE = 'scan' }
+#   monitoring        → Start-InstallMonitor (per server)
+#   firmware          → Run-Jenkins -Params @{ BUILD_STAGE = 'firmware' }
+#   windows           → Run-Jenkins -Params @{ BUILD_STAGE = 'windows' }
+#   maintenance_*     → Run-Scheduler (via Control)
+#   irequest          → Run-IRequest
 #
-# Only functions listed in Export-ModuleMember above are callable from outside.
+# This keeps schedule-jobs.ps1 DRY and consistent with DevOps principles.
 # ────────────────────────────────────────────────────────────────────────────
 
 [CmdletBinding(DefaultParameterSetName = 'Run')]

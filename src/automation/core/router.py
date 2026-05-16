@@ -3,25 +3,25 @@ Request routing for external callers.
 
 Maps incoming requests from Jenkins, scheduler, or iRequest forms
 to the appropriate automation module and returns standardized results.
+
+Routing is loaded from configs/request_types.json (single source of truth).
 """
 
+import json
 import logging
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Known request types and their target modules
+# Load routing from single source of truth
+_CONFIG_PATH = Path(__file__).resolve().parents[3] / "configs" / "request_types.json"
+with open(_CONFIG_PATH, encoding="utf-8") as f:
+    _CFG = json.load(f)
+
 ROUTE_MAP = {
-    "build_iso": "automation.cli.build_iso",
-    "update_firmware": "automation.cli.update_firmware_drivers",
-    "patch_windows": "automation.cli.patch_windows_security",
-    "deploy": "automation.cli.deploy_to_server",
-    "monitor": "automation.cli.monitor_install",
-    "maintenance_enable": "automation.cli.maintenance_mode",
-    "maintenance_disable": "automation.cli.maintenance_mode",
-    "maintenance_validate": "automation.cli.maintenance_mode",
-    "opsramp_report": "automation.cli.opsramp_integration",
-    "generate_uuid": "automation.cli.generate_uuid",
+    req: meta["python_module"]
+    for req, meta in _CFG["request_types"].items()
 }
 
 

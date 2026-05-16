@@ -1,0 +1,73 @@
+{
+  "version": "1.0",
+  "description": "Single source of truth for all automation request types, Jenkins stage mapping, and routing. Both Python and PowerShell load this file at runtime.",
+  "request_types": {
+    "build_iso": {
+      "python_module": "automation.cli.build_iso",
+      "powershell_handler": "New-IsoBuild",
+      "jenkins_stage": "all",
+      "description": "Full firmware + Windows ISO build pipeline"
+    },
+    "update_firmware": {
+      "python_module": "automation.cli.update_firmware_drivers",
+      "powershell_handler": "Update-Firmware",
+      "jenkins_stage": "firmware",
+      "description": "HPE firmware/driver ISO generation via SUT"
+    },
+    "patch_windows": {
+      "python_module": "automation.cli.patch_windows_security",
+      "powershell_handler": "Invoke-WindowsSecurityUpdate",
+      "jenkins_stage": "windows",
+      "description": "Windows security patching via DISM"
+    },
+    "deploy": {
+      "python_module": "automation.cli.deploy_to_server",
+      "powershell_handler": "Invoke-IsoDeploy",
+      "jenkins_stage": "deploy",
+      "description": "Deploy ISO to target servers via iLO/Redfish"
+    },
+    "monitor": {
+      "python_module": "automation.cli.monitor_install",
+      "powershell_handler": "Start-InstallMonitor",
+      "jenkins_stage": null,
+      "description": "Monitor ongoing Windows installations"
+    },
+    "maintenance_enable": {
+      "python_module": "automation.cli.maintenance_mode",
+      "powershell_handler": "Set-MaintenanceMode",
+      "jenkins_stage": null,
+      "description": "Enable maintenance mode for a cluster"
+    },
+    "maintenance_disable": {
+      "python_module": "automation.cli.maintenance_mode",
+      "powershell_handler": "Set-MaintenanceMode",
+      "jenkins_stage": null,
+      "description": "Disable maintenance mode for a cluster"
+    },
+    "maintenance_validate": {
+      "python_module": "automation.cli.maintenance_mode",
+      "powershell_handler": "Set-MaintenanceMode",
+      "jenkins_stage": null,
+      "description": "Validate maintenance window for a cluster"
+    },
+    "opsramp_report": {
+      "python_module": "automation.cli.opsramp_integration",
+      "powershell_handler": "Invoke-OpsRampClient",
+      "jenkins_stage": "scan",
+      "description": "OpsRamp metrics and reporting"
+    },
+    "generate_uuid": {
+      "python_module": "automation.cli.generate_uuid",
+      "powershell_handler": "New-Uuid",
+      "jenkins_stage": null,
+      "description": "Generate deterministic server UUID"
+    }
+  },
+  "jenkins_stage_map": {
+    "firmware": "update_firmware",
+    "windows": "patch_windows",
+    "deploy": "deploy",
+    "scan": "opsramp_report",
+    "all": "build_iso"
+  }
+}
