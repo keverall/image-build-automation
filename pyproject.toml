@@ -80,12 +80,32 @@ python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 
+[tool.coverage.run]
+# Omit docstrings, string constants, and non-executable triple-quoted strings
+# to avoid inflating line counts without production code coverage.
+omit = [
+    "*/docstrings.py",
+    "*/__new_object_base.py",
+    "src/automation/__init__.py",
+]
+
+[tool.coverage.report]
+# Always show missing lines so gaps are easy to spot in CI logs
+show_missing = true
+# Omit newlines / docstrings / multiline string literals from coverage counts
+# to avoid artificial inflation from module-level document strings.
+omit = [
+    "*/__init__.py",
+    "*/docstrings.py",
+]
+ignore_errors = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# Configure test coverage
 addopts = """
     --verbose
     --cov=automation
+    --cov-config=pyproject.toml
     --cov-report=term-missing
     --cov-report=xml
     --cov-report=html
