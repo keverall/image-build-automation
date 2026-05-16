@@ -1,0 +1,729 @@
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 4, unit: 'HOURS')
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
+        ansiColor('xterm')
+    }
+
+    parameters {
+        // ════════════════════════════════════════════════════════════════════════
+        //  Stage selector — also used by automation.control from_scheduler() /
+        //  cron_jobs.sh.  reporting/monitoring map to the scheduled-cron path.
+        // ════════════════════════════════════════════════════════════════════════
+        choice(
+            name: 'BUILD_STAGE',
+            choices: ['firmware', 'windows', 'deploy', 'reporting', 'monitoring', 'all'],
+            description: 'Pipeline stage to execute. reporting/monitoring map to scheduled-cron jobs.'
+        )
+        string(
+            name: 'SERVER_FILTER',
+            defaultValue: '',
+            description: 'Comma-separated list of servers (empty = all servers)'
+        )
+        string(
+            name: 'BASE_ISO_PATH',
+            defaultValue: '/mnt/isos/Windows_Server_2022.iso',
+            description: 'Path to base Windows Server ISO'
+        )
+        string(
+            name: 'CLUSTER_ID',
+            defaultValue: '',
+            description: 'Cluster ID for iRequest maintenance or scheduler calls'
+        )
+        booleanParam(
+            name: 'DRY_RUN',
+            defaultValue: false,
+            description: 'Run in dry-run mode (no actual changes)'
+        )
+        choice(
+            name: 'DEPLOY_METHOD',
+            choices: ['ilo', 'redfish'],
+            description: 'Deployment method for deploy stage'
+        )
+        booleanParam(
+            name: 'SKIP_DOWNLOAD',
+            defaultValue: false,
+            description: 'Skip firmware/driver download (use existing)'
+        )
+        booleanParam(
+            name: 'SKIP_CODE_SCAN',
+            defaultValue: false,
+            description: 'Skip code quality and security scanning stages'
+        )
+        booleanParam(
+            name: 'FAIL_ON_CODE_ISSUES',
+            defaultValue: false,
+            description: 'Fail build on code quality issues (strict mode)'
+        )
+    }
+
+    environment {
+        CYBERARK_APP_ID = 'jenkins'
+        PYTHONUNBUFFERED = '1'
+        OUTPUT_DIR        = 'output'
+        CONFIG_DIR        = 'configs'
+        AUT_IMPL          = 'PY'
+    }
+
+    stages {
+
+        // =========================================================================
+        //  1. SETUP
+        //      • Install all deps from requirements.txt
+        //      • Install automation package (editable)
+        //      • Validate JSON configs  (Python-native — no PS dependency)
+        //      • Verify module imports match PS cmdlet surface exactly
+        // =========================================================================
+        stage('Setup') {
+            steps {
+                script {
+                    currentBuild.displayName = "#${BUILD_NUMBER} - ${params.BUILD_STAGE}"
+                }
+                sh '''
+                    mkdir -p output/firmware output/patched output/combined output/results
+                    mkdir -p logs/build_reports logs/monitoring_sessions logs/scan_reports logs/scheduled_jobs
+                '''
+                sh '''
+                    python -m pip install --upgrade pip
+                    pip install -r requirements.txt
+                    pip install ruff radon bandit safety pytest pytest-cov mypy gitleaks
+                    pip install -e .
+                    echo "[SETUP] Verifying Python module surface..."
+                    python -c "
+import importlib, sys
+
+# All public modules must be importable — mirrors PS cmdlet-slot verification
+mods = [
+    'automation.cli.generate_uuid',
+    'automation.cli.build_iso',
+    'automation.cli.update_firmware_drivers',
+    'automation.cli.patch_windows_security',
+    'automation.cli.deploy_to_server',
+    'automation.cli.monitor_install',
+    'automation.cli.opsramp_integration',
+    'automation.cli.maintenance_mode',
+    'automation.utils.powershell',
+    'automation.control',
+    'automation.core.orchestrator',
+    'automation.core.router',
+    'automation.core.validators',
+]
+for m in mods:
+    try:
+        importlib.import_module(m)
+    except Exception as e:
+        print(f'MISSING: {m}  —  {e}')
+        sys.exit(1)
+print(f'[SETUP] All {len(mods)} Python modules verified.')
+"
+                    echo "[SETUP] Validating JSON configs..."
+                    python -c "
+import json
+for p in [
+    'configs/hpe_firmware_drivers_nov2025.json',
+    'configs/windows_patches.json',
+    'configs/opsramp_config.json',
+    'configs/clusters_catalogue.json',
+    'configs/scom_config.json',
+    'configs/openview_config.json',
+    'configs/email_distribution_lists.json',
+]:
+    with open(p) as f:
+        json.load(f)
+print('[SETUP] All JSON configs valid.')
+"
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  2. CYBERARK — BOOTSTRAP SECRETS
+        //      AIM REST API (PS CLI not available on this Linux agent)
+        //      Secrets injected as env vars — same schema as PS pipeline
+        // =========================================================================
+        stage('CyberArk - Bootstrap Secrets') {
+            steps {
+                sh '''
+                    AIM_URL="${AIM_WEBSERVICE_URL:-${CYBERARK_CCP_URL:-https://cyberark-ccp:443/AIMWebService/API/Accounts}}"
+                    REST_MAP=(
+                        HPE-iLO ILO_USER ILO_USER
+                        HPE-iLO ILO_PASSWORD ILO_PASSWORD
+                        SCOM-2015 SCOM_ADMIN_USER SCOM_ADMIN_USER
+                        SCOM-2015 SCOM_ADMIN_PASSWORD SCOM_ADMIN_PASSWORD
+                        OpsRamp OPSRAMP_CLIENT_ID OPSRAMP_CLIENT_ID
+                        OpsRamp OPSRAMP_CLIENT_SECRET OPSRAMP_CLIENT_SECRET
+                        OpsRamp OPSRAMP_TENANT_ID OPSRAMP_TENANT_ID
+                        SMTP-Mail SMTP_USER SMTP_USER
+                        SMTP-Mail SMTP_PASSWORD SMTP_PASSWORD
+                        OpenView OPENVIEW_USER OPENVIEW_USER
+                        OpenView OPENVIEW_PASSWORD OPENVIEW_PASSWORD
+                        HPE-Download hpe-download-user HPE_DOWNLOAD_USER
+                        HPE-Download hpe-download-pass HPE_DOWNLOAD_PASS
+                    )
+                    for ((a=0; a<${#REST_MAP[@]}; a+=3)); do
+                        [ -n "${!REST_MAP[$a+2]}" ] && continue
+                        SAFE="${REST_MAP[$a]}"; OBJ="${REST_MAP[$a+1]}"; VAR="${REST_MAP[$a+2]}"
+                        Q=$(python3 -c "import urllib.parse; print(urllib.parse.quote(f'Safe=${SAFE};Object=${OBJ}'))")
+                        if VAL=$(curl -sk --max-time 10 "${AIM_URL}?AppID=jenkins&Query=${Q}" 2>/dev/null); then
+                            SECRET=$(echo "$VAL" | python3 -c "import sys,json; r=json.load(sys.stdin); v=r[0]['Content'] if isinstance(r,list) else r['Content']; print(v or '')")
+                            if [ -n "$SECRET" ]; then export "${VAR}=${SECRET}"; echo "[CyberArk:REST]  ${VAR}  <-  safe=${SAFE}  object=${OBJ}"; fi
+                        fi
+                    done
+                    echo "[CyberArk] Bootstrap complete."
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  3. CODE QUALITY & SECURITY SCAN
+        //      1. ruff + ruff format   — lint + auto-fix
+        //      2. pylint              — comprehensive lint (JSON + text)
+        //      3. radon CC/MI         — complexity + maintainability index
+        //      4. bandit              — Python security vulnerabilities
+        //      5. safety              — dependency vulnerability check
+        //      6. gitleaks            — committed secret detection
+        // =========================================================================
+        stage('Code Quality & Security Scan') {
+            when { expression { !params.SKIP_CODE_SCAN } }
+            steps {
+                sh '''
+                    mkdir -p code_scan_results
+                '''
+                script {
+                    def strict = params.FAIL_ON_CODE_ISSUES ? true : false
+                    // 1. ruff
+                    sh '''
+                        echo "[1/6] ruff lint..."
+                        ruff check src/automation/ --output-format=json --output=code_scan_results/ruff_issues.json || true
+                        ruff check src/automation/ --fix || true
+                        ruff format --check src/automation/ > code_scan_results/ruff_format.txt 2>&1 || true
+                    '''
+                    // 2. pylint
+                    sh '''
+                        echo "[2/6] pylint..."
+                        pip install pylint -q
+                        pylint --output-format=json src/automation/ > code_scan_results/pylint_report.json 2>&1 || true
+                        pylint src/automation/ > code_scan_results/pylint_report.txt 2>&1 || true
+                    '''
+                    // 3. radon
+                    sh '''
+                        echo "[3/6] radon..."
+                        radon mi src/automation/ -s -j > code_scan_results/radon_maintainability.json
+                        radon cc src/automation/ -s -j > code_scan_results/radon_cyclomatic.json
+                        radon cc src/automation/ -nc > code_scan_results/radon_complexity_warnings.txt || true
+                    '''
+                    // 4. bandit
+                    sh '''
+                        echo "[4/6] bandit..."
+                        bandit -r src/automation/ -f json -o code_scan_results/bandit_report.json || true
+                        bandit -r src/automation/ -f txt -o code_scan_results/bandit_report.txt || true
+                    '''
+                    // 5. safety
+                    sh '''
+                        echo "[5/6] safety..."
+                        safety check --json --output code_scan_results/safety_report.json || true
+                        safety check > code_scan_results/safety_report.txt || true
+                    '''
+                    // 6. gitleaks
+                    sh '''
+                        echo "[6/6] gitleaks..."
+                        if ! command -v gitleaks &>/dev/null; then
+                            mkdir -p tools
+                            [ -f tools/gitleaks ] || {
+                                curl -sSL -o tools/gitleaks.tar.gz \
+                                    https://github.com/gitleaks/gitleaks/releases/download/v8.18.1/gitleaks_8.18.1_linux_x64.tar.gz
+                                tar -xzf tools/gitleaks.tar.gz -C tools/
+                                rm tools/gitleaks.tar.gz
+                            }
+                        fi
+                        gitleaks detect --source=. --report-path=code_scan_results/gitleaks_report.json --report-format json --no-banner || true
+                        echo "[SUMMARY] Scan complete."
+                        ls code_scan_results/
+                    '''
+                    // strict failure (bandit HIGH/CRITICAL, gitleaks findings)
+                    script {
+                        if (strict) {
+                            def hasIssues = false
+                            try { if (readJSON(file: 'code_scan_results/ruff_issues.json')) { hasIssues = true } } catch (e) {}
+                            try {
+                                def banditData = readJSON(file: 'code_scan_results/bandit_report.json')
+                                if (banditData.results?.findAll { it.issue_severity in ['HIGH','CRITICAL'] }) { hasIssues = true }
+                            } catch (e) {}
+                            try {
+                                def glData = readJSON(file: 'code_scan_results/gitleaks_report.json')
+                                if (glData.Findings) { hasIssues = true }
+                            } catch (e) {}
+                            if (hasIssues) { error "Code quality issues in strict mode" }
+                        }
+                    }
+                }
+            }
+            post {
+                always { archiveArtifacts artifacts: 'code_scan_results/**', allowEmptyArchive: false }
+                failure {
+                    mail to: 'security-alerts@yourcompany.com',
+                         subject: "⚠️ Code Quality/Scan FAILED: Build #${BUILD_NUMBER}",
+                         body: "Review artifacts in build #${BUILD_NUMBER}.\nReports: code_scan_results/"
+                }
+            }
+        }
+
+        // =========================================================================
+        //  4. PYTEST UNIT TESTS & COVERAGE
+        //      Mirrors PS Pester stage — runs tests/ via pytest with incremental
+        //      PR targeting (turbo-style).
+        // =========================================================================
+        stage('Pester Unit Tests & Coverage') {
+            steps {
+                sh '''
+                    if [ "${CHANGE_ID:-}" ]; then
+                        echo "PR build: running affected tests..."
+                        git fetch origin "${CHANGE_TARGET:-main}" 2>/dev/null || true
+                        CHANGED=$(git diff --name-only origin/${CHANGE_TARGET:-main}...HEAD)
+                        TEST_FILES=""
+                        for f in $CHANGED; do
+                            if [[ "$f" == tests/*.py ]]; then
+                                TEST_FILES="$TEST_FILES $f"
+                            elif [[ "$f" == src/automation/* ]]; then
+                                base=$(basename "$f" .py)
+                                tf="tests/test_${base}.py"
+                                [ -f "$tf" ] && TEST_FILES="$TEST_FILES $tf"
+                            fi
+                        done
+                        if [ -z "$TEST_FILES" ]; then
+                            echo '<?xml version="1.0"?><testsuite name="Empty" tests="0" failures="0" errors="0" skipped="0" time="0.0"></testsuite>' > test-results.xml
+                            exit 0
+                        fi
+                        echo "Running: $TEST_FILES"
+                        python -m pytest $TEST_FILES --junitxml=test-results.xml
+                    else
+                        echo "Full build: running all tests..."
+                        python -m pytest tests --junitxml=test-results.xml
+                    fi
+                '''
+            }
+            post {
+                always {
+                    junit 'test-results.xml'
+                    archiveArtifacts artifacts: 'coverage.xml', allowEmptyArchive: true
+                }
+                failure {
+                    mail to: 'dev-team@yourcompany.com',
+                         subject: "pytest FAILED: Build #${BUILD_NUMBER}",
+                         body: "One or more pytest tests failed. See Jenkins test report."
+                }
+            }
+        }
+
+        // =========================================================================
+        //  5. ORCHESTRATOR
+        //      Uses automation.control (mirrors PS Control.psm1 Run-Jenkins path).
+        //      Identical parameter map to the PS pipeline's Orchestrator stage.
+        //      Equivalent PS: ctrl = New-JenkinsCtrl -Params $jenkinsParams | Run-Jenkins
+        //      Equivalent PY: python -m automation.control run_jenkins              (or run as API, this pipeline uses the module main)
+        // =========================================================================
+        stage('Orchestrator') {
+            when {
+                expression { params.BUILD_STAGE in ['firmware','windows','deploy','all'] }
+            }
+            steps {
+                sh '''
+                    # Mirror of PS: ctrl | Run-Jenkins  where ctrl = New-JenkinsCtrl -Params …
+                    # control.py maps BUILD_STAGE via stage_map → invokes orchestrator internally
+                    python3 -c "
+import sys, os, json
+sys.path.insert(0, '.')
+
+# Replicate automation.control.from_jenkins(params) then .run()
+from automation.control import Control
+
+jenkins_params = {
+    'BUILD_STAGE':   os.environ.get('BUILD_STAGE', 'all'),
+    'BASE_ISO_PATH': os.environ.get('BASE_ISO_PATH', ''),
+    'SERVER_FILTER': os.environ.get('SERVER_FILTER', ''),
+    'DEPLOY_METHOD': os.environ.get('DEPLOY_METHOD', 'ilo'),
+    'SKIP_DOWNLOAD': os.environ.get('SKIP_DOWNLOAD', 'false').lower() == 'true',
+}
+
+ctrl    = Control.from_jenkins(jenkins_params)
+result  = ctrl.run()
+with open('output/orchestrate_result.json', 'w') as f:
+    json.dump(result, f, indent=2, default=str)
+if not result.get('success'):
+    sys.exit(1)
+"
+                '''
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'output/orchestrate_result.json', allowEmptyArchive: true
+                }
+            }
+        }
+
+        // =========================================================================
+        //  6. DIRECT CALL / API ENTRY
+        //      Mirrors PS Start-AutomationOrchestrator.
+        //      Single entry point for any caller outside Jenkins (cron, ISAPI, API).
+        //      Equivalent PS:    Start-AutomationOrchestrator -RequestType … -Params @{…}
+        //      Equivalent PY:    python -m automation.core.orchestrator <request_type> …
+        // =========================================================================
+        stage('Direct Call') {
+            when { expression { params.BUILD_STAGE == 'direct' } }
+            steps {
+                sh '''
+                    python3 -m automation.core.orchestrator "${BUILD_STAGE}" \
+                        --base-iso "${BASE_ISO_PATH:-}" \
+                        --dry-run "${DRY_RUN}" \
+                        > output/direct_call_result.json 2>&1
+                    EXIT=$?
+                    if [ $EXIT -ne 0 ]; then
+                        echo "Direct call exited $EXIT"
+                        # Write failure record
+                        echo "{\"success\":false,\"request_type\":\"${BUILD_STAGE}\"}" > output/direct_call_result.json
+                        exit $EXIT
+                    fi
+                    # If stdout isn't JSON, wrap it
+                    if ! python3 -c "import json,sys; json.load(sys.stdin)" < output/direct_call_result.json 2>/dev/null; then
+                        python3 -c "
+import json,sys
+stdout = open('output/direct_call_result.json').read()
+json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, open('output/direct_call_result.json','w'))
+"
+                    fi
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'output/direct_call_result.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  7. BUILD FIRMWARE ISOS
+        //      Equivalent PS: Update-Firmware
+        // =========================================================================
+        stage('Build Firmware ISOs') {
+            when { expression { params.BUILD_STAGE in ['firmware','all','reporting','monitoring'] } }
+            steps {
+                sh '''
+                    python -m automation.cli.update_firmware_drivers \
+                        --server-list configs/server_list.txt \
+                        --output-dir output/firmware \
+                        --skip-download "${SKIP_DOWNLOAD}" \
+                        --dry-run "${DRY_RUN}"
+                '''
+                archiveArtifacts artifacts: 'output/firmware/**/*.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'output/firmware/**/*.iso', allowEmptyArchive: true
+            }
+            post {
+                always {
+                    sh '''
+                        for f in output/firmware/results/*.json; do
+                            [ -f "$f" ] || continue
+                            python3 -c "import json; print(f'Server: {json.load(open(\"$f\"))[\"server\"]} — Success: {json.load(open(\"$f\"))[\"success\"]}')"
+                        done
+                    '''
+                }
+            }
+        }
+
+        // =========================================================================
+        //  8. BUILD WINDOWS ISOS
+        //      Equivalent PS: Update-WindowsSecurity
+        // =========================================================================
+        stage('Build Windows ISOs') {
+            when { expression { params.BUILD_STAGE in ['windows','all','reporting','monitoring'] } }
+            steps {
+                sh '''
+                    if [ ! -f "${BASE_ISO_PATH}" ]; then echo "Base ISO not found: ${BASE_ISO_PATH}"; exit 1; fi
+                    SERVERS=$(grep -v '^#' configs/server_list.txt | tr '\n' ' ')
+                    if [ -n "${SERVER_FILTER:-}" ]; then
+                        FILTER=$(echo "$SERVER_FILTER" | tr ',' '\n' | sort)
+                        SERVERS=$(echo "$SERVERS" | tr ' ' '\n' | sort | comm -12 - <(echo "$FILTER") | tr '\n' ' ')
+                    fi
+                    for server in $SERVERS; do
+                        [ -z "$server" ] && continue
+                        echo ""
+                        echo "[INFO] Patching Windows ISO for: $server"
+                        python -m automation.cli.patch_windows_security \
+                            --base-iso "${BASE_ISO_PATH}" \
+                            --server "$server" \
+                            --output-dir output/patched \
+                            --dry-run "${DRY_RUN}"
+                    done
+                '''
+                archiveArtifacts artifacts: 'output/patched/**/*.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'output/patched/**/*.iso', allowEmptyArchive: true
+            }
+        }
+
+        // =========================================================================
+        //  9. COMBINE DEPLOYMENT PACKAGES
+        //      Equivalent PS: New-IsoBuild + Compress-Archive
+        // =========================================================================
+        stage('Combine Deployment Packages') {
+            when { expression { params.BUILD_STAGE in ['windows','all'] } }
+            steps {
+                sh '''
+                    python -m automation.cli.build_iso \
+                        --config-dir configs \
+                        --output-dir output/combined \
+                        --dry-run "${DRY_RUN}"
+                    DATE=$(date +%Y%m%d_%H%M%S)
+                    BUNDLE="deployment_bundle_${DATE}"
+                    zip -r "output/${BUNDLE}.zip" output/combined/ > /dev/null 2>&1
+                    echo "Created: ${BUNDLE}.zip"
+                '''
+                archiveArtifacts artifacts: 'output/*.zip', allowEmptyArchive: true
+            }
+        }
+
+        // =========================================================================
+        //  10. IREQUEST ENTRY (ISAPI / BMC FORM)
+        //      Mirrors Python control.py from_irequest() / PS Run-IRequest.
+        //      Triggered by BUILD_STAGE='irequest' + CLUSTER_ID=<id>.
+        //      Form fields: cluster_id=<id>  action=enable  start=now  end=<iso>
+        //      Accept: application/json
+        // =========================================================================
+        stage('iRequest Entry') {
+            when {
+                allOf {
+                    expression { params.BUILD_STAGE == 'irequest' }
+                    expression { params.CLUSTER_ID != '' }
+                }
+            }
+            steps {
+                sh '''
+                    python3 -c "
+import json, os
+from automation.control import Control
+
+form_data = {
+    'cluster_id': os.environ['CLUSTER_ID'],
+    'action':     'enable',
+    'start':      'now',
+    'end':        None,
+    'dry_run':    os.environ.get('DRY_RUN','false').lower() == 'true',
+}
+cluster_id = form_data['cluster_id']
+result = Control.from_irequest(form_data).run()
+with open('output/irequest_result.json', 'w') as f:
+    json.dump(result, f, indent=2, default=str)
+if not result.get('success'):
+    raise SystemExit(1)
+print(f'iRequest OK: {result["request_type"]} cluster={cluster_id}')
+"""
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'output/irequest_result.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  11. SCHEDULED TASK (schtasks / cron path)
+        //      Mirrors PS: scripts/schedule-jobs.ps1 Invoke-JobMaintenanceDisable
+        //                  / cron_jobs.sh Invoke-JobMaintenanceDisable
+        //      Equivalent PS:   New-SchedulerCtrl -TaskParams … | Run-Scheduler
+        //      Equivalent PY:   Control.from_scheduler(task_params).run()
+        //      Triggered by BUILD_STAGE='scheduled' + CLUSTER_ID=<id>
+        // =========================================================================
+        stage('Scheduled Task') {
+            when {
+                allOf {
+                    expression { params.BUILD_STAGE == 'scheduled' }
+                    expression { params.CLUSTER_ID != '' }
+                }
+            }
+            steps {
+                sh '''
+                    python3 -c "
+import json, os
+from automation.control import Control
+
+task_params = {
+    'task':       'maintenance_disable',
+    'cluster_id': os.environ['CLUSTER_ID'],
+    'dry_run':    os.environ.get('DRY_RUN','false').lower() == 'true',
+}
+cluster_id = task_params['cluster_id']
+result = Control.from_scheduler(task_params).run()
+with open('output/scheduler_result.json', 'w') as f:
+    json.dump(result, f, indent=2, default=str)
+if not result.get('success'):
+    raise SystemExit(1)
+print(f'Scheduled task completed: {result["request_type"]} cluster={cluster_id}')
+"""
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'output/scheduler_result.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  12. DEPLOY
+        //      Equivalent PS: Invoke-IsoDeploy
+        // =========================================================================
+        stage('Deploy') {
+            when { expression { params.BUILD_STAGE in ['deploy','all','monitoring'] } }
+            steps {
+                sh '''
+                    python -m automation.cli.deploy_to_server \
+                        --method "${DEPLOY_METHOD}" \
+                        --dry-run "${DRY_RUN}"
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'logs/deploy_*.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  13. VULNERABILITY SCAN
+        //      Placeholder — configure Nessus / OpenVAS per environment
+        // =========================================================================
+        stage('Vulnerability Scan') {
+            when { expression { params.BUILD_STAGE in ['scan','all'] } }
+            steps {
+                sh '''
+                    mkdir -p logs/scan_reports
+                    echo "[INFO] Vulnerability scanning placeholder"
+                    echo "[INFO] Configure Nessus or OpenVAS in CI environment"
+                    echo "{\"scan_date\":\"$(date -Iseconds)\",\"servers_scanned\":0,\"notes\":\"Nessus/OpenVAS not configured\"}" \
+                        > logs/scan_reports/vuln_scan_summary.json
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'logs/scan_reports/**', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  14. OPSRAMP REPORTING
+        //      Reads output/results/*.json and pushes metrics/alerts via OpsRampClient.
+        // =========================================================================
+        stage('OpsRamp Reporting') {
+            when { expression { env.OPSRAMP_ENABLED == 'true' } }
+            steps {
+                sh '''
+                    python3 -c "
+from pathlib import Path
+import json, os
+from automation.cli.opsramp_integration import OpsRampClient
+
+cfg = 'configs/opsramp_config.json'
+results_dir = Path('output/results')
+if results_dir.exists() and Path(cfg).exists():
+    client = OpsRampClient(cfg)
+    for rf in results_dir.glob('*.json'):
+        data = json.load(open(rf))
+        client.report_build_status(data.get('server',''), data)
+        print(f\"Reported to OpsRamp: {data.get('server')} -> {data.get('success')}\")
+"
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  15. REPORTING
+        //      Cron-scheduled (daily 02:00) — mirrors scripts/schedule-jobs.ps1 -Job reporting
+        //      Equivalent PY: scripts/cron_jobs.sh reporting  OR
+        //                     python -m automation.control run_jenkins | stage=all
+        // =========================================================================
+        stage('Reporting') {
+            when { expression { params.BUILD_STAGE == 'reporting' } }
+            steps {
+                sh '''
+                    export HPE_AUTO_SOURCE=jenkins
+                    export HPE_AUTO_BUILD_STAGE=all
+                    python -m automation 2>&1 | tee logs/scheduled_jobs/reporting.log
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  16. MONITORING
+        //      Cron-scheduled (every 5 min) — mirrors scripts/schedule-jobs.ps1 -Job monitoring
+        //      Equivalent PY: scripts/cron_jobs.sh monitoring  OR
+        //                     python -m automation.control run_jenkins | stage=deploy
+        // =========================================================================
+        stage('Monitoring') {
+            when { expression { params.BUILD_STAGE == 'monitoring' } }
+            steps {
+                sh '''
+                    export HPE_AUTO_SOURCE=jenkins
+                    export HPE_AUTO_BUILD_STAGE=deploy
+                    python -m automation 2>&1 | tee logs/scheduled_jobs/monitoring.log
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  17. AUDIT & REPORTING
+        //      Python-native: AuditLogger.save() + JSON summary
+        // =========================================================================
+        stage('Audit & Reporting') {
+            steps {
+                sh '''
+                    python3 -c "
+import json, os
+from pathlib import Path
+from datetime import datetime
+
+date   = datetime.now().strftime('%Y-%m-%d')
+rptDir = Path(f'logs/build_reports/{date}')
+rptDir.mkdir(parents=True, exist_ok=True)
+
+import shutil
+for pattern in ['output/results/*.json', 'logs/monitoring_sessions/*.json']:
+    for f in Path('.').glob(pattern):
+        shutil.copy2(str(f), str(rptDir / f.name))
+
+total = len(list(Path('output/results').glob('*.json'))) if Path('output/results').exists() else 0
+ok = failed = 0
+for rf in rptDir.glob('*.json'):
+    try:
+        d = json.load(open(rf))
+        ok += 1 if d.get('success') else 0
+        failed += 0 if d.get('success') else 1
+    except Exception:
+        pass
+
+summary = {
+    'build_date': date,
+    'total_servers': total,
+    'successful': ok,
+    'failed': failed,
+    'stages_completed': os.environ.get('BUILD_STAGE', 'all'),
+}
+with open(rptDir / 'summary.json', 'w') as f:
+    json.dump(summary, f, indent=2)
+print(f'Summary: {ok}/{total} successful')
+"
+                '''
+                archiveArtifacts artifacts: 'logs/build_reports/**', allowEmptyArchive: true
+            }
+        }
+    }
+
+    post {
+        success {
+            mail to: 'automation-alerts@yourcompany.com',
+                 subject: "✅ Build #${BUILD_NUMBER} SUCCEEDED — ${params.BUILD_STAGE}",
+                 body: "Build ${BUILD_NUMBER} complete.\nStage: ${params.BUILD_STAGE}\nParameters: ${params}"
+        }
+        failure {
+            mail to: 'automation-alerts@yourcompany.com',
+                 subject: "❌ Build #${BUILD_NUMBER} FAILED — ${params.BUILD_STAGE}",
+                 body: "Build ${BUILD_NUMBER} failed.\nStage: ${params.BUILD_STAGE}\nCheck console for details."
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

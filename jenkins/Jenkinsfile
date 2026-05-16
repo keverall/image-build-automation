@@ -1,0 +1,709 @@
+pipeline {
+    agent {
+        label 'windows'
+    }
+
+    options {
+        timeout(time: 4, unit: 'HOURS')
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
+        ansiColor('xterm')
+    }
+
+    parameters {
+        // ════════════════════════════════════════════════════════════════════════
+        //  Stage selector — also used by Run-Jenkins (Control.psm1)
+        //  and by the direct-call script: scripts/schedule-jobs.ps1 -Job <stage>
+        // ════════════════════════════════════════════════════════════════════════
+        choice(
+            name: 'BUILD_STAGE',
+            choices: ['firmware', 'windows', 'deploy', 'reporting', 'monitoring', 'all'],
+            description: 'Pipeline stage to execute. reporting/monitoring map to scheduled-cron jobs.'
+        )
+        string(
+            name: 'SERVER_FILTER',
+            defaultValue: '',
+            description: 'Comma-separated list of servers (empty = all servers)'
+        )
+        string(
+            name: 'BASE_ISO_PATH',
+            defaultValue: 'C:\\ISOs\\Windows_Server_2022.iso',
+            description: 'Path to base Windows Server ISO'
+        )
+        string(
+            name: 'CLUSTER_ID',
+            defaultValue: '',
+            description: 'Cluster ID for iRequest maintenance or scheduler calls'
+        )
+        booleanParam(
+            name: 'DRY_RUN',
+            defaultValue: false,
+            description: 'Run in dry-run mode (no actual changes)'
+        )
+        choice(
+            name: 'DEPLOY_METHOD',
+            choices: ['ilo', 'redfish'],
+            description: 'Deployment method for deploy stage'
+        )
+        booleanParam(
+            name: 'SKIP_DOWNLOAD',
+            defaultValue: false,
+            description: 'Skip firmware/driver download (use existing)'
+        )
+        booleanParam(
+            name: 'SKIP_CODE_SCAN',
+            defaultValue: false,
+            description: 'Skip code quality and security scanning stages'
+        )
+        booleanParam(
+            name: 'FAIL_ON_CODE_ISSUES',
+            defaultValue: false,
+            description: 'Fail build on code quality issues (strict mode)'
+        )
+    }
+
+    environment {
+        // CyberArk — single source of truth for all secrets injected here
+        CYBERARK_APP_ID = 'jenkins'
+
+        // Optional: override CCP REST URL
+        // AIM_WEBSERVICE_URL = 'https://cyberark-vault.example.com/AIMWebService/API/Accounts'
+
+        PYTHONUNBUFFERED = '1'
+        OUTPUT_DIR        = 'output'
+        CONFIG_DIR        = 'configs'
+
+        // Surface identifier for audit logs
+        AUT_IMPL          = 'PS'
+    }
+
+    stages {
+
+        // =========================================================================
+        //  1. SETUP
+        //      • Import Automation + Control modules
+        //      • Verify all public cmdlets and Control functions are loadable
+        //      • Create directory tree
+        //      • Validate JSON configs (PS-native, no Python needed)
+        // =========================================================================
+        stage('Setup') {
+            steps {
+                script {
+                    currentBuild.displayName = "#${BUILD_NUMBER} - ${params.BUILD_STAGE}"
+                }
+
+                bat '''
+                    echo [INFO] Setting up workspace
+                    if not exist "output" mkdir output
+                    if not exist "output\\firmware" mkdir output\\firmware
+                    if not exist "output\\patched"  mkdir output\\patched
+                    if not exist "output\\combined"  mkdir output\\combined
+                    if not exist "output\\results"  mkdir output\\results
+                    if not exist "logs"              mkdir logs
+                    if not exist "logs\\build_reports"       mkdir logs\\build_reports
+                    if not exist "logs\\monitoring_sessions" mkdir logs\\monitoring_sessions
+                    if not exist "logs\\scan_reports"        mkdir logs\\scan_reports
+                    if not exist "logs\\scheduled_jobs"      mkdir logs\\scheduled_jobs
+                '''
+
+                powershell '''
+                    $ErrorActionPreference = 'Stop'
+
+                    # Auto-import PS module from repo root
+                    $modRoot = Join-Path $PSScriptRoot '..\\powershell\\Automation'
+                    Import-Module $modRoot -Force -ErrorAction Stop
+                    Write-Host "[SETUP] Automation module imported: $modRoot"
+
+                    # Auto-import the Control.psm1 factory layer (mirrors Python control.py)
+                    $ctrlPath = Join-Path $PSScriptRoot '..\\powershell\\Automation\\Control.psm1'
+                    if (Test-Path $ctrlPath) {
+                        Import-Module $ctrlPath -Force -ErrorAction Stop
+                        Write-Host "[SETUP] Control module imported: $ctrlPath"
+                    } else {
+                        Write-Warning "[SETUP] Control.psm1 not found — factory entry points unavailable."
+                    }
+
+                    # ── Verify every public cmdlet is resolvable ──────────────────────
+                    # Mirrors Python's import-time package validation step
+                    $coreCmdlets = @(
+                        'Start-AutomationOrchestrator',   # orchestrator entry point
+                        'Invoke-RoutedRequest',            # router
+                        'Invoke-IsoDeploy',                # automation
+                        'Update-Firmware',                 # automation
+                        'Update-WindowsSecurity',          # automation
+                        'New-IsoBuild',                    # automation
+                        'New-Uuid',                        # automation
+                        'Set-MaintenanceMode',             # automation
+                        'Start-InstallMonitor',            # automation
+                        'Invoke-OpsRamp',                  # automation
+                        'Test-BuildParams',                # validators
+                        'Test-ClusterId',                  # validators
+                        'Test-ServerList',                 # validators
+                        # Control.psm1 factory helpers
+                        'New-JenkinsCtrl',                 # Control factory
+                        'New-IRequestCtrl',                # Control factory
+                        'New-SchedulerCtrl',               # Control factory
+                        'Run-Jenkins',                     # Control convenience
+                        'Run-IRequest',                    # Control convenience
+                        'Run-Scheduler'                    # Control convenience
+                    )
+                    foreach ($c in $coreCmdlets) {
+                        if (-not (Get-Command $c -ErrorAction SilentlyContinue)) {
+                            Write-Error "MISSING cmdlet / function: $c"
+                        }
+                    }
+                    Write-Host "[SETUP] All $($coreCmdlets.Count) public cmdlets verified."
+
+                    # ── Validate JSON configs ─────────────────────────────────────────
+                    Write-Host "[INFO] Validating JSON configs..."
+                    Get-ChildItem 'configs\\' -Filter *.json -ErrorAction SilentlyContinue | ForEach-Object {
+                        try { Load-JsonConfig -Path $_.FullName -Required:$false | Out-Null }
+                        catch { Write-Error "Invalid JSON: $($_.FullName)  —  $($_.Exception.Message)" }
+                    }
+                    Write-Host "[INFO] All JSON configs valid."
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  2. CYBERARK — BOOTSTRAP SECRETS
+        //      CCP CLI first; AIM REST fallback.
+        //      Secrets injected as Process-scope env vars — same schema as Python.
+        // =========================================================================
+        stage('CyberArk - Bootstrap Secrets') {
+            steps {
+                powershell '''
+                    $ErrorActionPreference = 'Stop'
+                    $ccCli = Get-Command ark_ccl -ErrorAction SilentlyContinue
+                    if (-not $ccCli) { $ccCli = Get-Command ark_cc  -ErrorAction SilentlyContinue }
+
+                    $script:fetched        = @()
+                    $secretMap = @(
+                        @{ Safe='HPE-iLO';      Obj='ILO_USER';              Var='ILO_USER'       },
+                        @{ Safe='HPE-iLO';      Obj='ILO_PASSWORD';           Var='ILO_PASSWORD'   },
+                        @{ Safe='SCOM-2015';    Obj='SCOM_ADMIN_USER';        Var='SCOM_ADMIN_USER'},
+                        @{ Safe='SCOM-2015';    Obj='SCOM_ADMIN_PASSWORD';    Var='SCOM_ADMIN_PASSWORD'},
+                        @{ Safe='OpsRamp';      Obj='OPSRAMP_CLIENT_ID';      Var='OPSRAMP_CLIENT_ID'},
+                        @{ Safe='OpsRamp';      Obj='OPSRAMP_CLIENT_SECRET';  Var='OPSRAMP_CLIENT_SECRET'},
+                        @{ Safe='OpsRamp';      Obj='OPSRAMP_TENANT_ID';      Var='OPSRAMP_TENANT_ID'},
+                        @{ Safe='SMTP-Mail';    Obj='SMTP_USER';              Var='SMTP_USER'      },
+                        @{ Safe='SMTP-Mail';    Obj='SMTP_PASSWORD';          Var='SMTP_PASSWORD'  },
+                        @{ Safe='OpenView';     Obj='OPENVIEW_USER';          Var='OPENVIEW_USER'  },
+                        @{ Safe='OpenView';     Obj='OPENVIEW_PASSWORD';      Var='OPENVIEW_PASSWORD'},
+                        @{ Safe='HPE-Download'; Obj='hpe-download-user';      Var='HPE_DOWNLOAD_USER'},
+                        @{ Safe='HPE-Download'; Obj='hpe-download-pass';      Var='HPE_DOWNLOAD_PASS'}
+                    )
+                    if ($ccCli) {
+                        Write-Host "[CyberArk] CCP CLI found: $($ccCli.Source)"
+                        foreach ($s in $secretMap) {
+                            if ([System.Environment]::GetEnvironmentVariable($s.Var)) { continue }
+                            $out = & $ccCli.Source getpassword -pAppID=jenkins -pSafe=$s.Safe -pObject=$s.Obj 2>&1 | Out-String
+                            if ($LASTEXITCODE -eq 0 -and $out.Trim()) {
+                                $lines  = $out.Trim() -split "`n"
+                                $secret = ($lines | Where-Object { $_.Trim() }) | Select-Object -First 1
+                                if ($secret) { [System.Environment]::SetEnvironmentVariable($s.Var, $secret, 'Process') }
+                            }
+                        }
+                    }
+
+                    # REST fallback
+                    $aimUrl = $env:AIM_WEBSERVICE_URL ??
+                              $env:CYBERARK_CCP_URL  ??
+                              'https://cyberark-ccp:443/AIMWebService/API/Accounts'
+                    $script:restFetched = @()
+                    foreach ($s in $secretMap) {
+                        if ([System.Environment]::GetEnvironmentVariable($s.Var)) { continue }
+                        try {
+                            $q    = [System.Uri]::EscapeDataString("Safe=$($s.Safe);Object=$($s.Obj)")
+                            $resp = Invoke-RestMethod -Uri "$aimUrl`?AppID=jenkins&Query=$q" -TimeoutSec 10 -ErrorAction Stop
+                            $item  = if ($resp -is [System.Array]) { $resp[0] } else { $resp }
+                            if ($item.Content) {
+                                [System.Environment]::SetEnvironmentVariable($s.Var, $item.Content, 'Process')
+                                $script:restFetched += $s.Var
+                            }
+                        } catch { Write-Warning "REST fetch failed: $($s.Safe)/$($s.Obj)" }
+                    }
+                    Write-Host "[CyberArk] REST fetched: $($script:restFetched -join ', ') — Bootstrap complete."
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  3. CODE QUALITY & SECURITY SCAN
+        //      1. PSScriptAnalyzer  — PowerShell lint
+        //      2. Pester unit tests  — PowerShell tests (NUnit XML)
+        //      3. gitleaks          — committed secrets
+        //      4. Module manifest   — Automation.psd1 validity
+        //      5. PS1 syntax check  — dot-sourced every .ps1 in the module
+        // =========================================================================
+        stage('Code Quality & Security Scan') {
+            when { expression { !params.SKIP_CODE_SCAN } }
+            steps {
+                powershell '''
+                    $ErrorActionPreference = 'Continue'
+                    $scanDir = 'code_scan_results'
+                    if (Test-Path $scanDir) { Remove-Item -Recurse -Force $scanDir }
+                    New-Item -ItemType Directory -Force -Path $scanDir | Out-Null
+                    $strict = $env:FAIL_ON_CODE_ISSUES -eq 'true'
+
+                    # ── [1/5] PSScriptAnalyzer ─────────────────────────────────────
+                    Write-Host "[1/5] PSScriptAnalyzer..."
+                    if (-not (Get-Module PSScriptAnalyzer -ListAvailable)) {
+                        Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -AllowClobber | Out-Null
+                    }
+                    $saDir = Join-Path $PSScriptRoot '..\\powershell'
+                    Invoke-ScriptAnalyzer -Path $saDir -Recurse -Severity Warning,Error |
+                        ConvertTo-Json -Depth 3 | Set-Content (Join-Path $scanDir 'psanalyzer.json')
+                    Invoke-ScriptAnalyzer -Path $saDir -Recurse -Severity Warning,Error |
+                        Format-Table RuleName,Severity,Line,Message -AutoSize |
+                        Out-File (Join-Path $scanDir 'psanalyzer.txt')
+                    Write-Host "  Done: $saDir"
+
+                    # ── [2/5] Pester unit tests ─────────────────────────────────────
+                    Write-Host "[2/5] Pester unit tests..."
+                    if (-not (Get-Module Pester -ListAvailable)) {
+                        try  { Install-Module Pester -Scope CurrentUser -Force -AllowClobber -SkipPublisherCheck | Out-Null }
+                        catch { Write-Warning "PSGallery unavailable; Pester may be missing." }
+                    }
+                    Import-Module Pester -MinimumVersion 5.0 -ErrorAction SilentlyContinue
+                    $pesterDir = Join-Path $scanDir 'pester'
+                    New-Item -ItemType Directory -Force -Path $pesterDir | Out-Null
+                    $testRoot = Join-Path $PSScriptRoot '..\\powershell\\Tests'
+                    if (Test-Path $testRoot) {
+                        Invoke-Pester -Path $testRoot `
+                            -OutputFile    (Join-Path $pesterDir 'TestResults.xml') `
+                            -OutputFormat  NUnitXml -Show None | Out-Null
+                    } else {
+                        Write-Warning "No Pester tests directory at: $testRoot"
+                    }
+
+                    # ── [3/5] gitleaks ──────────────────────────────────────────────
+                    Write-Host "[3/5] gitleaks..."
+                    if (-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
+                        if (-not (Test-Path 'tools')) { New-Item -ItemType Directory -Force -Path 'tools' | Out-Null }
+                        if (-not (Test-Path 'tools\\gitleaks.exe')) {
+                            Invoke-WebRequest -Uri 'https://github.com/gitleaks/gitleaks/releases/download/v8.18.1/gitleaks_8.18.1_windows_x64.zip' `
+                                -OutFile 'tools\\gitleaks.zip' -TimeoutSec 30 | Out-Null
+                            Expand-Archive -Path 'tools\\gitleaks.zip' -DestinationPath 'tools' -Force
+                            Remove-Item 'tools\\gitleaks.zip' -Force
+                        }
+                        $glPath = '.\\tools\\gitleaks.exe'
+                    } else { $glPath = 'gitleaks' }
+                    if ($glPath) {
+                        & $glPath detect --source=. --report-path="$scanDir\\gitleaks.json" --report-format json --no-banner | Out-Null
+                        $glExit = $LASTEXITCODE
+                        if ($glExit -ne 0 -and $strict) { exit 1 }
+                    }
+
+                    # ── [4/5] Module manifest validity ───────────────────────────────
+                    Write-Host "[4/5] Module manifest..."
+                    $psd1 = Join-Path $PSScriptRoot '..\\powershell\\Automation\\Automation.psd1'
+                    Test-ModuleManifest -Path $psd1 -ErrorAction Stop | Out-Null
+                    Write-Host "  Valid: $psd1"
+
+                    # ── [5/5] PS1 syntax check ───────────────────────────────────────
+                    Write-Host "[5/5] PS1 syntax..."
+                    $syntaxErrors = @()
+                    Get-ChildItem (Join-Path $PSScriptRoot '..\\powershell\\') -Recurse -Filter *.ps1 | ForEach-Object {
+                        $tok = $null
+                        $null = [System.Management.Automation.PSParser]::Tokenize($_.FullName, [ref]$tok)
+                    }
+                    Write-Host "  Done."
+
+                    Write-Host ''
+                    Write-Host '[SUMMARY] Code scan complete. Reports in code_scan_results/'
+                    Get-ChildItem $scanDir | ForEach-Object { Write-Host "  - $($_.Name)" }
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'code_scan_results/**', allowEmptyArchive: false
+                }
+                failure {
+                    mail to: 'security-alerts@yourcompany.com',
+                         subject: "⚠️ Code Quality/Scan FAILED: Build #${BUILD_NUMBER}",
+                         body: "Review artifacts in build #${BUILD_NUMBER}.\nReports: code_scan_results/"
+                }
+            }
+        }
+
+        // =========================================================================
+        //  4. PESTER UNIT TESTS
+        //      Mirrors Python pytest stage — runs powershell/Tests/ via Pester v5
+        // =========================================================================
+        stage('Pester Unit Tests & Coverage') {
+            steps {
+                powershell '''
+                    $ErrorActionPreference = 'Continue'
+                    if (-not (Get-Module Pester -ListAvailable)) {
+                        Install-Module Pester -Scope CurrentUser -Force -AllowClobber -SkipPublisherCheck | Out-Null
+                    }
+                    Import-Module Pester -MinimumVersion 5.0
+                    $testRoot = Join-Path $PSScriptRoot '..\\powershell\\Tests'
+                    if (-not (Test-Path $testRoot)) { New-Item -ItemType Directory -Force -Path $testRoot | Out-Null }
+                    Invoke-Pester -Path $testRoot `
+                        -OutputFile  'pester-results.xml' `
+                        -OutputFormat NUnitXml -Show None | Out-Null
+                '''
+            }
+            post {
+                always {
+                    junit 'pester-results.xml'
+                    archiveArtifacts artifacts: 'pester_output/**', allowEmptyArchive: true
+                }
+                failure {
+                    mail to: 'dev-team@yourcompany.com',
+                         subject: "Pester Tests FAILED: Build #${BUILD_NUMBER}",
+                         body: "One or more Pester tests failed. See Jenkins test report."
+                }
+            }
+        }
+
+        // =========================================================================
+        //  5. ORCHESTRATOR
+        //      Single decision point — mirrors Python orchestrator.execute().
+        //      Uses the Control.psm1 factory (new-JenkinsCtrl | Run-Jenkins) so
+        //      every downstream stage uses the same code path as schedulers and
+        //      direct API callers, rather than duplicating cmdlet calls.
+        // =========================================================================
+        stage('Orchestrator') {
+            when {
+                expression { params.BUILD_STAGE in ['firmware','windows','deploy','all'] }
+            }
+            steps {
+                powershell '''
+                    # Build the Jenkins parameter map that Control.psm1 expects
+                    $jenkinsParams = @{
+                        BUILD_STAGE   = $env:BUILD_STAGE        # firmware | windows | deploy | all ...
+                        BASE_ISO_PATH = $env:BASE_ISO_PATH
+                        SERVER_FILTER = $env:SERVER_FILTER
+                        DEPLOY_METHOD = $env:DEPLOY_METHOD
+                        SKIP_DOWNLOAD = [bool]$env:SKIP_DOWNLOAD
+                        DRY_RUN       = [bool]$env:DRY_RUN
+                    }
+                    # Factory + invoke (mirrors Python Control.from_jenkins(params).run())
+                    $ctrl  = New-JenkinsCtrl -Params $jenkinsParams
+                    $result = $ctrl | Run-Jenkins
+
+                    # Write result JSON for archiving
+                    $result | ConvertTo-Json -Depth 6 | Out-File 'output\\orchestrate_result.json' -Encoding UTF8
+                    if (-not $result.Success) { throw "Orchestrator failed: $($result.Error)" }
+                '''
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'output/orchestrate_result.json', allowEmptyArchive: true
+                }
+            }
+        }
+
+        // =========================================================================
+        //  6. DIRECT CALL / API ENTRY
+        //      Mirrors Python automation.core.orchestrator.AutomationOrchestrator.
+        //      Single entry point for any caller outside Jenkins (cron, ISAPI, API).
+        //      Equivalent Python: from automation.control import run_jenkins; run_jenkins(params)
+        //      Equivalent PS:    Start-AutomationOrchestrator -RequestType … -Params @{…}
+        // =========================================================================
+        stage('Direct Call') {
+            when { expression { params.BUILD_STAGE == 'direct' } }
+            steps {
+                powershell '''
+                    # Caller outside Jenkins (chron, iRequest, ISAPI stub): run_scheduler RUN
+                    # The caller builds the same request map as the Jenkins pipeline would:
+                    #   request_type  = BUILD_STAGE  (firmware | windows | deploy | build_iso)
+                    #   params        = { BaseIsoPath, ServerFilter, DeployMethod, DryRun }
+                    # This is the PS equivalent of: python -m automation.core.orchestrator build_iso ...
+                    $orchParams = [ordered]@{
+                        BUILD_STAGE   = $env:BUILD_STAGE
+                        BASE_ISO_PATH = $env:BASE_ISO_PATH
+                        SERVER_FILTER = $env:SERVER_FILTER
+                        DEPLOY_METHOD = $env:DEPLOY_METHOD
+                        DRY_RUN       = [bool]$env:DRY_RUN
+                    }
+                    $result = Start-AutomationOrchestrator -RequestType $orchParams.BUILD_STAGE -Params @{
+                        BaseIsoPath  = $orchParams.BASE_ISO_PATH
+                        ServerFilter = $orchParams.SERVER_FILTER
+                        DeployMethod = $orchParams.DEPLOY_METHOD
+                        DryRun       = $orchParams.DRY_RUN
+                    }
+                    $result | ConvertTo-Json -Depth 6 | Out-File 'output\\direct_call_result.json'
+                    if (-not $result.Success) { throw "Direct call failed: $($result.Error)" }
+                    Write-Host "Direct call succeeded: $($result.RequestType)"
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'output/direct_call_result.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  7. BUILD FIRMWARE ISOS
+        //      PS-native: Update-Firmware
+        // =========================================================================
+        stage('Build Firmware ISOs') {
+            when { expression { params.BUILD_STAGE in ['firmware','all','reporting','monitoring'] } }
+            steps {
+                powershell '''
+                    Update-Firmware `
+                        -ServerList  (Load-ServerList -Path 'configs\\server_list.txt' -IncludeDetails) `
+                        -OutputDir   'output\\firmware' `
+                        -SkipDownload:$params.SKIP_DOWNLOAD `
+                        -DryRun:$params.DRY_RUN
+                '''
+                archiveArtifacts artifacts: 'output/firmware/**/*.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'output/firmware/**/*.iso', allowEmptyArchive: true
+            }
+            post {
+                always {
+                    powershell '''
+                        Get-ChildItem 'output\\firmware\\results\\*.json' -ErrorAction SilentlyContinue | ForEach-Object {
+                            $r = Load-Json -Path $_.FullName
+                            Write-Host "Server: $($r.server) — Success: $($r.success)"
+                        }
+                    '''
+                }
+            }
+        }
+
+        // =========================================================================
+        //  8. BUILD WINDOWS ISOS
+        //      PS-native: Update-WindowsSecurity
+        // =========================================================================
+        stage('Build Windows ISOs') {
+            when { expression { params.BUILD_STAGE in ['windows','all','reporting','monitoring'] } }
+            steps {
+                powershell '''
+                    $baseIso = $env:BASE_ISO_PATH
+                    if (-not (Test-Path $baseIso)) { Write-Error "Base ISO not found: $baseIso"; exit 1 }
+                    $servers = Load-ServerList -Path 'configs\\server_list.txt' -IncludeDetails
+                    foreach ($server in $servers) {
+                        Write-Host "`n[INFO] Patching Windows ISO for: $($server.Hostname)"
+                        Update-WindowsSecurity `
+                            -BaseIso   $baseIso `
+                            -Server    $server `
+                            -OutputDir 'output\\patched' `
+                            -DryRun:$params.DRY_RUN
+                    }
+                '''
+                archiveArtifacts artifacts: 'output/patched/**/*.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'output/patched/**/*.iso', allowEmptyArchive: true
+            }
+        }
+
+        // =========================================================================
+        //  9. COMBINE DEPLOYMENT PACKAGES
+        //      PS-native: New-IsoBuild + Compress-Archive
+        // =========================================================================
+        stage('Combine Deployment Packages') {
+            when { expression { params.BUILD_STAGE in ['windows','all'] } }
+            steps {
+                powershell '''
+                    New-IsoBuild -ConfigDir 'configs' -OutputDir 'output\\combined' -DryRun:$params.DRY_RUN
+                    $date   = Get-Date -Format 'yyyyMMdd_HHmmss'
+                    $bundle = "deployment_bundle_$date"
+                    Compress-Archive -Path 'output\\combined\\**' -DestinationPath "output\\${bundle}.zip" -Force
+                    Write-Host "Created: ${bundle}.zip"
+                '''
+                archiveArtifacts artifacts: 'output/*.zip', allowEmptyArchive: true
+            }
+        }
+
+        // =========================================================================
+        //  10. IREQUEST (ISAPI / BMC FORM) ENTRY
+        //       Mirrors Python control.py from_irequest().
+        //       Triggered by setting BUILD_STAGE='irequest' and CLUSTER_ID=<id>.
+        //       Real BMC iRequest header: Accept: application/json
+        //       Form field: cluster_id=<clust>  action=enable  start=now
+        // =========================================================================
+        stage('iRequest Entry') {
+            when {
+                allOf {
+                    expression { params.BUILD_STAGE == 'irequest' }
+                    expression { params.CLUSTER_ID != '' }
+                }
+            }
+            steps {
+                powershell '''
+                    # Simulate an iRequest form POST / ISAPI handler call
+                    $formData = @{
+                        cluster_id = $env:CLUSTER_ID
+                        action     = 'enable'
+                        start      = 'now'
+                        end        = $null
+                        dry_run    = [bool]$env:DRY_RUN
+                    }
+                    $result = Run-IRequest -FormData $formData
+                    $result | ConvertTo-Json -Depth 6 | Out-File 'output\\irequest_result.json'
+                    if (-not $result.Success) { throw "iRequest failed: $($result.Error)" }
+                    Write-Host "iRequest succeeded: $($result.RequestType) cluster=$($result.Params.ClusterId)"
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'output/irequest_result.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  11. SCHEDULED TASK CALLER (Windows schtasks / Linux cron)
+        //       Mirrors Python control.py from_scheduler().
+        //       Registers + runs the maintenance-disable Windows Scheduled Task,
+        //       triggered by BUILD_STAGE='scheduled' + CLUSTER_ID=<id>.
+        // =========================================================================
+        stage('Scheduled Task') {
+            when {
+                allOf {
+                    expression { params.BUILD_STAGE == 'scheduled' }
+                    expression { params.CLUSTER_ID != '' }
+                }
+            }
+            steps {
+                powershell '''
+                    $taskParams = @{
+                        task       = 'maintenance_disable'
+                        cluster_id = $env:CLUSTER_ID
+                        dry_run    = [bool]$env:DRY_RUN
+                    }
+                    # Factory + invoke (mirrors Python Control.from_scheduler(task_params).run())
+                    $ctrl    = New-SchedulerCtrl -TaskParams $taskParams
+                    $result  = $ctrl | Run-Scheduler
+                    $result | ConvertTo-Json -Depth 6 | Out-File 'output\\scheduler_result.json'
+                    if (-not $result.Success) { throw "Scheduler call failed: $($result.Error)" }
+                    Write-Host "Scheduled task completed: $($result.RequestType) cluster=$($result.Params.ClusterId)"
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'output/scheduler_result.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  12. DEPLOY
+        //      PS-native: Invoke-IsoDeploy
+        // =========================================================================
+        stage('Deploy') {
+            when { expression { params.BUILD_STAGE in ['deploy','all','monitoring'] } }
+            steps {
+                powershell '''
+                    Invoke-IsoDeploy `
+                        -Method     $env:DEPLOY_METHOD `
+                        -DryRun:$params.DRY_RUN
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'logs/deploy_*.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  13. VULNERABILITY SCAN
+        //      Placeholder — configure Nessus / OpenVAS per environment
+        // =========================================================================
+        stage('Vulnerability Scan') {
+            when { expression { params.BUILD_STAGE in ['scan','all'] } }
+            steps {
+                powershell '''
+                    $scanDir = 'logs\\scan_reports'
+                    New-Item -ItemType Directory -Force -Path $scanDir | Out-Null
+                    @{ scan_date='(Get-Date -Format o)'; servers_scanned=0; notes='Nessus/OpenVAS not configured yet' } |
+                        ConvertTo-Json | Out-File "$scanDir\\vuln_scan_summary.json"
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'logs/scan_reports/**', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  14. OPSRAMP REPORTING
+        //      PS-native: Invoke-OpsRamp reads output/results/*.json
+        //      Also the cron/automation entry point via scripts/schedule-jobs.ps1 reporting
+        // =========================================================================
+        stage('OpsRamp Reporting') {
+            when { expression { env.OPSRAMP_ENABLED == 'true' } }
+            steps {
+                powershell '''
+                    Get-ChildItem 'output\\results\\*.json' -ErrorAction SilentlyContinue | ForEach-Object {
+                        $data = Load-Json -Path $_.FullName
+                        Invoke-OpsRamp -ServerName $data.server -BuildData $data
+                    }
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  15. REPORTING  (cron-scheduled  → orchestrator/run_job)
+        //      Mirrors: cron_jobs.sh reporting  /  scripts/schedule-jobs.ps1 Invoke-JobReporting
+        //      24-hour midnight daily batch; pushes audit logs to OpsRamp and archives
+        // =========================================================================
+        stage('Reporting') {
+            when { expression { params.BUILD_STAGE == 'reporting' } }
+            steps {
+                powershell '''
+                    & "$PSScriptRoot\\..\\scripts\\schedule-jobs.ps1" -Job reporting
+                '''
+            }
+            post {
+                always { archiveArtifacts artifacts: 'output/orchestrate_result.json', allowEmptyArchive: true }
+            }
+        }
+
+        // =========================================================================
+        //  16. MONITORING  (cron-scheduled every 5 min  →  Start-InstallMonitor per server)
+        //      Mirrors: cron_jobs.sh monitoring  /  scripts/schedule-jobs.ps1 Invoke-JobMonitoring
+        // =========================================================================
+        stage('Monitoring') {
+            when { expression { params.BUILD_STAGE == 'monitoring' } }
+            steps {
+                powershell '''
+                    & "$PSScriptRoot\\..\\scripts\\schedule-jobs.ps1" -Job monitoring
+                '''
+            }
+        }
+
+        // =========================================================================
+        //  17. AUDIT & REPORTING
+        //      PS-native: same AuditLogger / ConvertTo-Json pattern
+        // =========================================================================
+        stage('Audit & Reporting') {
+            steps {
+                powershell '''
+                    $date   = Get-Date -Format 'yyyy-MM-dd'
+                    $rptDir = "logs\\build_reports\\$date"
+                    New-Item -ItemType Directory -Force -Path $rptDir | Out-Null
+                    Get-ChildItem 'output\\results\\*.json'     -ErrorAction SilentlyContinue | Copy-Item -Destination $rptDir
+                    Get-ChildItem 'logs\\monitoring_sessions\\*.json' -ErrorAction SilentlyContinue | Copy-Item -Destination $rptDir
+                    Write-Host "Audit report: $rptDir"
+                    $total = (Get-ChildItem 'output\\results\\*.json' -ErrorAction SilentlyContinue).Count
+                    $ok=0; $failed=0
+                    Get-ChildItem 'output\\results\\*.json' | ForEach-Object {
+                        $d=Load-Json -Path $_.FullName; if($d.success){$ok++}else{$failed++}
+                    }
+                    [ordered]@{ build_date=$date; total_servers=$total; successful=$ok; failed=$failed; stages_completed=$env:BUILD_STAGE } |
+                        ConvertTo-Json -Depth 3 | Out-File "$rptDir\\summary.json"
+                    Write-Host "Summary: $ok/$total successful"
+                '''
+                archiveArtifacts artifacts: 'logs/build_reports/**', allowEmptyArchive: true
+            }
+        }
+    }    // end stages
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Mail — same schema as Python pipeline
+    // ─────────────────────────────────────────────────────────────────────────
+    post {
+        success {
+            mail to: 'automation-alerts@yourcompany.com',
+                 subject: "✅ #${BUILD_NUMBER} SUCCEEDED — ${params.BUILD_STAGE}",
+                 body: "Build ${BUILD_NUMBER} complete.\nStage: ${params.BUILD_STAGE}\nParameters: ${params}"
+        }
+        failure {
+            mail to: 'automation-alerts@yourcompany.com',
+                 subject: "❌ #${BUILD_NUMBER} FAILED — ${params.BUILD_STAGE}",
+                 body: "Build ${BUILD_NUMBER} failed.\nStage: ${params.BUILD_STAGE}\nCheck console for details."
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

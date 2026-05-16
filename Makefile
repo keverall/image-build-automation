@@ -25,7 +25,63 @@ YELLOW := \033[1;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: setup install deps test lint lint-fix security format check clean help all
+.PHONY: setup install deps test lint lint-fix security format check clean help all \
+         pwsh-lint pwsh-test pwsh-test-unit pwsh-test-integration
+
+# ─── PowerShell ─────────────────────────────────────────────────────────────
+PSMODULE := powershell/Automation/Automation.psd1
+PSTESTS  := powershell/Tests
+PSDIRS   := powershell
+
+pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
+	@echo "$(CYAN)[pwsh-lint]$(NC) Running PSScriptAnalyzer..."
+	@pwsh -NoProfile -Command "\
+		\$$pssa = Get-Module PSScriptAnalyzer -ListAvailable -ErrorAction SilentlyContinue; \
+		if (-not \$$pssa) { \
+			Write-Host 'PSScriptAnalyzer not found. Install with: Install-Module PSScriptAnalyzer'; \
+			exit 1; \
+		}; \
+		\$$errors = Invoke-ScriptAnalyzer -Path '$(PSDIRS)' -Recurse -Severity Warning; \
+		if (\$$errors) { \$$errors | Format-Table -AutoSize; exit 1 } \
+		else { Write-Host '$(GREEN)[pwsh-lint]$(NC) No issues found' }"
+
+pwsh-test: ## Run all Pester PowerShell tests
+	@echo "$(CYAN)[pwsh-test]$(NC) Running all Pester tests..."
+	@pwsh -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		Invoke-Pester -Path @( \
+			'$(PSTESTS)/Audit.Unit.Tests.ps1', \
+			'$(PSTESTS)/Config.Unit.Tests.ps1', \
+			'$(PSTESTS)/Credentials.Unit.Tests.ps1', \
+			'$(PSTESTS)/Executor.Unit.Tests.ps1', \
+			'$(PSTESTS)/FileIO.Unit.Tests.ps1', \
+			'$(PSTESTS)/Inventory.Unit.Tests.ps1', \
+			'$(PSTESTS)/New-Uuid.Unit.Tests.ps1', \
+			'$(PSTESTS)/Router.Unit.Tests.ps1', \
+			'$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1', \
+			'$(PSTESTS)/Validators.Unit.Tests.ps1', \
+			'$(PSTESTS)/Pester.Integration.ps1' \
+		) -PassThru"
+
+pwsh-test-unit: ## Run Pester unit tests only
+	@echo "$(CYAN)[pwsh-test-unit]$(NC) Running Pester unit tests..."
+	@pwsh -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		Invoke-Pester -Path @( \
+			'$(PSTESTS)/Audit.Unit.Tests.ps1', \
+			'$(PSTESTS)/Config.Unit.Tests.ps1', \
+			'$(PSTESTS)/Credentials.Unit.Tests.ps1', \
+			'$(PSTESTS)/Executor.Unit.Tests.ps1', \
+			'$(PSTESTS)/FileIO.Unit.Tests.ps1', \
+			'$(PSTESTS)/Inventory.Unit.Tests.ps1', \
+			'$(PSTESTS)/New-Uuid.Unit.Tests.ps1', \
+			'$(PSTESTS)/Router.Unit.Tests.ps1', \
+			'$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1', \
+			'$(PSTESTS)/Validators.Unit.Tests.ps1' \
+		) -PassThru"
+
+pwsh-test-integration: ## Run Pester integration tests only
+	@echo "$(CYAN)[pwsh-test-integration]$(NC) Running Pester integration tests..."
+	@pwsh -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		Invoke-Pester -Path $(PSTESTS)/Pester.Integration.ps1 -PassThru"
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
