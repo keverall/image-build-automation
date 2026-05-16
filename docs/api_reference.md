@@ -1,9 +1,8 @@
 # Orchestrator & Routing Layer — API Reference
 
 > **Language-agnostic reference.** For PowerShell types and return schemas, see
-> [../powershell/api_reference.md](../powershell/api_reference.md). For Python
-> types and return schemas, see [../python/..](../README.md) (Python equivalent
-> commands are linked inline below where available).
+> [powershell/api_reference.md](powershell/api_reference.md). For Python
+> types and return schemas, see the inline Python blocks in this doc.
 
 ---
 
@@ -182,7 +181,7 @@ errors — the validation-failure envelope is returned immediately.
 - For the PowerShell view of each symbols — module paths, `[hashtable]` return
   types for every dispatcher branch, and `$script:RouteMap` / `$RouteMap` vs
   `_RouteMap` docs — see
-  [`powershell/api_reference.md`](../powershell/api_reference.md).
+  [`powershell/api_reference.md`](powershell/api_reference.md).
 - For the Python orchestrator and router source references, see the Python
   testing doc and `src/automation/cli/` for the SSH/WinRM executor that the
   `opsramp_report` handler uses.

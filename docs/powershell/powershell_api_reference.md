@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the **PowerShell translation** of the [`hpe-automation`](README.md) Python
+This is the **PowerShell translation** of the [`hpe-automation`](../README.md) Python
 project. It provides the same end-to-end automation — firmware / driver ISO builds,
 Windows security patching, ISO deployment to iLO, installation monitoring, SCOM
 maintenance-mode orchestration, and OpsRamp telemetry — implemented as a native

@@ -2,7 +2,7 @@
 
 What is required to run the `powershell/Automation` module standalone or inside a
 separate Jenkins `windows` stage.  Does **not** duplicate Pester testing guidance
-(see [`../powershell/powershell_testing.md`](../powershell/powershell_testing.md)) or the Python testing
+(see [`powershell_testing.md`](powershell_testing.md)) or the Python testing
 guide (see [`../python/testing.md`](../python/testing.md)).
 
 ---

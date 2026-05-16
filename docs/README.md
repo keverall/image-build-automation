@@ -29,7 +29,7 @@ hpe-windows-iso-automation/
 ## Quick Start
 
 - **Python** package setup and first build: see the [top-level README](../README.md#quick-start)
-- **PowerShell** module import and first command: see [powershell/powershell_api_reference.md](../powershell/powershell_api_reference.md#quick-start)
+- **PowerShell** module import and first command: see [powershell/powershell_api_reference.md](powershell/powershell_api_reference.md#quick-start)
 
 ---
 
@@ -51,7 +51,7 @@ hpe-windows-iso-automation/
 
 | Document | Description |
 |---|---|
-| [PowerShell API Reference — Generic](../api_reference.md) | Orchestrator & routing layer — request types, flow, adding new handlers, return schema |
+| [PowerShell API Reference — Generic](api_reference.md) | Orchestrator & routing layer — request types, flow, adding new handlers, return schema |
 | [PowerShell API Reference](powershell/api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
 | [PowerShell Module Overview](powershell/powershell_api_reference.md) | Module overview, directory layout, requirements, design mapping to Python, quick-start |
 | [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
