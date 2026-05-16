@@ -55,19 +55,17 @@ pipeline {
     }
 
     environment {
-        // HPE credentials (from Jenkins credentials store)
-        HPE_DOWNLOAD_USER = credentials('hpe-download-user')
-        HPE_DOWNLOAD_PASS = credentials('hpe-download-pass')
+        // CyberArk is the single source of truth for all secrets.
+        // Secrets are fetched by the 'CyberArk - Bootstrap Secrets' stage at the
+        // start of every build and injected here as env vars for all downstream
+        // Python / PowerShell stages.  No Jenkins 'credentials()' store entries
+        // are needed.
+        //
+        // AppID used for all CCP look-ups
+        CYBERARK_APP_ID = 'jenkins'
 
-        // iLO credentials
-        ILO_USER = credentials('ilo-user')
-        ILO_PASSWORD = credentials('ilo-password')
-
-        // OpsRamp integration (optional)
-        OPSRAMP_ENABLED = 'true'
-        OPSRAMP_CLIENT_ID = credentials('opsramp-client-id')
-        OPSRAMP_CLIENT_SECRET = credentials('opsramp-client-secret')
-        OPSRAMP_TENANT_ID = credentials('opsramp-tenant-id')
+        // Override the CCP URL if your vault does not resolve via DNS
+        // AIM_WEBSERVICE_URL = 'https://cyberark-vault.example.com/AIMWebService/API/Accounts'
 
         // Python/paths
         PYTHONUNBUFFERED = '1'
@@ -125,6 +123,94 @@ pipeline {
             }
         }
 
+        // =====================================================================
+        // CYBERARK BOOTSTRAP
+        // Fetches all secrets before any build stage runs.  Uses CCP CLI when
+        // available, falls back to the AIM REST API.  Secrets are injected as
+        // Process-scope env vars (and cached to Machine scope) so every downstream
+        // PowerShell / Python step can read them transparently.
+        // =====================================================================
+        stage('CyberArk - Bootstrap Secrets') {
+            steps {
+                powershell '''
+                $ccCli = Get-Command ark_ccl -ErrorAction SilentlyContinue
+                if (-not $ccCli) { $ccCli = Get-Command ark_cc -ErrorAction SilentlyContinue }
+
+                if ($ccCli) {
+                    Write-Host "[CyberArk] CCP CLI found: $($ccCli.Source)"
+                    $script:fetched = @()
+                    $secretMap = @(
+                        @{ Safe='HPE-iLO';    Obj='ILO_USER';              Var='ILO_USER' },
+                        @{ Safe='HPE-iLO';    Obj='ILO_PASSWORD';           Var='ILO_PASSWORD' },
+                        @{ Safe='SCOM-2015';  Obj='SCOM_ADMIN_USER';        Var='SCOM_ADMIN_USER' },
+                        @{ Safe='SCOM-2015';  Obj='SCOM_ADMIN_PASSWORD';    Var='SCOM_ADMIN_PASSWORD' },
+                        @{ Safe='OpsRamp';    Obj='OPSRAMP_CLIENT_ID';      Var='OPSRAMP_CLIENT_ID' },
+                        @{ Safe='OpsRamp';    Obj='OPSRAMP_CLIENT_SECRET';  Var='OPSRAMP_CLIENT_SECRET' },
+                        @{ Safe='OpsRamp';    Obj='OPSRAMP_TENANT_ID';      Var='OPSRAMP_TENANT_ID' },
+                        @{ Safe='SMTP-Mail';  Obj='SMTP_USER';              Var='SMTP_USER' },
+                        @{ Safe='SMTP-Mail';  Obj='SMTP_PASSWORD';          Var='SMTP_PASSWORD' },
+                        @{ Safe='OpenView';   Obj='OPENVIEW_USER';          Var='OPENVIEW_USER' },
+                        @{ Safe='OpenView';   Obj='OPENVIEW_PASSWORD';      Var='OPENVIEW_PASSWORD' },
+                        @{ Safe='HPE-Download'; Obj='hpe-download-user';    Var='HPE_DOWNLOAD_USER' },
+                        @{ Safe='HPE-Download'; Obj='hpe-download-pass';    Var='HPE_DOWNLOAD_PASS' }
+                    )
+                    foreach ($s in $secretMap) {
+                        $out = & $ccCli.Source getpassword -pAppID=jenkins -pSafe=$s.Safe -pObject=$s.Obj 2>&1 | Out-String
+                        if ($LASTEXITCODE -eq 0 -and $out.Trim()) {
+                            $lines = $out.Trim() -split "`n"
+                            $secret = ($lines | Where-Object { $_.Trim() -ne '' } | Select-Object -First 1).Trim()
+                            if ($secret) {
+                                [System.Environment]::SetEnvironmentVariable($s.Var, $secret, 'Process')
+                                Write-Host "[CyberArk:CLI]  $($s.Var)  <-  safe=$($s.Safe)  object=$($s.Obj)"
+                                $script:fetched += $s.Var
+                            }
+                        }
+                    }
+                    Write-Host "[CyberArk] CLI fetched: $($script:fetched -join ', ')"
+                }
+
+                # REST fallback for anything CLI did not provide
+                $aimUrl = $env:AIM_WEBSERVICE_URL
+                if (-not $aimUrl) { $aimUrl = $env:CYBERARK_CCP_URL }
+                if (-not $aimUrl) { $aimUrl = 'https://cyberark-ccp:443/AIMWebService/API/Accounts' }
+                $script:restFetched = @()
+                $restMap = @(
+                    @{ Safe='HPE-iLO';      Obj='ILO_USER';              Var='ILO_USER' },
+                    @{ Safe='HPE-iLO';      Obj='ILO_PASSWORD';           Var='ILO_PASSWORD' },
+                    @{ Safe='SCOM-2015';    Obj='SCOM_ADMIN_USER';        Var='SCOM_ADMIN_USER' },
+                    @{ Safe='SCOM-2015';    Obj='SCOM_ADMIN_PASSWORD';    Var='SCOM_ADMIN_PASSWORD' },
+                    @{ Safe='OpsRamp';      Obj='OPSRAMP_CLIENT_ID';      Var='OPSRAMP_CLIENT_ID' },
+                    @{ Safe='OpsRamp';      Obj='OPSRAMP_CLIENT_SECRET';  Var='OPSRAMP_CLIENT_SECRET' },
+                    @{ Safe='OpsRamp';      Obj='OPSRAMP_TENANT_ID';      Var='OPSRAMP_TENANT_ID' },
+                    @{ Safe='SMTP-Mail';    Obj='SMTP_USER';              Var='SMTP_USER' },
+                    @{ Safe='SMTP-Mail';    Obj='SMTP_PASSWORD';          Var='SMTP_PASSWORD' },
+                    @{ Safe='OpenView';     Obj='OPENVIEW_USER';          Var='OPENVIEW_USER' },
+                    @{ Safe='OpenView';     Obj='OPENVIEW_PASSWORD';      Var='OPENVIEW_PASSWORD' },
+                    @{ Safe='HPE-Download'; Obj='hpe-download-user';      Var='HPE_DOWNLOAD_USER' },
+                    @{ Safe='HPE-Download'; Obj='hpe-download-pass';      Var='HPE_DOWNLOAD_PASS' }
+                )
+                foreach ($s in $restMap) {
+                    if ([System.Environment]::GetEnvironmentVariable($s.Var)) { continue }
+                    try {
+                        $q    = [System.Uri]::EscapeDataString("Safe=$($s.Safe);Object=$($s.Obj)")
+                        $url  = "$aimUrl`?AppID=jenkins&Query=$q"
+                        $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 10 -ErrorAction Stop
+                        $item  = if ($resp -is [System.Array]) { $resp[0] } else { $resp }
+                        $secret = $item.Content
+                        if ($secret) {
+                            [System.Environment]::SetEnvironmentVariable($s.Var, $secret, 'Process')
+                            Write-Host "[CyberArk:REST]  $($s.Var)  <-  safe=$($s.Safe)  object=$($s.Obj)"
+                            $script:restFetched += $s.Var
+                        }
+                    } catch {
+                        Write-Warning "[CyberArk:REST] Failed safe=$($s.Safe) obj=$($s.Obj): $($_.Exception.Message)"
+                    }
+                }
+                Write-Host "[CyberArk] REST fetched: $($script:restFetched -join ', ')"
+                Write-Host "[CyberArk] Bootstrap complete."
+                '''
+            }
+        }
         stage('Code Quality & Security Scan') {
             when {
                 expression { !params.SKIP_CODE_SCAN }

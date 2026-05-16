@@ -2,6 +2,8 @@
 # Public/Update-WindowsSecurity.ps1 — Windows security patcher / ISO builder
 # Equivalent of Python cli/patch_windows_security.py
 #
+# Contains: Invoke-WindowsSecurityUpdate wrapper, WindowsPatcher class, script mode.
+#
 
 function Invoke-WindowsSecurityUpdate {
     <#
@@ -95,16 +97,18 @@ class WindowsPatcher {
             $this._Log('setup_base_iso','FAILED',"ISO not found: $IsoPath")
             return $null
         }
-        # Mount ISO (Windows) — on Linux are used we assume it is pre-mounted
+        # Mount ISO on Windows; on Linux we assume it is already extracted/mounted
         if ($IsWindows) {
             try {
                 $disk = Mount-DiskImage -ImagePath $IsoPath -PassThru -ErrorAction Stop
                 $vol  = (Get-Volume -DiskImage $disk -ErrorAction Stop)
-                $this._Log('setup_base_iso','INFO',"Mounted at $)($vol.DriveLetter):\"
+                $this._Log('setup_base_iso','INFO',"Mounted at $($vol.DriveLetter):\")
                 return "$($vol.DriveLetter):\"
-            } catch {
-                # Re-mount
-                $diskImg = Disassemble-Image -ImagePath $IsoPath -PassThru
+            }
+            catch {
+                # Attempt to clean up a partial mount before giving up
+                try  { Dismount-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue } catch {}
+                $this._Log('setup_base_iso','WARN',"Could not mount ISO: $($_.Exception.Message)")
             }
         }
         Ensure-DirectoryExists -Path $this.BaseIsoDir
@@ -118,10 +122,10 @@ class WindowsPatcher {
             $kb       = $patch.Get_Item('kb_number')
             $msuPath  = Join-Path $this.PatchDir "$kb.msu"
             if (-not (Test-Path $msuPath)) { Write-Warning "Patch not found: $msuPath, skipping"; continue }
-            $dismArgs = @('/Image:', $this.BaseIsoDir, '/Add-Package', "/PackagePath:$msuPath")
-            $r        = Invoke-Command -Command @('dism') + $dismArgs -TimeoutSeconds 600
+            $dismArgs = @('/Image:', $this.BaseIsoDir, '/Add-Package', "/PackagePath:$msuPath", '/LimitAccess', '/NoRestart')
+            $r        = Invoke-NativeCommand -Command @('dism') + $dismArgs -TimeoutSeconds 600
             if (-not $r.Success) {
-                $this._Log("apply_patch_$kb",'FAILED',"DISM failed: $)($r.StandardError)"
+                $this._Log("apply_patch_$kb",'FAILED',"DISM failed: $($r.StandardError)")
                 return $false
             }
             $this._Log("apply_patch_$kb",'SUCCESS',"Applied $kb")
@@ -140,7 +144,7 @@ class WindowsPatcher {
             $psScript = "Add-WindowsPackage -Path '$($this.BaseIsoDir)' -PackagePath '$msuPath' -ErrorAction Stop"
             $r        = Invoke-PowerShellScript -Script $psScript -CaptureOutput $true -TimeoutSeconds 600
             if (-not $r.Success) {
-                $this._Log("apply_patch_$kb",'FAILED',"PS DISM failed: $)($r.Output)"
+                $this._Log("apply_patch_$kb",'FAILED',"PS DISM failed: $($r.Output)")
                 return $false
             }
             $this._Log("apply_patch_$kb",'SUCCESS',"Applied $kb")
@@ -154,14 +158,22 @@ class WindowsPatcher {
 
         try {
             $mounted = $this._SetupBaseIso($IsoPath, $DryRun)
-            if (-not $mounted -and -not $DryRun) { $this._Log('build','FAILED','Base ISO setup failed',;,return,$result,})
+            if (-not $mounted -and -not $DryRun) {
+                $this._Log('build','FAILED','Base ISO setup failed')
+                $result.error = 'Base ISO setup failed'
+                return $result
+            }
 
             $ok = switch ($Method.ToLowerInvariant()) {
                 'dism'       { $this._ApplyPatchesDism $DryRun }
                 'powershell' { $this._ApplyPatchesPowerShell $DryRun }
-                default      { $this._Log('build','FAILED',"Unknown method $Method",;,$false,})
+                default      { $this._Log('build','FAILED',"Unknown method $Method"); $false }
             }
-            if (-not $ok) { $this._Log('build','FAILED','Patching failed',;,return,$result,})
+            if (-not $ok) {
+                $this._Log('build','FAILED','Patching failed')
+                $result.error = 'Patching failed'
+                return $result
+            }
 
             if ($DryRun) {
                 $result.patched_iso = Join-Path $this.OutputDir "$ServerName`_patched_dryrun.iso"
@@ -170,7 +182,7 @@ class WindowsPatcher {
             }
 
             $outputIso = Join-Path $this.OutputDir "$ServerName`_patched.iso"
-            New-Item -Path $outputIso -Force -ItemType File | Out-Null   # placeholder
+            New-Item -Path $outputIso -Force -ItemType File | Out-Null   # placeholder — replaced by real DISM export in full impl
             $this._Log('create_iso','SUCCESS',"Created: $outputIso")
             $result.patched_iso = $outputIso; $result.success = $true
         }
