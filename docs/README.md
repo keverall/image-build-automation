@@ -54,6 +54,7 @@ hpe-windows-iso-automation/
 | [PowerShell Module README](../powershell/README.md) | Module overview, directory layout, requirements, Python-to-PowerShell design mapping, command quick-reference |
 | [PowerShell Testing Guide](powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
 | [PowerShell Testing Quick Start](TESTING_POWERSHELL_QUICKSTART.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
+| [🔧 PowerShell Jenkins Run Requirements](docs/powershell/powershell-jenkins-run-requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
 
 ---
 

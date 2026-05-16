@@ -21,6 +21,12 @@ Complete guide to running unit tests manually and via the Jenkins CI/CD pipeline
 
 > **Note:** The PowerShell module (`powershell/Automation/`) has an equivalent Pester test suite under `powershell/Tests/`. See [PowerShell Testing Guide](powershell_testing.md) for the Pester-specific reference.
 >
+>
+> **Secrets**: All credentials (iLO, SCOM, OpsRamp, SMTP, OpenView, HPE firmware download)
+> are resolved via **CyberArk Central Credential Provider**. The Jenkins `CyberArk - Bootstrap Secrets`
+> stage must run before any stage that needs credentials.
+> See [../powershell/powershell-jenkins-run-requirements.md](../powershell/powershell/powershell-jenkins-run-requirements.md)
+> for the full CyberArk safe/object mapping and CCP CLI + REST fallback details.
 > The project uses **pytest** for comprehensive unit testing of all code in `src/automation/` and its subfolders. Tests are located in `tests/` mirroring the package structure (e.g., `src/automation/cli/build_iso.py` → `tests/cli/test_build_iso.py`). Code coverage is measured with **pytest-cov** and reported in multiple formats (terminal, XML, HTML).
 
 **Key Features**

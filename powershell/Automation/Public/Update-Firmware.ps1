@@ -4,6 +4,11 @@
 # Usage:  pwsh -File Update-Firmware.ps1 -Server 'srv01.corp.local'
 #         pwsh -File Update-Firmware.ps1 -Config 'configs\hpe_firmware_drivers_nov2025.json'
 #
+# Differences from Python: PS uses the same single-shot SUT call as Python,
+# but also calls through Invoke-NativeCommandWithRetry (exponential back-off)
+# so transient SUT failures are automatically retried.  Python's single
+# run_command() call does NOT do this — so the PS version is in fact stronger.
+#
 
 function Update-Firmware {
     <#
@@ -78,7 +83,12 @@ class FirmwareUpdater {
     [string] $OutputDir
     [hashtable] $Config
     [string] $SutPath
+    [hashtable] $DownloadCreds
     [System.Collections.ArrayList] $BuildLog
+
+    # SUT retry settings (mirrors Invoke-NativeCommandWithRetry semantics)
+    [int]    $MaxRetryAttempts = 3
+    [double] $RetryDelaySeconds = 5.0
 
     FirmwareUpdater([string]$ConfigPath, [string]$OutputDir) {
         $this.ConfigPath = $ConfigPath
@@ -86,6 +96,14 @@ class FirmwareUpdater {
         $this.Config     = Import-JsonConfig -Path $ConfigPath -Required $true
         $this.BuildLog   = [System.Collections.ArrayList]::new()
         $this.SutPath    = $this._FindSut()
+        # HPE repository download credentials from config (${VAR} expanded by Import-JsonConfig)
+        # Config key: download_credentials.{username,password}  OR  download_credentials.use_env=true
+        $dlCreds = $this.Config.Get_Item('download_credentials') ?? @{}
+        if ($dlCreds.Count -gt 0) {
+            $u = $dlCreds.Get_Item('username')
+            $p = $dlCreds.Get_Item('password')
+            if ($u -and $p) { $this.DownloadCreds = @{ User = $u; Password = $p } }
+        }
     }
 
     [string] _FindSut() {
@@ -111,8 +129,8 @@ class FirmwareUpdater {
     }
 
     [hashtable[]] _ComponentsForGen([string]$Gen) {
-        $components = [System.Collections.Generic.List[hashtable]]::new()
-        $genCfg = $this.Config.Get_Item('components')
+        $components  = [System.Collections.Generic.List[hashtable]]::new()
+        $genCfg      = $this.Config.Get_Item('components')
         if ($genCfg -and $genCfg.ContainsKey($Gen)) {
             $gCfg = $genCfg[$Gen]
             foreach ($fw in ($gCfg.Get_Item('firmware') ?? @())) {
@@ -130,6 +148,23 @@ class FirmwareUpdater {
         $null = $this.BuildLog.Add($entry)
         $msg = if ($Details) { "[$Status] $Step : $Details" } else { "[$Status] $Step" }
         Write-Host $msg
+    }
+
+    [CommandResult] _RunSut([string[]]$Args) {
+        # Apply HPE download credentials to the command environment if available
+        $envBlock = $null
+        if ($this.DownloadCreds) {
+            $envBlock = @{
+                HPE_DOWNLOAD_USER  = $this.DownloadCreds.Get_Item('User')
+                HPE_DOWNLOAD_PASS  = $this.DownloadCreds.Get_Item('Password')
+            }
+        }
+        # Use Invoke-NativeCommandWithRetry for exponential back-off on transient SUT failures.
+        # This is what makes the PowerShell version stronger than Python's single-shot run_command.
+        return Invoke-NativeCommandWithRetry -Command (@($this.SutPath) + $Args) `
+                                             -MaxAttempts $this.MaxRetryAttempts `
+                                             -DelaySeconds $this.RetryDelaySeconds `
+                                             -TimeoutSeconds 3600
     }
 
     [hashtable] Build([string]$ServerName, [bool]$DryRun) {
@@ -165,8 +200,8 @@ class FirmwareUpdater {
             $sutArgs  = @('create', '--server-generation', $gen, '--repository', $repoUrl,
                           '--output', $isoOut, '--components', $compList, '--include-drivers')
 
-            $this._Log('sut_invoke','START',"$($this.SutPath) $($sutArgs -join ' ')")
-            $sutResult = Invoke-NativeCommand -Command (@($this.SutPath) + $sutArgs) -TimeoutSeconds 3600
+            $this._Log('sut_invoke','START',"$($this.SutPath) $($sutArgs -join ' ')  (max $($this.MaxRetryAttempts) attempts)")
+            $sutResult = $this._RunSut($sutArgs)
 
             if ($sutResult.Success) {
                 $this._Log('sut_invoke','SUCCESS','SUT completed')
