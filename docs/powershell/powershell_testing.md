@@ -388,7 +388,7 @@ if ($isPR) {
 
 - **CyberArk secrets + Jenkins setup** — full credential mapping, Bootstrap stage docs,
   and credential function reference: [`../powershell/powershell-jenkins-run-requirements.md`](../powershell/powershell/powershell-jenkins-run-requirements.md)
-- Python/pytest testing guide: [`../testing.md`](../testing.md)
+- Python/pytest testing guide: [`../python/testing.md`](../python/testing.md)
 - PowerShell module overview: [`../powershell/README.md`](../powershell/README.md)
 - Pester documentation: https://pester.dev/docs/
 - Pester v6 migration guide: https://pester.dev/docs/migration/v5-to-v6
