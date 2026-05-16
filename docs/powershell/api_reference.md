@@ -4,6 +4,7 @@
 > adding new handler types) is in [`../api_reference.md`](../api_reference.md).
 > This page documents PowerShell-specific types, return schemas, and dispatch
 > behaviour for each symbol in the routing layer.
+> For the equivalent Python view see [`../python/api_reference.md`](../python/api_reference.md).
 
 ---
 

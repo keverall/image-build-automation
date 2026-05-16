@@ -42,6 +42,7 @@ hpe-windows-iso-automation/
 | [Testing Guide](python/testing.md) | Comprehensive pytest / coverage / CI guide — commands, fixtures, PR incremental testing, coverage reports, troubleshooting |
 | [Testing Quick Start](python/testing_quickstart.md) | Cheat sheet for manual pytest runs and Jenkins, common commands, quick-reference table |
 | [Code Quality & Security](python/code_quality.md) | ruff, pylint, radon, bandit, safety, gitleaks — configuration, usage, Jenkins pipeline integration |
+| [API Reference](python/api_reference.md) | Orchestrator & routing layer — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators, return dicts |
 | [Maintenance Mode](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables, security — language-agnostic |
 | [Maintenance Mode — Python](python/maintenance_mode.md) | Python usage: CLI args, config, `clusters_catalogue.json`, `pip install`, troubleshooting |
 | [Maintenance Mode — PowerShell](powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration, Jenkins PSScriptAnalyzer |
@@ -53,6 +54,7 @@ hpe-windows-iso-automation/
 |---|---|
 | [PowerShell API Reference — Generic](api_reference.md) | Orchestrator & routing layer — request types, flow, adding new handlers, return schema |
 | [PowerShell API Reference](powershell/api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
+| [← Python API Reference](python/api_reference.md) | Equivalent Python API ref — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators |
 | [PowerShell Module Overview](powershell/powershell_api_reference.md) | Module overview, directory layout, requirements, design mapping to Python, quick-start |
 | [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
 | [PowerShell Testing Quick Start](powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
