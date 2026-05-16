@@ -228,4 +228,3 @@ Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'
 ## See Also
 
 - Python project: [`../README.md`](../README.md)
-- Migration plan: `.kilo/plans/`
