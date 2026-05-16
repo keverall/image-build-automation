@@ -1,6 +1,34 @@
 #
 # Private/Router.ps1 — Request routing equivalent of Python core/router.py
 #
+# Routing table is loaded from configs/request_types.json (single source of truth).
+# This keeps Python and PowerShell perfectly in sync.
+#
+
+$script:RouteConfigPath = Join-Path $PSScriptRoot '..\..\..\configs\request_types.json'
+$script:RouteMap = @{}
+
+try {
+    $cfg = Get-Content $script:RouteConfigPath -Raw | ConvertFrom-Json -AsHashtable
+    foreach ($entry in $cfg.request_types.GetEnumerator()) {
+        $script:RouteMap[$entry.Key] = $entry.Value.powershell_handler
+    }
+}
+catch {
+    Write-Warning "Router: Could not load request_types.json – falling back to static map"
+    $script:RouteMap = @{
+        build_iso            = 'New-IsoBuild'
+        update_firmware      = 'Update-Firmware'
+        patch_windows        = 'Invoke-WindowsSecurityUpdate'
+        deploy               = 'Invoke-IsoDeploy'
+        monitor              = 'Start-InstallMonitor'
+        maintenance_enable   = 'Set-MaintenanceMode'
+        maintenance_disable  = 'Set-MaintenanceMode'
+        maintenance_validate = 'Set-MaintenanceMode'
+        opsramp_report       = 'Invoke-OpsRampClient'
+        generate_uuid        = 'New-Uuid'
+    }
+}
 
 function Invoke-RoutedRequest {
     <#
