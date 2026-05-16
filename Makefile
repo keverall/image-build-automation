@@ -26,7 +26,7 @@ RED := \033[0;31m
 NC := \033[0m
 
 .PHONY: setup install deps test lint lint-fix security format check clean help all \
-         pwsh-lint pwsh-test pwsh-test-unit pwsh-test-integration
+         pwsh-lint pwsh-test pwsh-test-unit pwsh-test-integration pwsh-docs py-docs
 
 # ─── PowerShell ─────────────────────────────────────────────────────────────
 PSMODULE := powershell/Automation/Automation.psd1
@@ -44,6 +44,17 @@ pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 		\$$errors = Invoke-ScriptAnalyzer -Path '$(PSDIRS)' -Recurse -Severity Warning; \
 		if (\$$errors) { \$$errors | Format-Table -AutoSize; exit 1 } \
 		else { Write-Host '$(GREEN)[pwsh-lint]$(NC) No issues found' }"
+
+pwsh-docs: ## Generate PowerShell Markdown docs via PlatyPS
+	@echo "$(CYAN)[pwsh-docs]$(NC) Generating PowerShell API reference docs (PlatyPS)..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 || \
+		(echo "$(YELLOW)[pwsh-docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
+	@echo "$(GREEN)[pwsh-docs]$(NC) Docs written to docs/powershell/generated/"
+
+py-docs: ## Generate Python CLI Markdown docs via argparse help extraction
+	@echo "$(CYAN)[py-docs]$(NC) Generating Python CLI API reference docs…"
+	@$(PYTHON) scripts/generate_python_docs.py --force
+	@echo "$(GREEN)[py-docs]$(NC) Docs written to docs/python/generated/"
 
 pwsh-test: ## Run all Pester PowerShell tests
 	@echo "$(CYAN)[pwsh-test]$(NC) Running all Pester tests..."
@@ -259,5 +270,7 @@ run-maintenance: ## Enable maintenance mode for a cluster
 
 # ─── Aggregate Targets ───────────────────────────────────────────────────────
 all: setup lint test security ## Full setup, lint, test, and security scan
+
+docs: pwsh-docs py-docs ## Generate all API reference docs (PowerShell + Python)
 
 fresh: clean setup ## Clean everything and rebuild from scratch
