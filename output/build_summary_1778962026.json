@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-05-16T21:07:06.394978",
+  "total_servers": 5,
+  "successful": 0,
+  "failed": 5,
+  "results": [
+    {
+      "server": "server1.example.com",
+      "uuid": "df9b76f8-0bab-1f0a-777a-15a10bdcc77b",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-16T21:07:06.392479",
+      "steps": [
+        {
+          "step": "automation.cli.generate_uuid",
+          "uuid": "df9b76f8-0bab-1f0a-777a-15a10bdcc77b"
+        }
+      ],
+      "error": "HPE Smart Update Tool (hpe_sut) not found. Ensure it's installed and in PATH or placed in tools/ directory."
+    },
+    {
+      "server": "server2.example.com",
+      "uuid": "123368f6-c0d7-06be-ab75-1fe2b6c5689a",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-16T21:07:06.393390",
+      "steps": [
+        {
+          "step": "automation.cli.generate_uuid",
+          "uuid": "123368f6-c0d7-06be-ab75-1fe2b6c5689a"
+        }
+      ],
+      "error": "HPE Smart Update Tool (hpe_sut) not found. Ensure it's installed and in PATH or placed in tools/ directory."
+    },
+    {
+      "server": "server3.example.com",
+      "uuid": "5790c709-15f8-0f8d-0390-39c771892dc1",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-16T21:07:06.393809",
+      "steps": [
+        {
+          "step": "automation.cli.generate_uuid",
+          "uuid": "5790c709-15f8-0f8d-0390-39c771892dc1"
+        }
+      ],
+      "error": "HPE Smart Update Tool (hpe_sut) not found. Ensure it's installed and in PATH or placed in tools/ directory."
+    },
+    {
+      "server": "proliant-server-01",
+      "uuid": "fcc0cc86-398d-0206-4c84-cd0a63bf907a",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-16T21:07:06.394271",
+      "steps": [
+        {
+          "step": "automation.cli.generate_uuid",
+          "uuid": "fcc0cc86-398d-0206-4c84-cd0a63bf907a"
+        }
+      ],
+      "error": "HPE Smart Update Tool (hpe_sut) not found. Ensure it's installed and in PATH or placed in tools/ directory."
+    },
+    {
+      "server": "proliant-server-02",
+      "uuid": "5292e14e-3a9a-217f-bd53-7c18012eda5d",
+      "firmware_iso": null,
+      "patched_iso": null,
+      "combined_iso": null,
+      "success": false,
+      "timestamp": "2026-05-16T21:07:06.394656",
+      "steps": [
+        {
+          "step": "automation.cli.generate_uuid",
+          "uuid": "5292e14e-3a9a-217f-bd53-7c18012eda5d"
+        }
+      ],
+      "error": "HPE Smart Update Tool (hpe_sut) not found. Ensure it's installed and in PATH or placed in tools/ directory."
+    }
+  ]
+}
