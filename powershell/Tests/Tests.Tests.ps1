@@ -4,7 +4,7 @@ BeforeAll {
     $Script:TestRoot    = $PSScriptRoot
 
     # A temp directory for test artefacts
-    $Script:TempDir = Join-Path $env:TEMP "AutomationTests_$(New-Guid).Trim('{}')"
+    $Script:TempDir = Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))"
     New-Item -ItemType Directory -Path $Script:TempDir -Force | Out-Null
 
     # Minimal config JSONs the tests may need

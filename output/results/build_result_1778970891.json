@@ -1,0 +1,16 @@
+{
+  "server": "p",
+  "uuid": "00000000-0000-0000-0000-000000000000",
+  "firmware_iso": null,
+  "timestamp": "2026-05-16T23:34:51.6367781+01:00",
+  "success": false,
+  "error": "Unable to find type [FirmwareUpdater].",
+  "combined_iso": null,
+  "patched_iso": null,
+  "steps": [
+    {
+      "Uuid": "00000000-0000-0000-0000-000000000000",
+      "Step": "generate_uuid"
+    }
+  ]
+}

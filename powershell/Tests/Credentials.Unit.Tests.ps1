@@ -21,7 +21,7 @@ BeforeAll {
     # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
     if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
     if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
-    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$(New-Guid).Trim('{}')").TrimEnd('\','/')
+    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
     if (-not (Test-Path -Path $Script:TempDir))    { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
 
     # Minimal config fixtures

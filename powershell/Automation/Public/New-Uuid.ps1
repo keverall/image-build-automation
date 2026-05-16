@@ -54,18 +54,4 @@ function Test-Uuid {
     return [Guid]::new($guidBytes).ToString()
 }
 
-# ──────────────────────────────────────────────────────────────────────────────
-#  CLI entry point
-# ──────────────────────────────────────────────────────────────────────────────
-$uuid = Test-Uuid -ServerName $ServerName -Timestamp $Timestamp
-
-if ($OutputPath) {
-    $dir = Split-Path $OutputPath -Parent
-    if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory $dir -Force | Out-Null }
-    $uuid | Set-Content -Path $OutputPath -Encoding UTF8 -Force
-    Write-Host "UUID written to $OutputPath"
-} else {
-    Write-Host $uuid
-}
-
 # vim: ts=4 sw=4 et

@@ -82,7 +82,7 @@ class WindowsPatcher {
         $this.BuildLog          = [System.Collections.ArrayList]::new()
     }
 
-    _LoadConfig() { return $this.PatchesConfig }  # already loaded in ctor
+    [object] _LoadConfig() { return $this.PatchesConfig }
 
     [void] _Log([string]$Step, [string]$Status, [string]$Details = '') {
         $null = $this.BuildLog.Add(@{ timestamp=(Get-Date).ToString('o'); step=$Step; status=$Status; details=$Details })
@@ -98,7 +98,7 @@ class WindowsPatcher {
             return $null
         }
         # Mount ISO on Windows; on Linux we assume it is already extracted/mounted
-        if ($IsWindows) {
+        if (Test-Path Env:OS) {
             try {
                 $disk = Mount-DiskImage -ImagePath $IsoPath -PassThru -ErrorAction Stop
                 $vol  = (Get-Volume -DiskImage $disk -ErrorAction Stop)
@@ -106,7 +106,6 @@ class WindowsPatcher {
                 return "$($vol.DriveLetter):\"
             }
             catch {
-                # Attempt to clean up a partial mount before giving up
                 try  { Dismount-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue } catch {}
                 $this._Log('setup_base_iso','WARN',"Could not mount ISO: $($_.Exception.Message)")
             }
@@ -164,11 +163,12 @@ class WindowsPatcher {
                 return $result
             }
 
-            $ok = switch ($Method.ToLowerInvariant()) {
-                'dism'       { $this._ApplyPatchesDism $DryRun }
-                'powershell' { $this._ApplyPatchesPowerShell $DryRun }
-                default      { $this._Log('build','FAILED',"Unknown method $Method"); $false }
+            $patchResult = switch ($Method.ToLowerInvariant()) {
+                'dism'       { $this._ApplyPatchesDism($DryRun) }
+                'powershell' { $this._ApplyPatchesPowerShell($DryRun) }
+                default      { $this._Log('build','FAILED',"Unknown method $Method"); $null }
             }
+            $ok = if ($patchResult) { $patchResult.Success } else { $false }
             if (-not $ok) {
                 $this._Log('build','FAILED','Patching failed')
                 $result.error = 'Patching failed'

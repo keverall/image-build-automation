@@ -11,6 +11,14 @@
 #   2. iLO REST call now uses -SkipCertificateCheck (matches Python verify=False)
 #
 
+param(
+    [Parameter(Mandatory = $false)][ValidateSet('ilo','redfish')][string] $Method     = 'ilo',
+    [Parameter(Mandatory = $false)][string] $Server     = $null,
+    [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
+    [Parameter(Mandatory = $false)][string] $IsoDir     = 'output\combined',
+    [Parameter(Mandatory = $false)][switch] $DryRun
+)
+
 function Invoke-IsoDeploy {
     <#
     .SYNOPSIS
@@ -65,19 +73,6 @@ function Invoke-IsoDeploy {
     }
 }
 
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
-param(
-    [Parameter(Mandatory = $false)][ValidateSet('ilo','redfish')][string] $Method     = 'ilo',
-    [Parameter(Mandatory = $false)][string] $Server     = $null,
-    [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
-    [Parameter(Mandatory = $false)][string] $IsoDir     = 'output\combined',
-    [Parameter(Mandatory = $false)][switch] $DryRun
-)
-
-$Script:LogDir = Join-Path $PSScriptRoot '..\..\logs'
-Initialize-Logging -LogFile 'deploy.log'
-
-# ---- ISODeployer class ----
 class ISODeployer {
     [string]           $ServerListPath
     [string]           $IsoDir
@@ -285,11 +280,12 @@ class ISODeployer {
             $this._Log('deploy', $hn, 'FAILED', 'Package not found')
             return $false
         }
-        $ok = switch ($Method.ToLowerInvariant()) {
-            'ilo'     { $this._DeployViaIlo $Server $pkg $DryRun }.Success
-            'redfish' { $this._DeployViaRedfish $Server $pkg $DryRun }.Success
-            default   { Write-Error "Unknown method $Method"; $false }
+        $result = switch ($Method.ToLowerInvariant()) {
+            'ilo'     { $this._DeployViaIlo($Server, $pkg, $DryRun) }
+            'redfish' { $this._DeployViaRedfish($Server, $pkg, $DryRun) }
+            default   { Write-Error "Unknown method $Method"; $null }
         }
+        $ok = if ($result) { $result.Success } else { $false }
         $statusKey = if ($ok) { 'SUCCESS' } else { 'FAILED' }
         $this._Log('deploy', $hn, $statusKey, "Method: $Method; Success=$ok")
         return $ok

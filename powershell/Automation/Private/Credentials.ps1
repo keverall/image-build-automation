@@ -109,8 +109,8 @@ function _Resolve-Credential {
             return $cacheVal
         }
     } catch {
-        logger.debug("CyberArk REST fetch failed: safe=$SafeName object=$ObjectName: %s",
-                     $_.Exception.Message)
+        $logger = Get-Logger 'Credentials'
+        $logger.Debug("CyberArk REST fetch failed: safe=$SafeName object=$ObjectName $($_.Exception.Message)")
     }
 
     # ── Step 4: Safe default ─────────────────────────────────────────────────

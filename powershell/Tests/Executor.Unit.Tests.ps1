@@ -8,7 +8,7 @@ BeforeAll {
     # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
     if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
     if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
-    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$(New-Guid).Trim('{}')").TrimEnd('\','/')
+    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
     if (-not (Test-Path -Path $Script:TempDir))    { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
 
     # Minimal config fixtures
@@ -58,32 +58,32 @@ Describe 'New-CommandResult' {
     }
 }
 
-Describe 'Invoke-Command' {
+Describe 'Invoke-NativeCommand' {
     It 'Executes a simple command and returns Success=$true' {
-        $r = Invoke-Command -Command @('cmd.exe','/c','echo hello_world')
+        $r = Invoke-NativeCommand -Command @('echo','hello_world')
         $r.Success    | Should -Be $true
         $r.StandardOutput.Trim() | Should -Be 'hello_world'
     }
 
     It 'Returns Success=$false for a non-existent command' {
-        $r = Invoke-Command -Command @('nonexistent_cmd_xyz')
+        $r = Invoke-NativeCommand -Command @('nonexistent_cmd_xyz')
         $r.Success | Should -Be $false
     }
 
     It 'Captures stderr for a failing command' {
-        $r = Invoke-Command -Command @('cmd.exe','/c','echo error_out >&2')
+        $r = Invoke-NativeCommand -Command @('sh','-c','echo error_out >&2')
         $r.StandardError.Trim() | Should -Be 'error_out'
     }
 }
 
-Describe 'Invoke-CommandWithRetry' {
+Describe 'Invoke-NativeCommandWithRetry' {
     It 'Returns success on first attempt for a valid command' {
-        $r = Invoke-CommandWithRetry -Command @('cmd.exe','/c','echo ok') -MaxAttempts 1
+        $r = Invoke-NativeCommandWithRetry -Command @('echo','ok') -MaxAttempts 1
         $r.Success | Should -Be $true
     }
 
-    It 'Throws error for invalid command (PowerShell fails on empty $args[-1])' {
-        $r = Invoke-CommandWithRetry -Command @('nonexistent_cmd_xyz') -MaxAttempts 2 -DelaySeconds 0
+    It 'Returns Success=$false for an invalid command' {
+        $r = Invoke-NativeCommandWithRetry -Command @('nonexistent_cmd_xyz') -MaxAttempts 2 -DelaySeconds 0
         $r.Success | Should -Be $false
     }
 }
