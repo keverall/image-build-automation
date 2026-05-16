@@ -77,7 +77,9 @@ hpe-windows-iso-automation/
 ├── docker-entrypoint.ps1              # Windows-container entrypoint
 ├── docs/                              # Full documentation set
 │   └── (see Documentation Index above)
-├── Jenkinsfile                        # CI/CD pipeline — Windows agent
+├── jenkins/                           # CI/CD pipeline definitions
+│   ├── Jenkinsfile                    # ← PowerShell  pipeline (Windows agent)
+│   └── Jenkinsfile.python             # ← Python pipeline (x86_64-linux agent)
 ├── logs/                              # Audit trails and build reports
 │   ├── audit_trail.log
 │   ├── maintenance_audit.log
@@ -89,34 +91,34 @@ hpe-windows-iso-automation/
 │   ├── firmware/
 │   └── patched/
 ├── patched_iso/                       # Staging for patched Windows ISOs
-├── powershell/                        # PowerShell module (equivalent to Python src/)
+├── powershell/                        # PowerShell module (target implementation)
 │   ├── Automation/                    # Module root (mirrors src/automation/)
 │   │   ├── Public/                    # Exported cmdlets
-│   │   │   ├── New-Uuid.ps1           # ← src/automation/cli/generate_uuid.py
-│   │   │   ├── New-IsoBuild.ps1       # ← src/automation/cli/build_iso.py
-│   │   │   ├── Update-Firmware.ps1    # ← src/automation/cli/update_firmware_drivers.py
-│   │   │   ├── Update-WindowsSecurity.ps1  # ← src/automation/cli/patch_windows_security.py
-│   │   │   ├── Invoke-IsoDeploy.ps1   # ← src/automation/cli/deploy_to_server.py
-│   │   │   ├── Start-InstallMonitor.ps1     # ← src/automation/cli/monitor_install.py
-│   │   │   ├── Invoke-OpsRampClient.psm1    # ← src/automation/cli/opsramp_integration.py
-│   │   │   ├── Set-MaintenanceMode.ps1  # ← src/automation/cli/maintenance_mode.py
-│   │   │   ├── Invoke-Validator.psm1     # ← src/automation/utils/validators.py
-│   │   │   ├── Invoke-PowerShellScript.ps1   # ← src/automation/utils/powershell.py (local)
-│   │   │   ├── Invoke-PowerShellWinRM.ps1    # ← src/automation/utils/powershell.py (WinRM)
-│   │   │   └── Start-AutomationOrchestrator.ps1  # ← src/automation/core/orchestrator.py
+│   │   │   ├── New-Uuid.ps1
+│   │   │   ├── New-IsoBuild.ps1
+│   │   │   ├── Update-Firmware.ps1
+│   │   │   ├── Update-WindowsSecurity.ps1
+│   │   │   ├── Invoke-IsoDeploy.ps1
+│   │   │   ├── Start-InstallMonitor.ps1
+│   │   │   ├── Invoke-OpsRampClient.psm1
+│   │   │   ├── Set-MaintenanceMode.ps1
+│   │   │   ├── Invoke-Validator.psm1
+│   │   │   ├── Invoke-PowerShellScript.ps1
+│   │   │   ├── Invoke-PowerShellWinRM.ps1
+│   │   │   └── Start-AutomationOrchestrator.ps1
 │   │   └── Private/                    # Internal helpers (mirrors src/automation/utils/)
-│   │       ├── Config.psm1            # ← src/automation/utils/config.py
-│   │       ├── Credentials.psm1       # ← src/automation/utils/credentials.py
-│   │       ├── Executor.psm1          # ← src/automation/utils/executor.py
-│   │       ├── FileIO.psm1            # ← src/automation/utils/file_io.py
-│   │       ├── Inventory.psm1         # ← src/automation/utils/inventory.py
-│   │       ├── Audit.psm1             # ← src/automation/utils/audit.py
-│   │       ├── Logging.psm1           # ← src/automation/utils/logging_setup.py
-│   │       ├── Base.psm1              # ← src/automation/utils/base.py
-│   │       ├── Router.psm1            # ← src/automation/core/router.py
-│   │       └── Automation.psm1        # Module init — dot-sources Public/ and Private/
+│   │       ├── Config.psm1
+│   │       ├── Credentials.psm1
+│   │       ├── Executor.psm1
+│   │       ├── FileIO.psm1
+│   │       ├── Inventory.psm1
+│   │       ├── Audit.psm1
+│   │       ├── Logging.psm1
+│   │       ├── Base.psm1
+│   │       ├── Router.psm1
+│   │       └── Automation.psm1         # Module init — dot-sources Public/ and Private/
 │   └── Tests/                          # Pester v5 test suite  ←  mirrors tests/
-│       ├── Tests.Tests.ps1            # Shared BeforeAll / AfterAll  (= conftest.py)
+│       ├── Tests.Tests.ps1
 │       ├── Config.Tests.ps1
 │       ├── Credentials.Tests.ps1
 │       ├── Executor.Tests.ps1
@@ -127,12 +129,12 @@ hpe-windows-iso-automation/
 │       ├── New-Uuid.Tests.ps1
 │       ├── Audit.Tests.ps1
 │       ├── Set-MaintenanceMode.Tests.ps1
-│       └── Pester.All.api.ps1         # Combined integration run helper
+│       └── Pester.All.api.ps1
 ├── scripts/                            # CI runner provisioning and helpers
-│   └── setup-runner.sh                # Automated Jenkins/GitLab agent setup
-├── src/automation/                     # Python package (primary implementation)
+│   └── setup-runner.sh
+├── src/automation/                     # Python package (reference implementation)
 │   ├── __init__.py
-│   ├── cli/                            # CLI entry points
+│   ├── cli/                             # CLI entry points
 │   │   ├── build_iso.py
 │   │   ├── update_firmware_drivers.py
 │   │   ├── patch_windows_security.py
@@ -141,7 +143,7 @@ hpe-windows-iso-automation/
 │   │   ├── opsramp_integration.py
 │   │   ├── maintenance_mode.py
 │   │   └── generate_uuid.py
-│   └── utils/                          # Shared utilities
+│   └── utils/                           # Shared utilities
 │       ├── __init__.py
 │       ├── logging_setup.py
 │       ├── config.py
@@ -150,7 +152,7 @@ hpe-windows-iso-automation/
 │       ├── file_io.py
 │       ├── executor.py
 │       ├── credentials.py
-│       ├── powershell.py               # ← ps equivalent: Invoke-PowerShell*.ps1
+│       ├── powershell.py
 │       └── base.py
 ├── tests/                              # Python / pytest tests  ←  mirrors powershell/Tests/
 │   ├── conftest.py
@@ -179,21 +181,32 @@ hpe-windows-iso-automation/
 
 ---
 
-## Jenkins Pipeline Stages
+## Jenkins Pipeline Files
+
+Both pipelines live in **`jenkins/`** and are architecturally identical. They share the same parameters, stages, and environment. The only difference is the implementation language and agent label.
+
+| File | Language | Agent | Script Path (job config) |
+|---|---|---|---|
+| `jenkins/Jenkinsfile` | **PowerShell** | `windows` | `jenkins/Jenkinsfile` |
+| `jenkins/Jenkinsfile.python` | **Python** | `any` (Linux) | `jenkins/Jenkinsfile.python` |
+
+Each file is self-contained — no references to the other language.
+
+### Pipeline Stages (both flavours)
 
 1. **Setup** — Install dependencies, validate config JSONs, create directory structure
-2. **Code Quality & Security Scan** — ruff lint, pylint, radon CC/MI, bandit, safety, gitleaks
-3. **Unit Tests & Coverage** *(new)* — pytest with incremental testing on PRs
-4. **Generate UUIDs** — Deterministic UUID for each server (required for later stages)
-5. **Build Firmware ISOs** — HPE SUT integration; produces firmware-only ISOs
-6. **Build Windows ISOs** — Security patching via DISM
-7. **Combine Deployment Packages** — Merges firmware drivers into Windows ISOs
-8. **OpsRamp Integration** *(optional)* — API sync for monitoring/alerting
-9. **Maintenance Mode** *(optional)* — SCOM/iLO/OpenView orchestration
-10. **Deploy to Server** *(manual/parameterized)* — iLO Virtual Media or Redfish push
-11. **Monitor Install** *(manual/parameterized)* — Real-time installation tracking
-
-See [Testing Guide](docs/python/testing.md) for details on PR incremental test execution.
+2. **CyberArk Bootstrap** — Fetch secrets from vault; inject as process-scope env vars
+3. **Code Quality & Security Scan** — PSScriptAnalyzer (PS) / ruff+pylint+bandit+safety (Python) + gitleaks
+4. **Pester / pytest Unit Tests** — PS: `powershell/Tests/` via Pester v5; Python: `tests/` via pytest
+5. **Generate UUIDs** — Deterministic UUID per server (`New-Uuid` / `python -m automation.cli.generate_uuid`)
+6. **Build Firmware ISOs** — HPE SUT integration; firmware-only ISOs
+7. **Build Windows ISOs** — Security patching via DISM
+8. **Combine Deployment Packages** — Merges firmware drivers into Windows ISOs
+9. **OpsRamp Reporting** *(optional)* — API sync for monitoring/alerting
+10. **Monitor Install** *(PS only)* — Real-time install tracking via `Start-InstallMonitor`
+11. **Deploy to Server** *(manual/parameterized)* — iLO Virtual Media or Redfish push
+12. **Vulnerability Scan** *(optional stub)* — Configure Nessus / OpenVAS per environment
+13. **Audit & Reporting** — JSON summary + archive of all build result files
 
 ---
 

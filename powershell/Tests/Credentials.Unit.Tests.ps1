@@ -14,9 +14,46 @@
 # BeforeAll / AfterAll are in Tests.Tests.ps1 — this file only describes tests.
 
 BeforeAll {
+    # Initialise shared test-scoped variables (Pester V5: each file needs its own state)
+    $Script:ModuleRoot      = Split-Path -Parent $PSScriptRoot
+    $Script:TestRoot        = $PSScriptRoot
+
+    # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
+    if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
+    if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
+    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$(New-Guid).Trim('{}')").TrimEnd('\','/')
+    if (-not (Test-Path -Path $Script:TempDir))    { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
+
+    # Minimal config fixtures
+    $Script:SampleConfig = @{ name='test'; version='1.0'; items=@(@{ id=1; enabled=$true }) }
+    $Script:SampleServerList = @"
+# Test server list
+srv01.corp.local,192.168.1.101,192.168.1.201
+srv02.corp.local,192.168.1.102,192.168.1.202
+srv03
+"@
+    $Script:SampleClusterCatalogue = @{ clusters = @{
+        'TEST-CLUSTER' = @{
+            display_name  = 'Test Cluster'
+            servers       = @('srv01.corp.local','srv02.corp.local')
+            scom_group    = 'Test SCOM Group'
+            ilo_addresses = @{ 'srv01.corp.local' = '192.168.1.201'; 'srv02.corp.local' = '192.168.1.202' }
+            environment   = 'test'
+        }
+    }}
+
+    $Script:ConfigDir = Join-Path $Script:TempDir 'configs'
+    if (-not (Test-Path -Path $Script:ConfigDir))  { New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null }
+    $Script:SampleConfig | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'sample.json') -ErrorAction SilentlyContinue
+    $Script:SampleServerList | Set-Content (Join-Path $Script:ConfigDir 'server_list.txt') -ErrorAction SilentlyContinue
+    $Script:SampleClusterCatalogue | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -ErrorAction SilentlyContinue
+
+    $Script:LogDir = Join-Path $Script:TempDir 'logs'
+    $Script:OutDir = Join-Path $Script:TempDir 'output'
+    $Script:AuditDir = Join-Path $Script:TempDir 'audit_test'
+
     # Ensure the Automation module is available for all tests in this file.
-    Import-Module (Join-Path $Script:ModuleRoot 'Automation.psd1') -Force -ErrorAction Stop
-    # Shared sample configs are provided by Tests.Tests.ps1
+    Import-Module (Join-Path $Script:ModuleRoot 'Automation/Automation.psd1') -Force -ErrorAction Stop
 
     # ── Script-scoped helper ──────────────────────────────────────────────────
     $script:_envSnapshot = @{}   # populated by Record-TestEnv / Restore-TestEnv
@@ -43,6 +80,9 @@ function Restore-TestEnv {
 
 # Helper: a fake ark_ccl script location (NOT on real PATH, so Get-Command will
 # skip it unless we inject the path manually).
+# Guard $env:TEMP before using it in module body (line 83, outside BeforeAll)
+if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
+if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
 $script:_fakeCliDir = Join-Path $env:TEMP "fake_cyberark_clis_$(New-Guid)"
 New-Item -ItemType Directory -Path $script:_fakeCliDir -Force | Out-Null
 New-Item -Path (Join-Path $script:_fakeCliDir 'ark_ccl') -ItemType File -Force | Out-Null
