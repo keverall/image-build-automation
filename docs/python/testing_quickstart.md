@@ -27,10 +27,10 @@ pytest --cov=automation --cov-report=html
 
 ```bash
 # Single file
-pytest tests/cli/test_build_iso.py -v
+pytest tests/python/cli/test_build_iso.py -v
 
 # Single test function
-pytest tests/cli/test_build_iso.py::TestISOOrchestrator::test_initialization -v
+pytest tests/python/cli/test_build_iso.py::TestISOOrchestrator::test_initialization -v
 
 # By keyword
 pytest -k "dry_run" -v
@@ -55,7 +55,7 @@ pytest -k "dry_run" -v
 | Build Type | Tests Run | Coverage Threshold |
 |---|---|---|
 | PR / Merge Request | Affected tests only (see below) | `0%` (no failure) |
-| Full build (main) | All tests in `tests/` | `≥50%` (must pass) |
+| Full build (main) | All tests in `tests/python/` | `≥50%` (must pass) |
 | Manual parameterized | Based on `BUILD_STAGE` parameter | Configurable |
 
 ### PR Incremental Testing Flow
@@ -67,8 +67,8 @@ pytest -k "dry_run" -v
 │  1. Fetch target branch (e.g., main)    │
 │  2. git diff → changed files            │
 │  3. Map source → test files             │
-│     src/automation/core/x.py  → tests/core/test_x.py │
-│     tests/.../*.py            → run directly       │
+│     src/python/automation/core/x.py  → tests/python/core/test_x.py │
+│     tests/python/.../*.py            → run directly       │
 │  4. Run only those tests                │
 └─────────────────────────────────────────┘
 ```
@@ -84,11 +84,11 @@ pytest -k "dry_run" -v
 
 ```
 [INFO] PR build: Determining affected tests...
-[INFO] Running affected tests: tests/cli/test_build_iso.py, tests/utils/test_executor.py
+[INFO] Running affected tests: tests/python/cli/test_build_iso.py, tests/python/utils/test_executor.py
 ============================= test session starts ==============================
 collected 23 items
 
-tests/cli/test_build_iso.py :: TestISOOrchestrator::test_initialization PASSED
+tests/python/cli/test_build_iso.py :: TestISOOrchestrator::test_initialization PASSED
 ...
 
 ---------- coverage: platform linux, python 3.9 ----------
@@ -119,9 +119,9 @@ TOTAL                       500    100    80%
 
 ```powershell
 # PowerShell one-liner
-$src = 'src/automation/cli/build_iso.py'
-$test = $src -replace '^src/', 'tests/' -replace '\.py$', '_test.py'
-# Result: tests/cli/test_build_iso.py
+$src = 'src/python/automation/cli/build_iso.py'
+$test = $src -replace '^src/', 'tests/python/' -replace '\.py$', '_test.py'
+# Result: tests/python/cli/test_build_iso.py
 ```
 
 ### Coverage Thresholds
@@ -141,8 +141,8 @@ pytest --cov=automation --cov-report=term
 
 ```bash
 # Scaffold test file from template
-cp tests/template_test.py tests/cli/test_my_new_module.py
-sed -i 's/ModuleName/MyNewModule/g' tests/cli/test_my_new_module.py
+cp tests/python/template_test.py tests/python/cli/test_my_new_module.py
+sed -i 's/ModuleName/MyNewModule/g' tests/python/cli/test_my_new_module.py
 ```
 
 ---

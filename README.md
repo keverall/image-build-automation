@@ -15,15 +15,15 @@ Automated build pipelines for creating customized Windows Server installation IS
 | [🔍 Code Quality & Security](docs/python/code_quality.md) | Automated linting (ruff), complexity analysis (radon), security scanning (bandit, safety, gitleaks) embedded in Jenkins pipeline with configuration details |
 | [🔧 Maintenance Mode](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables — language-agnostic |
 | [🔧 Maintenance Mode — Python](docs/python/maintenance_mode.md) | Python script usage: CLI args, `clusters_catalogue.json`, `pip install`, and Python-specific troubleshooting |
-| [🔧 Maintenance Mode — PowerShell](docs/powershell/maintenance_mode.md) | PowerShell cmdlet usage: `[CmdletBinding()]` params, module import, `pwsh.exe` auto-disable scheduling, PSScriptAnalyzer Jenkins snippet |
+| [🔧 Maintenance Mode — PowerShell](docs/src/powershell/maintenance_mode.md) | PowerShell cmdlet usage: `[CmdletBinding()]` params, module import, `pwsh.exe` auto-disable scheduling, PSScriptAnalyzer Jenkins snippet |
 | [📦 Utilities Package](docs/python/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
 | [📡 Orchestrator & Routing](docs/api_reference.md) | Language-agnostic: request types, call sequence, adding new handlers, rotor and `ROUTE_MAP`/`$script:RouteMap`, return schemas for both Python `dict` and PowerShell `[hashtable]` |
 | [📡 Orchestrator & Routing — Python](docs/python/api_reference.md) | `AutomationOrchestrator`, `validate_build_params()`, `validate_cluster_id()`, source paths, return dicts |
-| [📡 Orchestrator & Routing — PowerShell](docs/powershell/api_reference.md) | `Start-AutomationOrchestrator`, `Invoke-RoutedRequest`, `$script:RouteMap`, `_Validate-Request`, source paths, return schemas |
-| [🧪 PowerShell Testing (Pester)](docs/powershell/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |
-| [⚙️ PowerShell Testing Quick Start](docs/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
+| [📡 Orchestrator & Routing — PowerShell](docs/src/powershell/api_reference.md) | `Start-AutomationOrchestrator`, `Invoke-RoutedRequest`, `$script:RouteMap`, `_Validate-Request`, source paths, return schemas |
+| [🧪 PowerShell Testing (Pester)](docs/src/powershell/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |
+| [⚙️ PowerShell Testing Quick Start](docs/src/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
 
 ### In this document
 - [Table of Contents](#table-of-contents)
@@ -66,8 +66,20 @@ Automated build pipelines for creating customized Windows Server installation IS
 
 ```
 hpe-windows-iso-automation/
-├── base_iso/                          # Base Windows ISOs (mounted in build)
-│   └── Windows_Server_2022.iso        # Base ISO used by patching pipeline
+├── generated/                         # Generated output (gitignored)
+│   ├── base_iso/                      # Base Windows ISOs (mounted in build)
+│   │   └── Windows_Server_2022.iso    # Base ISO used by patching pipeline
+│   ├── output/                        # Build artefacts
+│   │   ├── combined/
+│   │   ├── firmware/
+│   │   └── patched/
+│   ├── patched_iso/                   # Staging for patched Windows ISOs
+│   ├── logs/                          # Audit trails and build reports
+│   │   ├── audit_trail.log
+│   │   ├── maintenance_audit.log
+│   │   ├── maintenance_<action>_<cluster>_<ts>.json
+│   │   └── build_reports/
+│   └── htmlcov/                       # Coverage reports (make coverage-html)
 ├── configs/                           # Server/cluster/patch JSON configs
 │   ├── server_list.txt                # Target servers (one per line)
 │   ├── clusters_catalogue.json        # Cluster/SCOM/iLO definitions
@@ -85,19 +97,8 @@ hpe-windows-iso-automation/
 ├── jenkins/                           # CI/CD pipeline definitions
 │   ├── Jenkinsfile                    # ← PowerShell  pipeline (Windows agent)
 │   └── Jenkinsfile.python             # ← Python pipeline (x86_64-linux agent)
-├── logs/                              # Audit trails and build reports
-│   ├── audit_trail.log
-│   ├── maintenance_audit.log
-│   ├── maintenance_<action>_<cluster>_<ts>.json
-│   └── build_reports/
-├── Makefile                           # Development and CI task shortcuts
-├── output/                            # Build artefacts
-│   ├── combined/
-│   ├── firmware/
-│   └── patched/
-├── patched_iso/                       # Staging for patched Windows ISOs
-├── powershell/                        # PowerShell module (target implementation)
-│   ├── Automation/                    # Module root (mirrors src/automation/)
+├── src/powershell/                        # PowerShell module (target implementation)
+│   ├── Automation/                    # Module root (mirrors src/python/automation/)
 │   │   ├── Public/                    # Exported cmdlets
 │   │   │   ├── New-Uuid.ps1
 │   │   │   ├── New-IsoBuild.ps1
@@ -111,7 +112,7 @@ hpe-windows-iso-automation/
 │   │   │   ├── Invoke-PowerShellScript.ps1
 │   │   │   ├── Invoke-PowerShellWinRM.ps1
 │   │   │   └── Start-AutomationOrchestrator.ps1
-│   │   └── Private/                    # Internal helpers (mirrors src/automation/utils/)
+│   │   └── Private/                    # Internal helpers (mirrors src/python/automation/utils/)
 │   │       ├── Config.psm1
 │   │       ├── Credentials.psm1
 │   │       ├── Executor.psm1
@@ -122,7 +123,7 @@ hpe-windows-iso-automation/
 │   │       ├── Base.psm1
 │   │       ├── Router.psm1
 │   │       └── Automation.psm1         # Module init — dot-sources Public/ and Private/
-│   └── Tests/                          # Pester v5 test suite  ←  mirrors tests/
+│   └── Tests/                          # Pester v5 test suite  ←  mirrors tests/python/
 │       ├── Tests.Tests.ps1
 │       ├── Config.Tests.ps1
 │       ├── Credentials.Tests.ps1
@@ -137,7 +138,7 @@ hpe-windows-iso-automation/
 │       └── Pester.All.api.ps1
 ├── scripts/                            # CI runner provisioning and helpers
 │   └── setup-runner.sh
-├── src/automation/                     # Python package (reference implementation)
+├── src/python/automation/                     # Python package (reference implementation)
 │   ├── __init__.py
 │   ├── cli/                             # CLI entry points
 │   │   ├── build_iso.py
@@ -159,7 +160,7 @@ hpe-windows-iso-automation/
 │       ├── credentials.py
 │       ├── powershell.py
 │       └── base.py
-├── tests/                              # Python / pytest tests  ←  mirrors powershell/Tests/
+├── tests/python/                              # Python / pytest tests  ←  mirrors tests/powershell/
 │   ├── conftest.py
 │   ├── cli/
 │   ├── core/
@@ -179,7 +180,7 @@ hpe-windows-iso-automation/
 |---|---|---|
 | Run all tests locally | `pytest -v` | Unit Tests & Coverage |
 | Generate coverage report | `pytest --cov=automation --cov-report=html` | Same (publishes `coverage.xml`) |
-| Lint code | `ruff check src/automation/ --fix` | Code Quality & Security Scan |
+| Lint code | `ruff check src/python/automation/ --fix` | Code Quality & Security Scan |
 | Build complete ISO pipeline | `python -m automation.cli.build_iso` | Generate UUIDs → Build Firmware → Build Windows → Combine |
 | Enable maintenance mode | `python -m automation.cli.maintenance_mode --cluster-id CLUSTER --start now` | Maintenance Mode (manual) |
 | Validate configuration | `python -c "import json; json.load(open('configs/clusters_catalogue.json'))"` | Setup stage (automated) |
@@ -202,7 +203,7 @@ Each file is self-contained — no references to the other language.
 1. **Setup** — Install dependencies, validate config JSONs, create directory structure
 2. **CyberArk Bootstrap** — Fetch secrets from vault; inject as process-scope env vars
 3. **Code Quality & Security Scan** — PSScriptAnalyzer (PS) / ruff+pylint+bandit+safety (Python) + gitleaks
-4. **Pester / pytest Unit Tests** — PS: `powershell/Tests/` via Pester v5; Python: `tests/` via pytest
+4. **Pester / pytest Unit Tests** — PS: `tests/powershell/` via Pester v5; Python: `tests/python/` via pytest
 5. **Generate UUIDs** — Deterministic UUID per server (`New-Uuid` / `python -m automation.cli.generate_uuid`)
 6. **Build Firmware ISOs** — HPE SUT integration; firmware-only ISOs
 7. **Build Windows ISOs** — Security patching via DISM
@@ -445,7 +446,7 @@ Python orchestrator (maintenance_mode.py)
 
 All SCOM automation is built on the **HPE OperationsManager PowerShell module**, which ships with SCOM 2015. The module provides cmdlets for every maintenance mode operation. Our Python code generates PowerShell scripts dynamically using f-strings, injecting parameters like group names, durations, and comments at runtime.
 
-**Local Execution** ([`src/automation/utils/powershell.py`](src/automation/utils/powershell.py)):
+**Local Execution** ([`src/python/automation/utils/powershell.py`](src/python/automation/utils/powershell.py)):
 
 ```python
 def run_powershell(script: str, capture_output: bool = True, timeout: int = 300):
@@ -463,7 +464,7 @@ def run_powershell(script: str, capture_output: bool = True, timeout: int = 300)
 
 This runs `powershell.exe -Command "<generated script>"` directly on the Windows Jenkins agent. The agent must have the SCOM 2015 OperationsManager PowerShell module installed and the executing user must have SCOM admin rights.
 
-**Remote Execution via WinRM** ([`src/automation/utils/powershell.py`](src/automation/utils/powershell.py)):
+**Remote Execution via WinRM** ([`src/python/automation/utils/powershell.py`](src/python/automation/utils/powershell.py)):
 
 ```python
 def run_powershell_winrm(script, server, username, password, transport="ntlm", timeout=300):
@@ -480,7 +481,7 @@ This connects to the SCOM management server via Windows Remote Management (WinRM
 
 ### Step 2: The Python SCOMManager Class
 
-The `SCOMManager` class ([`src/automation/cli/maintenance_mode.py`](src/automation/cli/maintenance_mode.py)) encapsulates all SCOM 2015 operations and generates the PowerShell scripts dynamically:
+The `SCOMManager` class ([`src/python/automation/cli/maintenance_mode.py`](src/python/automation/cli/maintenance_mode.py)) encapsulates all SCOM 2015 operations and generates the PowerShell scripts dynamically:
 
 ```python
 class SCOMManager:
@@ -529,7 +530,7 @@ We take explicit steps to guarantee SCOM operations never attempt REST calls:
 
 | Safeguard | Detail |
 |---|---|
-| **No `requests` import in SCOM code** | `src/automation/cli/maintenance_mode.py` only imports `requests` inside `ILOManager` and `OpenViewClient` methods — **never** in `SCOMManager` |
+| **No `requests` import in SCOM code** | `src/python/automation/cli/maintenance_mode.py` only imports `requests` inside `ILOManager` and `OpenViewClient` methods — **never** in `SCOMManager` |
 | **No `urllib`/`httplib` imports** | The `powershell.py` helper imports only `subprocess` and `winrm` — zero HTTP libraries |
 | **All SCOM calls route through `_run_ps()`** | Every SCOM operation calls `self._run_ps(script)` which dispatches to either `run_powershell()` (subprocess) or `run_powershell_winrm()` (pywinrm) — both are non-REST |
 | **WinRM uses SOAP, not REST** | `pywinrm.Session` communicates via SOAP envelope over HTTP/HTTPS — this is the Windows remote management protocol, not a SCOM REST API |
@@ -623,9 +624,9 @@ class SCOMManager:
 
 All changes should include:
 
-1. **Unit tests** mirroring the module structure in `tests/`
+1. **Unit tests** mirroring the module structure in `tests/python/`
 2. **Documentation** updated in `docs/`
-3. **Linting** passing: `ruff check src/ tests/ --fix`
+3. **Linting** passing: `ruff check src/ tests/python/ --fix`
 4. **Coverage** maintained or improved: `pytest --cov=automation --cov-report=term-missing`
 5. **PR description** linking relevant documentation updates
 

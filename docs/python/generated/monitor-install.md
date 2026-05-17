@@ -1,34 +1,40 @@
 ---
 source:      automation.cli.monitor_install::main()
 console_script: monitor-install
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
 # `monitor-install`
 
+## Description
 
-## Keywords
-
-- `-server`  —  --server SERVER, -s SERVER
-- `-server-list`  —  --server-list SERVER_LIST; default: `configs/server_list.txt`
-- `-timeout`  —  --timeout TIMEOUT, -t TIMEOUT; default: `7200`
-- `-poll-interval`  —  --poll-interval POLL_INTERVAL; default: `30`
-- `-opsramp-config`  —  --opsramp-config OPSRAMP_CONFIG; default: `configs/opsramp_config.json`
+Installation Monitoring Tool Monitors Windows Server installations on HPE ProLiant hardware using multiple methods: iLO REST API for power/boot status, WinRM/PowerShell remoting for OS-level progress, SNMP for hardware events (placeholder), Log file parsing (if accessible), Provides real-time progress, alerts, and completion confirmation.
 
 ## Parameters
 
-| `-server` (--server SERVER, -s SERVER) | Monitor specific server only |
-| `-server-list` (--server-list SERVER_LIST) | Path to server list default: `configs/server_list.txt` |
-| `-timeout` (--timeout TIMEOUT, -t TIMEOUT) | Monitoring timeout in seconds default: `7200` |
-| `-poll-interval` (--poll-interval POLL_INTERVAL) | Polling interval in seconds default: `30` |
-| `-opsramp-config` (--opsramp-config OPSRAMP_CONFIG) | OpsRamp configuration path default: `configs/opsramp_config.json` |
+| Parameter | Description |
+|-----------|-------------|
+| `-server` | Monitor specific server only |
+| `-server-list` | Path to server list |
+| `-timeout` | Monitoring timeout in seconds |
+| `-poll-interval` | Polling interval in seconds |
+| `-opsramp-config` | OpsRamp configuration path |
 
 ## Examples
 
-### Example 1
-```shell
-[--poll-interval POLL_INTERVAL] [--opsramp-config OPSRAMP_CONFIG]
+## Original Docstring
+```python
+Installation Monitoring Tool
+
+Monitors Windows Server installations on HPE ProLiant hardware
+using multiple methods:
+- iLO REST API for power/boot status
+- WinRM/PowerShell remoting for OS-level progress
+- SNMP for hardware events (placeholder)
+- Log file parsing (if accessible)
+
+Provides real-time progress, alerts, and completion confirmation.
 ```
 
 ## Help

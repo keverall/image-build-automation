@@ -243,7 +243,7 @@ verify_installation() {
         ((FAIL++))
     fi
     log "Running quick lint check..."
-    if ruff check "${PROJECT_ROOT}/src/automation" --output-format=concise 2>&1 | tee -a "$LOG_FILE"; then
+    if ruff check "${PROJECT_ROOT}/src/python/automation" --output-format=concise 2>&1 | tee -a "$LOG_FILE"; then
         success "Lint check passed"
         ((PASS++))
     else
@@ -276,11 +276,11 @@ print_summary() {
     echo ""
     echo -e "  ${YELLOW}To run lint checks:${NC}"
     echo "    source ${VENV_DIR}/bin/activate"
-    echo "    ruff check src/automation/ --fix"
+    echo "    ruff check src/python/automation/ --fix"
     echo ""
     echo -e "  ${YELLOW}To run security scans:${NC}"
     echo "    source ${VENV_DIR}/bin/activate"
-    echo "    bandit -r src/automation/"
+    echo "    bandit -r src/python/automation/"
     echo "    safety check"
     echo "    gitleaks detect --source=."
     echo ""

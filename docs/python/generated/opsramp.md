@@ -1,7 +1,7 @@
 ---
 source:      automation.cli.opsramp_integration::main()
 console_script: opsramp
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
@@ -11,30 +11,22 @@ auto_generated_by: scripts/generate_python_docs.py
 
 Simple CLI interface for testing OpsRamp integration.
 
-
-## Keywords
-
-- `-action`  —  {test, metric, alert, event}, --action {test, metric, alert, event}, -a {test, metric, alert, event}; choices: {test, metric, alert, event}; default: `test`
-- `-server`  —  --server SERVER; default: `test-server`
-- `-uuid`  —  --uuid UUID
-- `-config`  —  --config CONFIG; default: `configs/opsramp_config.json`
-- `-value`  —  --value VALUE
-- `-message`  —  --message MESSAGE
-
 ## Parameters
 
-| `-action` ({test, metric, alert, event}, --action {test, metric, alert, event}, -a {test, metric, alert, event}) | Action to perform *(choices: {test, metric, alert, event})* default: `test` |
-| `-server` (--server SERVER) | Server name/resource ID default: `test-server` |
-| `-uuid` (--uuid UUID) | Server UUID (optional) |
-| `-config` (--config CONFIG) | OpsRamp configuration path default: `configs/opsramp_config.json` |
-| `-value` (--value VALUE) | Metric value |
-| `-message` (--message MESSAGE) | Alert/event message |
+| Parameter | Description |
+|-----------|-------------|
+| `-action` | Action to perform |
+| `-server` | Server name/resource ID |
+| `-uuid` | Server UUID (optional) |
+| `-config` | OpsRamp configuration path |
+| `-value` | Metric value |
+| `-message` | Alert/event message |
 
 ## Examples
 
-### Example 1
-```shell
-[--uuid UUID] [--config CONFIG] [--value VALUE] [--message MESSAGE]
+## Original Docstring
+```python
+Simple CLI interface for testing OpsRamp integration.
 ```
 
 ## Help

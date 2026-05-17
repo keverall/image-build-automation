@@ -11,12 +11,12 @@
 
 | Symbol | File | Public |
 |---|---|---|
-| `AutomationOrchestrator` | `src/automation/core/orchestrator.py` | yes |
-| `route_request()` | `src/automation/core/router.py` | yes |
-| `ROUTE_MAP` | `src/automation/core/router.py` | module-level constant |
-| `validate_build_params()` | `src/automation/core/validators.py` | yes |
-| `validate_cluster_id()` | `src/automation/core/validators.py` | yes |
-| `validate_server_list()` | `src/automation/core/validators.py` | yes |
+| `AutomationOrchestrator` | `src/python/automation/core/orchestrator.py` | yes |
+| `route_request()` | `src/python/automation/core/router.py` | yes |
+| `ROUTE_MAP` | `src/python/automation/core/router.py` | module-level constant |
+| `validate_build_params()` | `src/python/automation/core/validators.py` | yes |
+| `validate_cluster_id()` | `src/python/automation/core/validators.py` | yes |
+| `validate_server_list()` | `src/python/automation/core/validators.py` | yes |
 
 **Source equivalence** (PowerShell): `Start-AutomationOrchestrator`,
 `Invoke-RoutedRequest`, `$script:RouteMap`, `_Validate-Request`.
@@ -44,12 +44,12 @@ ROUTE_MAP = {
 }
 ```
 
-**Module:** `src/automation/core/router.py`
+**Module:** `src/python/automation/core/router.py`
 
 To add a new request type:
 
 1. Add the key/value pair to `ROUTE_MAP` in `router.py`.
-2. Ensure the handler module is importable (listed in `src/automation/cli/__init__.py` or `src/automation/__init__.py`).
+2. Ensure the handler module is importable (listed in `src/python/automation/cli/__init__.py` or `src/python/automation/__init__.py`).
 3. Optionally add a validation branch in `AutomationOrchestrator._validate()` or in `validators.py`.
 
 ---
@@ -63,7 +63,7 @@ orch = AutomationOrchestrator(config_dir=Path("configs"), logs_dir=Path("logs"))
 result = orch.execute("maintenance_enable", {"cluster_id": "PROD-CLUSTER-01", "start": "now"})
 ```
 
-**Module:** `src/automation/core/orchestrator.py`
+**Module:** `src/python/automation/core/orchestrator.py`
 **Public:** yes
 
 ### Constructor
@@ -155,7 +155,7 @@ from automation.core.router import route_request
 result = route_request("build_iso", {"base_iso": "/mnt/isos/WinServer2022.iso"})
 ```
 
-**Module:** `src/automation/core/router.py`
+**Module:** `src/python/automation/core/router.py`
 **Public:** yes
 
 ### Parameters
@@ -226,8 +226,8 @@ orch = AutomationOrchestrator()
 errors = orch._validate("build_iso", {"base_iso": "/mnt/isos/WinServer2022.iso"})
 ```
 
-**Module:** `src/automation/core/orchestrator.py` (`_validate`),  
-`src/automation/core/validators.py` (public validators)
+**Module:** `src/python/automation/core/orchestrator.py` (`_validate`),  
+`src/python/automation/core/validators.py` (public validators)
 
 ### `_validate()` return
 

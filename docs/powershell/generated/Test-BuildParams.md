@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Test-BuildParams.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Test-BuildParams.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Validate build parameters and return a list of validation errors (empty = valid).
+Checks that required build prerequisites are met, such as verifying the base Windows ISO file exists at the specified path. Returns an empty array on success or an array of error messages describing validation failures.
 
 ## Parameters
 
@@ -28,6 +28,11 @@ $errors = Test-BuildParams -BaseIsoPath 'C:\ISOs\server2022.iso'
 ```powershell
 .SYNOPSIS
         Validate build parameters and return a list of validation errors (empty = valid).
+
+    .DESCRIPTION
+        Checks that required build prerequisites are met, such as verifying the base
+        Windows ISO file exists at the specified path. Returns an empty array on
+        success or an array of error messages describing validation failures.
 
     .PARAMETER BaseIsoPath
         Path to the base Windows ISO (required for ISO builds).

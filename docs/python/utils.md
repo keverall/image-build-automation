@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `src/automation/utils/` package centralizes common functionality used across all automation scripts, enforcing **DRY (Don't Repeat Yourself)** principles and ensuring consistent behavior.
+The `src/python/automation/utils/` package centralizes common functionality used across all automation scripts, enforcing **DRY (Don't Repeat Yourself)** principles and ensuring consistent behavior.
 
 All utilities feature:
 - **Comprehensive docstrings** (Google-style) with Args, Returns, and Raises
@@ -677,14 +677,14 @@ All utils modules must pass:
 
 ```bash
 # Import sorting + formatting
-ruff check src/automation/utils/ --fix
-ruff format src/automation/utils/
+ruff check src/python/automation/utils/ --fix
+ruff format src/python/automation/utils/
 
 # Complexity (no function should exceed CC=10)
-radon cc src/automation/utils/ -nc
+radon cc src/python/automation/utils/ -nc
 
 # Type checking (optional)
-mypy src/automation/utils/ --ignore-missing-imports
+mypy src/python/automation/utils/ --ignore-missing-imports
 ```
 
 **Before committing**: ensure no `F401` (unused imports), `F841` (unused variables), or `E501` (line too long) errors.
@@ -693,7 +693,7 @@ mypy src/automation/utils/ --ignore-missing-imports
 
 ## Testing
 
-Each utility function should have at least one unit test under `tests/` (future work). Example pattern:
+Each utility function should have at least one unit test under `tests/python/` (future work). Example pattern:
 
 ```python
 def test_load_json_config_with_env_substitution(tmp_path, monkeypatch):
@@ -711,7 +711,7 @@ def test_load_json_config_with_env_substitution(tmp_path, monkeypatch):
 
 Run all tests:
 ```bash
-pytest tests/ -v
+pytest tests/python/ -v
 ```
 
 ---

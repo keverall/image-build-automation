@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Update-WindowsSecurity.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Update-WindowsSecurity.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Apply Windows security patches to a base Windows Server ISO and build the patched ISO. Callable from the module Router.
+Applies Windows security patches to a base ISO using DISM or PowerShell DISM equivalent, creating a patched ISO ready for deployment. Reads patch manifest from windows_patches.json and downloads/applies MSU packages to the mounted ISO image.
 
 ## Parameters
 
@@ -33,6 +33,12 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 's
 .SYNOPSIS
         Apply Windows security patches to a base Windows Server ISO and build the patched ISO.
         Callable from the module Router.
+
+    .DESCRIPTION
+        Applies Windows security patches to a base ISO using DISM or PowerShell
+        DISM equivalent, creating a patched ISO ready for deployment. Reads patch
+        manifest from windows_patches.json and downloads/applies MSU packages
+        to the mounted ISO image.
 
     .PARAMETER BaseIsoPath
         Path to the base Windows Server ISO file.

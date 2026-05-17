@@ -32,40 +32,9 @@ Optional modules:
 ## Directory Layout
 
 ```
-powershell/
+src/powershell/
 ├── Automation/                    # Module root
-│   ├── Automation.psd1            # Module manifest
-│   ├── Automation.psm1            # Root init (dot-sources all sub-modules)
-│   ├── Public/                    # User-visible cmdlets & helper classes
-│   │   ├── Invoke-IsoDeploy.ps1          # iLO virtual media deployer
-│   │   ├── Invoke-OpsRampClient.psm1    # OpsRamp REST API client class
-│   │   ├── Invoke-PowerShellScript.ps1  # Run-PowerShell / WinRM / SCOM templates
-│   │   ├── Invoke-PowerShellWinRM.ps1   # Native PowerShell remoting execution
-│   │   ├── New-IsoBuild.ps1             # Full ISO build orchestrator
-│   │   ├── New-ScomConnection.ps1       # SCOM connection factory
-│   │   ├── New-ScomMaintenanceScript.ps1# SCOM maintenance-mode script generator
-│   │   ├── New-Uuid.ps1                 # Deterministic UUID generator (Xorshift32 PRNG)
-│   │   ├── Set-MaintenanceMode.ps1      # SCOM / iLO / OpenView maintenance orchestrator
-│   │   ├── Start-AutomationOrchestrator.ps1 # Unified orchestrator / request router entry point
-│   │   ├── Start-InstallMonitor.ps1     # Installation progress monitor
-│   │   ├── Test-BuildParams.ps1         # Build parameter validators
-│   │   ├── Test-ClusterId.ps1           # Cluster ID validator
-│   │   ├── Test-ServerList.ps1          # Server-list validator
-│   │   ├── Update-Firmware.ps1          # HPE SUT firmware / driver ISO builder
-│   │   ├── Update-WindowsSecurity.ps1  # DISM / PS security patcher
-│   │   └── _Validate-Request.ps1        # Request pre-validation (private, underscore-prefixed)
-│   └── Private/                   # Internal helpers (not exported)
-│       ├── Audit.ps1              # Structured JSON audit logger
-│       ├── Base.ps1               # AutomationBase class (shared logic)
-│       ├── Config.ps1             # JSON / YAML config loader + env-var substitution
-│       ├── Credentials.ps1        # Env-var backed credential helpers
-│       ├── Executor.ps1           # Invoke-Command / retry / CommandResult class
-│       ├── FileIO.ps1             # Save-Json / Load-Json / Ensure-DirectoryExists
-│       ├── Inventory.ps1          # ServerInfo / Load-ServerList / ClusterCatalogue
-│       ├── Logging.ps1            # Initialize-Logging / Get-Logger
-│       ├── _RouteMap.ps1          # Request-type → handler function map (dot-sourced by Router.ps1)
-│       └── Router.ps1             # Invoke-RoutedRequest + $script:RouteMap dispatch table
-└── Tests/                         # Pester test suite (Pester 5+)
+├── Tests/                         # Pester test suite (Pester 5+)
     ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
     ├── Config.Tests.ps1
     ├── Credentials.Tests.ps1
@@ -92,7 +61,7 @@ Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ### Generate a deterministic UUID
 
 ```powershell
-Test-Uuid -ServerName 'srv01.corp.local'
+New-Uuid -ServerName 'srv01.corp.local'
 ```
 
 ### Build ISOs for all servers

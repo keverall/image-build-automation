@@ -1,36 +1,35 @@
 ---
 source:      automation.cli.update_firmware_drivers::main()
 console_script: update-firmware
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
 # `update-firmware`
 
+## Description
 
-## Keywords
-
-- `-config`  —  --config CONFIG, -c CONFIG; default: `configs/hpe_firmware_drivers_nov2025.json`
-- `-server`  —  --server SERVER, -s SERVER
-- `-server-list`  —  --server-list SERVER_LIST; default: `configs/server_list.txt`
-- `-output-dir`  —  --output-dir OUTPUT_DIR, -o OUTPUT_DIR; default: `output/firmware`
-- `-skip-download`  —  --skip-download; *(boolean flag)*
-- `-dry-run`  —  --dry-run; *(boolean flag)*
+HPE Firmware and Driver Update Tool Integrates with HPE Smart Update Tool (SUT) to create firmware/driver ISOs for HPE ProLiant servers. Supports Gen10 and Gen10 Plus servers.
 
 ## Parameters
 
-| `-config` (--config CONFIG, -c CONFIG) | Path to firmware/drivers configuration JSON default: `configs/hpe_firmware_drivers_nov2025.json` |
-| `-server` (--server SERVER, -s SERVER) | Server hostname (default: from server list) |
-| `-server-list` (--server-list SERVER_LIST) | Path to server list file default: `configs/server_list.txt` |
-| `-output-dir` (--output-dir OUTPUT_DIR, -o OUTPUT_DIR) | Output directory for ISOs default: `output/firmware` |
-| `-skip-download` (--skip-download) | Skip downloading components (use cached) |
-| `-dry-run` (--dry-run) | Simulate without executing SUT |
+| Parameter | Description |
+|-----------|-------------|
+| `-config` | Path to firmware/drivers configuration JSON |
+| `-server` | Server hostname (default: from server list) |
+| `-server-list` | Path to server list file |
+| `-output-dir` | Output directory for ISOs |
+| `-skip-download` | Skip downloading components (use cached) |
+| `-dry-run` | Simulate without executing SUT |
 
 ## Examples
 
-### Example 1
-```shell
-[--output-dir OUTPUT_DIR] [--skip-download] [--dry-run]
+## Original Docstring
+```python
+HPE Firmware and Driver Update Tool
+
+Integrates with HPE Smart Update Tool (SUT) to create firmware/driver ISOs
+for HPE ProLiant servers. Supports Gen10 and Gen10 Plus servers.
 ```
 
 ## Help

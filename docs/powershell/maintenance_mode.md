@@ -11,13 +11,13 @@
 
 ## Script Location
 
-`powershell/Automation/Public/Set-MaintenanceMode.ps1`
+`src/powershell/Automation/Public/Set-MaintenanceMode.ps1`
 
 ---
 
 ## Shared Utilities (PowerShell)
 
-`Set-MaintenanceMode.ps1` uses the private helpers in `powershell/Automation/Private/`:
+`Set-MaintenanceMode.ps1` uses the private helpers in `src/powershell/Automation/Private/`:
 
 - **Config.ps1** — `Import-JsonConfig` with `${VAR}` environment substitution
 - **Logging.ps1** — `Initialize-Logging` (file + console via `[TraceSource]`)

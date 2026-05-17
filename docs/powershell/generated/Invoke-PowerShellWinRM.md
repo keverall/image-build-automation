@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Invoke-PowerShellWinRM.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Execute a PowerShell script on a remote server via WinRM.
+Executes PowerShell scripts on remote Windows servers using WinRM (WS-Man). Creates a temporary PSSession for the operation and returns results including stdout and any errors encountered during execution.
 
 ## Parameters
 
@@ -32,6 +32,11 @@ $r = Invoke-PowerShellWinRM -Script 'Get-Process' -Server 'srv01.corp.local' -Us
 ```powershell
 .SYNOPSIS
         Execute a PowerShell script on a remote server via WinRM.
+
+    .DESCRIPTION
+        Executes PowerShell scripts on remote Windows servers using WinRM (WS-Man).
+        Creates a temporary PSSession for the operation and returns results
+        including stdout and any errors encountered during execution.
 
     .PARAMETER Script
         PowerShell script to execute remotely.

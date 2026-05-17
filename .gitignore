@@ -1,4 +1,4 @@
-# Python
+# === Python & Core Dependencies ===
 __pycache__/
 *.py[cod]
 *$py.class
@@ -19,44 +19,54 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.python-version
 
-# Virtual environments (all variants)
+# === Virtual Environments & Rust Tooling (uv) ===
 .venv/
 venv/
 ENV/
 env/
-.python-version
+.uv/
 
-# IDE
+# === Local Automation Runners (just) ===
+.just/
+.task/
+
+# === IDEs & Workspaces ===
 .vscode/
-.idea
+.idea/
 *.swp
 *.swo
-.DS_Store
 
-# Logs and reports
-logs/
+# === Logs, Reports & Linters ===
+htmlcov/
 *.log
 build_reports/
+.ruff_cache/
 
-# Configuration secrets (example files only - real ones should be outside repo)
+# === PowerShell logs (duplicate of generated/logs) ===
+src/powershell/logs/
+
+# === Generated Output (build artifacts) ===
+generated/
+
+# === Configuration Secrets ===
 configs/opsramp_config.json
 configs/hpe_firmware_drivers_nov2025.json
 configs/windows_patches.json
 
-# Windows tools
+# === Windows Binaries & Build Images ===
 tools/hpe_sut.exe
 tools/dism.exe
-
-# Temporary files
 *.tmp
 *.bak
+
+# Generated ISO archives - keep only .gitignore'd ones
 *.iso
 
-# OS
+# === OS Generated Files ===
+.DS_Store
 Thumbs.db
 
-# Linter cache
-.ruff_cache/
-
+# === AI Workspace Configs ===
 .kilo/

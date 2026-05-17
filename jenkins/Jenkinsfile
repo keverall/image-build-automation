@@ -71,7 +71,7 @@ pipeline {
         // AIM_WEBSERVICE_URL = 'https://cyberark-vault.example.com/AIMWebService/API/Accounts'
 
         PYTHONUNBUFFERED = '1'
-        OUTPUT_DIR        = 'output'
+        OUTPUT_DIR = "generated/output"'
         CONFIG_DIR        = 'configs'
 
         // Surface identifier for audit logs
@@ -95,28 +95,28 @@ pipeline {
 
                 bat '''
                     echo [INFO] Setting up workspace
-                    if not exist "output" mkdir output
-                    if not exist "output\\firmware" mkdir output\\firmware
-                    if not exist "output\\patched"  mkdir output\\patched
+                    if not exist "generated\output" mkdir output
+                    if not exist "generated\output\firmware" mkdir generated\output\firmware
+                    if not exist "generated\output\patched"  mkdir generated\output\patched
                     if not exist "output\\combined"  mkdir output\\combined
                     if not exist "output\\results"  mkdir output\\results
                     if not exist "logs"              mkdir logs
-                    if not exist "logs\\build_reports"       mkdir logs\\build_reports
-                    if not exist "logs\\monitoring_sessions" mkdir logs\\monitoring_sessions
-                    if not exist "logs\\scan_reports"        mkdir logs\\scan_reports
-                    if not exist "logs\\scheduled_jobs"      mkdir logs\\scheduled_jobs
+                    if not exist "generated\logs\build_reports"       mkdir logs\\build_reports
+                    if not exist "generated\logs\monitoring_sessions" mkdir logs\\monitoring_sessions
+                    if not exist "generated\logs\scan_reports"        mkdir logs\\scan_reports
+                    if not exist "generated\logs\scheduled_jobs"      mkdir logs\\scheduled_jobs
                 '''
 
                 powershell '''
                     $ErrorActionPreference = 'Stop'
 
                     # Auto-import PS module from repo root
-                    $modRoot = Join-Path $PSScriptRoot '..\\powershell\\Automation'
-                    Import-Module $modRoot -Force -ErrorAction Stop
-                    Write-Host "[SETUP] Automation module imported: $modRoot"
+$modRoot = Join-Path $PSScriptRoot '..\s..\src\powershell\Automation'
+                     Import-Module $modRoot -Force -ErrorAction Stop
+                     Write-Host "[SETUP] Automation module imported: $modRoot"
 
-                    # Auto-import the Control.psm1 factory layer (mirrors Python control.py)
-                    $ctrlPath = Join-Path $PSScriptRoot '..\\powershell\\Automation\\Control.psm1'
+                     # Auto-import the Control.psm1 factory layer (mirrors Python control.py)
+                     $ctrlPath = Join-Path $PSScriptRoot '..\s..\src\powershell\Automation\Control.psm1'
                     if (Test-Path $ctrlPath) {
                         Import-Module $ctrlPath -Force -ErrorAction Stop
                         Write-Host "[SETUP] Control module imported: $ctrlPath"
@@ -299,7 +299,7 @@ pipeline {
                     if (-not (Get-Module PSScriptAnalyzer -ListAvailable)) {
                         Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -AllowClobber | Out-Null
                     }
-                    $saDir = Join-Path $PSScriptRoot '..\\powershell'
+                    $saDir = Join-Path $PSScriptRoot '..\src\powershell'
                     Invoke-ScriptAnalyzer -Path $saDir -Recurse -Severity Warning,Error |
                         ConvertTo-Json -Depth 3 | Set-Content (Join-Path $scanDir 'psanalyzer.json')
                     Invoke-ScriptAnalyzer -Path $saDir -Recurse -Severity Warning,Error |
@@ -316,7 +316,7 @@ pipeline {
                     Import-Module Pester -MinimumVersion 5.0 -ErrorAction SilentlyContinue
                     $pesterDir = Join-Path $scanDir 'pester'
                     New-Item -ItemType Directory -Force -Path $pesterDir | Out-Null
-                    $testRoot = Join-Path $PSScriptRoot '..\\powershell\\Tests'
+                    $testRoot = Join-Path $PSScriptRoot '...\src\powershell\\Tests'
                     if (Test-Path $testRoot) {
                         Invoke-Pester -Path $testRoot `
                             -OutputFile    (Join-Path $pesterDir 'TestResults.xml') `
@@ -345,14 +345,14 @@ pipeline {
 
                     # ── [4/5] Module manifest validity ───────────────────────────────
                     Write-Host "[4/5] Module manifest..."
-                    $psd1 = Join-Path $PSScriptRoot '..\\powershell\\Automation\\Automation.psd1'
+                    $psd1 = Join-Path $PSScriptRoot '...\src\powershell\\Automation\\Automation.psd1'
                     Test-ModuleManifest -Path $psd1 -ErrorAction Stop | Out-Null
                     Write-Host "  Valid: $psd1"
 
                     # ── [5/5] PS1 syntax check ───────────────────────────────────────
                     Write-Host "[5/5] PS1 syntax..."
                     $syntaxErrors = @()
-                    Get-ChildItem (Join-Path $PSScriptRoot '..\\powershell\\') -Recurse -Filter *.ps1 | ForEach-Object {
+                    Get-ChildItem (Join-Path $PSScriptRoot '...\src\powershell\\') -Recurse -Filter *.ps1 | ForEach-Object {
                         $tok = $null
                         $null = [System.Management.Automation.PSParser]::Tokenize($_.FullName, [ref]$tok)
                     }
@@ -377,7 +377,7 @@ pipeline {
 
         // =========================================================================
         //  5. PESTER UNIT TESTS
-        //      Mirrors Python pytest stage — runs powershell/Tests/ via Pester v5
+        //      Mirrors Python pytest stage — runs tests/powershell/ via Pester v5
         // =========================================================================
         stage('Pester Unit Tests & Coverage') {
             steps {
@@ -387,7 +387,7 @@ pipeline {
                         Install-Module Pester -Scope CurrentUser -Force -AllowClobber -SkipPublisherCheck | Out-Null
                     }
                     Import-Module Pester -MinimumVersion 5.0
-                    $testRoot = Join-Path $PSScriptRoot '..\\powershell\\Tests'
+                    $testRoot = Join-Path $PSScriptRoot '...\tests\powershell'
                     if (-not (Test-Path $testRoot)) { New-Item -ItemType Directory -Force -Path $testRoot | Out-Null }
                     Invoke-Pester -Path $testRoot `
                         -OutputFile  'pester-results.xml' `
@@ -440,7 +440,7 @@ pipeline {
             }
             post {
                 success {
-                    archiveArtifacts artifacts: 'output/orchestrate_result.json', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'generated/output/orchestrate_result.json', allowEmptyArchive: true
                 }
             }
         }
@@ -480,7 +480,7 @@ pipeline {
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'output/direct_call_result.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/output/direct_call_result.json', allowEmptyArchive: true }
             }
         }
 
@@ -494,17 +494,17 @@ pipeline {
                 powershell '''
                     Update-Firmware `
                         -ServerList  (Load-ServerList -Path 'configs\\server_list.txt' -IncludeDetails) `
-                        -OutputDir   'output\\firmware' `
+                        -OutputDir   'generated\output\firmware' `
                         -SkipDownload:$params.SKIP_DOWNLOAD `
                         -DryRun:$params.DRY_RUN
                 '''
-                archiveArtifacts artifacts: 'output/firmware/**/*.json', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'output/firmware/**/*.iso', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/output/firmware/**/*.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/output/firmware/**/*.iso', allowEmptyArchive: true
             }
             post {
                 always {
                     powershell '''
-                        Get-ChildItem 'output\\firmware\\results\\*.json' -ErrorAction SilentlyContinue | ForEach-Object {
+                        Get-ChildItem 'generated\output\firmware\\results\\*.json' -ErrorAction SilentlyContinue | ForEach-Object {
                             $r = Load-Json -Path $_.FullName
                             Write-Host "Server: $($r.server) — Success: $($r.success)"
                         }
@@ -529,12 +529,12 @@ pipeline {
                         Update-WindowsSecurity `
                             -BaseIso   $baseIso `
                             -Server    $server `
-                            -OutputDir 'output\\patched' `
+                            -OutputDir 'generated\output\patched' `
                             -DryRun:$params.DRY_RUN
                     }
                 '''
-                archiveArtifacts artifacts: 'output/patched/**/*.json', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'output/patched/**/*.iso', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/output/patched/**/*.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/output/patched/**/*.iso', allowEmptyArchive: true
             }
         }
 
@@ -552,7 +552,7 @@ pipeline {
                     Compress-Archive -Path 'output\\combined\\**' -DestinationPath "output\\${bundle}.zip" -Force
                     Write-Host "Created: ${bundle}.zip"
                 '''
-                archiveArtifacts artifacts: 'output/*.zip', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/output/*.zip', allowEmptyArchive: true
             }
         }
 
@@ -587,7 +587,7 @@ pipeline {
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'output/irequest_result.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/output/irequest_result.json', allowEmptyArchive: true }
             }
         }
 
@@ -620,7 +620,7 @@ pipeline {
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'output/scheduler_result.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/output/scheduler_result.json', allowEmptyArchive: true }
             }
         }
 
@@ -638,7 +638,7 @@ pipeline {
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'logs/deploy_*.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/logs/deploy_*.json', allowEmptyArchive: true }
             }
         }
 
@@ -657,13 +657,13 @@ pipeline {
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'logs/scan_reports/**', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/logs/scan_reports/**', allowEmptyArchive: true }
             }
         }
 
         // =========================================================================
         //  15. OPSRAMP REPORTING
-        //      PS-native: Invoke-OpsRamp reads output/results/*.json
+        //      PS-native: Invoke-OpsRamp reads generated/output/results/*.json
         //      Also the cron/automation entry point via scripts/schedule-jobs.ps1 reporting
         // =========================================================================
         stage('OpsRamp Reporting') {
@@ -691,7 +691,7 @@ pipeline {
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'output/orchestrate_result.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/output/orchestrate_result.json', allowEmptyArchive: true }
             }
         }
 
@@ -716,7 +716,7 @@ pipeline {
             steps {
                 powershell '''
                     $date   = Get-Date -Format 'yyyy-MM-dd'
-                    $rptDir = "logs\\build_reports\\$date"
+                    $rptDir = "generated\logs\build_reports\\$date"
                     New-Item -ItemType Directory -Force -Path $rptDir | Out-Null
                     Get-ChildItem 'output\\results\\*.json'     -ErrorAction SilentlyContinue | Copy-Item -Destination $rptDir
                     Get-ChildItem 'logs\\monitoring_sessions\\*.json' -ErrorAction SilentlyContinue | Copy-Item -Destination $rptDir
@@ -730,7 +730,7 @@ pipeline {
                         ConvertTo-Json -Depth 3 | Out-File "$rptDir\\summary.json"
                     Write-Host "Summary: $ok/$total successful"
                 '''
-                archiveArtifacts artifacts: 'logs/build_reports/**', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/logs/build_reports/**', allowEmptyArchive: true
             }
         }
     }    // end stages

@@ -64,7 +64,7 @@ pipeline {
     environment {
         CYBERARK_APP_ID = 'jenkins'
         PYTHONUNBUFFERED = '1'
-        OUTPUT_DIR        = 'output'
+        OUTPUT_DIR        = 'generated/output'
         CONFIG_DIR        = 'configs'
         AUT_IMPL          = 'PY'
     }
@@ -83,10 +83,10 @@ pipeline {
                 script {
                     currentBuild.displayName = "#${BUILD_NUMBER} - ${params.BUILD_STAGE}"
                 }
-                sh '''
-                    mkdir -p output/firmware output/patched output/combined output/results
-                    mkdir -p logs/build_reports logs/monitoring_sessions logs/scan_reports logs/scheduled_jobs
-                '''
+sh '''
+                     mkdir -p generated/output/firmware generated/output/patched generated/output/combined generated/output/results
+                     mkdir -p generated/logs/build_reports generated/logs/monitoring_sessions generated/logs/scan_reports generated/logs/scheduled_jobs
+                 '''
                 sh '''
                     python -m pip install --upgrade pip
                     pip install -r requirements.txt
@@ -240,29 +240,29 @@ print('[SETUP] All JSON configs valid.')
                     // 1. ruff
                     sh '''
                         echo "[1/6] ruff lint..."
-                        ruff check src/automation/ --output-format=json --output=code_scan_results/ruff_issues.json || true
-                        ruff check src/automation/ --fix || true
-                        ruff format --check src/automation/ > code_scan_results/ruff_format.txt 2>&1 || true
+                        ruff check src/python/automation/ --output-format=json --output=code_scan_results/ruff_issues.json || true
+                        ruff check src/python/automation/ --fix || true
+                        ruff format --check src/python/automation/ > code_scan_results/ruff_format.txt 2>&1 || true
                     '''
                     // 2. pylint
                     sh '''
                         echo "[2/6] pylint..."
                         pip install pylint -q
-                        pylint --output-format=json src/automation/ > code_scan_results/pylint_report.json 2>&1 || true
-                        pylint src/automation/ > code_scan_results/pylint_report.txt 2>&1 || true
+                        pylint --output-format=json src/python/automation/ > code_scan_results/pylint_report.json 2>&1 || true
+                        pylint src/python/automation/ > code_scan_results/pylint_report.txt 2>&1 || true
                     '''
                     // 3. radon
                     sh '''
                         echo "[3/6] radon..."
-                        radon mi src/automation/ -s -j > code_scan_results/radon_maintainability.json
-                        radon cc src/automation/ -s -j > code_scan_results/radon_cyclomatic.json
-                        radon cc src/automation/ -nc > code_scan_results/radon_complexity_warnings.txt || true
+                        radon mi src/python/automation/ -s -j > code_scan_results/radon_maintainability.json
+                        radon cc src/python/automation/ -s -j > code_scan_results/radon_cyclomatic.json
+                        radon cc src/python/automation/ -nc > code_scan_results/radon_complexity_warnings.txt || true
                     '''
                     // 4. bandit
                     sh '''
                         echo "[4/6] bandit..."
-                        bandit -r src/automation/ -f json -o code_scan_results/bandit_report.json || true
-                        bandit -r src/automation/ -f txt -o code_scan_results/bandit_report.txt || true
+                        bandit -r src/python/automation/ -f json -o code_scan_results/bandit_report.json || true
+                        bandit -r src/python/automation/ -f txt -o code_scan_results/bandit_report.txt || true
                     '''
                     // 5. safety
                     sh '''
@@ -330,7 +330,7 @@ print('[SETUP] All JSON configs valid.')
                         for f in $CHANGED; do
                             if [[ "$f" == tests/*.py ]]; then
                                 TEST_FILES="$TEST_FILES $f"
-                            elif [[ "$f" == src/automation/* ]]; then
+                            elif [[ "$f" == src/python/automation/* ]]; then
                                 base=$(basename "$f" .py)
                                 tf="tests/test_${base}.py"
                                 [ -f "$tf" ] && TEST_FILES="$TEST_FILES $tf"
@@ -393,7 +393,7 @@ jenkins_params = {
 
 ctrl    = Control.from_jenkins(jenkins_params)
 result  = ctrl.run()
-with open('output/orchestrate_result.json', 'w') as f:
+with open('generated/output/orchestrate_result.json', 'w') as f:
     json.dump(result, f, indent=2, default=str)
 if not result.get('success'):
     sys.exit(1)
@@ -402,7 +402,7 @@ if not result.get('success'):
             }
             post {
                 success {
-                    archiveArtifacts artifacts: 'output/orchestrate_result.json', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'generated/output/orchestrate_result.json', allowEmptyArchive: true
                 }
             }
         }
@@ -421,26 +421,26 @@ if not result.get('success'):
                     python3 -m automation.core.orchestrator "${BUILD_STAGE}" \
                         --base-iso "${BASE_ISO_PATH:-}" \
                         --dry-run "${DRY_RUN}" \
-                        > output/direct_call_result.json 2>&1
+                        > generated/output/direct_call_result.json 2>&1
                     EXIT=$?
                     if [ $EXIT -ne 0 ]; then
                         echo "Direct call exited $EXIT"
                         # Write failure record
-                        echo "{\"success\":false,\"request_type\":\"${BUILD_STAGE}\"}" > output/direct_call_result.json
+                        echo "{\"success\":false,\"request_type\":\"${BUILD_STAGE}\"}" > generated/output/direct_call_result.json
                         exit $EXIT
                     fi
                     # If stdout isn't JSON, wrap it
-                    if ! python3 -c "import json,sys; json.load(sys.stdin)" < output/direct_call_result.json 2>/dev/null; then
+                    if ! python3 -c "import json,sys; json.load(sys.stdin)" < generated/output/direct_call_result.json 2>/dev/null; then
                         python3 -c "
 import json,sys
-stdout = open('output/direct_call_result.json').read()
-json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, open('output/direct_call_result.json','w'))
+stdout = open('generated/output/direct_call_result.json').read()
+json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, open('generated/output/direct_call_result.json','w'))
 "
                     fi
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'output/direct_call_result.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/output/direct_call_result.json', allowEmptyArchive: true }
             }
         }
 
@@ -452,19 +452,19 @@ json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, 
             when { expression { params.BUILD_STAGE in ['firmware','all','reporting','monitoring'] } }
             steps {
                 sh '''
-                    python -m automation.cli.update_firmware_drivers \
-                        --server-list configs/server_list.txt \
-                        --output-dir output/firmware \
-                        --skip-download "${SKIP_DOWNLOAD}" \
-                        --dry-run "${DRY_RUN}"
+python -m automation.cli.update_firmware_drivers \
+                         --server-list configs/server_list.txt \
+                         --output-dir generated/output/firmware \
+                         --skip-download "${SKIP_DOWNLOAD}" \
+                         --dry-run "${DRY_RUN}"
                 '''
-                archiveArtifacts artifacts: 'output/firmware/**/*.json', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'output/firmware/**/*.iso', allowEmptyArchive: true
+archiveArtifacts artifacts: 'generated/output/firmware/**/*.json', allowEmptyArchive: true
+                 archiveArtifacts artifacts: 'generated/output/firmware/**/*.iso', allowEmptyArchive: true
             }
             post {
                 always {
                     sh '''
-                        for f in output/firmware/results/*.json; do
+                        for f in generated/output/firmware/results/*.json; do
                             [ -f "$f" ] || continue
                             python3 -c "import json; print(f'Server: {json.load(open(\"$f\"))[\"server\"]} — Success: {json.load(open(\"$f\"))[\"success\"]}')"
                         done
@@ -491,15 +491,15 @@ json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, 
                         [ -z "$server" ] && continue
                         echo ""
                         echo "[INFO] Patching Windows ISO for: $server"
-                        python -m automation.cli.patch_windows_security \
-                            --base-iso "${BASE_ISO_PATH}" \
-                            --server "$server" \
-                            --output-dir output/patched \
-                            --dry-run "${DRY_RUN}"
+python -m automation.cli.patch_windows_security \
+                             --base-iso "${BASE_ISO_PATH}" \
+                             --server "$server" \
+                             --output-dir generated/output/patched \
+                             --dry-run "${DRY_RUN}"
                     done
                 '''
-                archiveArtifacts artifacts: 'output/patched/**/*.json', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'output/patched/**/*.iso', allowEmptyArchive: true
+archiveArtifacts artifacts: 'generated/output/patched/**/*.json', allowEmptyArchive: true
+                 archiveArtifacts artifacts: 'generated/output/patched/**/*.iso', allowEmptyArchive: true
             }
         }
 
@@ -511,16 +511,16 @@ json.dump({'success': True, 'request_type':'${BUILD_STAGE}', 'output': stdout}, 
             when { expression { params.BUILD_STAGE in ['windows','all'] } }
             steps {
                 sh '''
-                    python -m automation.cli.build_iso \
-                        --config-dir configs \
-                        --output-dir output/combined \
-                        --dry-run "${DRY_RUN}"
-                    DATE=$(date +%Y%m%d_%H%M%S)
-                    BUNDLE="deployment_bundle_${DATE}"
-                    zip -r "output/${BUNDLE}.zip" output/combined/ > /dev/null 2>&1
+python -m automation.cli.build_iso \
+                         --config-dir configs \
+                         --output-dir generated/output/combined \
+                         --dry-run "${DRY_RUN}"
+                     DATE=$(date +%Y%m%d_%H%M%S)
+                     BUNDLE="deployment_bundle_${DATE}"
+                     zip -r "generated/output/${BUNDLE}.zip" generated/output/combined/ > /dev/null 2>&1
                     echo "Created: ${BUNDLE}.zip"
                 '''
-                archiveArtifacts artifacts: 'output/*.zip', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/output/*.zip', allowEmptyArchive: true
             }
         }
 
@@ -553,7 +553,7 @@ form_data = {
 }
 cluster_id = form_data['cluster_id']
 result = Control.from_irequest(form_data).run()
-with open('output/irequest_result.json', 'w') as f:
+with open('generated/output/irequest_result.json', 'w') as f:
     json.dump(result, f, indent=2, default=str)
 if not result.get('success'):
     raise SystemExit(1)
@@ -562,7 +562,7 @@ print(f'iRequest OK: {result["request_type"]} cluster={cluster_id}')
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'output/irequest_result.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/output/irequest_result.json', allowEmptyArchive: true }
             }
         }
 
@@ -594,7 +594,7 @@ task_params = {
 }
 cluster_id = task_params['cluster_id']
 result = Control.from_scheduler(task_params).run()
-with open('output/scheduler_result.json', 'w') as f:
+with open('generated/output/scheduler_result.json', 'w') as f:
     json.dump(result, f, indent=2, default=str)
 if not result.get('success'):
     raise SystemExit(1)
@@ -603,7 +603,7 @@ print(f'Scheduled task completed: {result["request_type"]} cluster={cluster_id}'
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'output/scheduler_result.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/output/scheduler_result.json', allowEmptyArchive: true }
             }
         }
 
@@ -621,7 +621,7 @@ print(f'Scheduled task completed: {result["request_type"]} cluster={cluster_id}'
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'logs/deploy_*.json', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/logs/deploy_*.json', allowEmptyArchive: true }
             }
         }
 
@@ -633,21 +633,21 @@ print(f'Scheduled task completed: {result["request_type"]} cluster={cluster_id}'
             when { expression { params.BUILD_STAGE in ['scan','all'] } }
             steps {
                 sh '''
-                    mkdir -p logs/scan_reports
+                    mkdir -p generated/logs/scan_reports
                     echo "[INFO] Vulnerability scanning placeholder"
                     echo "[INFO] Configure Nessus or OpenVAS in CI environment"
                     echo "{\"scan_date\":\"$(date -Iseconds)\",\"servers_scanned\":0,\"notes\":\"Nessus/OpenVAS not configured\"}" \
-                        > logs/scan_reports/vuln_scan_summary.json
+                        > generated/logs/scan_reports/vuln_scan_summary.json
                 '''
             }
             post {
-                always { archiveArtifacts artifacts: 'logs/scan_reports/**', allowEmptyArchive: true }
+                always { archiveArtifacts artifacts: 'generated/logs/scan_reports/**', allowEmptyArchive: true }
             }
         }
 
         // =========================================================================
         //  15. OPSRAMP REPORTING
-        //      Reads output/results/*.json and pushes metrics/alerts via OpsRampClient.
+        //      Reads generated/output/results/*.json and pushes metrics/alerts via OpsRampClient.
         // =========================================================================
         stage('OpsRamp Reporting') {
             when { expression { env.OPSRAMP_ENABLED == 'true' } }
@@ -659,7 +659,7 @@ import json, os
 from automation.cli.opsramp_integration import OpsRampClient
 
 cfg = 'configs/opsramp_config.json'
-results_dir = Path('output/results')
+results_dir = Path('generated/output/results')
 if results_dir.exists() and Path(cfg).exists():
     client = OpsRampClient(cfg)
     for rf in results_dir.glob('*.json'):
@@ -683,7 +683,7 @@ if results_dir.exists() and Path(cfg).exists():
                 sh '''
                     export HPE_AUTO_SOURCE=jenkins
                     export HPE_AUTO_BUILD_STAGE=all
-                    python -m automation 2>&1 | tee logs/scheduled_jobs/reporting.log
+                    python -m automation 2>&1 | tee generated/logs/scheduled_jobs/reporting.log
                 '''
             }
         }
@@ -700,7 +700,7 @@ if results_dir.exists() and Path(cfg).exists():
                 sh '''
                     export HPE_AUTO_SOURCE=jenkins
                     export HPE_AUTO_BUILD_STAGE=deploy
-                    python -m automation 2>&1 | tee logs/scheduled_jobs/monitoring.log
+                    python -m automation 2>&1 | tee generated/logs/scheduled_jobs/monitoring.log
                 '''
             }
         }
@@ -718,15 +718,15 @@ from pathlib import Path
 from datetime import datetime
 
 date   = datetime.now().strftime('%Y-%m-%d')
-rptDir = Path(f'logs/build_reports/{date}')
+rptDir = Path(f'generated/logs/build_reports/{date}')
 rptDir.mkdir(parents=True, exist_ok=True)
 
 import shutil
-for pattern in ['output/results/*.json', 'logs/monitoring_sessions/*.json']:
+for pattern in ['generated/output/results/*.json', 'generated/logs/monitoring_sessions/*.json']:
     for f in Path('.').glob(pattern):
         shutil.copy2(str(f), str(rptDir / f.name))
 
-total = len(list(Path('output/results').glob('*.json'))) if Path('output/results').exists() else 0
+total = len(list(Path('generated/output/results').glob('*.json'))) if Path('generated/output/results').exists() else 0
 ok = failed = 0
 for rf in rptDir.glob('*.json'):
     try:
@@ -748,7 +748,7 @@ with open(rptDir / 'summary.json', 'w') as f:
 print(f'Summary: {ok}/{total} successful')
 "
                 '''
-                archiveArtifacts artifacts: 'logs/build_reports/**', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'generated/logs/build_reports/**', allowEmptyArchive: true
             }
         }
     }
