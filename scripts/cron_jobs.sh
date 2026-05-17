@@ -5,9 +5,9 @@
 #
 # All jobs use a single dispatch entry point:
 #   HPE_AUTO_SOURCE=<jenkins|scheduler|irequest>  python -m automation
-#   ──⇨ run_jenkins()   (src/automation/control.py)
-#   ──⇨ run_scheduler() (src/automation/control.py)
-#   ──⇨ run_irequest()  (src/automation/control.py)
+#   ──⇨ run_jenkins()   (src/python/automation/control.py)
+#   ──⇨ run_scheduler() (src/python/automation/control.py)
+#   ──⇨ run_irequest()  (src/python/automation/control.py)
 #
 # PS equivalent for each surface:
 #   surface              PS entry point
@@ -52,7 +52,7 @@ log() {
 
 # ── Unified automation dispatch ────────────────────────────────────────────────
 # Single entry point; dispatches to run_jenkins / run_scheduler / run_irequest
-# via src/automation/__main__.py and src/automation/control.py.
+# via src/python/automation/__main__.py and src/python/automation/control.py.
 # mirrors PS Control.psm1: Run-Jenkins | Run-Scheduler | Run-IRequest
 
 run_automation() {

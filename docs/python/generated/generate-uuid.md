@@ -1,30 +1,30 @@
 ---
 source:      automation.cli.generate_uuid::main()
 console_script: generate-uuid
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
 # `generate-uuid`
 
+## Description
 
-## Keywords
-
-- `-server_name`  —  SERVER_NAME
-- `-output`  —  --output OUTPUT, -o OUTPUT
-- `-timestamp`  —  --timestamp TIMESTAMP, -t TIMESTAMP
+Generate deterministic UUIDs for HPE ProLiant servers. UUID is based on server name, timestamp, and SHA256 hash for uniqueness.
 
 ## Parameters
 
-| `server_name` (SERVER_NAME) | Server name or hostname |
-| `-output` (--output OUTPUT, -o OUTPUT) | Output file path (default: stdout) |
-| `-timestamp` (--timestamp TIMESTAMP, -t TIMESTAMP) | Custom timestamp in ISO format (default: current time) |
+| Parameter | Description |
+|-----------|-------------|
+| `server_name` | Server name or hostname |
+| `-output` | Output file path (default: stdout) |
+| `-timestamp` | Custom timestamp in ISO format (default: current time) |
 
 ## Examples
 
-### Example 1
-```shell
-Generate deterministic UUID for HPE ProLiant servers
+## Original Docstring
+```python
+Generate deterministic UUIDs for HPE ProLiant servers.
+UUID is based on server name, timestamp, and SHA256 hash for uniqueness.
 ```
 
 ## Help

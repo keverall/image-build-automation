@@ -14,9 +14,10 @@
 # ─── Configuration ───────────────────────────────────────────────────────────
 PYTHON := uv run --python 3.12
 VENV := .venv
-SRC := src/automation
-TESTS := tests
+SRC := src/python/automation
+TESTS := tests/python
 PYPROJECT := pyproject.toml
+CURDIR := $(shell pwd)
 
 # Colors
 GREEN := \033[0;32m
@@ -26,12 +27,12 @@ RED := \033[0;31m
 NC := \033[0m
 
 .PHONY: setup install deps test lint lint-fix security format check clean help all \
-         pwsh-lint pwsh-test pwsh-test-unit pwsh-test-integration pwsh-docs py-docs
+          pwsh-lint pwsh-lint-fix pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs
 
 # ─── PowerShell ─────────────────────────────────────────────────────────────
-PSMODULE := powershell/Automation/Automation.psd1
-PSTESTS  := powershell/Tests
-PSDIRS   := powershell
+PSMODULE := src/powershell/Automation/Automation.psd1
+PSTESTS  := tests/powershell
+PSDIRS   := src/powershell
 
 pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 	@echo "$(CYAN)[pwsh-lint]$(NC) Running PSScriptAnalyzer..."
@@ -45,54 +46,95 @@ pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 		if (\$$errors) { \$$errors | Format-Table -AutoSize; exit 1 } \
 		else { Write-Host '$(GREEN)[pwsh-lint]$(NC) No issues found' }"
 
+pwsh-lint-fix: ## Auto-fix PowerShell script analyzer issues
+	@echo "$(CYAN)[pwsh-lint-fix]$(NC) Auto-fixing PowerShell scripts with PSScriptAnalyzer..."
+	@pwsh -NoProfile -Command "\
+		\$$pssa = Get-Module PSScriptAnalyzer -ListAvailable -ErrorAction SilentlyContinue; \
+		if (-not \$$pssa) { \
+			Write-Host 'PSScriptAnalyzer not found. Install with: Install-Module PSScriptAnalyzer'; \
+			exit 1; \
+		}; \
+		\$$files = Get-ChildItem -Path '$(PSDIRS)' -Recurse -Filter '*.ps1'; \
+		foreach (\$$file in \$$files) { \
+			\$$fix = Invoke-ScriptAnalyzer -Path \$$file.FullName -Fix -ErrorAction SilentlyContinue; \
+			if (\$$fix) { Write-Host \"Fixed: \$$file.Name\" } \
+		}; \
+		Write-Host '$(GREEN)[pwsh-lint-fix]$(NC) Done'"
+
+pwsh-lint-test: ## Lint PowerShell test files
+	@echo "$(CYAN)[pwsh-lint-test]$(NC) Checking PowerShell test files..."
+	@pwsh -NoProfile -Command "\
+		\$$pssa = Get-Module PSScriptAnalyzer -ListAvailable -ErrorAction SilentlyContinue; \
+		if (-not \$$pssa) { \
+			Write-Host 'PSScriptAnalyzer not found. Install with: Install-Module PSScriptAnalyzer'; \
+			exit 1; \
+		}; \
+		\$$errors = Invoke-ScriptAnalyzer -Path '$(PSTESTS)' -Recurse -Severity Warning -ErrorAction SilentlyContinue; \
+		if (\$$errors) { \$$errors | Format-Table -AutoSize; exit 1 } \
+		else { Write-Host '$(GREEN)[pwsh-lint-test]$(NC) Test files OK' }"
+
+# ─── PowerShell Testing ───────────────────────────────────────────────────────
+pwsh-test: ## Run all Pester PowerShell tests
+	@echo "$(CYAN)[pwsh-test]$(NC) Running all Pester tests..."
+	@pwsh -Command "\$$pwd = '$(CURDIR)'; Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		Invoke-Pester -Path @( \
+			\"\$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Credentials.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/New-Uuid.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Pester.Integration.ps1\" \
+		) -PassThru"
+
+pwsh-test-unit: ## Run Pester unit tests only
+	@echo "$(CYAN)[pwsh-test-unit]$(NC) Running Pester unit tests..."
+	@pwsh -Command "\$$pwd = '$(CURDIR)'; Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		Invoke-Pester -Path @( \
+			\"\$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Credentials.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/New-Uuid.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
+			\"\$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \
+		) -PassThru"
+
+pwsh-test-integration: ## Run Pester integration tests only
+	@echo "$(CYAN)[pwsh-test-integration]$(NC) Running Pester integration tests..."
+	@pwsh -Command "\$$pwd = '$(CURDIR)'; Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		Invoke-Pester -Path \"\$$pwd\$(PSTESTS)/Pester.Integration.ps1\" -PassThru"
+
+pwsh-coverage: ## Run Pester tests with code coverage
+	@echo "$(CYAN)[pwsh-coverage]$(NC) Running Pester tests with coverage..."
+	@pwsh -NoProfile -Command "\
+		\$$pwd = '$(CURDIR)'; \
+		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		\$$config = New-PesterConfiguration; \
+		\$$config.Run.Path = @('\$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/Credentials.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/New-Uuid.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1', '\$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1'); \
+		\$$config.Output.Verbosity = 'Detailed'; \
+		\$$config.CodeCoverage.Enabled = \$true; \
+		\$$config.CodeCoverage.Path = '\$$pwd\$(PSDIRS)/Public/*.ps1'; \
+		Invoke-Pester -Configuration \$$config"
+
 pwsh-docs: ## Generate PowerShell Markdown docs via PlatyPS
 	@echo "$(CYAN)[pwsh-docs]$(NC) Generating PowerShell API reference docs (PlatyPS)..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 || \
 		(echo "$(YELLOW)[pwsh-docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
 	@echo "$(GREEN)[pwsh-docs]$(NC) Docs written to docs/powershell/generated/"
+	@echo ""
 
 py-docs: ## Generate Python CLI Markdown docs via argparse help extraction
 	@echo "$(CYAN)[py-docs]$(NC) Generating Python CLI API reference docs…"
 	@$(PYTHON) scripts/generate_python_docs.py --force
 	@echo "$(GREEN)[py-docs]$(NC) Docs written to docs/python/generated/"
-
-pwsh-test: ## Run all Pester PowerShell tests
-	@echo "$(CYAN)[pwsh-test]$(NC) Running all Pester tests..."
-	@pwsh -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		Invoke-Pester -Path @( \
-			'$(PSTESTS)/Audit.Unit.Tests.ps1', \
-			'$(PSTESTS)/Config.Unit.Tests.ps1', \
-			'$(PSTESTS)/Credentials.Unit.Tests.ps1', \
-			'$(PSTESTS)/Executor.Unit.Tests.ps1', \
-			'$(PSTESTS)/FileIO.Unit.Tests.ps1', \
-			'$(PSTESTS)/Inventory.Unit.Tests.ps1', \
-			'$(PSTESTS)/New-Uuid.Unit.Tests.ps1', \
-			'$(PSTESTS)/Router.Unit.Tests.ps1', \
-			'$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1', \
-			'$(PSTESTS)/Validators.Unit.Tests.ps1', \
-			'$(PSTESTS)/Pester.Integration.ps1' \
-		) -PassThru"
-
-pwsh-test-unit: ## Run Pester unit tests only
-	@echo "$(CYAN)[pwsh-test-unit]$(NC) Running Pester unit tests..."
-	@pwsh -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		Invoke-Pester -Path @( \
-			'$(PSTESTS)/Audit.Unit.Tests.ps1', \
-			'$(PSTESTS)/Config.Unit.Tests.ps1', \
-			'$(PSTESTS)/Credentials.Unit.Tests.ps1', \
-			'$(PSTESTS)/Executor.Unit.Tests.ps1', \
-			'$(PSTESTS)/FileIO.Unit.Tests.ps1', \
-			'$(PSTESTS)/Inventory.Unit.Tests.ps1', \
-			'$(PSTESTS)/New-Uuid.Unit.Tests.ps1', \
-			'$(PSTESTS)/Router.Unit.Tests.ps1', \
-			'$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1', \
-			'$(PSTESTS)/Validators.Unit.Tests.ps1' \
-		) -PassThru"
-
-pwsh-test-integration: ## Run Pester integration tests only
-	@echo "$(CYAN)[pwsh-test-integration]$(NC) Running Pester integration tests..."
-	@pwsh -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		Invoke-Pester -Path $(PSTESTS)/Pester.Integration.ps1 -PassThru"
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
@@ -148,8 +190,9 @@ test-watch: ## Run tests and watch for changes (requires pytest-watch)
 
 coverage-html: ## Generate HTML coverage report
 	@echo "$(CYAN)[coverage-html]$(NC) Generating HTML coverage report..."
-	$(PYTHON) -m pytest $(TESTS) --cov=$(SRC:src/%=%) --cov-report=html
-	@echo "$(GREEN)[coverage-html]$(NC) Open htmlcov/index.html in browser"
+	@$(PYTHON) -m pytest $(TESTS) --cov=$(SRC:src/%=%) --cov-report=html -q 2>/dev/null || true
+	@mkdir -p generated && mv htmlcov generated/ 2>/dev/null || true
+	@echo "$(GREEN)[coverage-html]$(NC) Open generated/htmlcov/index.html in browser"
 
 coverage-xml: ## Generate XML coverage report (for CI)
 	@echo "$(CYAN)[coverage-xml]$(NC) Generating XML coverage report..."
@@ -224,11 +267,9 @@ build: ## Build distribution packages
 clean: ## Remove build artifacts, cache, and venv
 	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
 	rm -rf dist/ build/ *.egg-info src/*.egg-info
-	rm -rf .pytest_cache .coverage coverage.xml htmlcov/
+	rm -rf .pytest_cache .coverage coverage.xml
 	rm -rf .mypy_cache .ruff_cache
-	rm -rf logs/*.log logs/*.json
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	rm -rf generated/
 	@echo "$(CYAN)[clean]$(NC) Removing virtual environment..."
 	rm -rf $(VENV)
 	@echo "$(GREEN)[clean]$(NC) Done"

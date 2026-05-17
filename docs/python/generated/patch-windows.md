@@ -1,36 +1,35 @@
 ---
 source:      automation.cli.patch_windows_security::main()
 console_script: patch-windows
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
 # `patch-windows`
 
+## Description
 
-## Keywords
-
-- `-base-iso`  —  --base-iso BASE_ISO, -b BASE_ISO
-- `-server`  —  --server SERVER, -s SERVER
-- `-patches-config`  —  --patches-config PATCHES_CONFIG, -p PATCHES_CONFIG; default: `configs/windows_patches.json`
-- `-output-dir`  —  --output-dir OUTPUT_DIR, -o OUTPUT_DIR; default: `output/patched`
-- `-method`  —  {dism, powershell}, --method {dism, powershell}, -m {dism, powershell}; choices: {dism, powershell}; default: `dism`
-- `-dry-run`  —  --dry-run; *(boolean flag)*
+Windows Security Patcher Applies security patches to Windows Server ISO images using DISM. Creates patched ISOs with November 2025 security updates.
 
 ## Parameters
 
-| `-base-iso` (--base-iso BASE_ISO, -b BASE_ISO) | Path to base Windows Server ISO |
-| `-server` (--server SERVER, -s SERVER) | Server hostname (for naming) |
-| `-patches-config` (--patches-config PATCHES_CONFIG, -p PATCHES_CONFIG) | Path to patches configuration JSON default: `configs/windows_patches.json` |
-| `-output-dir` (--output-dir OUTPUT_DIR, -o OUTPUT_DIR) | Output directory for patched ISOs default: `output/patched` |
-| `-method` ({dism, powershell}, --method {dism, powershell}, -m {dism, powershell}) | Patching method (default: dism) *(choices: {dism, powershell})* default: `dism` |
-| `-dry-run` (--dry-run) | Simulate without making changes |
+| Parameter | Description |
+|-----------|-------------|
+| `-base-iso` | Path to base Windows Server ISO |
+| `-server` | Server hostname (for naming) |
+| `-patches-config` | Path to patches configuration JSON |
+| `-output-dir` | Output directory for patched ISOs |
+| `-method` | Patching method (default: dism) |
+| `-dry-run` | Simulate without making changes |
 
 ## Examples
 
-### Example 1
-```shell
-[--patches-config PATCHES_CONFIG] [--output-dir OUTPUT_DIR]
+## Original Docstring
+```python
+Windows Security Patcher
+
+Applies security patches to Windows Server ISO images using DISM.
+Creates patched ISOs with November 2025 security updates.
 ```
 
 ## Help

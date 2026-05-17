@@ -19,14 +19,14 @@ Complete guide to running unit tests manually and via the Jenkins CI/CD pipeline
 
 ## Overview
 
-> **Note:** The PowerShell module (`powershell/Automation/`) has an equivalent Pester test suite under `powershell/Tests/`. See [PowerShell Testing Guide](../powershell/powershell_testing.md) for the Pester-specific reference.
+> **Note:** The PowerShell module (`src/powershell/Automation/`) has an equivalent Pester test suite under `tests/powershell/`. See [PowerShell Testing Guide](tests/powershell/powershell_testing.md) for the Pester-specific reference.
 
 
 > 
 > **Secrets**: All credentials (iLO, SCOM, OpsRamp, SMTP, OpenView, HPE firmware download)
 > are resolved via **CyberArk Central Credential Provider**. The Jenkins `CyberArk - Bootstrap Secrets`
 > stage must run before any stage that needs credentials.
-> See [../powershell/powershell_jenkins_run_requirements.md](../powershell/powershell_jenkins_run_requirements.md)
+> See [../src/powershell/powershell_jenkins_run_requirements.md](../src/powershell/powershell_jenkins_run_requirements.md)
 > for the full CyberArk safe/object mapping and CCP CLI + REST fallback details.
 > 
 **Key Features**
@@ -56,7 +56,7 @@ addopts = """
 """
 ```
 
-- `--cov=automation` — measures coverage for the `automation` package (everything under `src/automation/`)
+- `--cov=automation` — measures coverage for the `automation` package (everything under `src/python/automation/`)
 - `--cov-report=term-missing` — shows missing line numbers in console output
 - `--cov-report=xml` — generates `coverage.xml` for CI/CD tooling and PR comments
 - `--cov-report=html` — generates `htmlcov/` directory with a browsable interactive report
@@ -89,7 +89,7 @@ python -m pytest
 
 **Run tests for a specific module:**
 ```bash
-pytest tests/cli/test_build_iso.py -v
+pytest tests/python/cli/test_build_iso.py -v
 ```
 
 **Run tests matching a name pattern:**
@@ -124,7 +124,7 @@ pytest -n auto  # runs in parallel across CPU cores
 Each module mirrors the package structure:
 
 ```
-tests/
+tests/python/
 ├── cli/
 │   ├── test_build_iso.py
 │   ├── test_generate_uuid.py
@@ -148,7 +148,7 @@ tests/
     └── test_powershell.py
 ```
 
-### Common Fixtures (defined in `tests/conftest.py`)
+### Common Fixtures (defined in `tests/python/conftest.py`)
 
 - `tmp_path` — isolated temporary directory for filesystem operations
 - `sample_config` — sample JSON config dict
@@ -193,15 +193,15 @@ On pull request builds (when `CHANGE_ID` environment variable is set), only affe
 2. Fetch target branch: `git fetch origin $target`
 3. Get changed files: `git diff --name-only origin/$target...HEAD`
 4. For each changed file:
-   - If it's a test file (`tests/*.py`) → add directly
-   - If it's source (`src/automation/*.py`) → map to corresponding test file:
-     - `src/automation/cli/build_iso.py` → `tests/cli/test_build_iso.py`
-     - `src/automation/utils/executor.py` → `tests/utils/test_executor.py`
+   - If it's a test file (`tests/python/*.py`) → add directly
+   - If it's source (`src/python/automation/*.py`) → map to corresponding test file:
+     - `src/python/automation/cli/build_iso.py` → `tests/python/cli/test_build_iso.py`
+     - `src/python/automation/utils/executor.py` → `tests/python/utils/test_executor.py`
      - etc.
 5. Run only the collected test files
 6. If no tests detected, write empty JUnit report and exit 0 (no failure)
 
-**Full builds** (direct pushes to main or parameterized builds) run all tests in `tests/` directory.
+**Full builds** (direct pushes to main or parameterized builds) run all tests in `tests/python/` directory.
 
 #### Coverage Reporting
 
@@ -245,13 +245,13 @@ pytest -v
 ### 2. Run a Single Test File
 
 ```bash
-pytest tests/cli/test_build_iso.py -v
+pytest tests/python/cli/test_build_iso.py -v
 ```
 
 ### 3. Run a Single Test Function
 
 ```bash
-pytest tests/cli/test_build_iso.py::TestISOOrchestrator::test_initialization -v
+pytest tests/python/cli/test_build_iso.py::TestISOOrchestrator::test_initialization -v
 ```
 
 ### 4. Check Coverage (Console)
@@ -279,14 +279,14 @@ pytest --cov=automation --cov-report=term --cov-fail-under=80
 |---|---|
 | Import errors (`No module named automation`) | Ensure you ran `pip install -e .` in the virtual environment |
 | Permission errors on Windows | Run PowerShell as Administrator or install Python with user privileges |
-| Missing fixtures | Ensure `conftest.py` is in `tests/` directory and up-to-date |
+| Missing fixtures | Ensure `conftest.py` is in `tests/python/` directory and up-to-date |
 | Coverage XML not generated | Install `pytest-cov`: `pip install pytest-cov` |
 | Tests hanging on network calls | Verify mocks are applied; check `patch()` paths |
 
 ### 8. Lint the Test Code
 
 ```bash
-ruff check tests/ --fix
+ruff check tests/python/ --fix
 ```
 
 ---
@@ -298,8 +298,8 @@ ruff check tests/ --fix
 Push your changes to a feature branch and open a pull request. Jenkins automatically:
 
 1. Detects it's a PR (via `CHANGE_ID` env var)
-2. Determines affected source files (`src/automation/**/*.py`)
-3. Maps to corresponding test files (`tests/**/test_*.py`)
+2. Determines affected source files (`src/python/automation/**/*.py`)
+3. Maps to corresponding test files (`tests/python/**/test_*.py`)
 4. Runs only those affected tests
 5. Publishes JUnit results and coverage report
 
@@ -406,10 +406,10 @@ if ($isPR) {
 
 | Changed source file | Corresponding test file |
 |---|---|
-| `src/automation/cli/build_iso.py` | `tests/cli/test_build_iso.py` |
-| `src/automation/core/orchestrator.py` | `tests/core/test_orchestrator.py` |
-| `src/automation/utils/executor.py` | `tests/utils/test_executor.py` |
-| `tests/cli/test_build_iso.py` (modified) | runs directly |
+| `src/python/automation/cli/build_iso.py` | `tests/python/cli/test_build_iso.py` |
+| `src/python/automation/core/orchestrator.py` | `tests/python/core/test_orchestrator.py` |
+| `src/python/automation/utils/executor.py` | `tests/python/utils/test_executor.py` |
+| `tests/python/cli/test_build_iso.py` (modified) | runs directly |
 
 If a source file is changed but no corresponding test exists, a notice is logged but the build continues.
 
@@ -442,7 +442,7 @@ pip install -e .
 
 ### Import errors in tests due to sys.path
 
-`tests/conftest.py` adds `src/` to `sys.path`. Ensure it's present:
+`tests/python/conftest.py` adds `src/` to `sys.path`. Ensure it's present:
 
 ```python
 import sys
@@ -454,7 +454,7 @@ sys.path.insert(0, str(src_path))
 
 ### "ImportError: cannot import name 'X' from 'automation.cli.build_iso'"
 
-Ensure `build_iso.py` explicitly contains `def iso_main():` (or whichever symbol) and it's exported via `__all__` in `src/automation/cli/__init__.py`.
+Ensure `build_iso.py` explicitly contains `def iso_main():` (or whichever symbol) and it's exported via `__all__` in `src/python/automation/cli/__init__.py`.
 
 ### Coverage report not generated
 
@@ -510,10 +510,10 @@ Write-Host "CHANGE_ID=$env:CHANGE_ID, CHANGE_TARGET=$env:CHANGE_TARGET"
 | Task | Command |
 |---|---|
 | Run all tests | `pytest` |
-| Run file-specific tests | `pytest tests/cli/test_build_iso.py` |
+| Run file-specific tests | `pytest tests/python/cli/test_build_iso.py` |
 | Run coverage with report | `pytest --cov=automation --cov-report=term-missing` |
 | Generate HTML coverage | `pytest --cov=automation --cov-report=html` |
-| Lint test code | `ruff check tests/ --fix` |
+| Lint test code | `ruff check tests/python/ --fix` |
 | Jenkins full build | Trigger with `BUILD_STAGE=all` |
 | Jenkins PR incremental | Automatic on PR open/update |
 

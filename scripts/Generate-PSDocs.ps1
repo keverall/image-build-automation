@@ -2,7 +2,12 @@
 # scripts/Generate-PSDocs.ps1
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-generate clean Markdown API reference docs from PowerShell comment-based
-# help blocks extracted directly from each Public/*.ps1 source file.
+# help blocks extracted directly from each source file.
+#
+# Scans:
+#   • src/powershell/Automation/Public/*.ps1 (public functions)
+#   • src/powershell/Automation/Private/*.ps1 (private functions)
+#   • scripts/*.ps1 (script files with embedded functions)
 #
 # Output style is deliberately kept close to the Python generator:
 #   • Front-matter with source / timestamp
@@ -27,7 +32,7 @@ $ErrorActionPreference = 'Continue'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $repoRoot  = Resolve-Path (Join-Path $scriptDir '..')
 
-if (-not $ModuleRoot) { $ModuleRoot = Join-Path $repoRoot 'powershell\Automation' }
+if (-not $ModuleRoot) { $ModuleRoot = Join-Path $repoRoot 'src\powershell\Automation' }
 $ModuleRoot = (Get-Item -LiteralPath $ModuleRoot).FullName
 
 if (-not $OutputDir) { $OutputDir = Join-Path $repoRoot 'docs\powershell\generated' }
@@ -140,7 +145,12 @@ function ConvertFrom-CommentBlock {
 # ─────────────────────────────────────────────────────────────────────────────
 
 $publicDir = Join-Path $ModuleRoot 'Public'
+$privateDir = Join-Path $ModuleRoot 'Private'
+$scriptsDir = Join-Path $repoRoot 'scripts'
+
 $files = Get-ChildItem $publicDir -Filter *.ps1 -Recurse | Where-Object { $_.Name -ne '_Validate-Request.ps1' }
+$files += Get-ChildItem $privateDir -Filter *.ps1 -Recurse
+$files += Get-ChildItem $scriptsDir -Filter *.ps1 -Recurse
 
 $generated = @()
 
@@ -159,10 +169,18 @@ foreach ($f in $files) {
     if ((Get-Content -Raw $f.FullName) -match 'function\s+([A-Za-z0-9_-]+)') { $cmdName = $Matches[1] }
 
     $ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm') + ' UTC'
+    
+    # Determine relative path for docs
+    $relPath = Resolve-Path -Relative $f.FullName
+    if ($relPath -match '^.+\\src\\powershell\\') { 
+        $relPath = $relPath -replace '^.+\\src\\powershell\\', 'src/powershell/' 
+    } elseif ($relPath -match '^.+\\scripts\\') {
+        $relPath = $relPath -replace '^.+\\scripts\\', 'scripts/'
+    }
 
     $md = @()
     $md += '---'
-    $md += "source:  powershell/Automation/Public/$stem.ps1"
+    $md += "source:  $relPath"
     $md += "generated: $ts"
     $md += "auto_generated_by: scripts/Generate-PSDocs.ps1"
     $md += '---'

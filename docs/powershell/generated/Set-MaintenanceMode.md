@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,8 +16,9 @@ Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO, and HPE Open
 |-----------|-------------|
 | `-Action` | 'enable', 'disable', or 'validate'. |
 | `-ClusterId` | Cluster identifier string. |
-| `-Start` | Maintenance start datetime string (default: now). |
-| `-End` | Maintenance end datetime string. |
+| `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
+| `-Start` | Maintenance start datetime string (default: now) format YYYY-MM-DD HH:MM . |
+| `-End` | Maintenance end datetime string format YYYY-MM-DD HH:MM . |
 | `-DryRun` | Simulate without making changes. |
 | `-NoSchedule` | Do not create a Windows Scheduled Task for automatic disable at end time. |
 | `-VerbosePreference` | Enable verbose debug logging. |
@@ -30,6 +31,11 @@ Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
 ```
 
 ### Example 2
+```powershell
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
+```
+
+### Example 3
 ```powershell
 Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
 ```
@@ -55,11 +61,14 @@ Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
     .PARAMETER ClusterId
         Cluster identifier string.
 
+    .PARAMETER ConfigDir
+        Directory containing configuration files (default: 'configs').
+
     .PARAMETER Start
-        Maintenance start datetime string (default: now).
+        Maintenance start datetime string (default: now) format YYYY-MM-DD HH:MM .
 
     .PARAMETER End
-        Maintenance end datetime string.
+        Maintenance end datetime string format YYYY-MM-DD HH:MM .
 
     .PARAMETER DryRun
         Simulate without making changes.
@@ -75,6 +84,9 @@ Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
 
     .EXAMPLE
         Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
+
+    .EXAMPLE
+        Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
 
     .EXAMPLE
         Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'

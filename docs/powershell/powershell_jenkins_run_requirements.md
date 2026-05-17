@@ -1,6 +1,6 @@
 # PowerShell Module — Jenkins Run Requirements
 
-What is required to run the `powershell/Automation` module standalone or inside a
+What is required to run the `src/powershell/Automation` module standalone or inside a
 separate Jenkins `windows` stage.  Does **not** duplicate Pester testing guidance
 (see [`powershell_testing.md`](powershell_testing.md)) or the Python testing
 guide (see [`../python/testing.md`](../python/testing.md)).
@@ -79,8 +79,8 @@ stage('CyberArk - Bootstrap Secrets') {
 <a name="feature-parity"></a>
 ## 1. Feature Parity: Python `src/` → PowerShell
 
-Every Python module in `src/automation/` is **structurally present** in
-`powershell/Automation/` — same file count, same routing map, same entry-point
+Every Python module in `src/python/automation/` is **structurally present** in
+`src/powershell/Automation/` — same file count, same routing map, same entry-point
 names, same config contracts (`configs/*.json` shared by both).  Degree of
 implementation is noted separately below.
 
@@ -167,7 +167,7 @@ stage('PowerShell — Pester Unit Tests') {
 }
 ```
 
-See [`../powershell/powershell_testing.md`](../powershell/powershell_testing.md) for the full Pester guide
+See [`../src/powershell/powershell_testing.md`](../src/powershell/powershell_testing.md) for the full Pester guide
 (commands, tags, mocking, CI integration).
 
 ### Incremental / PR testing (optional)

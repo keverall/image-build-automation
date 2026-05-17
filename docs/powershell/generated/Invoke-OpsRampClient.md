@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Invoke-OpsRampClient.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Invoke-OpsRampClient.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Quick CLI test of the OpsRamp API connection.
+Convenience function to test OpsRamp API connectivity by obtaining an authentication token. Useful for verifying credentials and network access before running full integrations.
 
 ## Parameters
 
@@ -27,6 +27,11 @@ Invoke-OpsRamp -ConfigPath 'configs\opsramp_config.json'
 ```powershell
 .SYNOPSIS
         Quick CLI test of the OpsRamp API connection.
+
+    .DESCRIPTION
+        Convenience function to test OpsRamp API connectivity by obtaining an
+        authentication token. Useful for verifying credentials and network
+        access before running full integrations.
 
     .PARAMETER ConfigPath
         Path to opsramp_config.json.

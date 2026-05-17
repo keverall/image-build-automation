@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Test-ServerList.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Test-ServerList.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Validate and load the server list text file.
+Reads the server list text file (server_list.txt) and returns an array of valid server hostnames, skipping empty lines and comments (lines starting with #). Optionally trims comma-separated metadata from each line.
 
 ## Parameters
 
@@ -27,6 +27,11 @@ $servers = Test-ServerList
 ```powershell
 .SYNOPSIS
         Validate and load the server list text file.
+
+    .DESCRIPTION
+        Reads the server list text file (server_list.txt) and returns an array
+        of valid server hostnames, skipping empty lines and comments (lines
+        starting with #). Optionally trims comma-separated metadata from each line.
 
     .PARAMETER ServerListPath
         Path to server_list.txt (default: configs\server_list.txt).

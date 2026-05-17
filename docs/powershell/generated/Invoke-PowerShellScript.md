@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Invoke-PowerShellScript.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Invoke-PowerShellScript.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Execute a PowerShell script block / string locally via `powershell.exe`.
+Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Useful for isolating script execution or running scripts in a fresh PowerShell context. Returns a hashtable with success status and combined output.
 
 ## Parameters
 
@@ -30,6 +30,12 @@ $r = Invoke-PowerShellScript -Script 'Get-Service | Select-Object -First 5 Name'
 ```powershell
 .SYNOPSIS
         Execute a PowerShell script block / string locally via `powershell.exe`.
+
+    .DESCRIPTION
+        Executes PowerShell scripts locally by spawning a new PowerShell process
+        with configurable timeout, execution policy, and output capture. Useful
+        for isolating script execution or running scripts in a fresh PowerShell
+        context. Returns a hashtable with success status and combined output.
 
     .PARAMETER Script
         PowerShell script to execute.

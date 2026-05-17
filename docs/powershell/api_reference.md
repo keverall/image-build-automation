@@ -40,11 +40,11 @@ $script:RouteMap = @{
     'maintenance_disable'  = 'Set-MaintenanceMode'
     'maintenance_validate' = 'Set-MaintenanceMode'
     'opsramp_report'       = 'Invoke-OpsRamp'
-    'generate_uuid'        = 'Test-Uuid'
+    'generate_uuid'        = 'New-Uuid'
 }
 ```
 
-**Module:** `powershell/Automation/Private/_RouteMap.ps1`
+**Module:** `src/powershell/Automation/Private/_RouteMap.ps1`
 **Exported:** no (`$script:`-scoped data variable)
 
 To add a new request type:
@@ -61,7 +61,7 @@ To add a new request type:
 Start-AutomationOrchestrator -RequestType <string> -Params <hashtable>
 ```
 
-**Module:** `powershell/Automation/Public/Start-AutomationOrchestrator.ps1`
+**Module:** `src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1`
 **Exported:** yes
 
 ### Parameters
@@ -124,7 +124,7 @@ if (-not $result.Success) {
 Invoke-RoutedRequest -RequestType <string> -Params <hashtable>
 ```
 
-**Module:** `powershell/Automation/Private/Router.ps1`
+**Module:** `src/powershell/Automation/Private/Router.ps1`
 **Exported:** yes
 **Note:** normally called only by `Start-AutomationOrchestrator`; direct callers are responsible for their own validation.
 
@@ -173,7 +173,7 @@ Invoke-RoutedRequest ($RequestType, $Params)
 _Validate-Request -RequestType <string> -Params <hashtable>
 ```
 
-**Module:** `powershell/Automation/Public/_Validate-Request.ps1`
+**Module:** `src/powershell/Automation/Public/_Validate-Request.ps1`
 **Exported:** no (private; underscore-prefixed)
 **Called by:** `Start-AutomationOrchestrator`
 

@@ -57,12 +57,12 @@ maintenance-mode = "automation.cli.maintenance_mode:main"
 generate-uuid = "automation.cli.generate_uuid:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src/python"]
 include = ["automation*"]
 
 [tool.ruff]
 target-version = "py39"
-src = ["src"]
+src = ["src/python"]
 line-length = 120
 
 [tool.ruff.lint]
@@ -86,7 +86,7 @@ warn_unused_configs = true
 omit = [
     "*/docstrings.py",
     "*/__new_object_base.py",
-    "src/automation/__init__.py",
+    "src/python/automation/__init__.py",
 ]
 
 [tool.coverage.report]
@@ -94,21 +94,18 @@ omit = [
 show_missing = true
 # Omit newlines / docstrings / multiline string literals from coverage counts
 # to avoid artificial inflation from module-level document strings.
-omit = [
-    "*/__init__.py",
-    "*/docstrings.py",
-]
+omit = ["*/__init__.py", "*/docstrings.py"]
 ignore_errors = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/python"]
 addopts = """
     --verbose
     --cov=automation
     --cov-config=pyproject.toml
     --cov-report=term-missing
     --cov-report=xml
-    --cov-report=html
+    --cov-report=html:generated/htmlcov
     --cov-fail-under=50
 """
 markers = [

@@ -4,7 +4,7 @@
 
 This document describes the comprehensive audit process for the HPE ProLiant Windows Server ISO Automation pipeline. Every action is logged, timestamped, and stored for compliance, troubleshooting, and reporting.
 
-All scripts use the centralized **`AuditLogger`** class from `src/automation/utils/audit.py`, ensuring consistent structured JSON audit records across the entire codebase. Audit logs are written to both per-action files and a master line-delimited JSON log.
+All scripts use the centralized **`AuditLogger`** class from `src/python/automation/utils/audit.py`, ensuring consistent structured JSON audit records across the entire codebase. Audit logs are written to both per-action files and a master line-delimited JSON log.
 
 ## Audit Trail Structure
 

@@ -9,7 +9,7 @@ integration, required environment variables, security, and troubleshooting) see
 
 ## Script Location
 
-`src/automation/cli/maintenance_mode.py`
+`src/python/automation/cli/maintenance_mode.py`
 
 ---
 

@@ -781,72 +781,46 @@ def _fmt_preamble(cmd: CmdDoc) -> list[str]:
 
 
 def _fmt_description(cmd: CmdDoc) -> list[str]:
-    """## Description section from module docstring."""
+    """## Description section from module docstring.
+
+    Extracts description text, combining prose lines into a single paragraph.
+    Converts bullet list items to comma-separated inline text.
+    Stops at section markers like 'Usage examples:'.
+    Mirrors PowerShell's .SYNOPSIS/.DESCRIPTION handling.
+    """
     out: list[str] = []
     if cmd.docstring:
-        out += ["## Description", ""]
-        for para in cmd.docstring.strip().splitlines():
-            out.append(para)
-        out.append("")
+        lines = cmd.docstring.strip().splitlines()
+        desc_lines: list[str] = []
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            # Stop at section markers
+            if stripped.lower().startswith("usage examples:") or stripped.lower().startswith("example:"):
+                break
+            # Skip empty lines
+            if not stripped:
+                continue
+            # Convert list markers to text
+            is_list_item = stripped.startswith("- ")
+            if is_list_item:
+                stripped = stripped[2:]  # Remove "- " prefix
+            desc_lines.append((stripped, is_list_item))
+        # Join with proper separators - add commas between list items
+        result_parts: list[str] = []
+        for i, (text, is_list) in enumerate(desc_lines):
+            # Add comma before list item if previous doesn't end with punctuation
+            if is_list and result_parts:
+                prev = result_parts[-1]
+                if not prev.endswith((",", ":")):
+                    result_parts[-1] = prev + ","
+            # Add comma after list item if next is non-list prose
+            if not is_list and i > 0 and desc_lines[i - 1][1] and result_parts and not result_parts[-1].endswith(","):
+                result_parts[-1] = result_parts[-1] + ","
+            result_parts.append(text)
+        desc_text = " ".join(result_parts)
+        if desc_text:
+            out = ["## Description", "", desc_text, ""]
     return out
-
-
-def _fmt_preamble_args(raw_help: str) -> tuple[str | None, str | None]:
-    """Extract the ``usage:`` line and its description prose from the raw help text."""
-    prog: str | None = None
-    desc: str | None = None
-    for line in raw_help.splitlines():
-        s = line.strip()
-        if not s:
-            continue
-        if prog is None:
-            if s.startswith("usage:"):
-                prog = s
-            elif desc is None and not s.startswith("usage:"):
-                desc = s
-        if prog and desc:
-            break
-    return prog, desc
-
-
-def _fmt_keywords(args_meta: list[dict[str, Any]]) -> list[str]:
-    """
-    Build the ## Keywords block listing argument names and key descriptors.
-
-    Lists the items as `>-name` — type / choices / default — for quick scanning.
-    Skips bool flags (no useful type or default column).
-    """
-    lines: list[str] = ["", "## Keywords", ""]
-    has_any = False
-    for arg in args_meta:
-        has_any = True
-        name_disp = f"-{arg['name'].rstrip(',')}"  # strip trailing comma from canon name
-        desc_parts: list[str] = []
-
-        type_str = arg.get("type", "")
-        if type_str:
-            desc_parts.append(type_str)
-
-        if arg["is_bool"]:
-            desc_parts.append("*(boolean flag)*")
-
-        choices_str = arg.get("choices")
-        if choices_str:
-            desc_parts.append(f"choices: {choices_str}")
-
-        default = arg.get("default")
-        if default is not None:
-            desc_parts.append(f"default: `{default}`")
-
-        full_desc = "; ".join(desc_parts) if desc_parts else ""
-        if full_desc:
-            lines.append(f"- `{name_disp}`  —  {full_desc}")
-        else:
-            lines.append(f"- `{name_disp}`")
-
-    if not has_any:
-        return []
-    return lines
 
 
 def _fmt_parameters(args_meta: list[dict[str, Any]]) -> list[str]:
@@ -854,66 +828,63 @@ def _fmt_parameters(args_meta: list[dict[str, Any]]) -> list[str]:
     Build the ## Parameters Markdown table.
 
     Renders each option flag and positional argument as a single table row.
-    Matches the two-column PowerShell style (Parameter | Description) but includes
-    the expected type/metavar in the left-hand cell for extra clarity.
-
-    Row formats:
-      Flags with a metavar                --iso-dir ISO_DIR   |  Dir description  |
-      Boolean flags (no metavar)          --dry-run           |  Description only |
-      Flags with {choices} inline         --method {ilo,redfishredfish}   |  Description: 'ilo', 'redfish' |
-      Positional args (type shown as loc) server_name        |  Desc  |
+    Matches the PowerShell two-column style (Parameter | Description).
     """
     if not args_meta:
         return []
 
-    lines: list[str] = ["", "## Parameters", ""]
+    lines: list[str] = ["## Parameters", ""]
+    lines += ["| Parameter | Description |", "|-----------|-------------|"]
 
     for arg in args_meta:
         # ── Name cell ──────────────────────────────────────────────────────
         canon = arg['name'].rstrip(',')  # strip trailing comma from canon name
         name_disp = f"`-{canon}`" if arg["item_type"] == "opt" else f"`{canon}`"
 
-        # ── Type / metavar annotation in parens ─────────────────────────────
-        type_col = arg.get("type", "")
-        type_part = f" ({type_col})" if type_col else ""
-
-        # ── Description cell: help prose first, then choices annotation ────
-        desc_parts: list[str] = []
+        # ── Description cell: help prose only (matches PowerShell style) ────
         help_descr = (arg.get("help_descr") or "").strip()
-        if help_descr:
-            desc_parts.append(help_descr)
+        desc_col = help_descr if help_descr else "—"
 
-        choices_str = arg.get("choices")
-        if choices_str:
-            desc_parts.append(f"*(choices: {choices_str})*")
-
-        default = arg.get("default")
-        if default is not None:
-            desc_parts.append(f"default: `{default}`")
-
-        desc_col = " ".join(desc_parts) if desc_parts else "—"
-
-        lines.append(f"| {name_disp}{type_part} | {desc_col} |")
+        lines.append(f"| {name_disp} | {desc_col} |")
+    lines.append("")  # Blank line after table
 
     return lines
 
 
-def _fmt_examples(raw_help: str) -> list[str]:
+def _fmt_examples(raw_help: str, docstring: str | None = None) -> list[str]:
     """
-    Build the ## Examples section from the raw argparse --help text.
+    Build the ## Examples section.
 
-    Uses the short description line (first non-empty prose after the
-    ``usage:`` line) as Example 1.
+    Extracts examples from the docstring's "Usage examples:" section.
+    Only generates examples if docstring contains "Usage examples:" section.
     """
-    _, desc_line = _fmt_preamble_args(raw_help)
+    out: list[str] = ["## Examples", ""]
 
-    out: list[str] = ["", "## Examples", ""]
-    if desc_line:
-        out.append("### Example 1")
-        out.append("```shell")
-        out.append(desc_line)
-        out.append("```")
-        out.append("")
+    # Try to extract examples from docstring only
+    if docstring:
+        in_examples = False
+        example_lines: list[str] = []
+        for line in docstring.splitlines():
+            stripped = line.strip()
+            if stripped.lower().startswith("usage examples:"):
+                in_examples = True
+                continue
+            if in_examples:
+                # Stop at empty line (end of examples section)
+                if not stripped:
+                    break
+                example_lines.append(stripped)
+
+        if example_lines:
+            for i, ex in enumerate(example_lines, 1):
+                out.append(f"### Example {i}")
+                out.append("```shell")
+                out.append(ex)
+                out.append("```")
+                out.append("")
+            return out
+
+    # No docstring examples available - return empty section
     return out
 
 
@@ -940,15 +911,21 @@ def render_markdown(cmd: CmdDoc) -> str:
     # ── Description ──────────────────────────────────────────────────────────
     sections += _fmt_description(cmd)
 
-    # ── Keywords ─────────────────────────────────────────────────────────────
-    if cmd.arg_table:
-        sections += _fmt_keywords(cmd.arg_table)
-
     # ── Parameters ───────────────────────────────────────────────────────────
     sections += _fmt_parameters(cmd.arg_table)
 
     # ── Examples ─────────────────────────────────────────────────────────────
-    sections += _fmt_examples(cmd.raw_help)
+    sections += _fmt_examples(cmd.raw_help, cmd.docstring)
+
+    # ── Original Docstring (matches PowerShell "Original Comment-Based Help") ──
+    if cmd.docstring:
+        sections += [
+            "## Original Docstring",
+            "```python",
+            cmd.docstring.strip(),
+            "```",
+            "",
+        ]
 
     # ── Help (raw argparse output) ───────────────────────────────────────────
     sections += _fmt_help(cmd.raw_help)
@@ -1019,6 +996,16 @@ def main() -> int:
             continue
 
         docstring = (fn.__doc__ or "").strip().splitlines()
+        # Use module docstring if function docstring is empty (matches PowerShell style)
+        if not docstring:
+            mod_name = dotted_path.rsplit(':', 1)[0]
+            try:
+                mod = importlib.import_module(mod_name)
+                mod_doc = (mod.__doc__ or "").strip().splitlines()
+                if mod_doc:
+                    docstring = mod_doc
+            except Exception:
+                pass
         docstr = "\n".join(docstring) if docstring else None
 
         try:

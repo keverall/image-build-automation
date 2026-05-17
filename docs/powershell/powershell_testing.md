@@ -1,6 +1,6 @@
 # PowerShell Module Testing Guide (Pester)
 
-Complete guide to running and maintaining the Pester test suite for the `powershell/Automation` module.
+Complete guide to running and maintaining the Pester test suite for the `src/powershell/Automation` module.
 
 ---
 
@@ -21,19 +21,19 @@ Complete guide to running and maintaining the Pester test suite for the `powersh
 
 ## Overview
 
-The PowerShell module uses **Pester v5+** as its BDD-style testing framework — the equivalent of `pytest` for Python. Tests are colocated with the source under `powershell/Tests/` alongside their corresponding modules in `powershell/Automation/`.
+The PowerShell module uses **Pester v5+** as its BDD-style testing framework — the equivalent of `pytest` for Python. Tests are colocated with the source under `tests/powershell/` alongside their corresponding modules in `src/powershell/Automation/`.
 
 **Framework:** [Pester](https://pester.dev/) v5.7.1 (latest stable at time of writing)
 
 **Test runner command:** `Invoke-Pester`
 
-**Test discovery:** `*.Tests.ps1` files in `powershell/Tests/`
+**Test discovery:** `*.Tests.ps1` files in `tests/powershell/`
 
 **BDD keywords:** `Describe`, `Context`, `It`, `Should`, `Mock`, `BeforeAll`, `AfterAll`, `BeforeEach`, `AfterEach`
 
 | Python / pytest concept | PowerShell / Pester equivalent |
 |---|---|
-| `tests/` directory | `powershell/Tests/` |
+| `tests/python/` directory | `tests/powershell/` |
 | `conftest.py` / fixtures | `BeforeAll` / `AfterAll` in each test file |
 | `unittest.mock.patch` | `Mock` keyword |
 | `assert x == y` | `$result | Should -Be expected` |
@@ -68,7 +68,7 @@ Get-Module Pester -ListAvailable
 ### Run the complete test suite
 
 ```powershell
-# Run all Pester tests under powershell/Tests/
+# Run all Pester tests under tests/powershell/
 Invoke-Pester -Path 'powershell\Tests' -PassThru
 
 # Verbose output — shows every passing and failing test
@@ -138,19 +138,19 @@ Invoke-Pester -Path 'powershell\Tests' -PassThru -CI
 ## Test File Structure
 
 ```
-powershell/
+tests/powershell/
 └── Tests/
     ├── Tests.Tests.ps1               # Shared BeforeAll / AfterAll (temp dirs, sample configs)
-    ├── Config.Tests.ps1              # Tests for powershell/Automation/Private/Config.psm1
-    ├── Credentials.Tests.ps1         # Tests for powershell/Automation/Private/Credentials.psm1
-    ├── Executor.Tests.ps1            # Tests for powershell/Automation/Private/Executor.psm1
-    ├── FileIO.Tests.ps1              # Tests for powershell/Automation/Private/FileIO.psm1
-    ├── Inventory.Tests.ps1           # Tests for powershell/Automation/Private/Inventory.psm1
-    ├── Validators.Tests.ps1          # Tests for powershell/Automation/Public/Invoke-Validator.psm1
-    ├── Router.Tests.ps1              # Tests for powershell/Automation/Private/Router.psm1
-    ├── New-Uuid.Tests.ps1            # Tests for powershell/Automation/Public/New-Uuid.ps1
-    ├── Audit.Tests.ps1               # Tests for powershell/Automation/Private/Audit.psm1
-    ├── Set-MaintenanceMode.Tests.ps1 # Tests for powershell/Automation/Public/Set-MaintenanceMode.ps1
+    ├── Config.Tests.ps1              # Tests for src/powershell/Automation/Private/Config.psm1
+    ├── Credentials.Tests.ps1         # Tests for src/powershell/Automation/Private/Credentials.psm1
+    ├── Executor.Tests.ps1            # Tests for src/powershell/Automation/Private/Executor.psm1
+    ├── FileIO.Tests.ps1              # Tests for src/powershell/Automation/Private/FileIO.psm1
+    ├── Inventory.Tests.ps1           # Tests for src/powershell/Automation/Private/Inventory.psm1
+    ├── Validators.Tests.ps1          # Tests for src/powershell/Automation/Public/Invoke-Validator.psm1
+    ├── Router.Tests.ps1              # Tests for src/powershell/Automation/Private/Router.psm1
+    ├── New-Uuid.Tests.ps1            # Tests for src/powershell/Automation/Public/New-Uuid.ps1
+    ├── Audit.Tests.ps1               # Tests for src/powershell/Automation/Private/Audit.psm1
+    ├── Set-MaintenanceMode.Tests.ps1 # Tests for src/powershell/Automation/Public/Set-MaintenanceMode.ps1
     ├── Pester.All.api.ps1            # Combined integration run helper
     ├── _import_test.ps1              # standalone smoke-test: verifies all module functions are exported
     ├── _debug_module.ps1             # ad-hoc debugging helper
@@ -168,10 +168,10 @@ powershell/
 
 ## Shared Test Infrastructure
 
-`powershell/Tests/Tests.Tests.ps1` is the equivalent of Python's `tests/conftest.py`. It runs `BeforeAll` before every individual test file and sets up:
+`tests/powershell/Tests.Tests.ps1` is the equivalent of Python's `tests/python/conftest.py`. It runs `BeforeAll` before every individual test file and sets up:
 
-- **`$Script:ModuleRoot`** — absolute path to `powershell/Automation/`
-- **`$Script:TestRoot`** — absolute path to `powershell/Tests/`
+- **`$Script:ModuleRoot`** — absolute path to `src/powershell/Automation/`
+- **`$Script:TestRoot`** — absolute path to `tests/powershell/`
 - **`$Script:TempDir`** — unique temp directory (GUID-named), cleaned up in `AfterAll`
 - **`$Script:ConfigDir`** — pre-created `configs/` subdir inside `$TempDir` with sample JSON fixtures:
   - `sample.json` — generic config
@@ -181,7 +181,7 @@ powershell/
 
 ```powershell
 BeforeAll {
-    $Script:ModuleRoot = Split-Path -Parent $PSScriptRoot
+    $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../src/powershell/Automation')).Path
     $Script:TestRoot    = $PSScriptRoot
     $Script:TempDir     = Join-Path $env:TEMP "AutomationTests_$(New-Guid).Trim('{}')"
     New-Item -ItemType Directory -Path $Script:TempDir -Force | Out-Null
@@ -207,7 +207,7 @@ BeforeAll {
 The pattern from the existing test files (taken from `Config.Tests.ps1` and `New-Uuid.Tests.ps1`):
 
 ```powershell
-# powershell/Tests/<ModuleName>.Tests.ps1
+# tests/powershell/<ModuleName>.Tests.ps1
 BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation.psd1') -Force -ErrorAction Stop
 }
@@ -374,8 +374,8 @@ if ($isPR) {
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Import-Module : Module 'Automation' was not loaded because no valid module file was found` | `$Script:ModuleRoot` is not set or wrong path | Run `powershell/Tests/Tests.Tests.ps1` first; it sets `$Script:ModuleRoot` in `BeforeAll`. Pass through `$Script:ModuleRoot` from the shared file. |
-| `The variable '$Script:ModuleRoot' cannot be retrieved because it has not been set` | Running an individual test file directly without the shared `BeforeAll` | Run via `Invoke-Pester -Path 'powershell\Tests'` so shared `Tests.Tests.ps1` `BeforeAll` runs first, or paste the `BeforeAll` block from `Tests.Tests.ps1` into your script. |
+| `Import-Module : Module 'Automation' was not loaded because no valid module file was found` | `$Script:ModuleRoot` is not set or wrong path | Run `tests/powershell/Tests.Tests.ps1` first; it sets `$Script:ModuleRoot` in `BeforeAll`. Pass through `$Script:ModuleRoot` from the shared file. |
+| `The variable '$Script:ModuleRoot' cannot be retrieved because it has not been set` | Running an individual test file directly without the shared `BeforeAll` | Run via `Invoke-Pester -Path 'tests/powershell'` so shared `Tests.Tests.ps1` `BeforeAll` runs first, or paste the `BeforeAll` block from `Tests.Tests.ps1` into your script. |
 | `Mock` has no effect | Mock scope is outside the `Describe` block that calls the mocked cmdlet | `Mock` must be inside the same `Describe` context as the `It` that triggers it. |
 | Tests never finish | A mocked `Invoke-Command` is not being hit and a real network call blocks | Verify `Mock` is applied with `-Verifiable`; use `Assert-MockCalled`. |
 | Module not found on Windows Server 2016 | Pester was installed with `-Scope AllUsers` | Use `-Scope CurrentUser` or run `Install-Module Pester` from an elevated prompt, then `$env:PSModulePath` should include `C:\Program Files\WindowsPowerShell\Modules`. |

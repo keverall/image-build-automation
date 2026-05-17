@@ -1,34 +1,36 @@
 ---
 source:      automation.cli.deploy_to_server::main()
 console_script: deploy-server
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
 # `deploy-server`
 
+## Description
 
-## Keywords
-
-- `-method`  —  {ilo, redfish}, --method {ilo, redfish}, -m {ilo, redfish}; choices: {ilo, redfish}; default: `ilo`
-- `-server`  —  --server SERVER, -s SERVER
-- `-server-list`  —  --server-list SERVER_LIST; default: `configs/server_list.txt`
-- `-iso-dir`  —  --iso-dir ISO_DIR; default: `output/combined`
-- `-dry-run`  —  --dry-run; *(boolean flag)*
+Deployment Automation Script Deploys generated ISOs to target HPE ProLiant servers via: Virtual Media mount via HPE iLO REST API, Supports unattended installation with automated kickstart/unattended.xml.
 
 ## Parameters
 
-| `-method` ({ilo, redfish}, --method {ilo, redfish}, -m {ilo, redfish}) | Deployment method *(choices: {ilo, redfish})* default: `ilo` |
-| `-server` (--server SERVER, -s SERVER) | Deploy to specific server only |
-| `-server-list` (--server-list SERVER_LIST) | Path to server list file default: `configs/server_list.txt` |
-| `-iso-dir` (--iso-dir ISO_DIR) | Directory containing deployment packages default: `output/combined` |
-| `-dry-run` (--dry-run) | Simulate without actual deployment |
+| Parameter | Description |
+|-----------|-------------|
+| `-method` | Deployment method |
+| `-server` | Deploy to specific server only |
+| `-server-list` | Path to server list file |
+| `-iso-dir` | Directory containing deployment packages |
+| `-dry-run` | Simulate without actual deployment |
 
 ## Examples
 
-### Example 1
-```shell
-[--server-list SERVER_LIST] [--iso-dir ISO_DIR] [--dry-run]
+## Original Docstring
+```python
+Deployment Automation Script
+
+Deploys generated ISOs to target HPE ProLiant servers via:
+- Virtual Media mount via HPE iLO REST API
+
+Supports unattended installation with automated kickstart/unattended.xml.
 ```
 
 ## Help

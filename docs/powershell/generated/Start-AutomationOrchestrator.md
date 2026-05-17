@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Start-AutomationOrchestrator.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Execute an automation request with validation and routing. Mirrors Python AutomationOrchestrator.execute().
+Validates the request parameters using _Validate-Request, then routes the request to the appropriate handler function based on the RequestType parameter. Returns a hashtable with success status and output from the handler. This is the unified entry point for all automation operations.
 
 ## Parameters
 
@@ -29,6 +29,13 @@ Start-AutomationOrchestrator -RequestType 'build_iso' -Params @{ BaseIsoPath = '
 .SYNOPSIS
         Execute an automation request with validation and routing.
         Mirrors Python AutomationOrchestrator.execute().
+
+    .DESCRIPTION
+        Validates the request parameters using _Validate-Request, then routes
+        the request to the appropriate handler function based on the
+        RequestType parameter. Returns a hashtable with success status and
+        output from the handler. This is the unified entry point for all
+        automation operations.
 
     .PARAMETER RequestType
         Request type string (build_iso, maintenance_enable, etc.).

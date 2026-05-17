@@ -24,14 +24,14 @@ Install-Module PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck -Force
 Install-Module gitleaks -Scope CurrentUser -SkipPublisherCheck -Force  # or download binary
 ```
 
-Validates PowerShell syntax for all scripts under `powershell/Automation/` and
-`powershell/Tests/`. Uses `Invoke-ScriptAnalyzer` as the lint entry-point (see below).
+Validates PowerShell syntax for all scripts under `src/powershell/Automation/` and
+`tests/powershell/`. Uses `Invoke-ScriptAnalyzer` as the lint entry-point (see below).
 
 ### 2. Code Quality & Security Scan
 
 Runs immediately after Setup, before any build/deploy operations. It:
 
-- Lints all PowerShell code in `powershell/Automation/` and `powershell/Tests/`
+- Lints all PowerShell code in `src/powershell/` (Automation + tests/powershell/)
 - Checks for PowerShell security anti-patterns (hardcoded credentials, unsafe invocation, etc.)
 - Scans the repository history for committed secrets via gitleaks
 
@@ -50,8 +50,8 @@ Unaffected; code scanning runs as a pre-check.
 
 **Command:**
 ```powershell
-Invoke-ScriptAnalyzer -Path 'powershell\Automation' -Recurse -Severity Error,Warning,Information -OutputFormat Json -OutFile 'code_scan_results\psa_issues.json'
-Invoke-ScriptAnalyzer -Path 'powershell\Automation' -Recurse -Severity Error,Warning -OutputFormat Diagnostics
+Invoke-ScriptAnalyzer -Path 'src\powershell\Automation' -Recurse -Severity Error,Warning,Information -OutputFormat Json -OutFile 'code_scan_results\psa_issues.json'
+Invoke-ScriptAnalyzer -Path 'src\powershell\Automation' -Recurse -Severity Error,Warning -OutputFormat Diagnostics
 ```
 
 **Checks** (selected rules — severity indicated):

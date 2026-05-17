@@ -1,7 +1,7 @@
 # HPE ProLiant Windows Server ISO Automation — Documentation Index
 
-Complete documentation for the Python automation package (`src/automation/`) and
-PowerShell module (`powershell/Automation/`).
+Complete documentation for the Python automation package (`src/python/automation/`) and
+PowerShell module (`src/powershell/Automation/`).
 
 ---
 
@@ -10,15 +10,15 @@ PowerShell module (`powershell/Automation/`).
 ```
 hpe-windows-iso-automation/
 ├── Jenkinsfile                                  # CI/CD pipeline definition
-├── src/automation/                              # Python package
+├── src/python/automation/                              # Python package
 │   ├── cli/                                     # CLI entry points
 │   └── utils/                                   # Shared utilities
-├── powershell/Automation/                       # PowerShell module
+├── src/powershell/Automation/                       # PowerShell module
 │   ├── Public/                                  # Exported cmdlets
 │   ├── Private/                                 # Internal helpers
 │   └── Automation.psd1                          # Module manifest
-├── tests/                                       # Python / pytest tests
-├── powershell/Tests/                            # PowerShell / Pester tests
+├── tests/python/                                     # Python / pytest tests
+├── tests/powershell/                            # PowerShell / Pester tests
 ├── configs/                                     # Server/cluster/patch JSON configs
 ├── docs/                                        # This directory
 └── logs/                                        # Audit trails & build reports
@@ -29,7 +29,7 @@ hpe-windows-iso-automation/
 ## Quick Start
 
 - **Python** package setup and first build: see the [top-level README](../README.md#quick-start)
-- **PowerShell** module import and first command: see [powershell/powershell_api_reference.md](powershell/powershell_api_reference.md#quick-start)
+- **PowerShell** module import and first command: see [src/powershell/powershell_api_reference.md](src/powershell/powershell_api_reference.md#quick-start)
 
 ---
 
@@ -45,43 +45,43 @@ hpe-windows-iso-automation/
 | [API Reference](python/api_reference.md) | Orchestrator & routing layer — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators, return dicts |
 | [Maintenance Mode](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables, security — language-agnostic |
 | [Maintenance Mode — Python](python/maintenance_mode.md) | Python usage: CLI args, config, `clusters_catalogue.json`, `pip install`, troubleshooting |
-| [Maintenance Mode — PowerShell](powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration, Jenkins PSScriptAnalyzer |
-| [Python Utilities](python/utils.md) | Full reference for all modules in `src/automation/utils/` — logging, config, inventory, audit, executor, credentials, PowerShell bridge, base class |
+| [Maintenance Mode — PowerShell](src/powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration, Jenkins PSScriptAnalyzer |
+| [Python Utilities](python/utils.md) | Full reference for all modules in `src/python/automation/utils/` — logging, config, inventory, audit, executor, credentials, PowerShell bridge, base class |
 
 ### PowerShell
 
 | Document | Description |
 |---|---|
 | [PowerShell API Reference — Generic](api_reference.md) | Orchestrator & routing layer — request types, flow, adding new handlers, return schema |
-| [PowerShell API Reference](powershell/api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
+| [PowerShell API Reference](src/powershell/api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
 | [← Python API Reference](python/api_reference.md) | Equivalent Python API ref — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators |
-| [PowerShell Module Overview](powershell/powershell_api_reference.md) | Module overview, directory layout, requirements, design mapping to Python, quick-start |
-| [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
-| [PowerShell Testing Quick Start](powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
-| [PowerShell Code Quality & Security](powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, Jenkins pipeline integration, quality gates, comparison with Python tools |
-| [PowerShell Jenkins Run Requirements](powershell/powershell_jenkins_run_requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
+| [PowerShell Module Overview](src/powershell/powershell_api_reference.md) | Module overview, directory layout, requirements, design mapping to Python, quick-start |
+| [PowerShell Testing Guide](src/powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
+| [PowerShell Testing Quick Start](src/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
+| [PowerShell Code Quality & Security](src/powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, Jenkins pipeline integration, quality gates, comparison with Python tools |
+| [PowerShell Jenkins Run Requirements](src/powershell/powershell_jenkins_run_requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
 
 ---
 
 ## Python vs PowerShell Feature Parity
 
-| Feature | Python (`src/automation/`) | PowerShell (`powershell/Automation/`) |
+| Feature | Python (`src/python/automation/`) | PowerShell (`src/powershell/Automation/`) |
 |---|---|---|
-| Unit tests | `tests/` · pytest (254 tests) | `powershell/Tests/` · Pester (11 × `*.Tests.ps1`) |
+| Unit tests | `tests/python/` · pytest (254 tests) | `tests/powershell/` · Pester (11 × `*.Tests.ps1`) |
 | Test runner | `pytest` | `Invoke-Pester` |
 | CI pipeline | Jenkins `Unit Tests & Coverage` stage (only Python) | **No Pester stage yet** — target: add to Jenkinsfile |
 | Fakes / mocking | `unittest.mock` | `Mock` keyword (Pester) |
 | Coverage | `pytest-cov` → `coverage.xml`, `htmlcov/` | Not yet automated |
-| Shared fixture / setup | `tests/conftest.py` | `powershell/Tests/Tests.Tests.ps1` (`BeforeAll`) |
+| Shared fixture / setup | `tests/python/conftest.py` | `tests/powershell/Tests.Tests.ps1` (`BeforeAll`) |
 
 ---
 
 ## Contributing
 
-1. Add or update unit tests mirroring the module structure (Python → `tests/`, PowerShell → `powershell/Tests/`)
-2. Update the relevant doc page in `python/` or `powershell/`
-3. Run linting: `ruff check src/automation/ --fix` and `Invoke-ScriptAnalyzer -Path powershell\Automation -Recurse`
+1. Add or update unit tests mirroring the module structure (Python → `tests/python/`, PowerShell → `tests/powershell/`)
+2. Update the relevant doc page in `python/` or `src/powershell/`
+3. Run linting: `ruff check src/python/automation/ --fix` and `Invoke-ScriptAnalyzer -Path powershell\Automation -Recurse`
 4. Ensure pytest / Pester passes: `pytest` (Python) and/or `Invoke-Pester` (PowerShell)
 5. PR description must link to any documentation changes
 
-See [Python Code Quality](python/code_quality.md) / [PowerShell Code Quality](powershell/code_quality.md) for full lint/scan details.
+See [Python Code Quality](python/code_quality.md) / [PowerShell Code Quality](src/powershell/code_quality.md) for full lint/scan details.

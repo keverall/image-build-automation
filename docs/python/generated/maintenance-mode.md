@@ -1,38 +1,61 @@
 ---
 source:      automation.cli.maintenance_mode::main()
 console_script: maintenance-mode
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
 # `maintenance-mode`
 
+## Description
 
-## Keywords
-
-- `-cluster-id`  —  --cluster-id CLUSTER_ID, -c CLUSTER_ID
-- `-start`  —  --start START, -s START
-- `-end`  —  --end END, -e END
-- `-action`  —  {enable, disable, validate}, --action {enable, disable, validate}, -a {enable, disable, validate}; choices: {enable, disable, validate}; default: `enable`
-- `-dry-run`  —  --dry-run; *(boolean flag)*
-- `-no-schedule`  —  --no-schedule; *(boolean flag)*
-- `-verbose`  —  --verbose; *(boolean flag)*
+Maintenance Mode Orchestration Script Enables or disables maintenance mode for a cluster of servers across: SCOM 2015 (System Center Operations Manager) via PowerShell cmdlets, HPE iLO (Integrated Lights-Out) via REST API or PowerShell module, HPE OpenView via REST API or CLI, Integrates with OpsRamp for monitoring/alerting and sends email notifications. Supports scheduling automatic disable via Windows Task Scheduler.
 
 ## Parameters
 
-| `-cluster-id` (--cluster-id CLUSTER_ID, -c CLUSTER_ID) | Cluster identifier (key from clusters_catalogue.json) |
-| `-start` (--start START, -s START) | Maintenance start datetime (ISO 8601, e.g., 2025-05-15T14:30:00 or 'now') |
-| `-end` (--end END, -e END) | Maintenance end datetime (ISO 8601). If omitted, computed from cluster schedule. |
-| `-action` ({enable, disable, validate}, --action {enable, disable, validate}, -a {enable, disable, validate}) | Action to perform (default: enable) *(choices: {enable, disable, validate})* default: `enable` |
-| `-dry-run` (--dry-run) | Simulate only, do not make changes |
-| `-no-schedule` (--no-schedule) | Do not create scheduled task for automatic disable |
-| `-verbose` (--verbose) | Enable verbose debug logging |
+| Parameter | Description |
+|-----------|-------------|
+| `-cluster-id` | Cluster identifier (key from clusters_catalogue.json) |
+| `-start` | Maintenance start datetime (ISO 8601, e.g., 2025-05-15T14:30:00 or 'now') |
+| `-end` | Maintenance end datetime (ISO 8601). If omitted, computed from cluster schedule. |
+| `-action` | Action to perform (default: enable) |
+| `-dry-run` | Simulate only, do not make changes |
+| `-no-schedule` | Do not create scheduled task for automatic disable |
+| `-verbose` | Enable verbose debug logging |
 
 ## Examples
 
 ### Example 1
 ```shell
-[--dry-run] [--no-schedule] [--verbose]
+python automation.cli.maintenance_mode.py --cluster-id PROD-CLUSTER-01 --start now --end 2025-05-15T08:00:00
+```
+
+### Example 2
+```shell
+python automation.cli.maintenance_mode.py --cluster-id PROD-CLUSTER-01 --disable
+```
+
+### Example 3
+```shell
+python automation.cli.maintenance_mode.py --cluster-id PROD-CLUSTER-01 --validate-only
+```
+
+## Original Docstring
+```python
+Maintenance Mode Orchestration Script
+
+Enables or disables maintenance mode for a cluster of servers across:
+- SCOM 2015 (System Center Operations Manager) via PowerShell cmdlets
+- HPE iLO (Integrated Lights-Out) via REST API or PowerShell module
+- HPE OpenView via REST API or CLI
+
+Integrates with OpsRamp for monitoring/alerting and sends email notifications.
+Supports scheduling automatic disable via Windows Task Scheduler.
+
+Usage examples:
+  python automation.cli.maintenance_mode.py --cluster-id PROD-CLUSTER-01 --start now --end 2025-05-15T08:00:00
+  python automation.cli.maintenance_mode.py --cluster-id PROD-CLUSTER-01 --disable
+  python automation.cli.maintenance_mode.py --cluster-id PROD-CLUSTER-01 --validate-only
 ```
 
 ## Help

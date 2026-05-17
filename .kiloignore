@@ -1,0 +1,27 @@
+# Ignore python virtual environments
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Ignore local Jenkins workspace data & state
+.jenkins/
+workspace/
+*.log
+
+# Ignore local OS metadata
+.DS_Store
+Thumbs.db
+
+# Ignore secure credentials (never send to LLMs)
+*.pkcs12
+*.pem
+*.key
+
+# Block local Justfile execution histories
+.justfile/
+.just/
+
+# Block uv internal cache storage blocks
+.uv/
+uv.lock

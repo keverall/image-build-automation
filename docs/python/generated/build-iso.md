@@ -1,36 +1,35 @@
 ---
 source:      automation.cli.build_iso::main()
 console_script: build-iso
-generated:   2026-05-16 21:19 UTC
+generated:   2026-05-17 23:02 UTC
 auto_generated_by: scripts/generate_python_docs.py
 ---
 
 # `build-iso`
 
+## Description
 
-## Keywords
-
-- `-base-iso`  —  --base-iso BASE_ISO, -b BASE_ISO
-- `-config-dir`  —  --config-dir CONFIG_DIR, -c CONFIG_DIR; default: `configs`
-- `-output-dir`  —  --output-dir OUTPUT_DIR, -o OUTPUT_DIR; default: `output`
-- `-server`  —  --server SERVER, -s SERVER
-- `-dry-run`  —  --dry-run; *(boolean flag)*
-- `-skip-audit`  —  --skip-audit; *(boolean flag)*
+Main ISO Build Orchestrator Coordinates firmware/driver builds and Windows patching to create complete customized ISOs for HPE ProLiant servers.
 
 ## Parameters
 
-| `-base-iso` (--base-iso BASE_ISO, -b BASE_ISO) | Path to base Windows Server ISO (required for Windows patching) |
-| `-config-dir` (--config-dir CONFIG_DIR, -c CONFIG_DIR) | Configuration directory default: `configs` |
-| `-output-dir` (--output-dir OUTPUT_DIR, -o OUTPUT_DIR) | Output directory default: `output` |
-| `-server` (--server SERVER, -s SERVER) | Build for specific server (default: all servers) |
-| `-dry-run` (--dry-run) | Simulate without executing commands |
-| `-skip-audit` (--skip-audit) | Skip audit logging (for testing) |
+| Parameter | Description |
+|-----------|-------------|
+| `-base-iso` | Path to base Windows Server ISO (required for Windows patching) |
+| `-config-dir` | Configuration directory |
+| `-output-dir` | Output directory |
+| `-server` | Build for specific server (default: all servers) |
+| `-dry-run` | Simulate without executing commands |
+| `-skip-audit` | Skip audit logging (for testing) |
 
 ## Examples
 
-### Example 1
-```shell
-[--output-dir OUTPUT_DIR] [--server SERVER] [--dry-run] [--skip-audit]
+## Original Docstring
+```python
+Main ISO Build Orchestrator
+
+Coordinates firmware/driver builds and Windows patching to create
+complete customized ISOs for HPE ProLiant servers.
 ```
 
 ## Help

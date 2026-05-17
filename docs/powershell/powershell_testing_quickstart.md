@@ -1,6 +1,6 @@
 # PowerShell Testing — Quick Start Guide
 
-Fast reference for running Pester tests on the `powershell/Automation` module.
+Fast reference for running Pester tests on the `src/powershell/Automation` module.
 
 ---
 
@@ -19,11 +19,11 @@ Get-Module Pester -ListAvailable
 ## Run All Tests
 
 ```powershell
-# Discovered automatically from *.Tests.ps1 in powershell/Tests/
-Invoke-Pester -Path 'powershell\Tests' -PassThru
+# Discovered automatically from *.Tests.ps1 in tests/powershell/
+Invoke-Pester -Path 'tests/powershell' -PassThru
 
 # Verbose — every passing AND failing test in the console
-Invoke-Pester -Path 'powershell\Tests' -PassThru -Show All
+Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
 ```
 
 ---
@@ -31,8 +31,8 @@ Invoke-Pester -Path 'powershell\Tests' -PassThru -Show All
 ## Run a Single File
 
 ```powershell
-Invoke-Pester -Path 'powershell\Tests\Config.Tests.ps1'
-Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'
+Invoke-Pester -Path 'tests/powershell\Config.Tests.ps1'
+Invoke-Pester -Path 'tests/powershell\New-Uuid.Tests.ps1'
 ```
 
 ---
@@ -41,10 +41,10 @@ Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'
 
 ```powershell
 # Run Config + FileIO tests only
-Invoke-Pester -Path 'powershell\Tests' -Tag @('Config','FileIO') -PassThru
+Invoke-Pester -Path 'tests/powershell' -Tag @('Config','FileIO') -PassThru
 
 # Exclude integration tests
-Invoke-Pester -Path 'powershell\Tests' -ExcludeTag @('Integration') -PassThru
+Invoke-Pester -Path 'tests/powershell' -ExcludeTag @('Integration') -PassThru
 ```
 
 ---
@@ -52,7 +52,7 @@ Invoke-Pester -Path 'powershell\Tests' -ExcludeTag @('Integration') -PassThru
 ## CI / JUnit XML Output
 
 ```powershell
-$result = Invoke-Pester -Path 'powershell\Tests' -Tag 'Unit' `
+$result = Invoke-Pester -Path 'tests/powershell' -Tag 'Unit' `
             -OutputFile 'powershell-test-results.xml' `
             -OutputFormat NUnitXml `
             -PassThru
@@ -74,7 +74,7 @@ cd image-build-automation
 Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
 
 # 3. Run the test suite
-Invoke-Pester -Path 'powershell\Tests' -PassThru
+Invoke-Pester -Path 'tests/powershell' -PassThru
 ```
 
 ---
@@ -83,7 +83,7 @@ Invoke-Pester -Path 'powershell\Tests' -PassThru
 
 ```powershell
 # Run the ad-hoc smoke test (verifies all expected exports are present)
-pwsh -File powershell/Tests/_import_test.ps1
+pwsh -File tests/powershell/_import_test.ps1
 # → "Summary: N OK, 0 MISSING"
 ```
 
@@ -106,12 +106,12 @@ Tests completed in 450 ms
 
 | Task | Command |
 |---|---|
-| Run all tests | `Invoke-Pester -Path 'powershell\Tests' -PassThru` |
-| Run one file | `Invoke-Pester -Path 'powershell\Tests\<file>.Tests.ps1'` |
-| Run by tag | `Invoke-Pester -Path 'powershell\Tests' -Tag @('Config') -PassThru` |
-| JUnit XML for CI | `Invoke-Pester -Path 'powershell\Tests' -OutputFile results.xml -OutputFormat NUnitXml -PassThru` |
-| Verbose all results | `Invoke-Pester -Path 'powershell\Tests' -PassThru -Show All` |
-| Smoke-test module exports | `pwsh -File powershell/Tests/_import_test.ps1` |
+| Run all tests | `Invoke-Pester -Path 'tests/powershell' -PassThru` |
+| Run one file | `Invoke-Pester -Path 'tests/powershell\<file>.Tests.ps1'` |
+| Run by tag | `Invoke-Pester -Path 'tests/powershell' -Tag @('Config') -PassThru` |
+| JUnit XML for CI | `Invoke-Pester -Path 'tests/powershell' -OutputFile results.xml -OutputFormat NUnitXml -PassThru` |
+| Verbose all results | `Invoke-Pester -Path 'tests/powershell' -PassThru -Show All` |
+| Smoke-test module exports | `pwsh -File tests/powershell/_import_test.ps1` |
 
 ---
 

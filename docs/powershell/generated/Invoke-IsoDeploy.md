@@ -1,6 +1,6 @@
 ---
-source:  powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-05-16 18:52 UTC
+source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
+generated: 2026-05-17 23:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Deploy generated deployment packages to HPE ProLiant servers via iLO or Redfish. Callable from the module Router.
+Deploys customized ISO packages to HPE ProLiant servers using iLO virtual media or Redfish API. Supports both single-server and bulk deployment modes. The function reads deployment packages from the specified IsoDir and uses iLO credentials from the server list configuration.
 
 ## Parameters
 
@@ -32,6 +32,12 @@ Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
 .SYNOPSIS
         Deploy generated deployment packages to HPE ProLiant servers via iLO or Redfish.
         Callable from the module Router.
+
+    .DESCRIPTION
+        Deploys customized ISO packages to HPE ProLiant servers using iLO virtual
+        media or Redfish API. Supports both single-server and bulk deployment
+        modes. The function reads deployment packages from the specified IsoDir
+        and uses iLO credentials from the server list configuration.
 
     .PARAMETER Method
         Deployment method: 'ilo' (default) or 'redfish'.
