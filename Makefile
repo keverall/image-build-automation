@@ -34,12 +34,12 @@ PYPROJECT := pyproject.toml
 CURDIR := $(shell pwd)
 
 # Colors
-GREEN := $$(printf '\033[0;32m')
-CYAN := $$(printf '\033[0;36m')
-YELLOW := $$(printf '\033[1;33m')
-RED := $$(printf '\033[0;31m')
-BOLD := $$(printf '\033[1m')
-NC := $$(printf '\033[0m')
+GREEN := \033[0;32m
+CYAN := \033[0;36m
+YELLOW := \033[1;33m
+RED := \033[0;31m
+BOLD := \033[1m
+NC := \033[0m
 
 .PHONY: setup install deps test lint lint-fix security format check clean help all \
             pwsh-setup pwsh-lint pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs \
@@ -66,11 +66,7 @@ pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 		\$$errors = Invoke-ScriptAnalyzer -Path '$(PSDIRS)' -Recurse -Severity Warning; \
 		if (\$$errors) { \$$errors | Format-Table -AutoSize; exit 1 } \
 		else { Write-Host '$(GREEN)[pwsh-lint]$(NC) No issues found' }" || true
-	@echo "$(RED)$(BOLD)⚠️  WARNING: DO NOT CHANGE STRINGS TO SECURESTRINGS — IT BREAKS ALL POWERSHELL TESTS. BE WARNED AND HEED!$(NC)"
-
-pwsh-lint-test: ## Lint PowerShell test files
-
-
+	@printf "\033[0;31m\033[1m⚠️  WARNING: DO NOT CHANGE STRINGS TO SECURESTRINGS — IT BREAKS ALL POWERSHELL TESTS. BE WARNED AND HEED!\033[0m\n"
 
 pwsh-lint-test: ## Lint PowerShell test files
 	@echo "$(CYAN)[pwsh-lint-test]$(NC) Checking PowerShell test files..."
@@ -151,12 +147,12 @@ py-docs: ## Generate Python CLI Markdown docs via argparse help extraction
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
-	@echo "$(CYAN)╔══════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(CYAN)║$(NC)  HPE ProLiant ISO Automation — Available Commands   $(CYAN)║$(NC)"
-	@echo "$(CYAN)╚══════════════════════════════════════════════════════════╝$(NC)"
+	@printf "\033[0;36m╔══════════════════════════════════════════════════════════╗\033[0m\n"
+	@printf "\033[0;36m║\033[0m  HPE ProLiant ISO Automation — Available Commands   \033[0;36m║\033[0m\n"
+	@printf "\033[0;36m╚══════════════════════════════════════════════════════════╝\033[0m\n"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-15s$(NC) %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "} {printf "  \033[0;32m%-15s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
 # ─── Setup ───────────────────────────────────────────────────────────────────
