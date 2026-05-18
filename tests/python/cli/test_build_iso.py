@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from python.automation.cli.build_iso import ISOOrchestrator
+from automation.cli.build_iso import ISOOrchestrator
 
 
 class TestISOOrchestrator:

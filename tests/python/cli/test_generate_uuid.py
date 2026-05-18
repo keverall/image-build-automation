@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from python.automation.cli.generate_uuid import generate_unique_uuid, main
+from automation.cli.generate_uuid import generate_unique_uuid, main
 
 
 class TestGenerateUniqueUUID:

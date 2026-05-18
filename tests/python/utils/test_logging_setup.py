@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from python.automation.utils.logging_setup import get_logger, init_logging
+from automation.utils.logging_setup import get_logger, init_logging
 
 
 class TestInitLogging:

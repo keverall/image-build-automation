@@ -29,7 +29,7 @@ _SRC = os.path.join(os.path.dirname(__file__), "..", "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from python.automation.utils.credentials import (  # noqa: E402
+from automation.utils.credentials import (  # noqa: E402
     _cyberark_fetch,
     _resolve,
     get_credential,

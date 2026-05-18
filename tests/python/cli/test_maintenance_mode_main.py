@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from python.automation.cli.maintenance_mode import (
+from automation.cli.maintenance_mode import (
     compute_next_work_start,
     parse_datetime,
 )
@@ -125,7 +125,7 @@ class TestMaintenanceModeMainValidateAction:
         clusters = {"GOOD-CLUSTER": _minimal_cluster("GOOD-CLUSTER")}
         mock_load.return_value = {"clusters": clusters}
         with pytest.raises(SystemExit) as exc_info,              patch("automation.cli.maintenance_mode.CONFIG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.LOG_DIR", tmp_path),              patch("sys.argv", ["maintenance_mode", "-c", "GOOD-CLUSTER", "-a", "validate"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 0
 
@@ -137,7 +137,7 @@ class TestMaintenanceModeMainValidateAction:
         clusters = {"OTHER-CLUSTER": _minimal_cluster("OTHER-CLUSTER")}
         mock_load.return_value = {"clusters": clusters}
         with pytest.raises(SystemExit) as exc_info,              patch("sys.argv", ["maintenance_mode", "-c", "NONEXISTENT", "-a", "validate"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 2
 
@@ -165,7 +165,7 @@ class TestMaintenanceModeMainEnableAction:
         mock_email.return_value.send_maintenance_notification.return_value = True
 
         with pytest.raises(SystemExit) as exc_info,              patch("automation.cli.maintenance_mode.CONFIG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.LOG_DIR", tmp_path),              patch("sys.argv", ["maintenance_mode", "-c", "TEST-CLUSTER", "-a", "enable", "-s", "now", "-e", "2025-06-01T17:00:00"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 0
         mock_scom.return_value.enter_maintenance.assert_called_once()
@@ -190,7 +190,7 @@ class TestMaintenanceModeMainEnableAction:
         mock_email.return_value.send_maintenance_notification.return_value = True
 
         with pytest.raises(SystemExit) as exc_info,              patch("automation.cli.maintenance_mode.CONFIG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.LOG_DIR", tmp_path),              patch("sys.argv", ["maintenance_mode", "-c", "TEST-CLUSTER", "-a", "enable", "-s", "2025-06-01T09:00:00", "-e", "2025-06-01T17:00:00"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 0
 
@@ -211,7 +211,7 @@ class TestMaintenanceModeMainEnableAction:
         mock_load.return_value = {"clusters": clusters, "scom_config": {}, "openview_config": {}, "email_distribution_lists": {}}
 
         with pytest.raises(SystemExit) as exc_info,              patch("automation.cli.maintenance_mode.CONFIG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.LOG_DIR", tmp_path),              patch("sys.argv", ["maintenance_mode", "-c", "NO-SCHED", "-a", "enable", "-s", "now"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 1
 
@@ -230,7 +230,7 @@ class TestMaintenanceModeMainEnableAction:
         mock_load.return_value = {"clusters": clusters, "scom_config": {"use_winrm": False}, "openview_config": {}, "email_distribution_lists": {}}
 
         with pytest.raises(SystemExit) as exc_info,              patch("automation.cli.maintenance_mode.CONFIG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.LOG_DIR", tmp_path),              patch("sys.argv", ["maintenance_mode", "-c", "TEST-CLUSTER", "-a", "enable", "-s", "now", "-e", "2025-06-01T17:00:00", "--dry-run"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 0
         mock_scom.return_value.enter_maintenance.assert_called_once()
@@ -243,7 +243,7 @@ class TestMaintenanceModeMainEnableAction:
         clusters = {"TEST-CLUSTER": _minimal_cluster()}
         mock_load.return_value = {"clusters": clusters}
         with pytest.raises(SystemExit) as exc_info,              patch("sys.argv", ["maintenance_mode", "-c", "TEST-CLUSTER", "-a", "enable", "-s", "2025-06-01T17:00:00", "-e", "2025-06-01T09:00:00"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 1
 
@@ -255,7 +255,7 @@ class TestMaintenanceModeMainEnableAction:
         clusters = {"TEST-CLUSTER": _minimal_cluster()}
         mock_load.return_value = {"clusters": clusters}
         with pytest.raises(SystemExit) as exc_info,              patch("sys.argv", ["maintenance_mode", "-c", "TEST-CLUSTER", "-a", "enable", "-s", "not-a-date", "-e", "2025-06-01T17:00:00"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 1
 
@@ -274,7 +274,7 @@ class TestMaintenanceModeMainDisableAction:
         mock_email.return_value.send_maintenance_notification.return_value = True
 
         with pytest.raises(SystemExit) as exc_info,              patch("automation.cli.maintenance_mode.CONFIG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.LOG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.OpsRampClient", return_value=None),              patch("sys.argv", ["maintenance_mode", "-c", "TEST-CLUSTER", "-a", "disable"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 0
         mock_email.return_value.send_maintenance_notification.assert_called_once()
@@ -291,7 +291,7 @@ class TestMaintenanceModeMainClusterIdValidation:
         clusters = {"GOOD-CLUSTER": _minimal_cluster("GOOD-CLUSTER")}
         mock_load.return_value = {"clusters": clusters}
         with pytest.raises(SystemExit) as exc_info, patch("sys.argv", ["maintenance_mode", "-c", "INVALID-ID"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 2
         captured = capsys.readouterr()
@@ -308,7 +308,7 @@ class TestMaintenanceModeMainClusterIdValidation:
         node_as_cluster_id = "srv1.example.com"
         assert node_as_cluster_id in prod_cluster["servers"]
         with pytest.raises(SystemExit) as exc_info,              patch("sys.argv", ["maintenance_mode", "-c", node_as_cluster_id]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 2
 
@@ -321,7 +321,7 @@ class TestMaintenanceModeMainClusterIdValidation:
         clusters = {"BAD": incomplete}
         mock_load.return_value = {"clusters": clusters}
         with pytest.raises(SystemExit) as exc_info, patch("sys.argv", ["maintenance_mode", "-c", "BAD"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 1
 
@@ -334,7 +334,7 @@ class TestMaintenanceModeMainClusterIdValidation:
         clusters = {"BAD": bad}
         mock_load.return_value = {"clusters": clusters}
         with pytest.raises(SystemExit) as exc_info, patch("sys.argv", ["maintenance_mode", "-c", "BAD"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 1
 
@@ -361,7 +361,7 @@ class TestMaintenanceModeMainNoSchedule:
         mock_email.return_value.send_maintenance_notification.return_value = True
 
         with pytest.raises(SystemExit) as exc_info,              patch("automation.cli.maintenance_mode.CONFIG_DIR", tmp_path),              patch("automation.cli.maintenance_mode.LOG_DIR", tmp_path),              patch("sys.platform", "win32"),              patch("subprocess.run", return_value=MagicMock(returncode=0)) as mock_sub,              patch("sys.argv", ["maintenance_mode", "-c", "TEST-CLUSTER", "-a", "enable", "-s", "now", "-e", "2025-06-01T17:00:00", "--no-schedule"]):
-            from python.automation.cli.maintenance_mode import main as mm_main
+            from automation.cli.maintenance_mode import main as mm_main
             mm_main()
         assert exc_info.value.code == 0
         mock_sub.assert_not_called()

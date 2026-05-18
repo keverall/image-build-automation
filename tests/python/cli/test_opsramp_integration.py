@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from python.automation.cli.opsramp_integration import OpsRampClient
+from automation.cli.opsramp_integration import OpsRampClient
 
 
 class TestOpsRampClient:

@@ -2,7 +2,7 @@
 
 import json
 
-from python.automation.utils.audit import AuditLogger, save_audit_record
+from automation.utils.audit import AuditLogger, save_audit_record
 
 
 class TestAuditLogger:

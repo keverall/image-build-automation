@@ -5,7 +5,7 @@
 # This keeps Python and PowerShell perfectly in sync.
 #
 
-$script:RouteConfigPath = Join-Path $PSScriptRoot '..\..\..\configs\request_types.json'
+$script:RouteConfigPath = Join-Path $PSScriptRoot '..\..\..\..\configs\request_types.json'
 $script:RouteMap = @{}
 
 try {
@@ -55,7 +55,6 @@ function Invoke-RoutedRequest {
         [hashtable] $Params = @{}
     )
     if (-not $script:RouteMap.ContainsKey($RequestType)) {
-        Write-Error "Unknown request type: $RequestType"
         return @{
             Success        = $false
             Error          = "Unknown request type: $RequestType"

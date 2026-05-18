@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import MagicMock, patch
 
-from python.automation.core.router import ROUTE_MAP, route_request
+from automation.core.router import ROUTE_MAP, route_request
 
 
 class TestRouteRequest:

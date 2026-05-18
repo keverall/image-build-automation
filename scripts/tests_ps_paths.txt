@@ -1,0 +1,10 @@
+/home/keverall/repos/image-build-automation/tests/powershell/Audit.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/Config.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/Credentials.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/Executor.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/FileIO.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/Inventory.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/New-Uuid.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/Router.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/Validators.Unit.Tests.ps1

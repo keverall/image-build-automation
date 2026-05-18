@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from unittest.mock import patch
 
-from python.automation.core.orchestrator import AutomationOrchestrator
+from automation.core.orchestrator import AutomationOrchestrator
 
 
 class TestAutomationOrchestrator:

@@ -3,7 +3,7 @@
 import json
 from unittest.mock import patch
 
-from python.automation.cli.patch_windows_security import WindowsPatcher
+from automation.cli.patch_windows_security import WindowsPatcher
 
 
 class TestWindowsPatcher:
