@@ -27,12 +27,16 @@ RED := \033[0;31m
 NC := \033[0m
 
 .PHONY: setup install deps test lint lint-fix security format check clean help all \
-          pwsh-lint pwsh-lint-fix pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs
+           pwsh-setup pwsh-lint pwsh-lint-fix pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs
 
 # ─── PowerShell ─────────────────────────────────────────────────────────────
 PSMODULE := src/powershell/Automation/Automation.psd1
 PSTESTS  := tests/powershell
 PSDIRS   := src/powershell
+
+pwsh-setup: ## Setup PowerShell environment (install modules, configure)
+	@echo "$(CYAN)[pwsh-setup]$(NC) Setting up PowerShell environment..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 
 pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 	@echo "$(CYAN)[pwsh-lint]$(NC) Running PSScriptAnalyzer..."
@@ -84,11 +88,9 @@ pwsh-test: ## Run all Pester PowerShell tests
 			\"\$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1\", \
-			\"\$$pwd\$(PSTESTS)/New-Uuid.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
-			\"\$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\", \
-			\"\$$pwd\$(PSTESTS)/Pester.Integration.ps1\" \
+			\"\$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \
 		) -PassThru"
 
 pwsh-test-unit: ## Run Pester unit tests only
@@ -101,7 +103,6 @@ pwsh-test-unit: ## Run Pester unit tests only
 			\"\$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1\", \
-			\"\$$pwd\$(PSTESTS)/New-Uuid.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from python.automation.utils.executor import CommandResult, run_command, run_with_retry
+from automation.utils.executor import CommandResult, run_command, run_with_retry
 
 
 class TestCommandResult:

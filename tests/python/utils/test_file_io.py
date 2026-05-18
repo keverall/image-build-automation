@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from python.automation.utils.file_io import ensure_dir, load_json, save_json, save_result_json
+from automation.utils.file_io import ensure_dir, load_json, save_json, save_result_json
 
 
 class TestEnsureDir:

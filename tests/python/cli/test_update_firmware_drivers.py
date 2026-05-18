@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from python.automation.cli.update_firmware_drivers import FirmwareUpdater
+from automation.cli.update_firmware_drivers import FirmwareUpdater
 
 
 class TestFirmwareUpdater:

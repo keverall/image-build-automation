@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from python.automation.cli.maintenance_mode import (
+from automation.cli.maintenance_mode import (
     EmailNotifier,
     ILOManager,
     OpenViewClient,

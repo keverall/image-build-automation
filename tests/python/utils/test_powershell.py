@@ -4,7 +4,7 @@ import subprocess
 import sys
 from unittest.mock import MagicMock, patch
 
-from python.automation.utils.powershell import (
+from automation.utils.powershell import (
     build_scom_connection,
     build_scom_maintenance_script,
     run_powershell,

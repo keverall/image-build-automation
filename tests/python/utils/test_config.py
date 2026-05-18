@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from python.automation.utils.config import _replace_env_vars, load_json_config, load_yaml_config
+from automation.utils.config import _replace_env_vars, load_json_config, load_yaml_config
 
 
 class TestLoadJsonConfig:

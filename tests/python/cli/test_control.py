@@ -15,7 +15,7 @@ Covers:
 import json
 from unittest.mock import MagicMock, patch
 
-from python.automation.control import Control, run_irequest, run_jenkins, run_scheduler
+from automation.control import Control, run_irequest, run_jenkins, run_scheduler
 
 # ── from_irequest ──────────────────────────────────────────────────────────────
 

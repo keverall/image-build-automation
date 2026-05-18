@@ -2,7 +2,7 @@
 
 import json
 
-from python.automation.core.validators import (
+from automation.core.validators import (
     validate_build_params,
     validate_cluster_id,
     validate_server_list,

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from python.automation.utils.inventory import (
+from automation.utils.inventory import (
     ServerInfo,
     load_cluster_catalogue,
     load_server_list,
