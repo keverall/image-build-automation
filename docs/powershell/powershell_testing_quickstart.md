@@ -31,8 +31,8 @@ Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
 ## Run a Single File
 
 ```powershell
-Invoke-Pester -Path 'tests/powershell\Config.Tests.ps1'
-Invoke-Pester -Path 'tests/powershell\New-Uuid.Tests.ps1'
+Invoke-Pester -Path 'tests/powershell\Config.Unit.Tests.ps1'
+Invoke-Pester -Path 'tests/powershell\New-Uuid.Unit.Tests.ps1'
 ```
 
 ---
@@ -107,7 +107,7 @@ Tests completed in 450 ms
 | Task | Command |
 |---|---|
 | Run all tests | `Invoke-Pester -Path 'tests/powershell' -PassThru` |
-| Run one file | `Invoke-Pester -Path 'tests/powershell\<file>.Tests.ps1'` |
+| Run one file | `Invoke-Pester -Path 'tests/powershell\<file>.Unit.Tests.ps1'` |
 | Run by tag | `Invoke-Pester -Path 'tests/powershell' -Tag @('Config') -PassThru` |
 | JUnit XML for CI | `Invoke-Pester -Path 'tests/powershell' -OutputFile results.xml -OutputFormat NUnitXml -PassThru` |
 | Verbose all results | `Invoke-Pester -Path 'tests/powershell' -PassThru -Show All` |

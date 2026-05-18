@@ -108,10 +108,15 @@ hpe-windows-iso-automation/
 │   │   │   ├── Start-InstallMonitor.ps1
 │   │   │   ├── Invoke-OpsRampClient.psm1
 │   │   │   ├── Set-MaintenanceMode.ps1
-│   │   │   ├── Invoke-Validator.psm1
+│   │   │   ├── _Validate-Request.ps1
 │   │   │   ├── Invoke-PowerShellScript.ps1
 │   │   │   ├── Invoke-PowerShellWinRM.ps1
-│   │   │   └── Start-AutomationOrchestrator.ps1
+│   │   │   ├── Start-AutomationOrchestrator.ps1
+│   │   │   ├── Test-BuildParams.ps1
+│   │   │   ├── Test-ClusterId.ps1
+│   │   │   ├── Test-ServerList.ps1
+│   │   │   ├── New-ScomConnection.ps1
+│   │   │   └── New-ScomMaintenanceScript.ps1
 │   │   └── Private/                    # Internal helpers (mirrors src/python/automation/utils/)
 │   │       ├── Config.psm1
 │   │       ├── Credentials.psm1
@@ -122,20 +127,19 @@ hpe-windows-iso-automation/
 │   │       ├── Logging.psm1
 │   │       ├── Base.psm1
 │   │       ├── Router.psm1
-│   │       └── Automation.psm1         # Module init — dot-sources Public/ and Private/
+│   │       └── Automation.psd1         # Module manifest
 │   └── Tests/                          # Pester v5 test suite  ←  mirrors tests/python/
 │       ├── Tests.Tests.ps1
-│       ├── Config.Tests.ps1
-│       ├── Credentials.Tests.ps1
-│       ├── Executor.Tests.ps1
-│       ├── FileIO.Tests.ps1
-│       ├── Inventory.Tests.ps1
-│       ├── Validators.Tests.ps1
-│       ├── Router.Tests.ps1
-│       ├── New-Uuid.Tests.ps1
-│       ├── Audit.Tests.ps1
-│       ├── Set-MaintenanceMode.Tests.ps1
-│       └── Pester.All.api.ps1
+│       ├── Config.Unit.Tests.ps1
+│       ├── Credentials.Unit.Tests.ps1
+│       ├── Executor.Unit.Tests.ps1
+│       ├── FileIO.Unit.Tests.ps1
+│       ├── Inventory.Unit.Tests.ps1
+│       ├── Validators.Unit.Tests.ps1
+│       ├── Router.Unit.Tests.ps1
+│       ├── New-Uuid.Unit.Tests.ps1
+│       ├── Audit.Unit.Tests.ps1
+│       └── Set-MaintenanceMode.Unit.Tests.ps1
 ├── scripts/                            # CI runner provisioning and helpers
 │   └── setup-runner.sh
 ├── src/python/automation/                     # Python package (reference implementation)
@@ -149,6 +153,11 @@ hpe-windows-iso-automation/
 │   │   ├── opsramp_integration.py
 │   │   ├── maintenance_mode.py
 │   │   └── generate_uuid.py
+│   ├── core/                            # Core orchestration and routing layer
+│   │   ├── __init__.py
+│   │   ├── orchestrator.py
+│   │   ├── router.py
+│   │   └── validators.py
 │   └── utils/                           # Shared utilities
 │       ├── __init__.py
 │       ├── logging_setup.py

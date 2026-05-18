@@ -33,13 +33,13 @@ table exists at parse time.
 $script:RouteMap = @{
     'build_iso'            = 'New-IsoBuild'
     'update_firmware'      = 'Update-Firmware'
-    'patch_windows'        = 'Invoke-WindowsSecurityUpdate'
+    'patch_windows'        = 'Update-WindowsSecurity'
     'deploy'               = 'Invoke-IsoDeploy'
     'monitor'              = 'Start-InstallMonitor'
     'maintenance_enable'   = 'Set-MaintenanceMode'
     'maintenance_disable'  = 'Set-MaintenanceMode'
     'maintenance_validate' = 'Set-MaintenanceMode'
-    'opsramp_report'       = 'Invoke-OpsRamp'
+    'opsramp_report'       = 'Invoke-OpsRampClient'
     'generate_uuid'        = 'New-Uuid'
 }
 ```
