@@ -30,7 +30,7 @@ hpe-windows-iso-automation/
 ## Quick Start
 
 - **Python** package setup and first build: see the [top-level README](../README.md#quick-start)
-- **PowerShell** module import and first command: see [src/powershell/powershell_api_reference.md](src/powershell/powershell_api_reference.md#quick-start)
+- **PowerShell** module import and first command: see [powershell/powershell_api_reference.md](powershell/powershell_api_reference.md#quick-start)
 
 ---
 
@@ -44,9 +44,10 @@ hpe-windows-iso-automation/
 | [Testing Quick Start](python/testing_quickstart.md) | Cheat sheet for manual pytest runs and Jenkins, common commands, quick-reference table |
 | [Code Quality & Security](python/code_quality.md) | ruff, pylint, radon, bandit, safety, gitleaks — configuration, usage, Jenkins pipeline integration |
 | [API Reference](python/api_reference.md) | Orchestrator & routing layer — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators, return dicts |
+| [Python CLI — Generated Reference](python/generated/INDEX.md) | Auto-generated CLI reference for `build-iso`, `deploy-server`, `maintenance-mode`, `update-firmware`, `patch-windows`, `monitor-install`, `opsramp`, `generate-uuid` |
 | [Maintenance Mode](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables, security — language-agnostic |
 | [Maintenance Mode — Python](python/maintenance_mode.md) | Python usage: CLI args, config, `clusters_catalogue.json`, `pip install`, troubleshooting |
-| [Maintenance Mode — PowerShell](src/powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration, Jenkins PSScriptAnalyzer |
+| [Maintenance Mode — PowerShell](powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration, Jenkins PSScriptAnalyzer |
 | [Python Utilities](python/utils.md) | Full reference for all modules in `src/python/automation/utils/` — logging, config, inventory, audit, executor, credentials, PowerShell bridge, base class |
 
 ### PowerShell
@@ -54,13 +55,14 @@ hpe-windows-iso-automation/
 | Document | Description |
 |---|---|
 | [PowerShell API Reference — Generic](api_reference.md) | Orchestrator & routing layer — request types, flow, adding new handlers, return schema |
-| [PowerShell API Reference](src/powershell/api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
+| [PowerShell API Reference](api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
 | [← Python API Reference](python/api_reference.md) | Equivalent Python API ref — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators |
-| [PowerShell Module Overview](src/powershell/powershell_api_reference.md) | Module overview, directory layout, requirements, design mapping to Python, quick-start |
-| [PowerShell Testing Guide](src/powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
-| [PowerShell Testing Quick Start](src/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
-| [PowerShell Code Quality & Security](src/powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, Jenkins pipeline integration, quality gates, comparison with Python tools |
-| [PowerShell Jenkins Run Requirements](src/powershell/powershell_jenkins_run_requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
+| [PowerShell Module Overview](powershell_api_reference.md) | Module overview, directory layout, requirements, design mapping to Python, quick-start |
+| [PowerShell Generated Cmdlets](generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, `Invoke-OpsRampClient`, `Start-AutomationOrchestrator`, etc. |
+| [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
+| [PowerShell Testing Quick Start](powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
+| [PowerShell Code Quality & Security](powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, Jenkins pipeline integration, quality gates, comparison with Python tools |
+| [PowerShell Jenkins Run Requirements](powershell/powershell_jenkins_run_requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
 
 ---
 
@@ -85,4 +87,4 @@ hpe-windows-iso-automation/
 4. Ensure pytest / Pester passes: `pytest` (Python) and/or `Invoke-Pester` (PowerShell)
 5. PR description must link to any documentation changes
 
-See [Python Code Quality](python/code_quality.md) / [PowerShell Code Quality](src/powershell/code_quality.md) for full lint/scan details.
+See [Python Code Quality](python/code_quality.md) / [PowerShell Code Quality](powershell/code_quality.md) for full lint/scan details.

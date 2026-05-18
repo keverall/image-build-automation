@@ -31,16 +31,16 @@ values are the **module-name strings** of the handler to import.
 
 ```python
 ROUTE_MAP = {
-    "build_iso":            "automation.cli.build_iso",
-    "update_firmware":      "automation.cli.update_firmware_drivers",
-    "patch_windows":        "automation.cli.patch_windows_security",
-    "deploy":               "automation.cli.deploy_to_server",
-    "monitor":              "automation.cli.monitor_install",
-    "maintenance_enable":   "automation.cli.maintenance_mode",
+    "build_iso":            "automation.cli.build_iso",            # See [generated/build-iso.md](generated/build-iso.md)
+    "update_firmware":      "automation.cli.update_firmware_drivers",# See [generated/update-firmware.md](generated/update-firmware.md)
+    "patch_windows":        "automation.cli.patch_windows_security",# See [generated/patch-windows.md](generated/patch-windows.md)
+    "deploy":               "automation.cli.deploy_to_server",      # See [generated/deploy-server.md](generated/deploy-server.md)
+    "monitor":              "automation.cli.monitor_install",       # See [generated/monitor-install.md](generated/monitor-install.md)
+    "maintenance_enable":   "automation.cli.maintenance_mode",      # See [generated/maintenance-mode.md](generated/maintenance-mode.md)
     "maintenance_disable":  "automation.cli.maintenance_mode",
     "maintenance_validate": "automation.cli.maintenance_mode",
-    "opsramp_report":       "automation.cli.opsramp_integration",
-    "generate_uuid":        "automation.cli.generate_uuid",
+    "opsramp_report":       "automation.cli.opsramp_integration",   # See [generated/opsramp.md](generated/opsramp.md)
+    "generate_uuid":        "automation.cli.generate_uuid",           # See [generated/generate-uuid.md](generated/generate-uuid.md)
 }
 ```
 
@@ -62,6 +62,8 @@ from automation.core import AutomationOrchestrator
 orch = AutomationOrchestrator(config_dir=Path("configs"), logs_dir=Path("logs"))
 result = orch.execute("maintenance_enable", {"cluster_id": "PROD-CLUSTER-01", "start": "now"})
 ```
+
+For full generated documentation on all CLI commands, see the [Python Generated CLI Index](../python/generated/INDEX.md).
 
 **Module:** `src/python/automation/core/orchestrator.py`
 **Public:** yes
