@@ -17,6 +17,7 @@ if (-not (Get-Module Pester -ListAvailable)) {
 }
 
 Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
+Import-Module (Join-Path $PROJECT_ROOT 'src/powershell/Automation/Automation.psd1') -Force -WarningAction SilentlyContinue
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $publicPath = Join-Path $PROJECT_ROOT 'src/powershell'

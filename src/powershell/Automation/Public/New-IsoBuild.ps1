@@ -104,7 +104,7 @@ function Build-ForServer([string]$ServerName) {
 
     try {
         if ($DryRun) { $generatedUuid = '00000000-0000-0000-0000-000000000000' }
-        else         { $generatedUuid = New-Uuid -ServerName $ServerName }
+        else         { $generatedUuid = New-Uuid -ServerName $ServerName -ErrorAction Stop }
         $result.uuid = $generatedUuid
         $result.steps += @{ Step = 'generate_uuid'; Uuid = $generatedUuid }
 

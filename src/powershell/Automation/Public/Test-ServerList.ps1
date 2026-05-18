@@ -8,9 +8,9 @@ function Test-ServerList {
         Validate and load the server list text file.
 
     .DESCRIPTION
-        Reads the server list text file (server_list.txt) and returns an array
-        of valid server hostnames, skipping empty lines and comments (lines
-        starting with #). Optionally trims comma-separated metadata from each line.
+        Reads the server list text file (server_list.txt) and returns a hashtable
+        with Success and Servers properties. Skips empty lines and comments
+        (lines starting with #). Optionally trims comma-separated metadata from each line.
 
     .PARAMETER ServerListPath
         Path to server_list.txt (default: configs\server_list.txt).
@@ -19,13 +19,16 @@ function Test-ServerList {
         $servers = Test-ServerList
     #>
     [CmdletBinding()]
-    [OutputType([string[]])]
+    [OutputType([hashtable])]
     param(
         [string] $ServerListPath = 'configs\server_list.txt'
     )
     if (-not (Test-Path $ServerListPath)) {
-        Write-Error "Server list not found: $ServerListPath"
-        return @()
+        return @{
+            Success = $false
+            Error   = "Server list not found: $ServerListPath"
+            Servers = @()
+        }
     }
     $servers = @()
     Get-Content $ServerListPath -Encoding UTF8 | ForEach-Object {
@@ -36,5 +39,8 @@ function Test-ServerList {
         }
     }
     if (-not $servers) { Write-Warning "No valid servers found in $ServerListPath" }
-    return $servers
+    return @{
+        Success = $true
+        Servers = $servers
+    }
 }

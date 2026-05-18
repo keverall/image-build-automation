@@ -63,7 +63,7 @@ Describe 'Invoke-RoutedRequest' {
 
     It 'Includes the request_type in the result' {
         # Test-Uuid module IS available after module import
-        $r = Invoke-RoutedRequest -RequestType 'generate_uuid'
+        $r = Invoke-RoutedRequest -RequestType 'generate_uuid' -Params @{ ServerName = 'srv01.corp.local' }
         # It should not throw; handler may or may not exist depending on param binding
         $null -ne $r | Should -Be $true
     }
