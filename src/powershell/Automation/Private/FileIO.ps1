@@ -1,4 +1,4 @@
-#
+﻿#
 # Private/FileIO.ps1 — File I/O utilities: directory creation, JSON persistence, timestamped results.
 #
 

@@ -1,4 +1,4 @@
-#
+﻿#
 # Public/Test-BuildParams.ps1 — Validate build parameters.
 #
 

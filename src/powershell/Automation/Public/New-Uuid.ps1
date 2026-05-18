@@ -1,4 +1,4 @@
-#
+﻿#
 # New-Uuid.ps1 — Deterministic UUID generator
 #
 # Mirrors Python cli/generate_uuid.py (SHA-256 seed → UUID)
@@ -57,11 +57,11 @@ function New-Uuid {
     # Take first 16 bytes, convert to hex string for UUID format
     $hashHex = [System.BitConverter]::ToString($hashBytes[0..15]).Replace('-', '').ToLower()
     $uuid = [Guid]::new($hashHex).ToString()
-    
+
     if ($OutputPath) {
         Set-Content -Path $OutputPath -Value $uuid -NoNewline -ErrorAction Stop
     }
-    
+
     return $uuid
 }
 

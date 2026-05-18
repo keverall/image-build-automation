@@ -1,4 +1,4 @@
-#
+﻿#
 # Private/Credentials.ps1 — Env-var credential helpers with CyberArk CCP fallback.
 # Mirrors Python utils/credentials.py.
 #

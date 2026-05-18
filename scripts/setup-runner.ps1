@@ -13,7 +13,7 @@ using namespace System
 # ─── Configuration ───────────────────────────────────────────────────────────
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
-$LOG_FILE = Join-Path $env:TEMP "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+$LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 
 # PowerShell Gallery configuration
 $REQUIRED_MODULES = @(
@@ -67,7 +67,7 @@ function Install-PowerShellModule {
         Install-Module -Name $Name -RequiredVersion $Version -Scope $Scope -Force -AllowClobber -Repository PSGallery 2>&1 | Tee-Object -FilePath $LOG_FILE
         Write-OK "$Name installed"
     } catch {
-        Write-Err "Failed to install $Name: $_"
+        Write-Err "Failed to install ${Name}: $($_)"
         Write-Err "Try: Set-PSRepository PSGallery -InstallationPolicy Trusted"
         exit 1
     }

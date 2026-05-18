@@ -1,4 +1,4 @@
-#
+﻿#
 # Public/Update-Firmware.ps1 — HPE firmware/driver ISO builder via HPE Smart Update Tool (SUT)
 # Mirrors Python cli/update_firmware_drivers.py
 # Usage:  pwsh -File Update-Firmware.ps1 -Server 'srv01.corp.local'
@@ -223,7 +223,7 @@ class FirmwareUpdater {
 }
 
 # ── Main (script mode only) ───────────────────────────────────────────────────
-if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
         $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $ServerList }
         $updater = [FirmwareUpdater]::new($Config, $OutputDir)

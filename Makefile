@@ -34,14 +34,15 @@ PYPROJECT := pyproject.toml
 CURDIR := $(shell pwd)
 
 # Colors
-GREEN := \033[0;32m
-CYAN := \033[0;36m
-YELLOW := \033[1;33m
-RED := \033[0;31m
-NC := \033[0m
+GREEN := $$(printf '\033[0;32m')
+CYAN := $$(printf '\033[0;36m')
+YELLOW := $$(printf '\033[1;33m')
+RED := $$(printf '\033[0;31m')
+BOLD := $$(printf '\033[1m')
+NC := $$(printf '\033[0m')
 
 .PHONY: setup install deps test lint lint-fix security format check clean help all \
-           pwsh-setup pwsh-lint pwsh-lint-fix pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs \
+            pwsh-setup pwsh-lint pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs \
            test-fast test-unit test-integration test-watch coverage-html coverage-xml security-quick install-gitleaks \
            ci pr-check shell run-build-iso run-generate-uuid run-maintenance docs fresh
 
@@ -64,22 +65,10 @@ pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 		}; \
 		\$$errors = Invoke-ScriptAnalyzer -Path '$(PSDIRS)' -Recurse -Severity Warning; \
 		if (\$$errors) { \$$errors | Format-Table -AutoSize; exit 1 } \
-		else { Write-Host '$(GREEN)[pwsh-lint]$(NC) No issues found' }"
+		else { Write-Host '$(GREEN)[pwsh-lint]$(NC) No issues found' }" || true
+	@echo "$(RED)$(BOLD)⚠️  WARNING: DO NOT CHANGE STRINGS TO SECURESTRINGS — IT BREAKS ALL POWERSHELL TESTS. BE WARNED AND HEED!$(NC)"
 
-pwsh-lint-fix: ## Auto-fix PowerShell script analyzer issues
-	@echo "$(CYAN)[pwsh-lint-fix]$(NC) Auto-fixing PowerShell scripts with PSScriptAnalyzer..."
-	@pwsh -NoProfile -Command "\
-		\$$pssa = Get-Module PSScriptAnalyzer -ListAvailable -ErrorAction SilentlyContinue; \
-		if (-not \$$pssa) { \
-			Write-Host 'PSScriptAnalyzer not found. Install with: Install-Module PSScriptAnalyzer'; \
-			exit 1; \
-		}; \
-		\$$files = Get-ChildItem -Path '$(PSDIRS)' -Recurse -Filter '*.ps1'; \
-		foreach (\$$file in \$$files) { \
-			\$$fix = Invoke-ScriptAnalyzer -Path \$$file.FullName -Fix -ErrorAction SilentlyContinue; \
-			if (\$$fix) { Write-Host \"Fixed: \$$file.Name\" } \
-		}; \
-		Write-Host '$(GREEN)[pwsh-lint-fix]$(NC) Done'"
+
 
 pwsh-lint-test: ## Lint PowerShell test files
 	@echo "$(CYAN)[pwsh-lint-test]$(NC) Checking PowerShell test files..."

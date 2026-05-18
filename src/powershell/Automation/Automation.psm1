@@ -188,7 +188,7 @@ class OpsRamp_Client {
         try {
             $resp = $this.HttpClient.PostAsync($tokenUrl, $body).Result
             $resp.EnsureSuccessStatusCode() | Out-Null
-            $json          = $resp.Content.ReadAsStringAsync().Result | ConvertFrom-Json | _ConvertTo-Hashtable
+            $json          = $resp.Content.ReadAsStringAsync().Result | ConvertFrom-Json | _PS_ConvertTo-Hashtable
             $this.AccessToken  = $json.Get_Item('access_token')
             $expiresIn         = ($json.Get_Item('expires_in')) ?? 3600
             $this.TokenExpiry  = (Get-Date).AddSeconds($expiresIn * 0.9)
@@ -219,7 +219,7 @@ class OpsRamp_Client {
             if ($resp.IsSuccessStatusCode) {
                 if ($resp.Content.Headers.ContentLength -gt 0) {
                     $body = $resp.Content.ReadAsStringAsync().Result
-                    return ($body | ConvertFrom-Json | _ConvertTo-Hashtable)
+                    return ($body | ConvertFrom-Json | _PS_ConvertTo-Hashtable)
                 }
                 return @{}
             } else {
