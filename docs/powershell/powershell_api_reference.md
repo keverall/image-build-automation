@@ -60,17 +60,23 @@ Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 
 ### Generate a deterministic UUID
 
+See [New-Uuid (generated reference)](generated/New-Uuid.md) for full parameter documentation.
+
 ```powershell
 New-Uuid -ServerName 'srv01.corp.local'
 ```
 
 ### Build ISOs for all servers
 
+See [New-IsoBuild (generated reference)](generated/New-IsoBuild.md) for full parameter documentation.
+
 ```powershell
 New-IsoBuild -BaseIsoPath 'C:\ISOs\WinServer2022.iso'
 ```
 
 ### Deploy ISOs via iLO
+
+See [Invoke-IsoDeploy (generated reference)](generated/Invoke-IsoDeploy.md) for full parameter documentation.
 
 ```powershell
 Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
@@ -197,3 +203,4 @@ Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'
 ## See Also
 
 - Python project: [`../README.md`](../README.md)
+- [PowerShell Generated Cmdlets Reference](generated/INDEX.md) — full auto-generated documentation for all cmdlets

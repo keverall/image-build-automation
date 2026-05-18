@@ -26,21 +26,21 @@
 
 `$script:RouteMap` is a `[hashtable]` whose keys are the request-type strings
 accepted by the orchestrator and whose values are the **function-name strings**
-of the handler to invoke. Defined before `Router.ps1` is dot-sourced so the
+of the handler to invoke. Defined before `Router.psm1` is dot-sourced so the
 table exists at parse time.
 
 ```powershell
 $script:RouteMap = @{
-    'build_iso'            = 'New-IsoBuild'
-    'update_firmware'      = 'Update-Firmware'
-    'patch_windows'        = 'Update-WindowsSecurity'
-    'deploy'               = 'Invoke-IsoDeploy'
-    'monitor'              = 'Start-InstallMonitor'
+    'build_iso'            = 'New-IsoBuild'           # See [generated/New-IsoBuild.md](generated/New-IsoBuild.md)
+    'update_firmware'      = 'Update-Firmware'        # See [generated/Update-Firmware.md](generated/Update-Firmware.md)
+    'patch_windows'        = 'Update-WindowsSecurity' # See [generated/Invoke-WindowsSecurityUpdate.md](generated/Invoke-WindowsSecurityUpdate.md)
+    'deploy'               = 'Invoke-IsoDeploy'       # See [generated/Invoke-IsoDeploy.md](generated/Invoke-IsoDeploy.md)
+    'monitor'              = 'Start-InstallMonitor'   # See [generated/Start-InstallMonitor.md](generated/Start-InstallMonitor.md)
     'maintenance_enable'   = 'Set-MaintenanceMode'
     'maintenance_disable'  = 'Set-MaintenanceMode'
     'maintenance_validate' = 'Set-MaintenanceMode'
-    'opsramp_report'       = 'Invoke-OpsRampClient'
-    'generate_uuid'        = 'New-Uuid'
+    'opsramp_report'       = 'Invoke-OpsRampClient'   # See [generated/Invoke-OpsRampClient.md](generated/Invoke-OpsRampClient.md)
+    'generate_uuid'        = 'New-Uuid'               # See [generated/New-Uuid.md](generated/New-Uuid.md)
 }
 ```
 
@@ -63,6 +63,8 @@ Start-AutomationOrchestrator -RequestType <string> -Params <hashtable>
 
 **Module:** `src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1`
 **Exported:** yes
+
+For full generated documentation on all cmdlets referenced in the orchestrator, see the [PowerShell Generated Cmdlets Index](generated/INDEX.md).
 
 ### Parameters
 
