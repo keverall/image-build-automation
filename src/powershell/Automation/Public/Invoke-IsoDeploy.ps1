@@ -1,4 +1,4 @@
-#
+﻿#
 # Invoke-IsoDeploy.ps1 — iLO virtual media deployer (wrapper function + script mode)
 # Equivalent of Python cli/deploy_to_server.py
 #
@@ -320,7 +320,7 @@ class ISODeployer {
 }
 
 # ---- Main (script mode only) ----
-if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
         $deployer = [ISODeployer]::new($ServerList, $IsoDir)
         if ($Server) {

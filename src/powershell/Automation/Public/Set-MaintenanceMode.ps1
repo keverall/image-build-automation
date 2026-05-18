@@ -1,4 +1,4 @@
-#
+﻿#
 # Set-MaintenanceMode.ps1 — SCOM / iLO / OpenView maintenance-mode orchestrator
 # Equivalent of Python cli/maintenance_mode.py (~956 lines)
 #
@@ -174,7 +174,7 @@ function Set-MaintenanceMode {
             $opsOk = $opsrampClient.SendAlert($ClusterId, 'maintenance.enabled', 'INFO',
                 "Maintenance enabled for $ClusterId",
                 @{ cluster = $clusterDef.Get_Item('display_name'); servers = $servers;
-                    start = $startDt.ToString('o'); end = $endDt.ToString('o') 
+                    start = $startDt.ToString('o'); end = $endDt.ToString('o')
                 })
             $opsrampClient.SendEvent($ClusterId, 'maintenance.enabled',
                 "Maintenance window started for $($clusterDef.Get_Item('display_name'))",
@@ -397,7 +397,7 @@ class ILOManager {
         return if ($m) { $m.Get_Item($ServerName) } else { $null }
     }
 
-    [hashtable] _CreateWindowRest([string]$IloIp, [string]$Username, [string]$Password,
+    [hashtable] _CreateWindowRest([string]$IloIp, [string]$Username, [SecureString]$Password,
         [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
         if ($DryRun) { return @{ Success = $true; Msg = "[DRY RUN] Would create iLO maintenance window on $IloIp from $StartDt to $EndDt" } }
         $baseUrl = "https://$IloIp/rest/v1"
@@ -646,7 +646,7 @@ function Split-PipelineCmd([string]$CommandString) {
 }
 
 # ---- Main CLI logic (script mode only) ----
-if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     $ErrorActionPreference = 'Continue'
 
     # Load configs

@@ -1,4 +1,4 @@
-#
+﻿#
 # Start-InstallMonitor.ps1 — Windows installation progress monitor
 # Equivalent of Python cli/monitor_install.py (481 lines → ~330 PS lines)
 #
@@ -284,7 +284,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
 }
 
 # --- Main (script mode only) ---
-if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
         $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig)
         if ($Server) {

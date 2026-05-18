@@ -1,4 +1,4 @@
-#
+﻿#
 # Public/Update-WindowsSecurity.ps1 — Windows security patcher / ISO builder
 # Equivalent of Python cli/patch_windows_security.py
 #
@@ -201,7 +201,7 @@ class WindowsPatcher {
 }
 
 # ---- Main (script mode only) ----
-if ($MyInvocation.InvocationName -ne '.' -and $MyInvocation.PSScriptRoot -ne $null) {
+if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
         $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)
         $result  = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)

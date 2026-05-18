@@ -1,4 +1,4 @@
-#
+﻿#
 # Public/Invoke-PowerShellWinRM.ps1 — Execute a PowerShell script on a remote server via WinRM.
 #
 
@@ -42,7 +42,7 @@ function Invoke-PowerShellWinRM {
         [Parameter(Mandatory, Position = 0)][string] $Script,
         [Parameter(Mandatory, Position = 1)][string] $Server,
         [Parameter(Mandatory, Position = 2)][string] $Username,
-        [Parameter(Mandatory, Position = 3)][string] $Password,
+        [Parameter(Mandatory, Position = 3)][SecureString] $Password,
         [Parameter(Mandatory = $false)][string]    $Transport  = 'NTLM',
         [Parameter(Mandatory = $false)][int]       $TimeoutSeconds = 300
     )
