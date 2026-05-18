@@ -68,6 +68,8 @@ pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 		else { Write-Host '$(GREEN)[pwsh-lint]$(NC) No issues found' }" || true
 	@echo "$(RED)$(BOLD)⚠️  WARNING: DO NOT CHANGE STRINGS TO SECURESTRINGS — IT BREAKS ALL POWERSHELL TESTS. BE WARNED AND HEED!$(NC)"
 
+pwsh-lint-test: ## Lint PowerShell test files
+
 
 
 pwsh-lint-test: ## Lint PowerShell test files
