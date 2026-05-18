@@ -93,18 +93,19 @@ pipeline {
                     currentBuild.displayName = "#${BUILD_NUMBER} - ${params.BUILD_STAGE}"
                 }
 
-                bat '''
+bat '''
                     echo [INFO] Setting up workspace
-                    if not exist "generated\output" mkdir output
-                    if not exist "generated\output\firmware" mkdir generated\output\firmware
-                    if not exist "generated\output\patched"  mkdir generated\output\patched
-                    if not exist "output\\combined"  mkdir output\\combined
-                    if not exist "output\\results"  mkdir output\\results
-                    if not exist "logs"              mkdir logs
-                    if not exist "generated\logs\build_reports"       mkdir logs\\build_reports
-                    if not exist "generated\logs\monitoring_sessions" mkdir logs\\monitoring_sessions
-                    if not exist "generated\logs\scan_reports"        mkdir logs\\scan_reports
-                    if not exist "generated\logs\scheduled_jobs"      mkdir logs\\scheduled_jobs
+                    if not exist "generated\\output" mkdir generated\\output
+                    if not exist "generated\\output\\firmware" mkdir generated\\output\\firmware
+                    if not exist "generated\\output\\patched"  mkdir generated\\output\\patched
+                    if not exist "generated\\base_iso" mkdir generated\\base_iso
+                    if not exist "generated\\output\\combined"  mkdir generated\\output\\combined
+                    if not exist "generated\\output\\results"  mkdir generated\\output\\results
+                    if not exist "generated\\logs"              mkdir generated\\logs
+                    if not exist "generated\\logs\\build_reports"       mkdir generated\\logs\\build_reports
+                    if not exist "generated\\logs\\monitoring_sessions" mkdir generated\\logs\\monitoring_sessions
+                    if not exist "generated\\logs\\scan_reports"        mkdir generated\\logs\\scan_reports
+                    if not exist "generated\\logs\\scheduled_jobs"      mkdir generated\\logs\\scheduled_jobs
                 '''
 
                 powershell '''
