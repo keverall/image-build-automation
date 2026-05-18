@@ -10,8 +10,8 @@ function Test-ClusterId {
     .DESCRIPTION
         Checks the cluster catalogue JSON file for the specified ClusterId and
         validates that required fields (servers, scom_group, ilo_addresses) are
-        present. Returns the cluster definition hashtable on success, or writes
-        an error and returns null on failure.
+        present. Returns a hashtable with Success and Cluster properties on
+        success, or Success=false with Error on failure.
 
     .PARAMETER ClusterId
         Cluster identifier string.
@@ -29,26 +29,37 @@ function Test-ClusterId {
         [string] $CataloguePath = 'configs\clusters_catalogue.json'
     )
     if (-not $ClusterId) {
-        Write-Error 'Cluster ID is empty.'
-        return $null
+        return @{
+            Success = $false
+            Error   = 'Cluster ID is empty.'
+        }
     }
     if (-not (Test-Path $CataloguePath)) {
-        Write-Error "Cluster catalogue not found: $CataloguePath"
-        return $null
+        return @{
+            Success = $false
+            Error   = "Cluster catalogue not found: $CataloguePath"
+        }
     }
     $catalogue = Import-JsonConfig -Path $CataloguePath
     $clusters  = $catalogue.Get_Item('clusters')
     if (-not $clusters -or -not $clusters.ContainsKey($ClusterId)) {
-        Write-Error "Cluster '$ClusterId' not found in catalogue. Available: $($clusters.Keys -join ', ')"
-        return $null
+        return @{
+            Success = $false
+            Error   = "Cluster '$ClusterId' not found in catalogue. Available: $($clusters.Keys -join ', ')"
+        }
     }
     $def = $clusters[$ClusterId]
     $required = @('servers','scom_group','ilo_addresses')
     foreach ($f in $required) {
         if (-not $def.ContainsKey($f)) {
-            Write-Error "Cluster '$ClusterId' missing required field '$f'."
-            return $null
+            return @{
+                Success = $false
+                Error   = "Cluster '$ClusterId' missing required field '$f'."
+            }
         }
     }
-    return $def
+    return @{
+        Success = $true
+        Cluster = $def
+    }
 }

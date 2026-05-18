@@ -3,12 +3,26 @@
 # =============================================================================
 # Common tasks for development, testing, and CI/CD.
 #
-# Usage:
+# Quick start:
 #   make setup          # Create venv and install all dependencies
-#   make test           # Run test suite with coverage
-#   make lint           # Run all linting and code quality checks
-#   make security       # Run security scans (bandit, safety, gitleaks)
-#   make all            # Run setup + lint + test + security
+#   make pwsh-setup     # Setup PowerShell environment (install modules)
+#   make test           # Run Python test suite with coverage
+#   make pwsh-test      # Run PowerShell tests
+#   make lint           # Run all linting checks
+#   make security       # Run security scans
+#   make all            # Full setup + lint + test + security
+#
+# Python commands:
+#   make test-fast      # Run tests without coverage (faster)
+#   make test-unit      # Run unit tests only
+#   make test-integration # Run integration tests only
+#   make lint-fix       # Auto-fix linting issues
+#   make format         # Format all Python files
+#
+# PowerShell commands:
+#   make pwsh-test      # Run all Pester tests
+#   make pwsh-lint      # Lint PowerShell with PSScriptAnalyzer
+#   make pwsh-coverage  # Run tests with code coverage
 # =============================================================================
 
 # ─── Configuration ───────────────────────────────────────────────────────────
@@ -27,7 +41,9 @@ RED := \033[0;31m
 NC := \033[0m
 
 .PHONY: setup install deps test lint lint-fix security format check clean help all \
-           pwsh-setup pwsh-lint pwsh-lint-fix pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs
+           pwsh-setup pwsh-lint pwsh-lint-fix pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs py-docs \
+           test-fast test-unit test-integration test-watch coverage-html coverage-xml security-quick install-gitleaks \
+           ci pr-check shell run-build-iso run-generate-uuid run-maintenance docs fresh
 
 # ─── PowerShell ─────────────────────────────────────────────────────────────
 PSMODULE := src/powershell/Automation/Automation.psd1
@@ -80,8 +96,11 @@ pwsh-lint-test: ## Lint PowerShell test files
 # ─── PowerShell Testing ───────────────────────────────────────────────────────
 pwsh-test: ## Run all Pester PowerShell tests
 	@echo "$(CYAN)[pwsh-test]$(NC) Running all Pester tests..."
-	@pwsh -Command "\$$pwd = '$(CURDIR)'; Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		Invoke-Pester -Path @( \
+	@pwsh -NoProfile -Command "\
+		\$$pwd = '$(CURDIR)'; \
+		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		\$$config = New-PesterConfiguration; \
+		\$$config.Run.Path = @( \
 			\"\$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Credentials.Unit.Tests.ps1\", \
@@ -91,11 +110,13 @@ pwsh-test: ## Run all Pester PowerShell tests
 			\"\$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \
-		) -PassThru"
+		); \
+		\$$config.Output.Verbosity = 'Detailed'; \
+		Invoke-Pester -Configuration \$$config"
 
 pwsh-test-unit: ## Run Pester unit tests only
 	@echo "$(CYAN)[pwsh-test-unit]$(NC) Running Pester unit tests..."
-	@pwsh -Command "\$$pwd = '$(CURDIR)'; Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+	@pwsh -Command "\$$pwd = '$(CURDIR)'; Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; Import-Module \$$pwd\$(PSDIRS)/Automation/Automation.psd1 -Force -WarningAction SilentlyContinue; \
 		Invoke-Pester -Path @( \
 			\"\$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1\", \
 			\"\$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1\", \
