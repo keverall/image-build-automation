@@ -36,16 +36,16 @@ src/powershell/
 ├── Automation/                    # Module root
 ├── Tests/                         # Pester test suite (Pester 5+)
     ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
-    ├── Config.Tests.ps1
-    ├── Credentials.Tests.ps1
-    ├── Executor.Tests.ps1
-    ├── FileIO.Tests.ps1
-    ├── Inventory.Tests.ps1
-    ├── Validators.Tests.ps1
-    ├── Router.Tests.ps1
-    ├── New-Uuid.Tests.ps1
-    ├── Audit.Tests.ps1
-    └── Set-MaintenanceMode.Tests.ps1
+    ├── Config.Unit.Tests.ps1
+    ├── Credentials.Unit.Tests.ps1
+    ├── Executor.Unit.Tests.ps1
+    ├── FileIO.Unit.Tests.ps1
+    ├── Inventory.Unit.Tests.ps1
+    ├── Validators.Unit.Tests.ps1
+    ├── Router.Unit.Tests.ps1
+    ├── New-Uuid.Unit.Tests.ps1
+    ├── Audit.Unit.Tests.ps1
+    └── Set-MaintenanceMode.Unit.Tests.ps1
 ```
 
 ---

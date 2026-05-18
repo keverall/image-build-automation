@@ -27,7 +27,7 @@ The PowerShell module uses **Pester v5+** as its BDD-style testing framework —
 
 **Test runner command:** `Invoke-Pester`
 
-**Test discovery:** `*.Tests.ps1` files in `tests/powershell/`
+**Test discovery:** `*.Unit.Tests.ps1` files in `tests/powershell/`
 
 **BDD keywords:** `Describe`, `Context`, `It`, `Should`, `Mock`, `BeforeAll`, `AfterAll`, `BeforeEach`, `AfterEach`
 
@@ -81,15 +81,15 @@ Invoke-Pester -Path 'powershell\Tests' -PassThru -Show All
 ### Run a single test file
 
 ```powershell
-Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'
+Invoke-Pester -Path 'powershell\Tests\Config.Unit.Tests.ps1'
 ```
 
 ### Run a single `Describe` block
 
 ```powershell
-Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1' -Tag New_Uuid
+Invoke-Pester -Path 'powershell\Tests\Config.Unit.Tests.ps1' -Tag Config
 # or by Describe name
-Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'  # runs all in that file
+Invoke-Pester -Path 'powershell\Tests\Config.Unit.Tests.ps1'  # runs all in that file
 ```
 
 ### Run tests matching a specific `Describe` or `It`
@@ -111,7 +111,7 @@ Invoke-Pester -Path 'powershell\Tests' -Tag @() -SkipTagFilter -ExcludeTag @('In
 ### Run integration tests only
 
 ```powershell
-Invoke-Pester -Path 'powershell\Tests\Pester.All.api.ps1' -Tag 'Integration' -PassThru
+Invoke-Pester -Path 'powershell\Tests\Pester.Integration.ps1' -Tag 'Integration' -PassThru
 ```
 
 ### CI / non-interactive (generate NUnit XML)
@@ -140,23 +140,23 @@ Invoke-Pester -Path 'powershell\Tests' -PassThru -CI
 ```
 tests/powershell/
 └── Tests/
-    ├── Tests.Tests.ps1               # Shared BeforeAll / AfterAll (temp dirs, sample configs)
-    ├── Config.Tests.ps1              # Tests for src/powershell/Automation/Private/Config.psm1
-    ├── Credentials.Tests.ps1         # Tests for src/powershell/Automation/Private/Credentials.psm1
-    ├── Executor.Tests.ps1            # Tests for src/powershell/Automation/Private/Executor.psm1
-    ├── FileIO.Tests.ps1              # Tests for src/powershell/Automation/Private/FileIO.psm1
-    ├── Inventory.Tests.ps1           # Tests for src/powershell/Automation/Private/Inventory.psm1
-    ├── Validators.Tests.ps1          # Tests for src/powershell/Automation/Public/Invoke-Validator.psm1
-    ├── Router.Tests.ps1              # Tests for src/powershell/Automation/Private/Router.psm1
-    ├── New-Uuid.Tests.ps1            # Tests for src/powershell/Automation/Public/New-Uuid.ps1
-    ├── Audit.Tests.ps1               # Tests for src/powershell/Automation/Private/Audit.psm1
-    ├── Set-MaintenanceMode.Tests.ps1 # Tests for src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-    ├── Pester.All.api.ps1            # Combined integration run helper
-    ├── _import_test.ps1              # standalone smoke-test: verifies all module functions are exported
-    ├── _debug_module.ps1             # ad-hoc debugging helper
-    ├── _class_test.ps1               # ad-hoc class smoke test
-    ├── _cls_final.ps1                # ad-hoc class smoke test
-    └── _mod_detail.ps1               # ad-hoc detail / metadata dump
+    ├── Tests.Tests.ps1               # Shared BeforeAll/AfterAll (temp dirs, sample configs)
+    ├── Config.Unit.Tests.ps1
+    ├── Credentials.Unit.Tests.ps1
+    ├── Executor.Unit.Tests.ps1
+    ├── FileIO.Unit.Tests.ps1
+    ├── Inventory.Unit.Tests.ps1
+    ├── Validators.Unit.Tests.ps1
+    ├── Router.Unit.Tests.ps1
+    ├── New-Uuid.Unit.Tests.ps1
+    ├── Audit.Unit.Tests.ps1
+    ├── Set-MaintenanceMode.Unit.Tests.ps1
+    ├── Pester.Integration.ps1
+    ├── _import_test.ps1               # standalone smoke-test: verifies all module functions are exported
+    ├── _debug_module.ps1              # ad-hoc debugging helper
+    ├── _class_test.ps1                # ad-hoc class smoke test
+    ├── _cls_final.ps1                 # ad-hoc class smoke test
+    └── _mod_detail.ps1                # ad-hoc detail / metadata dump
 ```
 
 ### Naming convention
@@ -293,16 +293,16 @@ Assert-MockCalled Get-Content -ParameterFilter { $Path -eq 'missing.txt' } -Time
 
 | Test file | Source module |
 |---|---|
-| `Config.Tests.ps1` | `Automation/Private/Config.psm1` |
-| `Credentials.Tests.ps1` | `Automation/Private/Credentials.psm1` |
-| `Executor.Tests.ps1` | `Automation/Private/Executor.psm1` |
-| `FileIO.Tests.ps1` | `Automation/Private/FileIO.psm1` |
-| `Inventory.Tests.ps1` | `Automation/Private/Inventory.psm1` |
-| `Router.Tests.ps1` | `Automation/Private/Router.psm1` |
-| `New-Uuid.Tests.ps1` | `Automation/Public/New-Uuid.ps1` |
-| `Audit.Tests.ps1` | `Automation/Private/Audit.psm1` |
-| `Validators.Tests.ps1` | `Automation/Public/Invoke-Validator.psm1` |
-| `Set-MaintenanceMode.Tests.ps1` | `Automation/Public/Set-MaintenanceMode.ps1` |
+| `Config.Unit.Tests.ps1` | `Automation/Private/Config.psm1` |
+| `Credentials.Unit.Tests.ps1` | `Automation/Private/Credentials.psm1` |
+| `Executor.Unit.Tests.ps1` | `Automation/Private/Executor.psm1` |
+| `FileIO.Unit.Tests.ps1` | `Automation/Private/FileIO.psm1` |
+| `Inventory.Unit.Tests.ps1` | `Automation/Private/Inventory.psm1` |
+| `Router.Unit.Tests.ps1` | `Automation/Private/Router.psm1` |
+| `New-Uuid.Unit.Tests.ps1` | `Automation/Public/New-Uuid.ps1` |
+| `Audit.Unit.Tests.ps1` | `Automation/Private/Audit.psm1` |
+| `Validators.Unit.Tests.ps1` | `Automation/Public/_Validate-Request.ps1` |
+| `Set-MaintenanceMode.Unit.Tests.ps1` | `Automation/Public/Set-MaintenanceMode.ps1` |
 
 ---
 

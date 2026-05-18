@@ -12,8 +12,9 @@ hpe-windows-iso-automation/
 ├── Jenkinsfile                                  # CI/CD pipeline definition
 ├── src/python/automation/                              # Python package
 │   ├── cli/                                     # CLI entry points
+│   ├── core/                                    # Core orchestration and routing
 │   └── utils/                                   # Shared utilities
-├── src/powershell/Automation/                       # PowerShell module
+├── src/powershell/Automation                       # PowerShell module
 │   ├── Public/                                  # Exported cmdlets
 │   ├── Private/                                 # Internal helpers
 │   └── Automation.psd1                          # Module manifest
@@ -67,7 +68,7 @@ hpe-windows-iso-automation/
 
 | Feature | Python (`src/python/automation/`) | PowerShell (`src/powershell/Automation/`) |
 |---|---|---|
-| Unit tests | `tests/python/` · pytest (254 tests) | `tests/powershell/` · Pester (11 × `*.Tests.ps1`) |
+| Unit tests | `tests/python/` · pytest (254 tests) | `tests/powershell/` · Pester (20 × `*.Unit.Tests.ps1`) |
 | Test runner | `pytest` | `Invoke-Pester` |
 | CI pipeline | Jenkins `Unit Tests & Coverage` stage (only Python) | **No Pester stage yet** — target: add to Jenkinsfile |
 | Fakes / mocking | `unittest.mock` | `Mock` keyword (Pester) |

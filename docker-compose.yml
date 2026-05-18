@@ -119,7 +119,7 @@ services:
       #   tag: "hpe-iso-automation"
 
     # Command to run
-    command: ["python", "C:\\app\\scripts\\build_iso.py", "--server-list", "C:\\app\\configs\\server_list.txt"]
+    command: ["python", "-m", "automation.cli.build_iso", "--help"]
 
     # Labels for compliance and management
     labels:
@@ -168,7 +168,7 @@ secrets:
 # SERVER_LIST=custom_servers.txt docker-compose up
 #
 # Run in test mode:
-# docker-compose run --rm hpe-iso-automation python C:\app\scripts\generate_uuid.py test-server
+# docker-compose run --rm hpe-iso-automation python -m automation.cli.generate_uuid test-server
 #
 # Build for specific environment:
 # VERSION=2025.11 BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) docker-compose build
