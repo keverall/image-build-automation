@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class WindowsPatcher:
     """Applies Windows security patches using DISM or PowerShell."""
 
-    def __init__(self, patches_config: str, base_iso_dir: str = "base_iso", output_dir: str = "patched_iso"):
+    def __init__(self, patches_config: str, base_iso_dir: str = "generated/base_iso", output_dir: str = "generated/output/patched"):
         """
         Initialize WindowsPatcher.
 
@@ -198,7 +198,7 @@ def main():
     parser.add_argument(
         "--patches-config", "-p", default="configs/windows_patches.json", help="Path to patches configuration JSON"
     )
-    parser.add_argument("--output-dir", "-o", default="output/patched", help="Output directory for patched ISOs")
+    parser.add_argument("--output-dir", "-o", default="generated/output/patched", help="Output directory for patched ISOs")
     parser.add_argument(
         "--method", "-m", choices=["dism", "powershell"], default="dism", help="Patching method (default: dism)"
     )
