@@ -12,6 +12,14 @@ foreach ($server in $servers) {
 
 }
 
+https://learn.microsoft.com/en-us/system-center/scom/manage-maintenance-mode-overview?view=sc-om-2016&tabs=Edit#create-maintenance-schedule-in-the-operations-console
+
+https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance
+
+https://learn.microsoft.com/en-us/rest/api/operationsmanager/
+
+
+
 #==============================================================================================================================# 
 #                                                                                                                              #
 #                                                                                                                              # 
