@@ -19,6 +19,23 @@ automatic disable via OS task scheduling.
 
 ---
 
+## Flow
+
+---
+
+- SCOM: Maintenance mode needs to operate the SCOM using the [schedule maintenance functionality](https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance)
+  - first the script must powershell remote into the server using SCOM and HPe iLO so get a token for the SCOM management servers [here](https://learn.microsoft.com/en-us/rest/api/operationsmanager/#initialize-the-csrf-token)
+  - enable, disable or stop maintenance mode for the cluster of servers in SCOM
+
+- HPe OpenView: Enable maintenance mode for cluster of servers or disable or stop seperately.
+
+- Also disable all alerting during maintenance window SCOM and HPe Openview
+- Update OpsRamp
+- Alerting is via Marin's alerting SCOM code not via Opsramp do not duplicate alerts
+- email dist list when Maintenance mode changes for cluster group
+
+---
+
 ## Architecture
 
 ```
