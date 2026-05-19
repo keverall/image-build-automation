@@ -1,0 +1,248 @@
+Import-Module OperationsManager
+New-SCOMManagementGroupConnection -ComputerName alpasopm12ms1.ad.aib.pri
+$servers = Get-SCOMGroup -DisplayName "AIB Maintenance Mode Non 24-Hour Servers" | Get-SCOMClassInstance
+$Time = ((Get-Date).AddMinutes(3660))
+
+ 
+
+foreach ($server in $servers) {
+    Start-SCOMMaintenanceMode -Instance $server -EndTime $Time -Comment "Weekend Maintenance Mode"
+
+ 
+
+}
+
+#==============================================================================================================================# 
+#                                                                                                                              #
+#                                                                                                                              # 
+# SCOM2012_MM_0_2.ps1                                                                                                          # 
+# Powershell Script to put a Host or Group into maintenance mode. Tested with SCOM 2012 and SCOM 2012 SP1                      #      #                                                 #
+# Created by: Arjan Vroege                               #      #                                                                                                                              #
+# Version: 0.2                                                                                                                 #
+#                                                                                                                              # 
+# Usage: .\SCOM2012_MM_0_2.ps1 -Minutes <<Duration>> -Comment "<<Comment>>" -Type <<Group or Agent>> -Name  << Name >>     #
+#                                                                                                                              #
+# -Minutes:   Number of Minutes                                                                                              #
+# -Comment:   Maintenance Mode comment                                                                                       #
+# -Type:     Agent or SCOM Group                                                                                    #
+# -Name:     Name of the Group or Display Name of Agent                                                             #
+#                                                                                                                              #
+#                                                                                                                              #
+#==============================================================================================================================#
+
+ 
+
+Param(
+  [int32]$minutes,
+  [string]$comment,
+  [string]$type,
+  [string]$name
+)
+
+ 
+
+#Import the Operations Manager Powershell Module
+Import-Module OperationsManager
+
+ 
+
+#Defining Variables
+$MgntSrv   = "alpasopm12ms2.ad.aib.pri"
+$startTime = (Get-Date).ToUniversalTime() 
+$endTime   = $startTime.AddMinutes($Minutes)
+$reason    = "PlannedOther";
+
+ 
+
+if($type -eq "Group") {
+    #Getting Group Objects
+    $group = Get-SCOMGroup -ComputerName $MgntSrv -DisplayName $name
+
+  #Check if Group is already in Maintenance Mode
+    If($group.InMaintenanceMode -eq $false) {
+        Write-Host "Putting Group $Name into maintenance mode." -ForeGroundColor Blue 
+    $group.ScheduleMaintenanceMode($startTime,$endTime,$reason,$Comment,"Recursive")
+    }
+} elseif($type -eq "Agent") {
+    #Gets the SCOM Agent
+    $SCOMAgent = Get-SCOMAgent -ComputerName $MgntSrv -Name $name
+    $Instance  = $scomagent.HostComputer
+
+    if(($clusters = $SCOMagent.GetRemotelyManagedComputers())) { 
+      $clusterNodeClass = Get-SCOMClass -ComputerName $MgntSrv -Name Microsoft.Windows.Cluster.Node 
+      foreach($cluster in $clusters) {
+         $ClusterAgentName = $cluster.ComputerName
+         $SCOMClass        = Get-SCOMClass -ComputerName $MgntSrv -Name Microsoft.Windows.Cluster
+         $ClusterInstance  = Get-SCOMClassinstance -ComputerName $MgntSrv -Class $SCOMClass | where {$_.Displayname -like “*$ClusterAgentName*”} 
+         if($ClusterInstance) {     
+          $ClusterInstance.ScheduleMaintenanceMode($startTime,$endTime,$reason,$Comment,"Recursive") 
+          $nodes = $ClusterInstance.GetRelatedMonitoringObjects($clusterNodeClass) 
+          if($nodes) { 
+            foreach($node in $nodes) { 
+              Write-Host "Putting $node into maintenance mode." -ForeGroundColor Green 
+            } 
+           } 
+         }
+        Write-Host "Putting $($cluster.Computer) into maintenance mode." -ForeGroundColor Blue 
+        $ClusterComputer = $cluster.Computer
+        $ClusterComputer.ScheduleMaintenanceMode($startTime,$endTime,$reason,$Comment,"Recursive") 
+      } 
+    } else { 
+      #Setting maintenance mode for computer object and/or cluster components 
+      Write-Host "Putting $Instance into maintenance mode." -ForeGroundColor Blue 
+      $Instance.ScheduleMaintenanceMode($startTime,$endTime,$reason,$Comment,"Recursive")
+    }
+} else {
+    Write-host "Exiting" -ForeGroundColor Red 
+}
+
+the SCOM Management Group Server names for you below.
+
+ 
+
+Some links to share also,
+
+ 
+
+SCOM Rest API quick start: https://www.cookdown.com/blog/quick-start-scom-rest-api
+
+ 
+
+Microsoft Rest API documentation (the Schedule Maintenance section will be relevant): https://learn.microsoft.com/en-us/rest/api/operationsmanager/
+
+ 
+
+SCOM Maintenance Mode with Powershell: https://kevinjustin.com/blog/tag/maintenance-mode/
+
+ 
+
+I have attached two Powershell scripts as examples of Group and Cluster Support maintenance mode.
+
+ 
+
+Regards
+Noel
+
+ 
+
+ 
+
+SCOM 2012
+
+ 
+
+PRODUCTION
+
+ 
+
+Management Group Name:  ***REMOVED***
+Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
+Operational Database Server:  ALPASOPM12DB1.ad.aib.pri
+Datawarehouse Server:  ALPASOPM12DW1.ad.aib.pri
+
+ 
+
+ 
+
+SCOM 2016
+
+ 
+
+TEST
+
+ 
+
+Management Group Name:  ***REMOVED***
+Management Servers:  ***REMOVED*** and ***REMOVED***
+Operational Database Server:  ***REMOVED***
+Datawarehouse Server:  ***REMOVED***
+
+ 
+
+ 
+
+PRODUCTION
+
+ 
+
+Management Group Name:  ***REMOVED***
+Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
+Operational Database Servers:  ALPASOPM16DB1.ad.aib.pri and ALPASOPM16DB2.ad.aib.pri (SQL AlwaysOn)
+Datawarehouse Server:  ALPASOPM16DW1.ad.aib.pri and ALPASOPM16DW2.ad.aib.pri (SQL AlwaysOn)
+
+ 
+
+ 
+
+ 
+
+SCOM 2019
+
+ 
+
+TEST
+
+ 
+
+Management Group Name:  ***REMOVED***
+Management Servers:  ***REMOVED*** and ***REMOVED***
+Operational Database Server:  VM-OPM19T-DB1.ad.aib.pri
+Datawarehouse Server:  VM-OPM19T-DW1.ad.aib.pri
+
+ 
+
+ 
+
+PRODUCTION
+
+ 
+
+Management Group Name:  ***REMOVED***
+Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
+Operational Database Server:  VR-OPM19PD-7141.ad.aib.pri
+Datawarehouse Server:  VR-OPM19PW-7143.ad.aib.pri
+
+I need to verify the below so I build automation that is as its expected and not how I assume it should be, so can I get responses for my questions below, please? Alternatively, I could book a call if preferred?
+
+ 
+
+ 
+
+ 
+
+Is this automation just to enable or disable maintenance mode using Start-SCOMAgentMaintenanceMode -Duration <Double (in minutes)> [-Reason <string>] [-Comments <string>] to enable/disable the cluster/servers,
+Or is it to orchestrate the full SCOM maintenance schedule suite of functionality Schedule Maintenance - REST API (Operations Manager) | Microsoft Learn which is significantly larger task?
+My understanding from last week’s call was the requirement is just enable and disable maintenance mode but after a discussion with Noel earlier and checking the MS Learn API doc for SCOM 2016/2019/2025 I see there is much more to this maintenance schedule/mode functionality.
+Schedule Maintenance covers the following functionality - REST API (Operations Manager - Schedule Maintenance API Version:v1
+Create Schedule Maintenance
+Adds the schedule maintenance for provided schedule request.
+
+Delete Schedule Maintenance
+Deletes the schedule maintenance details for the specified schedule ID
+
+Disable Maintenance Schedule
+Disables the schedule maintenance details for the specified schedule ID.
+
+Edit Schedule Maintenance
+Updates the scheduled Maintenance for the provided schedule request.
+
+Enable Maintenance Schedule
+Enables the schedule maintenance for the specified schedule ID.
+
+Extend Schedule Maintenance
+Extends the scheduled maintenance for the provided schedule request.
+
+Get Schedule Maintenance
+Retrieves the schedule maintenance details for the specified schedule ID.
+
+Get Schedule Maintenance List
+Retrieves the schedule maintenance List.
+
+Stop Maintenance Schedule
+Stops the scheduled maintenance details for specified schedule ID.
+
+ 
+
+ 
+
+5.  Noel also asked that the automation handle 3 different SCOM versions, prior to this i thought initially just 2016 was being covered in this release? So 2012/2016/2019 and 2025 need to be covered with the earliest two being HTTP calls non REST and the latter two being REST API specific, I can check the SCOM server version , hopefully when the script PowerShell remotes in and either use rest or http as appropriate for that cluster/servers SCOM version, if required.
