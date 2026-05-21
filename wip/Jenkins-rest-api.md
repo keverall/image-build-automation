@@ -59,3 +59,59 @@ Invoke-RestMethod -Uri $JenkinsURL -Method Post -Headers $Headers -Body $Body
 
 Does your corporate iRequest software run on a different server, or is it running on this same local machine? If it's on a different server, let me know so we can ensure your corporate firewalls allow traffic from the iRequest server IP to port 8080!
 
+
+
+## To trigger your specific SCOM script through the Jenkins REST API from iRequest, you must use the buildWithParameters endpoint [1].
+
+This allows iRequest to send a web request that forces Jenkins to run your local script file (C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Public\Set-MaintenanceMode.ps1) while passing variable data (like Computer Name, Duration, and Reason) dynamically into it.
+Here is the exact API configuration and execution commands to set this up:
+## Step 1: Configure Your Parameterized Job in Jenkins
+First, your Jenkins job must be configured to receive parameters from iRequest and forward them directly to your script file.
+
+   1. Create a pipeline or freestyle job named SCOM-Maintenance-Mode.
+   2. Check "This project is parameterized".
+   3. Add three String Parameters with these exact names:
+   * ComputerName (The server entering maintenance mode)
+      * DurationMinutes (How long to silence alerts)
+      * Reason (The ticket reference or justification)
+   4. In the Build Steps, add a Windows PowerShell block and paste this execution line:
+   
+   & "C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Public\Set-MaintenanceMode.ps1" -ComputerName "$env:ComputerName" -DurationMinutes "$env:DurationMinutes" -Reason "$env:Reason"
+   
+   
+------------------------------
+## Step 2: The iRequest API Command (PowerShell Payload)
+When an iRequest form is submitted, the iRequest workflow engine must fire this specific raw HTTP POST command to pass the server details over to Jenkins.
+Replace YOUR_JENKINS_USER and YOUR_API_TOKEN with your actual Jenkins credentials:
+
+# 1. Setup secure credentials (Username + Jenkins API Token)
+$User = "YOUR_JENKINS_USER"
+$Token = "YOUR_API_TOKEN"
+$AuthInfo = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("${User}:${Token}"))
+$Headers = @{ Authorization = "Basic $AuthInfo" }
+# 2. Map data fields straight from the submitted iRequest form
+$Body = @{
+    ComputerName    = "WebProdServer01.corporate.local"
+    DurationMinutes = "60"
+    Reason          = "Planned OS Patching via iRequest"
+}
+# 3. Target URL targeting the job's parameterized trigger endpoint
+$JenkinsURL = "http://localhost:8080/job/SCOM-Maintenance-Mode/buildWithParameters"
+# 4. Fire the command
+Invoke-RestMethod -Uri $JenkinsURL -Method Post -Headers $Headers -Body $Body
+
+------------------------------
+## Step 3: Raw Curl Format (If iRequest cannot use PowerShell)
+If your corporate iRequest engine uses a standard linux-style webhook runner instead of native Windows PowerShell, it must execute this standard curl string to perform the exact same task:
+
+curl -X POST "http://localhost:8080/job/SCOM-Maintenance-Mode/buildWithParameters" \
+     -u "YOUR_JENKINS_USER:YOUR_API_TOKEN" \
+     --data-urlencode "ComputerName=WebProdServer01.corporate.local" \
+     --data-urlencode "DurationMinutes=60" \
+     --data-urlencode "Reason=Planned OS Patching via iRequest"
+
+## ⚠️ Critical Security Notice for SCOM Scripts
+Because Jenkins runs as a local background process on your machine, it might execute scripts under the LocalSystem context. SCOM management groups require domain credentials to modify server alerts.
+If your script throws an "Unauthorized" or "Cannot connect to Management Server" error when triggered via the API, you will need to go to your Windows Services manager, double-click the Jenkins service, switch to the Log On tab, and explicitly change it to run as a Domain Service Account that has administrative rights inside your SCOM console.
+When you run the API command, does the job trigger successfully on the Jenkins dashboard? If the script launches but fails to communicate with SCOM, let me know so we can adjust the execution permissions or execution policy flags!
+
