@@ -443,6 +443,7 @@ Export-ModuleMember -Function @(
     'Invoke-PowerShellWinRM'
     'New-ScomConnection'
     'New-ScomMaintenanceScript'
+    'New-OneViewMaintenanceScript'
     # Validators
     'Test-BuildParams'
     'Test-ClusterId'

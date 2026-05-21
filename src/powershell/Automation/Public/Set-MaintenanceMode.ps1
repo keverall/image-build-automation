@@ -78,6 +78,7 @@ function Set-MaintenanceMode {
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
     $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json')           -Required:$false
     $openviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'openview_config.json')       -Required:$false
+    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json')         -Required:$false
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
@@ -126,6 +127,7 @@ function Set-MaintenanceMode {
     $scomMgr = $null; try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
     $iloMgr = [ILOManager]::new($clusterDef)
     $ovMgr = [OpenViewClient]::new($openviewCfg, $clusterDef)
+    $oneviewMgr = $null; try { $oneviewMgr = [OneViewManager]::new($oneviewCfg, $clusterDef) } catch { Write-Warning "OneView manager unavailable: $($_.Exception.Message)" }
     $emailer = [EmailNotifier]::new($emailCfg)
 
     $opsrampClient = $null
@@ -159,6 +161,14 @@ function Set-MaintenanceMode {
         $ovOk = $ovRes.Success; $ovMsg = $ovRes.Message
         $audit.steps['openview'] = @{ Success = $ovOk; Message = $ovMsg }
         if (-not $ovOk) { $overallOk = $false }
+
+        # OneView (HPE OneView for iLO)
+        if ($oneviewMgr) {
+            $oneviewRes = $oneviewMgr.SetMaintenanceWindow($clusterDef, $startDt, $endDt, [bool]$DryRun)
+            $oneviewOk = $oneviewRes.Success; $oneviewMsg = $oneviewRes.Message
+            $audit.steps['oneview'] = @{ Success = $oneviewOk; Message = $oneviewMsg }
+            if (-not $oneviewOk) { $overallOk = $false }
+        }
 
         # Email
         $emailOk = $emailer.SendMaintenanceNotification('enabled', $clusterDef, $servers, $startDt, $endDt, [bool]$DryRun)
@@ -360,6 +370,100 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
         $r = $this._RunPs($script)
         Write-Verbose "SCOM maintenance disable output: $($r.Output)"
         return $r.Success
+    }
+}
+
+# ---- OneViewManager ----
+class OneViewManager {
+    [hashtable] $Config
+    [string]    $Appliance
+    [string]    $ModuleName
+    [bool]      $UseWinRM
+    [hashtable] $Cred
+    [string]    $ScopeName
+
+    OneViewManager([hashtable]$Config, [hashtable]$ClusterDef) {
+        $this.Config = $Config
+        $ovConfig = $Config.Get_Item('oneview') ?? @{}
+        $this.Appliance = $ovConfig.Get_Item('appliance') ?? 'oneview.example.com'
+        $this.ModuleName = $ovConfig.Get_Item('module_name') ?? 'HPOneView.Managed'
+        $this.UseWinRM = [bool]($ovConfig.Get_Item('use_winrm') ?? $true)
+        $this.Cred = $null
+        $this.ScopeName = $ClusterDef.Get_Item('oneview_scope') ?? $ClusterDef.Get_Item('display_name')
+        
+        $credCfg = $ovConfig.Get_Item('credentials')
+        if ($credCfg) {
+            $uenv = $credCfg.Get_Item('username_env') ?? 'ONEVIEW_USER'
+            $penv = $credCfg.Get_Item('password_env') ?? 'ONEVIEW_PASSWORD'
+            $u = [System.Environment]::GetEnvironmentVariable($uenv)
+            $p = [System.Environment]::GetEnvironmentVariable($penv)
+            if ($u -and $p) { $this.Cred = @{ username = $u; password = $p } }
+        }
+    }
+
+    [hashtable] _RunPs([string]$Script) {
+        if ($this.UseWinRM) {
+            if (-not $this.Cred) { return @{ Success = $false; Output = 'WinRM credentials not configured' } }
+            return Invoke-PowerShellWinRM -Script $Script `
+                -Server $this.Appliance -Username $this.Cred['username'] -Password $this.Cred['password']
+        }
+        else {
+            return Invoke-PowerShellScript -Script $Script
+        }
+    }
+
+    [hashtable] SetMaintenanceWindow([hashtable]$ClusterDef, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun = $false) {
+        if ($DryRun) {
+            Write-Verbose "[DRY RUN] Would enable OneView maintenance for scope '$($this.ScopeName)'"
+            return @{ Success = $true; Output = "DRY RUN: OneView maintenance for $($this.ScopeName)" }
+        }
+        
+        $script = @"
+Import-Module $($this.ModuleName) -ErrorAction Stop
+Connect-OVMgmt -Appliance "$($this.Appliance)" -Credential (New-Object System.Management.Automation.PSCredential("$($this.Cred['username'])", (ConvertTo-SecureString "$($this.Cred['password'])" -AsPlainText -Force))) -ErrorAction Stop
+`$scope = Get-OVScope -Name "$($this.ScopeName)" -ErrorAction SilentlyContinue
+if (-not `$scope) { Write-Error "Scope '$($this.ScopeName)' not found"; exit 1 }
+`$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
+foreach (`$s in `$servers) {
+    if (-not `$s.MaintenanceModeEnabled) {
+        Enable-OVMaintenanceMode -InputObject `$s -Async -ErrorAction Stop
+        Write-Host "OneView maintenance enabled: `$(`$s.Name)"
+    }
+}
+"@
+        $r = $this._RunPs($script)
+        if ($r.Success) {
+            return @{ Success = $true; Output = $r.Output }
+        }
+        Write-Error "OneView maintenance failed: $($r.Output)"
+        return @{ Success = $false; Output = $r.Output }
+    }
+
+    [hashtable] StopMaintenance([hashtable]$ClusterDef, [bool]$DryRun = $false) {
+        if ($DryRun) {
+            Write-Verbose "[DRY RUN] Would disable OneView maintenance for scope '$($this.ScopeName)'"
+            return @{ Success = $true; Output = "DRY RUN: OneView disable for $($this.ScopeName)" }
+        }
+        
+        $script = @"
+Import-Module $($this.ModuleName) -ErrorAction Stop
+Connect-OVMgmt -Appliance "$($this.Appliance)" -Credential (New-Object System.Management.Automation.PSCredential("$($this.Cred['username'])", (ConvertTo-SecureString "$($this.Cred['password'])" -AsPlainText -Force))) -ErrorAction Stop
+`$scope = Get-OVScope -Name "$($this.ScopeName)" -ErrorAction SilentlyContinue
+if (-not `$scope) { Write-Error "Scope '$($this.ScopeName)' not found"; exit 1 }
+`$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
+foreach (`$s in `$servers) {
+    if (`$s.MaintenanceModeEnabled) {
+        Disable-OVMaintenanceMode -InputObject `$s -Async -ErrorAction Stop
+        Write-Host "OneView maintenance disabled: `$(`$s.Name)"
+    }
+}
+"@
+        $r = $this._RunPs($script)
+        if ($r.Success) {
+            return @{ Success = $true; Output = $r.Output }
+        }
+        Write-Error "OneView maintenance stop failed: $($r.Output)"
+        return @{ Success = $false; Output = $r.Output }
     }
 }
 
