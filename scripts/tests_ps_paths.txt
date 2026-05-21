@@ -4,6 +4,8 @@
 /home/keverall/repos/image-build-automation/tests/powershell/Executor.Unit.Tests.ps1
 /home/keverall/repos/image-build-automation/tests/powershell/FileIO.Unit.Tests.ps1
 /home/keverall/repos/image-build-automation/tests/powershell/Inventory.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/New-ScomConnection.Unit.Tests.ps1
+/home/keverall/repos/image-build-automation/tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1
 /home/keverall/repos/image-build-automation/tests/powershell/New-Uuid.Unit.Tests.ps1
 /home/keverall/repos/image-build-automation/tests/powershell/Router.Unit.Tests.ps1
 /home/keverall/repos/image-build-automation/tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1
