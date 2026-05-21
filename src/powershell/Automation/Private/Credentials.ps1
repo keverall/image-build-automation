@@ -183,6 +183,16 @@ function Get-OpenViewCredentials {
            (_Resolve-Credential -EnvVarName $PassEnv  -SafeName 'OpenView'  -ObjectName $PassEnv)
 }
 
+function Get-OneViewCredentials {
+    [CmdletBinding()]
+    param(
+        [string] $UserEnv = 'ONEVIEW_USER',
+        [string] $PassEnv = 'ONEVIEW_PASSWORD'
+    )
+    return (_Resolve-Credential -EnvVarName $UserEnv  -SafeName 'HPE-OneView'  -ObjectName $UserEnv),
+           (_Resolve-Credential -EnvVarName $PassEnv  -SafeName 'HPE-OneView'  -ObjectName $PassEnv)
+}
+
 function Get-SmtpCredentials {
     [CmdletBinding()]
     param(
