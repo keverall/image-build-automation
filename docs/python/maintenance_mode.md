@@ -3,7 +3,7 @@
 This guide documents Python-specific usage of `maintenance_mode.py`. For
 language-agnostic concepts (architecture, scheduling, audit format, OpsRamp
 integration, required environment variables, security, and troubleshooting) see
-[../maintenance_mode.md](../maintenance_mode.md).
+[Docs Root maintenance_mode.md](../maintenance_mode.md).
 
 ---
 

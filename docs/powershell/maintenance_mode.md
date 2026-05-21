@@ -3,7 +3,7 @@
 > **Language-agnostic documentation** (architecture overview, scheduling
 > semantics, audit log format, OpsRamp integration, required environment
 > variables, security, and troubleshooting) is in
-> [`../maintenance_mode.md`](../maintenance_mode.md).
+> [`Root maintenance_mode.md`](../maintenance_mode.md).
 > This page documents PowerShell-specific parameters, CmdletBinding, module
 > dependencies, and `pwsh.exe` integration.
 
@@ -25,8 +25,8 @@
   `logs/maintenance_audit.log`
 - **Executor.ps1** — `Invoke-PowerShellScript`, `Invoke-PowerShellWinRM`,
   `Invoke-Command` wrappers
-- **Credentials.ps1** — `Get-IloCredentials`, `Get-OpenViewCredentials`,
-  `Get-CredentialSecret`
+- **Credentials.ps1** — `Get-IloCredentials`, `Get-ScomCredentials`,
+  `Get-OpenViewCredentials`, `Get-OneViewCredentials`, `Get-CredentialSecret`
 - **Base.ps1** — `AutomationBase` class (shared logic across cmdlets)
 - **FileIO.ps1** — `Ensure-DirectoryExists`
 
@@ -125,9 +125,10 @@ The task runs as SYSTEM (override via `/RU <user>` / `/RP <password>`).
 
 | File | Purpose |
 |------|---------|
-| `clusters_catalogue.json` | Clusters, servers, SCOM groups, iLO IPs, OpenView node IDs, schedules |
+| `clusters_catalogue.json` | Clusters, servers, SCOM groups, iLO IPs, OpenView node IDs, OneView scopes, schedules |
 | `scom_config.json` | Management server, module name, WinRM flag, credential env-var names |
 | `openview_config.json` | API URL, version, endpoint, auth type, optional CLI path |
+| `oneview_config.json` | OneView appliance, WinRM, module name, credential env-var names |
 | `email_distribution_lists.json` | SMTP settings + distribution lists per event type |
 | `opsramp_config.json` | Re-used OpsRamp integration config |
 | `maintenance_distribution_list.txt` | Optional one-email-per-line override |
@@ -141,6 +142,7 @@ The task runs as SYSTEM (override via `/RU <user>` / `/RP <password>`).
 | `SCOM_ADMIN_USER` / `SCOM_ADMIN_PASSWORD` | SCOM connection credentials |
 | `ILO_USER` / `ILO_PASSWORD` | Global iLO credentials; per-server overrides via `ilo_credentials` in cluster definition |
 | `OPENVIEW_USER` / `OPENVIEW_PASSWORD` | OpenView auth |
+| `ONEVIEW_USER` / `ONEVIEW_PASSWORD` | HPE OneView appliance credentials |
 | `SMTP_USER` / `SMTP_PASSWORD` | SMTP creds (optional; often not required internally) |
 | `OPSRAMP_*` | OpsRamp client (shared with other scripts) |
 
@@ -154,7 +156,7 @@ Per run the cmdlet writes *and* appends (same as Python):
 - `logs/maintenance_audit.log` — line-delimited JSON (appended)
 
 Record fields: `cluster`, `action`, `dry_run`, per-system results
-(`scom`, `ilo`, `openview`, `email`, `opsramp`), `start`, `end`,
+(`scom`, `ilo`, `openview`, `oneview`, `email`, `opsramp`), `start`, `end`,
 `scheduled_disable`, `success`, `errors`.
 
 ---
@@ -165,6 +167,7 @@ Record fields: `cluster`, `action`, `dry_run`, per-system results
 |---|---|
 | PowerShell 5.1 or 7 | Windows 10 / 11 / Server 2016+ |
 | OperationsManager module | SCOM 2015 |
+| HPOneView.Managed module | HPE OneView |
 | `powershell-yaml` (optional) | YAML config support |
 | Pester (testing only) | `Install-Module Pester` |
 

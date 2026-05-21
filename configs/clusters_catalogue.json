@@ -10,6 +10,7 @@
         "prod-server-02.example.com": "192.168.1.102",
         "prod-server-03.example.com": "192.168.1.103"
       },
+      "oneview_scope": "Production_Cluster_01",
       "openview_node_ids": {
         "prod-server-01.example.com": "OV_NODE_001",
         "prod-server-02.example.com": "OV_NODE_002",
@@ -40,6 +41,7 @@
         "stag-server-01.example.com": "192.168.2.101",
         "stag-server-02.example.com": "192.168.2.102"
       },
+      "oneview_scope": "Staging_Cluster_01",
       "openview_node_ids": {
         "stag-server-01.example.com": "OV_STAG_001",
         "stag-server-02.example.com": "OV_STAG_002"

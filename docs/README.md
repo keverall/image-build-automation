@@ -1,4 +1,4 @@
-# HPE ProLiant Windows Server ISO Automation — Documentation Index
+# HPE ProLiant Windows Server ISO Automation — Documentation Index (Docs Root Readme)
 
 Complete documentation for the Python automation package (`src/python/automation/`) and
 PowerShell module (`src/powershell/Automation/`).

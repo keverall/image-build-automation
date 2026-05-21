@@ -89,6 +89,7 @@
         'Invoke-PowerShellWinRM'
         'New-ScomConnection'
         'New-ScomMaintenanceScript'
+        'New-OneViewMaintenanceScript'
         # ── Validators ──────────────────────────────────────────────────────────
         'Test-BuildParams'
         'Test-ClusterId'
@@ -99,6 +100,7 @@
         'Get-EnvCredential'
         'Get-IloCredentials'
         'Get-OpenViewCredentials'
+        'Get-OneViewCredentials'
         'Get-ScomCredentials'
         'Get-SmtpCredentials'
         # ── Process execution ───────────────────────────────────────────────────
