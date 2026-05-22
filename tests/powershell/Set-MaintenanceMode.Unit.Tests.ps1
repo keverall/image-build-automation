@@ -25,8 +25,8 @@ BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
     $Script:TestRoot   = $PSScriptRoot
 
-    if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
-    if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
+    if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
+    if (-not $env:TMP)   { $env:TMP   = '/tmp' }
     $Script:TempDir = (Join-Path $env:TEMP "MMTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
     if (-not (Test-Path -Path $Script:TempDir)) { New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null }
 
