@@ -1,3 +1,6 @@
+# Maintenance mode code extracts and samples
+
+``` PWSH
 Import-Module OperationsManager
 New-SCOMManagementGroupConnection -ComputerName alpasopm12ms1.ad.example.com
 $servers = Get-SCOMGroup -DisplayName "Contoso Maintenance Mode Non 24-Hour Servers" | Get-SCOMClassInstance
@@ -11,15 +14,17 @@ foreach ($server in $servers) {
  
 
 }
+```
 
-https://learn.microsoft.com/en-us/system-center/scom/manage-maintenance-mode-overview?view=sc-om-2016&tabs=Edit#create-maintenance-schedule-in-the-operations-console
+relevant documentation -
+- [SCOM Maintenance Mode Overview](https://learn.microsoft.com/en-us/system-center/scom/manage-maintenance-mode-overview?view=sc-om-2016&tabs=Edit#create-maintenance-schedule-in-the-operations-console)
 
-https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance
+[SCOM Maintenance Mode REST API Schedule Maintenance](https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance)
 
-https://learn.microsoft.com/en-us/rest/api/operationsmanager/
+[SCOM REST API Operations manager](https://learn.microsoft.com/en-us/rest/api/operationsmanager/)
 
 
-
+```PWSH
 #==============================================================================================================================# 
 #                                                                                                                              #
 #                                                                                                                              # 
@@ -103,154 +108,97 @@ if($type -eq "Group") {
 } else {
     Write-host "Exiting" -ForeGroundColor Red 
 }
+```
 
-the SCOM Management Group Server names for you below.
+## SCOM Management Group Server names
 
- 
+- [SCOM Rest API quick start:](https://www.cookdown.com/blog/quick-start-scom-rest-api)
 
-Some links to share also,
+- [Microsoft Rest API documentation (the Schedule Maintenance section will be relevant): ](https://learn.microsoft.com/en-us/rest/api/operationsmanager/)
 
- 
+- [SCOM Maintenance Mode with Powershell: ](https://kevinjustin.com/blog/tag/maintenance-mode/)
 
-SCOM Rest API quick start: https://www.cookdown.com/blog/quick-start-scom-rest-api
+## Powershell scripts as examples of Group and Cluster Support maintenance mode:
 
- 
+### SCOM 2012
 
-Microsoft Rest API documentation (the Schedule Maintenance section will be relevant): https://learn.microsoft.com/en-us/rest/api/operationsmanager/
-
- 
-
-SCOM Maintenance Mode with Powershell: https://kevinjustin.com/blog/tag/maintenance-mode/
-
- 
-
-I have attached two Powershell scripts as examples of Group and Cluster Support maintenance mode.
-
- 
-
-Regards
-Noel
-
- 
-
- 
-
-SCOM 2012
-
- 
-
-PRODUCTION
-
- 
+#### PRODUCTION
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
-Operational Database Server:  ALPASOPM12DB1.ad.example.com
-Datawarehouse Server:  ALPASOPM12DW1.ad.example.com
+Operational Database Server:  ***REMOVED***
+Datawarehouse Server:  ***REMOVED***
 
- 
+### SCOM 2016
 
- 
-
-SCOM 2016
-
- 
-
-TEST
-
- 
+#### TEST
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED*** and ***REMOVED***
 Operational Database Server:  ***REMOVED***
 Datawarehouse Server:  ***REMOVED***
 
- 
-
- 
-
-PRODUCTION
-
- 
+#### PRODUCTION
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
-Operational Database Servers:  ALPASOPM16DB1.ad.example.com and ALPASOPM16DB2.ad.example.com (SQL AlwaysOn)
-Datawarehouse Server:  ALPASOPM16DW1.ad.example.com and ALPASOPM16DW2.ad.example.com (SQL AlwaysOn)
+Operational Database Servers:  ***REMOVED*** and ***REMOVED*** (SQL AlwaysOn)
+Datawarehouse Server:  ***REMOVED*** and ***REMOVED*** (SQL AlwaysOn)
 
- 
+### SCOM 2019
 
- 
-
- 
-
-SCOM 2019
-
- 
-
-TEST
-
- 
+#### TEST
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED*** and ***REMOVED***
-Operational Database Server:  VM-OPM19T-DB1.ad.example.com
-Datawarehouse Server:  VM-OPM19T-DW1.ad.example.com
+Operational Database Server:  ***REMOVED***
+Datawarehouse Server:  ***REMOVED***
 
- 
-
- 
-
-PRODUCTION
-
- 
+#### PRODUCTION
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
-Operational Database Server:  VR-OPM19PD-7141.ad.example.com
-Datawarehouse Server:  VR-OPM19PW-7143.ad.example.com
+Operational Database Server:  ***REMOVED***
+Datawarehouse Server:  ***REMOVED***
 
 I need to verify the below so I build automation that is as its expected and not how I assume it should be, so can I get responses for my questions below, please? Alternatively, I could book a call if preferred?
 
- 
+## Questions that group needs to clarify on and still has not
 
- 
-
- 
-
-Is this automation just to enable or disable maintenance mode using Start-SCOMAgentMaintenanceMode -Duration <Double (in minutes)> [-Reason <string>] [-Comments <string>] to enable/disable the cluster/servers,
-Or is it to orchestrate the full SCOM maintenance schedule suite of functionality Schedule Maintenance - REST API (Operations Manager) | Microsoft Learn which is significantly larger task?
-My understanding from last week’s call was the requirement is just enable and disable maintenance mode but after a discussion with Noel earlier and checking the MS Learn API doc for SCOM 2016/2019/2025 I see there is much more to this maintenance schedule/mode functionality.
+1) Is this automation just to enable or disable maintenance mode using Start-SCOMAgentMaintenanceMode -Duration <Double (in minutes)> [-Reason <string>] [-Comments <string>] to enable/disable the cluster/servers,
+2) Or is it to orchestrate the full SCOM maintenance schedule suite of functionality Schedule Maintenance - REST API (Operations Manager) | Microsoft Learn which is significantly larger task?
+3) My understanding from last week’s call was the requirement is just enable and disable maintenance mode but after a discussion with Noel earlier and checking the MS Learn API doc for SCOM 2016/2019/2025 I see there is much more to this maintenance schedule/mode functionality.
 Schedule Maintenance covers the following functionality - REST API (Operations Manager - Schedule Maintenance API Version:v1
-Create Schedule Maintenance
+
+- Create Schedule Maintenance
 Adds the schedule maintenance for provided schedule request.
 
-Delete Schedule Maintenance
+- Delete Schedule Maintenance
 Deletes the schedule maintenance details for the specified schedule ID
 
-Disable Maintenance Schedule
+- Disable Maintenance Schedule
 Disables the schedule maintenance details for the specified schedule ID.
 
-Edit Schedule Maintenance
+- Edit Schedule Maintenance
 Updates the scheduled Maintenance for the provided schedule request.
 
-Enable Maintenance Schedule
+- Enable Maintenance Schedule
 Enables the schedule maintenance for the specified schedule ID.
 
-Extend Schedule Maintenance
+- Extend Schedule Maintenance
 Extends the scheduled maintenance for the provided schedule request.
 
-Get Schedule Maintenance
+- Get Schedule Maintenance
 Retrieves the schedule maintenance details for the specified schedule ID.
 
-Get Schedule Maintenance List
+- Get Schedule Maintenance List
 Retrieves the schedule maintenance List.
 
-Stop Maintenance Schedule
+- Stop Maintenance Schedule
 Stops the scheduled maintenance details for specified schedule ID.
 
  
 
  
 
-5.  Noel also asked that the automation handle 3 different SCOM versions, prior to this i thought initially just 2016 was being covered in this release? So 2012/2016/2019 and 2025 need to be covered with the earliest two being HTTP calls non REST and the latter two being REST API specific, I can check the SCOM server version , hopefully when the script PowerShell remotes in and either use rest or http as appropriate for that cluster/servers SCOM version, if required.
+1.  Noel also asked that the automation handle 3 different SCOM versions, prior to this i thought initially just 2016 was being covered in this release? So 2012/2016/2019 and 2025 need to be covered with the earliest two being HTTP calls non REST and the latter two being REST API specific, I can check the SCOM server version , hopefully when the script PowerShell remotes in and either use rest or http as appropriate for that cluster/servers SCOM version, if required.

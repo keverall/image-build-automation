@@ -288,6 +288,12 @@ function _Compute-NextWorkStart([hashtable]$Schedule, [DateTime]$After) {
 function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
     $dir = Split-Path $Path -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    
+    # Add GitLab context if available
+    if ($Script:GitlabContext) {
+        $Audit.gitlab_context = $Script:GitlabContext
+    }
+    
     $Audit | ConvertTo-Json -Depth 64 | Set-Content -Path $Path -Encoding UTF8 -Force
     # Append to master log
     $master = Join-Path $Script:LogDir 'maintenance_audit.log'
