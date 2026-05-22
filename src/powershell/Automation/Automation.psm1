@@ -422,6 +422,10 @@ if (Test-Path $_publicRoot) {
     }
 }
 
+# Load Control.psm1 for GitLab maintenance trigger support
+$_controlPath = Join-Path $_moduleBase 'Control.psm1'
+if (Test-Path $_controlPath) { . $_controlPath }
+
 # Export only the functions that are part of the public API surface.
 # Private helpers (leading underscore) and internal factories are intentionally excluded.
 Export-ModuleMember -Function @(

@@ -1,0 +1,71 @@
+stages:
+  - maintenance
+
+variables:
+  POWERSHELL_VERSION: "7.4"
+  # Callback settings - must be set in GitLab CI/CD variables
+  # MAINTENANCE_CALLBACK_URL - webhook URL for completion callback
+  # MAINTENANCE_API_KEY - optional API key for callback authentication
+
+.maintenance_defaults: &maintenance_defaults
+  stage: maintenance
+  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
+  before_script:
+    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
+  artifacts:
+    paths:
+      - logs/
+    expire_in: 7 days
+  only:
+    - triggers
+
+maintenance-enable:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "enable"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -START "$START"
+      -END "$END"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -DRY_RUN "$DRY_RUN"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  variables:
+    FF_NETWORK_PER_BUILD: "true"
+
+maintenance-disable:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "disable"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -DRY_RUN "$DRY_RUN"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  variables:
+    FF_NETWORK_PER_BUILD: "true"
+
+maintenance-validate:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "validate"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -DRY_RUN "$DRY_RUN"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+
+maintenance-auto-disable:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "disable"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  when: manual
+  allow_failure: true
