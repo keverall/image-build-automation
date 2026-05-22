@@ -14,4 +14,5 @@ $script:RouteMap = @{
     'maintenance_validate' = 'Set-MaintenanceMode'
     'opsramp_report'    = 'Invoke-OpsRamp'
     'generate_uuid'     = 'New-Uuid'
+    'gitlab_maintenance'  = 'Invoke-GitLabMaintenanceTrigger'
 }
