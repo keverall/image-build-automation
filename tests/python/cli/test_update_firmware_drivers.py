@@ -1,12 +1,18 @@
 """Tests for automation.cli.update_firmware_drivers module."""
 
 import json
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from automation.cli.update_firmware_drivers import FirmwareUpdater
+
+
+def _sut_path(name: str = "hpe_sut") -> Path:
+    """Create a mock SUT path relative to current working directory."""
+    return Path("tools") / name if sys.platform != "win32" else Path("tools") / f"{name}.exe"
 
 
 class TestFirmwareUpdater:
@@ -20,7 +26,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=_sut_path()),
         ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 
@@ -44,7 +50,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=_sut_path()),
         ):
             updater = FirmwareUpdater(str(config_path))
 
@@ -61,10 +67,10 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/tools/hpe_sut.exe")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path())),
         ):
             updater = FirmwareUpdater(str(config_path))
-            assert updater.sut_path == Path("/tools/hpe_sut.exe")
+            assert updater.sut_path == Path(_sut_path())
 
     def test_find_sut_not_found_raises_error(self, tmp_path, monkeypatch):
         """Test _find_sut raises FileNotFoundError when SUT not found."""
@@ -88,7 +94,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path())),
         ):
             updater = FirmwareUpdater(str(config_path))
 
@@ -104,7 +110,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path())),
         ):
             updater = FirmwareUpdater(str(config_path))
 
@@ -126,7 +132,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path())),
         ):
             updater = FirmwareUpdater(str(config_path))
 
@@ -145,7 +151,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path())),
         ):
             updater = FirmwareUpdater(str(config_path))
 
@@ -163,7 +169,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path("hpe_sut"))),
         ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 
@@ -184,7 +190,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path("hpe_sut"))),
         ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 
@@ -215,7 +221,7 @@ class TestFirmwareUpdater:
 
         with (
             patch("automation.utils.logging_setup.init_logging"),
-            patch.object(FirmwareUpdater, "_find_sut", return_value=Path("/fake/sut")),
+            patch.object(FirmwareUpdater, "_find_sut", return_value=Path(_sut_path("hpe_sut"))),
         ):
             updater = FirmwareUpdater(str(config_path), str(output_dir))
 

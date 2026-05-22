@@ -74,7 +74,8 @@ $Script:GitlabContext = @{
 }
 
 # Import the main module
-$modulePath = Join-Path $PSScriptRoot 'Set-MaintenanceMode.ps1'
+$modulePath = Join-Path $PSScriptRoot '../src/powershell/Automation/Public/Set-MaintenanceMode.ps1'
+$modulePath = (Resolve-Path $modulePath).Path
 if (Test-Path $modulePath) {
     . $modulePath
 } else {
@@ -83,7 +84,7 @@ if (Test-Path $modulePath) {
 }
 
 # Initialize logging for GitLab CI environment
-$logDir = Join-Path $PSScriptRoot '..\logs'
+$logDir = Join-Path $PSScriptRoot '../logs'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 
 Write-Host "GitLab CI Maintenance Call - Pipeline: $CI_PIPELINE_ID, Job: $CI_JOB_ID"

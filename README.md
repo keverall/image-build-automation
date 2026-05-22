@@ -19,9 +19,10 @@ Automated build pipelines for creating customized Windows Server installation IS
 | [📦 Utilities Package](docs/python/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
-| [📡 Orchestrator & Routing](docs/api_reference.md) | Language-agnostic: request types, call sequence, adding new handlers, rotor and `ROUTE_MAP`/`$script:RouteMap`, return schemas for both Python `dict` and PowerShell `[hashtable]` |
+| [📡 Orchestrator & Routing](docs/api/api_reference.md) | Language-agnostic: request types, call sequence, adding new handlers, rotor and `ROUTE_MAP`/`$script:RouteMap`, return schemas for both Python `dict` and PowerShell `[hashtable]` |
 | [📡 Orchestrator & Routing — Python](docs/python/api_reference.md) | `AutomationOrchestrator`, `validate_build_params()`, `validate_cluster_id()`, source paths, return dicts |
 | [📡 Orchestrator & Routing — PowerShell](docs/powershell/api_reference.md) | `Start-AutomationOrchestrator`, `Invoke-RoutedRequest`, `$script:RouteMap`, `_Validate-Request`, source paths, return schemas |
+| [🌐 GitLab REST API — Pipeline Triggers](docs/api/gitlab.md) | End-to-end GitLab REST trigger reference: `.gitlab-ci.yml` job setup, Pipeline Trigger Tokens, `trigger/pipeline` POST payloads (PowerShell + curl), `Send-GitLabMaintenanceRequest` helper, callbacks, polling, and GitLab-vs-Jenkins comparison |
 | [🔌 PowerShell Generated Cmdlets](docs/powershell/generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, etc. |
 | [🔌 Python Generated CLI](docs/python/generated/INDEX.md) | Auto-generated reference for all Python CLI commands — `build-iso`, `deploy-server`, `maintenance-mode`, etc. |
 | [🧪 PowerShell Testing (Pester)](docs/powershell/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |

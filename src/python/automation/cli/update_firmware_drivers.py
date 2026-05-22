@@ -48,12 +48,21 @@ class FirmwareUpdater:
 
     def _find_sut(self) -> Path:
         """Locate HPE Smart Update Tool executable."""
+        import sys
+
         search_paths = [
+            Path("tools/hpe_sut.exe"),
+            Path("tools/hpe_sut"),
             Path("tools/hpe_sut.exe"),
             Path("/opt/hpe/sut/hpe_sut.exe"),
             Path("/usr/local/bin/hpe_sut"),
-            Path("C:\\Program Files\\HPE\\Smart Update Tool\\hpe_sut.exe"),
         ]
+        # Add Windows paths only when running on Windows
+        if sys.platform == "win32":
+            search_paths.extend([
+                Path("C:/Program Files/HPE/Smart Update Tool/hpe_sut.exe"),
+                Path("C:\\Program Files\\HPE\\Smart Update Tool\\hpe_sut.exe"),
+            ])
 
         path_dirs = os.environ.get("PATH", "").split(os.pathsep)
         for dir_name in path_dirs:

@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 
 # Ensure the scripts/ directory is importable
-SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "scripts"
+SCRIPTS_DIR = Path(__file__).parent.parent.parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from generate_python_docs import (  # type: ignore  # noqa: E402
