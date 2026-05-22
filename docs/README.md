@@ -57,6 +57,7 @@ hpe-windows-iso-automation/
 | [PowerShell API Reference — Generic](api_reference.md) | Orchestrator & routing layer — request types, flow, adding new handlers, return schema |
 | [PowerShell API Reference](api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
 | [← Python API Reference](python/api_reference.md) | Equivalent Python API ref — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators |
+| [GitLab REST API Reference](api/gitlab.md) | Pipeline trigger architecture, REST endpoint, `trigger/pipeline` payload, `Send-GitLabMaintenanceRequest`, callbacks, polling, cluster config, network/firewall notes |
 | [PowerShell Module Overview](powershell_api_reference.md) | Module overview, directory layout, requirements, design mapping to Python, quick-start |
 | [PowerShell Generated Cmdlets](generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, `Invoke-OpsRampClient`, `Start-AutomationOrchestrator`, etc. |
 | [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |

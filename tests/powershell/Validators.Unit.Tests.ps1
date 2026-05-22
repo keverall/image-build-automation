@@ -6,8 +6,8 @@ BeforeAll {
     $Script:TestRoot        = $PSScriptRoot
 
     # TempDir — guard against $env:TEMP / $pwd being null in Pester discovery context
-    if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
-    if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
+    if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
+    if (-not $env:TMP)   { $env:TMP   = '/tmp' }
     $Script:TempDir   = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
     if (-not (Test-Path -Path $Script:TempDir))  { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
 

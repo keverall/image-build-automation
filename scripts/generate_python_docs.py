@@ -66,7 +66,7 @@ from pathlib import Path
 from typing import Any
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent
 SRC_ROOT = PROJECT_ROOT / "src"
 DOCS_OUTPUT_DIR = PROJECT_ROOT / "docs" / "python" / "generated"
 DOCS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

@@ -5,8 +5,8 @@ BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
     $Script:TestRoot   = $PSScriptRoot
 
-    if (-not $env:TEMP) { $env:TEMP = '/home/keverall/' }
-    if (-not $env:TMP)  { $env:TMP  = '/home/keverall/' }
+    if (-not $env:TEMP) { $env:TEMP = '/tmp' }
+    if (-not $env:TMP)  { $env:TMP  = '/tmp' }
 
     $Script:TempDir = Join-Path $env:TEMP "GenDocsTests_$([guid]::NewGuid().ToString('N'))"
     New-Item -ItemType Directory -Path $Script:TempDir -Force | Out-Null
