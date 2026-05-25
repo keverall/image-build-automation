@@ -20,6 +20,7 @@ wheels/
 .installed.cfg
 *.egg
 .python-version
+.venv
 
 # === Virtual Environments & Rust Tooling (uv) ===
 .venv/

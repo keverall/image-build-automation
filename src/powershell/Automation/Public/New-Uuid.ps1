@@ -1,7 +1,7 @@
 ﻿#
 # New-Uuid.ps1 — Deterministic UUID generator
 #
-# Mirrors Python cli/generate_uuid.py (SHA-256 seed → UUID)
+# Mirrors reference implementation cli/generate_uuid.py (SHA-256 seed → UUID)
 #
 # Usage:  pwsh -File New-Uuid.ps1 -ServerName 'srv01.corp.local'
 #         pwsh -File New-Uuid.ps1 -ServerName 'srv01' -OutputPath 'output\srv01.uuid'
@@ -10,8 +10,8 @@
 function New-Uuid {
     <#
     .SYNOPSIS
-        Generate a deterministic UUID from server name + timestamp using SHA-256.
-        Mirrors Python generate_unique_uuid().
+Generate a deterministic UUID from server name + timestamp using SHA-256.
+         Mirrors generate_unique_uuid().
 
     .DESCRIPTION
         Creates a deterministic UUID (GUID) by computing SHA-256 hash of the

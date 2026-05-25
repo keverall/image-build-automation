@@ -1,9 +1,9 @@
 ﻿#
 # Private/Credentials.ps1 — Env-var credential helpers with CyberArk CCP fallback.
-# Mirrors Python utils/credentials.py.
+# Credential resolution implementation.
 #
 # Resolution order (every credential function follows this):
-#   1. Environment variable               (Jenkins pre-fetches from CyberArk and sets these)
+#   1. Environment variable               (CI pre-fetches from CyberArk and sets these)
 #   2. CyberArk Central Credential Provider CLI  (ark_ccl / ark_cc on PATH)
 #   3. CyberArk AIM Web Service REST API  ($env:AIM_WEBSERVICE_URL or $env:CYBERARK_CCP_URL)
 #   4. Safe default                       (empty string or low-privilege default so secrets don't leak)
@@ -11,14 +11,13 @@
 # CyberArk safe / object naming convention:
 #   Safe    — logical grouping, e.g. "HPE-iLO", "SCOM-2015", "OpenView", "SMTP-Mail"
 #   Object  — same as the env-var name, e.g. "ILO_USER", "SCOM_ADMIN_PASSWORD"
-#   AppID   — "jenkins"  (or set via $env:CYBERARK_APP_ID)
+#   AppID   — "ci"  (or set via $env:CYBERARK_APP_ID)
 #
 
 function _Resolve-Credential {
     <#
     .SYNOPSIS
-        Core credential resolver: env var → CyberArk CLI → REST → default.
-        PowerShell equivalent of Python utils/credentials._resolve().
+Core credential resolver: env var → CyberArk CLI → REST → default.
 
     .PARAMETER EnvVarName
         Environment variable to check first.
@@ -43,7 +42,7 @@ function _Resolve-Credential {
     if (-not $SafeName)   { $SafeName = $EnvVarName }
     if (-not $ObjectName) { $ObjectName = $EnvVarName }
 
-    # ── Step 1: Environment variable (Jenkins / shell) ─────────────────────
+    # ── Step 1: Environment variable (CI / shell) ─────────────────────
     $val = [System.Environment]::GetEnvironmentVariable($EnvVarName)
     if (-not [string]::IsNullOrEmpty($val)) {
         return $val
@@ -56,7 +55,7 @@ function _Resolve-Credential {
             if (-not $cliPath) { continue }
             # Standard CCP getpassword argument syntax
             $args = @('getpassword',
-                      "-pAppID=jenkins",
+                      "-pAppID=ci",
                       "-pSafe=$SafeName",
                       "-pObject=$ObjectName")
             $psi             = New-Object System.Diagnostics.ProcessStartInfo
@@ -102,7 +101,7 @@ function _Resolve-Credential {
     }
     try {
         $queryEnc = [System.Uri]::EscapeDataString("Safe=$SafeName;Object=$ObjectName")
-        $fullUrl  = "$aimUrl`?AppID=jenkins&Query=$queryEnc"
+        $fullUrl  = "$aimUrl`?AppID=ci&Query=$queryEnc"
         $items    = Invoke-RestMethod -Uri $fullUrl -Method Get -TimeoutSec 10 -ErrorAction Stop
         $first    = if ($items -is [System.Array]) { $items[0] } else { $items }
         $cUser    = $first.UserName
@@ -136,8 +135,8 @@ function Get-EnvCredential {
         [string] $Default  = '',
         [switch] $Required
     )
-    return _Resolve-Credential -EnvVarName $EnvVarName `
-                               -SafeName    'Jenkins' `
+return _Resolve-Credential -EnvVarName $EnvVarName `
+                                -SafeName    'CI' `
                                -ObjectName  $EnvVarName `
                                -Default     $Default `
                                -Required:$Required

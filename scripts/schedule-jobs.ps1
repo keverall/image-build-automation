@@ -7,10 +7,10 @@
 # This script only maps simple job names to the canonical Control calls.
 #
 #   Job               → Control call
-#   reporting         → Run-Jenkins -Params @{ BUILD_STAGE = 'scan' }
+#   reporting         → Run-CIPipeline -Params @{ BUILD_STAGE = 'scan' }
 #   monitoring        → Start-InstallMonitor (per server)
-#   firmware          → Run-Jenkins -Params @{ BUILD_STAGE = 'firmware' }
-#   windows           → Run-Jenkins -Params @{ BUILD_STAGE = 'windows' }
+#   firmware          → Run-CIPipeline -Params @{ BUILD_STAGE = 'firmware' }
+#   windows           → Run-CIPipeline -Params @{ BUILD_STAGE = 'windows' }
 #   maintenance_*     → Run-Scheduler (via Control)
 #   irequest          → Run-IRequest
 #
@@ -85,14 +85,14 @@ function Invoke-JobReporting {
     .SYNOPSIS
         Scheduled OpsRamp + audit reporting job.
         Triggered daily (or hourly) by schtasks / cron.
-        Equates to: python -m automation.control run_jenkins | stage=scan or stage=all
+        Equates to: CI pipeline trigger with BUILD_STAGE=scan or BUILD_STAGE=all
     #>
     [CmdletBinding()]
     param([bool]$DryRun)
 
     Write-JobLog '── Reporting job START ──'
 
-    # Option A: use the orchestrator directly (equivalent to Python orchestrator.execute())
+    # Option A: use the orchestrator directly
     $result = Start-AutomationOrchestrator -RequestType 'opsramp_report' -Params @{ DryRun = $DryRun }
     if ($result.Success) {
         Write-JobLog 'OpsRamp report completed.'
@@ -100,14 +100,14 @@ function Invoke-JobReporting {
         Write-JobLog "OpsRamp report failed: $($result.Error)", 'WARNING'
     }
 
-    # Option B: full build pipeline via Control pattern (equivalent to Python run_jenkins with BUILD_STAGE=all)
-    $ctrl = New-JenkinsCtrl -Params @{
+    # Option B: full build pipeline via Control pattern (equivalent to the unified CI runner with BUILD_STAGE=all)
+    $ctrl = New-CIPipelineCtrl -Params @{
         BUILD_STAGE  = 'all'
         DRY_RUN      = $DryRun
         SERVER_FILTER = ''
         DEPLOY_METHOD = 'ilo'
     }
-    $ctrlResult = $ctrl | Run-Jenkins
+    $ctrlResult = $ctrl | Run-CIPipeline
     if ($ctrlResult.Success) {
         Write-JobLog "Reporting build pipeline succeeded."
     } else {
@@ -121,7 +121,7 @@ function Invoke-JobMonitoring {
     .SYNOPSIS
         Scheduled installation monitoring job.
         Triggered every 5 min by schtasks.
-        Equates to: python -m automation.control run_jenkins | stage=deploy
+        Equates to: CI pipeline trigger with BUILD_STAGE=deploy
     #>
     [CmdletBinding()]
     param([bool]$DryRun)
@@ -144,18 +144,18 @@ function Invoke-JobFirmware {
     <#
     .SYNOPSIS
         Scheduled firmware ISO build (nightly).
-        Equates to: python -m automation.control run_jenkins | BUILD_STAGE=firmware
+        Equates to: CI pipeline trigger with BUILD_STAGE=firmware
     #>
     [CmdletBinding()]
     param([bool]$DryRun)
 
     Write-JobLog '── Firmware build job START ──'
-    $ctrl = New-JenkinsCtrl -Params @{
+    $ctrl = New-CIPipelineCtrl -Params @{
         BUILD_STAGE   = 'firmware'
         DRY_RUN       = $DryRun
         SKIP_DOWNLOAD = $false
     }
-    $result = $ctrl | Run-Jenkins
+    $result = $ctrl | Run-CIPipeline
     if ($result.Success) { Write-JobLog 'Firmware build OK.' }
     else                  { Write-JobLog "Firmware build FAILED: $($result.Error)" -Level 'ERROR' }
     Write-JobLog '── Firmware build job END ──'
@@ -165,18 +165,18 @@ function Invoke-JobWindows {
     <#
     .SYNOPSIS
         Scheduled Windows ISO build (nightly).
-        Equates to: python -m automation.control run_jenkins | BUILD_STAGE=windows
+        Equates to: CI pipeline trigger with BUILD_STAGE=windows
     #>
     [CmdletBinding()]
     param([bool]$DryRun)
 
     Write-JobLog '── Windows patch job START ──'
-    $ctrl = New-JenkinsCtrl -Params @{
+    $ctrl = New-CIPipelineCtrl -Params @{
         BUILD_STAGE   = 'windows'
         DRY_RUN       = $DryRun
         BASE_ISO_PATH = 'C:\\\\ISOs\\\\Windows_Server_2022.iso'
     }
-    $result = $ctrl | Run-Jenkins
+    $result = $ctrl | Run-CIPipeline
     if ($result.Success) { Write-JobLog 'Windows patch OK.' }
     else                  { Write-JobLog "Windows patch FAILED: $($result.Error)" -Level 'ERROR' }
     Write-JobLog '── Windows patch job END ──'
@@ -186,7 +186,7 @@ function Invoke-JobMaintenanceDisable {
     <#
     .SYNOPSIS
         Scheduled maintenance disable (end-of-window cleanup).
-        Equates to: python -m automation.control run_scheduler | task=maintenance_disable
+        Equates to: Run-Scheduler with task=maintenance_disable
     #>
     [CmdletBinding()]
     param(
@@ -210,7 +210,7 @@ function Invoke-JobIRequest {
     .SYNOPSIS
         iRequest / BMC ISAPI form entry point.
         Wraps Run-IRequest using posted form data.
-        Equates to Python: from automation.control import run_irequest; run_irequest(form_data)
+        Equates to: Start-AutomationOrchestrator -RequestType 'irequest' -FormData $FormData
     #>
     [CmdletBinding()]
     param([hashtable]$FormData)

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # scripts/cron_jobs.sh
 # ─────────────────────────────────────────────────────────────────────────────
-# Cron runner + installer for Python/Linux scheduled automation jobs.
+# Cron runner + installer for CI scheduled automation jobs.
 #
 # All jobs use a single dispatch entry point:
-#   HPE_AUTO_SOURCE=<jenkins|scheduler|irequest>  python -m automation
-#   ──⇨ run_jenkins()   (src/python/automation/control.py)
-#   ──⇨ run_scheduler() (src/python/automation/control.py)
-#   ──⇨ run_irequest()  (src/python/automation/control.py)
+#   HPE_AUTO_SOURCE=<ci|scheduler|irequest>
+#   ──⇨ run_ci()       (scripts/schedule-jobs.ps1)
+#   ──⇨ run_scheduler()
+#   ──⇨ run_irequest()
 #
 # PS equivalent for each surface:
 #   surface              PS entry point
@@ -31,12 +31,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV_PYTHON="${SCRIPT_DIR}/../.venv/bin/python"
-if [ ! -f "$VENV_PYTHON" ]; then
-    VENV_PYTHON="$(command -v python3 || command -v python)"
-fi
-: "${VENV_PYTHON:=python3}"
-
 CRON_TAG="HPE_AUTO"
 LOG_DIR="${SCRIPT_DIR}/../logs/scheduled_jobs"
 mkdir -p "$LOG_DIR"
@@ -51,13 +45,12 @@ log() {
 }
 
 # ── Unified automation dispatch ────────────────────────────────────────────────
-# Single entry point; dispatches to run_jenkins / run_scheduler / run_irequest
-# via src/python/automation/__main__.py and src/python/automation/control.py.
-# mirrors PS Control.psm1: Run-Jenkins | Run-Scheduler | Run-IRequest
+# Single entry point; dispatches to run_ci / run_scheduler / run_irequest
+# mirrors PS Control.psm1: Run-CIPipeline | Run-Scheduler | Run-IRequest
 
 run_automation() {
     local source="$1"; shift
-    HPE_AUTO_SOURCE="$source" "$VENV_PYTHON" -m automation "$@"
+    HPE_AUTO_SOURCE="$source" pwsh -File scripts/schedule-jobs.ps1 -Job "$@"
 }
 
 # ── Individual cron jobs ───────────────────────────────────────────────────────
@@ -66,9 +59,9 @@ job_reporting() {
     # PS equivalent: Invoke-JobReporting  in scripts/schedule-jobs.ps1
     # Sets BUILD_STAGE=all for full audit + OpsRamp telemetry pipeline
     log INFO "── Reporting job START ──"
-    run_automation jenkins  # BUILD_STAGE already defaults to all via stage_map in control.py
+    run_automation ci  # BUILD_STAGE already defaults to all via stage_map in control.py
     # Override explicitly for clarity (eval-time override uses HPE_AUTO_BUILD_STAGE env var):
-    HPE_AUTO_BUILD_STAGE=all run_automation jenkins
+    HPE_AUTO_BUILD_STAGE=all run_automation ci
     log INFO "── Reporting job END ──"
 }
 
@@ -76,21 +69,21 @@ job_monitoring() {
     # PS equivalent: Invoke-JobMonitoring  in scripts/schedule-jobs.ps1
     # Triggered every 5 min — Start-InstallMonitor per server
     log INFO "── Monitoring job START ──"
-    HPE_AUTO_BUILD_STAGE=deploy run_automation jenkins
+    HPE_AUTO_BUILD_STAGE=deploy run_automation ci
     log INFO "── Monitoring job END ──"
 }
 
 job_firmware() {
     # PS equivalent: Invoke-JobFirmware  in scripts/schedule-jobs.ps1
     log INFO "── Firmware build job START ──"
-    HPE_AUTO_BUILD_STAGE=firmware run_automation jenkins
+    HPE_AUTO_BUILD_STAGE=firmware run_automation ci
     log INFO "── Firmware build job END ──"
 }
 
 job_windows() {
     # PS equivalent: Invoke-JobWindows  in scripts/schedule-jobs.ps1
     log INFO "── Windows patch job START ──"
-    HPE_AUTO_BUILD_STAGE=windows run_automation jenkins
+    HPE_AUTO_BUILD_STAGE=windows run_automation ci
     log INFO "── Windows patch job END ──"
 }
 
@@ -134,22 +127,22 @@ case "$job" in
 
     # ── Cron installer ──────────────────────────────────────────────────────────
     --install-reporting)
-        CRON_LINE="0 2 * * *  cd '${SCRIPT_DIR}/..' && HPE_AUTO_SOURCE=jenkins HPE_AUTO_BUILD_STAGE=all '${VENV_PYTHON}' -m automation >> '${LOG_DIR}/reporting.log' 2>&1 # ${CRON_TAG}-reporting"
+        CRON_LINE="0 2 * * *  cd '${SCRIPT_DIR}/..' && pwsh -File scripts/schedule-jobs.ps1 -Job reporting # ${CRON_TAG}-reporting"
         (crontab -l 2>/dev/null | grep -v "^# ${CRON_TAG}-reporting$"; echo "$CRON_LINE") | crontab -
         log INFO "Installed reporting cron (daily 02:00)"
         ;;
     --install-monitoring)
-        CRON_LINE="*/5 * * * * cd '${SCRIPT_DIR}/..' && HPE_AUTO_SOURCE=jenkins HPE_AUTO_BUILD_STAGE=deploy '${VENV_PYTHON}' -m automation >> '${LOG_DIR}/monitoring.log' 2>&1 # ${CRON_TAG}-monitoring"
+        CRON_LINE="*/5 * * * * cd '${SCRIPT_DIR}/..' && pwsh -File scripts/schedule-jobs.ps1 -Job monitoring # ${CRON_TAG}-monitoring"
         (crontab -l 2>/dev/null | grep -v "^# ${CRON_TAG}-monitoring$"; echo "$CRON_LINE") | crontab -
         log INFO "Installed monitoring cron (every 5 min)"
         ;;
     --install-firmware)
-        CRON_LINE="0 3 * * 0  cd '${SCRIPT_DIR}/..' && HPE_AUTO_SOURCE=jenkins HPE_AUTO_BUILD_STAGE=firmware '${VENV_PYTHON}' -m automation >> '${LOG_DIR}/firmware.log' 2>&1 # ${CRON_TAG}-firmware"
+        CRON_LINE="0 3 * * 0  cd '${SCRIPT_DIR}/..' && pwsh -File scripts/schedule-jobs.ps1 -Job firmware # ${CRON_TAG}-firmware"
         (crontab -l 2>/dev/null | grep -v "^# ${CRON_TAG}-firmware$"; echo "$CRON_LINE") | crontab -
         log INFO "Installed firmware cron (Sun 03:00)"
         ;;
     --install-windows)
-        CRON_LINE="0 4 * * 0  cd '${SCRIPT_DIR}/..' && HPE_AUTO_SOURCE=jenkins HPE_AUTO_BUILD_STAGE=windows '${VENV_PYTHON}' -m automation >> '${LOG_DIR}/windows.log' 2>&1 # ${CRON_TAG}-windows"
+        CRON_LINE="0 4 * * 0  cd '${SCRIPT_DIR}/..' && pwsh -File scripts/schedule-jobs.ps1 -Job windows # ${CRON_TAG}-windows"
         (crontab -l 2>/dev/null | grep -v "^# ${CRON_TAG}-windows$"; echo "$CRON_LINE") | crontab -
         log INFO "Installed Windows patch cron (Sun 04:00)"
         ;;

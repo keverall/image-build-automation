@@ -1,8 +1,7 @@
 # Orchestrator & Routing Layer — API Reference
 
 > **Language-agnostic reference.** For PowerShell types and return schemas, see
-> [src/powershell/api_reference.md](src/powershell/api_reference.md). For Python
-> types and return schemas, see the inline Python blocks in this doc.
+> [src/powershell/api_reference.md](src/powershell/api_reference.md).
 
 ---
 
@@ -13,21 +12,21 @@ all automation integrations. Callers interact only with the top-level
 orchestrator function; the router selects the handler for each request type, and
 an optional validator enforces pre-conditions before routing occurs.
 
-| Concept | Python equivalent | PowerShell equivalent |
-|---------|-------------------|-----------------------|
-| Orchestrator | `AutomationOrchestrator.execute()` | `Start-AutomationOrchestrator` |
-| Router / dispatcher | `router.py` | `Router.ps1` / `Invoke-RoutedRequest` |
-| Route table | `_ROUTE_MAP` dict | `$script:RouteMap` hashtable |
-| Request validator | `_VALIDATORS` dict | `_Validate-Request.ps1` |
+| Concept | PowerShell equivalent |
+|---------|-----------------------|
+| Orchestrator | `Start-AutomationOrchestrator` |
+| Router / dispatcher | `Router.ps1` / `Invoke-RoutedRequest` |
+| Route table | `$script:RouteMap` hashtable |
+| Request validator | `_Validate-Request.ps1` |
 
 ---
 
 ## Request Types
 
-Every orchestrator call specifies a `RequestType` (Python) /
+Every orchestrator call specifies a `RequestType` /
 `-RequestType` string (PowerShell). Each is bound 1-to-1 to a handler function.
 
-| RequestType | Handler (Python) | Handler (PowerShell) | Required Params |
+| RequestType | Handler (PowerShell) | Required Params |
 |---|---|---|---|
 | `build_iso` | `NewIsoBuild` | `New-IsoBuild` | `base_iso` |
 | `update_firmware` | `UpdateFirmwareDrivers` | `Update-Firmware` | — |
@@ -44,11 +43,6 @@ Every orchestrator call specifies a `RequestType` (Python) /
 
 ## Orchestrator Signature
 
-```python
-# Python
-result = orchestrator.execute(request_type, params)
-```
-
 ```powershell
 # PowerShell
 $result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
@@ -61,23 +55,11 @@ $result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
 ## Common Return Schema
 
 All orchestrators return a uniform result envelope regardless of outcome.
-PowerShell uses a `[hashtable]`; Python uses a `dict`.
+PowerShell uses a `[hashtable]`.
 
 ### Success
 
-```python
-# Python
-{
-    "Success": True,
-    "Output": "...handler output text...",
-    "RequestType": "maintenance_enable",
-    "Timestamp": "2026-05-16T17:50:00+00:00",
-    # handler-specific keys may also be present
-}
-```
-
 ```powershell
-# PowerShell
 @{
     Success     = $true
     Output      = "...handler output text..."
@@ -91,15 +73,15 @@ PowerShell uses a `[hashtable]`; Python uses a `dict`.
 Triggered when request-specific preconditions fail (e.g., missing or invalid
 params).
 
-```python
-{
-    "Success": False,
-    "Errors": [
+```powershell
+@{
+    Success     = $false
+    Errors      = @(
         "Missing required parameter: base_iso",
         "Invalid cluster_id: UNKNOWN"
-    ],
-    "RequestType": "build_iso",
-    "Timestamp": "..."
+    )
+    RequestType = "build_iso"
+    Timestamp   = "..."
 }
 ```
 
@@ -107,13 +89,13 @@ params).
 
 Returned when the `RequestType` string does not match any route table entry.
 
-```python
-{
-    "Success": False,
-    "Error": "Unknown request type: foobar",
-    "AvailableTypes": ["build_iso", "deploy", ...],
-    "RequestType": "foobar",
-    "Timestamp": "..."
+```powershell
+@{
+    Success        = $false
+    Error          = "Unknown request type: foobar"
+    AvailableTypes = @("build_iso", "deploy", ...)
+    RequestType    = "foobar"
+    Timestamp      = "..."
 }
 ```
 
@@ -148,14 +130,11 @@ Result envelope  ──► Orchestrator stamps RequestType + Timestamp  ──�
 ## Adding a New Request Type
 
 1. Add the key/value pair to the **route table**:
-   - Python: `_ROUTE_MAP` in `router.py`
-   - PowerShell: `$script:RouteMap` in `_RouteMap.ps1`
+    - PowerShell: `$script:RouteMap` in `_RouteMap.ps1`
 2. Add a corresponding validation branch in the **request validator** if the
-   new type requires mandatory parameters:
-   - Python: `_VALIDATORS` in `router.py`
-   - PowerShell: `_Validate-Request.ps1`
-3. Export the handler function in the module manifest (PowerShell) or ensure it
-   is importable (Python `__init__.py`).
+    new type requires mandatory parameters:
+    - PowerShell: `_Validate-Request.ps1`
+3. Export the handler function in the module manifest.
 
 ---
 
@@ -179,9 +158,5 @@ errors — the validation-failure envelope is returned immediately.
 ## Additional Language-Specific Detail
 
 - For the PowerShell view of each symbols — module paths, `[hashtable]` return
-  types for every dispatcher branch, and `$script:RouteMap` / `$RouteMap` vs
-  `_RouteMap` docs — see
+  types for every dispatcher branch, and `$script:RouteMap` docs — see
   [`src/powershell/api_reference.md`](src/powershell/api_reference.md).
-- For the Python orchestrator and router source references, see the Python
-  testing doc and `src/python/automation/cli/` for the SSH/WinRM executor that the
-  `opsramp_report` handler uses.

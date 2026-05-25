@@ -1,14 +1,14 @@
 ﻿#
 # Invoke-IsoDeploy.ps1 — iLO virtual media deployer (wrapper function + script mode)
-# Equivalent of Python cli/deploy_to_server.py
+# Equivalent of reference implementation cli/deploy_to_server.py
 #
-# Virtual media mount stub: matches Python exactly (both sides reserve for future).
-# Python logs:  "iLO deployment via REST API needs full implementation"
+# Virtual media mount stub: matches the reference implementation exactly (both sides reserve for future).
+# Reference implementation logs:  "iLO deployment via REST API needs full implementation"
 # PS logs:      "iLO virtual media mount needs full implementation — …"
 #
 # Concrete fixes vs original broken version:
 #   1. All sed-insertion artefacts purged; every guard is a proper if/return block
-#   2. iLO REST call now uses -SkipCertificateCheck (matches Python verify=False)
+#   2. iLO REST call now uses -SkipCertificateCheck (matches reference implementation verify=False)
 #
 
 param(
@@ -172,7 +172,7 @@ class ISODeployer {
         if (-not (Test-Path $isoPath)) { Write-Error "ISO not found: $isoPath"; return @{ Success = $false; Msg = "ISO not found: $isoPath" } }
 
         # iLO REST uses self-signed certs by default — -SkipCertificateCheck mirrors
-        # Python requests.verify=False used in cli/deploy_to_server.py.
+        # Reference implementation requests.verify=False used in deployment module.
         $cred    = Get-IloCredentials
         $baseUrl = "http://$iloIp/rest/v1"
         try {
@@ -180,7 +180,7 @@ class ISODeployer {
             $loginUrl = "$baseUrl/sessions"
             $body     = @{ UserName = $cred[0]; Password = $cred[1] } | ConvertTo-Json
             # -SkipCertificateCheck: iLO ships with self-signed certificate by default.
-            # Equivalent to Python:  requests.post(verify=False)
+            # Equivalent to reference implementation:  requests.post(verify=False)
             $resp     = Invoke-RestMethod -Uri $loginUrl -Method Post -Body $body `
                                           -ContentType 'application/json;charset=utf-8' `
                                           -SkipCertificateCheck `
@@ -193,10 +193,10 @@ class ISODeployer {
             #
             # FULL IMPLEMENTATION CONTRACT (when ISO serving URL is available):
             #
-            #   The ISO file must first be placed on an HTTP/HTTPS server that
+#   The ISO file must first be placed on an HTTP/HTTPS server that
             #   the target iLO management processor can reach over the network
-            #   (i.e.  http://<jenkins-agent-or-nfs-server>/isos/<server>.iso  or
-            #           http:// artifacts.mycorp.local/iso/<server>.iso ).
+            #   (i.e.  http://<ci-runner-or-nfs-server>/isos/<server>.iso  or
+            #            http:// artifacts.mycorp.local/iso/<server>.iso ).
             #
             #   Uncomment the block below and replace <iso_serving_url> with
             #   the actual accessible URL.
@@ -236,7 +236,7 @@ class ISODeployer {
             # -----------------------------------------------------------------------
             #
             # Until the ISO serving URL is available the virtual-media step is
-            # intentionally logged as a scaffold only — same status as Python side.
+            # intentionally logged as a scaffold only — same status as reference implementation.
 
             Write-Warning 'iLO virtual media mount needs a reachable ISO serving URL —'
             Write-Warning '  mirror cli/deploy_to_server.py._mount_virtual_media()'
