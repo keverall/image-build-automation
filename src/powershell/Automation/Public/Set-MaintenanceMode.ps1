@@ -78,6 +78,7 @@ function Set-MaintenanceMode {
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
     $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json')           -Required:$false
     $openviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'openview_config.json')       -Required:$false
+    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json')         -Required:$false
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
@@ -126,6 +127,7 @@ function Set-MaintenanceMode {
     $scomMgr = $null; try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
     $iloMgr = [ILOManager]::new($clusterDef)
     $ovMgr = [OpenViewClient]::new($openviewCfg, $clusterDef)
+    $oneviewMgr = $null; try { $oneviewMgr = [OneViewManager]::new($oneviewCfg, $clusterDef) } catch { Write-Warning "OneView manager unavailable: $($_.Exception.Message)" }
     $emailer = [EmailNotifier]::new($emailCfg)
 
     $opsrampClient = $null
@@ -141,7 +143,11 @@ function Set-MaintenanceMode {
         if ($scomMgr) {
             $durHrs = $duration.TotalSeconds / 3600.0
             $comment = "iRequest Maintenance: $ClusterId"
-            $scomRes = $scomMgr.EnterMaintenance($clusterDef.Get_Item('scom_group'), $duration, $comment, [bool]$DryRun)
+            $serversArr = [string[]]@($clusterDef.Get_Item('servers'))
+            $scomRes = $scomMgr.EnterMaintenance(
+                $clusterDef.Get_Item('scom_group'),
+                $duration, $comment, [bool]$DryRun,
+                $serversArr, $true)
             $scomOk = $scomRes.Success
             $scomInfo = if ($scomRes.Output) { ($scomRes.Output -join "`n") } else { '' }
         }
@@ -159,6 +165,14 @@ function Set-MaintenanceMode {
         $ovOk = $ovRes.Success; $ovMsg = $ovRes.Message
         $audit.steps['openview'] = @{ Success = $ovOk; Message = $ovMsg }
         if (-not $ovOk) { $overallOk = $false }
+
+        # OneView (HPE OneView for iLO)
+        if ($oneviewMgr) {
+            $oneviewRes = $oneviewMgr.SetMaintenanceWindow($clusterDef, $startDt, $endDt, [bool]$DryRun)
+            $oneviewOk = $oneviewRes.Success; $oneviewMsg = $oneviewRes.Message
+            $audit.steps['oneview'] = @{ Success = $oneviewOk; Message = $oneviewMsg }
+            if (-not $oneviewOk) { $overallOk = $false }
+        }
 
         # Email
         $emailOk = $emailer.SendMaintenanceNotification('enabled', $clusterDef, $servers, $startDt, $endDt, [bool]$DryRun)
@@ -274,6 +288,12 @@ function _Compute-NextWorkStart([hashtable]$Schedule, [DateTime]$After) {
 function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
     $dir = Split-Path $Path -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    
+    # Add GitLab context if available
+    if ($Script:GitlabContext) {
+        $Audit.gitlab_context = $Script:GitlabContext
+    }
+    
     $Audit | ConvertTo-Json -Depth 64 | Set-Content -Path $Path -Encoding UTF8 -Force
     # Append to master log
     $master = Join-Path $Script:LogDir 'maintenance_audit.log'
@@ -287,6 +307,8 @@ class SCOMManager {
     [string]    $ModuleName
     [bool]      $UseWinRM
     [hashtable] $Cred
+    [int]       $ScomVersion       # 2012 | 2016 | 2019 | 2025
+    [bool]      $RestApiReady      # $true for 2019 UR1+ and 2025
 
     SCOMManager([hashtable]$Config) {
         $this.Config = $Config
@@ -294,6 +316,8 @@ class SCOMManager {
         $this.ModuleName = $Config.Get_Item('powershell_module') ?? 'OperationsManager'
         $this.UseWinRM = [bool]($Config.Get_Item('use_winrm') ?? $false)
         $this.Cred = $null
+        $this.ScomVersion = 0
+        $this.RestApiReady = $false
         $credCfg = $Config.Get_Item('credentials')
         if ($credCfg) {
             $uenv = $credCfg.Get_Item('username_env')
@@ -304,6 +328,7 @@ class SCOMManager {
                 if ($u -and $p) { $this.Cred = @{ username = $u; password = $p } }
             }
         }
+        # Detect SCOM version and REST-API readiness on first use (lazy, on demand)
     }
 
     [hashtable] _RunPs([string]$Script) {
@@ -315,6 +340,37 @@ class SCOMManager {
         else {
             return Invoke-PowerShellScript -Script $Script
         }
+    }
+
+    [void] _DetectVersion() {
+        if ($this.ScomVersion -gt 0) { return }
+        if (-not $this.Cred) { return }
+        $script = @"
+Import-Module $($this.ModuleName) -ErrorAction Stop
+`$null = New-SCOMManagementGroupConnection -ComputerName "$($this.MgmtServer)" -ErrorAction Stop
+`$verLine = (Get-SCOMManagementServer | Select-Object -First 1).Version
+`$ver = if (`$verLine) { `$verLine.Trim() } else { 'unknown' }
+# Test whether REST /authenticate endpoint responds
+`$restOk = `$false
+try {
+    `$base = "http://$($this.MgmtServer)/OperationsManager"
+    `$null = Invoke-WebRequest -Uri "`$base/authenticate" -Method Head `
+        -TimeoutSec 5 -UseDefaultCredentials -ErrorAction Stop
+    `$restOk = `$true
+} catch { `$restOk = `$false }
+Write-Output "SCOM_VERSION: `$ver"
+Write-Output "SCOM_REST_READY: `$restOk"
+"@
+        $r = $this._RunPs($script)
+        if ($r.Success) {
+            foreach ($line in ($r.Output -split "`n")) {
+                $trimmed = $line.Trim()
+                if ($trimmed -match '^SCOM_VERSION:\s*(\d+)')         { $this.ScomVersion = [int]$Matches[1] }
+                if ($trimmed -match '^SCOM_REST_READY:\s*(True|true)') { $this.RestApiReady = $true }
+            }
+        }
+        if ($this.ScomVersion -eq 0) { $this.ScomVersion = 2016 }   # safe default
+        Write-Verbose "SCOM version detected: $($this.ScomVersion), REST ready: $($this.RestApiReady)"
     }
 
     [object[]] GetGroupMembers([string]$GroupDisplayName) {
@@ -332,15 +388,38 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
     }
 
     [hashtable] EnterMaintenance([string]$GroupDisplayName, [TimeSpan]$Duration,
-        [string]$Comment, [bool]$DryRun = $false) {
+        [string]$Comment, [bool]$DryRun = $false,
+        [string[]]$ServerHostnames = $null,
+        [bool]$UseClusterMode = $false) {
+
         if ($DryRun) {
-            Write-Verbose "[DRY RUN] Would enable SCOM maintenance for group '$GroupDisplayName', duration=$Duration"
+            if ($UseClusterMode) {
+                Write-Verbose "[DRY RUN] Would enable SCOM maintenance for group '$GroupDisplayName', Cluster mode (servers: $($ServerHostnames -join ', '))"
+            } else {
+                Write-Verbose "[DRY RUN] Would enable SCOM maintenance for group '$GroupDisplayName'"
+            }
             return @{ Success = $true; Output = @() }
         }
-        $totalSec = [int]$Duration.TotalSeconds
+
+        $this._DetectVersion()
+
+        $endTimeUtc = (Get-Date).ToUniversalTime().Add($Duration)
+        $endTimeStr = $endTimeUtc.ToString('yyyy-MM-ddTHH:mm:ss')
         $safeComment = $Comment.Replace("'", "''")
-        $script = New-ScomMaintenanceScript -GroupDisplayName $GroupDisplayName `
-            -DurationSeconds $totalSec -Comment $safeComment -Operation 'start'
+
+        # ── SCOM 2019 UR1+ and 2025: use REST API ────────────────────────────
+        if ($this.ScomVersion -ge 2019 -and $this.RestApiReady) {
+            return $this._EnterMaintenanceRest($endTimeStr, $safeComment, $ServerHostnames, $UseClusterMode)
+        }
+
+        # ── 2012 / 2016 / 2019-without-REST: use PowerShell cmdlets ───────────
+        $script = if ($UseClusterMode) {
+            New-ScomMaintenanceScript -ServerHostnames $ServerHostnames `
+                -EndTimeStr $endTimeStr -Reason 'PlannedOther' -Comment $safeComment -Operation 'start' -UseClusterMode
+        } else {
+            New-ScomMaintenanceScript -GroupDisplayName $GroupDisplayName `
+                -EndTimeStr $endTimeStr -Reason 'PlannedOther' -Comment $safeComment -Operation 'start'
+        }
         $r = $this._RunPs($script)
         if ($r.Success) {
             Write-Verbose "SCOM maintenance enabled: $($r.Output)"
@@ -350,16 +429,260 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
         return @{ Success = $false; Output = @($r.Output) }
     }
 
-    [bool] ExitMaintenance([string]$GroupDisplayName, [bool]$DryRun = $false) {
+    [bool] ExitMaintenance([string]$GroupDisplayName, [bool]$DryRun = $false,
+        [string[]]$ServerHostnames = $null,
+        [bool]$UseClusterMode = $false) {
+
         if ($DryRun) {
-            Write-Verbose "[DRY RUN] Would disable SCOM maintenance for group '$GroupDisplayName'"
+            if ($UseClusterMode) {
+                Write-Verbose "[DRY RUN] Would disable SCOM maintenance, Cluster mode for $($ServerHostnames -join ', ')"
+            } else {
+                Write-Verbose "[DRY RUN] Would disable SCOM maintenance for group '$GroupDisplayName'"
+            }
             return $true
         }
-        $script = New-ScomMaintenanceScript -GroupDisplayName $GroupDisplayName `
-            -DurationSeconds 0 -Comment 'exit' -Operation 'stop'
+
+        $this._DetectVersion()
+
+        # ── SCOM 2019 UR1+ and 2025: use REST API ────────────────────────────
+        if ($this.ScomVersion -ge 2019 -and $this.RestApiReady) {
+            $r = $this._ExitMaintenanceRest($ServerHostnames, $UseClusterMode)
+            return $r.Success
+        }
+
+        # ── 2012 / 2016 / 2019-without-REST: use PowerShell cmdlets ───────────
+        $script = if ($UseClusterMode) {
+            New-ScomMaintenanceScript -ServerHostnames $ServerHostnames `
+                -Comment 'exit' -Operation 'stop' -UseClusterMode
+        } else {
+            New-ScomMaintenanceScript -GroupDisplayName $GroupDisplayName `
+                -Comment 'exit' -Operation 'stop'
+        }
         $r = $this._RunPs($script)
         Write-Verbose "SCOM maintenance disable output: $($r.Output)"
         return $r.Success
+    }
+
+    # ════════════════════════════════════════════════════════════════════════
+    # PRIVATE — SCOM REST API helpers (2019 UR1+ and 2025 only)
+    # ════════════════════════════════════════════════════════════════════════
+
+    [hashtable] _EnterMaintenanceRest([string]$EndTimeStr, [string]$Comment,
+        [string[]]$ServerHostnames, [bool]$UseClusterMode) {
+
+        if (-not $this.Cred) { return @{ Success = $false; Output = 'No SCOM REST credentials' } }
+
+        # The REST script authenticates, resolves monitoring object IDs, calls POST /ScheduleMaintenance
+        $serverJson = ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join ","
+        $script = @"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+`$server     = "$($this.MgmtServer)"
+`$user       = "$($this.Cred['username'])"
+`$pass       = "$($this.Cred['password'])"
+`$baseUrl    = "http://`$server/OperationsManager"
+`$endTime    = [DateTime]::Parse('$EndTimeStr')
+`$endIso     = `$endTime.ToString('yyyy-MM-ddTHH:mm:ss')
+`$comment    = '$Comment'
+
+# ── Authenticate and obtain CSRF token ────────────────────────────────────
+`$headers   = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+`$headers.Add('Content-Type','application/json; charset=utf-8')
+`$bodyRaw   = "(Network):`$user:`$pass"
+`$bytes     = [System.Text.Encoding]::UTF8.GetBytes(`$bodyRaw)
+`$encAuth   = [Convert]::ToBase64String(`$bytes)
+`$jsonBody  = `$encAuth | ConvertTo-Json
+`$session   = `$null
+try {
+    `$resp = Invoke-WebRequest -Method POST -Uri "`$baseUrl/authenticate" `
+        -Headers `$headers -Body `$jsonBody -UseDefaultCredentials -SessionVariable session
+} catch {
+    Write-Error "SCOM REST authentication failed: `$(`$_.Exception.Message)"
+    exit 1
+}
+`$csrf = `$session.Cookies.GetCookies(`$baseUrl) | Where-Object { `$_.Name -eq 'SCOM-CSRF-TOKEN' }
+if (`$csrf) { `$headers.Add('SCOM-CSRF-TOKEN', [System.Web.HttpUtility]::UrlDecode(`$csrf.Value)) }
+
+# ── Resolve monitoring object IDs ─────────────────────────────────────────
+`$ids     = [System.Collections.ArrayList]::new()
+`$servers = @($serverJson)
+foreach (`$srvName in `$servers) {
+    try {
+        `$bodyCriteria = "DisplayName LIKE '%`$srvName%'" | ConvertTo-Json
+        `$classResp = Invoke-WebRequest -Uri "`$baseUrl/data/class/monitors" `
+            -Method Post -Body `$bodyCriteria -Headers `$headers -WebSession `$session `
+            -ErrorAction Stop
+        `$classData = `$classResp.Content | ConvertFrom-Json
+        foreach (`$obj in `$classData) {
+            if (`$obj.Id) { [void]`$ids.Add([string]`$obj.Id) }
+        }
+    } catch {
+        Write-Warning "Could not resolve ID for `$srvName : `$(`$_.Exception.Message)"
+    }
+}
+if (`$ids.Count -eq 0) {
+    Write-Error "No monitoring object IDs resolved for: $($ServerHostnames -join ', ')"
+    Write-Error "Please verify the servers are monitored by this SCOM management group."
+    exit 1
+}
+
+# ── Call POST /ScheduleMaintenance ────────────────────────────────────────
+`$durationMin = [int](`$endTime - (Get-Date)).TotalMinutes
+`$freqType = 8   # 8 = OneTimeSchedule as per REST API docs
+`$reqBody = @{
+    scheduleName          = 'MaintenanceMode_PowerShell'
+    monitoringObjectsId   = @(`$ids)
+    startTime             = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
+    duration              = [Math]::Max(1, `$durationMin)
+    freqType              = `$freqType
+    category              = 0
+    scheduleEffectiveFrom = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
+    recursive             = `$true
+    enabled               = `$true
+    comment               = `$comment
+} | ConvertTo-Json -Depth 5
+try {
+    `$result = Invoke-WebRequest -Uri "`$baseUrl/ScheduleMaintenance" `
+        -Method Post -Body `$reqBody -Headers `$headers -ContentType 'application/json' `
+        -WebSession `$session -ErrorAction Stop
+    Write-Host "SCOM REST maintenance scheduled. IDs: `$(`$result.Content)"
+    exit 0
+} catch {
+    Write-Error "SCOM REST maintenance failed: `$(`$_.Exception.Message)"
+    exit 1
+}
+"@
+        $r = $this._RunPs($script)
+        return @{ Success = $r.Success; Output = @($r.Output) }
+    }
+
+    [hashtable] _ExitMaintenanceRest([string[]]$ServerHostnames, [bool]$UseClusterMode) {
+        if (-not $this.Cred) { return @{ Success = $false; Output = 'No SCOM REST credentials' } }
+
+        $serverJson = ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join ","
+        # Exit maintenance for REST SCOM:
+        # Use Start-SCOMMaintenanceMode PowerShell cmdlet to disable (mirrors stop flow)
+        # because the REST API does not expose a direct maintenanceMode 'stop' endpoint.
+        # The OperationsManager PowerShell module is installed on the same mgmt server.
+        $endTimeStr = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
+        $script = if ($UseClusterMode) {
+            New-ScomMaintenanceScript -ServerHostnames $ServerHostnames `
+                -Comment 'exit' -Operation 'stop' -UseClusterMode
+        } else {
+            New-ScomMaintenanceScript -GroupDisplayName '' `
+                -Comment 'exit' -Operation 'stop' -UseClusterMode
+        }
+        if (-not $script) {
+            $script = @"
+Import-Module $($this.ModuleName) -ErrorAction Stop
+`$conn = New-SCOMManagementGroupConnection -ComputerName "$($this.MgmtServer)" -ErrorAction Stop
+`$endTime = [DateTime]::Parse('$EndTimeStr')
+`$stopped = @()
+`$servers = @($serverJson)
+foreach (`$srvName in `$servers) {
+    `$inst = Get-SCOMClassInstance -Name "*`$srvName*" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (`$inst -and `$inst.InMaintenanceMode) {
+        try { `$inst.StopMaintenanceMode(); `$stopped += `$srvName } catch { Write-Warning "`$srvName: `$(`$_.Exception.Message)" }
+    } else { Write-Host "`$srvName not in maintenance - skipping" }
+}
+if (`$stopped.Count -gt 0) { Write-Host "Stopped for `$(`$stopped.Count) servers" } else { Write-Host "None in maintenance" }
+"@
+        }
+        $r = $this._RunPs($script)
+        return @{ Success = $r.Success; Output = @($r.Output) }
+    }
+}
+
+# ---- OneViewManager ----
+class OneViewManager {
+    [hashtable] $Config
+    [string]    $Appliance
+    [string]    $ModuleName
+    [bool]      $UseWinRM
+    [hashtable] $Cred
+    [string]    $ScopeName
+
+    OneViewManager([hashtable]$Config, [hashtable]$ClusterDef) {
+        $this.Config = $Config
+        $ovConfig = $Config.Get_Item('oneview') ?? @{}
+        $this.Appliance = $ovConfig.Get_Item('appliance') ?? 'oneview.example.com'
+        $this.ModuleName = $ovConfig.Get_Item('module_name') ?? 'HPOneView.Managed'
+        $this.UseWinRM = [bool]($ovConfig.Get_Item('use_winrm') ?? $true)
+        $this.Cred = $null
+        $this.ScopeName = $ClusterDef.Get_Item('oneview_scope') ?? $ClusterDef.Get_Item('display_name')
+        
+        $credCfg = $ovConfig.Get_Item('credentials')
+        if ($credCfg) {
+            $uenv = $credCfg.Get_Item('username_env') ?? 'ONEVIEW_USER'
+            $penv = $credCfg.Get_Item('password_env') ?? 'ONEVIEW_PASSWORD'
+            $u = [System.Environment]::GetEnvironmentVariable($uenv)
+            $p = [System.Environment]::GetEnvironmentVariable($penv)
+            if ($u -and $p) { $this.Cred = @{ username = $u; password = $p } }
+        }
+    }
+
+    [hashtable] _RunPs([string]$Script) {
+        if ($this.UseWinRM) {
+            if (-not $this.Cred) { return @{ Success = $false; Output = 'WinRM credentials not configured' } }
+            return Invoke-PowerShellWinRM -Script $Script `
+                -Server $this.Appliance -Username $this.Cred['username'] -Password $this.Cred['password']
+        }
+        else {
+            return Invoke-PowerShellScript -Script $Script
+        }
+    }
+
+    [hashtable] SetMaintenanceWindow([hashtable]$ClusterDef, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun = $false) {
+        if ($DryRun) {
+            Write-Verbose "[DRY RUN] Would enable OneView maintenance for scope '$($this.ScopeName)'"
+            return @{ Success = $true; Output = "DRY RUN: OneView maintenance for $($this.ScopeName)" }
+        }
+        
+        $script = @"
+Import-Module $($this.ModuleName) -ErrorAction Stop
+Connect-OVMgmt -Appliance "$($this.Appliance)" -Credential (New-Object System.Management.Automation.PSCredential("$($this.Cred['username'])", (ConvertTo-SecureString "$($this.Cred['password'])" -AsPlainText -Force))) -ErrorAction Stop
+`$scope = Get-OVScope -Name "$($this.ScopeName)" -ErrorAction SilentlyContinue
+if (-not `$scope) { Write-Error "Scope '$($this.ScopeName)' not found"; exit 1 }
+`$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
+foreach (`$s in `$servers) {
+    if (-not `$s.MaintenanceModeEnabled) {
+        Enable-OVMaintenanceMode -InputObject `$s -Async -ErrorAction Stop
+        Write-Host "OneView maintenance enabled: `$(`$s.Name)"
+    }
+}
+"@
+        $r = $this._RunPs($script)
+        if ($r.Success) {
+            return @{ Success = $true; Output = $r.Output }
+        }
+        Write-Error "OneView maintenance failed: $($r.Output)"
+        return @{ Success = $false; Output = $r.Output }
+    }
+
+    [hashtable] StopMaintenance([hashtable]$ClusterDef, [bool]$DryRun = $false) {
+        if ($DryRun) {
+            Write-Verbose "[DRY RUN] Would disable OneView maintenance for scope '$($this.ScopeName)'"
+            return @{ Success = $true; Output = "DRY RUN: OneView disable for $($this.ScopeName)" }
+        }
+        
+        $script = @"
+Import-Module $($this.ModuleName) -ErrorAction Stop
+Connect-OVMgmt -Appliance "$($this.Appliance)" -Credential (New-Object System.Management.Automation.PSCredential("$($this.Cred['username'])", (ConvertTo-SecureString "$($this.Cred['password'])" -AsPlainText -Force))) -ErrorAction Stop
+`$scope = Get-OVScope -Name "$($this.ScopeName)" -ErrorAction SilentlyContinue
+if (-not `$scope) { Write-Error "Scope '$($this.ScopeName)' not found"; exit 1 }
+`$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
+foreach (`$s in `$servers) {
+    if (`$s.MaintenanceModeEnabled) {
+        Disable-OVMaintenanceMode -InputObject `$s -Async -ErrorAction Stop
+        Write-Host "OneView maintenance disabled: `$(`$s.Name)"
+    }
+}
+"@
+        $r = $this._RunPs($script)
+        if ($r.Success) {
+            return @{ Success = $true; Output = $r.Output }
+        }
+        Write-Error "OneView maintenance stop failed: $($r.Output)"
+        return @{ Success = $false; Output = $r.Output }
     }
 }
 

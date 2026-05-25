@@ -4,8 +4,8 @@
 # credential getter for all four CyberArk fallback dimensions.
 
 $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
-if (-not $env:TEMP)  { $env:TEMP  = '/home/keverall/' }
-if (-not $env:TMP)   { $env:TMP   = '/home/keverall/' }
+if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
+if (-not $env:TMP)   { $env:TMP   = '/tmp' }
 
 Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -ErrorAction Stop
 
