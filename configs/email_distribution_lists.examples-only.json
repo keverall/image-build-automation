@@ -1,0 +1,24 @@
+{
+  "email": {
+    "smtp_server": "smtp.example.com",
+    "smtp_port": 587,
+    "use_tls": true,
+    "use_ssl": false,
+    "username_env": "SMTP_USER",
+    "password_env": "SMTP_PASSWORD",
+    "from_address": "maintenance-bot@example.com",
+    "distribution_lists": {
+      "maintenance_enabled": ["infrastructure-alerts@example.com", "support-team@example.com"],
+      "maintenance_disabled": ["infrastructure-alerts@example.com", "support-team@example.com"],
+      "failures": ["ops-alert@example.com", "maintenance-admin@example.com"],
+      "audit": ["audit-team@example.com"]
+    },
+    "templates": {
+      "subject_enabled": "Maintenance Mode ENABLED - Cluster: {cluster_name} ({environment})",
+      "subject_disabled": "Maintenance Mode DISABLED - Cluster: {cluster_name} ({environment})",
+      "subject_failure": "Maintenance Operation FAILED - Cluster: {cluster_name}",
+      "body_template": "Dear Team,\n\nMaintenance window for cluster '{cluster_name}' has {action} as scheduled.\n\nDetails:\n- Cluster: {cluster_name}\n- Servers: {servers}\n- Start: {start_time}\n- End: {end_time}\n- Triggered by: {triggered_by}\n\n{additional_info}\n\nDuring this period, health checks and alerts are suppressed. Please ignore any alarms raised for these servers until notified otherwise.\n\nRegards,\nMaintenance Automation Bot"
+    }
+  },
+  "notes": "Email configuration for maintenance notifications. Environment variables for credentials must be set on the system. Distribution list addresses should be updated to your organization's contacts."
+}
