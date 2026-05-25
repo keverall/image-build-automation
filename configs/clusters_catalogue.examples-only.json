@@ -1,0 +1,63 @@
+{
+  "clusters": {
+    "PROD-CLUSTER-01": {
+      "display_name": "Production Cluster 01",
+      "servers": ["prod-server-01.example.com", "prod-server-02.example.com", "prod-server-03.example.com"],
+      "scom_group": "SCOM_Prod_Cluster_01",
+      "scom_version": "2019",
+      "scom_management_server": "VR-OPM19P1-7382.ad.example.com",
+      "scom_environment": "production",
+      "ilo_addresses": {
+        "prod-server-01.example.com": "192.168.1.101",
+        "prod-server-02.example.com": "192.168.1.102",
+        "prod-server-03.example.com": "192.168.1.103"
+      },
+      "oneview_scope": "Production_Cluster_01",
+      "openview_node_ids": {
+        "prod-server-01.example.com": "OV_NODE_001",
+        "prod-server-02.example.com": "OV_NODE_002",
+        "prod-server-03.example.com": "OV_NODE_003"
+      },
+      "openview_api": {
+        "base_url": "https://openview.example.com/api",
+        "auth": {
+          "type": "basic",
+          "user_env": "OPENVIEW_USER",
+          "pass_env": "OPENVIEW_PASSWORD"
+        }
+      },
+      "schedule": {
+        "timezone": "Europe/Dublin",
+        "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+        "work_start": "08:00",
+        "work_end": "17:00"
+      },
+      "environment": "production"
+    },
+    "STAGING-CLUSTER-01": {
+      "display_name": "Staging Cluster 01",
+      "servers": ["stag-server-01.example.com", "stag-server-02.example.com"],
+      "scom_group": "SCOM_Staging_Cluster_01",
+      "scom_version": "2016",
+      "scom_management_server": "OMGASOPM16MS1.ad.example.com",
+      "scom_environment": "test",
+      "ilo_addresses": {
+        "stag-server-01.example.com": "192.168.2.101",
+        "stag-server-02.example.com": "192.168.2.102"
+      },
+      "oneview_scope": "Staging_Cluster_01",
+      "openview_node_ids": {
+        "stag-server-01.example.com": "OV_STAG_001",
+        "stag-server-02.example.com": "OV_STAG_002"
+      },
+      "schedule": {
+        "timezone": "Europe/Dublin",
+        "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+        "work_start": "08:00",
+        "work_end": "17:00"
+      },
+      "environment": "staging"
+    }
+  },
+  "notes": "Edit this file to define your clusters. Cluster IDs are case-sensitive. Do not commit sensitive data; use environment variables for credentials. scom_version: '2012' or '2016' uses PowerShell only. '2019' (UR1+) and '2025' support the SCOM REST API. scom_management_server is the primary management server for the cluster; scom_environment must be 'test' or 'production' to resolve management servers from scom_config.json."
+}
