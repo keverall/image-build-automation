@@ -4,7 +4,6 @@
 > adding new handler types) is in [`../api_reference.md`](../api_reference.md).
 > This page documents PowerShell-specific types, return schemas, and dispatch
 > behaviour for each symbol in the routing layer.
-> For the equivalent Python view see [`../python/api_reference.md`](../python/api_reference.md).
 
 ---
 
@@ -17,8 +16,8 @@
 | `$script:RouteMap` | `Private/_RouteMap.ps1` | no |
 | `_Validate-Request` | `Public/_Validate-Request.ps1` | no |
 
-**Source equivalence** (Python): `AutomationOrchestrator.execute()`, `router.py`,
-`_ROUTE_MAP`, `_VALIDATORS`.
+**Source:** `AutomationOrchestrator`, `Router.ps1`,
+`$script:RouteMap`, validation scripts.
 
 ---
 

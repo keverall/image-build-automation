@@ -9,8 +9,8 @@
 
 GitLab CI/CD pipeline triggers bridge web-based ticketing systems (iRequest,
 ServiceNow, Jira) with automated backend PowerShell scripts. The GitLab
-self-hosted instance is the automation gateway — the same pattern as the
-equivalent Jenkins REST architecture, adapted to the GitLab API surface.
+self-hosted instance is the automation gateway — a REST architecture
+that bridges web-based ticketing systems with automated backend PowerShell scripts.
 
 ```
 iRequest / ServiceNow / Jira
@@ -115,8 +115,7 @@ logs/maintenance_<CI_JOB_ID>_error.json    # on unhandled exception
 
 ## Step 2 — Generate a Pipeline Trigger Token
 
-The Pipeline Trigger Token is the GitLab equivalent of the Jenkins API token.
-It authenticates pipeline launches from external systems.
+The Pipeline Trigger Token authenticates pipeline launches from external systems.
 
 1. In GitLab, navigate to the project → **Settings > CI/CD > Pipeline triggers**
 2. Click **Add trigger**
@@ -341,17 +340,17 @@ making any subsystem calls.
 
 ---
 
-## Comparison with the Jenkins REST integration
+## Comparison with legacy CI systems
 
-| Aspect | Jenkins | GitLab |
+| Aspect | Legacy CI | GitLab |
 |---|---|---|
-| Config | Jenkinsfile / Web UI | `.gitlab-ci.yml` (code-in-git) |
+| Config | Legacy CI file / Web UI | `.gitlab-ci.yml` (code-in-git) |
 | Auth | Basic Auth header (username + API token) | Token in POST body (`token=`) |
 | Trigger endpoint | `/job/{name}/buildWithParameters` | `/api/v4/projects/{id}/trigger/pipeline` |
 | Parameters | `-d key=value` form body | `variables[key]=value` form body |
 | Branch selection | Per-job web config | `ref=` in trigger payload |
 | Commit tracking | Last-successful hash | Full git SHA in pipeline record |
-| Audit trail | Jenkins build log | GitLab Audit Events + pipeline history |
+| Audit trail | build log | GitLab Audit Events + pipeline history |
 
 ---
 
@@ -379,4 +378,4 @@ in PowerShell, `--insecure` in curl).
 | `400 Bad Request` / empty pipeline | Missing `ref` parameter | Ensure `ref=main` (or target branch) is in the POST body |
 | `Certificate` / `SSL` error (runner) | Self-signed or wrong CA on runner | Add CA to runner trust store or pass `--insecure` |
 | Pipeline `failed` without clear cause | Script error in runner | Check pipeline job log in GitLab UI or via API |
-| `Maintenance failed: Unauthorized` (SCOM) | Jenkins account missing SCOM rights | Verify the runner service account has `OperationsManager` admin in the SCOM management group |
+| `Maintenance failed: Unauthorized` (SCOM) | Runner service account missing SCOM rights | Verify the runner service account has `OperationsManager` admin in the SCOM management group |

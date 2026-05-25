@@ -12,7 +12,7 @@
 Set-StrictMode -Off   # allow $null comparisons, unset variables in classes
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Shared value type: CommandResult  (mirrors Python executor.CommandResult)
+# Shared value type: CommandResult 
 # ──────────────────────────────────────────────────────────────────────────────
 class CommandResult {
     [int]    $ReturnCode
@@ -31,7 +31,7 @@ class CommandResult {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Shared reference type: AuditLogger  (mirrors Python AuditLogger)
+# Shared reference type: AuditLogger  
 # ──────────────────────────────────────────────────────────────────────────────
 class AuditLogger {
     [string]  $Category
@@ -102,7 +102,7 @@ class AuditLogger {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Shared value type: ServerInfo  (mirrors Python ServerInfo dataclass)
+# Shared value type: ServerInfo  
 # ──────────────────────────────────────────────────────────────────────────────
 class ServerInfo {
     [string] $Hostname

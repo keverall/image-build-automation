@@ -5,8 +5,8 @@
 function Start-AutomationOrchestrator {
     <#
     .SYNOPSIS
-        Execute an automation request with validation and routing.
-        Mirrors Python AutomationOrchestrator.execute().
+Execute an automation request with validation and routing.
+         Mirrors AutomationOrchestrator.execute().
 
     .DESCRIPTION
         Validates the request parameters using _Validate-Request, then routes

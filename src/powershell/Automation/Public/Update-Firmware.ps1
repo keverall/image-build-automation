@@ -1,12 +1,12 @@
 ﻿#
 # Public/Update-Firmware.ps1 — HPE firmware/driver ISO builder via HPE Smart Update Tool (SUT)
-# Mirrors Python cli/update_firmware_drivers.py
+# Mirrors reference implementation cli/update_firmware_drivers.py
 # Usage:  pwsh -File Update-Firmware.ps1 -Server 'srv01.corp.local'
 #         pwsh -File Update-Firmware.ps1 -Config 'configs\hpe_firmware_drivers_nov2025.json'
 #
-# Differences from Python: PS uses the same single-shot SUT call as Python,
+# Differences from reference: PS uses the same single-shot SUT call as the reference,
 # but also calls through Invoke-NativeCommandWithRetry (exponential back-off)
-# so transient SUT failures are automatically retried.  Python's single
+# so transient SUT failures are automatically retried.  The reference's single
 # run_command() call does NOT do this — so the PS version is in fact stronger.
 #
 
@@ -19,7 +19,7 @@ function Update-Firmware {
     .DESCRIPTION
         Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and
         invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the
-        Python automation.cli.update_firmware_drivers module.
+        reference implementation automation.cli.update_firmware_drivers module.
 
     .PARAMETER Config
         Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json).
@@ -156,7 +156,7 @@ class FirmwareUpdater {
             }
         }
         # Use Invoke-NativeCommandWithRetry for exponential back-off on transient SUT failures.
-        # This is what makes the PowerShell version stronger than Python's single-shot run_command.
+        # This is what makes the PowerShell version stronger than reference implementation's single-shot run_command.
         return Invoke-NativeCommandWithRetry -Command (@($this.SutPath) + $Args) `
                                              -MaxAttempts $this.MaxRetryAttempts `
                                              -DelaySeconds $this.RetryDelaySeconds `

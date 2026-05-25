@@ -1,18 +1,17 @@
 #
 # Control.psm1 — Central Control Module.
 #
-# Mirrors Python automation/control.py exactly.
 # Single entry point for all automation request surfaces:
 #
 #   Surface          Invocation
 #   ────────────────  ──────────────────────────────────────────────────────────
-#   Jenkins pipeline  Run-Jenkins  -Params <hashtable>   (maps BUILD_STAGE → request)
+#   CI pipeline      Run-CIPipeline  -Params <hashtable>   (maps BUILD_STAGE → request)
 #   iRequest/ISAPI    Run-IRequest  -FormData <hashtable>  (cluster maintenance)
 #   Scheduled task    Run-Scheduler -TaskParams <hashtable> (schtasks / cron calls)
 #   Direct API        Start-AutomationOrchestrator -RequestType ... (PS cmdlets)
 #
-# After mirroring the Python file exactly:
-#   Run-Jenkins()   ≡  run_jenkins()
+# After mirroring the reference implementation exactly:
+#   Run-CIPipeline() ≡  run_ci_pipeline()
 #   Run-IRequest()  ≡  run_irequest()
 #   Run-Scheduler() ≡  run_scheduler()
 #
@@ -33,9 +32,9 @@ if (-not (Get-Module Automation -ErrorAction SilentlyContinue)) {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build JENKINS_PARAMS map equivalent to control.py stage_map
+# Helper — build CI_PARAMS map equivalent to control.py stage_map
 # ─────────────────────────────────────────────────────────────────────────────
-function _Build-JenkinsParams {
+function _Build-CIParams {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
@@ -44,7 +43,7 @@ function _Build-JenkinsParams {
     $stage = $RawParams.Get_Item('BUILD_STAGE')
     $dryRun = [bool]($RawParams.Get_Item('DRY_RUN'))
 
-    # Map Jenkins stage to PS orchestrator request type  ← mirrors stage_map in control.py
+    # Map CI stage to PS orchestrator request type
     $stageMap = @{
         firmware       = 'update_firmware'
         windows        = 'patch_windows'
@@ -64,7 +63,7 @@ function _Build-JenkinsParams {
             SkipDownload  = [bool]($RawParams.Get_Item('SKIP_DOWNLOAD'))
             DryRun        = $dryRun
         }
-        Source        = 'jenkins'
+        Source        = 'ci'
         DryRun        = $dryRun
     }
 }
@@ -130,16 +129,16 @@ function _Build-SchedulerParams {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# New-JenkinsCtrl  — factory; mirrors Control.from_jenkins()
+# New-CIPipelineCtrl  — factory; mirrors Control.from_ci()
 # Used externally before .Run() if you need the object
 # ─────────────────────────────────────────────────────────────────────────────
-function New-JenkinsCtrl {
+function New-CIPipelineCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
         [Parameter(Mandatory)][hashtable] $Params
     )
-    $ctrl = _Build-JenkinsParams -RawParams $Params
+    $ctrl = _Build-CIParams -RawParams $Params
     return [pscustomobject]$ctrl
 }
 
@@ -198,17 +197,17 @@ function _Execute {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Run-Jenkins  — convenience; mirrors run_jenkins()
-# Entry-point used by the Jenkins pipeline phase "Orchestration"
+# Run-CIPipeline  — convenience; mirrors run_ci()
+# Entry-point used by the CI pipeline phase "Orchestration"
 # ─────────────────────────────────────────────────────────────────────────────
-function Run-Jenkins {
+function Run-CIPipeline {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
         [Parameter(ValueFromPipeline)][hashtable] $Params
     )
-    $ctrl = _Build-JenkinsParams -RawParams $Params
-    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'jenkins'
+    $ctrl = _Build-CIParams -RawParams $Params
+    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'ci'
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -289,13 +288,13 @@ function Run-GitLab {
 # ─────────────────────────────────────────────────────────────────────────────
 Export-ModuleMember -Function @(
     # Factory  ← Control class alternative
-    'New-JenkinsCtrl'
+    'New-CIPipelineCtrl'
     'New-IRequestCtrl'
     'New-SchedulerCtrl'
     'New-GitLabCtrl'
 
     # Convenience singletons  ← run_* functions
-    'Run-Jenkins'
+    'Run-CIPipeline'
     'Run-IRequest'
     'Run-Scheduler'
     'Run-GitLab'

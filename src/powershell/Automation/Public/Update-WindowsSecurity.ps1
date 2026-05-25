@@ -1,6 +1,6 @@
 ﻿#
 # Public/Update-WindowsSecurity.ps1 — Windows security patcher / ISO builder
-# Equivalent of Python cli/patch_windows_security.py
+# Equivalent of reference implementation cli/patch_windows_security.py
 #
 # Contains: Invoke-WindowsSecurityUpdate wrapper, WindowsPatcher class, script mode.
 #

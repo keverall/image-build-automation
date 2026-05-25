@@ -90,7 +90,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, Open
 | `environment` | string | `production`, `staging`, or `dev` |
 
 **Notes**:
-- Only top-level keys in `clusters` are valid cluster IDs. Server hostnames that are not top-level keys are **rejected** by `maintenance_mode.py --validate`.
+- Only top-level keys in `clusters` are valid cluster IDs. Server hostnames that are not top-level keys are **rejected** by validation logic.
 - `schedule` is used only when `--end` is omitted; the script calculates the next workday 08:00 after start time.
 - `scom_management_server` can be overridden by `scom_config.json` per-environment but typically matches.
 
@@ -147,7 +147,7 @@ export HPE_DOWNLOAD_PASS="my_password"
 
 ### Component Selection
 
-The `update_firmware_drivers.py` script reads this manifest and instructs HPE SUT to:
+The update_firmware_drivers script reads this manifest and instructs HPE SUT to:
 
 1. Download each component (firmware + drivers) for the detected server generation
 2. Verify checksums
@@ -178,7 +178,7 @@ Security update specifications for DISM offline patching.
 - `kb_number` must match Microsoft Update Catalog identifier
 - `cve_ids` array may be empty if CVE IDs unknown
 - `url` is optional metadata for manual lookup
-- `patch_windows_security.py` mounts base ISO, applies these MSU files via DISM, generates patched ISO
+- `patch_windows_security` mounts base ISO, applies these MSU files via DISM, generates patched ISO
 
 ---
 
@@ -354,50 +354,6 @@ export OPSRAMP_CLIENT_SECRET="xxx"
 export OPSRAMP_TENANT_ID="xxx"
 ```
 
-**Tip**: Store these in a `.env` file and load via `python-dotenv` (already in `requirements.txt`):
-
-```python
-from dotenv import load_dotenv
-load_dotenv()  # Loads .env in current directory
-```
+**Tip**: Store these in a `.env` file and load via environment variable loader.
 
 ---
-
-## Validation
-
-All scripts call `load_json_config()` which:
-
-1. Checks file exists (if `required=True`)
-2. Parses JSON (raises `JSONDecodeError` on syntax error)
-3. Substitutes `${VAR}` from environment (searches `os.environ`, leaves unchanged if not found)
-
-To validate all configs at startup (fast sanity check):
-
-```bash
-python -c "
-from utils.config import load_json_config
-import sys
-
-files = [
-    'configs/clusters_catalogue.json',
-    'configs/scom_config.json',
-    'configs/openview_config.json',
-    'configs/email_distribution_lists.json',
-    'configs/opsramp_config.json',
-]
-
-for f in files:
-    try:
-        load_json_config(f, required=False)
-        print(f'OK: {f}')
-    except Exception as e:
-        print(f'ERROR: {f} — {e}', file=sys.stderr)
-        sys.exit(1)
-"
-```
-
----
-
-## Change History
-
-- 2026-05-15: Added with DRY refactor and maintenance mode orchestration
