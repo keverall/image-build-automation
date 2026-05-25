@@ -173,17 +173,17 @@ Record fields: `cluster`, `action`, `dry_run`, per-system results
 
 ---
 
-## Jenkins Pipeline Integration
+## GitLab CI Integration
 
-The root `Jenkinsfile` runs PSScriptAnalyzer on the full module. Extend it for a
-dedicated maintenance-mode stage after Pester passes:
+The root `.gitlab-ci.yml` runs PSScriptAnalyzer on the full module. Extend it for a
+dedicated maintenance-mode job after Pester passes:
 
 ```powershell
-# Inside the existing 'Code Quality & Security Scan' stage (after other PS tools)
+# Inside the existing 'Code Quality & Security Scan' job
 echo [INFO] [8/8] Running PSScriptAnalyzer on maintenance module...
-Invoke-ScriptAnalyzer -Path 'powershell\Automation\Public\Set-MaintenanceMode.ps1' `
+Invoke-ScriptAnalyzer -Path 'src/powershell/Automation/Public/Set-MaintenanceMode.ps1' `
     -Severity Error,Warning -OutputFormat Json `
-    -OutFile 'code_scan_results\psa_maintenance.json'
+    -OutFile 'code_scan_results/psa_maintenance.json'
 ```
 
 See [`code_quality.md`](code_quality.md) for the full PSScriptAnalyzer /
