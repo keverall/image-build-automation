@@ -37,24 +37,7 @@ pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
 
 # ─── PowerShell Testing ──────────────────────────────────────────────────────
 pwsh-test: ## Run all Pester PowerShell tests
-	@echo "$(CYAN)[pwsh-test]$(NC) Running all Pester tests..."
-	@pwsh -NoProfile -Command "\
-		$$pwd = '$(CURDIR)'; \
-		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		$$config = New-PesterConfiguration; \
-		$$config.Run.Path = @( \
-			\"$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Credentials.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \
-		); \
-		$$config.Output.Verbosity = 'Detailed'; \
-		Invoke-Pester -Configuration $$config"
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-pwsh-tests.ps1
 
 pwsh-test-unit: ## Run Pester unit tests only
 	@echo "$(CYAN)[pwsh-test-unit]$(NC) Running Pester unit tests..."
