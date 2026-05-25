@@ -24,9 +24,10 @@ $ErrorActionPreference = 'Stop'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-import the Automation module so callers never have to Import-Module first
+# Skip if already loaded (handles dot-sourcing from Automation.psm1)
 # ─────────────────────────────────────────────────────────────────────────────
-$modRoot = Join-Path $PSScriptRoot '..\\\\Automation'
 if (-not (Get-Module Automation -ErrorAction SilentlyContinue)) {
+    $modRoot = $PSScriptRoot
     try   { Import-Module $modRoot -Force -ErrorAction Stop }
     catch { Write-Warning "Control: Could not auto-import Automation module from $modRoot : $_" }
 }
@@ -239,18 +240,65 @@ function Run-Scheduler {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Export — strictly mirrors the control.py public API
+# Helper — build GITLAB_PARAMS map for GitLab CI/CD maintenance trigger
+# ─────────────────────────────────────────────────────────────────────────────
+function _Build-GitLabParams {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)][hashtable] $Params
+    )
+    return @{
+        RequestType   = "gitlab_maintenance"
+        Params        = $Params
+        Source        = 'gitlab'
+        DryRun        = [bool]($Params.Get_Item('dry_run'))
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# New-GitLabCtrl  — factory; mirrors Control.from_gitlab()
+# Used for GitLab CI/CD triggered maintenance operations
+# ─────────────────────────────────────────────────────────────────────────────
+function New-GitLabCtrl {
+    [CmdletBinding()]
+    [OutputType([psobject])]
+    param(
+        [Parameter(Mandatory)][hashtable] $Params
+    )
+    $ctrl = _Build-GitLabParams -Params $Params
+    return [pscustomobject]$ctrl
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Run-GitLab  — convenience; triggers GitLab CI pipeline for maintenance
+# Entry-point used by iRequest to trigger GitLab CI/CD instead of direct execution
+# ─────────────────────────────────────────────────────────────────────────────
+function Run-GitLab {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(ValueFromPipeline)][hashtable] $Params
+    )
+    $ctrl = _Build-GitLabParams -Params $Params
+    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'gitlab'
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Export — strictly mirrors the control.py public API + GitLab extensions
 # ─────────────────────────────────────────────────────────────────────────────
 Export-ModuleMember -Function @(
     # Factory  ← Control class alternative
     'New-JenkinsCtrl'
     'New-IRequestCtrl'
     'New-SchedulerCtrl'
+    'New-GitLabCtrl'
 
     # Convenience singletons  ← run_* functions
     'Run-Jenkins'
     'Run-IRequest'
     'Run-Scheduler'
+    'Run-GitLab'
 )
 
 # vim: ts=4 sw=4 et

@@ -61,6 +61,12 @@
       "powershell_handler": "New-Uuid",
       "jenkins_stage": null,
       "description": "Generate deterministic server UUID"
+    },
+    "gitlab_maintenance": {
+      "python_module": null,
+      "powershell_handler": "Invoke-GitLabMaintenanceTrigger",
+      "jenkins_stage": null,
+      "description": "Trigger GitLab CI/CD pipeline for maintenance operations"
     }
   },
   "jenkins_stage_map": {

@@ -1,4 +1,4 @@
-# HPE ProLiant Windows Server ISO Automation
+# HPE ProLiant Windows Server ISO Automation (Root Readme)
 
 Automated build pipelines for creating customized Windows Server installation ISOs tailored for HPE ProLiant hardware. Integrates firmware/driver updates, security patching, vulnerability scanning, complete audit trails, with OpsRamp monitoring and reporting.
 
@@ -19,46 +19,51 @@ Automated build pipelines for creating customized Windows Server installation IS
 | [📦 Utilities Package](docs/python/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
-| [📡 Orchestrator & Routing](docs/api_reference.md) | Language-agnostic: request types, call sequence, adding new handlers, rotor and `ROUTE_MAP`/`$script:RouteMap`, return schemas for both Python `dict` and PowerShell `[hashtable]` |
+| [📡 Orchestrator & Routing](docs/api/api_reference.md) | Language-agnostic: request types, call sequence, adding new handlers, rotor and `ROUTE_MAP`/`$script:RouteMap`, return schemas for both Python `dict` and PowerShell `[hashtable]` |
 | [📡 Orchestrator & Routing — Python](docs/python/api_reference.md) | `AutomationOrchestrator`, `validate_build_params()`, `validate_cluster_id()`, source paths, return dicts |
 | [📡 Orchestrator & Routing — PowerShell](docs/powershell/api_reference.md) | `Start-AutomationOrchestrator`, `Invoke-RoutedRequest`, `$script:RouteMap`, `_Validate-Request`, source paths, return schemas |
+| [🌐 GitLab REST API — Pipeline Triggers](docs/api/gitlab.md) | End-to-end GitLab REST trigger reference: `.gitlab-ci.yml` job setup, Pipeline Trigger Tokens, `trigger/pipeline` POST payloads (PowerShell + curl), `Send-GitLabMaintenanceRequest` helper, callbacks, polling, and GitLab-vs-Jenkins comparison |
 | [🔌 PowerShell Generated Cmdlets](docs/powershell/generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, etc. |
 | [🔌 Python Generated CLI](docs/python/generated/INDEX.md) | Auto-generated reference for all Python CLI commands — `build-iso`, `deploy-server`, `maintenance-mode`, etc. |
 | [🧪 PowerShell Testing (Pester)](docs/powershell/powershell_testing.md) | Pester v5 BDD testing guide — equivalent to pytest for the PowerShell module |
 | [⚙️ PowerShell Testing Quick Start](docs/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
 
 ### In this document
-- [Table of Contents](#table-of-contents)
-- [Project Architecture](#project-architecture)
-- [Quick Links for Common Tasks](#quick-links-for-common-tasks)
-- [Jenkins Pipeline Stages](#jenkins-pipeline-stages)
-- [Makefile & Local Development](#makefile-local-development)
-  - [Quick Start](#quick-start)
-  - [Virtual Environment](#virtual-environment)
-  - [Makefile Command Reference](#makefile-command-reference)
-  - [Makefile + Jenkinsfile Integration](#makefile-jenkinsfile-integration)
-- [CI Runner Setup](#ci-runner-setup)
-  - [Supported Platforms](#supported-platforms)
-  - [What It Installs](#what-it-installs)
-  - [Usage](#usage)
-  - [One-Liner for Remote Provisioning](#one-liner-for-remote-provisioning)
-  - [Idempotency](#idempotency)
-  - [Jenkinsfile Integration](#jenkinsfile-integration)
-- [SCOM 2015 Compliance](#scom-2015-compliance)
-  - [Why Not REST?](#why-not-rest)
-  - [How SCOM Integration Works](#how-scom-integration-works)
-  - [Step 1: The HPE PowerShell Wrapper Scripts](#step-1-the-hpe-powershell-wrapper-scripts)
-  - [Step 2: The Python SCOMManager Class](#step-2-the-python-scommanager-class)
-  - [Step 3: Ensuring REST API Is Not Used for SCOM 2015](#step-3-ensuring-rest-api-is-not-used-for-scom-2015)
-  - [Upgrade Path: SCOM 2025 with REST API](#upgrade-path-scom-2025-with-rest-api)
-    - [Migration Complexity: **Low** (10–17 hours for REST, 30–45 hours with FastAPI/GraphQL)](#migration-complexity-low-10-17-hours-for-rest-30-45-hours-with-fastapi-graphql)
-    - [Phase 1: Add REST Backend (Opt-In)](#phase-1-add-rest-backend-opt-in)
-    - [Phase 2-4: Progressive Rollout](#phase-2-4-progressive-rollout)
-    - [API Options for SCOM 2025](#api-options-for-scom-2025)
-    - [Benefits Comparison](#benefits-comparison)
-- [Contributing](#contributing)
-- [Support](#support)
-- [License](#license)
+- [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)
+  - [Table of Contents](#table-of-contents)
+    - [Internal docs index](#internal-docs-index)
+    - [In this document](#in-this-document)
+  - [Project Architecture](#project-architecture)
+  - [Quick Links for Common Tasks](#quick-links-for-common-tasks)
+  - [Jenkins Pipeline Files](#jenkins-pipeline-files)
+    - [Pipeline Stages (both flavours)](#pipeline-stages-both-flavours)
+  - [Makefile \& Local Development](#makefile--local-development)
+    - [Quick Start](#quick-start)
+    - [Virtual Environment](#virtual-environment)
+    - [Makefile Command Reference](#makefile-command-reference)
+    - [Makefile + Jenkinsfile Integration](#makefile--jenkinsfile-integration)
+  - [CI Runner Setup](#ci-runner-setup)
+    - [Supported Platforms](#supported-platforms)
+    - [What It Installs](#what-it-installs)
+    - [Usage](#usage)
+    - [One-Liner for Remote Provisioning](#one-liner-for-remote-provisioning)
+    - [Idempotency](#idempotency)
+    - [Jenkinsfile Integration](#jenkinsfile-integration)
+  - [SCOM 2015 Compliance](#scom-2015-compliance)
+    - [Why Not REST?](#why-not-rest)
+    - [How SCOM Integration Works](#how-scom-integration-works)
+    - [Step 1: The HPE PowerShell Wrapper Scripts](#step-1-the-hpe-powershell-wrapper-scripts)
+    - [Step 2: The Python SCOMManager Class](#step-2-the-python-scommanager-class)
+    - [Step 3: Ensuring REST API Is Not Used for SCOM 2015](#step-3-ensuring-rest-api-is-not-used-for-scom-2015)
+    - [Upgrade Path: SCOM 2025 with REST API](#upgrade-path-scom-2025-with-rest-api)
+      - [Migration Complexity: **Low** (10–17 hours for REST, 30–45 hours with FastAPI/GraphQL)](#migration-complexity-low-1017-hours-for-rest-3045-hours-with-fastapigraphql)
+      - [Phase 1: Add REST Backend (Opt-In)](#phase-1-add-rest-backend-opt-in)
+      - [Phase 2-4: Progressive Rollout](#phase-2-4-progressive-rollout)
+      - [API Options for SCOM 2025](#api-options-for-scom-2025)
+      - [Benefits Comparison](#benefits-comparison)
+  - [Contributing](#contributing)
+  - [Support](#support)
+  - [License](#license)
 
 ---
 
