@@ -1,4 +1,4 @@
-# HPE ProLiant Windows Server ISO Automation — Documentation Index (Docs Root Readme)
+# HPE ProLiant Windows Server ISO Automation — Documentation Index
 
 Complete documentation for the PowerShell automation module (`src/powershell/Automation/`).
 
@@ -23,33 +23,31 @@ hpe-windows-iso-automation/
 
 ## Quick Start
 
-- **PowerShell** module import and first command: see [powershell/powershell_api_reference.md](powershell/powershell_api_reference.md#quick-start)
+- **PowerShell** module import and first command: see [powershell_api_reference.md](powershell_api_reference.md#quick-start)
+- **Running tests:** see [testing.md](testing.md)
+- **CI integration:** see [powershell_ci.md](powershell_ci.md)
 
 ---
 
 ## Document Index
 
-### PowerShell
+### PowerShell Module
 
 | Document | Description |
 |---|---|
-| [PowerShell API Reference — Generic](api_reference.md) | Orchestrator & routing layer — request types, flow, adding new handlers, return schema |
-| [PowerShell API Reference](powershell/api_reference.md) | Orchestrator & routing layer — PS-specific types, return schemas, `$script:RouteMap`, `_Validate-Request` |
-| [GitLab REST API Reference](api/gitlab.md) | Pipeline trigger architecture, REST endpoint, `trigger/pipeline` payload, callbacks, polling, cluster config, network/firewall notes |
-| [PowerShell Module Overview](powershell_api_reference.md) | Module overview, directory layout, requirements, quick-start |
-| [PowerShell Generated Cmdlets](powershell/generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, `Invoke-OpsRampClient`, `Start-AutomationOrchestrator`, etc. |
-| [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, mocking, CI integration, writing new tests, troubleshooting |
-| [PowerShell Testing Quick Start](powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
-| [PowerShell Code Quality & Security](powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, GitLab CI pipeline integration |
+| [PowerShell API Reference](powershell_api_reference.md) | Module overview, requirements, quick-start, cmdlet usage, orchestrator API |
+| [CI Run Requirements](powershell_ci.md) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
+| [Testing Guide](testing.md) | Full Pester v5 guide — runner commands, mocking, CI integration |
+| [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, CI pipeline integration |
 | [Maintenance Mode](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
-| [Maintenance Mode — PowerShell](powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration |
+| [GitLab CI/CD Integration](gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
 
 ---
 
 ## Contributing
 
 1. Add or update unit tests mirroring the module structure in `tests/powershell/`
-2. Update the relevant doc page in `docs/powershell/`
+2. Update the relevant doc page in `docs/`
 3. Run linting: `pwsh -Command "Invoke-ScriptAnalyzer -Path src/powershell -Recurse"`
 4. Ensure Pester passes: `pwsh -Command "Invoke-Pester"`
 5. PR description must link to any documentation changes

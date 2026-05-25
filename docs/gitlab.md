@@ -1,8 +1,5 @@
 # GitLab CI/CD Pipeline Trigger API — REST reference and integration guide
 
-> **Scope:** `docs/api/` — external API integration layer.
-> For the orchestrator & routing internals that run *inside* the pipeline, see [../api_reference.md](../api_reference.md).
-
 ---
 
 ## Overview
