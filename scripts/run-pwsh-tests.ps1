@@ -37,7 +37,7 @@ $config.Run.Path = @(
     (Join-Path $testPath 'Validators.Unit.Tests.ps1')
 )
 $config.Output.Verbosity = 'Detailed'
-$config.Output.RenderMode = 'Console'
+$config.Output.RenderMode = 'Auto'
 
 $results = Invoke-Pester -Configuration $config
 exit ([int]($results.FailedCount -gt 0))
