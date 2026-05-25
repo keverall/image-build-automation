@@ -165,20 +165,22 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
                     }
                 }
             }
-        } catch {}
-        return $progress
+} catch {
+             Write-Debug "WinRM progress query failed"
+         }
+         return $progress
     }
 
     [void] _SendOpsRampMetric([string]$ServerName, [string]$MetricName, [double]$Value) {
         if ($this.OpsRampClient) {
-            try { $this.OpsRampClient.SendMetric($ServerName, $MetricName, $Value, @{ source='automation.cli.monitor_install' }) } catch {}
+            try { $this.OpsRampClient.SendMetric($ServerName, $MetricName, $Value, @{ source='automation.cli.monitor_install' }) } catch { Write-Debug "OpsRamp metric failed" }
         }
         return
     }
 
     [void] _SendOpsRampAlert([string]$ServerName, [string]$AlertType, [string]$Severity, [string]$Message) {
         if ($this.OpsRampClient) {
-            try { $this.OpsRampClient.SendAlert($ServerName, $AlertType, $Severity, $Message) } catch {}
+            try { $this.OpsRampClient.SendAlert($ServerName, $AlertType, $Severity, $Message) } catch { Write-Debug "OpsRamp alert failed" }
         }
     }
 

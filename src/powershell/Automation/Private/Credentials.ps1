@@ -85,7 +85,9 @@ function _Resolve-Credential {
                     }
                 }
             }
-        } catch { continue }
+        } catch {
+            Write-Debug "CyberArk CLI fetch failed for safe=$SafeName object=$ObjectName"
+        }
     }
 
     # ── Step 3: CyberArk AIM Web Service REST API ────────────────────────────
@@ -142,11 +144,6 @@ function Get-EnvCredential {
 }
 
 function Get-IloCredentials {
-    <#
-    .SYNOPSIS
-        Return iLO username and password.
-        Env var: ILO_USER / ILO_PASSWORD → CyberArk safe HPE-iLO → default.
-    #>
     [CmdletBinding()]
     param(
         [string] $UsernameEnv     = 'ILO_USER',
@@ -154,8 +151,9 @@ function Get-IloCredentials {
         [string] $DefaultUsername = 'Administrator',
         [string] $DefaultPassword = ''
     )
-    return (_Resolve-Credential -EnvVarName $UsernameEnv -SafeName 'HPE-iLO'   -ObjectName $UsernameEnv -Default $DefaultUsername),
-           (_Resolve-Credential -EnvVarName $PasswordEnv -SafeName 'HPE-iLO'   -ObjectName $PasswordEnv -Default $DefaultPassword)
+    $user = _Resolve-Credential -EnvVarName $UsernameEnv -SafeName 'HPE-iLO'   -ObjectName $UsernameEnv -Default $DefaultUsername
+    $pwd = _Resolve-Credential -EnvVarName $PasswordEnv -SafeName 'HPE-iLO'   -ObjectName $PasswordEnv -Default $DefaultPassword
+    return $user, $pwd
 }
 
 function Get-ScomCredentials {

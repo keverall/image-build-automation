@@ -24,7 +24,7 @@ This directory contains all configuration for the HPE ProLiant Windows Server IS
 
 Plain-text list of target servers, one per line. Optional columns for management IPs.
 
-```
+```TEXT
 # Format: hostname  [ipmi_ip]  [ilo_ip]
 server1.example.com
 server2.example.com,192.168.1.102,192.168.1.202
@@ -148,6 +148,7 @@ export HPE_DOWNLOAD_PASS="my_password"
 ### Component Selection
 
 The `update_firmware_drivers.py` script reads this manifest and instructs HPE SUT to:
+
 1. Download each component (firmware + drivers) for the detected server generation
 2. Verify checksums
 3. Create a bootable Service Pack for ProLiant (SPP) ISO
@@ -365,6 +366,7 @@ load_dotenv()  # Loads .env in current directory
 ## Validation
 
 All scripts call `load_json_config()` which:
+
 1. Checks file exists (if `required=True`)
 2. Parses JSON (raises `JSONDecodeError` on syntax error)
 3. Substitutes `${VAR}` from environment (searches `os.environ`, leaves unchanged if not found)
