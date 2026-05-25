@@ -32,7 +32,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CRON_TAG="HPE_AUTO"
-LOG_DIR="${SCRIPT_DIR}/../logs/scheduled_jobs"
+LOG_DIR="${SCRIPT_DIR}/../generated/logs/scheduled_jobs"
 mkdir -p "$LOG_DIR"
 
 timestamp() { date '+%Y-%m-%dT%H:%M:%S'; }

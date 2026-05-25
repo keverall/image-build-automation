@@ -52,7 +52,7 @@ function Invoke-WindowsSecurityUpdate {
         [Parameter(Mandatory = $false)][Alias('m')][string] $Method = 'dism',
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
-    $Script:LogDir = Join-Path $PSScriptRoot '..\..\logs'
+    $Script:LogDir = Join-Path $PSScriptRoot '..\..\generated\logs'
     Initialize-Logging -LogFile 'windows_patcher.log'
     $Script:PatchesConfigBuildDir = $OutputDir    # used by WindowsPatcher.Build
     try {
