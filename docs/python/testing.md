@@ -1,6 +1,6 @@
 # Unit Testing & Code Coverage Guide
 
-Complete guide to running unit tests manually and via the Jenkins CI/CD pipeline, including code coverage reporting, PR incremental testing, and troubleshooting.
+Complete guide to running unit tests manually and via the GitLab CI pipeline, including code coverage reporting, PR incremental testing, and troubleshooting.
 
 ---
 
@@ -9,9 +9,9 @@ Complete guide to running unit tests manually and via the Jenkins CI/CD pipeline
 1. [Overview](#overview)
 2. [Code Coverage Configuration](#code-coverage-configuration)
 3. [Manual Unit Testing](#manual-unit-testing)
-4. [Jenkins CI/CD Integration](#jenkins-cicd-integration)
+4. [GitLab CI Integration](#gitlab-ci-integration)
 5. [Quick Start: Manual Testing](#quick-start-manual-testing)
-6. [Quick Start: Jenkins Pipeline](#quick-start-jenkins-pipeline)
+6. [Quick Start: GitLab Pipeline](#quick-start-gitlab-pipeline)
 7. [Understanding Coverage Reports](#understanding-coverage-reports)
 8. [Troubleshooting](#troubleshooting)
 
@@ -24,9 +24,9 @@ Complete guide to running unit tests manually and via the Jenkins CI/CD pipeline
 
 > 
 > **Secrets**: All credentials (iLO, SCOM, OpsRamp, SMTP, OpenView, HPE firmware download)
-> are resolved via **CyberArk Central Credential Provider**. The Jenkins `CyberArk - Bootstrap Secrets`
+> are resolved via **CyberArk Central Credential Provider**. The GitLab `CyberArk - Bootstrap Secrets`
 > stage must run before any stage that needs credentials.
-> See [../src/powershell/powershell_jenkins_run_requirements.md](../src/powershell/powershell_jenkins_run_requirements.md)
+> See [../src/powershell/powershell_gitlab_run_requirements.md](../src/powershell/powershell_gitlab_run_requirements.md)
 > for the full CyberArk safe/object mapping and CCP CLI + REST fallback details.
 > 
 **Key Features**
@@ -62,7 +62,7 @@ addopts = """
 - `--cov-report=html` — generates `htmlcov/` directory with a browsable interactive report
 - `--cov-fail-under=50` — fails if overall coverage drops below 50% (can be overridden via CLI)
 
-> **Note**: In Jenkins PR builds, the coverage threshold is set to `0` to avoid failing on partial coverage during incremental testing. Full builds enforce the `≥50%` threshold.
+> **Note**: In GitLab PR builds, the coverage threshold is set to `0` to avoid failing on partial coverage during incremental testing. Full builds enforce the `≥50%` threshold.
 
 ---
 
@@ -163,11 +163,11 @@ tests/python/
 
 ---
 
-## Jenkins CI/CD Integration
+## GitLab CI Integration
 
 ### Pipeline Changes
 
-The Jenkinsfile was enhanced to add **Unit Tests & Coverage** stage after the **Code Quality & Security Scan** stage and before **Generate UUIDs**. This provides early feedback on PRs before long-running build steps.
+The GitLabfile was enhanced to add **Unit Tests & Coverage** stage after the **Code Quality & Security Scan** stage and before **Generate UUIDs**. This provides early feedback on PRs before long-running build steps.
 
 #### Stage Placement
 
@@ -205,8 +205,8 @@ On pull request builds (when `CHANGE_ID` environment variable is set), only affe
 
 #### Coverage Reporting
 
-- **JUnit XML:** `test-results.xml` — consumed by Jenkins JUnit plugin for test trend charts
-- **Coverage XML:** `coverage.xml` — can be published by Jenkins Cobertura plugin or archived as artifact
+- **JUnit XML:** `test-results.xml` — consumed by GitLab JUnit plugin for test trend charts
+- **Coverage XML:** `coverage.xml` — can be published by GitLab Cobertura plugin or archived as artifact
 - **Console output:** `--cov-report=term-missing` prints per-file missing line numbers
 
 #### Artifact Archiving
@@ -291,11 +291,11 @@ ruff check tests/python/ --fix
 
 ---
 
-## Quick Start: Jenkins Pipeline
+## Quick Start: GitLab Pipeline
 
 ### For Developers (PR Authors)
 
-Push your changes to a feature branch and open a pull request. Jenkins automatically:
+Push your changes to a feature branch and open a pull request. GitLab automatically:
 
 1. Detects it's a PR (via `CHANGE_ID` env var)
 2. Determines affected source files (`src/python/automation/**/*.py`)
@@ -305,7 +305,7 @@ Push your changes to a feature branch and open a pull request. Jenkins automatic
 
 **View results:**
 
-- Jenkins job page → "Unit Tests & Coverage" stage
+- GitLab job page → "Unit Tests & Coverage" stage
 - Click the stage to see console output
 - "Tests Result" link shows per-test breakdown
 - "Coverage Report" artifact (if published via Cobertura plugin)
@@ -314,7 +314,7 @@ Push your changes to a feature branch and open a pull request. Jenkins automatic
 
 ### For Administrators (Pipeline Configuration)
 
-#### Prerequisites on Jenkins Agent
+#### Prerequisites on GitLab Agent
 
 - Windows agent with Python 3.9+ on PATH
 - Virtual environment with project dependencies installed
@@ -334,10 +334,10 @@ Ensure workspace persistence or restore from cache to avoid reinstalling each bu
 
 #### Cobertura Plugin (Optional)
 
-To view coverage trends in Jenkins UI:
+To view coverage trends in GitLab UI:
 
 1. Install **Cobertura Plugin**
-2. In Jenkins job configuration → Post-build Actions → "Publish Cobertura Coverage Report"
+2. In GitLab job configuration → Post-build Actions → "Publish Cobertura Coverage Report"
 3. Set "Cobertura xml report pattern" to `**/coverage.xml`
 4. Enable "Record only stable builds" to avoid flood
 
@@ -347,7 +347,7 @@ Publishes test results from `test-results.xml`. Configured automatically via `ju
 
 #### Email Notification
 
-Configure Jenkins SMTP and update the email addresses in `Jenkinsfile`:
+Configure GitLab SMTP and update the email addresses in `GitLabfile`:
 
 ```groovy
 mail to: 'dev-team@yourcompany.com', ...
@@ -359,7 +359,7 @@ mail to: 'dev-team@yourcompany.com', ...
 
 ### Coverage.xml (Cobertura format)
 
-- Parsed by Jenkins Cobertura plugin to display trend charts
+- Parsed by GitLab Cobertura plugin to display trend charts
 - Shows per-package coverage (%)
 - Used by PR decoration tools to show coverage delta
 
@@ -468,7 +468,7 @@ pip install pytest-cov
 
 Test code uses `pathlib.Path` and `os.path` which are OS-aware. Avoid hard-coded `/` separators; use `Path()` or `os.path.join()`.
 
-### Jenkinsfile syntax errors
+### GitLabfile syntax errors
 
 Pipeline uses declarative syntax; ensure:
 - No tabs (use spaces)
@@ -478,7 +478,7 @@ Pipeline uses declarative syntax; ensure:
 
 ### Incremental testing runs nothing on PR
 
-Check environment variables in Jenkins:
+Check environment variables in GitLab:
 - `CHANGE_ID` should be set
 - `CHANGE_TARGET` should be the target branch (e.g., `main`)
 
@@ -500,8 +500,8 @@ Write-Host "CHANGE_ID=$env:CHANGE_ID, CHANGE_TARGET=$env:CHANGE_TARGET"
 
 - **pytest docs:** https://docs.pytest.org/
 - **pytest-cov docs:** https://pytest-cov.readthedocs.io/
-- **Jenkins JUnit plugin:** https://plugins.jenkins.io/junit/
-- **Jenkins Cobertura plugin:** https://plugins.jenkins.io/cobertura/
+- **GitLab JUnit plugin:** https://plugins.jenkins.io/junit/
+- **GitLab Cobertura plugin:** https://plugins.jenkins.io/cobertura/
 
 ---
 
@@ -514,6 +514,6 @@ Write-Host "CHANGE_ID=$env:CHANGE_ID, CHANGE_TARGET=$env:CHANGE_TARGET"
 | Run coverage with report | `pytest --cov=automation --cov-report=term-missing` |
 | Generate HTML coverage | `pytest --cov=automation --cov-report=html` |
 | Lint test code | `ruff check tests/python/ --fix` |
-| Jenkins full build | Trigger with `BUILD_STAGE=all` |
-| Jenkins PR incremental | Automatic on PR open/update |
+| GitLab full build | Trigger with `BUILD_STAGE=all` |
+| GitLab PR incremental | Automatic on PR open/update |
 

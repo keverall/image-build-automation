@@ -9,7 +9,7 @@ PowerShell module (`src/powershell/Automation/`).
 
 ```
 hpe-windows-iso-automation/
-├── Jenkinsfile                                  # CI/CD pipeline definition
+├── .gitlab-ci.yml                              # GitLab CI pipeline
 ├── src/python/automation/                              # Python package
 │   ├── cli/                                     # CLI entry points
 │   ├── core/                                    # Core orchestration and routing
@@ -41,13 +41,13 @@ hpe-windows-iso-automation/
 | Document | Description |
 |---|---|
 | [Testing Guide](python/testing.md) | Comprehensive pytest / coverage / CI guide — commands, fixtures, PR incremental testing, coverage reports, troubleshooting |
-| [Testing Quick Start](python/testing_quickstart.md) | Cheat sheet for manual pytest runs and Jenkins, common commands, quick-reference table |
-| [Code Quality & Security](python/code_quality.md) | ruff, pylint, radon, bandit, safety, gitleaks — configuration, usage, Jenkins pipeline integration |
+| [Testing Quick Start](python/testing_quickstart.md) | Cheat sheet for manual pytest runs and GitLab CI, common commands, quick-reference table |
+| [Code Quality & Security](python/code_quality.md) | ruff, pylint, radon, bandit, safety, gitleaks — configuration, usage, GitLab CI pipeline integration |
 | [API Reference](python/api_reference.md) | Orchestrator & routing layer — `AutomationOrchestrator`, `route_request()`, `ROUTE_MAP`, validators, return dicts |
 | [Python CLI — Generated Reference](python/generated/INDEX.md) | Auto-generated CLI reference for `build-iso`, `deploy-server`, `maintenance-mode`, `update-firmware`, `patch-windows`, `monitor-install`, `opsramp`, `generate-uuid` |
 | [Maintenance Mode](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables, security — language-agnostic |
 | [Maintenance Mode — Python](python/maintenance_mode.md) | Python usage: CLI args, config, `clusters_catalogue.json`, `pip install`, troubleshooting |
-| [Maintenance Mode — PowerShell](powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration, Jenkins PSScriptAnalyzer |
+| [Maintenance Mode — PowerShell](powershell/maintenance_mode.md) | PowerShell usage: CmdletBinding params, module import, `pwsh.exe` integration, CI/CD automation |
 | [Python Utilities](python/utils.md) | Full reference for all modules in `src/python/automation/utils/` — logging, config, inventory, audit, executor, credentials, PowerShell bridge, base class |
 
 ### PowerShell
@@ -62,8 +62,8 @@ hpe-windows-iso-automation/
 | [PowerShell Generated Cmdlets](generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, `Invoke-OpsRampClient`, `Start-AutomationOrchestrator`, etc. |
 | [PowerShell Testing Guide](powershell/powershell_testing.md) | Full Pester v5 guide — runner commands, BDD keywords, shared infrastructure, mocking, CI integration, writing new tests, troubleshooting |
 | [PowerShell Testing Quick Start](powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, module export smoke-test |
-| [PowerShell Code Quality & Security](powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, Jenkins pipeline integration, quality gates, comparison with Python tools |
-| [PowerShell Jenkins Run Requirements](powershell/powershell_jenkins_run_requirements.md) | Requirements and feasibility for running the PowerShell module in a separate Jenkins `windows` stage — feature parity, SCOM/iLO viability, open items |
+| [PowerShell Code Quality & Security](powershell/code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, GitLab CI pipeline integration, quality gates, comparison with Python tools |
+| [PowerShell GitLab CI Run Requirements](powershell/powershell_gitlab_run_requirements.md) | Requirements and feasibility for running the PowerShell module in a separate GitLab CI `windows` job — feature parity, SCOM/iLO viability, open items |
 
 ---
 
@@ -73,7 +73,7 @@ hpe-windows-iso-automation/
 |---|---|---|
 | Unit tests | `tests/python/` · pytest (254 tests) | `tests/powershell/` · Pester (20 × `*.Unit.Tests.ps1`) |
 | Test runner | `pytest` | `Invoke-Pester` |
-| CI pipeline | Jenkins `Unit Tests & Coverage` stage (only Python) | **No Pester stage yet** — target: add to Jenkinsfile |
+| CI pipeline | GitLab CI `test` stage (Python only) | **No Pester stage yet** — target: add to GitLab CI |
 | Fakes / mocking | `unittest.mock` | `Mock` keyword (Pester) |
 | Coverage | `pytest-cov` → `coverage.xml`, `htmlcov/` | Not yet automated |
 | Shared fixture / setup | `tests/python/conftest.py` | `tests/powershell/Tests.Tests.ps1` (`BeforeAll`) |

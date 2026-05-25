@@ -10,12 +10,12 @@ Automated build pipelines for creating customized Windows Server installation IS
 | Document | Description |
 |---|---|
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview with repository structure, quick start, and full feature catalog |
-| [🧪 Testing Guide](docs/python/testing.md) | Comprehensive unit testing & code coverage guide — manual pytest commands, Jenkins CI/CD integration, PR incremental testing (turbo-style), coverage report interpretation, and troubleshooting |
-| [⚡ Testing Quick Start](docs/python/testing_quickstart.md) | Concise cheat sheet for running tests locally and in Jenkins, common commands, and quick troubleshooting reference |
-| [🔍 Code Quality & Security](docs/python/code_quality.md) | Automated linting (ruff), complexity analysis (radon), security scanning (bandit, safety, gitleaks) embedded in Jenkins pipeline with configuration details |
+| [🧪 Testing Guide](docs/python/testing.md) | Comprehensive unit testing & code coverage guide — manual pytest commands, GitLab CI/CD integration, PR incremental testing (turbo-style), coverage report interpretation, and troubleshooting |
+| [⚡ Testing Quick Start](docs/python/testing_quickstart.md) | Concise cheat sheet for running tests locally and in GitLab, common commands, and quick troubleshooting reference |
+| [🔍 Code Quality & Security](docs/python/code_quality.md) | Automated linting (ruff), complexity analysis (radon), security scanning (bandit, safety, gitleaks) embedded in GitLab pipeline with configuration details |
 | [🔧 Maintenance Mode](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables — language-agnostic |
 | [🔧 Maintenance Mode — Python](docs/python/maintenance_mode.md) | Python script usage: CLI args, `clusters_catalogue.json`, `pip install`, and Python-specific troubleshooting |
-| [🔧 Maintenance Mode — PowerShell](docs/src/powershell/maintenance_mode.md) | PowerShell cmdlet usage: `[CmdletBinding()]` params, module import, `pwsh.exe` auto-disable scheduling, PSScriptAnalyzer Jenkins snippet |
+| [🔧 Maintenance Mode — PowerShell](docs/powershell/maintenance_mode.md) | PowerShell cmdlet usage: `[CmdletBinding()]` params, module import, `pwsh.exe` auto-disable scheduling, PSScriptAnalyzer |
 | [📦 Utilities Package](docs/python/utils.md) | Complete reference for the shared utilities package (`automation/utils/`) including logging, config, inventory, audit, executor, credentials, PowerShell, and base classes |
 | [📋 Audit Process](docs/audit_process.md) | Detailed audit logging procedures, structured JSON records, master log format, retention policies, and GDPR-compliant data handling |
 | [🛡️ GDPR Compliance](docs/gdpr_compliance.md) | GDPR-by-design implementation: data minimization, retention policies, encryption, residency, and user rights handling |
@@ -35,20 +35,20 @@ Automated build pipelines for creating customized Windows Server installation IS
     - [In this document](#in-this-document)
   - [Project Architecture](#project-architecture)
   - [Quick Links for Common Tasks](#quick-links-for-common-tasks)
-  - [Jenkins Pipeline Files](#jenkins-pipeline-files)
-    - [Pipeline Stages (both flavours)](#pipeline-stages-both-flavours)
+  - [GitLab Pipeline Files](#gitlab-pipeline-files)
+    - [Pipeline Stages](#pipeline-stages)
   - [Makefile \& Local Development](#makefile--local-development)
     - [Quick Start](#quick-start)
     - [Virtual Environment](#virtual-environment)
     - [Makefile Command Reference](#makefile-command-reference)
-    - [Makefile + Jenkinsfile Integration](#makefile--jenkinsfile-integration)
+    - [Makefile + GitLab CI Integration](#makefile--gitlab-ci-integration)
   - [CI Runner Setup](#ci-runner-setup)
     - [Supported Platforms](#supported-platforms)
     - [What It Installs](#what-it-installs)
     - [Usage](#usage)
     - [One-Liner for Remote Provisioning](#one-liner-for-remote-provisioning)
     - [Idempotency](#idempotency)
-    - [Jenkinsfile Integration](#jenkinsfile-integration)
+    - [GitLab CI Integration](#gitlab-ci-integration)
   - [SCOM 2015 Compliance](#scom-2015-compliance)
     - [Why Not REST?](#why-not-rest)
     - [How SCOM Integration Works](#how-scom-integration-works)
@@ -97,14 +97,12 @@ hpe-windows-iso-automation/
 │   ├── email_distribution_lists.json  # SMTP and distribution list recipients
 │   └── maintenance_distribution_list.txt  # Override email list for maintenance events
 ├── docker-compose.yml                 # Containerised build environment
-├── Dockerfile                         # Docker image for build agents
+├── Dockerfile                         # Docker image for build agents (deprecated - Jenkins)
 ├── docker-entrypoint.ps1              # Windows-container entrypoint
 ├── docs/                              # Full documentation set
 │   └── (see Documentation Index above)
-├── jenkins/                           # CI/CD pipeline definitions
-│   ├── Jenkinsfile                    # ← PowerShell  pipeline (Windows agent)
-│   └── Jenkinsfile.python             # ← Python pipeline (x86_64-linux agent)
-├── src/powershell/                        # PowerShell module (target implementation)
+├── .gitlab-ci.yml                     # GitLab CI/CD pipeline (REST API triggers)
+├── src/powershell/                    # PowerShell module (target implementation)
 │   ├── Automation/                    # Module root (mirrors src/python/automation/)
 │   │   ├── Public/                    # Exported cmdlets
 │   │   │   ├── New-Uuid.ps1
@@ -187,48 +185,43 @@ hpe-windows-iso-automation/
 ├── pyproject.toml                      # Package + pytest / ruff / mypy / bandit config
 ├── .ruff.toml                          # Ruff linter configuration
 ├── requirements.txt                    # Python runtime dependencies
-└── uv.lock                             # Python lock file (uv)
+├── uv.lock                             # Python lock file (uv)
+├── Jenkinsfile                         # Docker-based Jenkins pipeline (deprecated - use GitLab CI)
+├── jenkins/                            # Legacy Jenkins pipeline files (deprecated)
+│   ├── Jenkinsfile                     # PowerShell pipeline (deprecated)
+│   └── Jenkinsfile.python              # Python pipeline (deprecated)
 ```
 
 ## Quick Links for Common Tasks
 
 | Task | Manual Command | Pipeline Stage |
 |---|---|---|
-| Run all tests locally | `pytest -v` | Unit Tests & Coverage |
-| Generate coverage report | `pytest --cov=automation --cov-report=html` | Same (publishes `coverage.xml`) |
+| Run all tests locally | `pytest -v` | Unit Tests |
+| Generate coverage report | `pytest --cov=automation --cov-report=html` | Unit Tests |
 | Lint code | `ruff check src/python/automation/ --fix` | Code Quality & Security Scan |
-| Build complete ISO pipeline | `python -m automation.cli.build_iso` | Generate UUIDs → Build Firmware → Build Windows → Combine |
-| Enable maintenance mode | `python -m automation.cli.maintenance_mode --cluster-id CLUSTER --start now` | Maintenance Mode (manual) |
-| Validate configuration | `python -c "import json; json.load(open('configs/clusters_catalogue.json'))"` | Setup stage (automated) |
+| Build complete ISO pipeline | `python -m automation.cli.build_iso` | Build Firmware → Build Windows → Combine |
+| Enable maintenance mode | `python -m automation.cli.maintenance_mode --cluster-id CLUSTER --start now` | Maintenance Mode |
+| Validate configuration | `python -c "import json; json.load(open('configs/clusters_catalogue.json'))"` | Setup |
 
 ---
 
-## Jenkins Pipeline Files
+## GitLab Pipeline Files
 
-Both pipelines live in **`jenkins/`** and are architecturally identical. They share the same parameters, stages, and environment. The only difference is the implementation language and agent label.
+The GitLab CI pipeline lives in **`.gitlab-ci.yml`** at the repository root.
 
-| File | Language | Agent | Script Path (job config) |
-|---|---|---|---|
-| `jenkins/Jenkinsfile` | **PowerShell** | `windows` | `jenkins/Jenkinsfile` |
-| `jenkins/Jenkinsfile.python` | **Python** | `any` (Linux) | `jenkins/Jenkinsfile.python` |
-
-Each file is self-contained — no references to the other language.
-
-### Pipeline Stages (both flavours)
+### Pipeline Stages
 
 1. **Setup** — Install dependencies, validate config JSONs, create directory structure
 2. **CyberArk Bootstrap** — Fetch secrets from vault; inject as process-scope env vars
-3. **Code Quality & Security Scan** — PSScriptAnalyzer (PS) / ruff+pylint+bandit+safety (Python) + gitleaks
-4. **Pester / pytest Unit Tests** — PS: `tests/powershell/` via Pester v5; Python: `tests/python/` via pytest
-5. **Generate UUIDs** — Deterministic UUID per server (`New-Uuid` / `python -m automation.cli.generate_uuid`)
+3. **Code Quality & Security Scan** — ruff+pylint+bandit+safety + gitleaks
+4. **pytest Unit Tests** — Python tests via pytest
+5. **Generate UUIDs** — Deterministic UUID per server (`python -m automation.cli.generate_uuid`)
 6. **Build Firmware ISOs** — HPE SUT integration; firmware-only ISOs
 7. **Build Windows ISOs** — Security patching via DISM
 8. **Combine Deployment Packages** — Merges firmware drivers into Windows ISOs
 9. **OpsRamp Reporting** *(optional)* — API sync for monitoring/alerting
-10. **Monitor Install** *(PS only)* — Real-time install tracking via `Start-InstallMonitor`
-11. **Deploy to Server** *(manual/parameterized)* — iLO Virtual Media or Redfish push
-12. **Vulnerability Scan** *(optional stub)* — Configure Nessus / OpenVAS per environment
-13. **Audit & Reporting** — JSON summary + archive of all build result files
+10. **Vulnerability Scan** *(optional stub)* — Configure Nessus / OpenVAS per environment
+11. **Audit & Reporting** — JSON summary + archive of all build result files
 
 ---
 
@@ -329,28 +322,20 @@ deactivate
 | `make run-generate-uuid SERVER=server1` | Generate deterministic UUID for a server |
 | `make run-maintenance CLUSTER=PROD-CLUSTER-01` | Enable SCOM maintenance mode for a cluster |
 
-### Makefile + Jenkinsfile Integration
+### Makefile + GitLab CI Integration
 
-The `Makefile` simplifies Jenkins pipeline stages. Replace long shell blocks with:
+The `Makefile` simplifies GitLab CI pipeline stages. Replace long shell blocks with:
 
-```groovy
-stage('Unit Tests & Coverage') {
-    steps {
-        sh '''
-            source .venv/bin/activate
-            make test
-        '''
-    }
-}
+```yaml
+unit_tests:
+  script:
+    - source .venv/bin/activate
+    - make test
 
-stage('Code Quality') {
-    steps {
-        sh '''
-            source .venv/bin/activate
-            make lint
-        '''
-    }
-}
+code_quality:
+  script:
+    - source .venv/bin/activate
+    - make lint
 ```
 
 ---
@@ -411,20 +396,16 @@ The script is safe to run multiple times:
 - Skips venv creation if `.venv` exists with correct Python
 - Skips gitleaks download if already in PATH
 
-### Jenkinsfile Integration
+### GitLab CI Integration
 
-```groovy
-stage('Runner Setup') {
-    steps {
-        sh '''
-            if [ ! -f ".venv/bin/python" ]; then
-                chmod +x scripts/setup-runner.sh
-                ./scripts/setup-runner.sh
-            fi
-            source .venv/bin/activate
-        '''
-    }
-}
+```yaml
+runner_setup:
+  script:
+    - if [ ! -f ".venv/bin/python" ]; then
+        chmod +x scripts/setup-runner.sh
+        ./scripts/setup-runner.sh
+      fi
+    - source .venv/bin/activate
 ```
 
 ---
@@ -478,7 +459,7 @@ def run_powershell(script: str, capture_output: bool = True, timeout: int = 300)
     return (result.returncode == 0, result.stdout + result.stderr)
 ```
 
-This runs `powershell.exe -Command "<generated script>"` directly on the Windows Jenkins agent. The agent must have the SCOM 2015 OperationsManager PowerShell module installed and the executing user must have SCOM admin rights.
+This runs `powershell.exe -Command "<generated script>"` directly on the Windows GitLab runner. The runner must have the SCOM 2015 OperationsManager PowerShell module installed and the executing user must have SCOM admin rights.
 
 **Remote Execution via WinRM** ([`src/python/automation/utils/powershell.py`](src/python/automation/utils/powershell.py)):
 
@@ -633,7 +614,7 @@ class SCOMManager:
 | **Monitoring** | Limited (log file only) | Prometheus metrics, OpenTelemetry tracing |
 | **Testing** | Requires PowerShell environment | Mockable HTTP, contract testing with OpenAPI |
 | **Cross-Platform** | Windows-only | Any platform with Python (Linux agents, containers) |
-| **CI/CD** | Jenkins Windows agents only | Any CI/CD system, Kubernetes, serverless |
+| **CI/CD** | Windows-only agents | Any CI/CD system (GitLab CI, Kubernetes, serverless) |
 | **Authentication** | Windows account / WinRM credentials | OAuth2, API tokens, mTLS |
 
 ## Contributing
@@ -655,7 +636,7 @@ See [Code Quality](docs/python/code_quality.md) for scanning details.
 - Create an issue or pull request in the repository
 - Contact **Kev Everall**
 - Reference build ID from `logs/build_reports/` or `logs/maintenance_audit.log`
-- For Jenkins issues: check agent logs and console output
+- For CI/CD issues: check pipeline logs and job traces
 - For testing questions: see [Testing Guide](docs/python/testing.md)
 
 ---
