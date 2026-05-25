@@ -1,18 +1,25 @@
-# PowerShell Module — GitLab CI Run Requirements
+# PowerShell Module — CI Run Requirements
 
-What is required to run the `src/powershell/Automation` module standalone or inside GitLab CI stages. Does **not** duplicate Pester testing guidance (see [`powershell_testing.md`](powershell_testing.md)).
+What is required to run the `src/powershell/Automation` module standalone or inside a CI pipeline stage. Does **not** duplicate Pester testing guidance (see [`testing.md`](testing.md)).
 
 ---
 
 ## Table of Contents
 
-1. [GitLab CI — PowerShell Stage Requirements](#gitlab-ci-powershell-stage)
+1. [CyberArk Credential Bootstrap](#cyberark-credential-bootstrap)
+2. [CI Pipeline — PowerShell Stage Requirements](#ci-powershell-stage)
+3. [SCOM 2015 — Will It Work?](#scom-2015)
+4. [HPE iLO — Will It Work?](#hpe-ilo)
+5. [Open Items](#open-items)
 
-### CyberArk credential bootstrap
+---
 
-CyberArk is the **single source of truth for all credentials** used by this pipeline. GitLab CI variables (not `credentials()` IDs) store the initial authentication, then a dedicated **`CyberArk - Bootstrap Secrets`** job runs as the first step after workspace setup and retrieves every secret, injecting them as environment variables for all subsequent PowerShell jobs.
+<a name="cyberark-credential-bootstrap"></a>
+## 1. CyberArk Credential Bootstrap
 
-#### Fetching strategy
+CyberArk is the **single source of truth for all credentials** used by this pipeline. A dedicated **`CyberArk - Bootstrap Secrets`** stage runs as the first step after workspace setup and retrieves every secret, injecting them as environment variables for all subsequent jobs.
+
+### Fetching Strategy
 
 | Method | Tool | Details |
 |---|---|---|
@@ -21,9 +28,9 @@ CyberArk is the **single source of truth for all credentials** used by this pipe
 
 Both sides call the same logic. CLI tried first (13 secrets, one by one); any that CLI misses are retried through the REST API automatically.
 
-#### Secrets fetched (safe → object → env-var)
+### Secrets Fetched (Safe → Object → Env Var)
 
-\`\`\`
+```
 Safe              Object                   → Env Var
 HPE-iLO           ILO_USER                 → ILO_USER
 HPE-iLO           ILO_PASSWORD             → ILO_PASSWORD
@@ -38,46 +45,33 @@ OpenView          OPENVIEW_USER            → OPENVIEW_USER
 OpenView          OPENVIEW_PASSWORD        → OPENVIEW_PASSWORD
 HPE-Download      hpe-download-user        → HPE_DOWNLOAD_USER
 HPE-Download      hpe-download-pass        → HPE_DOWNLOAD_PASS
-\`\`\`
+```
 
-3. [SCOM 2015 — Will It Work?](#scom-2015)
-4. [HPE iLO — Will It Work?](#hpe-ilo)
-5. [Open Items](#open-items)
-
+For a Jenkins pipeline excerpt showing the bootstrap implementation, see [`gitlab_ci.md`](gitlab_ci.md#pipeline-excerpt).
 
 ---
 
-<a name="gitlab-ci-powershell-stage"></a>
-## 2. GitLab CI — PowerShell Stage Requirements
+<a name="ci-powershell-stage"></a>
+## 2. CI Pipeline — PowerShell Stage Requirements
 
-The GitLab CI pipeline in `.gitlab-ci.yml` runs PowerShell jobs using `mcr.microsoft.com/powershell` container images. 
-### Minimal prerequisites
+### Minimal Prerequisites
 
-- PowerShell 7.4+ (container image in `.gitlab-ci.yml`)
+- PowerShell 7.2+ (cross-platform) or Windows PowerShell 5.1
 - Pester module for testing:
-  \`\`\`powershell
+
+  ```powershell
   Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
-  \`\`\`
+  ```
+
 - `powershell-yaml` module only if YAML configs are used:
-  \`\`\`powershell
+
+  ```powershell
   Install-Module powershell-yaml -Scope CurrentUser -SkipPublisherCheck -Force
-  \`\`\`
+  ```
 
-### Required GitLab CI variables
+### GitLab CI Example
 
-Set these in your GitLab project's CI/CD variables:
-
-| Variable | Description |
-|---|---|
-| `MAINTENANCE_CALLBACK_URL` | Webhook URL for completion callback |
-| `MAINTENANCE_API_KEY` | Optional API key for callback authentication |
-| `CLUSTER_ID` | Target cluster identifier |
-| `CONFIG_DIR` | Path to configuration directory |
-| `DRY_RUN` | Set to `true` for validation-only runs |
-
-### GitLab CI job example
-
-\`\`\`yaml
+```yaml
 powershell_tests:
   stage: test
   image: mcr.microsoft.com/powershell:7.4
@@ -91,9 +85,37 @@ powershell_tests:
       - logs/
     reports:
       junit: powershell-unit-tests.xml
-\`\`\`
+```
 
-See [`../../src/powershell/powershell_testing.md`](../../src/powershell/powershell_testing.md) for the full Pester guide (commands, tags, mocking, CI integration).
+### Jenkins CI Example
+
+```groovy
+stage('PowerShell — Pester Unit Tests') {
+    agent { label 'windows' }
+    steps {
+        powershell '''
+            if (-not (Get-Module Pester -ListAvailable)) {
+                Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
+            }
+            Import-Module Pester
+
+            $result = Invoke-Pester -Path 'powershell\\Tests' -Tag 'Unit' `
+                -OutputFile 'powershell-test-results.xml' `
+                -OutputFormat NUnitXml `
+                -PassThru
+
+            Write-Host "Tests Passed : $($result.PassedCount)"
+            Write-Host "Tests Failed : $($result.FailedCount)"
+            if ($result.FailedCount -gt 0) { exit 1 }
+        '''
+    }
+    post {
+        always { junit 'powershell-test-results.xml' }
+    }
+}
+```
+
+See [`testing.md`](testing.md) for the full Pester guide (commands, tags, mocking, CI integration).
 
 ---
 
@@ -102,35 +124,35 @@ See [`../../src/powershell/powershell_testing.md`](../../src/powershell/powershe
 
 **Yes — this is the strongest part of the module.**
 
-The PS module calls `OperationsManager` cmdlets **natively** from the calling process. 
-\`\`\`powershell
-Import-Module OperationsManager                         # SCOM 2015 cmdlets loaded
+The PS module calls `OperationsManager` cmdlets **natively** from the calling process:
+
+```powershell
+Import-Module OperationsManager
 $conn  = New-SCOMManagementGroupConnection -ComputerName "<scom-mgmt-server>" -ErrorAction Stop
-$group = Get-SCOMGroup -DisplayName "<group-name>"       -ErrorAction Stop
+$group = Get-SCOMGroup -DisplayName "<group-name>" -ErrorAction Stop
 $instances = Get-SCOMClassInstance -Group $group
 foreach ($inst in $instances) {
     if (-not $inst.InMaintenanceMode) {
         Start-SCOMMantenanceMode -Instance $inst -Duration $duration -Comment $comment -ErrorAction Stop
     }
 }
-\`\`\`
+```
 
-
-### What must be true
+### What Must Be True
 
 | Requirement | Detail |
 |---|---|
-| GitLab runner is **domain-joined** | The runner must be in the same AD forest as the SCOM management group |
+| CI agent is **domain-joined** | The `windows` agent must be in the same AD forest as the SCOM management group |
 | `OperationsManager` module installed | Picked up from the SCOM 2015 console server; copy or use `Import-Module \\scom-server\share\OperationsManager` if remote |
 | `scom_config.json` — `management_server` | SCOM management-group server hostname |
 | `scom_config.json` — `use_winrm` | Leave `false` (local PowerShell direct); set `true` only if WinRM to a SCOM server is required, then configure WinRM `TrustedHosts` |
 | `clusters_catalogue.json` — `scom_group` | Display name **must match exactly** what SCOM `Get-SCOMGroup` returns |
 
-### What will NOT work without more work
+### What Will NOT Work Without More Work
 
 | Gap | Explanation |
 |---|---|
-| SCOM REST API | SCOM 2015 has no REST API. The `scom_config.use_winrm=true` setting is reserved for future SCOM 2025 support (see `README.md § Why Not REST?`). There is no REST path on 2015. |
+| SCOM REST API | SCOM 2015 has no REST API. The `scom_config.use_winrm=true` setting is reserved for future SCOM 2025 support. There is no REST path on 2015. |
 | SCOM login token expiry | `-ErrorAction Stop` on `New-SCOMManagementGroupConnection` will surface authentication failures immediately in CI |
 
 ---
@@ -144,9 +166,9 @@ foreach ($inst in $instances) {
 
 ### `Invoke-IsoDeploy` — iLO virtual media mount ⚠️ scaffold in place
 
-The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but the actual virtual media mount step is a **commented scaffold**.
+The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but the actual virtual media mount step is a **commented scaffold**:
 
-\`\`\`powershell
+```powershell
 # Uncomment when ISO serving URL is available:
 $vmActionUrl = "$baseUrl/systems/1/MediaState/0/Actions/Oem/Hpe/HpeiLOVirtualMedia/InsertVirtualMedia"
 $vmBody   = @{
@@ -154,14 +176,10 @@ $vmBody   = @{
     Inserted              = $true
     BootOnNextServerReset = $true
 } | ConvertTo-Json
-Invoke-RestMethod -Uri $vmActionUrl -Method Post -Body $vmBody -Headers @{ "X-Redfish-Session" = $sessionKey } …
-\`\`\`
+Invoke-RestMethod -Uri $vmActionUrl -Method Post -Body $vmBody -Headers @{ "X-Redfish-Session" = $sessionKey }
+```
 
 Until that `<http_iso_url>` is available the step is intentionally a no-op.
-
-### `ILOManager` inside `Set-MaintenanceMode` — iLO maintenance window ✅
-
-`POST /rest/v1/maintenancewindows` — POSTs a new maintenance window body including start/end timestamps. iLO ships a self-signed cert by default; the call uses `-SkipCertificateCheck` which is the PowerShell equivalent of `HttpClientHandler.ServerCertificateCustomValidationCallback` to bypass certificate validation.
 
 ### `Start-InstallMonitor` — iLO Redfish polling ✅
 
@@ -177,6 +195,14 @@ Until that `<http_iso_url>` is available the step is intentionally a no-op.
 | ✅ Fixed | `Invoke-IsoDeploy` broken syntax | Fixed | All `;,return,` / `$)($` artefacts removed; pure PS guards |
 | ✅ Fixed | `Update-WindowsSecurity` broken syntax | Fixed | All `;,return,` / `$)($` / `Disassemble-Image` artefacts removed |
 | ✅ Better | `Update-Firmware` no retry | Improved | Now uses `Invoke-NativeCommandWithRetry` with exponential back-off |
-| ✅ Done | `Update-WindowsSecurity` DISM loop | Done | `_ApplyPatchesDism` calls `Invoke-NativeCommand` per KB. `DISM /Image /Add-Package /PackagePath /LimitAccess /NoRestart` on `winpeimg`. |
+| ✅ Done | `Update-WindowsSecurity` DISM loop | Done | `_ApplyPatchesDism` calls `Invoke-NativeCommand` per KB |
 | ⚠️ Partial | iLO virtual media mount in `Invoke-IsoDeploy` | Scaffold in place | Session login implemented; full `InsertVirtualMedia` POST requires an HTTPServing URL to be decided separately |
 | ⚠️ Partial | Redfish ISO mount in `Invoke-IsoDeploy` | Scaffold in place | Comment present; needs ISO URL first |
+
+---
+
+## See Also
+
+- [Maintenance Mode Orchestration](maintenance_mode.md)
+- [PowerShell Testing Guide](testing.md)
+- [Code Quality & Security](code_quality.md)

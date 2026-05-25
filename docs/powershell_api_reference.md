@@ -1,0 +1,189 @@
+# HPE ProLiant Windows Server ISO Automation — PowerShell Module
+
+## Overview
+
+**PowerShell** provides the end-to-end automation — firmware/driver ISO builds, Windows security patching, ISO deployment to iLO, installation monitoring, SCOM maintenance-mode orchestration, and OpsRamp telemetry — implemented as a native PowerShell module.
+
+---
+
+## Requirements
+
+| Requirement | Version |
+|---|---|
+| PowerShell | 5.1 or PowerShell 7 |
+| Windows | Windows 10 / 11 / Server 2016+ (WinRM, DISM, schtasks) |
+| HPE SUT | `hpe_sut.exe` on the machine or in `PATH` |
+| .NET | .NET Framework 4.7.2 (PS 5.1 hosts) or .NET 6+ (PS 7) |
+
+Optional modules:
+- `powershell-yaml` (`Install-Module powershell-yaml`) — for YAML config support
+- `Pester` (`Install-Module Pester`) — for testing
+- Posh-SSH — for SSH-based integrations (not yet implemented)
+
+---
+
+## Directory Layout
+
+```
+src/powershell/
+├── Automation/                    # Module root
+│   ├── Public/                    # Exported cmdlets
+│   ├── Private/                   # Internal helpers
+│   └── Automation.psd1            # Module manifest
+├── tests/powershell/              # Pester test suite (Pester 5+)
+│   ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
+│   └── *Unit.Tests.ps1             # Test files per module
+```
+
+---
+
+## Quick Start
+
+### Import the Module
+
+```powershell
+Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
+```
+
+### Generate a Deterministic UUID
+
+```powershell
+New-Uuid -ServerName 'srv01.corp.local'
+```
+
+### Build ISOs for All Servers
+
+```powershell
+New-IsoBuild -BaseIsoPath 'C:\ISOs\WinServer2022.iso'
+```
+
+### Deploy ISOs via iLO
+
+```powershell
+Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
+```
+
+### Maintenance Mode
+
+```powershell
+# Enable immediately (start=now; end computed from cluster schedule)
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
+
+# Enable with explicit timestamps
+Set-MaintenanceMode -Action enable `
+    -ClusterId 'PROD-CLUSTER-01' `
+    -Start   '2026-05-16 22:00' `
+    -End     '2026-05-17 06:00'
+
+# Disable immediately
+Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
+
+# Dry-run — no SCOM/iLO/OpenView changes
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' `
+    -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
+```
+
+For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [maintenance_mode.md](maintenance_mode.md).
+
+---
+
+## Orchestrator API Reference
+
+The orchestrator/routing layer is the **primary programmatic entry point** for all automation integrations.
+
+| Concept | PowerShell Symbol |
+|---------|-------------------|
+| Orchestrator | `Start-AutomationOrchestrator` |
+| Router / dispatcher | `Invoke-RoutedRequest` |
+| Route table | `$script:RouteMap` |
+| Request validator | `_Validate-Request` |
+
+### Request Types
+
+| RequestType | Handler | Required Params |
+|-------------|---------|-----------------|
+| `build_iso` | `New-IsoBuild` | `base_iso` |
+| `update_firmware` | `Update-Firmware` | — |
+| `patch_windows` | `Update-WindowsSecurity` | `base_iso` |
+| `deploy` | `Invoke-IsoDeploy` | — |
+| `monitor` | `Start-InstallMonitor` | — |
+| `maintenance_enable` | `Set-MaintenanceMode` | `cluster_id` |
+| `maintenance_disable` | `Set-MaintenanceMode` | `cluster_id` |
+| `maintenance_validate` | `Set-MaintenanceMode` | `cluster_id` |
+| `opsramp_report` | `Invoke-OpsRampClient` | — |
+| `generate_uuid` | `New-Uuid` | — |
+
+### Orchestrator Signature
+
+```powershell
+$result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
+```
+
+### Common Return Schema
+
+```powershell
+# Success
+@{
+    Success     = $true
+    Output      = "...handler output text..."
+    RequestType = "maintenance_enable"
+    Timestamp   = "2026-05-16T17:50:00Z"
+}
+
+# Validation Failure
+@{
+    Success     = $false
+    Errors      = @("Missing required parameter: cluster_id")
+    RequestType = "build_iso"
+    Timestamp   = "..."
+}
+```
+
+### Request Flow
+
+```text
+Caller
+  │
+  ▼
+Start-AutomationOrchestrator(RequestType, Params)
+  │
+  ├─► _Validate-Request(RequestType, Params)
+  │       │
+  │       └── errors?  YES → return validation-failure envelope
+  │                     NO  → continue
+  ▼
+Invoke-RoutedRequest(RequestType, Params)
+  │
+  ├─► Route table lookup → handler name
+  │
+  ▼
+& $handlerName @Params
+  │
+  ▼
+Result envelope  ──► Orchestrator stamps RequestType + Timestamp  ──► Caller
+```
+
+---
+
+## Running Tests
+
+```powershell
+# Install Pester if necessary
+Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
+
+# Run all tests
+Invoke-Pester -Path 'powershell\Tests' -PassThru
+
+# Run a subset
+Invoke-Pester -Path 'powershell\Tests\New-Uuid.Unit.Tests.ps1'
+```
+
+See [testing.md](testing.md) for the full Pester guide.
+
+---
+
+## See Also
+
+- [CI Run Requirements](powershell_ci.md)
+- [Maintenance Mode](maintenance_mode.md)
+- [Code Quality & Security](code_quality.md)
