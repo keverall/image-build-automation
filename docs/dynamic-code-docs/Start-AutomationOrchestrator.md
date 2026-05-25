@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1
-generated: 2026-05-17 23:02 UTC
+generated: 2026-05-25 14:44 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -27,8 +27,8 @@ Start-AutomationOrchestrator -RequestType 'build_iso' -Params @{ BaseIsoPath = '
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Execute an automation request with validation and routing.
-        Mirrors Python AutomationOrchestrator.execute().
+Execute an automation request with validation and routing.
+         Mirrors AutomationOrchestrator.execute().
 
     .DESCRIPTION
         Validates the request parameters using _Validate-Request, then routes

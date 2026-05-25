@@ -77,10 +77,10 @@ pwsh-coverage: ## Run Pester tests with code coverage
 		Invoke-Pester -Configuration $$config"
 
 pwsh-docs: ## Generate PowerShell Markdown docs via PlatyPS
-	@echo "$(CYAN)[pwsh-docs]$(NC) Generating PowerShell API reference docs (PlatyPS)..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 || \
+	@echo "$(CYAN)[pwsh-docs]$(NC) Generating PowerShell API reference docs..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 -OutputDir docs/dynamic-code-docs || \
 		(echo "$(YELLOW)[pwsh-docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
-	@echo "$(GREEN)[pwsh-docs]$(NC) Docs written to docs/powershell/generated/"
+	@echo "$(GREEN)[pwsh-docs]$(NC) Docs written to docs/dynamic-code-docs/"
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message

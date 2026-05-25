@@ -35,8 +35,11 @@ $repoRoot  = Resolve-Path (Join-Path $scriptDir '..')
 if (-not $ModuleRoot) { $ModuleRoot = Join-Path $repoRoot 'src\powershell\Automation' }
 $ModuleRoot = (Get-Item -LiteralPath $ModuleRoot).FullName
 
-if (-not $OutputDir) { $OutputDir = Join-Path $repoRoot 'docs\powershell\generated' }
+if (-not $OutputDir) { $OutputDir = Join-Path $repoRoot 'docs/dynamic-code-docs' }
 New-Item -ItemType Directory -Force -Path $OutputDir -ErrorAction Stop | Out-Null
+
+# Clear existing files in output directory for clean generation
+Get-ChildItem -Path $OutputDir -File -ErrorAction SilentlyContinue | Remove-Item -Force
 
 Write-Host "[Generate-PSDocs] Module root : $ModuleRoot"
 Write-Host "[Generate-PSDocs] Output dir  : $OutputDir"

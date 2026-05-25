@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-IsoBuild.ps1
-generated: 2026-05-17 23:02 UTC
+generated: 2026-05-25 14:44 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -31,8 +31,8 @@ New-IsoBuild -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01.corp.local'
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Orchestrates the full ISO build pipeline, callable from the module Router.
-        Mirrors Python cli/build_iso.py.
+Orchestrates the full ISO build pipeline, callable from the module Router.
+         Mirrors reference implementation cli/build_iso.py.
 
     .DESCRIPTION
         Coordinates firmware/driver ISO creation (via HPE SUT) and Windows security
