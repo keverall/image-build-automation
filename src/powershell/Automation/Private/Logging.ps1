@@ -1,6 +1,6 @@
 #
 # Private/Logging.ps1 — Centralized logging setup.
-# Mirrors Python logging_setup.py (init_logging / get_logger).
+# Standard logging pattern implementation.
 #
 
 $script:_LogFile    = $null

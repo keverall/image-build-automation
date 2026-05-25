@@ -1,8 +1,7 @@
 #
-# Private/Router.ps1 — Request routing equivalent of Python core/router.py
+# Private/Router.ps1 — Request routing implementation
 #
 # Routing table is loaded from configs/request_types.json (single source of truth).
-# This keeps Python and PowerShell perfectly in sync.
 #
 
 $script:RouteConfigPath = Join-Path $PSScriptRoot '..\..\..\..\configs\request_types.json'
@@ -33,8 +32,8 @@ catch {
 function Invoke-RoutedRequest {
     <#
     .SYNOPSIS
-        Routes a request to the appropriate handler function based on request type.
-        Mirrors Python route_request(request_type, params).
+Routes a request to the appropriate handler function based on request type.
+         Mirrors route_request(request_type, params).
 
     .PARAMETER RequestType
         One of the known request types (e.g. 'build_iso', 'maintenance_enable').

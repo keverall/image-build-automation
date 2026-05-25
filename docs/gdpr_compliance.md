@@ -36,25 +36,25 @@ Data is not repurposed for marketing, profiling, or unrelated analytics.
 ### 3. Storage Limitation (Article 5(1)(e))
 
 **Retention periods:**
-- Build logs (JSON): 30 days in Jenkins workspace, then automatically purged
-- Jenkins build records: As configured by Jenkins admin (typically 90 days)
+- Build logs (JSON): 30 days in CI workspace, then automatically purged
+- Build records: As configured by CI admin (typically 90 days)
 - Audit reports: Archived monthly to secure, access-controlled storage for 7 years (compliance requirement)
 - Docker image layers: No logs or sensitive data embedded in images
 
 **Data location:**
 - All logs and artifacts stored within the EU region (data residency requirement)
-- Jenkins master/agent nodes configured with EU-based storage
+- CI master/agent nodes configured with EU-based storage
 - No cross-border data transfers outside EEA without appropriate safeguards (Standard Contractual Clauses)
 
 ### 4. Integrity & Confidentiality (Article 5(1)(f))
 
 **Security measures:**
-- Credentials stored in Jenkins Credentials Store (encrypted)
+- Credentials stored in CI Credentials Store (encrypted)
 - Audit logs write-once, append-only (tamper-evident)
 - Docker images built with non-root user (`appuser`)
 - Network communications use TLS 1.3 (HTTPS to HPE, OpsRamp)
 - Container isolation: Each build runs in isolated workspace
-- Access controls: Jenkins agents run with least-privilege service accounts
+- Access controls: CI agents run with least-privilege service accounts
 
 ## Personal Data Processing
 
@@ -93,18 +93,18 @@ As this system does not process personal data, data subject rights (access, rect
 ## Data Breach Notification
 
 In the unlikely event of a breach involving this automation:
-- **Detection:** Jenkins security logs and audit trails
+- **Detection:** CI security logs and audit trails
 - **Notification:** Report to Bank CIRT within 1 hour of discovery
 - **GDPR Notification:** CIRT will assess if personal data was impacted and notify supervisory authority within 72 hours if required
 
 **Breach scenarios covered:**
-- Unauthorized access to Jenkins credentials (affects pipeline integrity)
+- Unauthorized access to CI credentials (affects pipeline integrity)
 - Container escape compromising host or other builds
 - Log injection attacks (unlikely given non-personal data)
 
 ## International Data Transfers
 
-- All infrastructure (Jenkins agents, Docker hosts, storage) resides within the European Economic Area (EEA)
+- All infrastructure (CI agents, Docker hosts, storage) resides within the European Economic Area (EEA)
 - External APIs (HPE, OpsRamp) may process data outside EEA; ensure they have adequacy decisions or SCCs in place
 - No personal data is transferred; technical data only
 
@@ -123,7 +123,7 @@ All processors must comply with Bank's third-party risk management requirements.
 
 The Bank (as data controller) is responsible for:
 - Determining that this automation does not process personal data (confirmed)
-- Ensuring Jenkins credentials are rotated regularly (90 days)
+- Ensuring CI credentials are rotated regularly (90 days)
 - Reviewing audit logs weekly for anomalies
 - Maintaining documentation of this assessment
 - Responding to DPO inquiries
@@ -146,8 +146,8 @@ Entry for this system:
 - [x] Data minimization verified - no personal data collected
 - [x] Purpose limitation documented
 - [x] Retention periods defined and automated
-- [x] Credentials stored in Jenkins Credential Store (not in repo)
-- [x] Access controls: Jenkins agents run as non-root
+- [x] Credentials stored in CI Credential Store (not in repo)
+- [x] Access controls: CI agents run as non-root
 - [x] Docker image uses non-root user (`appuser`)
 - [x] Audit logging enabled (logs/audit_trail.log)
 - [x] TLS enforced for all external API calls

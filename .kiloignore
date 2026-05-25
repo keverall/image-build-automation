@@ -1,11 +1,11 @@
-# Ignore python virtual environments
+# Ignore virtual environments
 .venv/
 venv/
 __pycache__/
 *.pyc
 
-# Ignore local Jenkins workspace data & state
-.jenkins/
+# Ignore local CI workspace data & state
+.ci-cache/
 workspace/
 *.log
 

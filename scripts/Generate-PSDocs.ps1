@@ -9,7 +9,7 @@
 #   • src/powershell/Automation/Private/*.ps1 (private functions)
 #   • scripts/*.ps1 (script files with embedded functions)
 #
-# Output style is deliberately kept close to the Python generator:
+# Output style is deliberately kept clean and consistent:
 #   • Front-matter with source / timestamp
 #   • # CmdletName
 #   • ## Description (prose)
@@ -17,7 +17,7 @@
 #   • ## Examples (fenced code blocks)
 #   • Raw comment block in a fenced PowerShell block for reference
 #
-# This makes the python/ and powershell/ generated docs look and feel similar.
+# This makes the powershell/ generated docs look and feel similar.
 # ─────────────────────────────────────────────────────────────────────────────
 
 [CmdletBinding()]
@@ -141,7 +141,7 @@ function ConvertFrom-CommentBlock {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Per-file Markdown rendering (style matched to Python generator)
+#  Per-file Markdown rendering (consistent style)
 # ─────────────────────────────────────────────────────────────────────────────
 
 $publicDir = Join-Path $ModuleRoot 'Public'
@@ -197,7 +197,7 @@ foreach ($f in $files) {
         $md += ''
     }
 
-    # Parameters table (matches Python style)
+    # Parameters table (consistent format)
     if ($doc.Parameters.Count -gt 0) {
         $md += '## Parameters'
         $md += ''
@@ -225,7 +225,7 @@ foreach ($f in $files) {
         }
     }
 
-    # Raw help block (for reference, like Python shows argparse --help)
+    # Raw help block (for reference)
     if ($doc.Raw) {
         $md += '## Original Comment-Based Help'
         $md += '```powershell'

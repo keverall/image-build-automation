@@ -1,17 +1,16 @@
 # PowerShell Module — GitLab CI Run Requirements
 
-What is required to run the `src/powershell/Automation` module standalone or inside GitLab CI stages. Does **not** duplicate Pester testing guidance (see [`powershell_testing.md`](powershell_testing.md)) or the Python testing guide (see [`../python/testing.md`](../python/testing.md)).
+What is required to run the `src/powershell/Automation` module standalone or inside GitLab CI stages. Does **not** duplicate Pester testing guidance (see [`powershell_testing.md`](powershell_testing.md)).
 
 ---
 
 ## Table of Contents
 
-1. [Feature Parity: Python `src/` → PowerShell](#feature-parity)
-2. [GitLab CI — PowerShell Stage Requirements](#gitlab-ci-powershell-stage)
+1. [GitLab CI — PowerShell Stage Requirements](#gitlab-ci-powershell-stage)
 
 ### CyberArk credential bootstrap
 
-CyberArk is the **single source of truth for all credentials** used by this pipeline. GitLab CI variables (not `credentials()` IDs) store the initial authentication, then a dedicated **`CyberArk - Bootstrap Secrets`** job runs as the first step after workspace setup and retrieves every secret, injecting them as environment variables for all subsequent Python and PowerShell jobs.
+CyberArk is the **single source of truth for all credentials** used by this pipeline. GitLab CI variables (not `credentials()` IDs) store the initial authentication, then a dedicated **`CyberArk - Bootstrap Secrets`** job runs as the first step after workspace setup and retrieves every secret, injecting them as environment variables for all subsequent PowerShell jobs.
 
 #### Fetching strategy
 
@@ -45,46 +44,13 @@ HPE-Download      hpe-download-pass        → HPE_DOWNLOAD_PASS
 4. [HPE iLO — Will It Work?](#hpe-ilo)
 5. [Open Items](#open-items)
 
----
-
-<a name="feature-parity"></a>
-## 1. Feature Parity: Python `src/` → PowerShell
-
-Every Python module in `src/python/automation/` is **structurally present** in `src/powershell/Automation/` — same file count, same routing map, same entry-point names, same config contracts (`configs/*.json` shared by both). Degree of implementation is noted separately below.
-
-| # | Module | Python file | PowerShell file | PS status |
-|---|---|---|---|---|
-| 1 | Config | `utils/config.py` | `Private/Config.ps1` | ✅ Fully ported |
-| 2 | Credentials | `utils/credentials.py` | `Private/Credentials.ps1` | ✅ Fully ported |
-| 3 | Executor | `utils/executor.py` | `Private/Executor.ps1` | ✅ + `Invoke-NativeCommandWithRetry` stronger |
-| 4 | FileIO | `utils/file_io.py` | `Private/FileIO.ps1` | ✅ Fully ported |
-| 5 | Inventory | `utils/inventory.py` | `Private/Inventory.ps1` | ✅ Fully ported |
-| 6 | Audit | `utils/audit.py` | `Private/Audit.ps1` | ✅ Fully ported |
-| 7 | Logging | `utils/logging_setup.py` | `Private/Logging.ps1` | ✅ |
-| 8 | Router | `core/router.py` | `Private/Router.ps1` + `_RouteMap.ps1` | ✅ |
-| 9 | Orchestrator | `core/orchestrator.py` | `Public/Start-AutomationOrchestrator.ps1` | ✅ |
-| 10 | Base | `utils/base.py` | `Private/Base.ps1` | ✅ |
-| 11 | Uuid | `cli/generate_uuid.py` | `Public/New-Uuid.ps1` | ✅ RFC-4122 v4 |
-| 12 | Build ISO | `cli/build_iso.py` | `Public/New-IsoBuild.ps1` | ✅ |
-| 13 | **Firmware** | `cli/update_firmware_drivers.py` | `Public/Update-Firmware.ps1` | ⚠️ See §Open Items |
-| 14 | **Security Patch** | `cli/patch_windows_security.py` | `Public/Update-WindowsSecurity.ps1` | ⚠️ See §Open Items |
-| 15 | **Deploy** | `cli/deploy_to_server.py` | `Public/Invoke-IsoDeploy.ps1` | ⚠️ See §Open Items |
-| 16 | **Install Monitor** | `cli/monitor_install.py` | `Public/Start-InstallMonitor.ps1` | ✅ (full loop: iLO + WinRM) |
-| 17 | **Maintenance Mode** | `cli/maintenance_mode.py` | `Public/Set-MaintenanceMode.ps1` | ✅ |
-| 18 | OpsRamp | `cli/opsramp_integration.py` | `Public/Invoke-OpsRampClient.ps1` | ✅ |
-| 19 | Validators | `utils/validators.py` | `Public/Invoke-Validator.ps1` | ✅ |
-| 20 | PS execution | `utils/powershell.py` | `Public/Invoke-PowerShellScript.ps1` + `WinRM.ps1` | ✅ |
-| 21 | SCOM helpers | N/A (PS-only) | `Public/New-ScomConnection.ps1` + `New-ScomMaintenanceScript.ps1` | ✅ PS-native |
-
-**Modules in unbroken grey above (16 of 21) are complete and tested.** The three ⚠️ entries are documented individually below.
 
 ---
 
 <a name="gitlab-ci-powershell-stage"></a>
 ## 2. GitLab CI — PowerShell Stage Requirements
 
-The GitLab CI pipeline in `.gitlab-ci.yml` runs PowerShell jobs using `mcr.microsoft.com/powershell` container images. A dedicated PowerShell stage can be added alongside the existing Python `test` stage.
-
+The GitLab CI pipeline in `.gitlab-ci.yml` runs PowerShell jobs using `mcr.microsoft.com/powershell` container images. 
 ### Minimal prerequisites
 
 - PowerShell 7.4+ (container image in `.gitlab-ci.yml`)
@@ -136,8 +102,7 @@ See [`../../src/powershell/powershell_testing.md`](../../src/powershell/powershe
 
 **Yes — this is the strongest part of the module.**
 
-The PS module calls `OperationsManager` cmdlets **natively** from the calling process. The Python side had to shell out to `powershell.exe`; the PS side does not:
-
+The PS module calls `OperationsManager` cmdlets **natively** from the calling process. 
 \`\`\`powershell
 Import-Module OperationsManager                         # SCOM 2015 cmdlets loaded
 $conn  = New-SCOMManagementGroupConnection -ComputerName "<scom-mgmt-server>" -ErrorAction Stop
@@ -150,7 +115,6 @@ foreach ($inst in $instances) {
 }
 \`\`\`
 
-This is exactly the script the Python `New-ScomMaintenanceScript.ps1` would emit and pipe to `powershell.exe`; in PS it runs inline.
 
 ### What must be true
 
