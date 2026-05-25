@@ -60,7 +60,7 @@ param(
 
     # ── Logging ────────────────────────────────────────────────────────────────
     [Parameter(Mandatory = $false)]
-    [string] $LogDir = 'logs\\\\scheduled_jobs'
+    [string] $LogDir = 'generated/logs/scheduled_jobs'
 )
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────

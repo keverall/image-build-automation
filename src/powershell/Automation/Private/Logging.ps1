@@ -19,7 +19,7 @@ function Initialize-Logging {
     $script:_Configured = $true
 
     if ($LogFile) {
-        $dir = Join-Path ([System.IO.Path]::GetFullPath('.')) 'logs'
+        $dir = Join-Path ([System.IO.Path]::GetFullPath('.')) 'generated/logs'
         if (-not (Test-Path $dir)) { New-Item -ItemType Directory $dir -Force | Out-Null }
         $script:__AutomationLogPath = Join-Path $dir $LogFile
     }

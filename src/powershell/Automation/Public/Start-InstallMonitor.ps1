@@ -64,7 +64,7 @@ function Start-InstallMonitor {
     }
 }
 
-$Script:LogDir = Join-Path $PSScriptRoot '..\..\logs'
+$Script:LogDir = Join-Path $PSScriptRoot '..\..\generated\logs'
 Initialize-Logging -LogFile 'monitoring.log'
 
 # ---- Phase-name map ----
