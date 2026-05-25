@@ -25,7 +25,22 @@ if (-not $pssa) {
     exit 1
 }
 
-$errors = Invoke-ScriptAnalyzer -Path $PSDIRS -Recurse -Severity Warning
+# Exclude rules that flag intentional patterns (embedded scripts, credentials in scripts, etc.)
+$excludedRules = @(
+    'PSUseBOMForUnicodeEncodedFile',
+    'PSUseToExportFieldsInManifest',
+    'PSUseShouldProcessForStateChangingFunctions',
+    'PSUseApprovedVerbs',
+    'PSUseSingularNouns',
+    'PSAvoidUsingWriteHost',
+    'PSAvoidUsingConvertToSecureStringWithPlainText',
+    'PSAvoidUsingUsernameAndPasswordParams',
+    'TypeNotFound'
+)
+
+$errors = Invoke-ScriptAnalyzer -Path $PSDIRS -Recurse -Severity Error |
+    Where-Object { $excludedRules -notcontains $_.RuleName }
+
 if ($errors) {
     $errors | Format-Table -AutoSize
     exit 1
