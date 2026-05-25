@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ClusterId.ps1
-generated: 2026-05-17 23:02 UTC
+generated: 2026-05-25 14:44 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Checks the cluster catalogue JSON file for the specified ClusterId and validates that required fields (servers, scom_group, ilo_addresses) are present. Returns the cluster definition hashtable on success, or writes an error and returns null on failure.
+Checks the cluster catalogue JSON file for the specified ClusterId and validates that required fields (servers, scom_group, ilo_addresses) are present. Returns a hashtable with Success and Cluster properties on success, or Success=false with Error on failure.
 
 ## Parameters
 
@@ -32,8 +32,8 @@ $def = Test-ClusterId -ClusterId 'PROD-CLUSTER-01'
     .DESCRIPTION
         Checks the cluster catalogue JSON file for the specified ClusterId and
         validates that required fields (servers, scom_group, ilo_addresses) are
-        present. Returns the cluster definition hashtable on success, or writes
-        an error and returns null on failure.
+        present. Returns a hashtable with Success and Cluster properties on
+        success, or Success=false with Error on failure.
 
     .PARAMETER ClusterId
         Cluster identifier string.
