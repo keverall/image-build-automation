@@ -131,7 +131,7 @@ function Set-MaintenanceMode {
     $emailer = [EmailNotifier]::new($emailCfg)
 
     $opsrampClient = $null
-    if ($opsrampCfg) { try { $opsrampClient = [OpsRamp_Client]::new((Join-Path $Script:ConfigDir 'opsramp_config.json')) } catch {} }
+    if ($opsrampCfg) { try { $opsrampClient = [OpsRamp_Client]::new((Join-Path $Script:ConfigDir 'opsramp_config.json')) } catch { Write-Debug "OpsRamp init failed" } }
 
     # Execute action
     $overallOk = $true
@@ -264,9 +264,9 @@ function _Parse-Datetime([string]$s) {
     $s2 = $s.Replace('T', ' ')
     $formats = @('yyyy-MM-dd HH:mm:ss', 'yyyy-MM-dd HH:mm')
     foreach ($fmt in $formats) {
-        try { return [DateTime]::ParseExact($s2, $fmt, $null) } catch {}
+        try { return [DateTime]::ParseExact($s2, $fmt, $null) } catch { continue }
     }
-    try { return [DateTime]::Parse($s2) } catch {}
+    try { return [DateTime]::Parse($s2) } catch { Write-Debug "DateTime parse failed" }
     throw "Invalid datetime format '$s'. Use 'now' or 'YYYY-MM-DD HH:MM[:SS]'."
 }
 

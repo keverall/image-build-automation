@@ -134,22 +134,19 @@
     CmdletsToExport = @()
 
     # Variables to export from this module
-    VariablesToExport = @()
+    VariablesToExport = @('LogDir')
 
     # Aliases to export from this module
-    AliasesToExport = '*'
-
-    # DSC resources to export from this module
-    # DscResourcesToExport = @()
-
-    # List of all modules packaged with this module
-    # ModuleList = @()
-
-    # List of all files packaged with this module
-    # FileList = @()
+    AliasesToExport = @()
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess
-    # PrivateData = @{ PSData = @{ } }
+    PrivateData = @{
+        PSData = @{
+            Tags = @('HPE', 'Automation', 'Maintenance', 'Deployment')
+            LicenseUri = 'https://opensource.org/licenses/MIT'
+            ProjectUri = 'https://github.com/example/automation'
+        }
+    }
 
     # HelpInfo URI of this module
     # HelpInfoURI = ''

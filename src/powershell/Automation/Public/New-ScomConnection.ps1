@@ -50,38 +50,14 @@ Write-Output "SCOM_REST_READY: `$restReady"
 }
 
 function New-ScomRestConnection {
-    <#
-    .SYNOPSIS
-        Returns a PowerShell command string that initialises a CSRF token-aware HTTP session
-        for the SCOM REST API. Applicable for SCOM 2019 UR1+ and 2025 only.
-
-    .PARAMETER ManagementServer
-        SCOM management server hostname / IP.
-
-    .PARAMETER UserName
-        DOMAIN\username for basic auth on the REST endpoint.
-
-    .PARAMETER Password
-        Plain-text password for basic auth on the REST endpoint.
-
-    .DESCRIPTION
-        The returned script:
-          1. POSTs to /OperationsManager/authenticate to obtain a session cookie
-          2. Reads the SCOM-CSRF-TOKEN cookie
-          3. Builds an Authorization header (Network auth scheme)
-          4. Exposes the headers + web session so callers can invoke API endpoints
-
-    .EXAMPLE
-        $restScript = New-ScomRestConnection -ManagementServer 'scom19.corp.local' `
-            -UserName 'corp\admin' -Password 'secret'
-    #>
     [CmdletBinding()]
     [OutputType([string])]
     param(
         [Parameter(Mandatory, Position = 0)][string] $ManagementServer,
-        [Parameter(Mandatory, Position = 1)][string] $UserName,
-        [Parameter(Mandatory, Position = 2)][string] $Password
+        [Parameter(Mandatory, Position = 1)][System.Management.Automation.PSCredential] $Credential
     )
+    $UserName = $Credential.UserName
+    $Password = $Credential.GetNetworkCredential().Password
     return @"
 Import-Module OperationsManager -ErrorAction Stop
 `$baseUrl  = "http://$ManagementServer/OperationsManager"
