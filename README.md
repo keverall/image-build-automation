@@ -9,15 +9,13 @@ Automated build pipelines for creating customized Windows Server installation IS
 ### Internal docs index
 | Document | Description |
 |---|---|
-| [📚 Documentation Index](docs/README.md) | Complete documentation overview with repository structure, quick start, and full feature catalog |
-| [🔧 Maintenance Mode](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables — language-agnostic |
-| [🔧 Maintenance Mode — PowerShell](docs/powershell/maintenance_mode.md) | PowerShell cmdlet usage: `[CmdletBinding()]` params, module import, `pwsh.exe` auto-disable scheduling, PSScriptAnalyzer |
-| [📡 Orchestrator & Routing](docs/api/api_reference.md) | Language-agnostic: request types, call sequence, adding new handlers, return schemas |
-| [📡 PowerShell Orchestrator](docs/powershell/api_reference.md) | `Start-AutomationOrchestrator`, `Invoke-RoutedRequest`, `$script:RouteMap`, `_Validate-Request` |
-| [🌐 GitLab REST API — Pipeline Triggers](docs/api/gitlab.md) | End-to-end GitLab REST trigger reference: `.gitlab-ci.yml` job setup, Pipeline Trigger Tokens, `trigger/pipeline` POST payloads, callbacks, polling |
+| [📚 Documentation Index](docs/README.md) | Complete documentation overview |
+| [🔧 Maintenance Mode](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
+| [📡 Orchestrator & Routing](docs/powershell_api_reference.md#orchestrator-api-reference) | Request types, call sequence, adding new handlers, return schemas |
 | [🔌 PowerShell Generated Cmdlets](docs/powershell/generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, etc. |
-| [🧪 PowerShell Testing (Pester)](docs/powershell/powershell_testing.md) | Pester v5 BDD testing guide |
-| [⚙️ PowerShell Testing Quick Start](docs/powershell/powershell_testing_quickstart.md) | Pester one-liners — install, run-all, run-one-file, tag filter, JUnit XML, smoke-test |
+| [🧪 PowerShell Testing (Pester)](docs/testing.md) | Pester v5 BDD testing guide |
+| [⚙️ Code Quality & Security](docs/code_quality.md) | PSScriptAnalyzer, gitleaks configuration |
+| [🔌 CI Run Requirements](docs/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
 
 ### In this document
 - [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)

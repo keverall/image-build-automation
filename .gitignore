@@ -1,4 +1,4 @@
-# === Python & Core Dependencies ===
+# === Core Dependencies ===
 __pycache__/
 *.py[cod]
 *$py.class
