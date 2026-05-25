@@ -12,7 +12,7 @@ Automated build pipelines for creating customized Windows Server installation IS
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview |
 | [🔧 Maintenance Mode](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
 | [📡 Orchestrator & Routing](docs/powershell_api_reference.md#orchestrator-api-reference) | Request types, call sequence, adding new handlers, return schemas |
-| [🔌 PowerShell Generated Cmdlets](docs/powershell/generated/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, etc. |
+| [🔌 PowerShell Generated Cmdlets](docs/dynamic-code-docs/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, etc. |
 | [🧪 PowerShell Testing (Pester)](docs/testing.md) | Pester v5 BDD testing guide |
 | [⚙️ Code Quality & Security](docs/code_quality.md) | PSScriptAnalyzer, gitleaks configuration |
 | [🔌 CI Run Requirements](docs/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |

@@ -45,6 +45,13 @@ src/powershell/
 Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ```
 
+### Auto-Generated Documentation
+
+A complete reference for all PowerShell cmdlets is auto-generated and available at:
+- **[Auto-Generated Cmdlet Reference](dynamic-code-docs/INDEX.md)** — Full parameter tables, examples, and source locations
+
+---
+
 ### Generate a Deterministic UUID
 
 ```powershell

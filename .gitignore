@@ -49,7 +49,7 @@ build_reports/
 src/powershell/logs/
 
 # === Generated Output (build artifacts) ===
-generated/
+# Note: docs/dynamic-code-docs/ is tracked in git (auto-generated docs that are reviewed)
 
 # === Configuration Secrets ===
 configs/opsramp_config.json

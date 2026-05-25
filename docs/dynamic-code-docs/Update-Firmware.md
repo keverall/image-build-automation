@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-Firmware.ps1
-generated: 2026-05-17 23:02 UTC
+generated: 2026-05-25 14:44 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the Python automation.cli.update_firmware_drivers module.
+Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the reference implementation automation.cli.update_firmware_drivers module.
 
 ## Parameters
 
@@ -37,7 +37,7 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv
     .DESCRIPTION
         Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and
         invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the
-        Python automation.cli.update_firmware_drivers module.
+        reference implementation automation.cli.update_firmware_drivers module.
 
     .PARAMETER Config
         Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json).

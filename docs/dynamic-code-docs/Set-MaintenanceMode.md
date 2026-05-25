@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-05-17 23:02 UTC
+generated: 2026-05-25 14:44 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO, and HPE OpenView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications.  The function is the PowerShell equivalent of the Python automation.cli.maintenance_mode module.
+Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO, and HPE OpenView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications.  The function is the PowerShell implementation. automation.cli.maintenance_mode module.
 
 ## Parameters
 
@@ -52,7 +52,7 @@ Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
         Supports immediate enable/disable as well as scheduled windows with
         automatic disable via Windows Task Scheduler.
         Integrates with OpsRamp for metric/alert emission and can send email
-        notifications.  The function is the PowerShell equivalent of the Python
+        notifications.  The function is the PowerShell implementation.
         automation.cli.maintenance_mode module.
 
     .PARAMETER Action
