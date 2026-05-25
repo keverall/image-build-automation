@@ -1,7 +1,6 @@
 # Maintenance Mode Orchestration
 
-> **Language-agnostic reference.** For PowerShell usage, see [powershell maintenance_mode.md](powershell/maintenance_mode.md).  
-> For Python usage, see [python maintenance_mode.md](python/maintenance_mode.md).
+> **Language-agnostic reference.** For PowerShell usage, see [powershell maintenance_mode.md](powershell/maintenance_mode.md).
 
 ---
 
@@ -187,4 +186,4 @@ datetimes for `--start` / `-Start` and `--end` / `-End`.
 ## Change History
 
 - 2026-05-16: Initial version of language-agnostic maintenance-mode reference,
-  extracted from both PowerShell and Python implementations.
+  extracted from PowerShell implementation.

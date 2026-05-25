@@ -2,14 +2,10 @@
 
 ## Overview
 
-This is the **PowerShell translation** of the [`hpe-automation`](../README.md) Python
-project. It provides the same end-to-end automation — firmware / driver ISO builds,
+**PowerShell** provides the end-to-end automation — firmware / driver ISO builds,
 Windows security patching, ISO deployment to iLO, installation monitoring, SCOM
 maintenance-mode orchestration, and OpsRamp telemetry — implemented as a native
 PowerShell module.
-
-> **Note:** This is a feasibility implementation. The Python project remains the
-> authoritative, production-tested codebase.
 
 ---
 
@@ -124,36 +120,20 @@ All orchestrator results use the same envelope: `Success` (bool), `Output` /
 
 ## Key Design Decisions
 
-| Python pattern | PowerShell equivalent |
-|---|---|
-| `pathlib.Path` | `[System.IO.Path]` / `Join-Path` |
-| Type hints (`str`, `int`, `Optional`) | Comment-based; no runtime enforcement in PS 5.1 |
-| `dict[str, Any]` | `[hashtable]` / `[pscustomobject]` |
-| `dataclasses.dataclass` | PowerShell `class` with typed properties |
-| `subprocess.run()` | `Invoke-Command` / `System.Diagnostics.Process` |
-| `pywinrm.Session.run_ps()` | `New-PSSession` + `Invoke-Command -Session` |
-| `pytest` (254 tests) | **Pester** BDD framework |
-| `argparse` | PowerShell `param()` + `[CmdletBinding()]` |
-| `logging` | `[System.Diagnostics.TraceSource]` + `ConsoleTraceListener` |
-| `requests.Session()` | `[System.Net.Http.HttpClient]` |
-| f-string PS generation | Here-string / interpolated strings |
-| `asyncio` | Runspaces / PS Jobs (not needed; kept synchronous for fidelity) |
+  pattern:
 
----
-
-## Key Differences from the Python Version
-
-- **WinRM → native PowerShell remoting**: The Python `run_powershell_winrm` used
-  `pywinrm`; PowerShell uses `New-PSSession` and built-in WSMan trust hosts — the
-  caller may need `TrustedHosts` set.
-- **iLO REST → Invoke-RestMethod**: Python `requests` calls were translated directly
-  to `Invoke-RestMethod` / `Invoke-WebRequest` on the .NET `HttpClient`.
-- **No async primitives**: PowerShell 5.1 lacks `async`/`await`. Thread-pool
-  polling in `Start-InstallMonitor` was reimplemented as a synchronous `foreach`
-  loop.
-- **Scheduled Tasks**: Python called `schtasks.exe` directly via `run_command`;
-  PowerShell does the same via `Invoke-Command`.
-- **Logging**: Python `logging` was translated to `[TraceSource]` + `ConsoleTraceListener`.
+- `[System.IO.Path]` / `Join-Path`
+- Comment-based; no runtime enforcement in PS 5.1
+- `[hashtable]` / `[pscustomobject]` 
+- PowerShell `class` with typed properties 
+- `Invoke-Command` / `System.Diagnostics.Process`
+- `New-PSSession` + `Invoke-Command -Session` 
+- **Pester** BDD framework 
+- PowerShell `param()` + `[CmdletBinding()]` 
+- `[System.Diagnostics.TraceSource]` + `ConsoleTraceListener` 
+- `[System.Net.Http.HttpClient]` 
+- Here-string / interpolated strings 
+- Runspaces / PS Jobs (not needed; kept synchronous for fidelity) 
 
 ---
 
@@ -172,35 +152,6 @@ Invoke-Pester -Path 'powershell\Tests\New-Uuid.Tests.ps1'
 
 ---
 
-## Status
-
-| Module | Python SLOC | PowerShell SLOC | Status |
-|---|---|---|---|
-| `powershell.py` → `Invoke-PowerShell.psm1` | 180 | ~220 | ✅ Converted |
-| `config.py` → `Config.psm1` | 108 | ~180 | ✅ Converted |
-| `credentials.py` → `Credentials.psm1` | 76 | ~180 | ✅ Converted |
-| `executor.py` → `Executor.psm1` | 142 | ~220 | ✅ Converted |
-| `file_io.py` → `FileIO.psm1` | 96 | ~180 | ✅ Converted |
-| `inventory.py` → `Inventory.psm1` | 145 | ~200 | ✅ Converted |
-| `audit.py` → `Audit.psm1` | 151 | ~130 | ✅ Converted |
-| `logging_setup.py` → `Logging.psm1` | 51 | ~140 | ✅ Converted |
-| `base.py` → `Base.psm1` | 118 | ~130 | ✅ Converted |
-| `validators.py` → `_Validate-Request.ps1` | 105 | ~140 | ✅ Converted |
-| `router.py` → `Router.psm1` | 102 | ~80 | ✅ Converted |
-| `orchestrator.py` → `Start-AutomationOrchestrator.ps1` | 162 | ~80 | ✅ Converted |
-| `generate_uuid.py` → `New-Uuid.ps1` | 79 | ~130 | ✅ Converted |
-| `maintenance_mode.py` → `Set-MaintenanceMode.ps1` | 956 | ~550 | ✅ Converted |
-| `deploy_to_server.py` → `Invoke-IsoDeploy.ps1` | 296 | ~280 | ✅ Converted |
-| `opsramp_integration.py` → `OpsRampClient.psm1` | 540 | ~300 | ✅ Converted |
-| `build_iso.py` → `New-IsoBuild.ps1` | 318 | ~250 | ✅ Converted |
-| `update_firmware_drivers.py` → `Update-Firmware.ps1` | 265 | ~260 | ✅ Converted |
-| `patch_windows_security.py` → `Update-WindowsSecurity.ps1` | 280 | ~260 | ✅ Converted |
-| `monitor_install.py` → `Start-InstallMonitor.ps1` | 481 | ~330 | ✅ Converted |
-| **pytest tests** (254) | **3,535** | ~900 | ✅ Pester (25/25 passing on CI) |
-
----
-
 ## See Also
 
-- Python project: [`../README.md`](../README.md)
 - [PowerShell Generated Cmdlets Reference](generated/INDEX.md) — full auto-generated documentation for all cmdlets

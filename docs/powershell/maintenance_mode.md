@@ -150,7 +150,7 @@ The task runs as SYSTEM (override via `/RU <user>` / `/RP <password>`).
 
 ## Audit Format
 
-Per run the cmdlet writes *and* appends (same as Python):
+Per run the cmdlet writes *and* appends:
 
 - `logs/<action>_<ClusterId>_<unix-ts>.json` — per-action record
 - `logs/maintenance_audit.log` — line-delimited JSON (appended)

@@ -1,6 +1,6 @@
 ﻿#
 # Set-MaintenanceMode.ps1 — SCOM / iLO / OpenView maintenance-mode orchestrator
-# Equivalent of Python cli/maintenance_mode.py (~956 lines)
+# Equivalent of reference implementation cli/maintenance_mode.py (~956 lines)
 #
 # Contains: Set-MaintenanceMode wrapper function, helper functions, manager classes,
 #           and a script-mode guard for direct pwsh invocation.
@@ -18,7 +18,7 @@ function Set-MaintenanceMode {
         Supports immediate enable/disable as well as scheduled windows with
         automatic disable via Windows Task Scheduler.
         Integrates with OpsRamp for metric/alert emission and can send email
-        notifications.  The function is the PowerShell equivalent of the Python
+        notifications.  The function is the PowerShell implementation.
         automation.cli.maintenance_mode module.
 
     .PARAMETER Action

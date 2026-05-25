@@ -4,7 +4,7 @@
 
 This document describes the comprehensive audit process for the HPE ProLiant Windows Server ISO Automation pipeline. Every action is logged, timestamped, and stored for compliance, troubleshooting, and reporting.
 
-All scripts use the centralized **`AuditLogger`** class from `src/python/automation/utils/audit.py`, ensuring consistent structured JSON audit records across the entire codebase. Audit logs are written to both per-action files and a master line-delimited JSON log.
+All scripts use the centralized **`AuditLogger`** class for audit logging. Audit logs are written to both per-action files and a master line-delimited JSON log.
 
 ## Audit Trail Structure
 
@@ -23,7 +23,7 @@ All scripts use the centralized **`AuditLogger`** class from `src/python/automat
 
 **Maintenance-Specific Audit**
 - Location: `logs/maintenance_<action>_<cluster>_<timestamp>.json`
-- Each maintenance_mode.py run creates a detailed JSON record with per-system results
+- Each maintenance_run creates a detailed JSON record with per-system results
 - Aggregated into `logs/maintenance_audit.log` (line-delimited JSON) for centralized querying
 
 **Workflow Logs**
@@ -279,7 +279,7 @@ Steps:
 2. Verify Windows Scheduled Task exists: `schtasks /Query /TN "MaintenanceDisable-<cluster>"`
 3. Check task history: Event Viewer → Windows Logs → Task Scheduler
 4. Review script exit code in task history; any errors logged to `maintenance_audit.log`
-5. Manually run disable: `python -m automation.cli.maintenance_mode --cluster-id <id> --disable`
+5. Manually run disable via PowerShell or scheduled task invocation
 
 ## Best Practices
 

@@ -8,8 +8,7 @@ CI pipeline stage. Does **not** duplicate Pester testing guidance
 
 ## Table of Contents
 
-1. [Feature Parity: Python `src/` → PowerShell](#feature-parity)
-2. [Pipeline — Standalone PowerShell Stage](#ci-powershell-stage)
+1. [Pipeline — Standalone PowerShell Stage](#ci-powershell-stage)
 
 ### CyberArk credential bootstrap
 
@@ -72,43 +71,6 @@ stage('CyberArk - Bootstrap Secrets') {
 3. [SCOM 2015 — Will It Work?](#scom-2015)
 4. [HPE iLO — Will It Work?](#hpe-ilo)
 5. [Open Items](#open-items)
-
----
-
-<a name="feature-parity"></a>
-## 1. Feature Parity: Python `src/` → PowerShell
-
-Every module in `src/automation/` is **structurally present** in
-`src/powershell/Automation/` — same file count, same routing map, same entry-point
-names, same config contracts (`configs/*.json` shared by both).  Degree of
-implementation is noted separately below.
-
-| # | Module | Python file | PowerShell file | PS status |
-|---|---|---|---|---|
-| 1 | Config | `utils/config.py` | `Private/Config.ps1` | ✅ Fully ported |
-| 2 | Credentials | `utils/credentials.py` | `Private/Credentials.ps1` | ✅ Fully ported |
-| 3 | Executor | `utils/executor.py` | `Private/Executor.ps1` | ✅ + `Invoke-NativeCommandWithRetry` stronger |
-| 4 | FileIO | `utils/file_io.py` | `Private/FileIO.ps1` | ✅ Fully ported |
-| 5 | Inventory | `utils/inventory.py` | `Private/Inventory.ps1` | ✅ Fully ported |
-| 6 | Audit | `utils/audit.py` | `Private/Audit.ps1` | ✅ Fully ported |
-| 7 | Logging | `utils/logging_setup.py` | `Private/Logging.ps1` | ✅ |
-| 8 | Router | `core/router.py` | `Private/Router.ps1` + `_RouteMap.ps1` | ✅ |
-| 9 | Orchestrator | `core/orchestrator.py` | `Public/Start-AutomationOrchestrator.ps1` | ✅ |
-| 10 | Base | `utils/base.py` | `Private/Base.ps1` | ✅ |
-| 11 | Uuid | `cli/generate_uuid.py` | `Public/New-Uuid.ps1` | ✅ RFC-4122 v4 |
-| 12 | Build ISO | `cli/build_iso.py` | `Public/New-IsoBuild.ps1` | ✅ |
-| 13 | **Firmware** | `cli/update_firmware_drivers.py` | `Public/Update-Firmware.ps1` | ⚠️ See §Open Items |
-| 14 | **Security Patch** | `cli/patch_windows_security.py` | `Public/Update-WindowsSecurity.ps1` | ⚠️ See §Open Items |
-| 15 | **Deploy** | `cli/deploy_to_server.py` | `Public/Invoke-IsoDeploy.ps1` | ⚠️ See §Open Items |
-| 16 | **Install Monitor** | `cli/monitor_install.py` | `Public/Start-InstallMonitor.ps1` | ✅ (full loop: iLO + WinRM) |
-| 17 | **Maintenance Mode** | `cli/maintenance_mode.py` | `Public/Set-MaintenanceMode.ps1` | ✅ |
-| 18 | OpsRamp | `cli/opsramp_integration.py` | `Public/Invoke-OpsRampClient.ps1` | ✅ |
-| 19 | Validators | `utils/validators.py` | `Public/Invoke-Validator.ps1` | ✅ |
-| 20 | PS execution | `utils/powershell.py` | `Public/Invoke-PowerShellScript.ps1` + `WinRM.ps1` | ✅ |
-| 21 | SCOM helpers | N/A (PS-only) | `Public/New-ScomConnection.ps1` + `New-ScomMaintenanceScript.ps1` | ✅ PS-native |
-
-**Modules in unbroken grey above (16 of 21) are complete and tested.**  
-The three ⚠️ entries are documented individually below.
 
 ---
 
@@ -191,8 +153,7 @@ stage('PowerShell — Integration Tests') {
 **Yes — this is the strongest part of the module.**
 
 The PS module calls `OperationsManager` cmdlets **natively** from the calling
-process.  The Python side had to shell out to `powershell.exe`; the PS side does
-not:
+process.  
 
 ```powershell
 Import-Module OperationsManager                         # SCOM 2015 cmdlets loaded
@@ -205,9 +166,6 @@ foreach ($inst in $instances) {
     }
 }
 ```
-
-This is exactly the script the Python `New-ScomMaintenanceScript.ps1` would emit
-and pipe to `powershell.exe`; in PS it runs inline.
 
 ### What must be true
 
@@ -240,8 +198,7 @@ window on a real iLO 4/5/6 if IPs and credentials are correct.
 ### `Invoke-IsoDeploy` — iLO virtual media mount ⚠️ scaffold in place
 
 The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but
-the actual virtual media mount step is a **commented scaffold** — same contract as
-Python:
+the actual virtual media mount step is a **commented scaffold** 
 
 ```powershell
 # Uncomment when ISO serving URL is available:
@@ -253,9 +210,6 @@ $vmBody   = @{
 } | ConvertTo-Json
 Invoke-RestMethod -Uri $vmActionUrl -Method Post -Body $vmBody -Headers @{ "X-Redfish-Session" = $sessionKey } …
 ```
-
-Until that `<http_iso_url>` is available the step is intentionally a no-op,
-mirroring the Python-side placeholder verbatim.
 
 ### `ILOManager` inside `Set-MaintenanceMode` — iLO maintenance window ✅
 
@@ -279,7 +233,7 @@ poll loop.
 |---|---|---|---|
 | ✅ Fixed | `Invoke-IsoDeploy` broken syntax | Fixed | All `;,return,` / `$)($` artefacts removed; pure PS guards |
 | ✅ Fixed | `Update-WindowsSecurity` broken syntax | Fixed | All `;,return,` / `$)($` / `Disassemble-Image` artefacts removed |
-| ✅ Better | `Update-Firmware` no retry | Improved | Now uses `Invoke-NativeCommandWithRetry` with exponential back-off — cache-side improvement over Python (Python also has no retry; PS is now marginally stronger) |
+| ✅ Better | `Update-Firmware` no retry | Improved | Now uses `Invoke-NativeCommandWithRetry` with exponential back-off — cache-side improvement |
 | ✅ Done | `Update-WindowsSecurity` DISM loop | Done | `_ApplyPatchesDism` calls `Invoke-NativeCommand` per KB. `DISM /Image /Add-Package /PackagePath /LimitAccess /NoRestart` on `winpeimg` — same pattern as Python stub |
 | ⚠️ Partial | iLO virtual media mount in `Invoke-IsoDeploy` | Unchanged — same on Python side | Scaffold is in place (session login + commented mount sequence); full `InsertVirtualMedia` POST requires an HTTPServing URL to be decided separately |
 | ⚠️ Partial | Redfish ISO mount in `Invoke-IsoDeploy` | Unchanged — same on Python side | Scaffold comment present; needs ISO URL first |

@@ -21,7 +21,7 @@ Complete guide to running and maintaining the Pester test suite for the `src/pow
 
 ## Overview
 
-The PowerShell module uses **Pester v5+** as its BDD-style testing framework — the equivalent of `pytest` for Python. Tests are colocated with the source under `tests/powershell/` alongside their corresponding modules in `src/powershell/Automation/`.
+The PowerShell module uses **Pester v5+** as its BDD-style testing framework — the unit testing framework for PowerShell. Tests are colocated with the source under `tests/powershell/` alongside their corresponding modules in `src/powershell/Automation/`.
 
 **Framework:** [Pester](https://pester.dev/) v5.7.1 (latest stable at time of writing)
 
@@ -31,9 +31,9 @@ The PowerShell module uses **Pester v5+** as its BDD-style testing framework —
 
 **BDD keywords:** `Describe`, `Context`, `It`, `Should`, `Mock`, `BeforeAll`, `AfterAll`, `BeforeEach`, `AfterEach`
 
-| Python / pytest concept | PowerShell / Pester equivalent |
+| Pester concept | PowerShell equivalent |
 |---|---|
-| `tests/python/` directory | `tests/powershell/` |
+| `tests/` directory | `tests/powershell/` |
 | `conftest.py` / fixtures | `BeforeAll` / `AfterAll` in each test file |
 | `unittest.mock.patch` | `Mock` keyword |
 | `assert x == y` | `$result | Should -Be expected` |
@@ -168,7 +168,7 @@ tests/powershell/
 
 ## Shared Test Infrastructure
 
-`tests/powershell/Tests.Tests.ps1` is the equivalent of Python's `tests/python/conftest.py`. It runs `BeforeAll` before every individual test file and sets up:
+`tests/powershell/Tests.Tests.ps1` is the equivalent of `tests/conftest.py`. It runs `BeforeAll` before every individual test file and sets up:
 
 - **`$Script:ModuleRoot`** — absolute path to `src/powershell/Automation/`
 - **`$Script:TestRoot`** — absolute path to `tests/powershell/`
@@ -310,9 +310,10 @@ Assert-MockCalled Get-Content -ParameterFilter { $Path -eq 'missing.txt' } -Time
 
 ### Current state
 
-The Jenkinsfile (as of the current codebase) has **no `Invoke-Pester` stage**. The Linux-based `Unit Tests & Coverage` stage only runs `pytest` for the Python side of the project. Adding a Pester stage requires a Windows agent.
+The CI/CD pipeline (as of the current codebase) has **no `Invoke-Pester` stage**. A dedicated test stage for PowerShell requires a Windows agent.
 
-### Recommended Jenkins stage
+<a name="recommended-pipeline-stage"></a>
+## Recommended Pipeline Stage
 
 ```groovy
 stage('PowerShell Tests') {
@@ -349,11 +350,11 @@ stage('PowerShell Tests') {
 }
 ```
 
-> **Note:** Because this project's Jenkinsfile already runs on a `windows` agent, place this stage immediately before the existing `Unit Tests & Coverage` (Python/pytest) stage. Both can coexist on the same agent.
+> **Note:** When placing this stage before the existing tests stage, both can coexist on the same Windows agent.
 
 ### PR incremental testing for PowerShell
 
-In Jenkins, use `CHANGE_ID` to mirror Python's PR incremental mode for PowerShell too:
+In the pipeline, use `CI_PIPELINE_SOURCE` or equivalent variable for PowerShell PR incremental testing:
 
 ```powershell
 $isPR = $env:CHANGE_ID -ne $null -and $env:CHANGE_ID -ne ''
@@ -385,10 +386,7 @@ if ($isPR) {
 
 ## See Also
 
-
-- **CyberArk secrets + Jenkins setup** — full credential mapping, Bootstrap stage docs,
-  and credential function reference: [`powershell_jenkins_run_requirements.md`](powershell_jenkins_run_requirements.md)
-- Python/pytest testing guide: [`../python/testing.md`](../python/testing.md)
+- **Pipeline credentials setup** — full credential mapping and bootstrap documentation: [`powershell_run_requirements.md`](powershell_run_requirements.md)
 - PowerShell module overview: [`../powershell/powershell_api_reference.md`](../powershell/powershell_api_reference.md)
 - Pester documentation: https://pester.dev/docs/
 - Pester v6 migration guide: https://pester.dev/docs/migration/v5-to-v6

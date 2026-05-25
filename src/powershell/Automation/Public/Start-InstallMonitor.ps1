@@ -1,6 +1,6 @@
 ﻿#
 # Start-InstallMonitor.ps1 — Windows installation progress monitor
-# Equivalent of Python cli/monitor_install.py (481 lines → ~330 PS lines)
+# Equivalent of reference implementation cli/monitor_install.py (481 lines → ~330 PS lines)
 #
 # Contains: Start-InstallMonitor wrapper function, InstallationMonitor class,
 #           and a script-mode guard for direct pwsh invocation.

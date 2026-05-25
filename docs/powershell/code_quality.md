@@ -1,6 +1,6 @@
 # PowerShell Code Quality & Security Scanning
 
-This document describes the automated code quality, linting, security scanning, and vulnerability detection for PowerShell scripts in the Jenkins CI/CD pipeline.
+This document describes the automated code quality, linting, security scanning, and vulnerability detection for PowerShell scripts in the CI/CD pipeline.
 
 ## Overview
 
@@ -35,7 +35,7 @@ Runs immediately after Setup, before any build/deploy operations. It:
 - Checks for PowerShell security anti-patterns (hardcoded credentials, unsafe invocation, etc.)
 - Scans the repository history for committed secrets via gitleaks
 
-**Skip this stage** by setting the `SKIP_CODE_SCAN` parameter to `true` in Jenkins.
+**Skip this stage** by setting the `SKIP_CODE_SCAN` parameter to `true` in the pipeline.
 **Fail the build on violations** by setting `FAIL_ON_CODE_ISSUES` to `true`.
 
 ### 3–9. Existing Build Stages
@@ -121,7 +121,7 @@ code_scan_results/
 
 The build **alerts** via email on quality gate violations but does **not fail** by default — to avoid blocking active development.
 
-Enable strict failure by setting `FAIL_ON_CODE_ISSUES=true` in Jenkins parameters.
+Enable strict failure by setting `FAIL_ON_CODE_ISSUES=true` in pipeline parameters.
 
 | Metric | Threshold | Enforcement |
 |--------|-----------|-------------|
@@ -246,11 +246,9 @@ Pin gitleaks by downloading a specific release binary (e.g. `v8.18.1`).
 
 ---
 
-## Jenkins Pipeline Reference
+## Pipeline Integration
 
-The relevant stage is defined in `Jenkinsfile` as `Code Quality & Security Scan` (
-`Jenkinsfile:214`–`380`). The stage currently only scans Python sources.
-To add a PowerShell scan, extend the stage with:
+The relevant stage is defined in the CI/CD pipeline configuration as `Code Quality & Security Scan`. The stage scans PowerShell sources.
 
 ```powershell
 # === [6.5] PSScriptAnalyzer — PowerShell lint + security ===
@@ -280,20 +278,9 @@ if ($psaExit -ne 0) {
 
 ---
 
-## Comparative Reference: Python vs PowerShell
+## CI/CD Platform Integration
 
-| Concern | Python (`docs/python/code_quality.md`) | PowerShell (`this document`) |
-|---------|----------------------------------------|------------------------------|
-| Style linting | `ruff` | `PSScriptAnalyzer` |
-| Deep linting | `pylint` | `PSScriptAnalyzer` (combined) |
-| Complexity metrics | `radon mi` / `radon cc` | `PSScriptAnalyzer` (rule-level) |
-| Security scanning | `bandit` | `PSScriptAnalyzer` (security rules) |
-| Dependency vulns | `safety` | Not yet automated for PS modules |
-| Secret detection | `gitleaks` | `gitleaks` (same tool) |
-| Build authoring | `pytest` + `pytest-cov` | `Invoke-Pester` (testing doc) |
-| CI platform | Jenkins `windows` (Python stage) | Jenkins `windows` (PS stage pending) |
-
----
+This stage integrates with GitLab CI/CD and similar pipeline platforms.
 
 ## Future Enhancements
 
@@ -303,10 +290,10 @@ if ($psaExit -ne 0) {
 - **Security rule coverage**: expand PSScriptAnalyzer ruleset to include community-created SAST rules (e.g. `PSDSC` disallowed DSC patterns).
 - **Gitleaks allowlist**: maintain a per-repo `code_scan_results\.gitleaks.toml` for known false-positive patterns (noise-specific credential names used in test fixtures).
 - **Trivy secrets / SAST**: add Trivy secret scanning pass that understands `.ps1` context natively.
-- **SonarQube / CodeQL**: forward PSA JSON alongside the existing Python reports and, if compliant, enable GitHub Advanced Security CodeQL for PowerShell SAST.
+- **SonarQube / CodeQL**: forward PSA JSON and, if compliant, enable GitHub Advanced Security CodeQL for PowerShell SAST.
 
 ---
 
 ## Change History
 
-- 2026-05-16: Initial PowerShell code quality guide, mirroring `docs/python/code_quality.md`. Covers PSScriptAnalyzer, gitleaks, Jenkins pipeline integration, quality gates, and local workflow.
+- 2026-05-16: Initial PowerShell code quality guide, mirroring `docs/code_quality.md`. Covers PSScriptAnalyzer, gitleaks, pipeline integration, quality gates, and local workflow.
