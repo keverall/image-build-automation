@@ -45,11 +45,26 @@ htmlcov/
 build_reports/
 .ruff_cache/
 
-# === PowerShell logs (duplicate of generated/logs) ===
-src/powershell/logs/
-
 # === Generated Output (build artifacts) ===
 # Note: docs/dynamic-code-docs/ is tracked in git (auto-generated docs that are reviewed)
+# .gitkeep files are tracked to preserve directory structure
+!generated/.gitkeep
+!generated/base_iso/.gitkeep
+!generated/output/.gitkeep
+!generated/output/patched/.gitkeep
+!generated/output/firmware/.gitkeep
+!generated/output/combined/.gitkeep
+!generated/patched_iso/.gitkeep
+!generated/logs/.gitkeep
+!generated/scheduled_jobs/.gitkeep
+!generated/htmlcov/.gitkeep
+generated/*.iso
+generated/base_iso/*
+generated/output/*
+generated/patched_iso/*
+generated/logs/*
+generated/scheduled_jobs/*
+generated/htmlcov/*
 
 # === Configuration Secrets ===
 configs/opsramp_config.json

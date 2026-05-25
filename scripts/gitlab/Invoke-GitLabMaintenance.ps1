@@ -84,7 +84,7 @@ if (Test-Path $modulePath) {
 }
 
 # Initialize logging for GitLab CI environment
-$logDir = Join-Path $PSScriptRoot '../logs'
+$logDir = Join-Path $PSScriptRoot '../generated/logs'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 
 Write-Host "GitLab CI Maintenance Call - Pipeline: $CI_PIPELINE_ID, Job: $CI_JOB_ID"
