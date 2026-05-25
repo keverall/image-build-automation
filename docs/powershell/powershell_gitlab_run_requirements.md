@@ -130,7 +130,7 @@ foreach ($inst in $instances) {
 
 | Gap | Explanation |
 |---|---|
-| SCOM REST API | SCOM 2015 has no REST API. The Python code uses `scom_config.use_winrm=true` as a future SCOM 2025 path (see `README.md § Why Not REST?`). There is no REST path on 2015 — both implementations are correct for 2015. |
+| SCOM REST API | SCOM 2015 has no REST API. The `scom_config.use_winrm=true` setting is reserved for future SCOM 2025 support (see `README.md § Why Not REST?`). There is no REST path on 2015. |
 | SCOM login token expiry | `-ErrorAction Stop` on `New-SCOMManagementGroupConnection` will surface authentication failures immediately in CI |
 
 ---
@@ -144,7 +144,7 @@ foreach ($inst in $instances) {
 
 ### `Invoke-IsoDeploy` — iLO virtual media mount ⚠️ scaffold in place
 
-The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but the actual virtual media mount step is a **commented scaffold** — same contract as Python:
+The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but the actual virtual media mount step is a **commented scaffold**.
 
 \`\`\`powershell
 # Uncomment when ISO serving URL is available:
@@ -157,11 +157,11 @@ $vmBody   = @{
 Invoke-RestMethod -Uri $vmActionUrl -Method Post -Body $vmBody -Headers @{ "X-Redfish-Session" = $sessionKey } …
 \`\`\`
 
-Until that `<http_iso_url>` is available the step is intentionally a no-op, mirroring the Python-side placeholder verbatim.
+Until that `<http_iso_url>` is available the step is intentionally a no-op.
 
 ### `ILOManager` inside `Set-MaintenanceMode` — iLO maintenance window ✅
 
-`POST /rest/v1/maintenancewindows` — POSTs a new maintenance window body including start/end timestamps. iLO ships a self-signed cert by default; the call uses `-SkipCertificateCheck` which is the PowerShell equivalent of Python's `requests.post(verify=False)`.
+`POST /rest/v1/maintenancewindows` — POSTs a new maintenance window body including start/end timestamps. iLO ships a self-signed cert by default; the call uses `-SkipCertificateCheck` which is the PowerShell equivalent of `HttpClientHandler.ServerCertificateCustomValidationCallback` to bypass certificate validation.
 
 ### `Start-InstallMonitor` — iLO Redfish polling ✅
 
@@ -176,7 +176,7 @@ Until that `<http_iso_url>` is available the step is intentionally a no-op, mirr
 |---|---|---|---|
 | ✅ Fixed | `Invoke-IsoDeploy` broken syntax | Fixed | All `;,return,` / `$)($` artefacts removed; pure PS guards |
 | ✅ Fixed | `Update-WindowsSecurity` broken syntax | Fixed | All `;,return,` / `$)($` / `Disassemble-Image` artefacts removed |
-| ✅ Better | `Update-Firmware` no retry | Improved | Now uses `Invoke-NativeCommandWithRetry` with exponential back-off — cache-side improvement over Python (Python also has no retry; PS is now marginally stronger) |
-| ✅ Done | `Update-WindowsSecurity` DISM loop | Done | `_ApplyPatchesDism` calls `Invoke-NativeCommand` per KB. `DISM /Image /Add-Package /PackagePath /LimitAccess /NoRestart` on `winpeimg` — same pattern as Python stub |
-| ⚠️ Partial | iLO virtual media mount in `Invoke-IsoDeploy` | Unchanged — same on Python side | Scaffold is in place (session login + commented mount sequence); full `InsertVirtualMedia` POST requires an HTTPServing URL to be decided separately |
-| ⚠️ Partial | Redfish ISO mount in `Invoke-IsoDeploy` | Unchanged — same on Python side | Scaffold comment present; needs ISO URL first |
+| ✅ Better | `Update-Firmware` no retry | Improved | Now uses `Invoke-NativeCommandWithRetry` with exponential back-off |
+| ✅ Done | `Update-WindowsSecurity` DISM loop | Done | `_ApplyPatchesDism` calls `Invoke-NativeCommand` per KB. `DISM /Image /Add-Package /PackagePath /LimitAccess /NoRestart` on `winpeimg`. |
+| ⚠️ Partial | iLO virtual media mount in `Invoke-IsoDeploy` | Scaffold in place | Session login implemented; full `InsertVirtualMedia` POST requires an HTTPServing URL to be decided separately |
+| ⚠️ Partial | Redfish ISO mount in `Invoke-IsoDeploy` | Scaffold in place | Comment present; needs ISO URL first |
