@@ -131,79 +131,41 @@ I have attached two Powershell scripts as examples of Group and Cluster Support 
 Regards
 Noel
 
- 
-
- 
-
 SCOM 2012
 
- 
-
 PRODUCTION
-
- 
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
 Operational Database Server:  ALPASOPM12DB1.ad.aib.pri
 Datawarehouse Server:  ALPASOPM12DW1.ad.aib.pri
 
- 
-
- 
-
 SCOM 2016
 
- 
-
 TEST
-
- 
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED*** and ***REMOVED***
 Operational Database Server:  ***REMOVED***
 Datawarehouse Server:  ***REMOVED***
 
- 
-
- 
-
 PRODUCTION
-
- 
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
 Operational Database Servers:  ALPASOPM16DB1.ad.aib.pri and ALPASOPM16DB2.ad.aib.pri (SQL AlwaysOn)
 Datawarehouse Server:  ALPASOPM16DW1.ad.aib.pri and ALPASOPM16DW2.ad.aib.pri (SQL AlwaysOn)
 
- 
-
- 
-
- 
-
 SCOM 2019
 
- 
-
 TEST
-
- 
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED*** and ***REMOVED***
 Operational Database Server:  VM-OPM19T-DB1.ad.aib.pri
 Datawarehouse Server:  VM-OPM19T-DW1.ad.aib.pri
 
- 
-
- 
-
 PRODUCTION
-
- 
 
 Management Group Name:  ***REMOVED***
 Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED***
