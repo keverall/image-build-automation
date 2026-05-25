@@ -4,9 +4,6 @@
 #
 # This is a router handler function that wraps Send-GitLabMaintenanceRequest.
 
-[CmdletBinding()]
-param()
-
 $ErrorActionPreference = 'Stop'
 
 # Function definition - this is what gets exported and called by the router

@@ -59,7 +59,7 @@ function Save-JsonResult {
     param(
         [Parameter(Mandatory, Position = 0)] $Data,
         [Parameter(Mandatory, Position = 1)][string] $BaseName,
-        [string] $OutputDir = 'logs',
+        [string] $OutputDir = 'generated/logs',
         [string] $Category  = $null
     )
     $ts  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
