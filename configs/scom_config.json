@@ -1,13 +1,11 @@
 {
   "scom": {
-    "management_server": "scom01.example.com",
-    "powershell_module": "OperationsManager",
-    "use_winrm": false,
+    "use_winrm": true,
     "winrm": {
       "transport": "ntlm",
-      "server": "scom01.example.com",
       "username_env": "SCOM_ADMIN_USER",
-      "password_env": "SCOM_ADMIN_PASSWORD"
+      "password_env": "SCOM_ADMIN_PASSWORD",
+      "timeout_seconds": 300
     },
     "credentials": {
       "username_env": "SCOM_ADMIN_USER",
@@ -18,7 +16,66 @@
       "comment_prefix": "iRequest Maintenance: ",
       "suppress_alerts": true,
       "health_state_reset": "green"
+    },
+    "management_servers": {
+      "2012": {
+        "test": {
+          "group": "***REMOVED***",
+          "servers": ["***REMOVED***1.ad.example.com", "***REMOVED***2.ad.example.com"]
+        },
+        "production": {
+          "group": "***REMOVED***",
+          "servers": [
+            "***REMOVED***1.ad.example.com",
+            "***REMOVED***2.ad.example.com",
+            "***REMOVED***3.ad.example.com",
+            "***REMOVED***4.ad.example.com"
+          ]
+        }
+      },
+      "2016": {
+        "test": {
+          "group": "***REMOVED***",
+          "servers": ["***REMOVED***1.ad.example.com", "***REMOVED***2.ad.example.com"]
+        },
+        "production": {
+          "group": "***REMOVED***",
+          "servers": [
+            "***REMOVED***1.ad.example.com",
+            "***REMOVED***2.ad.example.com",
+            "***REMOVED***3.ad.example.com",
+            "***REMOVED***4.ad.example.com",
+            "***REMOVED***5.ad.example.com",
+            "***REMOVED***6.ad.example.com"
+          ]
+        }
+      },
+      "2019": {
+        "test": {
+          "group": "***REMOVED***",
+          "servers": ["***REMOVED***1.ad.example.com", "***REMOVED***2.ad.example.com"]
+        },
+        "production": {
+          "group": "***REMOVED***",
+          "servers": [
+            "***REMOVED***1-7382.ad.example.com",
+            "***REMOVED***2-6825.ad.example.com",
+            "***REMOVED***3-7386.ad.example.com",
+            "***REMOVED***4-7140.ad.example.com"
+          ]
+        }
+      },
+      "2025": {
+        "test": {
+          "group": "***REMOVED***",
+          "servers": []
+        },
+        "production": {
+          "group": "***REMOVED***",
+          "servers": []
+        }
+      }
     }
   },
-  "notes": "The OperationsManager PowerShell module must be installed on the system where commands are executed. If use_winrm is true, pywinrm will be used to remotely execute commands on the management server; otherwise commands run locally. Credentials are read from environment variables."
+  "notes": "SCOM management servers organized by version (2012/2016/2019/2025) and environment (test/production). Management servers for 2012 and 2016 use PowerShell remoting only (no REST API). Management servers for 2019 (UR1+) and 2025 support the REST API for schedule maintenance. Credentials are read from environment variables. Cluster-centric entries (Microsoft.Windows.Cluster) are used at cluster level per wip/HPe-Openview-maintenance-mode.ps1 requirements."
 }
