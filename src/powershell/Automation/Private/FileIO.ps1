@@ -62,13 +62,14 @@ function Save-JsonResult {
         [string] $OutputDir = '',
         [string] $Category  = $null
     )
+    $projectRoot = Resolve-Path (Join-Path ([System.IO.Path]::GetDirectoryName($PSScriptRoot)) '..\..')
     if (-not $OutputDir) {
         if ($Category -eq 'test') {
-            $OutputDir = 'generated/logs/testing'
+            $OutputDir = Join-Path $projectRoot 'generated/logs/testing'
         } elseif ($Category -eq 'audit' -or $Category -eq 'regulatory') {
-            $OutputDir = 'generated/logs/audit'
+            $OutputDir = Join-Path $projectRoot 'generated/logs/audit'
         } else {
-            $OutputDir = 'generated/logs/production'
+            $OutputDir = Join-Path $projectRoot 'generated/logs/production'
         }
     }
     $ts  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
