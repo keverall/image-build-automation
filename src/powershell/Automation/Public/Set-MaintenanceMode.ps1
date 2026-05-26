@@ -102,7 +102,7 @@ function Set-MaintenanceMode {
 
     $clustersMap = $clustersCfg.Get_Item('clusters')
     if (-not $clustersMap -or -not $clustersMap.ContainsKey($ClusterId)) {
-        Write-Error "Cluster ID '$ClusterId' not found in catalogue."
+        Write-Verbose "Cluster ID '$ClusterId' not found in catalogue."
         return @{ Success = $false; Error = "Cluster ID '$ClusterId' not found in catalogue." }
     }
     $clusterDef = $clustersMap[$ClusterId]
@@ -110,10 +110,10 @@ function Set-MaintenanceMode {
     # Validate cluster definition
     $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
     $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
-    if ($missing) { Write-Error "Cluster definition missing required fields: $($missing -join ', ')"; return @{ Success = $false; Error = "Missing fields: $($missing -join ', ')" } }
+    if ($missing) { Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"; return @{ Success = $false; Error = "Missing fields: $($missing -join ', ')" } }
     $servers = $clusterDef.Get_Item('servers')
     if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
-        Write-Error "Cluster 'servers' must be a non-empty list."
+        Write-Verbose "Cluster 'servers' must be a non-empty list."
         return @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list." }
     }
 
@@ -134,9 +134,9 @@ function Set-MaintenanceMode {
         else {
             $schedule = $clusterDef.Get_Item('schedule')
             if ($schedule) { $endDt = _Compute-NextWorkStart $schedule $startDt }
-            else { Write-Error 'No --end and no schedule defined in cluster.'; return @{ Success = $false; Error = 'No end time or schedule defined.' } }
+            else { Write-Verbose 'No --end and no schedule defined in cluster.'; return @{ Success = $false; Error = 'No end time or schedule defined.' } }
         }
-        if ($endDt -le $startDt) { Write-Error 'End time must be after start time.'; return @{ Success = $false; Error = 'End time must be after start time.' } }
+        if ($endDt -le $startDt) { Write-Verbose 'End time must be after start time.'; return @{ Success = $false; Error = 'End time must be after start time.' } }
         $duration = $endDt - $startDt
         Write-Verbose "Maintenance window: $startDt → $endDt (duration: $duration)"
     }
@@ -267,7 +267,7 @@ function Set-MaintenanceMode {
     _Save-AuditRecord $audit $auditFile
 
     if ($overallOk) { Write-Host "Maintenance $Action completed." }
-    else { Write-Error "Maintenance $Action finished with errors. Check $auditFile." }
+    else { Write-Verbose "Maintenance $Action finished with errors. Check $auditFile." }
     return @{ 
         Success = $overallOk
         Message = if ($overallOk) { "Maintenance $Action completed." } else { "Maintenance $Action finished with errors." }
