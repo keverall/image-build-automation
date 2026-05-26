@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-05-26T19:18:46.6494653+01:00",
+  "total_servers": 5,
+  "successful": 0,
+  "results": [
+    "output/results/build_result_1779819526.json",
+    {
+      "generated_patched_iso": null,
+      "generated": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "timestamp": "2026-05-26T19:18:46.6116155+01:00",
+      "firmware_iso": null,
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "combined_iso": null,
+      "server": "s"
+    },
+    "output/results/build_result_1779819526.json",
+    {
+      "generated_patched_iso": null,
+      "generated": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "timestamp": "2026-05-26T19:18:46.6275451+01:00",
+      "firmware_iso": null,
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "combined_iso": null,
+      "server": "s"
+    },
+    "output/results/build_result_1779819526.json",
+    {
+      "generated_patched_iso": null,
+      "generated": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "timestamp": "2026-05-26T19:18:46.6324105+01:00",
+      "firmware_iso": null,
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "combined_iso": null,
+      "server": "s"
+    },
+    "output/results/build_result_1779819526.json",
+    {
+      "generated_patched_iso": null,
+      "generated": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "timestamp": "2026-05-26T19:18:46.6388042+01:00",
+      "firmware_iso": null,
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "combined_iso": null,
+      "server": "p"
+    },
+    "output/results/build_result_1779819526.json",
+    {
+      "generated_patched_iso": null,
+      "generated": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "timestamp": "2026-05-26T19:18:46.6436107+01:00",
+      "firmware_iso": null,
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "combined_iso": null,
+      "server": "p"
+    }
+  ],
+  "failed": 5
+}

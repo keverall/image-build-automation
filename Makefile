@@ -103,20 +103,9 @@ coverage: ## Run Pester tests with code coverage and enforce threshold
 			Write-Host '$(GREEN)[coverage] SUCCESS: Coverage meets threshold$(NC)'; \
 		}"
 
-coverage-report: ## Generate HTML coverage report
-	@echo "$(CYAN)[coverage-report]$(NC) Generating HTML coverage report..."
-	@mkdir -p generated/htmlcov
-	@pwsh -NoProfile -ExecutionPolicy Bypass -Command "\
-		$$pwd = '$(CURDIR)'; \
-		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		$$config = New-PesterConfiguration; \
-		$$config.Run.Path = @('$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1'); \
-		$$config.CodeCoverage.Enabled = $$true; \
-		$$config.CodeCoverage.Path = '$$pwd\$(PSDIRS)/Automation/Public/Set-MaintenanceMode.ps1'; \
-		$config.CodeCoverage.OutputPath = '$pwd/generated/htmlcov/index.html'; \
-		$config.CodeCoverage.OutputFormat = 'Html'; \
-		Invoke-Pester -Configuration $config"
-	@echo "$(GREEN)[coverage-report]$(NC) Report written to generated/htmlcov/index.html"
+coverage-report: ## Generate Cobertura XML coverage report for all PowerShell code
+	@echo "$(CYAN)[coverage-report]$(NC) Generating Cobertura XML coverage report..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/coverage-report.ps1
 
 docs: ## Generate PowerShell Markdown docs via PlatyPS
 	@echo "$(CYAN)[docs]$(NC) Generating PowerShell API reference docs..."
@@ -138,8 +127,7 @@ help: ## Show this help message
 clean: ## Remove build artifacts and temp files
 	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
 	@rm -rf generated/
-	@rm -rf generated/htmlcov/*
-	@rm -rf coverage-results.xml
+	@rm -f coverage-results.xml
 	@echo "$(GREEN)[clean]$(NC) Done"
 
 # ─── Aggregate Targets ───────────────────────────────────────────────────────
