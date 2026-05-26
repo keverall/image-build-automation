@@ -16,7 +16,8 @@ function Write-AuditLog {
     $logEntry = "[$timestamp] [$Level] $Message"
     Write-Host $logEntry
     if (Test-Path "C:\app\logs") {
-        Add-Content -Path "C:\app\logs\audit_trail.log" -Value $logEntry
+        $ts = Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ'
+        Add-Content -Path "C:\app\logs\audit_trail_${ts}_INFO.log" -Value $logEntry
     }
 }
 

@@ -42,7 +42,7 @@ srv03
     $Script:AuditDir = Join-Path $Script:TempDir 'audit_test'
     Ensure-DirectoryExists -Path $Script:AuditDir
     # Remove any leftover master log
-    Remove-Item (Join-Path $Script:AuditDir 'audit.log') -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $Script:AuditDir 'audit*.log') -ErrorAction SilentlyContinue
 }
 
 Describe 'New-AuditLogger / AuditLogger' {
@@ -83,9 +83,9 @@ Describe 'New-AuditLogger / AuditLogger' {
     It 'AppendToMaster() appends to the master log file' {
         $audit.Log('master_test','INFO')
         $audit.AppendToMaster()
-        $master = Join-Path $Script:AuditDir 'audit.log'
-        Test-Path $master | Should -Be $true
-        $content = Get-Content $master -Raw
+        $master = Get-ChildItem -Path $Script:AuditDir -Filter 'audit_*.log' | Select-Object -First 1
+        Test-Path $master.FullName | Should -Be $true
+        $content = Get-Content $master.FullName -Raw
         $content | Should -Match 'master_test'
     }
 

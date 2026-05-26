@@ -8,11 +8,10 @@ $ErrorActionPreference = 'Stop'
 $scriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 $repoRoot    = (Resolve-Path (Join-Path $scriptRoot '..' '..' 'src' 'powershell' 'Automation')).ProviderPath
 
-# Import the Automation module which now includes Control.psm1
-Import-Module (Join-Path $repoRoot 'Automation.psd1') -Force -DisableNameChecking
+# Import the Automation module which now includes Control.ps1
 
-# Import Control.psm1 separately to get Run-GitLab exported
-Import-Module (Join-Path $repoRoot 'Control.psm1') -Force -DisableNameChecking
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '../../src/powershell/Automation')
+Import-Module (Join-Path $repoRoot 'Automation.psd1') -Force
 
 $testResults = @{
     passed = 0

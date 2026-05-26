@@ -11,6 +11,8 @@
 
 Set-StrictMode -Off   # allow $null comparisons, unset variables in classes
 
+$global:__Automation_Loading = $true
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Shared value type: CommandResult 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -42,11 +44,14 @@ class AuditLogger {
     AuditLogger([string]$Category, [string]$LogDir, [string]$MasterLogName) {
         $this.Category      = $Category
         $this.LogDir        = $LogDir
-        $this.MasterLogPath = [System.IO.Path]::Combine($LogDir, $MasterLogName)
+        $baseName = [System.IO.Path]::GetFileNameWithoutExtension($MasterLogName)
+        $ext = [System.IO.Path]::GetExtension($MasterLogName)
+        $ts = Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ'
+        $levelStr = 'INFO'
+        $realLogFile = "${baseName}_${ts}_${levelStr}${ext}"
+        $this.MasterLogPath = [System.IO.Path]::Combine($LogDir, $realLogFile)
         $this.Entries       = [System.Collections.ArrayList]::new()
-        if (-not (Test-Path $this.LogDir)) {
-            New-Item -ItemType Directory -Path $this.LogDir -Force | Out-Null
-        }
+    }
     }
 
     # 4-arg convenience overload — Extra defaults to $null
@@ -430,15 +435,20 @@ if (Test-Path $_publicRoot) {
     }
 }
 
-# Load Control.psm1 for GitLab maintenance trigger support
-$_controlPath = Join-Path $_moduleBase 'Control.psm1'
-if (Test-Path $_controlPath) { . $_controlPath }
-
 # Export only the functions that are part of the public API surface.
 # Private helpers (leading underscore) and internal factories are intentionally excluded.
 Export-ModuleMember -Function @(
     # Orchestrator
     'Start-AutomationOrchestrator'
+    # Control
+    'New-CIPipelineCtrl'
+    'New-IRequestCtrl'
+    'New-SchedulerCtrl'
+    'New-GitLabCtrl'
+    'Run-CIPipeline'
+    'Run-IRequest'
+    'Run-Scheduler'
+    'Run-GitLab'
     # Entry-point handlers (called by Invoke-RoutedRequest)
     'Invoke-IsoDeploy'
     'Invoke-WindowsSecurityUpdate'
@@ -494,5 +504,7 @@ Export-ModuleMember -Function @(
     # Base / factories
     'New-AutomationBase'
 )
+
+$global:__Automation_Loading = $false
 
 # vim: ts=4 sw=4 et

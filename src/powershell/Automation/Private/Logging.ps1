@@ -34,7 +34,17 @@ function Initialize-Logging {
             $dir = Join-Path $projectRoot 'generated/logs/production'
         }
         if (-not (Test-Path $dir -PathType Container)) { Ensure-DirectoryExists -Path $dir }
-        $script:__AutomationLogPath = Join-Path $dir $LogFile
+        
+        $baseName = [System.IO.Path]::GetFileNameWithoutExtension($LogFile)
+        $ext = [System.IO.Path]::GetExtension($LogFile)
+        $timestamp = Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ'
+        $levelStr = $Level.ToUpper()
+        
+        if ($levelStr -eq 'INFORMATION') { $levelStr = 'INFO' }
+        if ($levelStr -eq 'VERBOSE') { $levelStr = 'DEBUG' } # Adjust to preferred standard
+        
+        $realLogFile = "${baseName}_${timestamp}_${levelStr}${ext}"
+        $script:__AutomationLogPath = Join-Path $dir $realLogFile
     }
     $script:__AutomationLogLevel = $Level
 }

@@ -27,6 +27,7 @@ variables:
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
     - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
+    - pwsh -File ./scripts/prune-logs.ps1
   script:
     - pwsh -File ./scripts/lint.ps1
   artifacts:
@@ -52,6 +53,7 @@ lint-powershell:
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
     - pwsh -Command "Install-Module Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force"
+    - pwsh -File ./scripts/prune-logs.ps1
   script:
     # Run tests with coverage
     - pwsh -File ./scripts/run-coverage.ps1 -TestPath tests/powershell -SourcePath src/powershell -OutputFile generated/output/coverage/coverage-results.xml -Threshold 70
@@ -86,6 +88,7 @@ security-scan:
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
     - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
+    - pwsh -File ./scripts/prune-logs.ps1
   script:
     # PSScriptAnalyzer security rules
     - pwsh -NoProfile -Command "Import-Module PSScriptAnalyzer; \
@@ -111,6 +114,7 @@ security-scan:
   image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
+    - pwsh -File ./scripts/prune-logs.ps1
 artifacts:
     paths:
       - generated/logs/

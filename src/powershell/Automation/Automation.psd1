@@ -73,6 +73,15 @@
     FunctionsToExport = @(
         # ── Orchestrator ────────────────────────────────────────────────────────
         'Start-AutomationOrchestrator'
+        # ── Control ─────────────────────────────────────────────────────────────
+        'New-CIPipelineCtrl'
+        'New-IRequestCtrl'
+        'New-SchedulerCtrl'
+        'New-GitLabCtrl'
+        'Run-CIPipeline'
+        'Run-IRequest'
+        'Run-Scheduler'
+        'Run-GitLab'
         # ── Entry-point handlers invoked by Invoke-RoutedRequest ────────────────
         'Invoke-IsoDeploy'
         'Invoke-WindowsSecurityUpdate'
