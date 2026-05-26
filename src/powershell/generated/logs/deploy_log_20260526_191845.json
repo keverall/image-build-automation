@@ -1,0 +1,73 @@
+{
+  "summary": {
+    "results": [
+      {
+        "success": false,
+        "server": "s",
+        "method": "ilo"
+      },
+      {
+        "success": false,
+        "server": "s",
+        "method": "ilo"
+      },
+      {
+        "success": false,
+        "server": "s",
+        "method": "ilo"
+      },
+      {
+        "success": false,
+        "server": "p",
+        "method": "ilo"
+      },
+      {
+        "success": false,
+        "server": "p",
+        "method": "ilo"
+      }
+    ],
+    "failed": 5,
+    "successful": 0,
+    "method": "ilo",
+    "total": 5,
+    "timestamp": "2026-05-26T19:18:45.9017020+01:00"
+  },
+  "log": [
+    {
+      "timestamp": "2026-05-26T19:18:45.8961463+01:00",
+      "action": "deploy",
+      "details": "Package not found",
+      "server": "s",
+      "status": "FAILED"
+    },
+    {
+      "timestamp": "2026-05-26T19:18:45.8986274+01:00",
+      "action": "deploy",
+      "details": "Package not found",
+      "server": "s",
+      "status": "FAILED"
+    },
+    {
+      "timestamp": "2026-05-26T19:18:45.8992529+01:00",
+      "action": "deploy",
+      "details": "Package not found",
+      "server": "s",
+      "status": "FAILED"
+    },
+    {
+      "timestamp": "2026-05-26T19:18:45.8998373+01:00",
+      "action": "deploy",
+      "details": "Package not found",
+      "server": "p",
+      "status": "FAILED"
+    },
+    {
+      "timestamp": "2026-05-26T19:18:45.9004014+01:00",
+      "action": "deploy",
+      "details": "Package not found",
+      "server": "p",
+      "status": "FAILED"
+    }
+  ]
+}
