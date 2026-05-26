@@ -11,8 +11,8 @@ All scripts use the centralized **`AuditLogger`** class for audit logging. Audit
 ### Log Files
 
 **Master Audit Log**
-- Location: `logs/audit_trail.log` (legacy text format, retained for backward compatibility)
-- Location: `logs/maintenance_audit.log` (new structured JSON, one object per line)
+- Location: `generated/logs/audit/audit_trail.log` (legacy text format, retained for backward compatibility)
+- Location: `generated/logs/audit/maintenance_audit.log` (new structured JSON, one object per line)
 - Content: All actions across all scripts (build, deploy, monitor, scan, maintenance)
 - Rotation: Daily rollover with compressed archives
 
@@ -22,9 +22,9 @@ All scripts use the centralized **`AuditLogger`** class for audit logging. Audit
 - Includes: UUID, ISO paths, timestamps, success/failure status, step details
 
 **Maintenance-Specific Audit**
-- Location: `logs/maintenance_<action>_<cluster>_<timestamp>.json`
+- Location: `generated/logs/audit/maintenance_<action>_<cluster>_<timestamp>.json`
 - Each maintenance_run creates a detailed JSON record with per-system results
-- Aggregated into `logs/maintenance_audit.log` (line-delimited JSON) for centralized querying
+- Aggregated into `generated/logs/audit/maintenance_audit.log` (line-delimited JSON) for centralized querying
 
 **Workflow Logs**
 - GitHub Actions: Uploaded as artifacts for each run
@@ -166,16 +166,16 @@ Generated at midnight (or next build):
 ### Local Development
 ```bash
 # Tail live structured audit log (new format, JSON per line)
-tail -f logs/maintenance_audit.log | jq .
+tail -f generated/logs/audit/maintenance_audit.log | jq .
 
 # Search for cluster-specific maintenance entries
-grep "PROD-CLUSTER-01" logs/maintenance_audit.log | jq 'select(.cluster_id == "PROD-CLUSTER-01")'
+grep "PROD-CLUSTER-01" generated/logs/audit/maintenance_audit.log | jq 'select(.cluster_id == "PROD-CLUSTER-01")'
 
 # View latest maintenance action
-jq -s 'last' <(cat logs/maintenance_*.json)
+jq -s 'last' <(cat generated/logs/audit/maintenance_*.json)
 
 # View legacy text audit log
-tail -f logs/audit_trail.log
+tail -f generated/logs/audit/audit_trail.log
 
 # View structured build result
 cat output/results/build_result_server1_20251114_103045.json | jq .
@@ -223,7 +223,7 @@ maintenance_audit.log.1 # Rotated
 Cron job (or scheduled task) handles rotation:
 ```bash
 # Rotate logs older than 30 days to archive
-find logs/ -name "*.log.*" -mtime +30 -exec mv {} logs/archive/ \;
+find generated/logs/audit/ -name "*.log.*" -mtime +30 -exec mv {} generated/logs/archive/ \;
 ```
 
 ## Compliance and Governance
@@ -253,7 +253,7 @@ Monitor for:
 Steps:
 1. Find latest `build_result_serverX_*.json` in `output/results/`
 2. Check `steps` array for failed step name and error details
-3. Correlate with `logs/maintenance_audit.log` entries for that timestamp
+3. Correlate with `generated/logs/audit/maintenance_audit.log` entries for that timestamp
 4. Review HPE SUT output (if available in logs)
 5. Check network logs for HPE repository access
 
@@ -275,10 +275,10 @@ Steps:
 
 ### Scenario: Maintenance Window Did Not Auto-Disable
 Steps:
-1. Check `logs/maintenance_audit.log` for the enable action — look for `"scheduled_task"` field
+1. Check `generated/logs/audit/maintenance_audit.log` for the enable action — look for `"scheduled_task"` field
 2. Verify Windows Scheduled Task exists: `schtasks /Query /TN "MaintenanceDisable-<cluster>"`
 3. Check task history: Event Viewer → Windows Logs → Task Scheduler
-4. Review script exit code in task history; any errors logged to `maintenance_audit.log`
+4. Review script exit code in task history; any errors logged to `generated/logs/audit/maintenance_audit.log`
 5. Manually run disable via PowerShell or scheduled task invocation
 
 ## Best Practices

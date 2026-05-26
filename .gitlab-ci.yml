@@ -1,20 +1,138 @@
+# =============================================================================
+# HPE ProLiant Windows Server ISO Automation — GitLab CI Pipeline
+# =============================================================================
+# Stages: lint → test → security
+# Coverage threshold: 70%
+# =============================================================================
+
 stages:
+  - lint
+  - test
+  - security
   - maintenance
 
 variables:
   POWERSHELL_VERSION: "7.4"
+  COVERAGE_THRESHOLD: "70"
   # Callback settings - must be set in GitLab CI/CD variables
   # MAINTENANCE_CALLBACK_URL - webhook URL for completion callback
   # MAINTENANCE_API_KEY - optional API key for callback authentication
 
+# =============================================================================
+# Lint Stage
+# =============================================================================
+.lint_template: &lint_template
+  stage: lint
+  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
+  before_script:
+    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
+    - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
+  script:
+    - pwsh -File ./scripts/lint.ps1
+  artifacts:
+    reports:
+      metrics: metrics.txt
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+lint-powershell:
+  <<: *lint_template
+  script:
+    - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
+    - pwsh -File ./scripts/lint.ps1
+
+# =============================================================================
+# Test Stage
+# =============================================================================
+.test_template: &test_template
+  stage: test
+  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
+  before_script:
+    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
+    - pwsh -Command "Install-Module Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force"
+  script:
+    # Run tests with coverage
+    - pwsh -NoProfile -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+        `$config = New-PesterConfiguration; \
+        `$config.Run.Path = @('tests/powershell/Audit.Unit.Tests.ps1', 'tests/powershell/Config.Unit.Tests.ps1', 'tests/powershell/Credentials.Unit.Tests.ps1', 'tests/powershell/Executor.Unit.Tests.ps1', 'tests/powershell/FileIO.Unit.Tests.ps1', 'tests/powershell/Inventory.Unit.Tests.ps1', 'tests/powershell/Router.Unit.Tests.ps1', 'tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1', 'tests/powershell/Validators.Unit.Tests.ps1'); \
+        `$config.Output.Verbosity = 'Detailed'; \
+        `$config.CodeCoverage.Enabled = `$true; \
+        `$config.CodeCoverage.Path = 'src/powershell/Public/*.ps1'; \
+        `$config.CodeCoverage.OutputPath = 'coverage-results.xml'; \
+        `$config.CodeCoverage.OutputFormat = 'Cobertura'; \
+        Invoke-Pester -Configuration `$config"
+    # Report coverage
+    - pwsh -NoProfile -Command "Import-Module Pester -MinimumVersion 5.0.0; \
+        `$coverage = Get-Content coverage-results.xml -Raw | ConvertFrom-Json; \
+        `$coveredLines = `$coverage.coverage.coveredcommands.count; \
+        `$totalLines = `$coverage.coverage.totalcommands.count; \
+        `$percent = if (`$totalLines -gt 0) { [math]::Round(($coveredLines / $totalLines) * 100, 2) } else { 0 }; \
+        Write-Host ''; \
+        Write-Host '========================================'; \
+        Write-Host '[coverage] Results:'; \
+        Write-Host \"  Covered lines: $coveredLines / $totalLines\"; \
+        Write-Host \"  Coverage: $percent%\"; \
+        Write-Host '========================================'; \
+        if (`$percent -lt $env:COVERAGE_THRESHOLD) { \
+          exit 1; \
+        }"
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage-results.xml
+    paths:
+      - coverage-results.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+test-unit:
+  <<: *test_template
+  script:
+    - pwsh -Command "Install-Module Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force"
+    - pwsh -File ./scripts/run-tests.ps1
+
+# =============================================================================
+# Security Stage
+# =============================================================================
+security-scan:
+  stage: security
+  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
+  before_script:
+    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
+    - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
+  script:
+    # PSScriptAnalyzer security rules
+    - pwsh -NoProfile -Command "Import-Module PSScriptAnalyzer; \
+        `$results = Invoke-ScriptAnalyzer -Path 'src/powershell' -Recurse -Severity Error | \
+          Where-Object { `$_.RuleName -notin @('PSUseBOMForUnicodeEncodedFile', 'PSUseToExportFieldsInManifest', 'PSUseShouldProcessForStateChangingFunctions', 'PSUseApprovedVerbs', 'PSUseSingularNouns', 'PSAvoidUsingWriteHost', 'PSAvoidUsingConvertToSecureStringWithPlainText', 'PSAvoidUsingUsernameAndPasswordParams', 'TypeNotFound') }; \
+        `$results | Format-Table -AutoSize; \
+        if (`$results) { exit 1 }"
+    # Check for hardcoded secrets (basic pattern matching)
+    - pwsh -NoProfile -Command "Get-ChildItem -Path 'src/powershell' -Recurse -Include *.ps1,*.json | Select-String -Pattern 'password|secret|key|token' -List | ForEach-Object { Write-Warning \"Potential secret found in: `$(`$_.Path)`" }"
+    # Validate JSON config files
+    - pwsh -NoProfile -Command "Get-ChildItem -Path 'configs' -Recurse -Include *.json | ForEach-Object { try { Get-Content `$(`$_.FullName) -Raw | ConvertFrom-Json | Out-Null; Write-Host 'Valid JSON: `$(`$_.Name)' } catch { Write-Error \"Invalid JSON in `$(`$_.Name): `$(`$_.Exception.Message)\"; exit 1 } }"
+  artifacts:
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# =============================================================================
+# Maintenance Stage (existing jobs)
+# =============================================================================
 .maintenance_defaults: &maintenance_defaults
   stage: maintenance
   image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
-  artifacts:
+artifacts:
     paths:
-      - logs/
+      - generated/logs/
     expire_in: 7 days
   only:
     - triggers

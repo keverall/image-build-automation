@@ -59,9 +59,18 @@ function Save-JsonResult {
     param(
         [Parameter(Mandatory, Position = 0)] $Data,
         [Parameter(Mandatory, Position = 1)][string] $BaseName,
-        [string] $OutputDir = 'generated/logs',
+        [string] $OutputDir = '',
         [string] $Category  = $null
     )
+    if (-not $OutputDir) {
+        if ($Category -eq 'test') {
+            $OutputDir = 'generated/logs/testing'
+        } elseif ($Category -eq 'audit' -or $Category -eq 'regulatory') {
+            $OutputDir = 'generated/logs/audit'
+        } else {
+            $OutputDir = 'generated/logs/production'
+        }
+    }
     $ts  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $dir = if ($Category) { [System.IO.Path]::Combine($OutputDir, $Category) } else { $OutputDir }
     Ensure-DirectoryExists $dir | Out-Null

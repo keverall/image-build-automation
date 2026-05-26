@@ -73,7 +73,7 @@ Invoke-Pester -Path 'tests/powershell' -Tag @('Config','FileIO') -PassThru
 Invoke-Pester -Path 'tests/powershell' -ExcludeTag @('Integration') -PassThru
 ```
 
-### CI / JUnit XML Output
+### CI / XML Output & Coverage Reports
 
 ```powershell
 $result = Invoke-Pester -Path 'tests/powershell' -Tag 'Unit' `
@@ -85,24 +85,36 @@ Write-Host "Passed: $($result.PassedCount)  Failed: $($result.FailedCount)"
 exit $result.FailedCount
 ```
 
+### Code Coverage & `generated/htmlcov`
+
+Pester generates code coverage data for the source modules. By default, CI jobs produce `coverage-results.xml` (in Cobertura format) for GitLab integration. 
+
+You can also generate HTML coverage reports locally. These reports are placed in the `generated/htmlcov` directory (which is ignored by Git). 
+This directory provides a human-readable visualization of test coverage, showing exactly which lines of code were executed during tests.
+
+**To generate the HTML coverage report:**
+```bash
+make coverage-report
+```
+*Note: This command runs Pester with `CodeCoverage.OutputPath` directed to create an HTML report, which can be viewed in your browser.*
+
 ---
 
 ## Test File Structure
 
 ```
 tests/powershell/
-└── Tests/
-    ├── Tests.Tests.ps1               # Shared BeforeAll/AfterAll (temp dirs, sample configs)
-    ├── Config.Unit.Tests.ps1
-    ├── Credentials.Unit.Tests.ps1
-    ├── Executor.Unit.Tests.ps1
-    ├── FileIO.Unit.Tests.ps1
-    ├── Inventory.Unit.Tests.ps1
-    ├── Validators.Unit.Tests.ps1
-    ├── Router.Unit.Tests.ps1
-    ├── New-Uuid.Unit.Tests.ps1
-    ├── Audit.Unit.Tests.ps1
-    └── Set-MaintenanceMode.Unit.Tests.ps1
+├── Tests.Tests.ps1               # Shared BeforeAll/AfterAll (temp dirs, sample configs)
+├── Config.Unit.Tests.ps1
+├── Credentials.Unit.Tests.ps1
+├── Executor.Unit.Tests.ps1
+├── FileIO.Unit.Tests.ps1
+├── Inventory.Unit.Tests.ps1
+├── Validators.Unit.Tests.ps1
+├── Router.Unit.Tests.ps1
+├── New-Uuid.Unit.Tests.ps1
+├── Audit.Unit.Tests.ps1
+└── Set-MaintenanceMode.Unit.Tests.ps1
 ```
 
 ---
@@ -174,7 +186,7 @@ stage('PowerShell Tests') {
             if (-not (Get-Module Pester -ListAvailable)) {
                 Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
             }
-            $result = Invoke-Pester -Path 'powershell\\Tests' -Tag 'Unit' `
+            $result = Invoke-Pester -Path 'tests/powershell' -Tag 'Unit' `
                 -OutputFile 'powershell-test-results.xml' `
                 -OutputFormat NUnitXml `
                 -PassThru

@@ -56,6 +56,9 @@ build_reports/
 !generated/output/combined/.gitkeep
 !generated/patched_iso/.gitkeep
 !generated/logs/.gitkeep
+!generated/logs/testing/.gitkeep
+!generated/logs/production/.gitkeep
+!generated/logs/audit/.gitkeep
 !generated/scheduled_jobs/.gitkeep
 !generated/htmlcov/.gitkeep
 generated/*.iso
@@ -63,8 +66,8 @@ generated/base_iso/*
 generated/output/*
 generated/patched_iso/*
 generated/logs/*
-generated/scheduled_jobs/*
-generated/htmlcov/*
+!generated/logs/build_reports/
+!generated/logs/build_reports/.gitkeep
 
 # === Configuration Secrets ===
 configs/opsramp_config.json
@@ -86,8 +89,3 @@ Thumbs.db
 
 # === AI Workspace Configs ===
 .kilo/
-
-# === PowerShell Generated Output ===
-src/powershell/generated/*.json
-src/powershell/generated/logs/*.json
-src/powershell/generated/logs/*.log

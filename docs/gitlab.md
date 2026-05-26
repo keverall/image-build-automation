@@ -84,7 +84,7 @@ in the CI/CD Variables UI for that invocation only.
 
 Executed as `pwsh -File`. Runs inside the CI runner (not dot-sourced). Sources
 `Set-MaintenanceMode.ps1`, executes it with the CI environment variables, emits
-a JSON result line, and writes an artifact to `logs/`.
+a JSON result line, and writes an artifact to `generated/logs/audit/`.
 
 Key environment variables exported to the script:
 
@@ -104,8 +104,8 @@ Key environment variables exported to the script:
 **Job artifacts on exit:**
 
 ```
-logs/maintenance_<CI_JOB_ID>_result.json   # on success or handled failures
-logs/maintenance_<CI_JOB_ID>_error.json    # on unhandled exception
+generated/logs/audit/maintenance_<CI_JOB_ID>_result.json   # on success or handled failures
+generated/logs/audit/maintenance_<CI_JOB_ID>_error.json    # on unhandled exception
 ```
 
 ---
