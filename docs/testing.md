@@ -85,18 +85,19 @@ Write-Host "Passed: $($result.PassedCount)  Failed: $($result.FailedCount)"
 exit $result.FailedCount
 ```
 
-### Code Coverage & `generated/htmlcov`
+### Code Coverage
 
-Pester generates code coverage data for the source modules. By default, CI jobs produce `coverage-results.xml` (in Cobertura format) for GitLab integration. 
+Pester generates code coverage data for the PowerShell source modules. By default, CI jobs produce `coverage-results.xml` (in Cobertura format) for GitLab integration.
 
-You can also generate HTML coverage reports locally. These reports are placed in the `generated/htmlcov` directory (which is ignored by Git). 
-This directory provides a human-readable visualization of test coverage, showing exactly which lines of code were executed during tests.
-
-**To generate the HTML coverage report:**
+**To generate the coverage report:**
 ```bash
 make coverage-report
 ```
-*Note: This command runs Pester with `CodeCoverage.OutputPath` directed to create an HTML report, which can be viewed in your browser.*
+*Output: `coverage-results.xml` (Cobertura XML format)*
+
+**For HTML visualization:**
+- Upload `coverage-results.xml` to [Coveralls](https://coveralls.io) or similar services
+- Use `cobertura-xml-to-html` or `lcov` tools to convert to HTML locally
 
 ---
 
