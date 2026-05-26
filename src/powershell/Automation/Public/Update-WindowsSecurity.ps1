@@ -52,7 +52,22 @@ function Invoke-WindowsSecurityUpdate {
         [Parameter(Mandatory = $false)][Alias('m')][string] $Method = 'dism',
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
-    $Script:LogDir = Join-Path $PSScriptRoot '..\..\generated\logs'
+    if (-not $Script:WinSecLogDir -or $Script:WinSecLogDir -eq '') {
+        $current = $PSScriptRoot
+        if (-not $current) { $current = Get-Location }
+        while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
+            $parent = Split-Path $current
+            if ($parent -eq $current -or -not $parent) { break }
+            $current = $parent
+        }
+        $projectRoot = if (Test-Path $current) { (Resolve-Path $current).Path } else { $current }
+        $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
+        if ($isTesting) {
+            $Script:WinSecLogDir = Join-Path $projectRoot 'generated/logs/testing'
+        } else {
+            $Script:WinSecLogDir = Join-Path $projectRoot 'generated/logs/production'
+        }
+    }
     Initialize-Logging -LogFile 'windows_patcher.log'
     $Script:PatchesConfigBuildDir = $OutputDir    # used by WindowsPatcher.Build
     try {
