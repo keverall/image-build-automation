@@ -277,7 +277,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         $timedOut   = ($results | Where-Object { $_.status -eq 'timeout' }).Count
         $summary    = @{ timestamp=(Get-Date).ToString('o'); total=$results.Count; completed=$completed;
             failed=$failed; timeout=$timedOut; details=$results }
-        $summaryFile = Join-Path $Script:LogDir "monitor_summary_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+        $summaryFile = Join-Path $Script:LogDir "monitor_summary_$(Get-FileTimestamp).json"
         Save-Json -Data $summary -Path $summaryFile
         Write-Host "`nMonitoring Summary: Completed=$completed Failed=$failed Timeout=$timedOut Total=$($results.Count)"
         Write-Host "Saved: $summaryFile"

@@ -120,7 +120,7 @@ function Set-MaintenanceMode {
     # VALIDATE action
     if ($Action -eq 'validate') {
         Write-Host "Cluster '$ClusterId' validated. Servers: $($servers -join ', ')"
-        $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = (Get-Date).ToString('o'); steps = @{}; success = $true }
+        $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
         _Save-AuditRecord $audit (Join-Path $Script:LogDir "validate_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
         return @{ Success = $true; Message = "Cluster '$ClusterId' validated." }
     }
@@ -153,7 +153,9 @@ function Set-MaintenanceMode {
 
     # Execute action
     $overallOk = $true
-    $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = (Get-Date).ToString('o'); steps = @{}; success = $true }
+    $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
+    $utcStart = $null
+    $utcEnd = $null
 
     if ($Action -eq 'enable') {
         # SCOM
@@ -206,7 +208,7 @@ function Set-MaintenanceMode {
             $opsOk = $opsrampClient.SendAlert($ClusterId, 'maintenance.enabled', 'INFO',
                 "Maintenance enabled for $ClusterId",
                 @{ cluster = $clusterDef.Get_Item('display_name'); servers = $servers;
-                    start = $startDt.ToString('o'); end = $endDt.ToString('o')
+                    start = Convert-ToUtcIso8601 $startDt; end = Convert-ToUtcIso8601 $endDt
                 })
             $opsrampClient.SendEvent($ClusterId, 'maintenance.enabled',
                 "Maintenance window started for $($clusterDef.Get_Item('display_name'))",
@@ -228,6 +230,10 @@ function Set-MaintenanceMode {
             }
             catch { $audit.steps.scheduled_task = @{ Created = $false; Error = $_.Exception.Message }; $overallOk = $false }
         }
+        
+        # Capture computed UTC times for output
+        $utcStart = Convert-ToUtcIso8601 $startDt
+        $utcEnd = Convert-ToUtcIso8601 $endDt
     }
     elseif ($Action -eq 'disable') {
         # Email disable notification
@@ -242,7 +248,7 @@ function Set-MaintenanceMode {
             }
             $opsrampClient.SendAlert($ClusterId, 'maintenance.disabled', 'INFO',
                 "Maintenance disabled for $ClusterId",
-                @{ completed_at = (Get-Date -Format o) })
+                @{ completed_at = Get-UtcTimestamp })
             $opsrampClient.SendEvent($ClusterId, 'maintenance.disabled',
                 "Maintenance window ended for $($clusterDef.Get_Item('display_name'))",
                 @{ cluster = $ClusterId; action = 'disable' })
@@ -262,7 +268,12 @@ function Set-MaintenanceMode {
 
     if ($overallOk) { Write-Host "Maintenance $Action completed." }
     else { Write-Error "Maintenance $Action finished with errors. Check $auditFile." }
-    return @{ Success = $overallOk; Message = if ($overallOk) { "Maintenance $Action completed." } else { "Maintenance $Action finished with errors." } }
+    return @{ 
+        Success = $overallOk
+        Message = if ($overallOk) { "Maintenance $Action completed." } else { "Maintenance $Action finished with errors." }
+        StartTimeUtc = if ($Action -eq 'enable') { $utcStart } else { $null }
+        EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
+    }
 }
 
 # ---- Constants (always defined so classes referencing them work on dot-source) ----
@@ -1095,7 +1106,8 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
 
     # Add request metadata for iRequest traceability
     $result['request_type'] = "maintenance_$($boundParams['Action'])"
-    $result['timestamp'] = (Get-Date).ToString('o')
+    $result['timestamp'] = Get-UtcTimestamp
+    $result['timestamp_local'] = Get-LocalTimestamp
     $result['source'] = 'direct'
 
     if ($Json) {
@@ -1107,22 +1119,26 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     # Human-readable output for direct command-line usage
     $logEntry = @{
         timestamp = $result['timestamp']
+        timestamp_local = $result['timestamp_local']
         action = $boundParams['Action']
         cluster_id = $boundParams['ClusterId']
         config_dir = $boundParams['ConfigDir'] ?? $Script:ConfigDir
-        start_param = $boundParams['Start']
-        end_param = $boundParams['End']
+        start_time_utc = if ($result['StartTimeUtc']) { $result['StartTimeUtc'] } else { 'N/A' }
+        end_time_utc = if ($result['EndTimeUtc']) { $result['EndTimeUtc'] } else { 'N/A' }
         dry_run = $boundParams['DryRun']
         no_schedule = $boundParams['NoSchedule']
         script_path = $MyInvocation.MyCommand.Path
     }
     Write-Host "=== Maintenance Mode Command Audit ==="
-    Write-Host "Timestamp: $($logEntry.timestamp)"
+    Write-Host "Timestamp (UTC): $($logEntry.timestamp)"
+    Write-Host "Timestamp (Local): $($logEntry.timestamp_local)"
     Write-Host "Action: $($logEntry.action)"
     Write-Host "Cluster ID: $($logEntry.cluster_id)"
     Write-Host "Config Dir: $($logEntry.config_dir)"
-    Write-Host "Start Param: $($logEntry.start_param)"
-    Write-Host "End Param: $($logEntry.end_param)"
+    if ($boundParams['Action'] -eq 'enable') {
+        Write-Host "Start Time (UTC): $($logEntry.start_time_utc)"
+        Write-Host "End Time (UTC): $($logEntry.end_time_utc)"
+    }
     Write-Host "Dry Run: $($logEntry.dry_run)"
     Write-Host "No Schedule: $($logEntry.no_schedule)"
     Write-Host "==================================="

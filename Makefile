@@ -23,24 +23,24 @@ YELLOW := \033[1;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: pwsh-setup pwsh-lint pwsh-lint-test pwsh-test pwsh-test-unit pwsh-test-integration pwsh-coverage pwsh-docs \
+.PHONY: setup lint lint-test test test-unit test-integration coverage docs \
         clean help
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
-pwsh-setup: ## Setup PowerShell environment (install modules, configure)
-	@echo "$(CYAN)[pwsh-setup]$(NC) Setting up PowerShell environment..."
+setup: ## Setup PowerShell environment (install modules, configure)
+	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 
 # ─── PowerShell Linting ─────────────────────────────────────────────────────
-pwsh-lint: ## Lint PowerShell files with PSScriptAnalyzer
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint-pwsh.ps1
+lint: ## Lint PowerShell files with PSScriptAnalyzer
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
 # ─── PowerShell Testing ──────────────────────────────────────────────────────
-pwsh-test: ## Run all Pester PowerShell tests
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-pwsh-tests.ps1
+test: ## Run all Pester PowerShell tests
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1
 
-pwsh-test-unit: ## Run Pester unit tests only
-	@echo "$(CYAN)[pwsh-test-unit]$(NC) Running Pester unit tests..."
+test-unit: ## Run Pester unit tests only
+	@echo "$(CYAN)[test-unit]$(NC) Running Pester unit tests..."
 	@pwsh -NoProfile -Command "\
 		$$pwd = '$(CURDIR)'; \
 		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
@@ -57,15 +57,15 @@ pwsh-test-unit: ## Run Pester unit tests only
 			\"$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \
 		) -PassThru"
 
-pwsh-test-integration: ## Run Pester integration tests only
-	@echo "$(CYAN)[pwsh-test-integration]$(NC) Running Pester integration tests..."
+test-integration: ## Run Pester integration tests only
+	@echo "$(CYAN)[test-integration]$(NC) Running Pester integration tests..."
 	@pwsh -NoProfile -Command "\
 		$$pwd = '$(CURDIR)'; \
 		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
 		Invoke-Pester -Path \"$$pwd\$(PSTESTS)/Pester.Integration.ps1\" -PassThru"
 
-pwsh-coverage: ## Run Pester tests with code coverage
-	@echo "$(CYAN)[pwsh-coverage]$(NC) Running Pester tests with coverage..."
+coverage: ## Run Pester tests with code coverage
+	@echo "$(CYAN)[coverage]$(NC) Running Pester tests with coverage..."
 	@pwsh -NoProfile -Command "\
 		$$pwd = '$(CURDIR)'; \
 		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
@@ -76,11 +76,11 @@ pwsh-coverage: ## Run Pester tests with code coverage
 		$$config.CodeCoverage.Path = '$$pwd\$(PSDIRS)/Public/*.ps1'; \
 		Invoke-Pester -Configuration $$config"
 
-pwsh-docs: ## Generate PowerShell Markdown docs via PlatyPS
-	@echo "$(CYAN)[pwsh-docs]$(NC) Generating PowerShell API reference docs..."
+docs: ## Generate PowerShell Markdown docs via PlatyPS
+	@echo "$(CYAN)[docs]$(NC) Generating PowerShell API reference docs..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 -OutputDir docs/dynamic-code-docs || \
-		(echo "$(YELLOW)[pwsh-docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
-	@echo "$(GREEN)[pwsh-docs]$(NC) Docs written to docs/dynamic-code-docs/"
+		(echo "$(YELLOW)[docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
+	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
@@ -99,4 +99,4 @@ clean: ## Remove build artifacts and temp files
 	@echo "$(GREEN)[clean]$(NC) Done"
 
 # ─── Aggregate Targets ───────────────────────────────────────────────────────
-all: pwsh-lint pwsh-test ## Run linting and tests
+all: lint test ## Run linting and tests

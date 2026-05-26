@@ -311,7 +311,7 @@ class ISODeployer {
         $summary = @{ timestamp = (Get-Date).ToString('o'); method = $Method; total = $results.Count; successful = $okCount; failed = ($results.Count - $okCount); results = $results }
         $logDirLog = Join-Path $PSScriptRoot '..\..\generated\logs'
         Ensure-DirectoryExists -Path $logDirLog
-        $logFile = Join-Path $logDirLog "deploy_log_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+        $logFile = Join-Path $logDirLog "deploy_log_$(Get-FileTimestamp).json"
         Save-Json -Data @{ summary = $summary; log = $this.DeployLog } -Path $logFile
         Write-Host "`nDeployment Summary: $okCount/$($results.Count) successful"
         Write-Host "Log saved: $logFile"
