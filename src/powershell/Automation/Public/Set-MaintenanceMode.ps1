@@ -266,13 +266,37 @@ function Set-MaintenanceMode {
     $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
     _Save-AuditRecord $audit $auditFile
 
-    if ($overallOk) { Write-Host "Maintenance $Action completed." }
-    else { Write-Verbose "Maintenance $Action finished with errors. Check $auditFile." }
+    # Build detailed completion message
+    $clusterName = $clusterDef.Get_Item('display_name') ?? $ClusterId
+    $serverCount = ($servers | Measure-Object).Count
+    $dryRunNote = if ($DryRun) { " [DRY-RUN]" } else { "" }
+    
+    $detailMessage = if ($overallOk) {
+        if ($Action -eq 'enable') {
+            $durationStr = if ($duration) { " (Duration: $($duration.Hours)h $($duration.Minutes)m)" } else { "" }
+            "Maintenance $Action completed for cluster '$clusterName' ($serverCount servers)$durationStr$dryRunNote. Window: $utcStart -> $utcEnd"
+        } elseif ($Action -eq 'disable') {
+            "Maintenance $Action completed for cluster '$clusterName' ($serverCount servers)$dryRunNote. Maintenance mode deactivated."
+        } else {
+            "Validation completed for cluster '$clusterName' ($serverCount servers). Configuration is valid."
+        }
+    } else {
+        "Maintenance $Action finished with errors for cluster '$clusterName'$dryRunNote. Check audit: $auditFile"
+    }
+    
+    if ($overallOk) { Write-Host $detailMessage }
+    else { Write-Warning $detailMessage }
+    
     return @{ 
         Success = $overallOk
-        Message = if ($overallOk) { "Maintenance $Action completed." } else { "Maintenance $Action finished with errors." }
+        Message = $detailMessage
         StartTimeUtc = if ($Action -eq 'enable') { $utcStart } else { $null }
         EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
+        ClusterId = $ClusterId
+        ClusterName = $clusterName
+        ServerCount = $serverCount
+        DryRun = [bool]$DryRun
+        AuditFile = $auditFile
     }
 }
 
