@@ -35,11 +35,11 @@ srv03
     $Script:SampleServerList | Set-Content (Join-Path $Script:ConfigDir 'server_list.txt') -ErrorAction SilentlyContinue
     $Script:SampleClusterCatalogue | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -ErrorAction SilentlyContinue
 
-    $Script:LogDir = Join-Path $Script:TempDir 'logs'
+$Script:LogDir = Join-Path $Script:TempDir 'logs'
     $Script:OutDir = Join-Path $Script:TempDir 'output'
     $Script:AuditDir = Join-Path $Script:TempDir 'audit_test'
 
-    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -ErrorAction Stop
+    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
 Describe 'Test-ClusterId' {

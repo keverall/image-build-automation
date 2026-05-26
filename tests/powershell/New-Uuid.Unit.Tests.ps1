@@ -42,7 +42,7 @@ srv03
     # Import module with error handling - skip tests if module fails to load
     $Script:ModuleLoaded = $false
     try {
-        Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -ErrorAction Stop -WarningAction SilentlyContinue
+        Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop -WarningAction SilentlyContinue
         $Script:ModuleLoaded = $true
     } catch {
         Write-Warning "Skipping New-Uuid tests: Automation module not available - $_"

@@ -77,7 +77,7 @@ BeforeAll {
     $Script:ScriptPath = Join-Path $Script:ModuleRoot 'Automation/Public/Set-MaintenanceMode.ps1'
 
     Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
-    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -ErrorAction Stop
+    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
 AfterAll {

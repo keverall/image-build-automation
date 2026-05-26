@@ -4,7 +4,7 @@
 BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
     Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
-    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -ErrorAction Stop
+    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
 Describe 'New-OneViewMaintenanceScript — basic invocation and parameter validation' {

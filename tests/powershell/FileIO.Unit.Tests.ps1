@@ -38,7 +38,7 @@ srv03
     $Script:LogDir = Join-Path $Script:TempDir 'logs'
     $Script:OutDir = Join-Path $Script:TempDir 'output'
     $Script:AuditDir = Join-Path $Script:TempDir 'audit_test'
-    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -ErrorAction Stop
+    Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
     $Script:TestDir = Join-Path $Script:TempDir 'fileio'
     if (-not (Test-Path -Path $Script:TestDir))  { New-Item -ItemType Directory -Path $Script:TestDir -Force -ErrorAction SilentlyContinue | Out-Null }
 }
