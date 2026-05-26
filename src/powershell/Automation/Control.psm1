@@ -12,7 +12,7 @@
 #
 # After mirroring the reference implementation exactly:
 #   Run-CIPipeline() ≡  run_ci_pipeline()
-#   Run-IRequest()  ≡  run_irequest()
+fix#   Run-IRequest()  ≡  run_irequest()
 #   Run-Scheduler() ≡  run_scheduler()
 #
 
@@ -27,7 +27,7 @@ $ErrorActionPreference = 'Stop'
 # ─────────────────────────────────────────────────────────────────────────────
 if (-not (Get-Module Automation -ErrorAction SilentlyContinue)) {
     $modRoot = $PSScriptRoot
-    try   { Import-Module $modRoot -Force -ErrorAction Stop }
+    try { Import-Module $modRoot -Force -ErrorAction Stop }
     catch { Write-Warning "Control: Could not auto-import Automation module from $modRoot : $_" }
 }
 
@@ -45,26 +45,26 @@ function _Build-CIParams {
 
     # Map CI stage to PS orchestrator request type
     $stageMap = @{
-        firmware       = 'update_firmware'
-        windows        = 'patch_windows'
-        deploy         = 'deploy'
-        scan           = 'opsramp_report'
-        all            = 'build_iso'
+        firmware = 'update_firmware'
+        windows  = 'patch_windows'
+        deploy   = 'deploy'
+        scan     = 'opsramp_report'
+        all      = 'build_iso'
     }
     $requestType = $stageMap[$stage]
     if (-not $requestType) { $requestType = 'build_iso' }
 
     return @{
-        RequestType   = $requestType
-        Params        = @{
-            BaseIsoPath   = $RawParams.Get_Item('BASE_ISO_PATH')
-            ServerFilter  = $RawParams.Get_Item('SERVER_FILTER')
-            DeployMethod  = $RawParams.Get_Item('DEPLOY_METHOD')
-            SkipDownload  = [bool]($RawParams.Get_Item('SKIP_DOWNLOAD'))
-            DryRun        = $dryRun
+        RequestType = $requestType
+        Params      = @{
+            BaseIsoPath  = $RawParams.Get_Item('BASE_ISO_PATH')
+            ServerFilter = $RawParams.Get_Item('SERVER_FILTER')
+            DeployMethod = $RawParams.Get_Item('DEPLOY_METHOD')
+            SkipDownload = [bool]($RawParams.Get_Item('SKIP_DOWNLOAD'))
+            DryRun       = $dryRun
         }
-        Source        = 'ci'
-        DryRun        = $dryRun
+        Source      = 'ci'
+        DryRun      = $dryRun
     }
 }
 
@@ -78,21 +78,21 @@ function _Build-IRequestParams {
         [Parameter(Mandatory)][hashtable] $FormData
     )
     $clusterId = $FormData.Get_Item('cluster_id')
-    $action    = $FormData.Get_Item('action')
+    $action = $FormData.Get_Item('action')
     if (-not $action) { $action = 'enable' }
     $dryRun = [bool]($FormData.Get_Item('dry_run'))
 
     return @{
-        RequestType   = "maintenance_$action"
-        Params        = @{
-            ClusterId  = $clusterId
-            Start      = $FormData.Get_Item('start')
-            End        = $FormData.Get_Item('end')
-            DryRun     = $dryRun
-            Comment    = "iRequest $action - $clusterId"
+        RequestType = "maintenance_$action"
+        Params      = @{
+            ClusterId = $clusterId
+            Start     = $FormData.Get_Item('start')
+            End       = $FormData.Get_Item('end')
+            DryRun    = $dryRun
+            Comment   = "iRequest $action - $clusterId"
         }
-        Source        = 'irequest'
-        DryRun        = $dryRun
+        Source      = 'irequest'
+        DryRun      = $dryRun
     }
 }
 
@@ -105,7 +105,7 @@ function _Build-SchedulerParams {
     param(
         [Parameter(Mandatory)][hashtable] $TaskParams
     )
-    $task   = $TaskParams.Get_Item('task')
+    $task = $TaskParams.Get_Item('task')
     $dryRun = [bool]($TaskParams.Get_Item('dry_run'))
 
     # Map scheduler task to request type  ← mirrors task_map in control.py
@@ -118,13 +118,13 @@ function _Build-SchedulerParams {
     if (-not $requestType) { $requestType = $task }
 
     return @{
-        RequestType   = $requestType
-        Params        = @{
+        RequestType = $requestType
+        Params      = @{
             ClusterId = $TaskParams.Get_Item('cluster_id')
             DryRun    = $dryRun
         }
-        Source        = 'scheduler'
-        DryRun        = $dryRun
+        Source      = 'scheduler'
+        DryRun      = $dryRun
     }
 }
 
@@ -183,16 +183,16 @@ function _Execute {
     if ($errors) {
         return @{
             Success     = $false
-            Errors      = ,$errors
+            Errors      = , $errors
             Source      = $Source
             RequestType = $RequestType
             Timestamp   = (Get-Date).ToString('o')
         }
     }
     $result = Start-AutomationOrchestrator -RequestType $RequestType -Params $Params
-    $result['Source']      = $Source
+    $result['Source'] = $Source
     $result['RequestType'] = $RequestType
-    $result['Timestamp']   = (Get-Date).ToString('o')
+    $result['Timestamp'] = (Get-Date).ToString('o')
     return $result
 }
 
@@ -248,10 +248,10 @@ function _Build-GitLabParams {
         [Parameter(Mandatory)][hashtable] $Params
     )
     return @{
-        RequestType   = "gitlab_maintenance"
-        Params        = $Params
-        Source        = 'gitlab'
-        DryRun        = [bool]($Params.Get_Item('dry_run'))
+        RequestType = "gitlab_maintenance"
+        Params      = $Params
+        Source      = 'gitlab'
+        DryRun      = [bool]($Params.Get_Item('dry_run'))
     }
 }
 
