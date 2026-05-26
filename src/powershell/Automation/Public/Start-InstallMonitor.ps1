@@ -64,7 +64,25 @@ function Start-InstallMonitor {
     }
 }
 
-$Script:LogDir = Join-Path $PSScriptRoot '..\..\generated\logs'
+if (-not $Script:MonitorLogDir -or $Script:MonitorLogDir -eq '') {
+    $current = $PSScriptRoot
+    if (-not $current -and $MyInvocation.MyCommand.Path) {
+        $current = Split-Path $MyInvocation.MyCommand.Path
+    }
+    if (-not $current) { $current = Get-Location }
+    while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
+        $parent = Split-Path $current
+        if ($parent -eq $current -or -not $parent) { break }
+        $current = $parent
+    }
+    $projectRoot = if (Test-Path $current) { (Resolve-Path $current).Path } else { $current }
+    $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
+    if ($isTesting) {
+        $Script:MonitorLogDir = Join-Path $projectRoot 'generated/logs/testing'
+    } else {
+        $Script:MonitorLogDir = Join-Path $projectRoot 'generated/logs/production'
+    }
+}
 Initialize-Logging -LogFile 'monitoring.log'
 
 # ---- Phase-name map ----
@@ -256,7 +274,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         finally {
             $result['end_time'] = (Get-Date).ToString('o')
             $result['duration_seconds'] = ((Get-Date) - $startTime).TotalSeconds
-            $sessDir = Join-Path $Script:LogDir 'monitoring_sessions'
+            $sessDir = Join-Path $Script:MonitorLogDir 'monitoring_sessions'
             Ensure-DirectoryExists -Path $sessDir
             $sessFile = Join-Path $sessDir "monitor_${hn}_$([int][double]::Parse((Get-Date -UFormat %s))).json"
             Save-Json -Data $result -Path $sessFile
@@ -277,7 +295,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         $timedOut   = ($results | Where-Object { $_.status -eq 'timeout' }).Count
         $summary    = @{ timestamp=(Get-Date).ToString('o'); total=$results.Count; completed=$completed;
             failed=$failed; timeout=$timedOut; details=$results }
-        $summaryFile = Join-Path $Script:LogDir "monitor_summary_$(Get-FileTimestamp).json"
+        $summaryFile = Join-Path $Script:MonitorLogDir "monitor_summary_$(Get-FileTimestamp).json"
         Save-Json -Data $summary -Path $summaryFile
         Write-Host "`nMonitoring Summary: Completed=$completed Failed=$failed Timeout=$timedOut Total=$($results.Count)"
         Write-Host "Saved: $summaryFile"

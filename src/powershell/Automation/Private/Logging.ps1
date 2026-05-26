@@ -19,8 +19,20 @@ function Initialize-Logging {
     $script:_Configured = $true
 
     if ($LogFile) {
-        $projectRoot = Resolve-Path (Join-Path ([System.IO.Path]::GetDirectoryName($PSScriptRoot)) '../..')
-        $dir = Join-Path $projectRoot 'generated/logs/production'
+        $current = $PSScriptRoot
+        if (-not $current) { $current = Get-Location }
+        while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
+            $parent = Split-Path $current
+            if ($parent -eq $current -or -not $parent) { break }
+            $current = $parent
+        }
+        $projectRoot = (Resolve-Path $current).Path
+        $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
+        if ($isTesting) {
+            $dir = Join-Path $projectRoot 'generated/logs/testing'
+        } else {
+            $dir = Join-Path $projectRoot 'generated/logs/production'
+        }
         if (-not (Test-Path $dir -PathType Container)) { Ensure-DirectoryExists -Path $dir }
         $script:__AutomationLogPath = Join-Path $dir $LogFile
     }
