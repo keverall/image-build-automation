@@ -45,7 +45,7 @@ hpe-windows-iso-automation/
 │   │   ├── testing/                   # Test execution logs
 │   │   ├── production/                # Operational and execution logs
 │   │   └── build_reports/             # Build artefacts and output
-│   └── htmlcov/                       # HTML Test Coverage reports (see docs/testing.md)
+│   └── coverage-results.xml             # Cobertura XML coverage report (see docs/testing.md)
 ├── configs/                           # Server/cluster/patch JSON configs
 │   ├── server_list.txt                # Target servers (one per line)
 │   ├── clusters_catalogue.json        # Cluster/SCOM/iLO definitions
