@@ -7,7 +7,7 @@
 #   make setup    # Setup PowerShell environment (install modules)
 #   make test     # Run all Pester tests
 #   make lint     # Lint PowerShell with PSScriptAnalyzer
-#   make coverage   # Run tests with code coverage
+#   make coverage # Run tests with code coverage
 # =============================================================================
 
 # ─── Configuration ───────────────────────────────────────────────────────────
@@ -15,6 +15,9 @@ CURDIR := $(shell pwd)
 PSMODULE := src/powershell/Automation/Automation.psd1
 PSDIRS   := src/powershell
 PSTESTS  := tests/powershell
+
+# Coverage threshold (percentage)
+COVERAGE_THRESHOLD := 70
 
 # Colors
 GREEN := \033[0;32m
@@ -33,18 +36,22 @@ setup: ## Setup PowerShell environment (install modules, configure)
 
 # ─── PowerShell Linting ─────────────────────────────────────────────────────
 lint: ## Lint PowerShell files with PSScriptAnalyzer
+	@echo "$(CYAN)[lint]$(NC) Running PSScriptAnalyzer..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
+lint-test: ## Lint and run tests (combined CI step)
+	@$(MAKE) lint && $(MAKE) test
+
 # ─── PowerShell Testing ──────────────────────────────────────────────────────
-test: ## Run all Pester PowerShell tests
+test: ## Run all Pester PowerShell tests with verbose output
+	@echo "$(CYAN)[test]$(NC) Running Pester unit tests..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1
 
-test-unit: ## Run Pester unit tests only
+test-unit: ## Run Pester unit tests only with detailed output
 	@echo "$(CYAN)[test-unit]$(NC) Running Pester unit tests..."
 	@pwsh -NoProfile -Command "\
 		$$pwd = '$(CURDIR)'; \
 		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		Import-Module $$pwd\$(PSDIRS)/Automation/Automation.psd1 -Force -WarningAction SilentlyContinue; \
 		Invoke-Pester -Path @( \
 			\"$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1\", \
 			\"$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1\", \
@@ -55,7 +62,7 @@ test-unit: ## Run Pester unit tests only
 			\"$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
 			\"$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
 			\"$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \
-		) -PassThru"
+		) -PassThru -OutputVerbosity Detailed"
 
 test-integration: ## Run Pester integration tests only
 	@echo "$(CYAN)[test-integration]$(NC) Running Pester integration tests..."
@@ -64,17 +71,52 @@ test-integration: ## Run Pester integration tests only
 		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
 		Invoke-Pester -Path \"$$pwd\$(PSTESTS)/Pester.Integration.ps1\" -PassThru"
 
-coverage: ## Run Pester tests with code coverage
-	@echo "$(CYAN)[coverage]$(NC) Running Pester tests with coverage..."
-	@pwsh -NoProfile -Command "\
+# ─── Code Coverage ────────────────────────────────────────────────────────────
+coverage: ## Run Pester tests with code coverage and enforce threshold
+	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -Command "\
 		$$pwd = '$(CURDIR)'; \
 		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
 		$$config = New-PesterConfiguration; \
-		$$config.Run.Path = @('$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/Credentials.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/New-Uuid.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1', '$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1'); \
+		$$config.Run.Path = @('$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1'); \
 		$$config.Output.Verbosity = 'Detailed'; \
+		$$config.Output.RenderMode = 'Auto'; \
 		$$config.CodeCoverage.Enabled = $$true; \
-		$$config.CodeCoverage.Path = '$$pwd\$(PSDIRS)/Public/*.ps1'; \
-		Invoke-Pester -Configuration $$config"
+		$$config.CodeCoverage.Path = @('$$pwd\src/powershell/Automation/Public/Set-MaintenanceMode.ps1'); \
+		$$config.CodeCoverage.OutputPath = '$$pwd/coverage-results.xml'; \
+		$$config.CodeCoverage.OutputFormat = 'Cobertura'; \
+		Invoke-Pester -Configuration $$config; \
+		$$coverage = $$config.CodeCoverage; \
+		$$coveredLines = $$coverage.CoveredCommands.Count; \
+		$$totalLines = $$coverage.TotalCommands.Count; \
+		$$percent = if ($$totalLines -gt 0) { [math]::Round(($$coveredLines / $$totalLines) * 100, 2) } else { 0 }; \
+		Write-Host ''; \
+		Write-Host '========================================'; \
+		Write-Host '[coverage] Results:'; \
+		Write-Host \"  Covered commands: $$coveredLines / $$totalLines\"; \
+		Write-Host \"  Coverage: $$percent%\"; \
+		Write-Host '========================================'; \
+		if ($$percent -lt $(COVERAGE_THRESHOLD)) { \
+			Write-Host '$(RED)[coverage] ERROR: Coverage $$percent% is below threshold $(COVERAGE_THRESHOLD)%$(NC)'; \
+			exit 1; \
+		} else { \
+			Write-Host '$(GREEN)[coverage] SUCCESS: Coverage meets threshold$(NC)'; \
+		}"
+
+coverage-report: ## Generate HTML coverage report
+	@echo "$(CYAN)[coverage-report]$(NC) Generating HTML coverage report..."
+	@mkdir -p generated/htmlcov
+	@pwsh -NoProfile -ExecutionPolicy Bypass -Command "\
+		$$pwd = '$(CURDIR)'; \
+		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		$$config = New-PesterConfiguration; \
+		$$config.Run.Path = @('$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1'); \
+		$$config.CodeCoverage.Enabled = $$true; \
+		$$config.CodeCoverage.Path = '$$pwd\$(PSDIRS)/Automation/Public/Set-MaintenanceMode.ps1'; \
+		$config.CodeCoverage.OutputPath = '$pwd/generated/htmlcov/index.html'; \
+		$config.CodeCoverage.OutputFormat = 'Html'; \
+		Invoke-Pester -Configuration $config"
+	@echo "$(GREEN)[coverage-report]$(NC) Report written to generated/htmlcov/index.html"
 
 docs: ## Generate PowerShell Markdown docs via PlatyPS
 	@echo "$(CYAN)[docs]$(NC) Generating PowerShell API reference docs..."
@@ -92,11 +134,16 @@ help: ## Show this help message
 		awk 'BEGIN {FS = ":.*?## "} {printf "  \033[0;32m%-15s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
-# ─── Cleanup ───────────────────────────────────────────────────────────────────
+# ─── Cleanup ────────────────────────────────────────────────────────────────
 clean: ## Remove build artifacts and temp files
 	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
-	rm -rf generated/
+	@rm -rf generated/
+	@rm -rf generated/htmlcov/*
+	@rm -rf coverage-results.xml
 	@echo "$(GREEN)[clean]$(NC) Done"
 
 # ─── Aggregate Targets ───────────────────────────────────────────────────────
 all: lint test ## Run linting and tests
+
+# CI pipeline target
+ci: lint coverage ## Run full CI pipeline

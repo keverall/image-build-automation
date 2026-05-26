@@ -12,7 +12,7 @@
 #
 # After mirroring the reference implementation exactly:
 #   Run-CIPipeline() ≡  run_ci_pipeline()
-fix#   Run-IRequest()  ≡  run_irequest()
+#   Run-IRequest()  ≡  run_irequest()
 #   Run-Scheduler() ≡  run_scheduler()
 #
 
