@@ -54,37 +54,17 @@ lint-powershell:
     - pwsh -Command "Install-Module Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force"
   script:
     # Run tests with coverage
-    - pwsh -NoProfile -Command "Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-        `$config = New-PesterConfiguration; \
-        `$config.Run.Path = @('tests/powershell/Audit.Unit.Tests.ps1', 'tests/powershell/Config.Unit.Tests.ps1', 'tests/powershell/Credentials.Unit.Tests.ps1', 'tests/powershell/Executor.Unit.Tests.ps1', 'tests/powershell/FileIO.Unit.Tests.ps1', 'tests/powershell/Inventory.Unit.Tests.ps1', 'tests/powershell/Router.Unit.Tests.ps1', 'tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1', 'tests/powershell/Validators.Unit.Tests.ps1'); \
-        `$config.Output.Verbosity = 'Detailed'; \
-        `$config.CodeCoverage.Enabled = `$true; \
-        `$config.CodeCoverage.Path = 'src/powershell/Public/*.ps1'; \
-        `$config.CodeCoverage.OutputPath = 'coverage-results.xml'; \
-        `$config.CodeCoverage.OutputFormat = 'Cobertura'; \
-        Invoke-Pester -Configuration `$config"
-    # Report coverage
-    - pwsh -NoProfile -Command "Import-Module Pester -MinimumVersion 5.0.0; \
-        `$coverage = Get-Content coverage-results.xml -Raw | ConvertFrom-Json; \
-        `$coveredLines = `$coverage.coverage.coveredcommands.count; \
-        `$totalLines = `$coverage.coverage.totalcommands.count; \
-        `$percent = if (`$totalLines -gt 0) { [math]::Round(($coveredLines / $totalLines) * 100, 2) } else { 0 }; \
-        Write-Host ''; \
-        Write-Host '========================================'; \
-        Write-Host '[coverage] Results:'; \
-        Write-Host \"  Covered lines: $coveredLines / $totalLines\"; \
-        Write-Host \"  Coverage: $percent%\"; \
-        Write-Host '========================================'; \
-        if (`$percent -lt $env:COVERAGE_THRESHOLD) { \
-          exit 1; \
-        }"
+    - pwsh -File ./scripts/run-coverage.ps1 -TestPath tests/powershell -SourcePath src/powershell -OutputFile generated/output/coverage/coverage-results.xml -Threshold 70
+    # Report coverage summary
+    - pwsh -File ./scripts/CoverageSummary.ps1 -InputFile generated/output/coverage/coverage-results.xml -OutputFile generated/output/coverage/coverage-report.txt
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: coverage-results.xml
+        path: generated/output/coverage/coverage-results.xml
     paths:
-      - coverage-results.xml
+      - generated/output/coverage/coverage-results.xml
+      - generated/output/coverage/coverage-report.txt
     expire_in: 1 week
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
@@ -95,6 +75,7 @@ test-unit:
   script:
     - pwsh -Command "Install-Module Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force"
     - pwsh -File ./scripts/run-tests.ps1
+    - pwsh -File ./scripts/CoverageSummary.ps1 -InputFile generated/output/coverage/coverage-results.xml -OutputFile generated/output/coverage/coverage-report.txt
 
 # =============================================================================
 # Security Stage

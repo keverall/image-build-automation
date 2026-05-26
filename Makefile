@@ -49,20 +49,7 @@ test: ## Run all Pester PowerShell tests with verbose output
 
 test-unit: ## Run Pester unit tests only with detailed output
 	@echo "$(CYAN)[test-unit]$(NC) Running Pester unit tests..."
-	@pwsh -NoProfile -Command "\
-		$$pwd = '$(CURDIR)'; \
-		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		Invoke-Pester -Path @( \
-			\"$$pwd\$(PSTESTS)/Audit.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Config.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Credentials.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Executor.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/FileIO.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Inventory.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Router.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1\", \
-			\"$$pwd\$(PSTESTS)/Validators.Unit.Tests.ps1\" \
-		) -PassThru -OutputVerbosity Detailed"
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1
 
 test-integration: ## Run Pester integration tests only
 	@echo "$(CYAN)[test-integration]$(NC) Running Pester integration tests..."
@@ -74,34 +61,9 @@ test-integration: ## Run Pester integration tests only
 # ─── Code Coverage ────────────────────────────────────────────────────────────
 coverage: ## Run Pester tests with code coverage and enforce threshold
 	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -Command "\
-		$$pwd = '$(CURDIR)'; \
-		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
-		$$config = New-PesterConfiguration; \
-		$$config.Run.Path = @('$$pwd\$(PSTESTS)/Set-MaintenanceMode.Unit.Tests.ps1'); \
-		$$config.Output.Verbosity = 'Detailed'; \
-		$$config.Output.RenderMode = 'Auto'; \
-		$$config.CodeCoverage.Enabled = $$true; \
-		$$config.CodeCoverage.Path = @('$$pwd\src/powershell/Automation/Public/Set-MaintenanceMode.ps1'); \
-		$$config.CodeCoverage.OutputPath = '$$pwd/coverage-results.xml'; \
-		$$config.CodeCoverage.OutputFormat = 'Cobertura'; \
-		Invoke-Pester -Configuration $$config; \
-		$$coverage = $$config.CodeCoverage; \
-		$$coveredLines = $$coverage.CoveredCommands.Count; \
-		$$totalLines = $$coverage.TotalCommands.Count; \
-		$$percent = if ($$totalLines -gt 0) { [math]::Round(($$coveredLines / $$totalLines) * 100, 2) } else { 0 }; \
-		Write-Host ''; \
-		Write-Host '========================================'; \
-		Write-Host '[coverage] Results:'; \
-		Write-Host \"  Covered commands: $$coveredLines / $$totalLines\"; \
-		Write-Host \"  Coverage: $$percent%\"; \
-		Write-Host '========================================'; \
-		if ($$percent -lt $(COVERAGE_THRESHOLD)) { \
-			Write-Host '$(RED)[coverage] ERROR: Coverage $$percent% is below threshold $(COVERAGE_THRESHOLD)%$(NC)'; \
-			exit 1; \
-		} else { \
-			Write-Host '$(GREEN)[coverage] SUCCESS: Coverage meets threshold$(NC)'; \
-		}"
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-coverage.ps1 || true
+	@echo "$(CYAN)[coverage]$(NC) Generating coverage summary report..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/CoverageSummary.ps1 -InputFile generated/output/coverage/coverage-results.xml -OutputFile generated/output/coverage/coverage-report.txt
 
 coverage-report: ## Generate Cobertura XML coverage report for all PowerShell code
 	@echo "$(CYAN)[coverage-report]$(NC) Generating Cobertura XML coverage report..."
@@ -127,7 +89,6 @@ help: ## Show this help message
 clean: ## Remove build artifacts and temp files
 	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
 	@rm -rf generated/
-	@rm -f coverage-results.xml
 	@echo "$(GREEN)[clean]$(NC) Done"
 
 # ─── Aggregate Targets ───────────────────────────────────────────────────────

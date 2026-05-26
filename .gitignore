@@ -70,6 +70,8 @@ generated/logs/production/*
 generated/logs/audit/*
 generated/logs/build_reports/*
 !generated/logs/build_reports/.gitkeep
+generated/logs/deployment/*
+!generated/logs/deployment/.gitkeep
 
 # === Configuration Secrets ===
 configs/opsramp_config.json
