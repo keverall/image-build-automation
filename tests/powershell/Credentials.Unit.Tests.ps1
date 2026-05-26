@@ -7,7 +7,7 @@ $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershel
 if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
 if (-not $env:TMP)   { $env:TMP   = '/tmp' }
 
-Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -ErrorAction Stop
+Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 
 BeforeAll {
     # Helper: save / restore env-vars around individual tests
