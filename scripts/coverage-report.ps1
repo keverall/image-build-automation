@@ -17,7 +17,9 @@ Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $publicPath = Join-Path $PROJECT_ROOT 'src/powershell/Automation/Public'
-$outputPath = Join-Path $PROJECT_ROOT 'coverage-results.xml'
+$outputDir = Join-Path $PROJECT_ROOT 'generated/output/coverage'
+if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Force -Path $outputDir | Out-Null }
+$outputPath = Join-Path $outputDir 'coverage-results.xml'
 
 Write-Host "[coverage-report] Generating Cobertura XML coverage report..." -ForegroundColor Cyan
 
@@ -30,4 +32,4 @@ $config.CodeCoverage.OutputFormat = 'Cobertura'
 
 Invoke-Pester -Configuration $config
 
-Write-Host "[coverage-report] Report written to coverage-results.xml" -ForegroundColor Green
+Write-Host "[coverage-report] Report written to $outputPath" -ForegroundColor Green

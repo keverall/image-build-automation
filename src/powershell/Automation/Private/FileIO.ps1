@@ -76,12 +76,14 @@ function Save-JsonResult {
             $OutputDir = Join-Path $projectRoot 'generated/logs/testing'
         } elseif ($Category -eq 'audit' -or $Category -eq 'regulatory') {
             $OutputDir = Join-Path $projectRoot 'generated/logs/audit'
+        } elseif ($Category -eq 'build_reports') {
+            $OutputDir = Join-Path $projectRoot 'generated/logs/build_reports'
         } else {
             $OutputDir = Join-Path $projectRoot 'generated/logs/production'
         }
     }
     $ts  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-    $dir = if ($Category) { [System.IO.Path]::Combine($OutputDir, $Category) } else { $OutputDir }
+    $dir = $OutputDir
     Ensure-DirectoryExists $dir | Out-Null
     $fp  = [System.IO.Path]::Combine($dir, "$BaseName`_$ts.json")
     Save-Json -Data $Data -Path $fp | Out-Null

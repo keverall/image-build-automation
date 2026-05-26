@@ -74,7 +74,7 @@ Orchestrates the full ISO build pipeline, callable from the module Router.
             failed        = ($servers.Count - $successCount)
             results       = $results
         }
-        Save-JsonResult -Data $summary -BaseName 'build_summary' -OutputDir $OutputDir
+        Save-JsonResult -Data $summary -BaseName 'build_summary' -Category 'build_reports'
         return @{ Success = $true; Summary = $summary }
     }
     catch {
@@ -150,6 +150,6 @@ function Build-ForServer([string]$ServerName) {
         Write-Error "Build failed for $ServerName : $($_.Exception.Message)"
         $result.error = $_.Exception.Message
     }
-    Save-JsonResult -Data $result -BaseName 'build_result' -OutputDir $OutputDir -Category 'results'
+    Save-JsonResult -Data $result -BaseName 'build_result' -Category 'build_reports'
     return $result
 }
