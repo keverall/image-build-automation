@@ -306,7 +306,7 @@ Steps:
   "server": "...",
   "uuid": "...",
   "firmware_iso": "path/to/iso",
-  "patched_iso": "path/to/iso",
+  "generated/patched_iso": "path/to/iso",
   "combined_iso": "path/to/dir",
   "success": true/false,
   "timestamp": "...",
