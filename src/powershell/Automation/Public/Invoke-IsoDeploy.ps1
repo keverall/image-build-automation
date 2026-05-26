@@ -12,10 +12,10 @@
 #
 
 param(
-    [Parameter(Mandatory = $false)][ValidateSet('ilo','redfish')][string] $Method     = 'ilo',
-    [Parameter(Mandatory = $false)][string] $Server     = $null,
+    [Parameter(Mandatory = $false)][ValidateSet('ilo', 'redfish')][string] $Method = 'ilo',
+    [Parameter(Mandatory = $false)][string] $Server = $null,
     [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
-    [Parameter(Mandatory = $false)][string] $IsoDir     = 'output\combined',
+    [Parameter(Mandatory = $false)][string] $IsoDir = 'output\combined',
     [Parameter(Mandatory = $false)][switch] $DryRun
 )
 
@@ -55,17 +55,17 @@ function Invoke-IsoDeploy {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory = $false)][ValidateSet('ilo','redfish')][string] $Method     = 'ilo',
-        [Parameter(Mandatory = $false)][string] $Server     = $null,
+        [Parameter(Mandatory = $false)][ValidateSet('ilo', 'redfish')][string] $Method = 'ilo',
+        [Parameter(Mandatory = $false)][string] $Server = $null,
         [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
-        [Parameter(Mandatory = $false)][string] $IsoDir     = 'output\combined',
+        [Parameter(Mandatory = $false)][string] $IsoDir = 'output\combined',
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
     try {
         $deployer = [ISODeployer]::new($ServerList, $IsoDir)
         if ($Server) {
             $si = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-            if (-not $si) { return @{ Success=$false; Error="Server not found: $Server" } }
+            if (-not $si) { return @{ Success = $false; Error = "Server not found: $Server" } }
             $ok = $deployer.Deploy($si, $Method, [bool]$DryRun)
             return @{ Success = $ok; Server = $Server; Method = $Method }
         }
@@ -87,13 +87,13 @@ class ISODeployer {
 
     ISODeployer([string]$ServerList, [string]$IsoDir) {
         $this.ServerListPath = $ServerList
-        $this.IsoDir         = $IsoDir
-        $this.ServerDetails  = Load-ServerList -Path $ServerList -IncludeDetails
-        $this.DeployLog      = [System.Collections.ArrayList]::new()
+        $this.IsoDir = $IsoDir
+        $this.ServerDetails = Load-ServerList -Path $ServerList -IncludeDetails
+        $this.DeployLog = [System.Collections.ArrayList]::new()
     }
 
     [string] _FindServerPackage([string]$ServerName) {
-        $variants = @($ServerName, $ServerName.ToLower(), $ServerName.Replace('.','_'), ($ServerName.Split('.')[0]))
+        $variants = @($ServerName, $ServerName.ToLower(), $ServerName.Replace('.', '_'), ($ServerName.Split('.')[0]))
         foreach ($v in $variants) {
             $d = Join-Path $this.IsoDir $v
             if (Test-Path $d -PathType Container) { return $d }
@@ -111,7 +111,7 @@ class ISODeployer {
     }
 
     [void] _Log([string]$Action, [string]$ServerName, [string]$Status, [string]$Details = '') {
-        $null = $this.DeployLog.Add(@{ timestamp=(Get-Date).ToString('o'); action=$Action; server=$ServerName; status=$Status; details=$Details })
+        $null = $this.DeployLog.Add(@{ timestamp = (Get-Date).ToString('o'); action = $Action; server = $ServerName; status = $Status; details = $Details })
         Write-Host "[$Status] $Action | $ServerName | $Details"
     }
 
@@ -146,7 +146,7 @@ class ISODeployer {
     # ------------------------------------------------------------------
 
     [hashtable] _DeployViaIlo([ServerInfo]$Server, [string]$PackageDir, [bool]$DryRun) {
-        $hn    = $Server.Hostname
+        $hn = $Server.Hostname
         $iloIp = $Server.ILO_IP
         $this._Log('deploy_ilo', $hn, 'START', "iLO: $(if($iloIp) { $iloIp } else { 'N/A' })")
 
@@ -166,25 +166,25 @@ class ISODeployer {
             return @{ Success = $false; Msg = "Metadata not found: $metaFile" }
         }
         $metaData = Import-JsonConfig -Path $metaFile
-        $isoName  = $metaData.Get_Item('patched_iso')
+        $isoName = $metaData.Get_Item('generated_patched_iso')
         if (-not $isoName) { Write-Error 'No patched ISO in metadata'; return @{ Success = $false; Msg = 'No patched ISO in metadata' } }
-        $isoPath  = Join-Path $PackageDir $isoName
+        $isoPath = Join-Path $PackageDir $isoName
         if (-not (Test-Path $isoPath)) { Write-Error "ISO not found: $isoPath"; return @{ Success = $false; Msg = "ISO not found: $isoPath" } }
 
         # iLO REST uses self-signed certs by default — -SkipCertificateCheck mirrors
         # Reference implementation requests.verify=False used in deployment module.
-        $cred    = Get-IloCredentials
+        $cred = Get-IloCredentials
         $baseUrl = "http://$iloIp/rest/v1"
         try {
             # ── Step 1 ── Session login
             $loginUrl = "$baseUrl/sessions"
-            $body     = @{ UserName = $cred[0]; Password = $cred[1] } | ConvertTo-Json
+            $body = @{ UserName = $cred[0]; Password = $cred[1] } | ConvertTo-Json
             # -SkipCertificateCheck: iLO ships with self-signed certificate by default.
             # Equivalent to reference implementation:  requests.post(verify=False)
-            $resp     = Invoke-RestMethod -Uri $loginUrl -Method Post -Body $body `
-                                          -ContentType 'application/json;charset=utf-8' `
-                                          -SkipCertificateCheck `
-                                          -TimeoutSec 30 -ErrorAction Stop
+            $resp = Invoke-RestMethod -Uri $loginUrl -Method Post -Body $body `
+                -ContentType 'application/json;charset=utf-8' `
+                -SkipCertificateCheck `
+                -TimeoutSec 30 -ErrorAction Stop
 
             $sessionKey = $resp.sessionKey
             $this._Log('ilo_login', $hn, 'SUCCESS', "session $($sessionKey.Substring(0,8))…")
@@ -193,7 +193,7 @@ class ISODeployer {
             #
             # FULL IMPLEMENTATION CONTRACT (when ISO serving URL is available):
             #
-#   The ISO file must first be placed on an HTTP/HTTPS server that
+            #   The ISO file must first be placed on an HTTP/HTTPS server that
             #   the target iLO management processor can reach over the network
             #   (i.e.  http://<ci-runner-or-nfs-server>/isos/<server>.iso  or
             #            http:// artifacts.mycorp.local/iso/<server>.iso ).
@@ -263,7 +263,7 @@ class ISODeployer {
         if (-not (Test-Path $metaFile)) { return @{ Success = $false; Msg = "Metadata not found: $metaFile" } }
 
         $metaData = Import-JsonConfig -Path $metaFile
-        $isoName  = $metaData.Get_Item('patched_iso')
+        $isoName = $metaData.Get_Item('generated_patched_iso')
         if (-not $isoName) { Write-Error 'No patched ISO in metadata'; return @{ Success = $false; Msg = 'No patched ISO in metadata' } }
 
         if ($DryRun) {
@@ -280,16 +280,16 @@ class ISODeployer {
     }
 
     [bool] Deploy([ServerInfo]$Server, [string]$Method, [bool]$DryRun) {
-        $hn  = $Server.Hostname
+        $hn = $Server.Hostname
         $pkg = $this._FindServerPackage($hn)
         if (-not $pkg) {
             $this._Log('deploy', $hn, 'FAILED', 'Package not found')
             return $false
         }
         $result = switch ($Method.ToLowerInvariant()) {
-            'ilo'     { $this._DeployViaIlo($Server, $pkg, $DryRun) }
+            'ilo' { $this._DeployViaIlo($Server, $pkg, $DryRun) }
             'redfish' { $this._DeployViaRedfish($Server, $pkg, $DryRun) }
-            default   { Write-Error "Unknown method $Method"; $null }
+            default { Write-Error "Unknown method $Method"; $null }
         }
         $ok = if ($result) { $result.Success } else { $false }
         $statusKey = if ($ok) { 'SUCCESS' } else { 'FAILED' }
@@ -299,20 +299,20 @@ class ISODeployer {
 
     [hashtable] DeployAll([string]$Method, [bool]$DryRun) {
         Write-Host "`nDeploying to $($this.ServerDetails.Count) servers via $Method"
-        Write-Host $('='*60)
+        Write-Host $('=' * 60)
         $results = @()
         foreach ($s in $this.ServerDetails) {
             Write-Host "`nDeploying to: $($s.Hostname)"
             $ok = $this.Deploy($s, $Method, $DryRun)
-            $results += @{ server=$s.Hostname; success=$ok; method=$Method }
+            $results += @{ server = $s.Hostname; success = $ok; method = $Method }
             Write-Host "$(if($ok){'✓'}else{'✗'}) $($s.Hostname)"
         }
-        $okCount  = ($results | Where-Object { $_.success }).Count
-        $summary  = @{ timestamp=(Get-Date).ToString('o'); method=$Method; total=$results.Count; successful=$okCount; failed=($results.Count-$okCount); results=$results }
+        $okCount = ($results | Where-Object { $_.success }).Count
+        $summary = @{ timestamp = (Get-Date).ToString('o'); method = $Method; total = $results.Count; successful = $okCount; failed = ($results.Count - $okCount); results = $results }
         $logDirLog = Join-Path $PSScriptRoot '..\..\generated\logs'
         Ensure-DirectoryExists -Path $logDirLog
-        $logFile  = Join-Path $logDirLog "deploy_log_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
-        Save-Json -Data @{ summary=$summary; log=$this.DeployLog } -Path $logFile
+        $logFile = Join-Path $logDirLog "deploy_log_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+        Save-Json -Data @{ summary = $summary; log = $this.DeployLog } -Path $logFile
         Write-Host "`nDeployment Summary: $okCount/$($results.Count) successful"
         Write-Host "Log saved: $logFile"
         return $summary

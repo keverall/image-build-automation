@@ -41,19 +41,19 @@ Orchestrates the full ISO build pipeline, callable from the module Router.
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory = $false)][string] $BaseIsoPath  = $null,
-        [Parameter(Mandatory = $false)][string] $ConfigDir    = 'configs',
-        [Parameter(Mandatory = $false)][string] $OutputDir    = 'output',
-        [Parameter(Mandatory = $false)][string] $Server       = $null,
+        [Parameter(Mandatory = $false)][string] $BaseIsoPath = $null,
+        [Parameter(Mandatory = $false)][string] $ConfigDir = 'configs',
+        [Parameter(Mandatory = $false)][string] $OutputDir = 'output',
+        [Parameter(Mandatory = $false)][string] $Server = $null,
         [Parameter(Mandatory = $false)][switch]  $DryRun,
         [Parameter(Mandatory = $false)][switch]  $SkipAudit
     )
 
     $Script:ConfigDir = $ConfigDir
     $Script:OutputDir = $OutputDir
-    $Script:FwConfig      = Join-Path $ConfigDir 'hpe_firmware_drivers_nov2025.json'
-    $Script:PatchConfig   = Join-Path $ConfigDir 'windows_patches.json'
-    $Script:_ServerList   = Join-Path $ConfigDir 'server_list.txt'
+    $Script:FwConfig = Join-Path $ConfigDir 'hpe_firmware_drivers_nov2025.json'
+    $Script:PatchConfig = Join-Path $ConfigDir 'windows_patches.json'
+    $Script:_ServerList = Join-Path $ConfigDir 'server_list.txt'
 
     foreach ($f in @($Script:FwConfig, $Script:PatchConfig, $Script:_ServerList)) {
         if (-not (Test-Path $f -PathType Leaf)) {
@@ -66,13 +66,13 @@ Orchestrates the full ISO build pipeline, callable from the module Router.
         $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $Script:_ServerList }
         $results = foreach ($s in $servers) { Build-ForServer $s }
 
-        $successCount  = ($results | Where-Object { $_.success }).Count
-        $summary       = @{
-            timestamp      = (Get-Date).ToString('o')
-            total_servers  = $servers.Count
-            successful     = $successCount
-            failed         = ($servers.Count - $successCount)
-            results        = $results
+        $successCount = ($results | Where-Object { $_.success }).Count
+        $summary = @{
+            timestamp     = (Get-Date).ToString('o')
+            total_servers = $servers.Count
+            successful    = $successCount
+            failed        = ($servers.Count - $successCount)
+            results       = $results
         }
         Save-JsonResult -Data $summary -BaseName 'build_summary' -OutputDir $OutputDir
         return @{ Success = $true; Summary = $summary }
@@ -92,53 +92,59 @@ function Build-ForServer([string]$ServerName) {
     Write-Host "$('='*70)"
 
     $result = @{
-        server       = $ServerName
-        uuid         = $null
-        firmware_iso = $null
-        patched_iso  = $null
-        combined_iso = $null
-        success      = $false
-        timestamp    = (Get-Date).ToString('o')
-        steps        = @()
+        server            = $ServerName
+        uuid              = $null
+        firmware_iso      = $null
+        generated         = $null
+        generated_patched_iso = $null
+        combined_iso      = $null
+        success           = $false
+        timestamp         = (Get-Date).ToString('o')
+        steps             = @()
     }
 
     try {
         if ($DryRun) { $generatedUuid = '00000000-0000-0000-0000-000000000000' }
-        else         { $generatedUuid = New-Uuid -ServerName $ServerName -ErrorAction Stop }
+        else { $generatedUuid = New-Uuid -ServerName $ServerName -ErrorAction Stop }
         $result.uuid = $generatedUuid
         $result.steps += @{ Step = 'generate_uuid'; Uuid = $generatedUuid }
 
-        $fwOutput  = Join-Path $OutputDir "firmware\$ServerName"
+        $fwOutput = Join-Path $OutputDir "firmware\$ServerName"
         $fwUpdater = [FirmwareUpdater]::new($FwConfig, $fwOutput)
-        $fwResult  = $fwUpdater.Build($ServerName, $DryRun)
+        $fwResult = $fwUpdater.Build($ServerName, $DryRun)
         if ($fwResult.Success -and $fwResult.FirmwareIso) {
             $result.firmware_iso = $fwResult.FirmwareIso
-            $result.steps       += @{ Step = 'firmware_iso'; Status = 'ok'; Iso = $fwResult.FirmwareIso }
-        } else { $result.steps += @{ Step = 'firmware_iso'; Status = 'failed' } }
+            $result.steps += @{ Step = 'firmware_iso'; Status = 'ok'; Iso = $fwResult.FirmwareIso }
+        }
+        else { $result.steps += @{ Step = 'firmware_iso'; Status = 'failed' } }
 
         if ($BaseIsoPath) {
             $patchOutput = Join-Path $OutputDir "patched\$ServerName"
-            $patcher     = [WindowsPatcher]::new($PatchConfig, $patchOutput)
+            $patcher = [WindowsPatcher]::new($PatchConfig, $patchOutput)
             $patchResult = $patcher.Build($BaseIsoPath, $ServerName, 'dism', $DryRun)
             if ($patchResult.Success -and $patchResult.PatchedIso) {
-                $result.patched_iso = $patchResult.PatchedIso
-                $result.steps       += @{ Step = 'patched_iso'; Status = 'ok'; Iso = $patchResult.PatchedIso }
-            } else { $result.steps += @{ Step = 'patched_iso'; Status = 'failed' } }
-        } else { Write-Warning "No base ISO path given; skipping Windows patching for $ServerName" }
+                $result.generated_patched_iso = $patchResult.PatchedIso
+                $result.steps += @{ Step = 'generated_patched_iso'; Status = 'ok'; Iso = $patchResult.PatchedIso }
+            }
+            else { $result.steps += @{ Step = 'generated_patched_iso'; Status = 'failed' } }
+        }
+        else { Write-Warning "No base ISO path given; skipping Windows patching for $ServerName" }
 
         $combinedDir = Join-Path $OutputDir "combined\$ServerName"
         Ensure-DirectoryExists -Path $combinedDir
         if ($result.firmware_iso -and (Test-Path $result.firmware_iso)) {
-            Copy-Item $result.firmware_iso (Join-Path $combinedDir (Split-Path $result.firmware_iso -Leaf)) -Force }
-        if ($result.patched_iso -and (Test-Path $result.patched_iso)) {
-            Copy-Item $result.patched_iso (Join-Path $combinedDir (Split-Path $result.patched_iso -Leaf)) -Force }
-        $metadata = @{ server_name=$ServerName; uuid=$generatedUuid; build_timestamp=(Get-Date).ToString('o');
-            firmware_iso=(if($result.firmware_iso){Split-Path $result.firmware_iso -Leaf}else{$null});
-            patched_iso=(if($result.patched_iso){Split-Path $result.patched_iso -Leaf}else{$null});
-            config_version='nov2025' }
+            Copy-Item $result.firmware_iso (Join-Path $combinedDir (Split-Path $result.firmware_iso -Leaf)) -Force 
+        }
+        if ($result.generated_patched_iso -and (Test-Path $result.generated_patched_iso)) {
+            Copy-Item $result.generated_patched_iso (Join-Path $combinedDir (Split-Path $result.generated_patched_iso -Leaf)) -Force }
+        $metadata = @{ server_name = $ServerName; uuid = $generatedUuid; build_timestamp = (Get-Date).ToString('o');
+            firmware_iso = (if ($result.firmware_iso) { Split-Path $result.firmware_iso -Leaf }else { $null });
+            generated_patched_iso = (if($result.generated_patched_iso) { Split-Path $result.generated_patched_iso -Leaf }else { $null });
+            config_version = 'nov2025' 
+        }
         Save-Json -Data $metadata -Path (Join-Path $combinedDir 'deployment_metadata.json')
         $result.combined_iso = $combinedDir
-        $result.success      = $true
+        $result.success = $true
     }
     catch {
         Write-Error "Build failed for $ServerName : $($_.Exception.Message)"

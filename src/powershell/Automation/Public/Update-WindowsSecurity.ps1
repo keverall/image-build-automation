@@ -44,11 +44,11 @@ function Invoke-WindowsSecurityUpdate {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][Alias('BaseIso','b')][string] $BaseIsoPath,
-        [Parameter(Mandatory)][Alias('ServerName','s')][string] $Server,
+        [Parameter(Mandatory)][Alias('BaseIso', 'b')][string] $BaseIsoPath,
+        [Parameter(Mandatory)][Alias('ServerName', 's')][string] $Server,
         [Parameter(Mandatory = $false)][Alias('p')][string] $PatchesConfig = 'configs\windows_patches.json',
         [Parameter(Mandatory = $false)][Alias('o')][string] $OutputDir = 'output\patched',
-        [ValidateSet('dism','powershell')]
+        [ValidateSet('dism', 'powershell')]
         [Parameter(Mandatory = $false)][Alias('m')][string] $Method = 'dism',
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
@@ -57,7 +57,7 @@ function Invoke-WindowsSecurityUpdate {
     $Script:PatchesConfigBuildDir = $OutputDir    # used by WindowsPatcher.Build
     try {
         $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)
-        $result  = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
+        $result = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
         $resultsDir = Join-Path $OutputDir 'results'
         Ensure-DirectoryExists -Path $resultsDir
         Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
@@ -80,40 +80,40 @@ class WindowsPatcher {
 
     WindowsPatcher([string]$PatchesConfig, [string]$BaseIsoDir, [string]$OutputDir) {
         $this.PatchesConfigPath = $PatchesConfig
-        $this.BaseIsoDir        = $BaseIsoDir
-        $this.OutputDir         = $OutputDir
-        $this.PatchesConfig     = Import-JsonConfig -Path $PatchesConfig -Required:$true
-        $this.PatchDir          = Join-Path $this.BaseIsoDir 'patches'
+        $this.BaseIsoDir = $BaseIsoDir
+        $this.OutputDir = $OutputDir
+        $this.PatchesConfig = Import-JsonConfig -Path $PatchesConfig -Required:$true
+        $this.PatchDir = Join-Path $this.BaseIsoDir 'patches'
         Ensure-DirectoryExists -Path $this.PatchDir
-        $this.BuildLog          = [System.Collections.ArrayList]::new()
+        $this.BuildLog = [System.Collections.ArrayList]::new()
     }
 
     [object] _LoadConfig() { return $this.PatchesConfig }
 
     [void] _Log([string]$Step, [string]$Status, [string]$Details = '') {
-        $null = $this.BuildLog.Add(@{ timestamp=(Get-Date).ToString('o'); step=$Step; status=$Status; details=$Details })
+        $null = $this.BuildLog.Add(@{ timestamp = (Get-Date).ToString('o'); step = $Step; status = $Status; details = $Details })
         Write-Host "[$Status] $Step : $Details"
     }
 
     [string] _SetupBaseIso([string]$IsoPath, [bool]$DryRun) {
-        $this._Log('setup_base_iso','START',"ISO: $IsoPath")
+        $this._Log('setup_base_iso', 'START', "ISO: $IsoPath")
         if ($DryRun) { return $this.BaseIsoDir }
         $isoFile = Get-Item $IsoPath -ErrorAction SilentlyContinue
         if (-not $isoFile) {
-            $this._Log('setup_base_iso','FAILED',"ISO not found: $IsoPath")
+            $this._Log('setup_base_iso', 'FAILED', "ISO not found: $IsoPath")
             return $null
         }
         # Mount ISO on Windows; on Linux we assume it is already extracted/mounted
         if (Test-Path Env:OS) {
             try {
                 $disk = Mount-DiskImage -ImagePath $IsoPath -PassThru -ErrorAction Stop
-                $vol  = (Get-Volume -DiskImage $disk -ErrorAction Stop)
-                $this._Log('setup_base_iso','INFO',"Mounted at $($vol.DriveLetter):\")
+                $vol = (Get-Volume -DiskImage $disk -ErrorAction Stop)
+                $this._Log('setup_base_iso', 'INFO', "Mounted at $($vol.DriveLetter):\")
                 return "$($vol.DriveLetter):\"
             }
             catch {
-                try  { Dismount-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue } catch {}
-                $this._Log('setup_base_iso','WARN',"Could not mount ISO: $($_.Exception.Message)")
+                try { Dismount-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue } catch {}
+                $this._Log('setup_base_iso', 'WARN', "Could not mount ISO: $($_.Exception.Message)")
             }
         }
         Ensure-DirectoryExists -Path $this.BaseIsoDir
@@ -121,79 +121,79 @@ class WindowsPatcher {
     }
 
     [bool] _ApplyPatchesDism([bool]$DryRun) {
-        $this._Log('apply_patches_dism','START','Applying via DISM')
+        $this._Log('apply_patches_dism', 'START', 'Applying via DISM')
         if ($DryRun) { return $true }
         foreach ($patch in ($this.PatchesConfig.Get_Item('patches') ?? @())) {
-            $kb       = $patch.Get_Item('kb_number')
-            $msuPath  = Join-Path $this.PatchDir "$kb.msu"
+            $kb = $patch.Get_Item('kb_number')
+            $msuPath = Join-Path $this.PatchDir "$kb.msu"
             if (-not (Test-Path $msuPath)) { Write-Warning "Patch not found: $msuPath, skipping"; continue }
             $dismArgs = @('/Image:', $this.BaseIsoDir, '/Add-Package', "/PackagePath:$msuPath", '/LimitAccess', '/NoRestart')
-            $r        = Invoke-NativeCommand -Command @('dism') + $dismArgs -TimeoutSeconds 600
+            $r = Invoke-NativeCommand -Command @('dism') + $dismArgs -TimeoutSeconds 600
             if (-not $r.Success) {
-                $this._Log("apply_patch_$kb",'FAILED',"DISM failed: $($r.StandardError)")
+                $this._Log("apply_patch_$kb", 'FAILED', "DISM failed: $($r.StandardError)")
                 return $false
             }
-            $this._Log("apply_patch_$kb",'SUCCESS',"Applied $kb")
+            $this._Log("apply_patch_$kb", 'SUCCESS', "Applied $kb")
         }
         return $true
     }
 
     [bool] _ApplyPatchesPowerShell([bool]$DryRun) {
-        $this._Log('apply_patches_ps','START','Applying via PowerShell DISM')
+        $this._Log('apply_patches_ps', 'START', 'Applying via PowerShell DISM')
         if ($DryRun) { return $true }
         # Use Add-WindowsPackage via DISM equivalent
         foreach ($patch in ($this.PatchesConfig.Get_Item('patches') ?? @())) {
-            $kb      = $patch.Get_Item('kb_number')
+            $kb = $patch.Get_Item('kb_number')
             $msuPath = Join-Path $this.PatchDir "$kb.msu"
             if (-not (Test-Path $msuPath)) { Write-Warning "Patch $kb not found, skipping"; continue }
             $psScript = "Add-WindowsPackage -Path '$($this.BaseIsoDir)' -PackagePath '$msuPath' -ErrorAction Stop"
-            $r        = Invoke-PowerShellScript -Script $psScript -CaptureOutput $true -TimeoutSeconds 600
+            $r = Invoke-PowerShellScript -Script $psScript -CaptureOutput $true -TimeoutSeconds 600
             if (-not $r.Success) {
-                $this._Log("apply_patch_$kb",'FAILED',"PS DISM failed: $($r.Output)")
+                $this._Log("apply_patch_$kb", 'FAILED', "PS DISM failed: $($r.Output)")
                 return $false
             }
-            $this._Log("apply_patch_$kb",'SUCCESS',"Applied $kb")
+            $this._Log("apply_patch_$kb", 'SUCCESS', "Applied $kb")
         }
         return $true
     }
 
     [hashtable] Build([string]$IsoPath, [string]$ServerName, [string]$Method, [bool]$DryRun) {
-        $this._Log('build_start','START',"Patching for $ServerName")
-        $result = @{ server=$ServerName; patched_iso=$null; success=$false; build_log=$this.BuildLog; timestamp=(Get-Date).ToString('o') }
+        $this._Log('build_start', 'START', "Patching for $ServerName")
+        $result = @{ server = $ServerName; generated_patched_iso = $null; success = $false; build_log = $this.BuildLog; timestamp = (Get-Date).ToString('o') }
 
         try {
             $mounted = $this._SetupBaseIso($IsoPath, $DryRun)
             if (-not $mounted -and -not $DryRun) {
-                $this._Log('build','FAILED','Base ISO setup failed')
+                $this._Log('build', 'FAILED', 'Base ISO setup failed')
                 $result.error = 'Base ISO setup failed'
                 return $result
             }
 
             $patchResult = switch ($Method.ToLowerInvariant()) {
-                'dism'       { $this._ApplyPatchesDism($DryRun) }
+                'dism' { $this._ApplyPatchesDism($DryRun) }
                 'powershell' { $this._ApplyPatchesPowerShell($DryRun) }
-                default      { $this._Log('build','FAILED',"Unknown method $Method"); $null }
+                default { $this._Log('build', 'FAILED', "Unknown method $Method"); $null }
             }
             $ok = if ($patchResult) { $patchResult.Success } else { $false }
             if (-not $ok) {
-                $this._Log('build','FAILED','Patching failed')
+                $this._Log('build', 'FAILED', 'Patching failed')
                 $result.error = 'Patching failed'
                 return $result
             }
 
             if ($DryRun) {
-                $result.patched_iso = Join-Path $this.OutputDir "$ServerName`_patched_dryrun.iso"
-                $result.success     = $true
+                $result.generated_patched_iso = Join-Path $this.OutputDir "$ServerName`_patched_dryrun.iso"
+                $result.success = $true
                 return $result
             }
 
             $outputIso = Join-Path $this.OutputDir "$ServerName`_patched.iso"
             New-Item -Path $outputIso -Force -ItemType File | Out-Null   # placeholder — replaced by real DISM export in full impl
-            $this._Log('create_iso','SUCCESS',"Created: $outputIso")
-            $result.patched_iso = $outputIso; $result.success = $true
+            $this._Log('create_iso', 'SUCCESS', "Created: $outputIso")
+            $result.generated_patched_iso = $outputIso; $result.success = $true
         }
         catch {
-            $this._Log('build','FAILED',$_.Exception.Message)
+            $this._Log('build', 'FAILED', $_.Exception.Message)
             $result.error = $_.Exception.Message
         }
         return $result
@@ -204,14 +204,14 @@ class WindowsPatcher {
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
         $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)
-        $result  = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
+        $result = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
 
         $resultsDir = Join-Path $OutputDir 'results'
         Ensure-DirectoryExists -Path $resultsDir
         Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
 
         if ($result.success) { Write-Host "Patching succeeded for $Server"; exit 0 }
-        else                  { Write-Error "Patching failed for $Server : $($result.Get_Item('error'))"; exit 1 }
+        else { Write-Error "Patching failed for $Server : $($result.Get_Item('error'))"; exit 1 }
     }
     catch {
         Write-Error "Patcher failed: $($_.Exception.Message)"
