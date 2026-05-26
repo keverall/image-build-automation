@@ -1,5 +1,5 @@
 #
-# Control.psm1 — Central Control Module.
+# Control.ps1 — Central Control Module.
 #
 # Single entry point for all automation request surfaces:
 #
@@ -20,16 +20,6 @@
 # Error actions used in the whole control surface
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = 'Stop'
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Auto-import the Automation module so callers never have to Import-Module first
-# Skip if already loaded (handles dot-sourcing from Automation.psm1)
-# ─────────────────────────────────────────────────────────────────────────────
-if (-not (Get-Module Automation -ErrorAction SilentlyContinue)) {
-    $modRoot = $PSScriptRoot
-    try { Import-Module $modRoot -Force -ErrorAction Stop }
-    catch { Write-Warning "Control: Could not auto-import Automation module from $modRoot : $_" }
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper — build CI_PARAMS map equivalent to control.py stage_map
@@ -252,6 +242,7 @@ function _Build-GitLabParams {
         Params      = $Params
         Source      = 'gitlab'
         DryRun      = [bool]($Params.Get_Item('dry_run'))
+ 
     }
 }
 
@@ -282,22 +273,5 @@ function Run-GitLab {
     $ctrl = _Build-GitLabParams -Params $Params
     return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'gitlab'
 }
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Export — strictly mirrors the control.py public API + GitLab extensions
-# ─────────────────────────────────────────────────────────────────────────────
-Export-ModuleMember -Function @(
-    # Factory  ← Control class alternative
-    'New-CIPipelineCtrl'
-    'New-IRequestCtrl'
-    'New-SchedulerCtrl'
-    'New-GitLabCtrl'
-
-    # Convenience singletons  ← run_* functions
-    'Run-CIPipeline'
-    'Run-IRequest'
-    'Run-Scheduler'
-    'Run-GitLab'
-)
 
 # vim: ts=4 sw=4 et

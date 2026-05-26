@@ -3,7 +3,7 @@
 # ────────────────────────────────────────────────────────────────────────────
 # Thin scheduled-task dispatcher.
 #
-# All real logic lives in the Control surface (Control.psm1 / Start-AutomationOrchestrator).
+# All real logic lives in the Control surface (Control.ps1 / Start-AutomationOrchestrator).
 # This script only maps simple job names to the canonical Control calls.
 #
 #   Job               → Control call

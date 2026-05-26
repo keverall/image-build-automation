@@ -31,7 +31,21 @@ if ($Integration) {
 Write-Host "[pwsh-test] Running $($files.Count) test file(s) ..."
 
 $show = if ($ShowOutput) { 'All' } else { 'None' }
-$result = Invoke-Pester -Path $files -PassThru -Show $show
+
+$envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
+$logDir = Join-Path $repoRoot "generated/logs/$envName"
+if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
+$pesterLogPath = Join-Path $logDir "pester_test_results_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+
+Write-Host "Detailed log: $pesterLogPath"
+
+Start-Transcript -Path $pesterLogPath -Append:$false | Out-Null
+try {
+    $result = Invoke-Pester -Path $files -PassThru -Show $show
+}
+finally {
+    Stop-Transcript | Out-Null
+}
 
 # Count from per-test .Result to avoid Pester 5.7.1 PassThru count bugs
 $testObjs = $result.Tests
