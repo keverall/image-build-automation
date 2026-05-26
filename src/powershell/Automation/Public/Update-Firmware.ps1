@@ -72,7 +72,6 @@ function Update-Firmware {
     }
 }
 
-Initialize-Logging -LogFile 'firmware_updater.log'
 
 class FirmwareUpdater {
     [string] $ConfigPath
