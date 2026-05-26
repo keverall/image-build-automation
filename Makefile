@@ -4,9 +4,9 @@
 # Common tasks for PowerShell development and CI/CD.
 #
 # Quick start:
-#   make setup    # Setup PowerShell environment (install modules)
-#   make test     # Run all Pester tests
-#   make lint     # Lint PowerShell with PSScriptAnalyzer
+#   make setup   # Setup PowerShell environment (install modules)
+#   make test    # Run all Pester tests
+#   make lint    # Lint PowerShell with PSScriptAnalyzer
 #   make coverage # Run tests with code coverage
 # =============================================================================
 
@@ -27,31 +27,31 @@ RED := \033[0;31m
 NC := \033[0m
 
 .PHONY: setup lint lint-test test test-unit test-integration coverage docs \
-        clean help
+        clean prune-logs help
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
-setup: ## Setup PowerShell environment (install modules, configure)
+setup: prune-logs ## Setup PowerShell environment (install modules, configure)
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 
 # ─── PowerShell Linting ─────────────────────────────────────────────────────
-lint: ## Lint PowerShell files with PSScriptAnalyzer
+lint: prune-logs ## Lint PowerShell files with PSScriptAnalyzer
 	@echo "$(CYAN)[lint]$(NC) Running PSScriptAnalyzer..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
-lint-test: ## Lint and run tests (combined CI step)
+lint-test: prune-logs ## Lint and run tests (combined CI step)
 	@$(MAKE) lint && $(MAKE) test
 
 # ─── PowerShell Testing ──────────────────────────────────────────────────────
-test: ## Run all Pester PowerShell tests with verbose output
+test: prune-logs ## Run all Pester PowerShell tests with verbose output
 	@echo "$(CYAN)[test]$(NC) Running Pester unit tests..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1
 
-test-unit: ## Run Pester unit tests only with detailed output
+test-unit: prune-logs ## Run Pester unit tests only with detailed output
 	@echo "$(CYAN)[test-unit]$(NC) Running Pester unit tests..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-tests.ps1
 
-test-integration: ## Run Pester integration tests only
+test-integration: prune-logs ## Run Pester integration tests only
 	@echo "$(CYAN)[test-integration]$(NC) Running Pester integration tests..."
 	@pwsh -NoProfile -Command "\
 		$$pwd = '$(CURDIR)'; \
@@ -59,24 +59,18 @@ test-integration: ## Run Pester integration tests only
 		Invoke-Pester -Path \"$$pwd\$(PSTESTS)/Pester.Integration.ps1\" -PassThru"
 
 # ─── Code Coverage ────────────────────────────────────────────────────────────
-coverage: ## Run Pester tests with code coverage and enforce threshold
-	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-coverage.ps1 || true
-	@echo "$(CYAN)[coverage]$(NC) Generating coverage summary report..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/CoverageSummary.ps1 -InputFile generated/output/coverage/coverage-results.xml -OutputFile generated/output/coverage/coverage-report.txt
-
-coverage-report: ## Generate Cobertura XML coverage report for all PowerShell code
-	@echo "$(CYAN)[coverage-report]$(NC) Generating Cobertura XML coverage report..."
+coverage: prune-logs ## Run Pester tests with code coverage and generate report
+	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage and generating report..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/coverage-report.ps1
 
-docs: ## Generate PowerShell Markdown docs via PlatyPS
+docs: prune-logs ## Generate PowerShell Markdown docs via PlatyPS
 	@echo "$(CYAN)[docs]$(NC) Generating PowerShell API reference docs..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 -OutputDir docs/dynamic-code-docs || \
 		(echo "$(YELLOW)[docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
 	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
 
 # ─── Default Target ──────────────────────────────────────────────────────────
-help: ## Show this help message
+help: prune-logs ## Show this help message
 	@printf "\033[0;36m╔══════════════════════════════════════════════════════════╗\033[0m\n"
 	@printf "\033[0;36m║\033[0m  HPE ProLiant ISO Automation — Available Commands   \033[0;36m║\033[0m\n"
 	@printf "\033[0;36m╚══════════════════════════════════════════════════════════╝\033[0m\n"
@@ -86,10 +80,14 @@ help: ## Show this help message
 	@echo ""
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
-clean: ## Remove build artifacts and temp files
+clean: prune-logs ## Remove build artifacts and temp files
 	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
 	@rm -rf generated/
 	@echo "$(GREEN)[clean]$(NC) Done"
+
+prune-logs: ## Prune log files older than 30 days
+	@echo "$(CYAN)[prune-logs]$(NC) Pruning old log files..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/prune-logs.ps1
 
 # ─── Aggregate Targets ───────────────────────────────────────────────────────
 all: lint test ## Run linting and tests
