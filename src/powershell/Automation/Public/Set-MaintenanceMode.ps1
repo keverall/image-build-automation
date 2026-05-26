@@ -121,7 +121,7 @@ function Set-MaintenanceMode {
     if ($Action -eq 'validate') {
         Write-Host "Cluster '$ClusterId' validated. Servers: $($servers -join ', ')"
         $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
-        _Save-AuditRecord $audit (Join-Path $Script:LogDir "validate_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
+        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
         return @{ Success = $true; Message = "Cluster '$ClusterId' validated." }
     }
 
@@ -263,7 +263,7 @@ function Set-MaintenanceMode {
     }
 
     $audit.success = $overallOk
-    $auditFile = Join-Path $Script:LogDir "$($Action)_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
     _Save-AuditRecord $audit $auditFile
 
     if ($overallOk) { Write-Host "Maintenance $Action completed." }
@@ -283,31 +283,39 @@ function Set-MaintenanceMode {
 # When run directly: $PSScriptRoot = script dir (src/powershell/Automation/Public/)
 # Only set if not already set (e.g., by module import)
 if (-not $Script:BaseDir -or $Script:BaseDir -eq '') {
-    $scriptPath = $MyInvocation.MyCommand.Path
-    if ($scriptPath) {
-        # Script is at: .../Public/Set-MaintenanceMode.ps1
-        # Go up 4 levels to reach project root
-        $Script:BaseDir = Resolve-Path (Join-Path (Split-Path $scriptPath) '..\..\..\..')
-    } elseif ($PSScriptRoot) {
-        # Fallback: try from PSScriptRoot
-        $Script:BaseDir = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+    $current = $PSScriptRoot
+    if (-not $current -and $MyInvocation.MyCommand.Path) {
+        $current = Split-Path $MyInvocation.MyCommand.Path
+    }
+    if (-not $current) { $current = Get-Location }
+    while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
+        $parent = Split-Path $current
+        if ($parent -eq $current -or -not $parent) { break }
+        $current = $parent
+    }
+    if (Test-Path $current) {
+        $Script:BaseDir = (Resolve-Path $current).Path
     } else {
-        # Fallback: assume running from project root
-        $Script:BaseDir = Get-Location
+        $Script:BaseDir = $current
     }
 }
 # Only set config dir if not already set
 if (-not $Script:ConfigDir -or $Script:ConfigDir -eq '') {
     $Script:ConfigDir = Join-Path $Script:BaseDir 'configs'
 }
-if (-not $Script:LogDir -or $Script:LogDir -eq '') {
-    $Script:LogDir = Join-Path $Script:BaseDir 'generated/logs/audit'
+if (-not $Script:MaintLogDir -or $Script:MaintLogDir -eq '') {
+    $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
+    if ($isTesting) {
+        $Script:MaintLogDir = Join-Path $Script:BaseDir 'generated/logs/testing'
+    } else {
+        $Script:MaintLogDir = Join-Path $Script:BaseDir 'generated/logs/audit'
+    }
 }
 if (-not $Script:DistList -or $Script:DistList -eq '') {
     $Script:DistList = Join-Path $Script:BaseDir 'maintenance_distribution_list.txt'
 }
 
-if (-not (Test-Path $Script:LogDir)) { Ensure-DirectoryExists -Path $Script:LogDir }
+if (-not (Test-Path $Script:MaintLogDir)) { Ensure-DirectoryExists -Path $Script:MaintLogDir }
 
 # ---- Logging ----
 Initialize-Logging -LogFile 'maintenance.log'
@@ -369,7 +377,7 @@ function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
     
     $Audit | ConvertTo-Json -Depth 64 | Set-Content -Path $Path -Encoding UTF8 -Force
     # Append to master log
-    $master = Join-Path $Script:LogDir 'maintenance_audit.log'
+    $master = Join-Path $Script:MaintLogDir 'maintenance_audit.log'
     $Audit | ConvertTo-Json -Depth 64 | Add-Content $master -Encoding UTF8
 }
 
