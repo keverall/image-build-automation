@@ -65,8 +65,10 @@ generated/*.iso
 generated/base_iso/*
 generated/output/*
 generated/patched_iso/*
-generated/logs/*
-!generated/logs/build_reports/
+generated/logs/testing/*
+generated/logs/production/*
+generated/logs/audit/*
+generated/logs/build_reports/*
 !generated/logs/build_reports/.gitkeep
 
 # === Configuration Secrets ===
