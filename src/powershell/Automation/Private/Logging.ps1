@@ -20,7 +20,7 @@ function Initialize-Logging {
 
     if ($LogFile) {
         $dir = Join-Path ([System.IO.Path]::GetFullPath('.')) 'generated/logs'
-        if (-not (Test-Path $dir)) { New-Item -ItemType Directory $dir -Force | Out-Null }
+        if (-not (Test-Path $dir -PathType Container)) { Ensure-DirectoryExists -Path $dir }
         $script:__AutomationLogPath = Join-Path $dir $LogFile
     }
     $script:__AutomationLogLevel = $Level
@@ -35,21 +35,21 @@ function Get-Logger {
     $logger = [PSCustomObject]@{ Name = $Name }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Info' -Value {
         param([string]$msg)
-        $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $ts  = Get-LogTimestamp
         $line = "$ts - $($this.Name) - INFO - $msg"
         Write-Host $line
         if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Warning' -Value {
         param([string]$msg)
-        $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $ts  = Get-LogTimestamp
         $line = "$ts - $($this.Name) - WARNING - $msg"
         Write-Warning $line
         if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Error' -Value {
         param([string]$msg)
-        $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $ts  = Get-LogTimestamp
         $line = "$ts - $($this.Name) - ERROR - $msg"
         Write-Error $line
         if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
@@ -57,7 +57,7 @@ function Get-Logger {
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Debug' -Value {
         param([string]$msg)
         if ($global:__AutomationLogLevel -in @('Debug','Verbose')) {
-            $ts  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+            $ts  = Get-LogTimestamp
             $line = "$ts - $($this.Name) - DEBUG - $msg"
             Write-Verbose $line
             if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }

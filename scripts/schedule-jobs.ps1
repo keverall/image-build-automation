@@ -68,13 +68,13 @@ param(
 function Write-JobLog {
     [CmdletBinding()]
     param([string]$Message, [string]$Level = 'INFO')
-    $ts   = Get-Date -Format o
+    $ts   = Get-UtcTimestamp
     $line = "[$ts] [$Level] $Message"
     Write-Host $line
 
-    $logDir = $using:LogDir   # PS 3+ scoping
+    $logDir = $using:LogDir
     if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
-    $logFile = Join-Path $logDir "$(Get-Date -Format 'yyyy-MM-dd').log"
+    $logFile = Join-Path $logDir "$(Get-DateFileTimestamp).log"
     Add-Content -Path $logFile -Value $line -Encoding UTF8
 }
 
