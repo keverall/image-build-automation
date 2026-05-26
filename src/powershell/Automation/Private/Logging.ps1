@@ -19,7 +19,8 @@ function Initialize-Logging {
     $script:_Configured = $true
 
     if ($LogFile) {
-        $dir = Join-Path ([System.IO.Path]::GetFullPath('.')) 'generated/logs/production'
+        $projectRoot = Resolve-Path (Join-Path ([System.IO.Path]::GetDirectoryName($PSScriptRoot)) '../..')
+        $dir = Join-Path $projectRoot 'generated/logs/production'
         if (-not (Test-Path $dir -PathType Container)) { Ensure-DirectoryExists -Path $dir }
         $script:__AutomationLogPath = Join-Path $dir $LogFile
     }

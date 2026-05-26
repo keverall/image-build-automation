@@ -346,7 +346,8 @@ class AutomationBase {
         $this.DryRun    = $DryRun
 
         Ensure-DirectoryExists -Path $OutputDir
-        $logDir = Join-Path ([System.IO.Path]::GetFullPath('.')) 'generated/logs'
+        $projectRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
+        $logDir = Join-Path $projectRoot 'generated/logs'
         Ensure-DirectoryExists -Path $logDir
 
         $this.Logger = $null
