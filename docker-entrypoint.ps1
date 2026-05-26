@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 # Log function for audit trail
 function Write-AuditLog {
     param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $timestamp = Get-LogTimestamp
     $logEntry = "[$timestamp] [$Level] $Message"
     Write-Host $logEntry
     if (Test-Path "C:\app\logs") {

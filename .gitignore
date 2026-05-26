@@ -86,3 +86,8 @@ Thumbs.db
 
 # === AI Workspace Configs ===
 .kilo/
+
+# === PowerShell Generated Output ===
+src/powershell/generated/*.json
+src/powershell/generated/logs/*.json
+src/powershell/generated/logs/*.log
