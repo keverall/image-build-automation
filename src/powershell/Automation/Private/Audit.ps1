@@ -13,7 +13,7 @@ function New-AuditLogger {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)][string] $Category,
-        [string] $LogDir    = 'generated/logs',
+        [string] $LogDir    = 'generated/logs/audit',
         [string] $MasterLog = 'audit.log'
     )
     return [AuditLogger]::new($Category, $LogDir, $MasterLog)

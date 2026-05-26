@@ -25,14 +25,14 @@ Optional modules:
 ## Directory Layout
 
 ```
-src/powershell/
-├── Automation/                    # Module root
+hpe-windows-iso-automation/
+├── src/powershell/Automation/     # Module root
 │   ├── Public/                    # Exported cmdlets
 │   ├── Private/                   # Internal helpers
 │   └── Automation.psd1            # Module manifest
-├── tests/powershell/              # Pester test suite (Pester 5+)
-│   ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
-│   └── *Unit.Tests.ps1             # Test files per module
+└── tests/powershell/              # Pester test suite (Pester 5+)
+    ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
+    └── *.Unit.Tests.ps1           # Test files per module
 ```
 
 ---
@@ -179,10 +179,10 @@ Result envelope  ──► Orchestrator stamps RequestType + Timestamp  ──�
 Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
 
 # Run all tests
-Invoke-Pester -Path 'powershell\Tests' -PassThru
+pwsh -File scripts/run-tests.ps1
 
 # Run a subset
-Invoke-Pester -Path 'powershell\Tests\New-Uuid.Unit.Tests.ps1'
+Invoke-Pester -Path 'tests/powershell/New-Uuid.Unit.Tests.ps1'
 ```
 
 See [testing.md](testing.md) for the full Pester guide.

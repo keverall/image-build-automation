@@ -16,7 +16,7 @@ hpe-windows-iso-automation/
 ├── tests/powershell/                             # PowerShell / Pester tests
 ├── configs/                                     # Server/cluster/patch JSON configs
 ├── docs/                                        # This directory
-└── logs/                                        # Audit trails & build reports
+└── generated/logs/                            # Audit trails & build reports
 ```
 
 ---
@@ -50,5 +50,5 @@ hpe-windows-iso-automation/
 1. Add or update unit tests mirroring the module structure in `tests/powershell/`
 2. Update the relevant doc page in `docs/`
 3. Run linting: `pwsh -Command "Invoke-ScriptAnalyzer -Path src/powershell -Recurse"`
-4. Ensure Pester passes: `pwsh -Command "Invoke-Pester"`
+4. Ensure Pester passes: `pwsh -File scripts/run-tests.ps1`
 5. PR description must link to any documentation changes

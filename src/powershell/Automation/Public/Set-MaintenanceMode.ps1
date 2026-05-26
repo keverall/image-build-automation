@@ -301,7 +301,7 @@ if (-not $Script:ConfigDir -or $Script:ConfigDir -eq '') {
     $Script:ConfigDir = Join-Path $Script:BaseDir 'configs'
 }
 if (-not $Script:LogDir -or $Script:LogDir -eq '') {
-    $Script:LogDir = Join-Path $Script:BaseDir 'generated/logs'
+    $Script:LogDir = Join-Path $Script:BaseDir 'generated/logs/audit'
 }
 if (-not $Script:DistList -or $Script:DistList -eq '') {
     $Script:DistList = Join-Path $Script:BaseDir 'maintenance_distribution_list.txt'

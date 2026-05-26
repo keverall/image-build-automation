@@ -41,11 +41,11 @@ hpe-windows-iso-automation/
 │   │   └── patched/
 │   ├── patched_iso/                   # Staging for patched Windows ISOs
 │   ├── logs/                          # Audit trails and build reports
-│   │   ├── audit_trail.log
-│   │   ├── maintenance_audit.log
-│   │   ├── maintenance_<action>_<cluster>_<ts>.json
-│   │   └── build_reports/
-│   └── htmlcov/
+│   │   ├── audit/                     # Regulatory compliance & audit trails
+│   │   ├── testing/                   # Test execution logs
+│   │   ├── production/                # Operational and execution logs
+│   │   └── build_reports/             # Build artefacts and output
+│   └── htmlcov/                       # HTML Test Coverage reports (see docs/testing.md)
 ├── configs/                           # Server/cluster/patch JSON configs
 │   ├── server_list.txt                # Target servers (one per line)
 │   ├── clusters_catalogue.json        # Cluster/SCOM/iLO definitions
@@ -92,18 +92,18 @@ hpe-windows-iso-automation/
 │   │       ├── Base.psm1
 │   │       ├── Router.psm1
 │   │       └── Automation.psd1          # Module manifest
-│   └── Tests/                          # Pester v5 test suite
-│       ├── Tests.Tests.ps1
-│       ├── Config.Unit.Tests.ps1
-│       ├── Credentials.Unit.Tests.ps1
-│       ├── Executor.Unit.Tests.ps1
-│       ├── FileIO.Unit.Tests.ps1
-│       ├── Inventory.Unit.Tests.ps1
-│       ├── Validators.Unit.Tests.ps1
-│       ├── Router.Unit.Tests.ps1
-│       ├── New-Uuid.Unit.Tests.ps1
-│       ├── Audit.Unit.Tests.ps1
-│       └── Set-MaintenanceMode.Unit.Tests.ps1
+├── tests/powershell/                  # Pester v5 test suite
+│   ├── Tests.Tests.ps1
+│   ├── Config.Unit.Tests.ps1
+│   ├── Credentials.Unit.Tests.ps1
+│   ├── Executor.Unit.Tests.ps1
+│   ├── FileIO.Unit.Tests.ps1
+│   ├── Inventory.Unit.Tests.ps1
+│   ├── Validators.Unit.Tests.ps1
+│   ├── Router.Unit.Tests.ps1
+│   ├── New-Uuid.Unit.Tests.ps1
+│   ├── Audit.Unit.Tests.ps1
+│   └── Set-MaintenanceMode.Unit.Tests.ps1
 └── scripts/                            # CI runner provisioning and helpers
     └── setup-runner.sh
 ```
@@ -112,7 +112,8 @@ hpe-windows-iso-automation/
 
 | Task | Manual Command | Pipeline Stage |
 |---|---|---|
-| Run all tests locally | `pwsh -File Invoke-Pester` | Unit Tests |
+| Run all tests locally | `pwsh -File scripts/run-tests.ps1` | Unit Tests |
+| Generate test coverage | `make coverage-report` | Test |
 | Enable maintenance mode | `pwsh -Command "Set-MaintenanceMode -ClusterId CLUSTER -Start now"` | Maintenance Mode |
 | Validate configuration | `pwsh -Command "Get-Content configs/clusters_catalogue.json \| ConvertFrom-Json"` | Setup |
 
@@ -127,7 +128,7 @@ The GitLab CI pipeline lives in `.gitlab-ci.yml` at the repository root using Po
 ## Contributing
 
 All changes should include:
-1. Unit tests mirroring the module structure in `src/powershell/Automation/Tests/`
+1. Unit tests mirroring the module structure in `tests/powershell/`
 2. Documentation updated in `docs/`
 
 ---
@@ -136,7 +137,7 @@ All changes should include:
 
 - Create an issue or pull request in the repository
 - Contact **Kev Everall**
-- Reference build ID from `logs/build_reports/` or `logs/maintenance_audit.log`
+- Reference build ID from `generated/logs/build_reports/` or `generated/logs/audit/maintenance_audit.log`
 
 ---
 

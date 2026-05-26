@@ -149,7 +149,7 @@ Entry for this system:
 - [x] Credentials stored in CI Credential Store (not in repo)
 - [x] Access controls: CI agents run as non-root
 - [x] Docker image uses non-root user (`appuser`)
-- [x] Audit logging enabled (logs/audit_trail.log)
+- [x] Audit logging enabled (`generated/logs/audit/audit_trail.log`)
 - [x] TLS enforced for all external API calls
 - [x] No secrets in configuration files (use environment variables only)
 - [x] Data residency confirmed (EEA-hosted infrastructure)

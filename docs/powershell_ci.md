@@ -82,7 +82,7 @@ powershell_tests:
     - pwsh -File ./scripts/run-powershell-tests.ps1
   artifacts:
     paths:
-      - logs/
+      - generated/logs/
     reports:
       junit: powershell-unit-tests.xml
 ```
@@ -99,7 +99,7 @@ stage('PowerShell — Pester Unit Tests') {
             }
             Import-Module Pester
 
-            $result = Invoke-Pester -Path 'powershell\\Tests' -Tag 'Unit' `
+            $result = Invoke-Pester -Path 'tests/powershell' -Tag 'Unit' `
                 -OutputFile 'powershell-test-results.xml' `
                 -OutputFormat NUnitXml `
                 -PassThru
