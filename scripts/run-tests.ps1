@@ -22,7 +22,13 @@ Import-Module (Join-Path $PROJECT_ROOT 'src/powershell/Automation/Automation.psd
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $publicPath = Join-Path $PROJECT_ROOT 'src/powershell'
 
+$envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
+$logDir = Join-Path $PROJECT_ROOT "generated/logs/$envName"
+if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
+$pesterLogPath = Join-Path $logDir "pester_test_results_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+
 Write-Host "Running Pester tests from: $testPath" -ForegroundColor Cyan
+Write-Host "Detailed log: $pesterLogPath" -ForegroundColor Cyan
 
 $config = New-PesterConfiguration
 $config.Run.Path = @(
@@ -39,5 +45,12 @@ $config.Run.Path = @(
 $config.Output.Verbosity = 'Detailed'
 $config.Output.RenderMode = 'Auto'
 
-$results = Invoke-Pester -Configuration $config
+Start-Transcript -Path $pesterLogPath -Append:$false | Out-Null
+try {
+    $results = Invoke-Pester -Configuration $config
+}
+finally {
+    Stop-Transcript | Out-Null
+}
+
 exit ([int]($results.FailedCount -gt 0))

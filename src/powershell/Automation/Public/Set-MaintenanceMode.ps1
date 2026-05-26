@@ -401,7 +401,8 @@ function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
     
     $Audit | ConvertTo-Json -Depth 64 | Set-Content -Path $Path -Encoding UTF8 -Force
     # Append to master log
-    $master = Join-Path $Script:MaintLogDir 'maintenance_audit.log'
+    $ts = Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ'
+    $master = Join-Path $Script:MaintLogDir "maintenance_audit_${ts}_INFO.log"
     $Audit | ConvertTo-Json -Depth 64 | Add-Content $master -Encoding UTF8
 }
 
