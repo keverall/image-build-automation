@@ -109,9 +109,9 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 
 | RequestType | Handler | Required Params |
 |-------------|---------|-----------------|
-| `build_iso` | `New-IsoBuild` | `base_iso` |
+| `build_iso` | `New-IsoBuild` | `generated/base_iso` |
 | `update_firmware` | `Update-Firmware` | — |
-| `patch_windows` | `Update-WindowsSecurity` | `base_iso` |
+| `patch_windows` | `Update-WindowsSecurity` | `generated/base_iso` |
 | `deploy` | `Invoke-IsoDeploy` | — |
 | `monitor` | `Start-InstallMonitor` | — |
 | `maintenance_enable` | `Set-MaintenanceMode` | `cluster_id` |
