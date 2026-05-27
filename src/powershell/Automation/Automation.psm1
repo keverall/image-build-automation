@@ -350,14 +350,8 @@ class AutomationBase {
         $this.DryRun    = $DryRun
 
         Ensure-DirectoryExists -Path $OutputDir
-        $current = $PSScriptRoot
-        if (-not $current) { $current = Get-Location }
-        while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
-            $parent = Split-Path $current
-            if ($parent -eq $current -or -not $parent) { break }
-            $current = $parent
-        }
-        $projectRoot = (Resolve-Path $current).Path
+        $projectRoot = Get-ProjectRoot
+        if (-not $projectRoot) { $projectRoot = Get-Location }
         $logDir = Join-Path $projectRoot 'generated/logs'
         Ensure-DirectoryExists -Path $logDir
 
@@ -411,10 +405,10 @@ $_privateOrder = @(
     'Credentials.ps1',  # Get-EnvCredential, Get-IloCredentials, …
     'Executor.ps1',     # Invoke-NativeCommand, Invoke-NativeCommandWithRetry, New-CommandResult
     'FileIO.ps1',       # Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult, Test-PathEx
+    'PathResolver.ps1', # Get-ProjectRoot, Get-LogDirectory
     'Inventory.ps1',    # Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo
     'Logging.ps1',      # Initialize-Logging, Get-Logger
-    '_RouteMap.ps1',    # $script:RouteMap data
-    'Router.ps1',       # Invoke-RoutedRequest (uses $script:RouteMap)
+    'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
 )
 

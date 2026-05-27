@@ -97,8 +97,8 @@ function Install-RequiredModules {
 
 # ─── Make Installation (Windows) ─────────────────────────────────────────────
 function Install-Make {
-    $isWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSVersion.Major -le 5
-    if (-not $isWindows) {
+    $runningOnWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSVersion.Major -le 5
+    if (-not $runningOnWindows) {
         Write-Log "Non-Windows platform detected, skipping make installation"
         return
     }

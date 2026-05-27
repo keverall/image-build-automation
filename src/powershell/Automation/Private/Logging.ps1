@@ -19,14 +19,8 @@ function Initialize-Logging {
     $script:_Configured = $true
 
     if ($LogFile) {
-        $current = $PSScriptRoot
-        if (-not $current) { $current = Get-Location }
-        while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
-            $parent = Split-Path $current
-            if ($parent -eq $current -or -not $parent) { break }
-            $current = $parent
-        }
-        $projectRoot = (Resolve-Path $current).Path
+        $projectRoot = Get-ProjectRoot
+        if (-not $projectRoot) { $projectRoot = Get-Location }
         $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
         if ($isTesting) {
             $dir = Join-Path $projectRoot 'generated/logs/testing'
@@ -41,7 +35,7 @@ function Initialize-Logging {
         $levelStr = $Level.ToUpper()
         
         if ($levelStr -eq 'INFORMATION') { $levelStr = 'INFO' }
-        if ($levelStr -eq 'VERBOSE') { $levelStr = 'DEBUG' } # Adjust to preferred standard
+        if ($levelStr -eq 'VERBOSE') { $levelStr = 'DEBUG' }
         
         $realLogFile = "${baseName}_${timestamp}_${levelStr}${ext}"
         $script:__AutomationLogPath = Join-Path $dir $realLogFile
