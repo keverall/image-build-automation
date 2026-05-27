@@ -40,18 +40,6 @@ function Get-LogTimestamp {
     return Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 }
 
-function Convert-ToLocalLogFormat {
-    <#
-    .SYNOPSIS
-        Converts a DateTime to local log format string (yyyy-MM-dd HH:mm:ss).
-    .PARAMETER Date
-        The DateTime value to convert. If $null, returns $null.
-    #>
-    param([DateTime] $Date)
-    if ($null -eq $Date) { return $null }
-    return $Date.ToString('yyyy-MM-dd HH:mm:ss')
-}
-
 function Get-FileTimestamp {
     <#
     .SYNOPSIS
