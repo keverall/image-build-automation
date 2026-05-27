@@ -11,7 +11,7 @@ This directory contains all configuration for the HPE ProLiant Windows Server IS
 | `hpe_firmware_drivers_nov2025.json` | HPE repository URL and component versions | Yes | No |
 | `windows_patches.json` | Security patch KB list and metadata | Yes | No |
 | `scom_config.json` | SCOM 2015 management server connection | Optional | No |
-| `openview_config.json` | HPE OpenView API/CLI settings | Optional | No |
+| `oneview_config.json` | HPE OneView API/CLI settings | Optional | No |
 | `email_distribution_lists.json` | SMTP server and recipient lists | Optional | No |
 | `opsramp_config.json` | OpsRamp API credentials | Yes (if OpsRamp used) | Yes |
 | `maintenance_distribution_list.txt` | Override for maintenance emails | Optional | No |
@@ -41,7 +41,7 @@ server3.example.com,,,,  # (blank fields allowed but not recommended)
 
 ## clusters_catalogue.json
 
-Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OpenView node IDs, and maintenance schedules.
+Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneView node IDs, and maintenance schedules.
 
 ```json
 {
@@ -56,7 +56,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, Open
         "web02.example.com": "192.168.1.102",
         "db01.example.com": "192.168.1.103"
       },
-      "openview_node_ids": {
+      "oneview_node_ids": {
         "web01.example.com": "OV001",
         "web02.example.com": "OV002",
         "db01.example.com": "OV003"
@@ -82,7 +82,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, Open
 | `scom_group` | string | SCOM 2015 group display name for this cluster |
 | `scom_management_server` | string | SCOM management server hostname/IP |
 | `ilo_addresses` | object | Map: `server_hostname → iLO IP/hostname` |
-| `openview_node_ids` | object | Map: `server_hostname → OpenView node identifier` |
+| `oneview_node_ids` | object | Map: `server_hostname → OneView node identifier` |
 | `schedule.timezone` | string | IANA timezone (e.g., `Europe/Dublin`, `America/New_York`) |
 | `schedule.work_days` | array of 3-char day codes | `["Mon","Tue","Wed","Thu","Fri"]` |
 | `schedule.work_start` | string | Daily maintenance start (HH:MM, 24h) |
@@ -223,20 +223,20 @@ export SCOM_ADMIN_PASSWORD="secret_password"
 
 ---
 
-## openview_config.json
+## oneview_config.json
 
-HPE OpenView (Micro Focus) integration settings.
+HPE OneView integration settings.
 
 ```json
 {
-  "openview": {
-    "api_url": "https://openview.example.com:8443/rest/",
+  "oneview": {
+    "api_url": "https://oneview.example.com:8443/rest/",
     "api_version": "v1",
     "auth_type": "basic",
-    "username_env": "OPENVIEW_USER",
-    "password_env": "OPENVIEW_PASSWORD",
+    "username_env": "ONEVIEW_USER",
+    "password_env": "ONEVIEW_PASSWORD",
     "use_cli": false,
-    "cli_path": "C:\\Program Files\\OpenView\\bin\\ovcall.exe",
+    "cli_path": "C:\\Program Files\\OneView\\bin\\ovcall.exe",
     "node_id_field": "node_id",
     "maintenance_mode_action": "set_maintenance",
     "verify_ssl": false
@@ -252,8 +252,8 @@ HPE OpenView (Micro Focus) integration settings.
 **Authentication**: Set environment variables:
 
 ```bash
-export OPENVIEW_USER="ov_admin"
-export OPENVIEW_PASSWORD="ov_password"
+export ONEVIEW_USER="ov_admin"
+export ONEVIEW_PASSWORD="ov_password"
 ```
 
 ---
@@ -340,9 +340,9 @@ export ILO_PASSWORD="xxx"
 export SCOM_ADMIN_USER="domain\\admin"
 export SCOM_ADMIN_PASSWORD="xxx"
 
-# OpenView (if used)
-export OPENVIEW_USER="ov_admin"
-export OPENVIEW_PASSWORD="xxx"
+# OneView (if used)
+export ONEVIEW_USER="ov_admin"
+export ONEVIEW_PASSWORD="xxx"
 
 # SMTP (if auth required)
 export SMTP_USER="smtp_user"
