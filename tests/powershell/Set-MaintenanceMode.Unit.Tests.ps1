@@ -48,12 +48,18 @@ BeforeAll {
     $Script:ConfigDir = Join-Path $Script:TempDir 'configs'
     if (-not (Test-Path -Path $Script:ConfigDir)) { New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null }
 
-    # Write config files
-    @{ clusters = @{ $Script:TestClusterId  = $Script:TestClusterDef
-                     $Script:OtherClusterId = $Script:OtherClusterDef } } |
-        ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'clusters_catalogue.json')
-    @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'scom_config.json')
-    @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'openview_config.json')
+    # Write config files using examples-only.json as template
+    Copy-Item (Join-Path $Script:ModuleRoot 'configs/clusters_catalogue.examples-only.json') (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -Force
+    # Use example cluster definitions for tests
+    $Script:TestClusterId  = 'PROD-CLUSTER-01'
+    $Script:TestClusterDef = $null
+    $Script:OtherClusterId = 'STAGING-CLUSTER-01'
+    $Script:OtherClusterDef = $null
+
+    @{ management_server = 'localhost'; powershell_module = 'OperationsManager'; use_winrm = $false } |
+        ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'scom_config.json')
+    @{ openview = @{ method = 'rest'; api = @{ base_url = 'https://openview.example.com/api' } } } |
+        ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'openview_config.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'opsramp_config.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'json_config.json')
@@ -365,15 +371,16 @@ Describe 'Set-MaintenanceMode — enable action: End time validation' {
 
 Describe 'Set-MaintenanceMode — enable action: Schedule handling' {
     Context 'When no end time is provided' {
-        It 'Should reject when no cluster schedule defined and no --end [ClusterId=OTHER-CLUSTER]' {
-            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Start = 'now' }
+        It 'Should compute end time when no --end provided (uses schedule or defaults to 7am UTC Monday) [ClusterId=OTHER-CLUSTER]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Start = 'now'; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
-            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
-            $result.Success | Should -Be $false
-            $result.Error | Should -Match 'No end time|no schedule|schedule|No end'
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+            $result.EndTimeUtc | Should -Not -BeNullOrEmpty
+            $result.EndTimeUtc | Should -BeGreaterThan $result.StartTimeUtc
         }
 
         It 'Should compute end time from cluster schedule when schedule exists [ClusterId=UNIT-TEST-CLUSTER]' {
@@ -936,24 +943,26 @@ Describe 'Set-MaintenanceMode — mode parameter: Negative and edge cases' {
             $result.Success | Should -Be $false
         }
 
-        It 'Should reject scom mode with no end time or schedule on cluster without schedule [Mode=scom, no end]' {
-            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Mode = 'scom'; Start = 'now' }
+        It 'Should compute default end time when scom mode used with no explicit end [Mode=scom, no end]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Mode = 'scom'; Start = 'now'; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
-            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
-            $result.Success | Should -Be $false
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+            $result.EndTimeUtc | Should -Not -BeNullOrEmpty
         }
 
-        It 'Should reject all mode with no end time or schedule on cluster without schedule [Mode=all, no end]' {
-            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Mode = 'all'; Start = 'now' }
+        It 'Should compute default end time when all mode used with no explicit end [Mode=all, no end]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Mode = 'all'; Start = 'now'; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
-            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
-            $result.Success | Should -Be $false
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+            $result.EndTimeUtc | Should -Not -BeNullOrEmpty
         }
     }
 }
@@ -1064,6 +1073,109 @@ Describe 'Set-MaintenanceMode — PostDisableWaitSeconds parameter' {
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
             $result.Success | Should -Be $true
+        }
+    }
+}
+
+# =============================================================================
+# Per-Object Status Reporting tests
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — per-object status reporting' {
+    Context 'When enable action is executed (DryRun)' {
+        It 'Should return ScomObjects field as array in response [Action=enable, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+            $result.Keys | Should -Contain 'ScomObjects'
+            $result.ScomObjects -is [array] | Should -Be $true
+        }
+
+        It 'Should return ScomSummary object with expected fields [Action=enable, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Keys | Should -Contain 'ScomSummary'
+            $result.ScomSummary -is [hashtable] | Should -Be $true
+        }
+
+        It 'Should return FailedObjects field as array in response [Action=enable, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Keys | Should -Contain 'FailedObjects'
+            $result.FailedObjects -is [array] | Should -Be $true
+        }
+    }
+
+    Context 'When disable action is executed (DryRun)' {
+        It 'Should return ScomObjects field as array in response [Action=disable, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+            $result.Keys | Should -Contain 'ScomObjects'
+        }
+
+        It 'Should return ScomSummary with expected fields for disable [Action=disable, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Keys | Should -Contain 'ScomSummary'
+        }
+    }
+
+    Context 'When validate action is executed' {
+        It 'Should return ScomObjects field for validate [Action=validate]' {
+            $params = @{ Action = 'validate'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Keys | Should -Contain 'ScomObjects'
+            $result.ScomObjects.Count | Should -Be 0
+        }
+
+        It 'Should return FailedObjects field for validate [Action=validate]' {
+            $params = @{ Action = 'validate'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Keys | Should -Contain 'FailedObjects'
+            $result.FailedObjects.Count | Should -Be 0
+        }
+    }
+
+    Context 'When mode parameter varies (DryRun)' {
+        It 'Should return per-object status fields with scom mode [Mode=scom, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; Start = 'now'; End = '+1hour' }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Success | Should -Be $true
+            $result.Keys | Should -Contain 'ScomObjects'
+            $result.Keys | Should -Contain 'ScomSummary'
+            $result.Keys | Should -Contain 'FailedObjects'
+        }
+
+        It 'Should return per-object status fields with all mode [Mode=all, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all'; Start = 'now'; End = '+1hour' }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Success | Should -Be $true
+            $result.Keys | Should -Contain 'ScomObjects'
+            $result.Keys | Should -Contain 'ScomSummary'
+            $result.Keys | Should -Contain 'FailedObjects'
         }
     }
 }

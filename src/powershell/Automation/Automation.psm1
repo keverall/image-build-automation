@@ -46,7 +46,7 @@ class AuditLogger {
         $this.LogDir        = $LogDir
         $baseName = [System.IO.Path]::GetFileNameWithoutExtension($MasterLogName)
         $ext = [System.IO.Path]::GetExtension($MasterLogName)
-        $ts = Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ'
+        $ts = Get-UtcFileTimestamp
         $levelStr = 'INFO'
         $realLogFile = "${baseName}_${ts}_${levelStr}${ext}"
         $this.MasterLogPath = [System.IO.Path]::Combine($LogDir, $realLogFile)
@@ -66,7 +66,7 @@ class AuditLogger {
     [hashtable] Log([string]$Action, [string]$Status, [string]$Server,
                     [string]$Details, [hashtable]$Extra) {
         $entry = @{
-            timestamp = (Get-Date -Format o)
+            timestamp = Get-UtcTimestamp
             category  = $this.Category
             action    = $Action
             status    = $Status
@@ -85,7 +85,7 @@ class AuditLogger {
             $Filename = "$($this.Category)_$ts.json"
         }
         $fp = [System.IO.Path]::Combine($this.LogDir, $Filename)
-        @{ category = $this.Category; generatedAt = (Get-Date -Format o); entries = $this.Entries } |
+        @{ category = $this.Category; generatedAt = Get-UtcTimestamp; entries = $this.Entries } |
             ConvertTo-Json -Depth 64 | Set-Content -Path $fp -Encoding UTF8
         return $fp
     }
@@ -175,7 +175,7 @@ class OpsRamp_Client {
     }
 
     [bool] EnsureToken() {
-        if ($this.AccessToken -and $this.TokenExpiry -gt (Get-Date)) { return $true }
+        if ($this.AccessToken -and $this.TokenExpiry -gt [DateTime]::UtcNow) { return $true }
         $creds = $this.Config.Get_Item('credentials') ?? @{}
         $cid   = $creds.Get_Item('client_id')
         $csec  = $creds.Get_Item('client_secret')
@@ -195,7 +195,7 @@ class OpsRamp_Client {
             $json          = $resp.Content.ReadAsStringAsync().Result | ConvertFrom-Json | _PS_ConvertTo-Hashtable
             $this.AccessToken  = $json.Get_Item('access_token')
             $expiresIn         = ($json.Get_Item('expires_in')) ?? 3600
-            $this.TokenExpiry  = (Get-Date).AddSeconds($expiresIn * 0.9)
+            $this.TokenExpiry  = [DateTime]::UtcNow.AddSeconds($expiresIn * 0.9)
             $this.HttpClient.DefaultRequestHeaders.Authorization =
                 New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Bearer', $this.AccessToken)
             Write-Verbose 'OpsRamp access token obtained successfully.'
@@ -206,7 +206,7 @@ class OpsRamp_Client {
         }
     }
 
-    [hashtable] _MakeRequest([string] $Method, [string] $Endpoint, [hashtable] $Data = $null, [hashtable] $QueryParams = $null) {
+    [hashtable] _MakeRequest([string] $Method, [string] $Endpoint, [object] $Data = $null, [hashtable] $QueryParams = $null) {
         if (-not $this.EnsureToken()) { return $null }
         [string]$url = "$($this.BaseUrl.TrimEnd('/'))/$($this.ApiVersion.TrimStart('/'))$($Endpoint.TrimStart('/'))"
         if ($QueryParams) {
@@ -244,7 +244,7 @@ class OpsRamp_Client {
             metric     = @{
                 name      = $MetricName
                 value     = $Value
-                timestamp = if ($Timestamp -eq [DateTime]::MinValue) { (Get-Date).ToString('o') } else { $Timestamp.ToString('o') }
+                timestamp = if ($Timestamp -eq [DateTime]::MinValue) { Get-UtcTimestamp } else { $Timestamp.ToString('o') }
                 type      = 'gauge'
             }
         }
@@ -261,7 +261,7 @@ class OpsRamp_Client {
             type       = $AlertType
             severity   = $Severity
             message    = $Message
-            timestamp  = (Get-Date).ToString('o')
+            timestamp  = Get-UtcTimestamp
         }
         if ($Details) { $alert['details'] = $Details }
         $resp = $this._MakeRequest('POST', [OpsRamp_Client]::AlertsUrlSuffix, $alert)
@@ -274,7 +274,7 @@ class OpsRamp_Client {
             resourceId = $ResourceId
             type       = $EventType
             message    = $Message
-            timestamp  = (Get-Date).ToString('o')
+            timestamp  = Get-UtcTimestamp
         }
         if ($Properties) { $evt['properties'] = $Properties }
         $resp = $this._MakeRequest('POST', [OpsRamp_Client]::EventsUrlSuffix, $evt)

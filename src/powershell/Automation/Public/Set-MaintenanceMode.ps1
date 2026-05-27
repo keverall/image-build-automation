@@ -131,19 +131,24 @@ function Set-MaintenanceMode {
         Write-Host "Cluster '$ClusterId' validated. Servers: $($servers -join ', ')"
         $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
         _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
-        return @{ Success = $true; Message = "Cluster '$ClusterId' validated." }
+        return @{ Success = $true; Message = "Cluster '$ClusterId' validated."
+                  ScomObjects = @(); ScomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }; FailedObjects = @() }
     }
 
     # Resolve Start / End
     $startDt = $null; $endDt = $null
     if ($Action -eq 'enable') {
         if ($Start) { $startDt = _Parse-Datetime $Start }
-        else { $startDt = Get-Date }
+        else { $startDt = [DateTime]::UtcNow }
         if ($End) { $endDt = _Parse-Datetime $End }
         else {
             $schedule = $clusterDef.Get_Item('schedule')
             if ($schedule) { $endDt = _Compute-NextWorkStart $schedule $startDt }
-            else { Write-Verbose 'No --end and no schedule defined in cluster.'; return @{ Success = $false; Error = 'No end time or schedule defined.' } }
+            else {
+                $utcStart = [DateTime]::SpecifyKind($startDt, [DateTimeKind]::Utc)
+                $endDt = _Compute-DefaultEnd $utcStart
+                Write-Verbose "No --end and no schedule: defaulting to 7am UTC Monday following ($endDt)"
+            }
         }
         if ($endDt -le $startDt) { Write-Verbose 'End time must be after start time.'; return @{ Success = $false; Error = 'End time must be after start time.' } }
         $duration = $endDt - $startDt
@@ -167,7 +172,7 @@ function Set-MaintenanceMode {
     if ($Action -eq 'enable') {
         # SCOM — use group mode to put ALL objects in the SCOM group into maintenance mode
         # (servers, network devices, nodes, cluster objects, everything under the group)
-        $scomOk = $false; $scomInfo = ''
+        $scomOk = $false; $scomInfo = ''; $scomObjects = @(); $scomSummary = @{}
         if ($scomMgr) {
             $durHrs = $duration.TotalSeconds / 3600.0
             $comment = "iRequest Maintenance: $ClusterId"
@@ -176,9 +181,11 @@ function Set-MaintenanceMode {
                 $duration, $comment, [bool]$DryRun,
                 $null, $false)
             $scomOk = $scomRes.Success
+            $scomObjects = $scomRes.Objects
+            $scomSummary = $scomRes.Summary
             $scomInfo = if ($scomRes.Output) { ($scomRes.Output -join "`n") } else { '' }
         }
-        $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo }
+        $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo; Objects = $scomObjects; Summary = $scomSummary }
         if (-not $scomOk) { $overallOk = $false }
 
         # OpenView (only when mode is 'all')
@@ -198,7 +205,7 @@ function Set-MaintenanceMode {
         $opsOk = $false
         if ($opsrampClient -and -not $DryRun) {
             foreach ($s in $servers) {
-                $opsrampClient.SendMetric($s, 'maintenance.mode', 1, @{ cluster = $ClusterId; environment = $clusterDef.Get_Item('environment') })
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 1, [DateTime]::MinValue, @{ cluster = $ClusterId; environment = $clusterDef.Get_Item('environment') })
             }
             $opsOk = $opsrampClient.SendAlert($ClusterId, 'maintenance.enabled', 'INFO',
                 "Maintenance enabled for $ClusterId",
@@ -232,13 +239,16 @@ function Set-MaintenanceMode {
     }
     elseif ($Action -eq 'disable') {
         # SCOM — exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
-        $scomExitOk = $false
+        $scomExitOk = $false; $scomExitObjects = @(); $scomExitSummary = @{}
         if ($scomMgr) {
             Write-Verbose "Exiting SCOM maintenance mode for group '$($clusterDef.Get_Item('scom_group'))' (all objects)"
-            $scomExitOk = $scomMgr.ExitMaintenance(
+            $scomExitRes = $scomMgr.ExitMaintenance(
                 $clusterDef.Get_Item('scom_group'),
                 [bool]$DryRun, $null, $false)
-            $audit.steps['scom_exit'] = @{ Success = $scomExitOk }
+            $scomExitOk = $scomExitRes.Success
+            $scomExitObjects = $scomExitRes.Objects
+            $scomExitSummary = $scomExitRes.Summary
+            $audit.steps['scom_exit'] = @{ Success = $scomExitOk; Objects = $scomExitObjects; Summary = $scomExitSummary }
             if (-not $scomExitOk) { $overallOk = $false }
 
             # Wait/sleep period after disabling SCOM maintenance to allow servers time
@@ -256,14 +266,14 @@ function Set-MaintenanceMode {
         }
 
         # Email disable notification
-        $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, (Get-Date), [bool]$DryRun)
+        $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, [DateTime]::UtcNow, [bool]$DryRun)
         $audit.steps['email'] = @{ Sent = $emailOk }
         if (-not $emailOk) { $overallOk = $false }
 
         # OpsRamp
         if ($opsrampClient -and -not $DryRun) {
             foreach ($s in $servers) {
-                $opsrampClient.SendMetric($s, 'maintenance.mode', 0, @{ cluster = $ClusterId })
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 0, [DateTime]::MinValue, @{ cluster = $ClusterId })
             }
             $opsrampClient.SendAlert($ClusterId, 'maintenance.disabled', 'INFO',
                 "Maintenance disabled for $ClusterId",
@@ -306,6 +316,10 @@ function Set-MaintenanceMode {
     if ($overallOk) { Write-Host $detailMessage }
     else { Write-Warning $detailMessage }
     
+    # Build per-object results for response
+    $allScomObjects = @($scomObjects)
+    $failedScomObjects = [array]@($allScomObjects | Where-Object { $_.Status -eq 'failed' })
+    
     return @{ 
         Success = $overallOk
         Message = $detailMessage
@@ -316,6 +330,9 @@ function Set-MaintenanceMode {
         ServerCount = $serverCount
         DryRun = [bool]$DryRun
         AuditFile = $auditFile
+        ScomObjects = $allScomObjects
+        ScomSummary = if ($Action -eq 'enable') { $scomSummary } elseif ($Action -eq 'disable') { $scomExitSummary } else { @{} }
+        FailedObjects = $failedScomObjects
     }
 }
 
@@ -340,7 +357,7 @@ Initialize-Logging -LogFile 'maintenance.log'
 
 # ---- Parse datetime helpers ----
 function _Parse-Datetime([string]$s) {
-    if ($s.ToLower() -eq 'now') { return Get-Date }
+    if ($s.ToLower() -eq 'now') { return [DateTime]::UtcNow }
     
     # Handle relative time offsets like +1hour, +30minutes, +2days
     if ($s -match '^\+([\d]+)(seconds?|minutes?|hours?|days?)$') {
@@ -357,7 +374,7 @@ function _Parse-Datetime([string]$s) {
             'days' { [TimeSpan]::FromDays($value) }
             default { [TimeSpan]::Zero }
         }
-        return (Get-Date).Add($offset)
+        return ([DateTime]::UtcNow).Add($offset)
     }
     
     $s2 = $s.Replace('T', ' ')
@@ -367,6 +384,17 @@ function _Parse-Datetime([string]$s) {
     }
     try { return [DateTime]::Parse($s2) } catch { Write-Debug "DateTime parse failed" }
     throw "Invalid datetime format '$s'. Use 'now', '+1hour', or 'YYYY-MM-DD HH:MM[:SS]'."
+}
+
+function _Compute-DefaultEnd([DateTime]$After) {
+    # Default end time: 7am UTC Monday following the start time
+    $candidate = $After.Date
+    $daysUntilMonday = [int][DayOfWeek]::Monday - [int]$candidate.DayOfWeek
+    if ($daysUntilMonday -lt 0) { $daysUntilMonday += 7 }
+    $monday = $candidate.AddDays($daysUntilMonday)
+    $defaultEnd = $monday.Date.AddHours(7)
+    if ($defaultEnd -le $After) { $defaultEnd = $defaultEnd.AddDays(7) }
+    return [DateTime]::SpecifyKind($defaultEnd, [DateTimeKind]::Utc)
 }
 
 function _Compute-NextWorkStart([hashtable]$Schedule, [DateTime]$After) {
@@ -395,7 +423,7 @@ function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
     
     $Audit | ConvertTo-Json -Depth 64 | Set-Content -Path $Path -Encoding UTF8 -Force
     # Append to master log
-    $ts = Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ'
+    $ts = Get-UtcFileTimestamp
     $master = Join-Path $Script:MaintLogDir "maintenance_audit_${ts}_INFO.log"
     $Audit | ConvertTo-Json -Depth 64 | Add-Content $master -Encoding UTF8
 }
@@ -493,17 +521,43 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
         [bool]$UseClusterMode = $false) {
 
         if ($DryRun) {
-            if ($UseClusterMode) {
-                Write-Verbose "[DRY RUN] Would enable SCOM maintenance for group '$GroupDisplayName', Cluster mode (servers: $($ServerHostnames -join ', '))"
-            } else {
-                Write-Verbose "[DRY RUN] Would enable SCOM maintenance for group '$GroupDisplayName'"
+            # Return mock per-object status data for DryRun testing
+            # Based on clusters_catalogue.examples-only.json template
+            $mockServers = if ($ServerHostnames) { $ServerHostnames } else { @('mock-server-01.example.com', 'mock-server-02.example.com', 'mock-server-03.example.com') }
+            $mockObjects = @()
+            foreach ($srv in $mockServers) {
+                $mockObjects += @{
+                    Name = $srv
+                    Type = 'WindowsComputer'
+                    Action = 'enable'
+                    Status = 'success'
+                    Message = 'Maintenance mode enabled (DryRun)'
+                    NackReason = $null
+                    Resolution = $null
+                }
             }
-            return @{ Success = $true; Output = @() }
+            $mockObjects += @{
+                Name = $GroupDisplayName
+                Type = 'WindowsCluster'
+                Action = 'enable'
+                Status = 'success'
+                Message = 'Cluster maintenance mode enabled (DryRun)'
+                NackReason = $null
+                Resolution = $null
+            }
+            $mockSummary = @{
+                Total = $mockObjects.Count
+                Success = $mockObjects.Count
+                AlreadyInMaintenance = 0
+                Failed = 0
+            }
+            Write-Verbose "[DRY RUN] Would enable SCOM maintenance for group '$GroupDisplayName' ($($mockObjects.Count) objects)"
+            return @{ Success = $true; Output = @(); Objects = $mockObjects; Summary = $mockSummary }
         }
 
         $this._DetectVersion()
 
-        $endTimeUtc = (Get-Date).ToUniversalTime().Add($Duration)
+        $endTimeUtc = [DateTime]::UtcNow.Add($Duration)
         $endTimeStr = $endTimeUtc.ToString('yyyy-MM-ddTHH:mm:ss')
         $safeComment = $Comment.Replace("'", "''")
 
@@ -521,25 +575,85 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
                 -EndTimeStr $endTimeStr -Reason 'PlannedOther' -Comment $safeComment -Operation 'start'
         }
         $r = $this._RunPs($script)
+
+        # Parse per-object status and summary from output
+        $objects = @()
+        $summary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
+        foreach ($line in ($r.Output -split "`n")) {
+            $trimmed = $line.Trim()
+            if ($trimmed -match '^OBJECT_STATUS:(\{.*\})$') {
+                try {
+                    $obj = $Matches[1] | ConvertFrom-Json
+                    $objects += @{
+                        Name = $obj.name
+                        Type = $obj.type
+                        Action = $obj.action
+                        Status = $obj.status
+                        Message = if ($obj.PSObject.Properties['message']) { $obj.message } else { '' }
+                        NackReason = if ($obj.PSObject.Properties['nack_reason']) { $obj.nack_reason } else { $null }
+                        Resolution = if ($obj.PSObject.Properties['resolution']) { $obj.resolution } else { $null }
+                    }
+                    switch ($obj.status) {
+                        'success' { $summary.Success++ }
+                        'already_in_maintenance' { $summary.AlreadyInMaintenance++ }
+                        default { $summary.Failed++ }
+                    }
+                } catch { continue }
+            }
+            elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
+                try {
+                    $sum = $Matches[1] | ConvertFrom-Json
+                    if ($sum.PSObject.Properties['total_objects']) { $summary.Total = $sum.total_objects }
+                } catch { continue }
+            }
+        }
+        $summary.Failed = @($objects | Where-Object { $_.Status -eq 'failed' }).Count
+        if ($summary.Total -eq 0) { $summary.Total = $objects.Count }
+
         if ($r.Success) {
-            Write-Verbose "SCOM maintenance enabled: $($r.Output)"
-            return @{ Success = $true; Output = @($r.Output) }
+            Write-Verbose "SCOM maintenance enabled: $($objects.Count) objects processed"
+            return @{ Success = $true; Output = @($r.Output); Objects = $objects; Summary = $summary }
         }
         Write-Error "SCOM maintenance failed: $($r.Output)"
-        return @{ Success = $false; Output = @($r.Output) }
+        return @{ Success = $false; Output = @($r.Output); Objects = $objects; Summary = $summary }
     }
 
-    [bool] ExitMaintenance([string]$GroupDisplayName, [bool]$DryRun = $false,
+    [hashtable] ExitMaintenance([string]$GroupDisplayName, [bool]$DryRun = $false,
         [string[]]$ServerHostnames = $null,
         [bool]$UseClusterMode = $false) {
 
         if ($DryRun) {
-            if ($UseClusterMode) {
-                Write-Verbose "[DRY RUN] Would disable SCOM maintenance, Cluster mode for $($ServerHostnames -join ', ')"
-            } else {
-                Write-Verbose "[DRY RUN] Would disable SCOM maintenance for group '$GroupDisplayName'"
+            # Return mock per-object status data for DryRun testing
+            $mockServers = if ($ServerHostnames) { $ServerHostnames } else { @('mock-server-01.example.com', 'mock-server-02.example.com', 'mock-server-03.example.com') }
+            $mockObjects = @()
+            foreach ($srv in $mockServers) {
+                $mockObjects += @{
+                    Name = $srv
+                    Type = 'WindowsComputer'
+                    Action = 'disable'
+                    Status = 'success'
+                    Message = 'Maintenance mode stopped (DryRun)'
+                    NackReason = $null
+                    Resolution = $null
+                }
             }
-            return $true
+            $mockObjects += @{
+                Name = $GroupDisplayName
+                Type = 'WindowsCluster'
+                Action = 'disable'
+                Status = 'success'
+                Message = 'Cluster maintenance mode stopped (DryRun)'
+                NackReason = $null
+                Resolution = $null
+            }
+            $mockSummary = @{
+                Total = $mockObjects.Count
+                Success = $mockObjects.Count
+                NotInMaintenance = 0
+                Failed = 0
+            }
+            Write-Verbose "[DRY RUN] Would disable SCOM maintenance for group '$GroupDisplayName' ($($mockObjects.Count) objects)"
+            return @{ Success = $true; Output = @(); Objects = $mockObjects; Summary = $mockSummary }
         }
 
         $this._DetectVersion()
@@ -547,7 +661,39 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
         # ── SCOM 2019 UR1+ and 2025: use REST API ────────────────────────────
         if ($this.ScomVersion -ge 2019 -and $this.RestApiReady) {
             $r = $this._ExitMaintenanceRest($GroupDisplayName, $ServerHostnames, $UseClusterMode)
-            return $r.Success
+            $objects = @()
+            $summary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
+            foreach ($line in ($r.Output -split "`n")) {
+                $trimmed = $line.Trim()
+                if ($trimmed -match '^OBJECT_STATUS:(\{.*\})$') {
+                    try {
+                        $obj = $Matches[1] | ConvertFrom-Json
+                        $objects += @{
+                            Name = $obj.name
+                            Type = $obj.type
+                            Action = $obj.action
+                            Status = $obj.status
+                            Message = if ($obj.PSObject.Properties['message']) { $obj.message } else { '' }
+                            NackReason = if ($obj.PSObject.Properties['nack_reason']) { $obj.nack_reason } else { $null }
+                            Resolution = if ($obj.PSObject.Properties['resolution']) { $obj.resolution } else { $null }
+                        }
+                        switch ($obj.status) {
+                            'success' { $summary.Success++ }
+                            'not_in_maintenance' { $summary.NotInMaintenance++ }
+                            default { $summary.Failed++ }
+                        }
+                    } catch { continue }
+                }
+                elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
+                    try {
+                        $sum = $Matches[1] | ConvertFrom-Json
+                        if ($sum.PSObject.Properties['total_objects']) { $summary.Total = $sum.total_objects }
+                    } catch { continue }
+                }
+            }
+            $summary.Failed = @($objects | Where-Object { $_.Status -eq 'failed' }).Count
+            if ($summary.Total -eq 0) { $summary.Total = $objects.Count }
+            return @{ Success = $r.Success; Output = @($r.Output); Objects = $objects; Summary = $summary }
         }
 
         # ── 2012 / 2016 / 2019-without-REST: use PowerShell cmdlets ───────────
@@ -559,8 +705,43 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
                 -Comment 'exit' -Operation 'stop'
         }
         $r = $this._RunPs($script)
+
+        # Parse per-object status and summary from output
+        $objects = @()
+        $summary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
+        foreach ($line in ($r.Output -split "`n")) {
+            $trimmed = $line.Trim()
+            if ($trimmed -match '^OBJECT_STATUS:(\{.*\})$') {
+                try {
+                    $obj = $Matches[1] | ConvertFrom-Json
+                    $objects += @{
+                        Name = $obj.name
+                        Type = $obj.type
+                        Action = $obj.action
+                        Status = $obj.status
+                        Message = if ($obj.PSObject.Properties['message']) { $obj.message } else { '' }
+                        NackReason = if ($obj.PSObject.Properties['nack_reason']) { $obj.nack_reason } else { $null }
+                        Resolution = if ($obj.PSObject.Properties['resolution']) { $obj.resolution } else { $null }
+                    }
+                    switch ($obj.status) {
+                        'success' { $summary.Success++ }
+                        'not_in_maintenance' { $summary.NotInMaintenance++ }
+                        default { $summary.Failed++ }
+                    }
+                } catch { continue }
+            }
+            elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
+                try {
+                    $sum = $Matches[1] | ConvertFrom-Json
+                    if ($sum.PSObject.Properties['total_objects']) { $summary.Total = $sum.total_objects }
+                } catch { continue }
+            }
+        }
+        $summary.Failed = @($objects | Where-Object { $_.Status -eq 'failed' }).Count
+        if ($summary.Total -eq 0) { $summary.Total = $objects.Count }
+
         Write-Verbose "SCOM maintenance disable output: $($r.Output)"
-        return $r.Success
+        return @{ Success = $r.Success; Output = @($r.Output); Objects = $objects; Summary = $summary }
     }
 
     # ════════════════════════════════════════════════════════════════════════
@@ -626,16 +807,16 @@ if (`$ids.Count -eq 0) {
 }
 
 # ── Call POST /ScheduleMaintenance ────────────────────────────────────────
-`$durationMin = [int](`$endTime - (Get-Date)).TotalMinutes
+`$durationMin = [int](`$endTime - [DateTime]::UtcNow).TotalMinutes
 `$freqType = 8   # 8 = OneTimeSchedule as per REST API docs
 `$reqBody = @{
     scheduleName          = 'MaintenanceMode_PowerShell'
     monitoringObjectsId   = @(`$ids)
-    startTime             = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
+    startTime             = Get-UtcApiTimestamp
     duration              = [Math]::Max(1, `$durationMin)
     freqType              = `$freqType
     category              = 0
-    scheduleEffectiveFrom = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
+    scheduleEffectiveFrom = Get-UtcApiTimestamp
     recursive             = `$true
     enabled               = `$true
     comment               = `$comment
@@ -670,7 +851,7 @@ try {
         }
         if (-not $script) {
             $serverJson = if ($ServerHostnames) { ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join "," } else { '' }
-            $endTimeStr = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
+            $endTimeStr = Get-UtcApiTimestamp
             $script = @"
 Import-Module $($this.ModuleName) -ErrorAction Stop
 `$conn = New-SCOMManagementGroupConnection -ComputerName "$($this.MgmtServer)" -ErrorAction Stop
@@ -888,6 +1069,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Timestamp (Local): $($result['timestamp_local'])"
     Write-Host "Action: $Action"
     Write-Host "Cluster ID: $ClusterId"
+    Write-Host "Cluster Name: $clusterName"
     Write-Host "Mode: $Mode"
     Write-Host "Post-Disable Wait: ${PostDisableWaitSeconds}s"
     Write-Host "Config Dir: $ConfigDir"
@@ -899,6 +1081,52 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "No Schedule: $NoSchedule"
     Write-Host "==================================="
     Write-Host ""
+
+    # Per-object SCOM status table
+    $scomObjects = $result['ScomObjects']
+    $scomSummary = $result['ScomSummary']
+    if ($scomObjects -and $scomObjects.Count -gt 0) {
+        Write-Host "=== SCOM Per-Object Status ==="
+        Write-Host "Total Objects: $($scomSummary.Total)"
+        Write-Host "Success: $($scomSummary.Success)"
+        Write-Host "Already in Maintenance: $($scomSummary.AlreadyInMaintenance ?? $scomSummary.NotInMaintenance ?? 0)"
+        Write-Host "Failed: $($scomSummary.Failed)"
+        Write-Host ""
+        foreach ($obj in $scomObjects) {
+            $statusIcon = switch ($obj.Status) {
+                'success' { '[OK]' }
+                'already_in_maintenance' { '[SKIP]' }
+                'not_in_maintenance' { '[SKIP]' }
+                default { '[FAIL]' }
+            }
+            Write-Host "${statusIcon} $($obj.Name) ($($obj.Type)) - $($obj.Status)"
+            if ($obj.Message -and $obj.Status -ne 'success' -and $obj.Status -ne 'already_in_maintenance' -and $obj.Status -ne 'not_in_maintenance') {
+                Write-Host "  Message: $($obj.Message)"
+            }
+            if ($obj.NackReason) {
+                Write-Host "  NACK Reason: $($obj.NackReason)"
+            }
+            if ($obj.Resolution) {
+                Write-Host "  Resolution: $($obj.Resolution)"
+            }
+        }
+        Write-Host "==============================="
+        Write-Host ""
+    }
+
+    # NACK summary for troubleshooting
+    $failedObjects = $result['FailedObjects']
+    if ($failedObjects -and $failedObjects.Count -gt 0) {
+        Write-Host "=== NACK Summary (Failed Objects) ===" -ForegroundColor Red
+        Write-Host "Total Failed: $($failedObjects.Count)"
+        foreach ($obj in $failedObjects) {
+            Write-Host "  - $($obj.Name): $($obj.NackReason ?? $obj.Status)"
+            if ($obj.Resolution) { Write-Host "    Fix: $($obj.Resolution)" }
+        }
+        Write-Host "==================================="
+        Write-Host ""
+    }
+
     Write-Host "=== Command Result ==="
     Write-Host "Success: $($result.Success)"
     if ($result.Message) { Write-Host "Message: $($result.Message)" }

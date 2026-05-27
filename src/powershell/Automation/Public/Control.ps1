@@ -176,13 +176,13 @@ function _Execute {
             Errors      = , $errors
             Source      = $Source
             RequestType = $RequestType
-            Timestamp   = (Get-Date).ToString('o')
+            Timestamp   = Get-UtcTimestamp
         }
     }
     $result = Start-AutomationOrchestrator -RequestType $RequestType -Params $Params
     $result['Source'] = $Source
     $result['RequestType'] = $RequestType
-    $result['Timestamp'] = (Get-Date).ToString('o')
+    $result['Timestamp'] = Get-UtcTimestamp
     return $result
 }
 

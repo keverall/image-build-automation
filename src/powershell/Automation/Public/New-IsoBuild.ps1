@@ -68,7 +68,7 @@ Orchestrates the full ISO build pipeline, callable from the module Router.
 
         $successCount = ($results | Where-Object { $_.success }).Count
         $summary = @{
-            timestamp     = (Get-Date).ToString('o')
+            timestamp     = Get-UtcTimestamp
             total_servers = $servers.Count
             successful    = $successCount
             failed        = ($servers.Count - $successCount)
@@ -99,7 +99,7 @@ function Build-ForServer([string]$ServerName) {
         generated_patched_iso = $null
         combined_iso      = $null
         success           = $false
-        timestamp         = (Get-Date).ToString('o')
+        timestamp         = Get-UtcTimestamp
         steps             = @()
     }
 
@@ -137,7 +137,7 @@ function Build-ForServer([string]$ServerName) {
         }
         if ($result.generated_patched_iso -and (Test-Path $result.generated_patched_iso)) {
             Copy-Item $result.generated_patched_iso (Join-Path $combinedDir (Split-Path $result.generated_patched_iso -Leaf)) -Force }
-        $metadata = @{ server_name = $ServerName; uuid = $generatedUuid; build_timestamp = (Get-Date).ToString('o');
+        $metadata = @{ server_name = $ServerName; uuid = $generatedUuid; build_timestamp = Get-UtcTimestamp;
             firmware_iso = (if ($result.firmware_iso) { Split-Path $result.firmware_iso -Leaf }else { $null });
             generated_patched_iso = (if($result.generated_patched_iso) { Split-Path $result.generated_patched_iso -Leaf }else { $null });
             config_version = 'nov2025' 
