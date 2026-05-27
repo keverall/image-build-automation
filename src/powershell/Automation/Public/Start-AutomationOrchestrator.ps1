@@ -39,12 +39,12 @@ Execute an automation request with validation and routing.
         return @{
             Success     = $false
             Errors      = ,$errors
-            Timestamp   = (Get-Date).ToString('o')
+            Timestamp   = Get-UtcTimestamp
             RequestType = $RequestType
         }
     }
     $result            = Invoke-RoutedRequest -RequestType $RequestType -Params $Params
-    $result['Timestamp']   = (Get-Date).ToString('o')
+    $result['Timestamp'] = Get-UtcTimestamp
     $result['RequestType'] = $RequestType
     return $result
 }
