@@ -22,7 +22,7 @@ iRequest / ServiceNow / Jira
             │
             │  calls
             ▼
-  Set-MaintenanceMode.ps1  →  SCOM / iLO / OpenView
+  Set-MaintenanceMode.ps1  →  SCOM / iLO / OneView
 ```
 
 ---
@@ -326,7 +326,7 @@ Cluster definitions live in `configs/clusters_catalogue.json`:
       "environment": "production",
       "servers": ["web01", "web02", "db01"],
       "ilo_addresses": { "web01": "10.0.1.10", "web02": "10.0.1.11" },
-      "openview_node_ids": { "web01": "ov-001", "web02": "ov-002" }
+      "oneview_node_ids": { "web01": "ov-001", "web02": "ov-002" }
     }
   }
 }
@@ -357,7 +357,7 @@ making any subsystem calls.
 |---|---|
 | **iRequest → GitLab (TCP 443)** | iRequest / webhook runner must reach the GitLab HTTPS API URL |
 | **GitLab Runner → GitLab (TCP 443)** | Runners fetch source and submit job results |
-| **Runner → targets (WinRM 5985/5986, HTTPS 443)** | Runner must reach servers for SCOM, iLO, OpenView |
+| **Runner → targets (WinRM 5985/5986, HTTPS 443)** | Runner must reach servers for SCOM, iLO, OneView |
 
 If the GitLab instance uses a self-signed internal CA, the runner must trust
 that CA or be configured to skip certificate validation (`-SkipCertificateCheck`

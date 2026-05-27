@@ -8,7 +8,7 @@ The script supports both `-DryRun` and `-WhatIf` as equivalent parameters for si
 |-----------|------|-------------|
 | `-Action` | string | 'enable', 'disable', or 'validate' (default: enable) |
 | `-ClusterId` | string | Cluster identifier (required) |
-| `-Mode` | string | 'scom' for SCOM-only, 'openview' for OpenView-only, 'oneview' for OneView-only, 'all' for SCOM + OpenView + OneView (default: all) |
+| `-Mode` | string | 'scom' for SCOM-only, 'oneview' for OneView-only, 'all' for SCOM + OneView (default: all) |
 | `-PostDisableWaitSeconds` | int | Seconds to wait after SCOM disable for server stabilization (default: 120) |
 | `-ConfigDir` | string | Configuration directory (default: configs) |
 | `-Start` | string | Start datetime: 'now' or 'YYYY-MM-DD HH:MM' |
@@ -26,20 +26,11 @@ After disabling SCOM maintenance mode, a configurable wait period (default 120 s
 
 ## Mode Behavior Summary
 
-| Mode | SCOM | OpenView | OneView | ClusterId Required |
-|------|------|----------|---------|-------------------|
-| `scom` | Yes | No | No | Must be in `clusters_catalogue.json` |
-| `openview` | No | Yes | No | Catalogue lookup first; if not found, passed directly to OpenView API |
-| `oneview` | No | No | Yes | Resolved via OneView API — checks if it's a ServerHardware or Scope |
-| `all` | Yes | Yes | Yes | Must be in `clusters_catalogue.json` |
-
-## OpenView Mode
-
-When `-Mode openview` is used:
-- ClusterId is first looked up in `clusters_catalogue.json`
-- If found in catalogue, maintenance mode is applied to all servers in the cluster's `openview_node_ids` mapping
-- If not found in catalogue, the ClusterId is treated as a server identifier and passed directly to the OpenView REST API
-- The OpenView API determines the object type and applies maintenance mode accordingly
+| Mode | SCOM | OneView | ClusterId Required |
+|------|------|---------|-------------------|
+| `scom` | Yes | No | Must be in `clusters_catalogue.json` |
+| `oneview` | No | Yes | Resolved via OneView API — checks if it's a ServerHardware or Scope |
+| `all` | Yes | Yes | Must be in `clusters_catalogue.json` |
 
 ## OneView Mode
 
@@ -54,26 +45,21 @@ When `-Mode oneview` is used:
 
 When `-Mode all` is used (default):
 - SCOM maintenance is applied to all objects in the SCOM group (existing behavior)
-- OpenView maintenance is applied to all nodes in the cluster's `openview_node_ids` mapping
 - OneView maintenance is applied to the resolved target (server or scope)
-- All three systems receive per-object status reporting
+- Both systems receive per-object status reporting
 
 ## Testing Commands
 
 **1. Dry-run first (recommended) to validate config:**
 
 ```powershell
-# All systems (SCOM + OpenView) - default mode
+# All systems (SCOM + OneView) - default mode
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 'now' -End '+1hour' -DryRun
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -DryRun
 
 # SCOM-only mode
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode scom -DryRun
-
-# OpenView-only mode (uses cluster from catalogue or resolves server via OpenView API)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode openview -Start 'now' -End '+1hour' -DryRun
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode openview -DryRun
 
 # OneView-only mode (resolves server or scope via OneView API)
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'my-server-01' -Mode oneview -Start 'now' -End '+1hour' -DryRun
@@ -89,7 +75,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action en
 **3. Enable/disable with mode parameter:**
 
 ```powershell
-# SCOM + OpenView (explicit all mode)
+# SCOM + OneView (explicit all mode)
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode all -Start 'now' -End '+1hour'
 
 # SCOM-only mode
@@ -151,8 +137,6 @@ Both JSON output (`-Json`) and the return hashtable contain these fields for iRe
 |-------|------|-------------|
 | `ScomObjects` | array | Array of SCOM objects with their maintenance status |
 | `ScomSummary` | object | Aggregated SCOM counts (total, success, already_in_maintenance/not_in_maintenance, failed) |
-| `OpenViewObjects` | array | Array of OpenView objects with their maintenance status |
-| `OpenViewSummary` | object | Aggregated OpenView counts |
 | `OneViewObjects` | array | Array of OneView objects with their maintenance status |
 | `OneViewSummary` | object | Aggregated OneView counts |
 | `FailedObjects` | array | Filtered list of only failed objects across all systems with NACK details |

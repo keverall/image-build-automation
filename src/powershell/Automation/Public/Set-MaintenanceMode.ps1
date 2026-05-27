@@ -46,8 +46,8 @@ function Set-MaintenanceMode {
     .PARAMETER Action
         'enable', 'disable', or 'validate'.
 
-    .PARAMETER ClusterId
-        Cluster identifier string.
+    .PARAMETER TargetId
+        Target identifier string (cluster ID or server name).
 
     .PARAMETER Mode
         'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OpenView.
@@ -76,18 +76,18 @@ function Set-MaintenanceMode {
         [hashtable] with Success (bool) and details.
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Start now
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
 
     .EXAMPLE
-        Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
+        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01'
     #>
     [CmdletBinding()]
     param(
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
-        [Parameter(Mandatory, Position = 1)][string] $ClusterId,
+        [Parameter(Mandatory, Position = 1)][string] $TargetId,
         [Parameter(Position = 2)][ValidateSet('scom', 'oneview', 'all')][string] $Mode = 'all',
         [int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
@@ -109,29 +109,29 @@ function Set-MaintenanceMode {
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
-    # For oneview mode, ClusterId can be a server name - resolve via API
-    # For scom mode, ClusterId must be in catalogue (current behavior)
+    # For oneview mode, TargetId can be a server name - resolve via API
+    # For scom mode, TargetId must be in catalogue (current behavior)
     $isDirectServerMode = ($Mode -eq 'oneview')
     $clusterDef = $null
-    $clusterName = $ClusterId
+    $clusterName = $TargetId
 
     if ($isDirectServerMode) {
         # Try catalogue lookup first
         $clustersMap = $clustersCfg.Get_Item('clusters')
-        if ($clustersMap -and $clustersMap.ContainsKey($ClusterId)) {
-            $clusterDef = $clustersMap[$ClusterId]
-            $clusterName = $clusterDef.Get_Item('display_name') ?? $ClusterId
+        if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
+            $clusterDef = $clustersMap[$TargetId]
+            $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
         }
         # If not in catalogue, will be resolved via OneView API later
     } else {
         # SCOM or ALL mode - must be in catalogue
         $clustersMap = $clustersCfg.Get_Item('clusters')
-        if (-not $clustersMap -or -not $clustersMap.ContainsKey($ClusterId)) {
-            Write-Verbose "Cluster ID '$ClusterId' not found in catalogue."
-            return @{ Success = $false; Error = "Cluster ID '$ClusterId' not found in catalogue." }
+        if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
+            Write-Verbose "Target '$TargetId' not found in catalogue."
+            return @{ Success = $false; Error = "Target '$TargetId' not found in catalogue." }
         }
-        $clusterDef = $clustersMap[$ClusterId]
-        $clusterName = $clusterDef.Get_Item('display_name') ?? $ClusterId
+        $clusterDef = $clustersMap[$TargetId]
+        $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
     }
 
     # Validate cluster definition if found (required for scom/all modes)
@@ -145,18 +145,18 @@ function Set-MaintenanceMode {
             return @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list." }
         }
     } elseif (-not $clusterDef -and $isDirectServerMode) {
-        # Single server mode - derive servers array from ClusterId
-        $servers = @($ClusterId)
+        # Single server mode - derive servers array from TargetId
+        $servers = @($TargetId)
     } elseif ($clusterDef -and $isDirectServerMode) {
         $servers = $clusterDef.Get_Item('servers')
     }
 
     # VALIDATE action
     if ($Action -eq 'validate') {
-        Write-Host "Cluster '$ClusterId' validated. Servers: $($servers -join ', ')"
-        $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
-        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
-        return @{ Success = $true; Message = "Cluster '$ClusterId' validated."
+        Write-Host "Target '$TargetId' validated. Servers: $($servers -join ', ')"
+        $audit = @{ target_id = $TargetId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
+        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
+        return @{ Success = $true; Message = "Target '$TargetId' validated."
                   ScomObjects = @(); ScomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }; FailedObjects = @() }
     }
 
@@ -194,9 +194,9 @@ function Set-MaintenanceMode {
             $oneviewMgr = [OneViewClient]::new($oneviewCfg)
             # Resolve target for oneview - determine if server or cluster/scope
             if ($oneviewMgr -and $isDirectServerMode) {
-                $resolveResult = $oneviewMgr.ResolveTarget($ClusterId)
+                $resolveResult = $oneviewMgr.ResolveTarget($TargetId)
                 if (-not $resolveResult.Success) {
-                    return @{ Success = $false; Error = "OneView could not resolve '$ClusterId' as server or cluster: $($resolveResult.Message)" }
+                    return @{ Success = $false; Error = "OneView could not resolve '$TargetId' as server or cluster: $($resolveResult.Message)" }
                 }
                 $clusterName = $resolveResult.TargetName
             }
@@ -210,7 +210,7 @@ function Set-MaintenanceMode {
 
     # Execute action
     $overallOk = $true
-    $audit = @{ cluster_id = $ClusterId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
+    $audit = @{ target_id = $TargetId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
     $utcStart = $null
     $utcEnd = $null
 
@@ -222,7 +222,7 @@ function Set-MaintenanceMode {
         if ($scomMgr) {
             $scomOk = $false
             $durHrs = $duration.TotalSeconds / 3600.0
-            $comment = "iRequest Maintenance: $ClusterId"
+            $comment = "iRequest Maintenance: $TargetId"
             $scomRes = $scomMgr.EnterMaintenance(
                 $clusterDef.Get_Item('scom_group'),
                 $duration, $comment, [bool]$DryRun,
@@ -241,7 +241,7 @@ function Set-MaintenanceMode {
         $oneviewOk = $true; $oneviewMsg = ''; $oneviewObjects = @(); $oneviewSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
         if ($Mode -eq 'oneview' -or $Mode -eq 'all') {
             if ($oneviewMgr) {
-                $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $ClusterId }
+                $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
                 $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
                 $oneviewRes = $oneviewMgr.SetMaintenance($targetName, $targetType, $startDt, $endDt, [bool]$DryRun)
                 $oneviewOk = $oneviewRes.Success; $oneviewMsg = $oneviewRes.Message
@@ -265,28 +265,28 @@ function Set-MaintenanceMode {
             $env = if ($clusterDef) { $clusterDef.Get_Item('environment') } else { 'unknown' }
             $displayName = if ($clusterDef) { $clusterDef.Get_Item('display_name') } else { $clusterName }
             foreach ($s in $servers) {
-                $opsrampClient.SendMetric($s, 'maintenance.mode', 1, [DateTime]::MinValue, @{ cluster = $ClusterId; environment = $env })
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 1, [DateTime]::MinValue, @{ cluster = $TargetId; environment = $env })
             }
-            $opsOk = $opsrampClient.SendAlert($ClusterId, 'maintenance.enabled', 'INFO',
-                "Maintenance enabled for $ClusterId",
+            $opsrampClient.SendAlert($TargetId, 'maintenance.enabled', 'INFO',
+                "Maintenance enabled for $TargetId",
                 @{ cluster = $displayName; servers = $servers;
                     start = Convert-ToUtcIso8601 $startDt; end = Convert-ToUtcIso8601 $endDt
                 })
-            $opsrampClient.SendEvent($ClusterId, 'maintenance.enabled',
+            $opsrampClient.SendEvent($TargetId, 'maintenance.enabled',
                 "Maintenance window started for $displayName",
-                @{ cluster = $ClusterId; action = 'enable' })
+                @{ cluster = $TargetId; action = 'enable' })
         }
         $audit.steps['opsramp'] = @{ Success = $opsOk }
 
         # Scheduled Task
         if ($IsWindows -and -not $NoSchedule) {
-            $taskName = "MaintenanceDisable-$ClusterId"
+            $taskName = "MaintenanceDisable-$TargetId"
             $scriptAbs = (Resolve-Path $PSScriptRoot).Path
             $stTime = $endDt.ToString('HH:mm')
             $sdDate = $endDt.ToString('yyyy/MM/dd')
             schtasks /Delete /TN $taskName /F 2>$null | Out-Null
             try {
-                schtasks /Create /TN $taskName /TR "`"$($PSHOME)\pwsh.exe`" `"$scriptAbs`" -Action disable -ClusterId $ClusterId -NoSchedule" `
+                schtasks /Create /TN $taskName /TR "`"$($PSHOME)\pwsh.exe`" `"$scriptAbs`" -Action disable -TargetId $TargetId -NoSchedule" `
                     /SC ONCE /ST $stTime /SD $sdDate /RL HIGHEST /RU SYSTEM /F 2>&1 | Out-Null
                 $audit.steps.scheduled_task = @{ Created = $true }
             }
@@ -330,7 +330,7 @@ function Set-MaintenanceMode {
         # OneView disable — for 'oneview' and 'all' modes
         $oneviewExitOk = $true; $oneviewExitMsg = ''; $oneviewExitObjects = @(); $oneviewExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
         if (($Mode -eq 'oneview' -or $Mode -eq 'all') -and $oneviewMgr) {
-            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $ClusterId }
+            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
             $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
             $oneviewExitRes = $oneviewMgr.DisableMaintenance($targetName, $targetType, [bool]$DryRun)
             $oneviewExitOk = $oneviewExitRes.Success; $oneviewExitMsg = $oneviewExitRes.Message
@@ -352,26 +352,26 @@ function Set-MaintenanceMode {
             $env = if ($clusterDef) { $clusterDef.Get_Item('environment') } else { 'unknown' }
             $displayName = if ($clusterDef) { $clusterDef.Get_Item('display_name') } else { $clusterName }
             foreach ($s in $servers) {
-                $opsrampClient.SendMetric($s, 'maintenance.mode', 0, [DateTime]::MinValue, @{ cluster = $ClusterId; environment = $env })
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 0, [DateTime]::MinValue, @{ cluster = $TargetId; environment = $env })
             }
-            $opsrampClient.SendAlert($ClusterId, 'maintenance.disabled', 'INFO',
-                "Maintenance disabled for $ClusterId",
+            $opsrampClient.SendAlert($TargetId, 'maintenance.disabled', 'INFO',
+                "Maintenance disabled for $TargetId",
                 @{ completed_at = Get-UtcTimestamp })
-            $opsrampClient.SendEvent($ClusterId, 'maintenance.disabled',
+            $opsrampClient.SendEvent($TargetId, 'maintenance.disabled',
                 "Maintenance window ended for $displayName",
-                @{ cluster = $ClusterId; action = 'disable' })
+                @{ cluster = $TargetId; action = 'disable' })
         }
 
         # Clean up scheduled task
         if ($IsWindows) {
-            $taskName = "MaintenanceDisable-$ClusterId"
+            $taskName = "MaintenanceDisable-$TargetId"
             try { schtasks /Delete /TN $taskName /F 2>&1 | Out-Null; $audit.steps.scheduled_task_cleanup = @{ Deleted = $true } }
             catch { $audit.steps.scheduled_task_cleanup = @{ Deleted = $false; Error = $_.Exception.Message } }
         }
     }
 
     $audit.success = $overallOk
-    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${ClusterId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
     _Save-AuditRecord $audit $auditFile
 
     # Build detailed completion message
@@ -413,7 +413,7 @@ function Set-MaintenanceMode {
         Message = $detailMessage
         StartTimeUtc = if ($Action -eq 'enable') { $utcStart } else { $null }
         EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
-        ClusterId = $ClusterId
+        TargetId = $TargetId
         ClusterName = $clusterName
         ServerCount = $serverCount
         DryRun = [bool]$DryRun
@@ -1238,7 +1238,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         return $this._DisableViaModule($Target, $TargetType, $DryRun)
     }
 
-    [hashtable] ResolveTarget([string]$ClusterId) {
+    [hashtable] ResolveTarget([string]$TargetId) {
         $ovModule = $this.ModuleName
         $ovAppliance = $this.Appliance
         $scriptContent = @"
@@ -1246,19 +1246,19 @@ Import-Module $ovModule -ErrorAction Stop
 `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
 `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
 Connect-OVMgmt -Appliance '$($this.Appliance)' -Credential `$cred -ErrorAction Stop
-`$server = Get-OVServer -Name '$ClusterId' -ErrorAction SilentlyContinue
+`$server = Get-OVServer -Name '$TargetId' -ErrorAction SilentlyContinue
 if (`$server) {
     `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; Message = 'Found server' }
     `$result | ConvertTo-Json -Depth 3
     return
 }
-`$scope = Get-OVSCOPE -Name '$ClusterId' -ErrorAction SilentlyContinue
+`$scope = Get-OVSCOPE -Name '$TargetId' -ErrorAction SilentlyContinue
 if (`$scope) {
     `$result = @{ Success = `$true; TargetType = 'Scope'; TargetName = `$scope.Name; Message = 'Found scope (cluster)' }
     `$result | ConvertTo-Json -Depth 3
     return
 }
-`$result = @{ Success = `$false; TargetType = 'Unknown'; TargetName = '$ClusterId'; Message = 'Not found as server or scope' }
+`$result = @{ Success = `$false; TargetType = 'Unknown'; TargetName = '$TargetId'; Message = 'Not found as server or scope' }
 `$result | ConvertTo-Json -Depth 3
 "@
         try {
@@ -1281,7 +1281,7 @@ if (`$scope) {
             return @{
                 Success = $false
                 TargetType = 'Unknown'
-                TargetName = $ClusterId
+                TargetName = $TargetId
                 Message = "Resolve failed: $($_.Exception.Message)"
             }
         }
@@ -1414,7 +1414,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Timestamp (UTC): $($result['timestamp'])"
     Write-Host "Timestamp (Local): $($result['timestamp_local'])"
     Write-Host "Action: $Action"
-    Write-Host "Cluster ID: $ClusterId"
+    Write-Host "Target ID: $TargetId"
     Write-Host "Cluster Name: $clusterName"
     Write-Host "Mode: $Mode"
     Write-Host "Post-Disable Wait: ${PostDisableWaitSeconds}s"

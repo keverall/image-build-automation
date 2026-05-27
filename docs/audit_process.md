@@ -82,7 +82,7 @@ Every script in this repository uses the `AuditLogger` class or `_log_step()` me
 
 8. **Maintenance Mode Operations** (new)
    - Cluster ID, action (enable/disable/validate), dry-run flag
-   - Per-system results: SCOM status, iLO window creation, OpenView status, email sent, OpsRamp metrics
+    - Per-system results: SCOM status, iLO window creation, OneView status, email sent, OpsRamp metrics
    - Scheduled task creation/removal
    - Start/end timestamps and computed duration
 
@@ -118,7 +118,7 @@ For maintenance operations, the record is more comprehensive:
   "systems": {
     "scom": {"success": true, "servers": ["web01", "web02", "db01"]},
     "ilo": {"success": true, "windows_created": 3},
-    "openview": {"success": false, "error": "API endpoint unreachable"},
+    "oneview": {"success": false, "error": "API endpoint unreachable"},
     "email": {"success": true, "recipients": 5},
     "opsramp": {"success": true, "metrics_sent": 9}
   },
@@ -349,7 +349,7 @@ Steps:
   "systems": {
     "scom": {"success": true, "details": "..."},
     "ilo": {"success": true, "details": "..."},
-    "openview": {"success": false, "error": "..."},
+    "oneview": {"success": false, "error": "..."},
     "email": {"success": true},
     "opsramp": {"success": true}
   },

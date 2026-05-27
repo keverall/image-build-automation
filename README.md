@@ -53,7 +53,7 @@ hpe-windows-iso-automation/
 │   ├── hpe_firmware_drivers_nov2025.json  # Firmware/driver manifests from HPE
 │   ├── windows_patches.json           # Security patch specifications
 │   ├── scom_config.json               # SCOM 2015 server and group config
-│   ├── openview_config.json           # HPE OpenView integration settings
+│   ├── oneview_config.json           # HPE OneView integration settings
 │   ├── email_distribution_lists.json  # SMTP and distribution list recipients
 │   └── maintenance_distribution_list.txt  # Override email list for maintenance events
 ├── docker-compose.yml                 # Containerised build environment
