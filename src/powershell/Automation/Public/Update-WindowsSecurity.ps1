@@ -106,7 +106,7 @@ class WindowsPatcher {
     [object] _LoadConfig() { return $this.PatchesConfig }
 
     [void] _Log([string]$Step, [string]$Status, [string]$Details = '') {
-        $null = $this.BuildLog.Add(@{ timestamp = (Get-Date).ToString('o'); step = $Step; status = $Status; details = $Details })
+        $null = $this.BuildLog.Add(@{ timestamp = Get-UtcTimestamp; step = $Step; status = $Status; details = $Details })
         Write-Host "[$Status] $Step : $Details"
     }
 
@@ -174,7 +174,7 @@ class WindowsPatcher {
 
     [hashtable] Build([string]$IsoPath, [string]$ServerName, [string]$Method, [bool]$DryRun) {
         $this._Log('build_start', 'START', "Patching for $ServerName")
-        $result = @{ server = $ServerName; generated_patched_iso = $null; success = $false; build_log = $this.BuildLog; timestamp = (Get-Date).ToString('o') }
+        $result = @{ server = $ServerName; generated_patched_iso = $null; success = $false; build_log = $this.BuildLog; timestamp = Get-UtcTimestamp }
 
         try {
             $mounted = $this._SetupBaseIso($IsoPath, $DryRun)

@@ -7,15 +7,31 @@ function Get-UtcTimestamp {
     .SYNOPSIS
         Returns current UTC timestamp in ISO 8601 format.
     #>
-    return (Get-Date).ToUniversalTime().ToString('o')
+    return [DateTime]::UtcNow.ToString('o')
 }
 
 function Get-LocalTimestamp {
     <#
     .SYNOPSIS
-        Returns current local timestamp in ISO 8601 format.
+        Returns current UTC timestamp in ISO 8601 format.
     #>
-    return (Get-Date).ToString('o')
+    return Get-UtcTimestamp
+}
+
+function Get-UtcFileTimestamp {
+    <#
+    .SYNOPSIS
+        Returns current UTC timestamp for file naming (yyyy-MM-ddTHH-mm-ssZ).
+    #>
+    return [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH-mm-ssZ')
+}
+
+function Get-UtcApiTimestamp {
+    <#
+    .SYNOPSIS
+        Returns current UTC timestamp for SCOM REST API calls (yyyy-MM-ddTHH:mm:ss).
+    #>
+    return [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ss')
 }
 
 function Convert-ToUtcIso8601 {
@@ -35,25 +51,25 @@ function Convert-ToUtcIso8601 {
 function Get-LogTimestamp {
     <#
     .SYNOPSIS
-        Returns current local timestamp in log format (yyyy-MM-dd HH:mm:ss).
+        Returns current UTC timestamp in log format (yyyy-MM-dd HH:mm:ss).
     #>
-    return Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    return [DateTime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss')
 }
 
 function Get-FileTimestamp {
     <#
     .SYNOPSIS
-        Returns current local timestamp for file naming (yyyyMMdd_HHmmss).
+        Returns current UTC timestamp for file naming (yyyyMMdd_HHmmss).
     #>
-    return Get-Date -Format 'yyyyMMdd_HHmmss'
+    return [DateTime]::UtcNow.ToString('yyyyMMdd_HHmmss')
 }
 
 function Get-DateFileTimestamp {
     <#
     .SYNOPSIS
-        Returns current local date for daily log file naming (yyyy-MM-dd).
+        Returns current UTC date for daily log file naming (yyyy-MM-dd).
     #>
-    return Get-Date -Format 'yyyy-MM-dd'
+    return [DateTime]::UtcNow.ToString('yyyy-MM-dd')
 }
 
 function New-AutomationBase {

@@ -31,7 +31,7 @@ function Initialize-Logging {
         
         $baseName = [System.IO.Path]::GetFileNameWithoutExtension($LogFile)
         $ext = [System.IO.Path]::GetExtension($LogFile)
-        $timestamp = Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ'
+        $timestamp = Get-UtcFileTimestamp
         $levelStr = $Level.ToUpper()
         
         if ($levelStr -eq 'INFORMATION') { $levelStr = 'INFO' }

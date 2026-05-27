@@ -139,7 +139,7 @@ class FirmwareUpdater {
     }
 
     [void] _Log([string]$Step, [string]$Status, [string]$Details) {
-        $entry = @{ timestamp = (Get-Date -Format o); step = $Step; status = $Status; details = $Details }
+        $entry = @{ timestamp = Get-UtcTimestamp; step = $Step; status = $Status; details = $Details }
         $null = $this.BuildLog.Add($entry)
         $msg = if ($Details) { "[$Status] $Step : $Details" } else { "[$Status] $Step" }
         Write-Host $msg
@@ -168,7 +168,7 @@ class FirmwareUpdater {
             firmware_iso = $null
             success      = $false
             build_log    = $this.BuildLog
-            timestamp    = (Get-Date -Format o)
+            timestamp    = Get-UtcTimestamp
         }
         try {
             $gen        = $this._DetectGen($ServerName)
