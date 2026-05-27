@@ -13,18 +13,10 @@
         "prod-server-03.example.com": "192.168.1.103"
       },
       "oneview_scope": "Production_Cluster_01",
-      "openview_node_ids": {
+      "oneview_node_ids": {
         "prod-server-01.example.com": "OV_NODE_001",
         "prod-server-02.example.com": "OV_NODE_002",
         "prod-server-03.example.com": "OV_NODE_003"
-      },
-      "openview_api": {
-        "base_url": "https://openview.example.com/api",
-        "auth": {
-          "type": "basic",
-          "user_env": "OPENVIEW_USER",
-          "pass_env": "OPENVIEW_PASSWORD"
-        }
       },
       "schedule": {
         "timezone": "Europe/Dublin",
@@ -46,7 +38,7 @@
         "stag-server-02.example.com": "192.168.2.102"
       },
       "oneview_scope": "Staging_Cluster_01",
-      "openview_node_ids": {
+      "oneview_node_ids": {
         "stag-server-01.example.com": "OV_STAG_001",
         "stag-server-02.example.com": "OV_STAG_002"
       },
