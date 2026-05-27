@@ -1,17 +1,17 @@
 {
   "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
   "uuid": "00000000-0000-0000-0000-000000000000",
-  "success": false,
-  "generated": null,
-  "generated_patched_iso": null,
-  "server": "p",
   "firmware_iso": null,
-  "combined_iso": null,
+  "timestamp": "2026-05-27T17:43:33.3853549+01:00",
+  "generated": null,
+  "success": false,
+  "generated_patched_iso": null,
   "steps": [
     {
       "Step": "generate_uuid",
       "Uuid": "00000000-0000-0000-0000-000000000000"
     }
   ],
-  "timestamp": "2026-05-27T14:34:18.6204011+01:00"
+  "combined_iso": null,
+  "server": "p"
 }
