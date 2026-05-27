@@ -52,6 +52,11 @@ function Set-MaintenanceMode {
     .PARAMETER Mode
         'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OpenView.
 
+    .PARAMETER PostDisableWaitSeconds
+        Seconds to sleep after disabling SCOM maintenance mode to allow servers
+        time to reboot and restart services before alerting resumes.
+        Default is 120 (2 minutes). Set to 0 to skip the wait.
+
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs').
 
@@ -84,6 +89,7 @@ function Set-MaintenanceMode {
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [Parameter(Mandatory, Position = 1)][string] $ClusterId,
         [Parameter(Position = 2)][ValidateSet('scom', 'all')][string] $Mode = 'all',
+        [int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
         [string] $Start = $null,
         [string] $End = $null,
@@ -159,16 +165,16 @@ function Set-MaintenanceMode {
     $utcEnd = $null
 
     if ($Action -eq 'enable') {
-        # SCOM
+        # SCOM — use group mode to put ALL objects in the SCOM group into maintenance mode
+        # (servers, network devices, nodes, cluster objects, everything under the group)
         $scomOk = $false; $scomInfo = ''
         if ($scomMgr) {
             $durHrs = $duration.TotalSeconds / 3600.0
             $comment = "iRequest Maintenance: $ClusterId"
-            $serversArr = [string[]]@($clusterDef.Get_Item('servers'))
             $scomRes = $scomMgr.EnterMaintenance(
                 $clusterDef.Get_Item('scom_group'),
                 $duration, $comment, [bool]$DryRun,
-                $serversArr, $true)
+                $null, $false)
             $scomOk = $scomRes.Success
             $scomInfo = if ($scomRes.Output) { ($scomRes.Output -join "`n") } else { '' }
         }
@@ -225,6 +231,30 @@ function Set-MaintenanceMode {
         $utcEnd = Convert-ToUtcIso8601 $endDt
     }
     elseif ($Action -eq 'disable') {
+        # SCOM — exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
+        $scomExitOk = $false
+        if ($scomMgr) {
+            Write-Verbose "Exiting SCOM maintenance mode for group '$($clusterDef.Get_Item('scom_group'))' (all objects)"
+            $scomExitOk = $scomMgr.ExitMaintenance(
+                $clusterDef.Get_Item('scom_group'),
+                [bool]$DryRun, $null, $false)
+            $audit.steps['scom_exit'] = @{ Success = $scomExitOk }
+            if (-not $scomExitOk) { $overallOk = $false }
+
+            # Wait/sleep period after disabling SCOM maintenance to allow servers time
+            # to reboot, restart services, and stabilize before alerting resumes.
+            # This prevents false alerts that support staff report frequently.
+            if (-not $DryRun -and $PostDisableWaitSeconds -gt 0) {
+                Write-Host "Waiting ${PostDisableWaitSeconds}s for servers to stabilize after SCOM maintenance exit..."
+                Start-Sleep -Seconds $PostDisableWaitSeconds
+                Write-Host 'Stabilization wait complete. Alerting is now active.'
+                $audit.steps['post_disable_wait'] = @{ Seconds = $PostDisableWaitSeconds }
+            }
+            else {
+                $audit.steps['post_disable_wait'] = @{ Skipped = $true; Reason = if ($DryRun) { 'DryRun' } else { 'PostDisableWaitSeconds=0' } }
+            }
+        }
+
         # Email disable notification
         $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, (Get-Date), [bool]$DryRun)
         $audit.steps['email'] = @{ Sent = $emailOk }
@@ -516,7 +546,7 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
 
         # ── SCOM 2019 UR1+ and 2025: use REST API ────────────────────────────
         if ($this.ScomVersion -ge 2019 -and $this.RestApiReady) {
-            $r = $this._ExitMaintenanceRest($ServerHostnames, $UseClusterMode)
+            $r = $this._ExitMaintenanceRest($GroupDisplayName, $ServerHostnames, $UseClusterMode)
             return $r.Success
         }
 
@@ -625,36 +655,34 @@ try {
         return @{ Success = $r.Success; Output = @($r.Output) }
     }
 
-    [hashtable] _ExitMaintenanceRest([string[]]$ServerHostnames, [bool]$UseClusterMode) {
+    [hashtable] _ExitMaintenanceRest([string]$GroupDisplayName, [string[]]$ServerHostnames, [bool]$UseClusterMode) {
         if (-not $this.Cred) { return @{ Success = $false; Output = 'No SCOM REST credentials' } }
 
-        $serverJson = ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join ","
         # Exit maintenance for REST SCOM:
-        # Use Start-SCOMMaintenanceMode PowerShell cmdlet to disable (mirrors stop flow)
-        # because the REST API does not expose a direct maintenanceMode 'stop' endpoint.
-        # The OperationsManager PowerShell module is installed on the same mgmt server.
-        $endTimeStr = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
+        # Use PowerShell cmdlets to disable because the REST API does not expose
+        # a direct maintenanceMode 'stop' endpoint.
         $script = if ($UseClusterMode) {
             New-ScomMaintenanceScript -ServerHostnames $ServerHostnames `
                 -Comment 'exit' -Operation 'stop' -UseClusterMode
         } else {
-            New-ScomMaintenanceScript -GroupDisplayName '' `
-                -Comment 'exit' -Operation 'stop' -UseClusterMode
+            New-ScomMaintenanceScript -GroupDisplayName $GroupDisplayName `
+                -Comment 'exit' -Operation 'stop'
         }
         if (-not $script) {
+            $serverJson = if ($ServerHostnames) { ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join "," } else { '' }
+            $endTimeStr = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
             $script = @"
 Import-Module $($this.ModuleName) -ErrorAction Stop
 `$conn = New-SCOMManagementGroupConnection -ComputerName "$($this.MgmtServer)" -ErrorAction Stop
-`$endTime = [DateTime]::Parse('$EndTimeStr')
+`$group = Get-SCOMGroup -DisplayName "$GroupDisplayName" -ErrorAction Stop
+`$instances = Get-SCOMClassInstance -Group `$group
 `$stopped = @()
-`$servers = @($serverJson)
-foreach (`$srvName in `$servers) {
-    `$inst = Get-SCOMClassInstance -Name "*`$srvName*" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (`$inst -and `$inst.InMaintenanceMode) {
-        try { `$inst.StopMaintenanceMode(); `$stopped += `$srvName } catch { Write-Warning "`$srvName: `$(`$_.Exception.Message)" }
-    } else { Write-Host "`$srvName not in maintenance - skipping" }
+foreach (`$inst in `$instances) {
+    if (`$inst.InMaintenanceMode) {
+        try { `$inst.StopMaintenanceMode(); `$stopped += `$inst.Name } catch { Write-Warning "`$(`$inst.Name): `$(`$_.Exception.Message)" }
+    } else { Write-Host "`$(`$inst.Name) not in maintenance - skipping" }
 }
-if (`$stopped.Count -gt 0) { Write-Host "Stopped for `$(`$stopped.Count) servers" } else { Write-Host "None in maintenance" }
+if (`$stopped.Count -gt 0) { Write-Host "Stopped maintenance for `$(`$stopped.Count) instances" } else { Write-Host "No instances were in maintenance" }
 "@
         }
         $r = $this._RunPs($script)
@@ -861,6 +889,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Action: $Action"
     Write-Host "Cluster ID: $ClusterId"
     Write-Host "Mode: $Mode"
+    Write-Host "Post-Disable Wait: ${PostDisableWaitSeconds}s"
     Write-Host "Config Dir: $ConfigDir"
     if ($Action -eq 'enable') {
         Write-Host "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"

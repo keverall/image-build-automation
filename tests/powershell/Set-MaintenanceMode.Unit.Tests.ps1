@@ -957,3 +957,113 @@ Describe 'Set-MaintenanceMode — mode parameter: Negative and edge cases' {
         }
     }
 }
+
+# =============================================================================
+# PostDisableWaitSeconds parameter tests
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — PostDisableWaitSeconds parameter' {
+    Context 'When disabling maintenance with PostDisableWaitSeconds' {
+        It 'Should accept default PostDisableWaitSeconds (120s) on disable [Action=disable, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should accept custom PostDisableWaitSeconds value [PostDisableWaitSeconds=60, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; PostDisableWaitSeconds = 60 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should accept PostDisableWaitSeconds=0 to skip wait [PostDisableWaitSeconds=0, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; PostDisableWaitSeconds = 0 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should accept large PostDisableWaitSeconds value [PostDisableWaitSeconds=300, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; PostDisableWaitSeconds = 300 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with scom mode and PostDisableWaitSeconds [Mode=scom, PostDisableWaitSeconds=60, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; PostDisableWaitSeconds = 60 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with all mode and PostDisableWaitSeconds [Mode=all, PostDisableWaitSeconds=60, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all'; PostDisableWaitSeconds = 60 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with NoSchedule and PostDisableWaitSeconds [-NoSchedule, PostDisableWaitSeconds=60, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; NoSchedule = $true; PostDisableWaitSeconds = 60 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+    }
+
+    Context 'When PostDisableWaitSeconds has negative values' {
+        It 'Should reject negative PostDisableWaitSeconds [PostDisableWaitSeconds=-1]' {
+            { Set-MaintenanceMode -Action disable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -PostDisableWaitSeconds -1 } | Should -Throw
+        }
+
+        It 'Should reject very large PostDisableWaitSeconds [PostDisableWaitSeconds=99999999]' {
+            { Set-MaintenanceMode -Action disable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -PostDisableWaitSeconds 99999999 } | Should -Throw
+        }
+    }
+
+    Context 'When PostDisableWaitSeconds is used with enable action' {
+        It 'Should accept PostDisableWaitSeconds with enable (no-op but valid) [Action=enable, PostDisableWaitSeconds=60, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour'; PostDisableWaitSeconds = 60 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should accept PostDisableWaitSeconds with validate action (no-op but valid) [Action=validate, PostDisableWaitSeconds=60]' {
+            $params = @{ Action = 'validate'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; PostDisableWaitSeconds = 60 }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+    }
+}
