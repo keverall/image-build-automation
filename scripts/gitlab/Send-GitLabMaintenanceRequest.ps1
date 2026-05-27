@@ -28,6 +28,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Load shared callback helper
+. (Join-Path $PSScriptRoot 'Send-WebCallback.ps1')
+
 function _Trigger-Pipeline {
     param(
         [string] $GitLabUrl,
@@ -119,31 +122,7 @@ function Wait-GitLabMaintenanceResult {
     }
 }
 
-function Send-MaintenanceCallback {
-    param(
-        [Parameter(Mandatory = $true)][string] $CallbackUrl,
-        [Parameter(Mandatory = $true)][hashtable] $Result,
-        [string] $ApiKey
-    )
 
-    if (-not $CallbackUrl) {
-        Write-Warning "No callback URL configured"
-        return $false
-    }
-
-    $body = $Result | ConvertTo-Json -Depth 10
-    $headers = @{ "Content-Type" = "application/json" }
-    if ($ApiKey) { $headers["X-API-Key"] = $ApiKey }
-
-    try {
-        Invoke-RestMethod -Uri $CallbackUrl -Method Post -Body $body -Headers $headers -TimeoutSec 30
-        Write-Host "Callback sent successfully to $CallbackUrl"
-        return $true
-    } catch {
-        Write-Error "Failed to send callback: $($_.Exception.Message)"
-        return $false
-    }
-}
 
 # Define the main function for when this script is dot-sourced
 function Send-GitLabMaintenanceRequest {
@@ -192,7 +171,7 @@ function Send-GitLabMaintenanceRequest {
                     job_details    = $finalResult.jobs
                 }
 
-                Send-MaintenanceCallback -CallbackUrl $CallbackUrl -Result $callbackPayload -ApiKey $CallbackApiKey
+                Send-WebCallback -Url $CallbackUrl -Data $callbackPayload -ApiKey $CallbackApiKey
                 $result.status = $finalResult.pipeline.status
             }
         }

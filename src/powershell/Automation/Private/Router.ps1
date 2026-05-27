@@ -2,7 +2,6 @@
 # Private/Router.ps1 — Request routing implementation
 #
 # Routing table is loaded from configs/request_types.json (single source of truth).
-#
 
 $script:RouteConfigPath = Join-Path $PSScriptRoot '..\..\..\..\configs\request_types.json'
 $script:RouteMap = @{}
@@ -14,26 +13,14 @@ try {
     }
 }
 catch {
-    Write-Warning "Router: Could not load request_types.json – falling back to static map"
-    $script:RouteMap = @{
-        build_iso            = 'New-IsoBuild'
-        update_firmware      = 'Update-Firmware'
-        patch_windows        = 'Invoke-WindowsSecurityUpdate'
-        deploy               = 'Invoke-IsoDeploy'
-        monitor              = 'Start-InstallMonitor'
-        maintenance_enable   = 'Set-MaintenanceMode'
-        maintenance_disable  = 'Set-MaintenanceMode'
-        maintenance_validate = 'Set-MaintenanceMode'
-        opsramp_report       = 'Invoke-OpsRampClient'
-        generate_uuid        = 'New-Uuid'
-    }
+    Write-Warning "Router: Could not load request_types.json – routing unavailable"
+    throw "Failed to load routing configuration from $script:RouteConfigPath"
 }
 
 function Invoke-RoutedRequest {
     <#
     .SYNOPSIS
-Routes a request to the appropriate handler function based on request type.
-         Mirrors route_request(request_type, params).
+        Routes a request to the appropriate handler function based on request type.
 
     .PARAMETER RequestType
         One of the known request types (e.g. 'build_iso', 'maintenance_enable').

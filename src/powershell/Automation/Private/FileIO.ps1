@@ -62,25 +62,9 @@ function Save-JsonResult {
         [string] $OutputDir = '',
         [string] $Category  = $null
     )
-    $current = $PSScriptRoot
-    if (-not $current) { $current = Get-Location }
-    while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
-        $parent = Split-Path $current
-        if ($parent -eq $current -or -not $parent) { break }
-        $current = $parent
-    }
-    $projectRoot = (Resolve-Path $current).Path
+    $projectRoot = Get-ProjectRoot
     if (-not $OutputDir) {
-        $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
-        if ($isTesting -or $Category -eq 'test') {
-            $OutputDir = Join-Path $projectRoot 'generated/logs/testing'
-        } elseif ($Category -eq 'audit' -or $Category -eq 'regulatory') {
-            $OutputDir = Join-Path $projectRoot 'generated/logs/audit'
-        } elseif ($Category -eq 'build_reports') {
-            $OutputDir = Join-Path $projectRoot 'generated/logs/build_reports'
-        } else {
-            $OutputDir = Join-Path $projectRoot 'generated/logs/production'
-        }
+        $OutputDir = Get-LogDirectory -Category $Category
     }
     $ts  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $dir = $OutputDir
