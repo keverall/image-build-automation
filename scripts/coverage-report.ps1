@@ -25,7 +25,7 @@ Write-Host '[coverage-report] Running tests with code coverage...' -ForegroundCo
 
 $config = New-PesterConfiguration
 $config.Run.Path = @($testPath)
-$config.Output.Verbosity = 'None'
+$config.Output.Verbosity = 'Minimal'
 $config.CodeCoverage.Enabled = $true
 $config.CodeCoverage.Path = @($sourcePath)
 $config.CodeCoverage.OutputPath = $outputPath
@@ -35,13 +35,118 @@ $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } els
 $logDir = Join-Path $PROJECT_ROOT "generated/logs/$envName"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
 
-$pesterLogPath = Join-Path $logDir "pester_test_results_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+$pesterLogPath = Join-Path $logDir "testing_coverage_detail_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
 Write-Host "[coverage-report] Running Pester tests... (Detailed log: $pesterLogPath)" -ForegroundColor Cyan
 
 if ($PSVersionTable.PSVersion.Major -ge 7) { $PSStyle.OutputRendering = 'Ansi' }
 Start-Transcript -Path $pesterLogPath -Append:$false | Out-Null
 try {
-    Invoke-Pester -Configuration $config
+    # In Pester 5.7, Invoke-Pester -Configuration returns $null and -PassThru
+    # is incompatible with -Configuration. We run the tests, then parse the
+    # transcript (which already contains Pester's summary output) for counts.
+    $pesterResult = Invoke-Pester -Configuration $config
+
+    # Parse the transcript for Pester's summary lines
+    $logContent = Get-Content $pesterLogPath -Raw
+
+    $passed = 0; $failed = 0; $skipped = 0; $inconclusive = 0; $notRun = 0; $durationSec = 0
+
+    # "Tests completed in 25.78s"
+    $durationMatch = [regex]::Match($logContent, 'Tests completed in ([\d.]+)s')
+    if ($durationMatch.Success) {
+        $durationSec = [math]::Round([double]$durationMatch.Groups[1].Value, 2)
+    }
+
+    # "Tests Passed: 171, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0"
+    $summaryMatch = [regex]::Match($logContent, 'Tests Passed:\s*(\d+),\s*Failed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Inconclusive:\s*(\d+),\s*NotRun:\s*(\d+)')
+    if ($summaryMatch.Success) {
+        $passed        = [int]$summaryMatch.Groups[1].Value
+        $failed        = [int]$summaryMatch.Groups[2].Value
+        $skipped       = [int]$summaryMatch.Groups[3].Value
+        $inconclusive  = [int]$summaryMatch.Groups[4].Value
+        $notRun        = [int]$summaryMatch.Groups[5].Value
+    }
+
+    $durStr = "{0:N2}" -f $durationSec
+    Write-Host ''
+    Write-Host '**********************************************************************'
+    Write-Host '*                    COVERAGE TEST SUMMARY                           *'
+    Write-Host '**********************************************************************'
+    Write-Host '*'
+    Write-Host ('*  Duration : {0}s' -f $durStr)
+    Write-Host '*'
+    Write-Host '*  +--------------+-------+'
+    Write-Host ('*  | Passed       | {0,5} |' -f $passed)
+    Write-Host ('*  | Failed       | {0,5} |' -f $failed)
+    Write-Host ('*  | Skipped      | {0,5} |' -f $skipped)
+    Write-Host ('*  | Inconclusive | {0,5} |' -f $inconclusive)
+    Write-Host ('*  | NotRun       | {0,5} |' -f $notRun)
+    Write-Host '*  +--------------+-------+'
+    Write-Host '*'
+
+    if (-not (Test-Path $outputPath)) {
+        Write-Host '*  WARNING: Coverage data not available'
+    } else {
+        [xml]$xml = Get-Content $outputPath
+
+        $files = @()
+        foreach ($cls in $xml.coverage.packages.package.classes.class) {
+            $filename = $cls.filename
+            $lineRate = [double]$cls.'line-rate'
+            $lines = @()
+
+            $methodLines = $cls.SelectNodes('.//method')
+            foreach ($method in $methodLines) {
+                $lineNodes = $method.SelectNodes('./lines/line')
+                foreach ($lineNode in $lineNodes) {
+                    $lines += $lineNode
+                }
+            }
+
+            $directLines = $cls.SelectNodes('./lines/line')
+            foreach ($lineNode in $directLines) {
+                $lines += $lineNode
+            }
+
+            $totalLines = $lines.Count
+            $coveredLines = ($lines | Where-Object { [int]$_.hits -gt 0 }).Count
+
+            $files += [PSCustomObject]@{
+                Filename = $filename
+                Rate = $lineRate * 100
+                Covered = $coveredLines
+                Missed = $totalLines - $coveredLines
+                Total = $totalLines
+            }
+        }
+
+        $files = $files | Sort-Object Filename
+
+        $totalCovered = ($files | Measure-Object -Property Covered -Sum).Sum
+        $totalLinesCount = ($files | Measure-Object -Property Total -Sum).Sum
+        $overallRate = if ($totalLinesCount -gt 0) { [math]::Round(($totalCovered / $totalLinesCount) * 100, 1) } else { 0 }
+        $pctStr = "{0:N1}%" -f $overallRate
+
+        $barWidth = 40
+        $filledWidth = if ($overallRate -gt 0) { [math]::Floor(($overallRate / 100) * $barWidth) } else { 0 }
+        $emptyWidth = $barWidth - $filledWidth
+        $filledBar = '#' * $filledWidth
+        $emptyBar = '.' * $emptyWidth
+
+        $fileCount = $files.Count
+
+        Write-Host '*  COVERAGE SUMMARY'
+        Write-Host ('*  {0} {1}{2}' -f $pctStr, $filledBar, $emptyBar)
+        Write-Host '*'
+        Write-Host '*  +-----------+----------+----------+--------+'
+        Write-Host ('*  | Files     | {0,-8} |          |        |' -f $fileCount)
+        Write-Host ('*  | Lines     | {0,-8} | covered  | of {1} |' -f $totalCovered, $totalLinesCount)
+        Write-Host ('*  | Rate      | {0,-8} |          |        |' -f $pctStr)
+        Write-Host '*  +-----------+----------+----------+--------+'
+    }
+
+    Write-Host '*'
+    Write-Host '**********************************************************************'
 } finally {
     Stop-Transcript | Out-Null
 }
@@ -58,7 +163,7 @@ foreach ($cls in $xml.coverage.packages.package.classes.class) {
     $filename = $cls.filename
     $lineRate = [double]$cls.'line-rate'
     $lines = @()
-    
+
     $methodLines = $cls.SelectNodes('.//method')
     foreach ($method in $methodLines) {
         $lineNodes = $method.SelectNodes('./lines/line')
@@ -66,15 +171,15 @@ foreach ($cls in $xml.coverage.packages.package.classes.class) {
             $lines += $lineNode
         }
     }
-    
+
     $directLines = $cls.SelectNodes('./lines/line')
     foreach ($lineNode in $directLines) {
         $lines += $lineNode
     }
-    
+
     $totalLines = $lines.Count
     $coveredLines = ($lines | Where-Object { [int]$_.hits -gt 0 }).Count
-    
+
     $files += [PSCustomObject]@{
         Filename = $filename
         Rate = $lineRate * 100
@@ -87,14 +192,14 @@ foreach ($cls in $xml.coverage.packages.package.classes.class) {
 $files = $files | Sort-Object Filename
 
 $totalCovered = ($files | Measure-Object -Property Covered -Sum).Sum
-$totalLines = ($files | Measure-Object -Property Total -Sum).Sum
-$overallRate = if ($totalLines -gt 0) { [math]::Round(($totalCovered / $totalLines) * 100, 1) } else { 0 }
+$totalLinesCount = ($files | Measure-Object -Property Total -Sum).Sum
+$overallRate = if ($totalLinesCount -gt 0) { [math]::Round(($totalCovered / $totalLinesCount) * 100, 1) } else { 0 }
 
 Write-Host ''
 Write-Host '========================================'
 Write-Host '[coverage-report] Code Coverage Summary'
 Write-Host "  Files: $($files.Count)"
-Write-Host "  Lines: $totalCovered / $totalLines ($overallRate%)"
+Write-Host "  Lines: $totalCovered / $totalLinesCount ($overallRate%)"
 Write-Host '========================================'
 Write-Host ''
 
@@ -107,7 +212,7 @@ $output += $header
 $output += $separator
 
 foreach ($f in $files) {
-    $line = $f.Filename.PadRight(56) + " | " + 
+    $line = $f.Filename.PadRight(56) + " | " +
             ("{0:N1}%" -f $f.Rate).PadLeft(6) + " | " +
             $f.Covered.ToString().PadLeft(8) + " | " +
             $f.Missed.ToString().PadLeft(8) + " | " +
@@ -116,11 +221,11 @@ foreach ($f in $files) {
 }
 
 $output += $separator
-$output += ("TOTAL".PadRight(56) + " | " + 
+$output += ("TOTAL".PadRight(56) + " | " +
             ("{0:N1}%" -f $overallRate).PadLeft(6) + " | " +
             $totalCovered.ToString().PadLeft(8) + " | " +
-            ($totalLines - $totalCovered).ToString().PadLeft(8) + " | " +
-            $totalLines.ToString().PadLeft(6))
+            ($totalLinesCount - $totalCovered).ToString().PadLeft(8) + " | " +
+            $totalLinesCount.ToString().PadLeft(6))
 $output += ""
 
 # Don't print the huge table to the console, it floods the terminal.
@@ -134,7 +239,7 @@ $mdOutput += ""
 $mdOutput += "## Summary"
 $mdOutput += ""
 $mdOutput += "- **Files:** $($files.Count)"
-$mdOutput += "- **Lines:** $totalCovered / $totalLines ($overallRate%)"
+$mdOutput += "- **Lines:** $totalCovered / $totalLinesCount ($overallRate%)"
 $mdOutput += ""
 $mdOutput += "## Coverage by File"
 $mdOutput += ""
@@ -146,7 +251,9 @@ foreach ($f in $files) {
     $mdOutput += $mdLine
 }
 
-$mdOutput += "| $($("TOTAL".PadRight(50))) | {0:N1}% | {1} | {2} | {3} |" -f $overallRate, $totalCovered, ($totalLines - $totalCovered), $totalLines
+$mdOutput += "| $($("TOTAL".PadRight(50))) | {0:N1}% | {1} | {2} | {3} |" -f $overallRate, $totalCovered, ($totalLinesCount - $totalCovered), $totalLinesCount
+
+$mdOutput | Out-File -FilePath $mdOutputPath -Encoding UTF8
 
 $txtOutputPath = Join-Path $outputDir 'coverage-report.txt'
 $txtOutput = @()
@@ -155,7 +262,7 @@ $txtOutput += ""
 $txtOutput += "## Summary"
 $txtOutput += ""
 $txtOutput += "- **Files:** $($files.Count)"
-$txtOutput += "- **Lines:** $totalCovered / $totalLines ($overallRate%)"
+$txtOutput += "- **Lines:** $totalCovered / $totalLinesCount ($overallRate%)"
 $txtOutput += ""
 $txtOutput += "## Coverage by File"
 $txtOutput += ""
@@ -167,7 +274,7 @@ foreach ($f in $files) {
     $txtOutput += $txtLine
 }
 
-$txtOutput += "| $($("TOTAL".PadRight(50))) | {0:N1}% | {1} | {2} | {3} |" -f $overallRate, $totalCovered, ($totalLines - $totalCovered), $totalLines
+$txtOutput += "| $($("TOTAL".PadRight(50))) | {0:N1}% | {1} | {2} | {3} |" -f $overallRate, $totalCovered, ($totalLinesCount - $totalCovered), $totalLinesCount
 
 $txtOutput | Out-File -FilePath $txtOutputPath -Encoding UTF8
 
