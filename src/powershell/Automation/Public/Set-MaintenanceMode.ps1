@@ -1,5 +1,5 @@
 ﻿#
-# Set-MaintenanceMode.ps1 — SCOM / iLO / OpenView maintenance-mode orchestrator
+# Set-MaintenanceMode.ps1 — SCOM / OpenView maintenance-mode orchestrator
 # Equivalent of reference implementation cli/maintenance_mode.py (~956 lines)
 #
 # Contains: Set-MaintenanceMode wrapper function, helper functions, manager classes,
@@ -35,8 +35,8 @@ function Set-MaintenanceMode {
         Callable from the module Router.
 
     .DESCRIPTION
-        Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO,
-        and HPE OpenView for a logical cluster defined in clusters_catalogue.json.
+        Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView
+        for a logical cluster defined in clusters_catalogue.json.
         Supports immediate enable/disable as well as scheduled windows with
         automatic disable via Windows Task Scheduler.
         Integrates with OpsRamp for metric/alert emission and can send email
@@ -48,6 +48,9 @@ function Set-MaintenanceMode {
 
     .PARAMETER ClusterId
         Cluster identifier string.
+
+    .PARAMETER Mode
+        'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OpenView.
 
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs').
@@ -80,6 +83,7 @@ function Set-MaintenanceMode {
     param(
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [Parameter(Mandatory, Position = 1)][string] $ClusterId,
+        [Parameter(Position = 2)][ValidateSet('scom', 'all')][string] $Mode = 'all',
         [string] $ConfigDir = 'configs',
         [string] $Start = $null,
         [string] $End = $null,
@@ -96,7 +100,6 @@ function Set-MaintenanceMode {
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
     $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json')           -Required:$false
     $openviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'openview_config.json')       -Required:$false
-    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json')         -Required:$false
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
@@ -143,9 +146,7 @@ function Set-MaintenanceMode {
 
     # Initialise managers
     $scomMgr = $null; try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
-    $iloMgr = [ILOManager]::new($clusterDef)
     $ovMgr = [OpenViewClient]::new($openviewCfg, $clusterDef)
-    $oneviewMgr = $null; try { $oneviewMgr = [OneViewManager]::new($oneviewCfg, $clusterDef) } catch { Write-Warning "OneView manager unavailable: $($_.Exception.Message)" }
     $emailer = [EmailNotifier]::new($emailCfg)
 
     $opsrampClient = $null
@@ -174,24 +175,12 @@ function Set-MaintenanceMode {
         $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo }
         if (-not $scomOk) { $overallOk = $false }
 
-        # iLO
-        $iloRes = $iloMgr.SetMaintenanceWindow($clusterDef, $startDt, $endDt, [bool]$DryRun)
-        $iloOk = $iloRes.Success
-        $audit.steps['ilo'] = @{ Success = $iloOk; Details = $iloRes.Details }
-        if (-not $iloOk) { $overallOk = $false }
-
-        # OpenView
-        $ovRes = $ovMgr.SetMaintenance($clusterDef, $startDt, $endDt, [bool]$DryRun)
-        $ovOk = $ovRes.Success; $ovMsg = $ovRes.Message
-        $audit.steps['openview'] = @{ Success = $ovOk; Message = $ovMsg }
-        if (-not $ovOk) { $overallOk = $false }
-
-        # OneView (HPE OneView for iLO)
-        if ($oneviewMgr) {
-            $oneviewRes = $oneviewMgr.SetMaintenanceWindow($clusterDef, $startDt, $endDt, [bool]$DryRun)
-            $oneviewOk = $oneviewRes.Success; $oneviewMsg = $oneviewRes.Message
-            $audit.steps['oneview'] = @{ Success = $oneviewOk; Message = $oneviewMsg }
-            if (-not $oneviewOk) { $overallOk = $false }
+        # OpenView (only when mode is 'all')
+        if ($Mode -eq 'all') {
+            $ovRes = $ovMgr.SetMaintenance($clusterDef, $startDt, $endDt, [bool]$DryRun)
+            $ovOk = $ovRes.Success; $ovMsg = $ovRes.Message
+            $audit.steps['openview'] = @{ Success = $ovOk; Message = $ovMsg }
+            if (-not $ovOk) { $overallOk = $false }
         }
 
         # Email
@@ -673,200 +662,6 @@ if (`$stopped.Count -gt 0) { Write-Host "Stopped for `$(`$stopped.Count) servers
     }
 }
 
-# ---- OneViewManager ----
-class OneViewManager {
-    [hashtable] $Config
-    [string]    $Appliance
-    [string]    $ModuleName
-    [bool]      $UseWinRM
-    [hashtable] $Cred
-    [string]    $ScopeName
-
-    OneViewManager([hashtable]$Config, [hashtable]$ClusterDef) {
-        $this.Config = $Config
-        $ovConfig = $Config.Get_Item('oneview') ?? @{}
-        $this.Appliance = $ovConfig.Get_Item('appliance') ?? 'oneview.example.com'
-        $this.ModuleName = $ovConfig.Get_Item('module_name') ?? 'HPOneView.Managed'
-        $this.UseWinRM = [bool]($ovConfig.Get_Item('use_winrm') ?? $true)
-        $this.Cred = $null
-        $this.ScopeName = $ClusterDef.Get_Item('oneview_scope') ?? $ClusterDef.Get_Item('display_name')
-        
-        $credCfg = $ovConfig.Get_Item('credentials')
-        if ($credCfg) {
-            $uenv = $credCfg.Get_Item('username_env') ?? 'ONEVIEW_USER'
-            $penv = $credCfg.Get_Item('password_env') ?? 'ONEVIEW_PASSWORD'
-            $u = [System.Environment]::GetEnvironmentVariable($uenv)
-            $p = [System.Environment]::GetEnvironmentVariable($penv)
-            if ($u -and $p) { $this.Cred = @{ username = $u; password = $p } }
-        }
-    }
-
-    [hashtable] _RunPs([string]$Script) {
-        if ($this.UseWinRM) {
-            if (-not $this.Cred) { return @{ Success = $false; Output = 'WinRM credentials not configured' } }
-            return Invoke-PowerShellWinRM -Script $Script `
-                -Server $this.Appliance -Username $this.Cred['username'] -Password $this.Cred['password']
-        }
-        else {
-            return Invoke-PowerShellScript -Script $Script
-        }
-    }
-
-    [hashtable] SetMaintenanceWindow([hashtable]$ClusterDef, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun = $false) {
-        if ($DryRun) {
-            Write-Verbose "[DRY RUN] Would enable OneView maintenance for scope '$($this.ScopeName)'"
-            return @{ Success = $true; Output = "DRY RUN: OneView maintenance for $($this.ScopeName)" }
-        }
-        
-        $script = @"
-Import-Module $($this.ModuleName) -ErrorAction Stop
-Connect-OVMgmt -Appliance "$($this.Appliance)" -Credential (New-Object System.Management.Automation.PSCredential("$($this.Cred['username'])", (ConvertTo-SecureString "$($this.Cred['password'])" -AsPlainText -Force))) -ErrorAction Stop
-`$scope = Get-OVScope -Name "$($this.ScopeName)" -ErrorAction SilentlyContinue
-if (-not `$scope) { Write-Error "Scope '$($this.ScopeName)' not found"; exit 1 }
-`$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
-foreach (`$s in `$servers) {
-    if (-not `$s.MaintenanceModeEnabled) {
-        Enable-OVMaintenanceMode -InputObject `$s -Async -ErrorAction Stop
-        Write-Host "OneView maintenance enabled: `$(`$s.Name)"
-    }
-}
-"@
-        $r = $this._RunPs($script)
-        if ($r.Success) {
-            return @{ Success = $true; Output = $r.Output }
-        }
-        Write-Error "OneView maintenance failed: $($r.Output)"
-        return @{ Success = $false; Output = $r.Output }
-    }
-
-    [hashtable] StopMaintenance([hashtable]$ClusterDef, [bool]$DryRun = $false) {
-        if ($DryRun) {
-            Write-Verbose "[DRY RUN] Would disable OneView maintenance for scope '$($this.ScopeName)'"
-            return @{ Success = $true; Output = "DRY RUN: OneView disable for $($this.ScopeName)" }
-        }
-        
-        $script = @"
-Import-Module $($this.ModuleName) -ErrorAction Stop
-Connect-OVMgmt -Appliance "$($this.Appliance)" -Credential (New-Object System.Management.Automation.PSCredential("$($this.Cred['username'])", (ConvertTo-SecureString "$($this.Cred['password'])" -AsPlainText -Force))) -ErrorAction Stop
-`$scope = Get-OVScope -Name "$($this.ScopeName)" -ErrorAction SilentlyContinue
-if (-not `$scope) { Write-Error "Scope '$($this.ScopeName)' not found"; exit 1 }
-`$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
-foreach (`$s in `$servers) {
-    if (`$s.MaintenanceModeEnabled) {
-        Disable-OVMaintenanceMode -InputObject `$s -Async -ErrorAction Stop
-        Write-Host "OneView maintenance disabled: `$(`$s.Name)"
-    }
-}
-"@
-        $r = $this._RunPs($script)
-        if ($r.Success) {
-            return @{ Success = $true; Output = $r.Output }
-        }
-        Write-Error "OneView maintenance stop failed: $($r.Output)"
-        return @{ Success = $false; Output = $r.Output }
-    }
-}
-
-# ---- ILOManager ----
-class ILOManager {
-    [hashtable] $ClusterDef
-    [string]    $Method
-    [int]       $TimeoutSeconds
-    [string]    $GlobalUser
-    [string]    $GlobalPassword
-
-    ILOManager([hashtable]$ClusterDef) {
-        $this.ClusterDef = $ClusterDef
-        $this.Method = 'rest'
-        $this.TimeoutSeconds = 30
-        $uCred = Get-IloCredentials
-        $this.GlobalUser = $uCred[0]
-        $this.GlobalPassword = $uCred[1]
-    }
-
-    [hashtable] _GetIloCredentials([string]$ServerName) {
-        $credMap = $this.ClusterDef.Get_Item('ilo_credentials')
-        if ($credMap -and $credMap.ContainsKey($ServerName)) {
-            $info = $credMap[$ServerName]
-            $username = $info.Get_Item('username') ?? $this.GlobalUser
-            $penv = $info.Get_Item('password_env')
-            $password = if ($penv) { (Get-CredentialSecret -EnvVarName $penv -Default $this.GlobalPassword) } else { $this.GlobalPassword }
-            return @{ Username = $username; Password = $password }
-        }
-        return @{ Username = $this.GlobalUser; Password = $this.GlobalPassword }
-    }
-
-    [string] _GetIloIp([string]$ServerName) {
-        $m = $this.ClusterDef.Get_Item('ilo_addresses')
-        return if ($m) { $m.Get_Item($ServerName) } else { $null }
-    }
-
-    [hashtable] _CreateWindowRest([string]$IloIp, [string]$Username, [SecureString]$Password,
-        [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
-        if ($DryRun) { return @{ Success = $true; Msg = "[DRY RUN] Would create iLO maintenance window on $IloIp from $StartDt to $EndDt" } }
-        $baseUrl = "https://$IloIp/rest/v1"
-        # Quick reachability test via Invoke-RestMethod
-        try {
-            $null = Invoke-RestMethod -Uri "$baseUrl/systems/1" -Method Get `
-                -Credential (New-Object System.Management.Automation.PSCredential($Username,
-                    (ConvertTo-SecureString $Password -AsPlainText -Force))) `
-                -TimeoutSec $this.TimeoutSeconds -ErrorAction Stop
-        }
-        catch {
-            return @{ Success = $false; Msg = "iLO connection failed: $($_.Exception.Message)" }
-        }
-        $windowName = "maintenance_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-        $body = @{
-            Name      = $windowName
-            StartTime = $StartDt.ToString('o')
-            EndTime   = $EndDt.ToString('o')
-            Repeat    = 'Once'
-        }
-        try {
-            $resp = Invoke-RestMethod -Uri "$baseUrl/maintenancewindows" -Method Post -Body ($body | ConvertTo-Json) `
-                -ContentType 'application/json' `
-                -Credential (New-Object System.Management.Automation.PSCredential($Username,
-                    (ConvertTo-SecureString $Password -AsPlainText -Force))) `
-                -TimeoutSec $this.TimeoutSeconds -ErrorAction Stop
-            return @{ Success = $true; Msg = "Created iLO maintenance window (id=$($resp.Id)) on $IloIp" }
-        }
-        catch {
-            return @{ Success = $false; Msg = "iLO API error: $($_.Exception.Message)" }
-        }
-    }
-
-    [hashtable] SetMaintenanceWindow([hashtable]$ClusterDef, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
-        if ($DryRun) {
-            $fake = @{}
-            foreach ($s in ($ClusterDef.Get_Item('servers') ?? @())) {
-                $fake[$s] = @{ Success = $true; Msg = '[DRY RUN]'; IloIp = ($ClusterDef.Get_Item('ilo_addresses').Get_Item($s) ?? 'N/A') }
-            }
-            return @{ Success = $true; Details = $fake }
-        }
-        $servers = $ClusterDef.Get_Item('servers') ?? @()
-        $iloMap = $ClusterDef.Get_Item('ilo_addresses')
-        if (-not $iloMap) {
-            Write-Warning 'No iLO addresses defined; skipping iLO'
-            return @{ Skipped = $true; Reason = 'No iLO addresses' }
-        }
-        $ok = $true
-        $detail = @{}
-        foreach ($s in $servers) {
-            $ip = $iloMap.Get_Item($s)
-            if (-not $ip) { Write-Warning "No iLO IP for $s; skipping"; $detail[$s] = @{ Success = $false; Error = 'Missing iLO IP' }; $ok = $false; continue }
-            $uCred = $this._GetIloCredentials($s)
-            if (-not $uCred.Username -or -not $uCred.Password) {
-                Write-Warning "Missing iLO credentials for $s; skipping"
-                $detail[$s] = @{ Success = $false; Error = 'Missing credentials' }; $ok = $false; continue
-            }
-            $r = $this._CreateWindowRest($ip, $uCred.Username, $uCred.Password, $StartDt, $EndDt, $false)
-            $detail[$s] = @{ Success = $r.Success; Msg = $r.Msg; IloIp = $ip }
-            if (-not $r.Success) { $ok = $false }
-        }
-        return @{ Success = $ok; Details = $detail }
-    }
-}
-
 # ---- OpenViewClient ----
 class OpenViewClient {
     [hashtable] $Config
@@ -1065,6 +860,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Timestamp (Local): $($result['timestamp_local'])"
     Write-Host "Action: $Action"
     Write-Host "Cluster ID: $ClusterId"
+    Write-Host "Mode: $Mode"
     Write-Host "Config Dir: $ConfigDir"
     if ($Action -eq 'enable') {
         Write-Host "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"
