@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-05-27T14:34:18.6374995+01:00",
+  "total_servers": 5,
+  "successful": 0,
+  "results": [
+    "/home/keverall/repos/image-build-automation/generated/logs/testing build_reports/build_result_1779888858.json",
+    {
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "generated": null,
+      "generated_patched_iso": null,
+      "server": "s",
+      "firmware_iso": null,
+      "combined_iso": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "timestamp": "2026-05-27T14:34:18.5443882+01:00"
+    },
+    "/home/keverall/repos/image-build-automation/generated/logs/testing build_reports/build_result_1779888858.json",
+    {
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "generated": null,
+      "generated_patched_iso": null,
+      "server": "s",
+      "firmware_iso": null,
+      "combined_iso": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "timestamp": "2026-05-27T14:34:18.5735461+01:00"
+    },
+    "/home/keverall/repos/image-build-automation/generated/logs/testing build_reports/build_result_1779888858.json",
+    {
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "generated": null,
+      "generated_patched_iso": null,
+      "server": "s",
+      "firmware_iso": null,
+      "combined_iso": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "timestamp": "2026-05-27T14:34:18.5888074+01:00"
+    },
+    "/home/keverall/repos/image-build-automation/generated/logs/testing build_reports/build_result_1779888858.json",
+    {
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "generated": null,
+      "generated_patched_iso": null,
+      "server": "p",
+      "firmware_iso": null,
+      "combined_iso": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "timestamp": "2026-05-27T14:34:18.6064066+01:00"
+    },
+    "/home/keverall/repos/image-build-automation/generated/logs/testing build_reports/build_result_1779888858.json",
+    {
+      "error": "HPE SUT (hpe_sut) not found. Place in tools/ or add to PATH.",
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "success": false,
+      "generated": null,
+      "generated_patched_iso": null,
+      "server": "p",
+      "firmware_iso": null,
+      "combined_iso": null,
+      "steps": [
+        {
+          "Step": "generate_uuid",
+          "Uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "timestamp": "2026-05-27T14:34:18.6204011+01:00"
+    }
+  ],
+  "failed": 5
+}

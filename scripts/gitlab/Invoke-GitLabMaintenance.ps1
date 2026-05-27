@@ -29,34 +29,9 @@ $ErrorActionPreference = 'Stop'
 $isDotSourced = $MyInvocation.InvocationName -eq '.' -or $MyInvocation.InvocationName -eq ''
 
 # ==============================================================================
-# Callback Helper (defined first so it's available in main execution)
+# Load shared callback helper
 # ==============================================================================
-
-function _Send-Callback {
-    param(
-        [string] $Url,
-        [object] $Data,
-        [string] $ApiKey
-    )
-
-    try {
-        if ($Data -is [string]) {
-            $body = $Data
-        } elseif ($Data -is [hashtable]) {
-            $body = $Data | ConvertTo-Json -Depth 10
-        } else {
-            $body = $Data | ConvertTo-Json -Depth 10
-        }
-        $headers = @{ "Content-Type" = "application/json" }
-        if ($ApiKey) { $headers["X-API-Key"] = $ApiKey }
-
-        Write-Host "Sending callback to $Url"
-        Invoke-RestMethod -Uri $Url -Method Post -Body $body -Headers $headers -TimeoutSec 30
-        Write-Host "Callback sent successfully"
-    } catch {
-        Write-Warning "Failed to send callback: $($_.Exception.Message)"
-    }
-}
+. (Join-Path $PSScriptRoot 'Send-WebCallback.ps1')
 
 # If dot-sourced, just exit (function definitions done below for future use)
 if ($isDotSourced) { return }
@@ -128,7 +103,7 @@ try {
     if ($result.Success) {
         # Send callback on success
         if ($CALLBACK_URL) {
-            _Send-Callback -Url $CALLBACK_URL -Data $output -ApiKey $CALLBACK_API_KEY
+            Send-WebCallback -Url $CALLBACK_URL -Data $output -ApiKey $CALLBACK_API_KEY
         }
         exit 0
     } else {
@@ -143,7 +118,7 @@ try {
                 message     = "Maintenance $ACTION finished with errors"
                 timestamp   = (Get-Date).ToString('o')
             }
-            _Send-Callback -Url $CALLBACK_URL -Data $failOutput -ApiKey $CALLBACK_API_KEY
+            Send-WebCallback -Url $CALLBACK_URL -Data $failOutput -ApiKey $CALLBACK_API_KEY
         }
         exit 1
     }
@@ -167,7 +142,7 @@ try {
 
     # Send callback on error
     if ($CALLBACK_URL) {
-        _Send-Callback -Url $CALLBACK_URL -Data $errorOutput -ApiKey $CALLBACK_API_KEY
+        Send-WebCallback -Url $CALLBACK_URL -Data $errorOutput -ApiKey $CALLBACK_API_KEY
     }
 
     exit 1

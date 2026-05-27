@@ -301,43 +301,18 @@ function Set-MaintenanceMode {
 }
 
 # ---- Constants (always defined so classes referencing them work on dot-source) ----
-# Determine base directory - handle both module import and direct script execution
-# Script is at: src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-# When dot-sourced by module: $PSScriptRoot = module dir (src/powershell/Automation/)
-# When run directly: $PSScriptRoot = script dir (src/powershell/Automation/Public/)
-# Only set if not already set (e.g., by module import)
-if (-not $Script:BaseDir -or $Script:BaseDir -eq '') {
-    $current = $PSScriptRoot
-    if (-not $current -and $MyInvocation.MyCommand.Path) {
-        $current = Split-Path $MyInvocation.MyCommand.Path
-    }
-    if (-not $current) { $current = Get-Location }
-    while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
-        $parent = Split-Path $current
-        if ($parent -eq $current -or -not $parent) { break }
-        $current = $parent
-    }
-    if (Test-Path $current) {
-        $Script:BaseDir = (Resolve-Path $current).Path
-    } else {
-        $Script:BaseDir = $current
-    }
+# Determine base directory using shared utility
+$Script:BaseDir = Get-ProjectRoot
+if (-not $Script:BaseDir) {
+    $Script:BaseDir = Get-Location
 }
-# Only set config dir if not already set
-if (-not $Script:ConfigDir -or $Script:ConfigDir -eq '') {
-    $Script:ConfigDir = Join-Path $Script:BaseDir 'configs'
-}
-if (-not $Script:MaintLogDir -or $Script:MaintLogDir -eq '') {
+
+if (-not $Script:ConfigDir) { $Script:ConfigDir = Join-Path $Script:BaseDir 'configs' }
+if (-not $Script:MaintLogDir) {
     $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
-    if ($isTesting) {
-        $Script:MaintLogDir = Join-Path $Script:BaseDir 'generated/logs/testing'
-    } else {
-        $Script:MaintLogDir = Join-Path $Script:BaseDir 'generated/logs/audit'
-    }
+    $Script:MaintLogDir = Join-Path $Script:BaseDir "generated/logs/$($isTesting ? 'testing' : 'audit')"
 }
-if (-not $Script:DistList -or $Script:DistList -eq '') {
-    $Script:DistList = Join-Path $Script:BaseDir 'maintenance_distribution_list.txt'
-}
+if (-not $Script:DistList) { $Script:DistList = Join-Path $Script:BaseDir 'maintenance_distribution_list.txt' }
 
 if (-not (Test-Path $Script:MaintLogDir)) { Ensure-DirectoryExists -Path $Script:MaintLogDir }
 
@@ -956,9 +931,9 @@ class OpenViewClient {
         $startStr = $StartDt.ToString('yyyy-MM-dd HH:mm:ss')
         $endStr = $EndDt.ToString('yyyy-MM-dd HH:mm:ss')
         $nodesStr = ($NodeIds -join ',')
-        $cmd = "$($this.CliPath) -c `"set maintenance -nodes $nodesStr -start '$startStr' -end '$endStr' -comment '$ClusterName'`""
-        $r = Invoke-Command -Command (Split-PipelineCmd $cmd) -TimeoutSeconds $this.TimeoutSeconds
-        $msg = if ($r.Success) { $r.Output } else { $r.StandardError }
+        $cmdArgs = @($this.CliPath, '-c', "set maintenance -nodes $nodesStr -start '$startStr' -end '$endStr' -comment '$ClusterName'")
+        $r = Invoke-NativeCommand -Command $cmdArgs -TimeoutSeconds $this.TimeoutSeconds
+        $msg = if ($r.Success) { $r.StandardOutput } else { $r.StandardError }
         return @{ Success = $r.Success; Message = $msg }
     }
 }
@@ -1065,117 +1040,39 @@ class EmailNotifier {
     }
 }
 
-# ---- Helper: split a command string into an array (mirrors subprocess list style) ----
-function Split-PipelineCmd([string]$CommandString) {
-    # Minimal split: respects double-quoted groups
-    $tokens = [System.Management.Automation.CommandParameterTokenizer]::new(
-        [System.Management.Automation.Language.TokenKind]::Generic
-    ).Tokenize($CommandString, [ref]$null)
-    return , $CommandString   # fallback: raw string passed through as single command
-}
-
 # ---- Main CLI logic (script mode only) ----
-# Supports two output modes:
-# 1. Human-readable (default): for direct command-line usage
-# 2. JSON: for iRequest/REST API integration (when -Json flag is used)
+# When invoked with pwsh -File, PowerShell binds the param() block automatically.
 
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     $ErrorActionPreference = 'Continue'
 
-    $boundParams = @{}
-    $i = 0
-    while ($i -lt $args.Count) {
-        $arg = $args[$i]
-        switch ($arg) {
-            '-Action'    { if ($i + 1 -lt $args.Count) { $boundParams['Action'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '--Action'   { if ($i + 1 -lt $args.Count) { $boundParams['Action'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '-ClusterId' { if ($i + 1 -lt $args.Count) { $boundParams['ClusterId'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '--ClusterId'{ if ($i + 1 -lt $args.Count) { $boundParams['ClusterId'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '-ConfigDir' { if ($i + 1 -lt $args.Count) { $boundParams['ConfigDir'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '--ConfigDir'{ if ($i + 1 -lt $args.Count) { $boundParams['ConfigDir'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '-Start'     { if ($i + 1 -lt $args.Count) { $boundParams['Start'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '--Start'    { if ($i + 1 -lt $args.Count) { $boundParams['Start'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '-End'       { if ($i + 1 -lt $args.Count) { $boundParams['End'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '--End'      { if ($i + 1 -lt $args.Count) { $boundParams['End'] = $args[$i + 1]; $i += 2 } else { $i++ } }
-            '-DryRun'    { $boundParams['DryRun'] = $true; $i++ }
-            '--DryRun'   { $boundParams['DryRun'] = $true; $i++ }
-            '-NoSchedule'{ $boundParams['NoSchedule'] = $true; $i++ }
-            '--NoSchedule'{ $boundParams['NoSchedule'] = $true; $i++ }
-            '-WhatIf'    { $boundParams['DryRun'] = $true; $i++ }
-            '--WhatIf'   { $boundParams['DryRun'] = $true; $i++ }
-            default      { $i++ }
-        }
-    }
+    $result = Set-MaintenanceMode @PSBoundParameters
 
-    if (-not $boundParams.ContainsKey('Action')) {
-        $boundParams['Action'] = 'enable'
-    }
-    if (-not $boundParams.ContainsKey('DryRun')) {
-        $boundParams['DryRun'] = $false
-    }
-    if (-not $boundParams.ContainsKey('NoSchedule')) {
-        $boundParams['NoSchedule'] = $false
-    }
-
-    # Use provided ConfigDir or fall back to script-level variable
-    $effectiveConfigDir = $boundParams['ConfigDir'] ?? $Script:ConfigDir
-    # Resolve relative paths
-    if (-not [System.IO.Path]::IsPathRooted($effectiveConfigDir)) {
-        $effectiveConfigDir = Join-Path (Get-Location) $effectiveConfigDir
-    }
-    $resolvedPath = Resolve-Path $effectiveConfigDir -ErrorAction SilentlyContinue
-    if ($resolvedPath) {
-        $effectiveConfigDir = $resolvedPath
-    }
-
-    # Load configs
-    $clustersCfg = Import-JsonConfig -Path (Join-Path $effectiveConfigDir 'clusters_catalogue.json') -Required:$false
-    $scomCfg = Import-JsonConfig -Path (Join-Path $effectiveConfigDir 'scom_config.json')           -Required:$false
-    $openviewCfg = Import-JsonConfig -Path (Join-Path $effectiveConfigDir 'openview_config.json')       -Required:$false
-    $emailCfg = Import-JsonConfig -Path (Join-Path $effectiveConfigDir 'email_distribution_lists.json') -Required:$false
-    $opsrampCfg = Import-JsonConfig -Path (Join-Path $effectiveConfigDir 'opsramp_config.json') -Required:$false
-
-    $result = Set-MaintenanceMode @boundParams
-
-    # Add request metadata for iRequest traceability
-    $result['request_type'] = "maintenance_$($boundParams['Action'])"
+    # Add request metadata for traceability
+    $result['request_type'] = "maintenance_$Action"
     $result['timestamp'] = Get-UtcTimestamp
     $result['timestamp_local'] = Get-LocalTimestamp
     $result['source'] = 'direct'
 
     if ($Json) {
-        # Output JSON for iRequest/REST API integration
         $result | ConvertTo-Json -Depth 64
         exit $(if ($result.Success) { 0 } else { 1 })
     }
 
-    # Human-readable output for direct command-line usage
-    $logEntry = @{
-        timestamp = $result['timestamp']
-        timestamp_local = $result['timestamp_local']
-        action = $boundParams['Action']
-        cluster_id = $boundParams['ClusterId']
-        config_dir = $boundParams['ConfigDir'] ?? $Script:ConfigDir
-        start_time_utc = if ($result['StartTimeUtc']) { $result['StartTimeUtc'] } else { 'N/A' }
-        end_time_utc = if ($result['EndTimeUtc']) { $result['EndTimeUtc'] } else { 'N/A' }
-        dry_run = $boundParams['DryRun']
-        no_schedule = $boundParams['NoSchedule']
-        script_path = $MyInvocation.MyCommand.Path
-    }
+    # Human-readable output
     Write-Host "=== Maintenance Mode Command Audit ==="
-    Write-Host "Timestamp (UTC): $($logEntry.timestamp)"
-    Write-Host "Timestamp (Local): $($logEntry.timestamp_local)"
-    Write-Host "Action: $($logEntry.action)"
-    Write-Host "Cluster ID: $($logEntry.cluster_id)"
-    Write-Host "Config Dir: $($logEntry.config_dir)"
-    if ($boundParams['Action'] -eq 'enable') {
-        Write-Host "Start Time (UTC): $($logEntry.start_time_utc)"
-        Write-Host "End Time (UTC): $($logEntry.end_time_utc)"
+    Write-Host "Timestamp (UTC): $($result['timestamp'])"
+    Write-Host "Timestamp (Local): $($result['timestamp_local'])"
+    Write-Host "Action: $Action"
+    Write-Host "Cluster ID: $ClusterId"
+    Write-Host "Config Dir: $ConfigDir"
+    if ($Action -eq 'enable') {
+        Write-Host "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"
+        Write-Host "End Time (UTC): $($result['EndTimeUtc'] ?? 'N/A')"
     }
-    Write-Host "Dry Run: $($logEntry.dry_run)"
-    Write-Host "No Schedule: $($logEntry.no_schedule)"
+    Write-Host "Dry Run: $DryRun"
+    Write-Host "No Schedule: $NoSchedule"
     Write-Host "==================================="
-
     Write-Host ""
     Write-Host "=== Command Result ==="
     Write-Host "Success: $($result.Success)"
