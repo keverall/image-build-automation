@@ -111,7 +111,7 @@ class ISODeployer {
     }
 
     [void] _Log([string]$Action, [string]$ServerName, [string]$Status, [string]$Details = '') {
-        $null = $this.DeployLog.Add(@{ timestamp = (Get-Date).ToString('o'); action = $Action; server = $ServerName; status = $Status; details = $Details })
+        $null = $this.DeployLog.Add(@{ timestamp = Get-UtcTimestamp; action = $Action; server = $ServerName; status = $Status; details = $Details })
         Write-Host "[$Status] $Action | $ServerName | $Details"
     }
 
@@ -308,7 +308,7 @@ class ISODeployer {
             Write-Host "$(if($ok){'✓'}else{'✗'}) $($s.Hostname)"
         }
         $okCount = ($results | Where-Object { $_.success }).Count
-        $summary = @{ timestamp = (Get-Date).ToString('o'); method = $Method; total = $results.Count; successful = $okCount; failed = ($results.Count - $okCount); results = $results }
+        $summary = @{ timestamp = Get-UtcTimestamp; method = $Method; total = $results.Count; successful = $okCount; failed = ($results.Count - $okCount); results = $results }
         $logDirLog = Join-Path $PSScriptRoot '..\..\..\..\generated\logs\deployment'
         Ensure-DirectoryExists -Path $logDirLog
         $logFile = Join-Path $logDirLog "deploy_log_$(Get-FileTimestamp).json"

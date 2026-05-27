@@ -96,3 +96,124 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action va
 - Use `-DryRun` or `-WhatIf` first to validate configuration loading without making changes.
 - **Post-disable wait**: After SCOM maintenance is disabled, servers need time to reboot and stabilize. The default 120-second wait prevents false alerts that support staff frequently report. Set `-PostDisableWaitSeconds 0` to skip.
 - JSON output mode (`-Json`) is available for iRequest/REST API integration.
+
+## Per-Object Status Reporting
+
+When maintenance mode is enabled or disabled, the response includes **detailed per-object status** for every server, network device, cluster node, and cluster server in the SCOM group. This allows the iRequest CMDB to be accurately updated with the maintenance state of each individual object.
+
+### Response Object Structure
+
+Both JSON output (`-Json`) and the return hashtable contain these fields for iRequest integration:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ScomObjects` | array | Array of all objects with their maintenance status |
+| `ScomSummary` | object | Aggregated counts (total, success, already_in_maintenance, failed) |
+| `FailedObjects` | array | Filtered list of only failed objects with NACK details |
+
+### Per-Object Object Structure
+
+Each entry in `ScomObjects` contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Name` | string | Object display name (e.g., `srv01.corp.local`) |
+| `Type` | string | SCOM class type (e.g., `WindowsComputer`, `WindowsCluster`) |
+| `Action` | string | `enable` or `disable` |
+| `Status` | string | `success`, `already_in_maintenance`, `not_in_maintenance`, or `failed` |
+| `Message` | string | Human-readable status message |
+| `NackReason` | string or null | Failure reason (only present for failed objects) |
+| `Resolution` | string or null | Suggested fix for failures (only present for failed objects) |
+
+### Common NACK Reasons
+
+| NackReason | Resolution |
+|------------|------------|
+| Permission denied | Verify SCOM operator role permissions |
+| SCOM agent unreachable | Verify SCOM agent is running and network connectivity |
+| Object not found in SCOM | Verify object is monitored by SCOM |
+| Agent not found in SCOM | Verify agent is installed and registered with SCOM |
+| SCOM operation failed | Check SCOM management server logs |
+
+### CLI Output Example
+
+When running from command line, per-object status is displayed as a table:
+
+```
+=== SCOM Per-Object Status ===
+Total Objects: 15
+Success: 12
+Already in Maintenance: 2
+Failed: 1
+
+[OK] srv01.corp.local (WindowsComputer) - success
+[SKIP] srv02.corp.local (WindowsComputer) - already_in_maintenance
+[FAIL] net-switch-01.corp.local (NetworkDevice) - failed
+  NACK Reason: SCOM agent unreachable
+  Resolution: Verify SCOM agent is running and network connectivity
+===============================
+
+=== NACK Summary (Failed Objects) ===
+Total Failed: 1
+  - net-switch-01.corp.local: SCOM agent unreachable
+    Fix: Verify SCOM agent is running and network connectivity
+===================================
+```
+
+### JSON Output Example (iRequest Integration)
+
+```json
+{
+  "Success": false,
+  "ScomObjects": [
+    {
+      "Name": "srv01.corp.local",
+      "Type": "WindowsComputer",
+      "Action": "enable",
+      "Status": "success",
+      "Message": "Maintenance mode enabled"
+    },
+    {
+      "Name": "net-switch-01.corp.local",
+      "Type": "NetworkDevice",
+      "Action": "enable",
+      "Status": "failed",
+      "Message": "Access denied",
+      "NackReason": "Permission denied",
+      "Resolution": "Verify SCOM operator role permissions"
+    }
+  ],
+  "ScomSummary": {
+    "Total": 15,
+    "Success": 12,
+    "AlreadyInMaintenance": 2,
+    "Failed": 1
+  },
+  "FailedObjects": [
+    {
+      "Name": "net-switch-01.corp.local",
+      "Type": "NetworkDevice",
+      "Action": "enable",
+      "Status": "failed",
+      "NackReason": "Permission denied",
+      "Resolution": "Verify SCOM operator role permissions"
+    }
+  ]
+}
+```
+
+### Testing Per-Object Reporting
+
+```powershell
+# Dry-run to see response structure without making changes
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 'now' -End '+1hour' -DryRun -Json | ConvertFrom-Json | Select-Object ScomObjects, ScomSummary, FailedObjects
+
+# Live run with JSON output for iRequest CMDB integration
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+2hours' -Json
+
+# Verify per-object status in module approach
+Import-Module ./src/powershell/Automation/Automation.psm1 -Force
+$result = Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode all -Start 'now' -End '+1hour' -DryRun
+$result.ScomObjects | Format-Table Name, Type, Status, NackReason
+$result.FailedObjects | ForEach-Object { Write-Host "$($_.Name): $($_.NackReason) -> $($_.Resolution)" }
+```

@@ -120,7 +120,7 @@ class InstallationMonitor {
     }
 
     [void] _Log([string]$Action, [string]$ServerName, [string]$Status, [string]$Details = '') {
-        $null = $this.MonitorLog.Add(@{ timestamp=(Get-Date).ToString('o'); action=$Action; server=$ServerName; status=$Status; details=$Details })
+        $null = $this.MonitorLog.Add(@{ timestamp=Get-UtcTimestamp; action=$Action; server=$ServerName; status=$Status; details=$Details })
         Write-Host "[$Status] $Action | $ServerName | $Details"
     }
 
@@ -205,7 +205,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
     [hashtable] MonitorServer([ServerInfo]$Server, [int]$Timeout = $this.InstallTimeout, [int]$PollInterval = $this.CheckInterval) {
         $hn = $Server.Hostname
         Write-Host "Starting monitor for $hn"
-        $startTime = Get-Date
+        $startTime = [DateTime]::UtcNow
         $result = @{
             server           = $hn; start_time = $startTime.ToString('o'); status='monitoring'
             progress_percent = 0; current_phase = 'Not Started'; duration_seconds = 0
@@ -214,9 +214,9 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
 
         try {
             while ($true) {
-                $checkTime = Get-Date -Format o
+                $checkTime = Get-UtcTimestamp
                 $result['check_count']++
-                $elapsed = ((Get-Date) - $startTime).TotalSeconds
+                $elapsed = ([DateTime]::UtcNow - $startTime).TotalSeconds
 
                 if ($elapsed -gt $Timeout) {
                     $result.status = 'timeout'; $result.error = "Timed out after $Timeout s"
@@ -272,11 +272,11 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
             Write-Error "Monitor error for ${hn}: $($_.Exception.Message)"
         }
         finally {
-            $result['end_time'] = (Get-Date).ToString('o')
-            $result['duration_seconds'] = ((Get-Date) - $startTime).TotalSeconds
+            $result['end_time'] = Get-UtcTimestamp
+            $result['duration_seconds'] = ([DateTime]::UtcNow - $startTime).TotalSeconds
             $sessDir = Join-Path $Script:MonitorLogDir 'monitoring_sessions'
             Ensure-DirectoryExists -Path $sessDir
-            $sessFile = Join-Path $sessDir "monitor_${hn}_$([int][double]::Parse((Get-Date -UFormat %s))).json"
+            $sessFile = Join-Path $sessDir "monitor_${hn}_$([int][double]::Parse(([DateTime]::UtcNow - [DateTime]'1970-01-01').TotalSeconds)).json"
             Save-Json -Data $result -Path $sessFile
             Write-Host "Monitoring session saved: $sessFile"
         }
@@ -293,7 +293,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         $completed  = ($results | Where-Object { $_.status -eq 'completed' }).Count
         $failed     = ($results | Where-Object { $_.status -eq 'failed' }).Count
         $timedOut   = ($results | Where-Object { $_.status -eq 'timeout' }).Count
-        $summary    = @{ timestamp=(Get-Date).ToString('o'); total=$results.Count; completed=$completed;
+        $summary    = @{ timestamp=Get-UtcTimestamp; total=$results.Count; completed=$completed;
             failed=$failed; timeout=$timedOut; details=$results }
         $summaryFile = Join-Path $Script:MonitorLogDir "monitor_summary_$(Get-FileTimestamp).json"
         Save-Json -Data $summary -Path $summaryFile
