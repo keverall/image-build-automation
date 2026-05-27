@@ -52,7 +52,6 @@ class AuditLogger {
         $this.MasterLogPath = [System.IO.Path]::Combine($LogDir, $realLogFile)
         $this.Entries       = [System.Collections.ArrayList]::new()
     }
-    }
 
     # 4-arg convenience overload — Extra defaults to $null
     [hashtable] Log([string]$Action, [string]$Status, [string]$Server, [string]$Details) {
