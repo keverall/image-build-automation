@@ -85,7 +85,7 @@ Set-MaintenanceMode -Action enable `
 # Disable immediately
 Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
 
-# Dry-run — no SCOM/iLO/OpenView changes
+# Dry-run — no SCOM/iLO/OneView changes
 Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' `
     -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
 ```
