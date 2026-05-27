@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-05-25 14:44 UTC
+generated: 2026-05-27 16:13 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO, and HPE OpenView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications.  The function is the PowerShell implementation. automation.cli.maintenance_mode module.
+Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications. The `Mode` parameter controls which systems are affected: `scom` targets only SCOM, while `all` targets both SCOM and OpenView.
 
 ## Parameters
 
@@ -16,6 +16,7 @@ Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO, and HPE Open
 |-----------|-------------|
 | `-Action` | 'enable', 'disable', or 'validate'. |
 | `-ClusterId` | Cluster identifier string. |
+| `-Mode` | 'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OpenView (default: 'all'). |
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
 | `-Start` | Maintenance start datetime string (default: now) format YYYY-MM-DD HH:MM . |
 | `-End` | Maintenance end datetime string format YYYY-MM-DD HH:MM . |
@@ -25,20 +26,47 @@ Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO, and HPE Open
 
 ## Examples
 
-### Example 1
+### Example 1: Enable maintenance (default mode = all)
 ```powershell
 Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
 ```
+Enables maintenance mode for both SCOM and OpenView using the current time as the start.
 
-### Example 2
+### Example 2: Enable with explicit time window
 ```powershell
-Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start '2026-05-17 12:00' -End '2026-05-17 13:00'
 ```
+Enables maintenance mode for both SCOM and OpenView with a specific time window (UTC format YYYY-MM-DD HH:MM).
 
-### Example 3
+### Example 3: Disable maintenance
 ```powershell
 Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
 ```
+Disables maintenance mode for both SCOM and OpenView.
+
+### Example 4: SCOM-only maintenance mode
+```powershell
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -Start now -End '+2hours'
+```
+Enables maintenance mode for SCOM only. OpenView is not affected.
+
+### Example 5: Explicit all systems maintenance mode
+```powershell
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode all -Start '2026-05-17 12:00' -End '2026-05-17 18:00'
+```
+Explicitly enables maintenance mode for both SCOM and OpenView with a scheduled window.
+
+### Example 6: SCOM-only dry run
+```powershell
+Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -DryRun -Start now -End '+1hour'
+```
+Simulates enabling SCOM-only maintenance mode without making actual changes.
+
+### Example 7: Disable SCOM-only maintenance
+```powershell
+Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode scom
+```
+Disables maintenance mode for SCOM only. OpenView is not affected.
 
 ## Original Comment-Based Help
 ```powershell
@@ -47,8 +75,8 @@ Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
         Callable from the module Router.
 
     .DESCRIPTION
-        Orchestrates maintenance-mode operations across SCOM 2015, HPE iLO,
-        and HPE OpenView for a logical cluster defined in clusters_catalogue.json.
+        Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView
+        for a logical cluster defined in clusters_catalogue.json.
         Supports immediate enable/disable as well as scheduled windows with
         automatic disable via Windows Task Scheduler.
         Integrates with OpsRamp for metric/alert emission and can send email
@@ -60,6 +88,9 @@ Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
 
     .PARAMETER ClusterId
         Cluster identifier string.
+
+    .PARAMETER Mode
+        'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OpenView.
 
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs').
