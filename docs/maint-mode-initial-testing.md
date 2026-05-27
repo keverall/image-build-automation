@@ -8,7 +8,7 @@ The script supports both `-DryRun` and `-WhatIf` as equivalent parameters for si
 |-----------|------|-------------|
 | `-Action` | string | 'enable', 'disable', or 'validate' (default: enable) |
 | `-ClusterId` | string | Cluster identifier (required) |
-| `-Mode` | string | 'scom' for SCOM-only, 'all' for SCOM + OpenView (default: all) |
+| `-Mode` | string | 'scom' for SCOM-only, 'openview' for OpenView-only, 'oneview' for OneView-only, 'all' for SCOM + OpenView + OneView (default: all) |
 | `-PostDisableWaitSeconds` | int | Seconds to wait after SCOM disable for server stabilization (default: 120) |
 | `-ConfigDir` | string | Configuration directory (default: configs) |
 | `-Start` | string | Start datetime: 'now' or 'YYYY-MM-DD HH:MM' |
@@ -24,6 +24,40 @@ When maintenance mode is enabled or disabled for SCOM (via either `-Mode scom` o
 
 After disabling SCOM maintenance mode, a configurable wait period (default 120 seconds) allows servers time to reboot, restart services, and stabilize before alerting resumes, preventing false alerts.
 
+## Mode Behavior Summary
+
+| Mode | SCOM | OpenView | OneView | ClusterId Required |
+|------|------|----------|---------|-------------------|
+| `scom` | Yes | No | No | Must be in `clusters_catalogue.json` |
+| `openview` | No | Yes | No | Catalogue lookup first; if not found, passed directly to OpenView API |
+| `oneview` | No | No | Yes | Resolved via OneView API — checks if it's a ServerHardware or Scope |
+| `all` | Yes | Yes | Yes | Must be in `clusters_catalogue.json` |
+
+## OpenView Mode
+
+When `-Mode openview` is used:
+- ClusterId is first looked up in `clusters_catalogue.json`
+- If found in catalogue, maintenance mode is applied to all servers in the cluster's `openview_node_ids` mapping
+- If not found in catalogue, the ClusterId is treated as a server identifier and passed directly to the OpenView REST API
+- The OpenView API determines the object type and applies maintenance mode accordingly
+
+## OneView Mode
+
+When `-Mode oneview` is used:
+- ClusterId is resolved via the OneView API using `ResolveTarget()`
+- OneView checks if the identifier matches a `ServerHardware` (single server) or a `Scope` (cluster/collection)
+- If ServerHardware: maintenance mode is applied to that single server
+- If Scope: maintenance mode is applied to all ServerHardware members within that scope
+- Returns per-object status with ACK/NACK details matching SCOM response format
+
+## ALL Mode
+
+When `-Mode all` is used (default):
+- SCOM maintenance is applied to all objects in the SCOM group (existing behavior)
+- OpenView maintenance is applied to all nodes in the cluster's `openview_node_ids` mapping
+- OneView maintenance is applied to the resolved target (server or scope)
+- All three systems receive per-object status reporting
+
 ## Testing Commands
 
 **1. Dry-run first (recommended) to validate config:**
@@ -36,6 +70,14 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action di
 # SCOM-only mode
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode scom -DryRun
+
+# OpenView-only mode (uses cluster from catalogue or resolves server via OpenView API)
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode openview -Start 'now' -End '+1hour' -DryRun
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode openview -DryRun
+
+# OneView-only mode (resolves server or scope via OneView API)
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'my-server-01' -Mode oneview -Start 'now' -End '+1hour' -DryRun
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'my-server-01' -Mode oneview -DryRun
 ```
 
 **2. Using WhatIf (alias for DryRun):**
@@ -107,9 +149,13 @@ Both JSON output (`-Json`) and the return hashtable contain these fields for iRe
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `ScomObjects` | array | Array of all objects with their maintenance status |
-| `ScomSummary` | object | Aggregated counts (total, success, already_in_maintenance, failed) |
-| `FailedObjects` | array | Filtered list of only failed objects with NACK details |
+| `ScomObjects` | array | Array of SCOM objects with their maintenance status |
+| `ScomSummary` | object | Aggregated SCOM counts (total, success, already_in_maintenance/not_in_maintenance, failed) |
+| `OpenViewObjects` | array | Array of OpenView objects with their maintenance status |
+| `OpenViewSummary` | object | Aggregated OpenView counts |
+| `OneViewObjects` | array | Array of OneView objects with their maintenance status |
+| `OneViewSummary` | object | Aggregated OneView counts |
+| `FailedObjects` | array | Filtered list of only failed objects across all systems with NACK details |
 
 ### Per-Object Object Structure
 
