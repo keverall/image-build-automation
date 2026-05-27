@@ -22,6 +22,14 @@ $REQUIRED_MODULES = @(
     @{ Name = 'PlatyPS';       Version = '0.14.0';        Scope = 'CurrentUser' }
 )
 
+# Make binary configuration (for Windows)
+$MAKE_DOWNLOAD_URLS = @(
+    'https://eternallybored.org/misc/make/make-4.4.1.zip',
+    'https://sourceforge.net/projects/ezwinports/files/make-4.4.1-without-guile-w32-bin.zip/download'
+)
+$MAKE_DIRECT_URL = 'https://github.com/chocolatey/choco/raw/37575d0f7b3e2e3e5c8b3b1d0e6c1e0b5a4d3c2f/lib/make/tools/make.exe'
+$MAKE_EXPECTED_HASH = ''
+
 # Colors for terminal output (Windows/Linux compatible)
 $COLOR_GREEN = "`e[32m"
 $COLOR_CYAN  = "`e[36m"
@@ -87,6 +95,132 @@ function Install-RequiredModules {
     Write-OK "Help updated"
 }
 
+# ─── Make Installation (Windows) ─────────────────────────────────────────────
+function Install-Make {
+    $isWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSVersion.Major -le 5
+    if (-not $isWindows) {
+        Write-Log "Non-Windows platform detected, skipping make installation"
+        return
+    }
+
+    # Check if make is already available
+    if (Get-Command make -ErrorAction SilentlyContinue) {
+        $makeVersion = make --version 2>$null | Select-Object -First 1
+        Write-Log "make already installed: $makeVersion"
+        Write-OK "make version check passed"
+        return
+    }
+
+    Write-Log "Installing make for Windows..."
+
+    # Download precompiled binary to project-local bin directory
+    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
+    if (-not (Test-Path $localBinDir)) {
+        New-Item -ItemType Directory -Force -Path $localBinDir | Out-Null
+    }
+    $localMakePath = Join-Path $localBinDir 'make.exe'
+
+    # Check if already downloaded
+    if (Test-Path $localMakePath) {
+        Write-Log "make binary found at: $localMakePath"
+        $env:PATH = "$localBinDir;$env:PATH"
+        Write-OK "make available from local bin directory"
+        return
+    }
+
+    Write-Log "Downloading make binary..."
+
+    # Configure proxy if environment variables are set
+    $proxyParams = @{}
+    if ($env:HTTPS_PROXY) {
+        $proxyParams['Proxy'] = $env:HTTPS_PROXY
+        Write-Log "Using proxy: $env:HTTPS_PROXY"
+    } elseif ($env:HTTP_PROXY) {
+        $proxyParams['Proxy'] = $env:HTTP_PROXY
+        Write-Log "Using proxy: $env:HTTP_PROXY"
+    }
+
+    # Try zip archive URLs first
+    foreach ($url in $MAKE_DOWNLOAD_URLS) {
+        try {
+            Write-Log "Trying: $url"
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+            $downloadPath = Join-Path $localBinDir "make_$($url.GetHashCode()).zip"
+            Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
+
+            Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseBasicParsing -TimeoutSec 30 @proxyParams
+
+            if (Test-Path $downloadPath) {
+                try {
+                    Expand-Archive -Path $downloadPath -DestinationPath $localBinDir -Force -ErrorAction SilentlyContinue
+                    $foundMake = Get-ChildItem -Path $localBinDir -Filter 'make.exe' -Recurse | Select-Object -First 1
+                    if ($foundMake) {
+                        if ($foundMake.DirectoryName -ne $localBinDir) {
+                            Move-Item $foundMake.FullName $localMakePath -Force
+                        }
+                        Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
+
+                        if ($MAKE_EXPECTED_HASH) {
+                            $actualHash = (Get-FileHash $localMakePath -Algorithm SHA256).Hash
+                            if ($actualHash -ne $MAKE_EXPECTED_HASH) {
+                                Remove-Item $localMakePath -Force -ErrorAction SilentlyContinue
+                                throw "Hash mismatch for make.exe: expected $MAKE_EXPECTED_HASH, got $actualHash"
+                            }
+                            Write-Log "SHA-256 hash verified"
+                        }
+
+                        $env:PATH = "$localBinDir;$env:PATH"
+                        Write-OK "make downloaded and extracted to local bin directory"
+                        return
+                    }
+                } catch {
+                    Write-Warn "Extraction failed for $url, trying next URL..."
+                }
+                Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
+            }
+        } catch {
+            Write-Warn "Download failed from $url : $($_.Exception.Message)"
+        }
+    }
+
+    # Try direct .exe download as final fallback
+    try {
+        Write-Log "Trying direct .exe download: $MAKE_DIRECT_URL"
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        Remove-Item $localMakePath -Force -ErrorAction SilentlyContinue
+
+        Invoke-WebRequest -Uri $MAKE_DIRECT_URL -OutFile $localMakePath -UseBasicParsing -TimeoutSec 30 @proxyParams
+
+        if (Test-Path $localMakePath) {
+            if ($MAKE_EXPECTED_HASH) {
+                $actualHash = (Get-FileHash $localMakePath -Algorithm SHA256).Hash
+                if ($actualHash -ne $MAKE_EXPECTED_HASH) {
+                    Remove-Item $localMakePath -Force -ErrorAction SilentlyContinue
+                    throw "Hash mismatch for make.exe: expected $MAKE_EXPECTED_HASH, got $actualHash"
+                }
+                Write-Log "SHA-256 hash verified"
+            }
+            $env:PATH = "$localBinDir;$env:PATH"
+            Write-OK "make downloaded directly to local bin directory"
+            return
+        }
+    } catch {
+        Write-Warn "Direct .exe download failed: $($_.Exception.Message)"
+    }
+
+    # All methods failed
+    Write-Warn "Could not automatically install make."
+    Write-Warn "To manually install make:"
+    Write-Warn "  1. Download make.exe from: https://eternallybored.org/misc/make/"
+    Write-Warn "  2. Place it in: $localBinDir\make.exe"
+    Write-Warn "  3. Or add make.exe to your system PATH"
+    Write-Warn "Alternatively, you can run PowerShell scripts directly without make:"
+    Write-Warn "  pwsh -File scripts/setup-runner.ps1"
+    Write-Warn "  pwsh -File scripts/run-tests.ps1"
+    Write-Warn "  pwsh -File scripts/lint.ps1"
+    Write-Warn "  pwsh -File scripts/coverage-report.ps1"
+}
+
 # ─── Verify Installation ───────────────────────────────────────────────────────
 function Test-PowerShellTools {
     Write-Log "Verifying PowerShell tools..."
@@ -123,15 +257,25 @@ function Show-Summary {
     Write-Host ""
     Write-Host "${COLOR_YELLOW}To run PowerShell tests:${COLOR_RESET}"
     Write-Host "    cd $PROJECT_ROOT"
-    Write-Host "    pwsh -File scripts/run-pwsh-tests.ps1"
+    Write-Host "    pwsh -File scripts/run-tests.ps1"
     Write-Host ""
     Write-Host "${COLOR_YELLOW}To lint PowerShell files:${COLOR_RESET}"
     Write-Host "    pwsh -NoProfile -Command 'Invoke-ScriptAnalyzer -Path src/powershell -Recurse'"
     Write-Host ""
-    Write-Host "${COLOR_CYAN}Makefile integration:${COLOR_RESET}"
-    Write-Host "    make pwsh-setup   # Run this script"
-    Write-Host "    make pwsh-test    # Run Pester tests"
-    Write-Host "    make pwsh-lint    # Lint PowerShell code"
+    Write-Host "${COLOR_CYAN}Makefile targets:${COLOR_RESET}"
+    Write-Host "    make setup      # Run this setup script"
+    Write-Host "    make test       # Run all Pester tests"
+    Write-Host "    make lint       # Lint PowerShell with PSScriptAnalyzer"
+    Write-Host "    make coverage   # Run tests with code coverage"
+    Write-Host "    make clean      # Remove build artifacts"
+    Write-Host ""
+    if (-not (Get-Command make -ErrorAction SilentlyContinue)) {
+        Write-Host "${COLOR_YELLOW}make not found - run PowerShell scripts directly:${COLOR_RESET}"
+        Write-Host "    pwsh -File scripts/setup-runner.ps1"
+        Write-Host "    pwsh -File scripts/run-tests.ps1"
+        Write-Host "    pwsh -File scripts/lint.ps1"
+        Write-Host "    pwsh -File scripts/coverage-report.ps1"
+    }
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -144,6 +288,7 @@ function Main {
 
     Test-PowerShellVersion
     Install-RequiredModules
+    Install-Make
     Test-PowerShellTools
     Show-Summary
 
