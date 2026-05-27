@@ -88,7 +88,7 @@ function Set-MaintenanceMode {
     param(
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [Parameter(Mandatory, Position = 1)][string] $ClusterId,
-        [Parameter(Position = 2)][ValidateSet('scom', 'all')][string] $Mode = 'all',
+        [Parameter(Position = 2)][ValidateSet('scom', 'oneview', 'all')][string] $Mode = 'all',
         [int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
         [string] $Start = $null,
@@ -105,25 +105,50 @@ function Set-MaintenanceMode {
     # Load configs
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
     $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json')           -Required:$false
-    $openviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'openview_config.json')       -Required:$false
+    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json')        -Required:$false
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
-    $clustersMap = $clustersCfg.Get_Item('clusters')
-    if (-not $clustersMap -or -not $clustersMap.ContainsKey($ClusterId)) {
-        Write-Verbose "Cluster ID '$ClusterId' not found in catalogue."
-        return @{ Success = $false; Error = "Cluster ID '$ClusterId' not found in catalogue." }
-    }
-    $clusterDef = $clustersMap[$ClusterId]
+    # For oneview mode, ClusterId can be a server name - resolve via API
+    # For scom mode, ClusterId must be in catalogue (current behavior)
+    $isDirectServerMode = ($Mode -eq 'oneview')
+    $clusterDef = $null
+    $clusterName = $ClusterId
 
-    # Validate cluster definition
-    $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
-    $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
-    if ($missing) { Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"; return @{ Success = $false; Error = "Missing fields: $($missing -join ', ')" } }
-    $servers = $clusterDef.Get_Item('servers')
-    if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
-        Write-Verbose "Cluster 'servers' must be a non-empty list."
-        return @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list." }
+    if ($isDirectServerMode) {
+        # Try catalogue lookup first
+        $clustersMap = $clustersCfg.Get_Item('clusters')
+        if ($clustersMap -and $clustersMap.ContainsKey($ClusterId)) {
+            $clusterDef = $clustersMap[$ClusterId]
+            $clusterName = $clusterDef.Get_Item('display_name') ?? $ClusterId
+        }
+        # If not in catalogue, will be resolved via OneView API later
+    } else {
+        # SCOM or ALL mode - must be in catalogue
+        $clustersMap = $clustersCfg.Get_Item('clusters')
+        if (-not $clustersMap -or -not $clustersMap.ContainsKey($ClusterId)) {
+            Write-Verbose "Cluster ID '$ClusterId' not found in catalogue."
+            return @{ Success = $false; Error = "Cluster ID '$ClusterId' not found in catalogue." }
+        }
+        $clusterDef = $clustersMap[$ClusterId]
+        $clusterName = $clusterDef.Get_Item('display_name') ?? $ClusterId
+    }
+
+    # Validate cluster definition if found (required for scom/all modes)
+    if ($clusterDef -and ($Mode -eq 'scom' -or $Mode -eq 'all')) {
+        $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
+        $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
+        if ($missing) { Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"; return @{ Success = $false; Error = "Missing fields: $($missing -join ', ')" } }
+        $servers = $clusterDef.Get_Item('servers')
+        if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
+            Write-Verbose "Cluster 'servers' must be a non-empty list."
+            return @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list." }
+        }
+    } elseif (-not $clusterDef -and $isDirectServerMode) {
+        # Single server mode - derive servers array from ClusterId
+        $servers = @($ClusterId)
+    } elseif ($clusterDef -and $isDirectServerMode) {
+        $servers = $clusterDef.Get_Item('servers')
     }
 
     # VALIDATE action
@@ -156,8 +181,28 @@ function Set-MaintenanceMode {
     }
 
     # Initialise managers
-    $scomMgr = $null; try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
-    $ovMgr = [OpenViewClient]::new($openviewCfg, $clusterDef)
+    $scomMgr = $null
+    $oneviewMgr = $null
+    $resolveResult = $null
+
+    if ($Mode -eq 'scom' -or $Mode -eq 'all') {
+        try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
+    }
+
+    if ($Mode -eq 'oneview' -or $Mode -eq 'all') {
+        try {
+            $oneviewMgr = [OneViewClient]::new($oneviewCfg)
+            # Resolve target for oneview - determine if server or cluster/scope
+            if ($oneviewMgr -and $isDirectServerMode) {
+                $resolveResult = $oneviewMgr.ResolveTarget($ClusterId)
+                if (-not $resolveResult.Success) {
+                    return @{ Success = $false; Error = "OneView could not resolve '$ClusterId' as server or cluster: $($resolveResult.Message)" }
+                }
+                $clusterName = $resolveResult.TargetName
+            }
+        } catch { Write-Warning "OneView client unavailable: $($_.Exception.Message)" }
+    }
+
     $emailer = [EmailNotifier]::new($emailCfg)
 
     $opsrampClient = $null
@@ -172,8 +217,10 @@ function Set-MaintenanceMode {
     if ($Action -eq 'enable') {
         # SCOM — use group mode to put ALL objects in the SCOM group into maintenance mode
         # (servers, network devices, nodes, cluster objects, everything under the group)
-        $scomOk = $false; $scomInfo = ''; $scomObjects = @(); $scomSummary = @{}
+        # Only for 'scom' and 'all' modes
+        $scomOk = $true; $scomInfo = ''; $scomObjects = @(); $scomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
         if ($scomMgr) {
+            $scomOk = $false
             $durHrs = $duration.TotalSeconds / 3600.0
             $comment = "iRequest Maintenance: $ClusterId"
             $scomRes = $scomMgr.EnterMaintenance(
@@ -185,15 +232,26 @@ function Set-MaintenanceMode {
             $scomSummary = $scomRes.Summary
             $scomInfo = if ($scomRes.Output) { ($scomRes.Output -join "`n") } else { '' }
         }
-        $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo; Objects = $scomObjects; Summary = $scomSummary }
-        if (-not $scomOk) { $overallOk = $false }
+        if ($Mode -eq 'scom' -or $Mode -eq 'all') {
+            $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo; Objects = $scomObjects; Summary = $scomSummary }
+            if (-not $scomOk) { $overallOk = $false }
+        }
 
-        # OpenView (only when mode is 'all')
-        if ($Mode -eq 'all') {
-            $ovRes = $ovMgr.SetMaintenance($clusterDef, $startDt, $endDt, [bool]$DryRun)
-            $ovOk = $ovRes.Success; $ovMsg = $ovRes.Message
-            $audit.steps['openview'] = @{ Success = $ovOk; Message = $ovMsg }
-            if (-not $ovOk) { $overallOk = $false }
+        # OneView — for 'oneview' and 'all' modes
+        $oneviewOk = $true; $oneviewMsg = ''; $oneviewObjects = @(); $oneviewSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
+        if ($Mode -eq 'oneview' -or $Mode -eq 'all') {
+            if ($oneviewMgr) {
+                $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $ClusterId }
+                $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+                $oneviewRes = $oneviewMgr.SetMaintenance($targetName, $targetType, $startDt, $endDt, [bool]$DryRun)
+                $oneviewOk = $oneviewRes.Success; $oneviewMsg = $oneviewRes.Message
+                $oneviewObjects = $oneviewRes.Objects ?? @()
+                $oneviewSummary = $oneviewRes.Summary ?? @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
+            } else {
+                $oneviewOk = $false; $oneviewMsg = 'OneView client not available'
+            }
+            $audit.steps['oneview'] = @{ Success = $oneviewOk; Message = $oneviewMsg; Objects = $oneviewObjects; Summary = $oneviewSummary }
+            if (-not $oneviewOk) { $overallOk = $false }
         }
 
         # Email
@@ -204,16 +262,18 @@ function Set-MaintenanceMode {
         # OpsRamp
         $opsOk = $false
         if ($opsrampClient -and -not $DryRun) {
+            $env = if ($clusterDef) { $clusterDef.Get_Item('environment') } else { 'unknown' }
+            $displayName = if ($clusterDef) { $clusterDef.Get_Item('display_name') } else { $clusterName }
             foreach ($s in $servers) {
-                $opsrampClient.SendMetric($s, 'maintenance.mode', 1, [DateTime]::MinValue, @{ cluster = $ClusterId; environment = $clusterDef.Get_Item('environment') })
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 1, [DateTime]::MinValue, @{ cluster = $ClusterId; environment = $env })
             }
             $opsOk = $opsrampClient.SendAlert($ClusterId, 'maintenance.enabled', 'INFO',
                 "Maintenance enabled for $ClusterId",
-                @{ cluster = $clusterDef.Get_Item('display_name'); servers = $servers;
+                @{ cluster = $displayName; servers = $servers;
                     start = Convert-ToUtcIso8601 $startDt; end = Convert-ToUtcIso8601 $endDt
                 })
             $opsrampClient.SendEvent($ClusterId, 'maintenance.enabled',
-                "Maintenance window started for $($clusterDef.Get_Item('display_name'))",
+                "Maintenance window started for $displayName",
                 @{ cluster = $ClusterId; action = 'enable' })
         }
         $audit.steps['opsramp'] = @{ Success = $opsOk }
@@ -239,8 +299,10 @@ function Set-MaintenanceMode {
     }
     elseif ($Action -eq 'disable') {
         # SCOM — exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
-        $scomExitOk = $false; $scomExitObjects = @(); $scomExitSummary = @{}
-        if ($scomMgr) {
+        # Only for 'scom' and 'all' modes
+        $scomExitOk = $true; $scomExitObjects = @(); $scomExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
+        if ($scomMgr -and ($Mode -eq 'scom' -or $Mode -eq 'all')) {
+            $scomExitOk = $false
             Write-Verbose "Exiting SCOM maintenance mode for group '$($clusterDef.Get_Item('scom_group'))' (all objects)"
             $scomExitRes = $scomMgr.ExitMaintenance(
                 $clusterDef.Get_Item('scom_group'),
@@ -265,21 +327,38 @@ function Set-MaintenanceMode {
             }
         }
 
+        # OneView disable — for 'oneview' and 'all' modes
+        $oneviewExitOk = $true; $oneviewExitMsg = ''; $oneviewExitObjects = @(); $oneviewExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
+        if (($Mode -eq 'oneview' -or $Mode -eq 'all') -and $oneviewMgr) {
+            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $ClusterId }
+            $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+            $oneviewExitRes = $oneviewMgr.DisableMaintenance($targetName, $targetType, [bool]$DryRun)
+            $oneviewExitOk = $oneviewExitRes.Success; $oneviewExitMsg = $oneviewExitRes.Message
+            $oneviewExitObjects = $oneviewExitRes.Objects ?? @()
+            $oneviewExitSummary = $oneviewExitRes.Summary ?? @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
+            $audit.steps['oneview_exit'] = @{ Success = $oneviewExitOk; Message = $oneviewExitMsg; Objects = $oneviewExitObjects; Summary = $oneviewExitSummary }
+            if (-not $oneviewExitOk) { $overallOk = $false }
+        }
+
         # Email disable notification
-        $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, [DateTime]::UtcNow, [bool]$DryRun)
-        $audit.steps['email'] = @{ Sent = $emailOk }
-        if (-not $emailOk) { $overallOk = $false }
+        if ($clusterDef) {
+            $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, [DateTime]::UtcNow, [bool]$DryRun)
+            $audit.steps['email'] = @{ Sent = $emailOk }
+            if (-not $emailOk) { $overallOk = $false }
+        }
 
         # OpsRamp
         if ($opsrampClient -and -not $DryRun) {
+            $env = if ($clusterDef) { $clusterDef.Get_Item('environment') } else { 'unknown' }
+            $displayName = if ($clusterDef) { $clusterDef.Get_Item('display_name') } else { $clusterName }
             foreach ($s in $servers) {
-                $opsrampClient.SendMetric($s, 'maintenance.mode', 0, [DateTime]::MinValue, @{ cluster = $ClusterId })
+                $opsrampClient.SendMetric($s, 'maintenance.mode', 0, [DateTime]::MinValue, @{ cluster = $ClusterId; environment = $env })
             }
             $opsrampClient.SendAlert($ClusterId, 'maintenance.disabled', 'INFO',
                 "Maintenance disabled for $ClusterId",
                 @{ completed_at = Get-UtcTimestamp })
             $opsrampClient.SendEvent($ClusterId, 'maintenance.disabled',
-                "Maintenance window ended for $($clusterDef.Get_Item('display_name'))",
+                "Maintenance window ended for $displayName",
                 @{ cluster = $ClusterId; action = 'disable' })
         }
 
@@ -296,7 +375,6 @@ function Set-MaintenanceMode {
     _Save-AuditRecord $audit $auditFile
 
     # Build detailed completion message
-    $clusterName = $clusterDef.Get_Item('display_name') ?? $ClusterId
     $serverCount = ($servers | Measure-Object).Count
     $dryRunNote = if ($DryRun) { " [DRY-RUN]" } else { "" }
     
@@ -317,8 +395,18 @@ function Set-MaintenanceMode {
     else { Write-Warning $detailMessage }
     
     # Build per-object results for response
-    $allScomObjects = @($scomObjects)
-    $failedScomObjects = [array]@($allScomObjects | Where-Object { $_.Status -eq 'failed' })
+    $allScomObjects = @($scomObjects ?? @())
+    $allOneviewObjects = @($oneviewObjects ?? @())
+    $allExitObjects = @($scomExitObjects ?? @())
+    $allOneviewExitObjects = @($oneviewExitObjects ?? @())
+
+    $actionObjects = if ($Action -eq 'enable') {
+        $allScomObjects + $allOneviewObjects
+    } else {
+        $allExitObjects + $allOneviewExitObjects
+    }
+    
+    $failedObjects = [array]@($actionObjects | Where-Object { $_.Status -eq 'failed' })
     
     return @{ 
         Success = $overallOk
@@ -332,7 +420,9 @@ function Set-MaintenanceMode {
         AuditFile = $auditFile
         ScomObjects = $allScomObjects
         ScomSummary = if ($Action -eq 'enable') { $scomSummary } elseif ($Action -eq 'disable') { $scomExitSummary } else { @{} }
-        FailedObjects = $failedScomObjects
+        OneViewObjects = $allOneviewObjects
+        OneViewSummary = if ($Action -eq 'enable') { $oneviewSummary } elseif ($Action -eq 'disable') { $oneviewExitSummary } else { @{} }
+        FailedObjects = $failedObjects
     }
 }
 
@@ -871,74 +961,330 @@ if (`$stopped.Count -gt 0) { Write-Host "Stopped maintenance for `$(`$stopped.Co
     }
 }
 
-# ---- OpenViewClient ----
-class OpenViewClient {
+# ---- OneViewClient ----
+class OneViewClient {
     [hashtable] $Config
-    [string]    $BaseUrl
-    [string]    $ApiVersion
-    [string]    $Endpoint
-    [int]       $TimeoutSeconds
-    [string]    $AuthType
+    [string]    $Appliance
+    [string]    $ModuleName
+    [bool]      $UseWinRM
+    [string]    $WinRMServer
     [string]    $Username
     [string]    $Password
-    [bool]      $UseCli
-    [string]    $CliPath
 
-    OpenViewClient([hashtable]$Config, [hashtable]$ClusterDef) {
-        $ovConfig = $Config.Get_Item('openview') ?? @{}
+    OneViewClient([hashtable]$Config) {
+        $ovConfig = $Config.Get_Item('oneview') ?? @{}
         $this.Config = $ovConfig
-        $this.BaseUrl = $ovConfig.Get_Item('default_api_url') ?? 'https://openview.example.com/api'
-        $this.ApiVersion = $ovConfig.Get_Item('api_version') ?? 'v1'
-        $this.Endpoint = $ovConfig.Get_Item('maintenance_endpoint') ?? '/maintenance'
-        $this.TimeoutSeconds = ($ovConfig.Get_Item('timeout_seconds') ?? 30)
-        $authCfg = $ovConfig.Get_Item('auth') ?? @{}
-        $this.AuthType = $authCfg.Get_Item('type') ?? 'basic'
-        $uCreds = Get-OpenViewCredentials
-        $this.Username = $uCreds[0]
-        $this.Password = $uCreds[1]
-        $this.UseCli = [bool]($ovConfig.Get_Item('use_cli') ?? $false)
-        $this.CliPath = $ovConfig.Get_Item('cli_path') ?? 'ovcall'
+        $this.Appliance = $ovConfig.Get_Item('appliance') ?? 'oneview.example.com'
+        $this.ModuleName = $ovConfig.Get_Item('module_name') ?? 'HPOneView.Managed'
+        $this.UseWinRM = [bool]($ovConfig.Get_Item('use_winrm') ?? $false)
+        if ($this.UseWinRM) {
+            $winrmCfg = $ovConfig.Get_Item('winrm') ?? @{}
+            $this.WinRMServer = $winrmCfg.Get_Item('server') ?? $this.Appliance
+        }
+        $credCfg = $ovConfig.Get_Item('credentials') ?? @{}
+        $userEnv = $credCfg.Get_Item('username_env') ?? 'ONEVIEW_USER'
+        $passEnv = $credCfg.Get_Item('password_env') ?? 'ONEVIEW_PASSWORD'
+        $this.Username = [System.Environment]::GetEnvironmentVariable($userEnv)
+        $this.Password = [System.Environment]::GetEnvironmentVariable($passEnv)
     }
 
-    [hashtable] SetMaintenance([hashtable]$ClusterDef, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
-        $nodeIdsMap = $ClusterDef.Get_Item('openview_node_ids')
-        if (-not $nodeIdsMap) { return @{ Success = $true; Message = 'No OpenView nodes configured' } }
-        $nodeIds = [System.Collections.ArrayList]@($nodeIdsMap.Values)
-        if ($this.UseCli) { return $this._SetViaCli($nodeIds, $StartDt, $EndDt, $ClusterDef.Get_Item('display_name'), $DryRun) }
-        return $this._SetViaRest($nodeIds, $StartDt, $EndDt, $ClusterDef.Get_Item('display_name'), $DryRun)
+    [hashtable] SetMaintenance([object]$Target, [string]$TargetType, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
+        if ($this.UseWinRM) {
+            return $this._SetViaWinRM($Target, $TargetType, $StartDt, $EndDt, $DryRun)
+        }
+        return $this._SetViaModule($Target, $TargetType, $StartDt, $EndDt, $DryRun)
     }
 
-    [hashtable] _SetViaRest([object[]]$NodeIds, [DateTime]$StartDt, [DateTime]$EndDt, [string]$ClusterName, [bool]$DryRun) {
-        if ($DryRun) { return @{ Success = $true; Message = "[DRY RUN] OV REST for $($NodeIds -join ',')" } }
-        $body = @{
-            nodes      = $NodeIds
-            start_time = $StartDt.ToString('o')
-            end_time   = $EndDt.ToString('o')
-            comment    = "Maintenance for $ClusterName"
-            cluster    = $ClusterName
+    [hashtable] _SetViaModule([object]$Target, [string]$TargetType, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
+        $ovModule = $this.ModuleName
+        $ovAppliance = $this.Appliance
+        if ($DryRun) {
+            return @{ Success = $true; Message = "[DRY RUN] OneView maintenance for $TargetType '$Target'"; Objects = @() }
+        }
+        $scriptContent = @"
+Import-Module $ovModule -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$objects = @()
+`$success = 0
+`$failed = 0
+`$alreadyInMaintenance = 0
+if ('$TargetType' -eq 'ServerHardware') {
+    `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    `$obj = @{
+        Name = `$server.Name
+        Type = `$server.Type
+        Status = 'unknown'
+        Message = ''
+    }
+    try {
+        if (`$server.MaintenanceModeEnabled) {
+            `$obj.Status = 'already_in_maintenance'
+            `$obj.Message = 'Already in maintenance mode'
+            `$alreadyInMaintenance++
+        } else {
+            Enable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+            `$obj.Status = 'success'
+            `$obj.Message = 'Maintenance mode enabled'
+            `$success++
+        }
+    } catch {
+        `$obj.Status = 'failed'
+        `$obj.Message = `$_.Exception.Message
+        `$obj.NackReason = 'OneView API error: ' + `$_.Exception.Message
+        `$obj.Resolution = 'Check OneView appliance logs and permissions'
+        `$failed++
+    }
+    `$objects += `$obj
+} elseif ('$TargetType' -eq 'Scope') {
+    `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
+    `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
+    foreach (`$member in `$servers) {
+        `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
+        if (-not `$server) { continue }
+        `$obj = @{
+            Name = `$server.Name
+            Type = `$server.Type
+            Status = 'unknown'
+            Message = ''
         }
         try {
-            $null = Invoke-RestMethod -Uri ($this.BaseUrl.TrimEnd('/') + '/' + $this.ApiVersion.TrimStart('/') + $this.Endpoint) `
-                -Method Post -Body ($body | ConvertTo-Json -Depth 5) `
-                -Credential (New-Object System.Management.Automation.PSCredential($this.Username,
-                    (ConvertTo-SecureString $this.Password -AsPlainText -Force))) `
-                -TimeoutSec $this.TimeoutSeconds -ErrorAction Stop
-            return @{ Success = $true; Message = "OpenView maintenance set for $($NodeIds.Count) nodes" }
+            if (`$server.MaintenanceModeEnabled) {
+                `$obj.Status = 'already_in_maintenance'
+                `$obj.Message = 'Already in maintenance mode'
+                `$alreadyInMaintenance++
+            } else {
+                Enable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+                `$obj.Status = 'success'
+                `$obj.Message = 'Maintenance mode enabled'
+                `$success++
+            }
+        } catch {
+            `$obj.Status = 'failed'
+            `$obj.Message = `$_.Exception.Message
+            `$obj.NackReason = 'OneView API error: ' + `$_.Exception.Message
+            `$obj.Resolution = 'Check OneView appliance logs and permissions'
+            `$failed++
+        }
+        `$objects += `$obj
+    }
+}
+`$result = @{
+    Success = (`$failed -eq 0)
+    Message = "OneView maintenance: `$success succeeded, `$alreadyInMaintenance already, `$failed failed"
+    Objects = `$objects
+    Summary = @{ Total = `$objects.Count; Success = `$success; AlreadyInMaintenance = `$alreadyInMaintenance; Failed = `$failed }
+}
+`$result | ConvertTo-Json -Depth 5
+"@
+        try {
+            if ($this.UseWinRM) {
+                $session = New-PSSession -ComputerName $this.WinRMServer
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                Remove-PSSession $session
+            } else {
+                $output = Invoke-Expression $scriptContent
+            }
+            $result = $output | ConvertFrom-Json
+            return @{
+                Success = $result.Success
+                Message = $result.Message
+                Objects = @($result.Objects | ForEach-Object { $_ })
+                Summary = @{
+                    Total = $result.Summary.Total
+                    Success = $result.Summary.Success
+                    AlreadyInMaintenance = $result.Summary.AlreadyInMaintenance
+                    Failed = $result.Summary.Failed
+                }
+            }
         }
         catch {
-            return @{ Success = $false; Message = "OpenView REST call failed: $($_.Exception.Message)" }
+            return @{
+                Success = $false
+                Message = "OneView maintenance failed: $($_.Exception.Message)"
+                Objects = @()
+                Summary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 1 }
+            }
         }
     }
 
-    [hashtable] _SetViaCli([object[]]$NodeIds, [DateTime]$StartDt, [DateTime]$EndDt, [string]$ClusterName, [bool]$DryRun) {
-        if ($DryRun) { return @{ Success = $true; Message = "[DRY RUN] OV CLI for $($NodeIds -join ',')" } }
-        $startStr = $StartDt.ToString('yyyy-MM-dd HH:mm:ss')
-        $endStr = $EndDt.ToString('yyyy-MM-dd HH:mm:ss')
-        $nodesStr = ($NodeIds -join ',')
-        $cmdArgs = @($this.CliPath, '-c', "set maintenance -nodes $nodesStr -start '$startStr' -end '$endStr' -comment '$ClusterName'")
-        $r = Invoke-NativeCommand -Command $cmdArgs -TimeoutSeconds $this.TimeoutSeconds
-        $msg = if ($r.Success) { $r.StandardOutput } else { $r.StandardError }
-        return @{ Success = $r.Success; Message = $msg }
+    [hashtable] _SetViaWinRM([object]$Target, [string]$TargetType, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
+        return $this._SetViaModule($Target, $TargetType, $StartDt, $EndDt, $DryRun)
+    }
+
+    [hashtable] DisableMaintenance([object]$Target, [string]$TargetType, [bool]$DryRun) {
+        if ($this.UseWinRM) {
+            return $this._DisableViaWinRM($Target, $TargetType, $DryRun)
+        }
+        return $this._DisableViaModule($Target, $TargetType, $DryRun)
+    }
+
+    [hashtable] _DisableViaModule([object]$Target, [string]$TargetType, [bool]$DryRun) {
+        $ovModule = $this.ModuleName
+        $ovAppliance = $this.Appliance
+        if ($DryRun) {
+            return @{ Success = $true; Message = "[DRY RUN] OneView disable maintenance for $TargetType '$Target'"; Objects = @() }
+        }
+        $scriptContent = @"
+Import-Module $ovModule -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$objects = @()
+`$success = 0
+`$failed = 0
+`$notInMaintenance = 0
+if ('$TargetType' -eq 'ServerHardware') {
+    `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    `$obj = @{
+        Name = `$server.Name
+        Type = `$server.Type
+        Status = 'unknown'
+        Message = ''
+    }
+    try {
+        if (-not `$server.MaintenanceModeEnabled) {
+            `$obj.Status = 'not_in_maintenance'
+            `$obj.Message = 'Not in maintenance mode'
+            `$notInMaintenance++
+        } else {
+            Disable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+            `$obj.Status = 'success'
+            `$obj.Message = 'Maintenance mode disabled'
+            `$success++
+        }
+    } catch {
+        `$obj.Status = 'failed'
+        `$obj.Message = `$_.Exception.Message
+        `$obj.NackReason = 'OneView API error: ' + `$_.Exception.Message
+        `$obj.Resolution = 'Check OneView appliance logs and permissions'
+        `$failed++
+    }
+    `$objects += `$obj
+} elseif ('$TargetType' -eq 'Scope') {
+    `$scope = Get-OVSCOPE -Name '$Target' -ErrorAction Stop
+    `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
+    foreach (`$member in `$servers) {
+        `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
+        if (-not `$server) { continue }
+        `$obj = @{
+            Name = `$server.Name
+            Type = `$server.Type
+            Status = 'unknown'
+            Message = ''
+        }
+        try {
+            if (-not `$server.MaintenanceModeEnabled) {
+                `$obj.Status = 'not_in_maintenance'
+                `$obj.Message = 'Not in maintenance mode'
+                `$notInMaintenance++
+            } else {
+                Disable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+                `$obj.Status = 'success'
+                `$obj.Message = 'Maintenance mode disabled'
+                `$success++
+            }
+        } catch {
+            `$obj.Status = 'failed'
+            `$obj.Message = `$_.Exception.Message
+            `$obj.NackReason = 'OneView API error: ' + `$_.Exception.Message
+            `$obj.Resolution = 'Check OneView appliance logs and permissions'
+            `$failed++
+        }
+        `$objects += `$obj
+    }
+}
+`$result = @{
+    Success = (`$failed -eq 0)
+    Message = "OneView disable maintenance: `$success succeeded, `$notInMaintenance not in maintenance, `$failed failed"
+    Objects = `$objects
+    Summary = @{ Total = `$objects.Count; Success = `$success; NotInMaintenance = `$notInMaintenance; Failed = `$failed }
+}
+`$result | ConvertTo-Json -Depth 5
+"@
+        try {
+            if ($this.UseWinRM) {
+                $session = New-PSSession -ComputerName $this.WinRMServer
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                Remove-PSSession $session
+            } else {
+                $output = Invoke-Expression $scriptContent
+            }
+            $result = $output | ConvertFrom-Json
+            return @{
+                Success = $result.Success
+                Message = $result.Message
+                Objects = @($result.Objects | ForEach-Object { $_ })
+                Summary = @{
+                    Total = $result.Summary.Total
+                    Success = $result.Summary.Success
+                    NotInMaintenance = $result.Summary.NotInMaintenance
+                    Failed = $result.Summary.Failed
+                }
+            }
+        }
+        catch {
+            return @{
+                Success = $false
+                Message = "OneView disable maintenance failed: $($_.Exception.Message)"
+                Objects = @()
+                Summary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 1 }
+            }
+        }
+    }
+
+    [hashtable] _DisableViaWinRM([object]$Target, [string]$TargetType, [bool]$DryRun) {
+        return $this._DisableViaModule($Target, $TargetType, $DryRun)
+    }
+
+    [hashtable] ResolveTarget([string]$ClusterId) {
+        $ovModule = $this.ModuleName
+        $ovAppliance = $this.Appliance
+        $scriptContent = @"
+Import-Module $ovModule -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+Connect-OVMgmt -Appliance '$($this.Appliance)' -Credential `$cred -ErrorAction Stop
+`$server = Get-OVServer -Name '$ClusterId' -ErrorAction SilentlyContinue
+if (`$server) {
+    `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; Message = 'Found server' }
+    `$result | ConvertTo-Json -Depth 3
+    return
+}
+`$scope = Get-OVSCOPE -Name '$ClusterId' -ErrorAction SilentlyContinue
+if (`$scope) {
+    `$result = @{ Success = `$true; TargetType = 'Scope'; TargetName = `$scope.Name; Message = 'Found scope (cluster)' }
+    `$result | ConvertTo-Json -Depth 3
+    return
+}
+`$result = @{ Success = `$false; TargetType = 'Unknown'; TargetName = '$ClusterId'; Message = 'Not found as server or scope' }
+`$result | ConvertTo-Json -Depth 3
+"@
+        try {
+            if ($this.UseWinRM) {
+                $session = New-PSSession -ComputerName $this.WinRMServer
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                Remove-PSSession $session
+            } else {
+                $output = Invoke-Expression $scriptContent
+            }
+            $result = $output | ConvertFrom-Json
+            return @{
+                Success = $result.Success
+                TargetType = $result.TargetType
+                TargetName = $result.TargetName
+                Message = $result.Message
+            }
+        }
+        catch {
+            return @{
+                Success = $false
+                TargetType = 'Unknown'
+                TargetName = $ClusterId
+                Message = "Resolve failed: $($_.Exception.Message)"
+            }
+        }
     }
 }
 
