@@ -7,7 +7,7 @@
 # =============================================================================
 
 param(
-    [int]$MaxLogsToKeep = 5
+    [int]$MaxLogsToKeep = 10
 )
 
 $ErrorActionPreference = 'Stop'

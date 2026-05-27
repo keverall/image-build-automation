@@ -37,7 +37,14 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDi
 
 $pesterLogPath = Join-Path $logDir "pester_test_results_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
 Write-Host "[coverage-report] Running Pester tests... (Detailed log: $pesterLogPath)" -ForegroundColor Cyan
-Invoke-Pester -Configuration $config *> $pesterLogPath
+
+if ($PSVersionTable.PSVersion.Major -ge 7) { $PSStyle.OutputRendering = 'Ansi' }
+Start-Transcript -Path $pesterLogPath -Append:$false | Out-Null
+try {
+    Invoke-Pester -Configuration $config
+} finally {
+    Stop-Transcript | Out-Null
+}
 
 if (-not (Test-Path $outputPath)) {
     Write-Host '[coverage-report] WARNING: Coverage file not generated' -ForegroundColor Yellow
