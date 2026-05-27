@@ -1,18 +1,15 @@
 {
   "oneview": {
     "appliance": "oneview.example.com",
-    "use_winrm": true,
+    "module_name": "HPOneView.Managed",
+    "use_winrm": false,
     "winrm": {
-      "transport": "ntlm",
-      "server": "oneview.example.com",
-      "username_env": "ONEVIEW_USER",
-      "password_env": "ONEVIEW_PASSWORD"
+      "server": "oneview.example.com"
     },
     "credentials": {
       "username_env": "ONEVIEW_USER",
       "password_env": "ONEVIEW_PASSWORD"
-    },
-    "module_name": "HPOneView.Managed"
+    }
   },
-  "notes": "HPE OneView appliance configuration. The HPOneView.Managed PowerShell module must be installed. If use_winrm is true, PowerShell remoting will be used to execute commands on the OneView appliance."
+  "notes": "HPE OneView configuration. Uses HPOneView.Managed PowerShell module for server/scope management. Set use_winrm to true if executing commands via WinRM to a jump server."
 }
