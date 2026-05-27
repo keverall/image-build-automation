@@ -35,7 +35,7 @@ $show = if ($ShowOutput) { 'All' } else { 'None' }
 $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
 $logDir = Join-Path $repoRoot "generated/logs/$envName"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
-$pesterLogPath = Join-Path $logDir "pester_test_results_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+$pesterLogPath = Join-Path $logDir "testing_coverage_detail_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
 
 Write-Host "Detailed log: $pesterLogPath"
 
