@@ -1,10 +1,10 @@
 ---
 source:  ./src/powershell/Automation/Private/Base.ps1
-generated: 2026-05-25 14:44 UTC
+generated: 2026-05-27 20:04 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
-# New-AutomationBase
+# Get-UtcTimestamp
 
 ## Description
 

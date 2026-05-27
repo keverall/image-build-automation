@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Router.ps1
-generated: 2026-05-25 14:44 UTC
+generated: 2026-05-27 20:04 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Routes a request to the appropriate handler function based on request type. Mirrors route_request(request_type, params).
+Routes a request to the appropriate handler function based on request type.
 
 ## Parameters
 
@@ -27,8 +27,7 @@ Invoke-RoutedRequest -RequestType 'build_iso' -Params @{ BaseIsoPath = 'C:\ISOs\
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-Routes a request to the appropriate handler function based on request type.
-         Mirrors route_request(request_type, params).
+        Routes a request to the appropriate handler function based on request type.
 
     .PARAMETER RequestType
         One of the known request types (e.g. 'build_iso', 'maintenance_enable').
