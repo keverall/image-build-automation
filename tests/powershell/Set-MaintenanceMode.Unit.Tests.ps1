@@ -31,7 +31,6 @@ BeforeAll {
         display_name  = 'Unit Test Cluster'
         servers       = @('srv-unit-01.corp.local','srv-unit-02.corp.local')
         scom_group    = 'Unit Test SCOM Group'
-        ilo_addresses = @{ 'srv-unit-01.corp.local' = '192.168.99.101'; 'srv-unit-02.corp.local' = '192.168.99.102' }
         openview_node_ids = @{}
         schedule      = @{ work_days = @('Mon','Tue','Wed','Thu','Fri'); work_start = '08:00'; work_end = '17:00'; timezone = 'Europe/Dublin' }
         environment   = 'unittest'
@@ -41,7 +40,6 @@ BeforeAll {
         display_name  = 'Other Cluster'
         servers       = @('srv-other-01.corp.local')
         scom_group    = 'Other SCOM Group'
-        ilo_addresses = @{ 'srv-other-01.corp.local' = '192.168.99.201' }
         environment   = 'unittest'
     }
     $Script:NodeIdAsCluster = 'srv-unit-01.corp.local'
@@ -679,6 +677,283 @@ Describe 'Set-MaintenanceMode — boundary tests' {
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
             $result.Success | Should -Be $true
+        }
+    }
+}
+
+# =============================================================================
+# --mode parameter: Mode variants
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — mode parameter: SCOM only mode' {
+    Context 'When Mode is set to scom' {
+        It 'Should enable SCOM-only maintenance mode [Mode=scom, Action=enable, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; Start = 'now'; End = '+1hour' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should disable SCOM-only maintenance mode [Mode=scom, Action=disable, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should validate cluster with scom mode [Mode=scom, Action=validate]' {
+            $params = @{ Action = 'validate'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; Mode = 'scom' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with scom mode and NoSchedule flag [Mode=scom, -NoSchedule, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; NoSchedule = $true; Start = 'now'; End = '+2hours' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with scom mode and explicit time window [Mode=scom, Start/End explicit]' {
+            $start = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+            $end = (Get-Date).AddHours(4).ToString('yyyy-MM-dd HH:mm:ss')
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; Start = $start; End = $end }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with scom mode and relative time [Mode=scom, End=+30minutes]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; Start = 'now'; End = '+30minutes' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should reject unknown cluster with scom mode [Mode=scom, ClusterId=NONEXISTENT]' {
+            $params = @{ Action = 'enable'; ClusterId = 'NONEXISTENT'; ConfigDir = $Script:ConfigDir; Mode = 'scom' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
+            $result.Success | Should -Be $false
+            $result.Error | Should -Match 'not found in catalogue'
+        }
+    }
+}
+
+# =============================================================================
+# --mode parameter: All mode (SCOM + OpenView)
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — mode parameter: All mode (SCOM + OpenView)' {
+    Context 'When Mode is set to all (default)' {
+        It 'Should enable all-systems maintenance mode by default [Mode=all (default), -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should explicitly enable all-systems maintenance mode [Mode=all, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all'; Start = 'now'; End = '+1hour' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should disable all-systems maintenance mode [Mode=all, Action=disable, -DryRun]' {
+            $params = @{ Action = 'disable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should validate cluster with all mode [Mode=all, Action=validate]' {
+            $params = @{ Action = 'validate'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; Mode = 'all' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with all mode and NoSchedule [Mode=all, -NoSchedule, -DryRun]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all'; NoSchedule = $true; Start = 'now'; End = '+1hour' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with all mode and schedule-based end time [Mode=all, schedule]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all'; Start = 'now' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should work with all mode and explicit time window [Mode=all, Start/End explicit]' {
+            $start = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+            $end = (Get-Date).AddHours(6).ToString('yyyy-MM-dd HH:mm:ss')
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all'; Start = $start; End = $end }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $true
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should reject unknown cluster with all mode [Mode=all, ClusterId=NONEXISTENT]' {
+            $params = @{ Action = 'enable'; ClusterId = 'NONEXISTENT'; ConfigDir = $Script:ConfigDir; Mode = 'all' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
+            $result.Success | Should -Be $false
+            $result.Error | Should -Match 'not found in catalogue'
+        }
+    }
+}
+
+# =============================================================================
+# --mode parameter: Mode comparison tests
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — mode parameter: Comparison between scom and all' {
+    Context 'When comparing mode behaviors' {
+        It 'Should succeed with scom mode in dry-run [Mode=scom vs Mode=all comparison]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; Start = 'now'; End = '+1hour' }
+            $result_scom = Set-MaintenanceMode @params
+            
+            $params['Mode'] = 'all'
+            $result_all = Set-MaintenanceMode @params
+            
+            $result_scom.Success | Should -Be $true
+            $result_all.Success | Should -Be $true
+        }
+
+        It 'Should handle same cluster with different modes independently' {
+            $scomParams = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'scom'; Start = 'now'; End = '+1hour' }
+            $allParams  = @{ Action = 'enable'; ClusterId = $Script:TestClusterId; ConfigDir = $Script:ConfigDir; DryRun = $true; Mode = 'all'; Start = 'now'; End = '+1hour' }
+            
+            $scomResult = Set-MaintenanceMode @scomParams
+            $allResult  = Set-MaintenanceMode @allParams
+            
+            $scomResult.Success | Should -Be $true
+            $allResult.Success | Should -Be $true
+            $scomResult.ClusterId | Should -Be $allResult.ClusterId
+        }
+    }
+}
+
+# =============================================================================
+# --mode parameter: Negative tests
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — mode parameter: Negative and edge cases' {
+    Context 'When invalid mode values are provided' {
+        It 'Should reject invalid mode value "ilo" [Mode=ilo - invalid]' {
+            { Set-MaintenanceMode -Action enable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -Mode 'ilo' -Start 'now' -End '+1hour' } | Should -Throw
+        }
+
+        It 'Should reject invalid mode value "openview" [Mode=openview - invalid]' {
+            { Set-MaintenanceMode -Action enable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -Mode 'openview' -Start 'now' -End '+1hour' } | Should -Throw
+        }
+
+        It 'Should reject invalid mode value "both" [Mode=both - invalid]' {
+            { Set-MaintenanceMode -Action enable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -Mode 'both' -Start 'now' -End '+1hour' } | Should -Throw
+        }
+
+        It 'Should reject invalid mode value "none" [Mode=none - invalid]' {
+            { Set-MaintenanceMode -Action enable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -Mode 'none' -Start 'now' -End '+1hour' } | Should -Throw
+        }
+
+        It 'Should reject invalid mode value empty string [Mode="" - invalid]' {
+            { Set-MaintenanceMode -Action enable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -Mode '' -Start 'now' -End '+1hour' } | Should -Throw
+        }
+
+        It 'Should reject invalid mode value with typo "scomm" [Mode=scomm - invalid]' {
+            { Set-MaintenanceMode -Action enable -ClusterId $Script:TestClusterId -ConfigDir $Script:ConfigDir -Mode 'scomm' -Start 'now' -End '+1hour' } | Should -Throw
+        }
+    }
+
+    Context 'When mode is combined with error conditions' {
+        It 'Should fail gracefully when scom mode used with invalid cluster [Mode=scom, invalid cluster]' {
+            $params = @{ Action = 'enable'; ClusterId = 'INVALID-CLUSTER'; ConfigDir = $Script:ConfigDir; Mode = 'scom' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
+            $result.Success | Should -Be $false
+        }
+
+        It 'Should fail gracefully when all mode used with invalid cluster [Mode=all, invalid cluster]' {
+            $params = @{ Action = 'enable'; ClusterId = 'INVALID-CLUSTER'; ConfigDir = $Script:ConfigDir; Mode = 'all' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
+            $result.Success | Should -Be $false
+        }
+
+        It 'Should reject scom mode with no end time or schedule on cluster without schedule [Mode=scom, no end]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Mode = 'scom'; Start = 'now' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
+            $result.Success | Should -Be $false
+        }
+
+        It 'Should reject all mode with no end time or schedule on cluster without schedule [Mode=all, no end]' {
+            $params = @{ Action = 'enable'; ClusterId = $Script:OtherClusterId; ConfigDir = $Script:ConfigDir; Mode = 'all'; Start = 'now' }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
+            $result.Success | Should -Be $false
         }
     }
 }
