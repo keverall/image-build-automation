@@ -39,6 +39,8 @@ $pesterLogPath = Join-Path $logDir "pester_test_results_$(Get-Date -Format 'yyyy
 
 Write-Host "Detailed log: $pesterLogPath"
 
+if ($PSVersionTable.PSVersion.Major -ge 7) { $PSStyle.OutputRendering = 'Ansi' }
+
 Start-Transcript -Path $pesterLogPath -Append:$false | Out-Null
 try {
     $result = Invoke-Pester -Path $files -PassThru -Show $show

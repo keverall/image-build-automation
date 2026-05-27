@@ -45,6 +45,8 @@ $config.Run.Path = @(
 $config.Output.Verbosity = 'Detailed'
 $config.Output.RenderMode = 'Auto'
 
+if ($PSVersionTable.PSVersion.Major -ge 7) { $PSStyle.OutputRendering = 'Ansi' }
+
 Start-Transcript -Path $pesterLogPath -Append:$false | Out-Null
 try {
     $results = Invoke-Pester -Configuration $config
