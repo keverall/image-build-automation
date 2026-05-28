@@ -1,0 +1,138 @@
+{
+  // ─── Terminal: Default Shell per Platform ────────────────────────────────
+  "terminal.integrated.defaultProfile.windows": "PowerShell 7",
+  "terminal.integrated.defaultProfile.linux": "pwsh",
+  "terminal.integrated.defaultProfile.osx": "pwsh (Homebrew)",
+
+  // ─── Terminal Profiles: Windows ──────────────────────────────────────────
+  "terminal.integrated.profiles.windows": {
+    "PowerShell 7": {
+      "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    },
+    "PowerShell 7 (x86)": {
+      "path": "C:\\Program Files (x86)\\PowerShell\\7\\pwsh.exe",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    },
+    "Windows PowerShell": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    }
+  },
+
+  // ─── Terminal Profiles: Linux ────────────────────────────────────────────
+  "terminal.integrated.profiles.linux": {
+    "pwsh": {
+      "path": "/usr/bin/pwsh",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    },
+    "pwsh (Snap)": {
+      "path": "/snap/powershell/current/pwsh",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    },
+    "bash": {
+      "path": "/usr/bin/bash",
+      "icon": "terminal-bash",
+      "args": ["-l"]
+    },
+    "zsh": {
+      "path": "/usr/bin/zsh",
+      "icon": "terminal"
+    }
+  },
+
+  // ─── Terminal Profiles: macOS ────────────────────────────────────────────
+  "terminal.integrated.profiles.osx": {
+    "pwsh (Homebrew)": {
+      "path": "/opt/homebrew/bin/pwsh",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    },
+    "pwsh (Intel)": {
+      "path": "/usr/local/bin/pwsh",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    },
+    "zsh": {
+      "path": "/bin/zsh",
+      "icon": "terminal"
+    },
+    "bash": {
+      "path": "/bin/bash",
+      "icon": "terminal-bash"
+    }
+  },
+
+  // ─── Terminal: Core Behavior ─────────────────────────────────────────────
+  "terminal.integrated.inheritEnv": true,
+  "terminal.integrated.windowsEnableConpty": true,
+  "terminal.integrated.shellIntegration.enabled": true,
+
+  "terminal.integrated.env.windows": {
+    "PSExecutionPolicyPreference": "Bypass"
+  },
+
+  // ─── PowerShell Extension: Cross-Platform ────────────────────────────────
+  "powershell.powerShellDefaultVersion": "",
+
+  "powershell.powerShellAdditionalExePaths": [
+    { "versionName": "PowerShell 7",           "exePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe" },
+    { "versionName": "PowerShell 7 (x86)",     "exePath": "C:\\Program Files (x86)\\PowerShell\\7\\pwsh.exe" },
+    { "versionName": "pwsh (Linux)",           "exePath": "/usr/bin/pwsh" },
+    { "versionName": "pwsh (macOS Apple Silicon)", "exePath": "/opt/homebrew/bin/pwsh" },
+    { "versionName": "pwsh (macOS Intel)",     "exePath": "/usr/local/bin/pwsh" }
+  ],
+
+  // ─── PowerShell Extension: Formatting ────────────────────────────────────
+  "powershell.codeFormatting.preset": "OTBS",
+  "powershell.codeFormatting.newLineAfterCloseBrace": true,
+  "powershell.codeFormatting.newLineAfterOpenBrace": true,
+  "powershell.codeFormatting.whitespaceBeforeOpenBrace": true,
+  "powershell.codeFormatting.whitespaceBetweenParameters": true,
+  "powershell.codeFormatting.trimWhitespaceAroundPipe": true,
+  "powershell.codeFormatting.ignoreOneLineBlock": false,
+  "powershell.codeFormatting.pipelineIndentationStyle": "IncreaseIndentationForEveryPipeline",
+
+  // ─── PowerShell Extension: Editor ────────────────────────────────────────
+  "powershell.integratedConsole.focusConsoleOnExecute": false,
+  "powershell.integratedConsole.showOnStartup": false,
+  "powershell.integratedConsole.usePsReadLine": true,
+  "powershell.codeFolding.enable": true,
+  "powershell.codeFolding.showLastLine": true,
+
+  // ─── PowerShell Extension: Analysis & Testing ────────────────────────────
+  "powershell.scriptAnalysis.enable": true,
+  "powershell.pester.codeLens.enabled": true,
+
+  // ─── Editor: File Associations ──────────────────────────────────────────
+  "files.associations": {
+    "*.ps1": "powershell",
+    "*.psm1": "powershell",
+    "*.psd1": "powershell"
+  },
+
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": true,
+  "files.eol": "auto",
+
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/vendor/**": true,
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/.git": true,
+    "**/vendor/**": true,
+    "**/bin/**": true,
+    "**/build/**": true,
+    "**/node_modules/**": true
+  },
+
+  "security.workspace.trust.enabled": false
+}

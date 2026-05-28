@@ -18,3 +18,10 @@ At line:1 char:1
     + FullyQualifiedErrorId : CommandNotFoundException
 
     
+
+o make it permanent, add this to your VS Code settings (Ctrl+, → search "terminal env"):
+
+"terminal.integrated.env.windows": {
+    "PATH": "${env:PATH}"
+}
+Or check if terminal.integrated.inheritEnv is set to false somewhere - it should be true (the default).
