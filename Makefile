@@ -16,6 +16,14 @@ PSMODULE := src/powershell/Automation/Automation.psd1
 PSDIRS   := src/powershell
 PSTESTS  := tests/powershell
 
+# Use bundled make.exe on Windows if available (offline-capable)
+LOCAL_MAKE := $(CURDIR)/bin/make.exe
+ifeq ($(OS),Windows_NT)
+  ifneq ($(wildcard $(LOCAL_MAKE)),)
+    MAKE := $(LOCAL_MAKE)
+  endif
+endif
+
 # Coverage threshold (percentage)
 COVERAGE_THRESHOLD := 70
 
