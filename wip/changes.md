@@ -1,37 +1,20 @@
-README.md
-docs/dynamic-code-docs/Set-MaintenanceMode.md
-docs/dynamic-code-docs/Test-ClusterId.md
-docs/gitlab.md
-docs/maint-mode-initial-testing.md
-docs/powershell_api_reference.md
-scripts/gitlab/Send-GitLabMaintenanceRequest.ps1
-scripts/schedule-jobs.ps1
-src/powershell/Automation/Private/Inventory.ps1
-src/powershell/Automation/Public/Control.ps1
-src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1
-src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-src/powershell/Automation/Public/Test-ClusterId.ps1
-src/powershell/Automation/Public/_Validate-Request.ps1
-tests/powershell/Inventory.Unit.Tests.ps1
-tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1
-tests/powershell/TestOutputHelper.psm1
-tests/powershell/Validators.Unit.Tests.ps1
+ make test                                                    0  7s 499ms  17:21:14 
+\033[0;36m[prune-logs]\033[0m Pruning old log files...
+[prune-logs] Pruning logs to keep maximum 10 per type...
+[prune-logs] Pruned 0 excess log files.
+\033[0;36m[test]\033[0m Running Pester unit tests...
+Add-Type: Cannot bind parameter 'Path' to the target. Exception setting "Path": "Cannot find path
+'C:\Users\98253\Documents\PowerShell\Modules\Pester\5.7.1\bin\netstandard2.0\Pester.dll' because it does not exist."
+make: *** [test] Error 1
 
-README.md
-docs/dynamic-code-docs/Set-MaintenanceMode.md
-docs/dynamic-code-docs/Test-ClusterId.md
-docs/gitlab.md
-docs/maint-mode-initial-testing.md
-docs/powershell_api_reference.md
-scripts/gitlab/Send-GitLabMaintenanceRequest.ps1
-scripts/schedule-jobs.ps1
-src/powershell/Automation/Private/Inventory.ps1
-src/powershell/Automation/Public/Control.ps1
-src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1
-src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-src/powershell/Automation/Public/Test-ClusterId.ps1
-src/powershell/Automation/Public/_Validate-Request.ps1
-tests/powershell/Inventory.Unit.Tests.ps1
-tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1
-tests/powershell/TestOutputHelper.psm1
-tests/powershell/Validators.Unit.Tests.ps1
+from code error powershell pwsh -  make
+make : The term 'make' is not recognized as the name of a cmdlet, function, script file, or operable 
+program. Check the spelling of the name, or if a path was included, verify that the path is correct 
+and try again.
+At line:1 char:1
++ make
++ ~~~~
+    + CategoryInfo          : ObjectNotFound: (make:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+    
