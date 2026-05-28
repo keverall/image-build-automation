@@ -3,16 +3,16 @@
 BeforeAll {
     # Initialise shared test-scoped variables (Pester V5: each file needs its own state)
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
-    $Script:TestRoot        = $PSScriptRoot
+    $Script:TestRoot = $PSScriptRoot
 
     # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
-    if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
-    if (-not $env:TMP)   { $env:TMP   = '/tmp' }
-    $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
-    if (-not (Test-Path -Path $Script:TempDir))    { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
+    if (-not $env:TEMP) { $env:TEMP = '/tmp' }
+    if (-not $env:TMP) { $env:TMP = '/tmp' }
+    $Script:TempDir = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\', '/')
+    if (-not (Test-Path -Path $Script:TempDir)) { New-Item -ItemType Directory -Path $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null | Out-Null }
 
     # Minimal config fixtures
-    $Script:SampleConfig = @{ name='test'; version='1.0'; items=@(@{ id=1; enabled=$true }) }
+    $Script:SampleConfig = @{ name = 'test'; version = '1.0'; items = @(@{ id = 1; enabled = $true }) }
     $Script:SampleServerList = @"
 # Test server list
 srv01.corp.local,192.168.1.101,192.168.1.201
@@ -20,17 +20,18 @@ srv02.corp.local,192.168.1.102,192.168.1.202
 srv03
 "@
     $Script:SampleClusterCatalogue = @{ clusters = @{
-        'TEST-CLUSTER' = @{
-            display_name  = 'Test Cluster'
-            servers       = @('srv01.corp.local','srv02.corp.local')
-            scom_group    = 'Test SCOM Group'
-            ilo_addresses = @{ 'srv01.corp.local' = '192.168.1.201'; 'srv02.corp.local' = '192.168.1.202' }
-            environment   = 'test'
+            'TEST-CLUSTER' = @{
+                display_name  = 'Test Cluster'
+                servers       = @('srv01.corp.local', 'srv02.corp.local')
+                scom_group    = 'Test SCOM Group'
+                ilo_addresses = @{ 'srv01.corp.local' = '192.168.1.201'; 'srv02.corp.local' = '192.168.1.202' }
+                environment   = 'test'
+            }
         }
-    }}
+    }
 
     $Script:ConfigDir = Join-Path $Script:TempDir 'configs'
-    if (-not (Test-Path -Path $Script:ConfigDir))  { New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null }
+    if (-not (Test-Path -Path $Script:ConfigDir)) { New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null }
     $Script:SampleConfig | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'sample.json') -ErrorAction SilentlyContinue
     $Script:SampleServerList | Set-Content (Join-Path $Script:ConfigDir 'server_list.txt') -ErrorAction SilentlyContinue
     $Script:SampleClusterCatalogue | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -ErrorAction SilentlyContinue
@@ -74,14 +75,14 @@ Describe 'Load-ClusterCatalogue' {
 
 Describe 'Test-ClusterDefinition' {
     It 'Returns empty array for a valid definition' {
-        $def  = $Script:SampleClusterCatalogue.clusters['TEST-CLUSTER']
-        $errors = Test-ClusterDefinition -ClusterDef $def -ClusterId 'TEST-CLUSTER'
+        $def = $Script:SampleClusterCatalogue.clusters['TEST-CLUSTER']
+        $errors = Test-ClusterDefinition -ClusterDef $def -TargetId 'TEST-CLUSTER'
         $errors.Count | Should -Be 0
     }
 
     It 'Reports missing required fields' {
         $badDef = @{ servers = @('a') }
-        $errors = Test-ClusterDefinition -ClusterDef $badDef -ClusterId 'BAD'
+        $errors = Test-ClusterDefinition -ClusterDef $badDef -TargetId 'BAD'
         $errors -match 'display_name' | Should -Not -Be $null
     }
 }
