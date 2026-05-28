@@ -81,8 +81,20 @@ function Install-PowerShellModuleOffline {
         Sort-Object Version -Descending | Select-Object -First 1
 
     if ($installed -and $installed.Version -ge [version]$Version) {
-        Write-Log "$Name $($installed.Version) already installed"
-        return
+        # Verify the installation is functional by trying to import it
+        try {
+            Import-Module $Name -RequiredVersion $Version -ErrorAction Stop -WarningAction SilentlyContinue
+            Write-Log "$Name $($installed.Version) already installed and verified"
+            return
+        } catch {
+            Write-Warn "$Name $($installed.Version) found but failed to import (possibly corrupted), reinstalling..."
+            # Remove the corrupted installation
+            $moduleDir = Split-Path (Split-Path $installed.Path -Parent) -Parent
+            if (Test-Path $moduleDir) {
+                Remove-Item -Recurse -Force $moduleDir -ErrorAction SilentlyContinue
+                Write-Log "Removed corrupted $Name installation"
+            }
+        }
     }
 
     # Try to find bundled copy
