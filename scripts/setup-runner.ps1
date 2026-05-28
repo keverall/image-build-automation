@@ -22,7 +22,7 @@ $VENDOR_MODULES_DIR = Join-Path $PROJECT_ROOT 'vendor/modules'
 
 # PowerShell modules bundled in vendor/modules/
 $REQUIRED_MODULES = @(
-    @{ Name = 'Pester';           Version = '5.0.0' },
+    @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' }
 )
