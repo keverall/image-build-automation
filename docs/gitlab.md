@@ -202,7 +202,7 @@ function in **`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`**.
 # Trigger a pipeline and wait for completion
 Send-GitLabMaintenanceRequest `
     -Action         "enable" `
-    -ClusterId      "PROD-CLUSTER-01" `
+    -TargetId      "PROD-CLUSTER-01" `
     -Start          "now" `
     -End            "2026-05-17 13:00" `
     -GitLabUrl      "https://gitlab.example.com" `
@@ -225,7 +225,7 @@ The function:
 To run without blocking (fire-and-forget), pass `$null` for `-CallbackUrl`:
 
 ```powershell
-Send-GitLabMaintenanceRequest -Action enable -ClusterId PROD-CLUSTER-01 -CallbackUrl $null
+Send-GitLabMaintenanceRequest -Action enable -TargetId PROD-CLUSTER-01 -CallbackUrl $null
 ```
 
 ### Control-layer integration (recommended)
@@ -238,7 +238,7 @@ as another stop in the standard poller loop:
 Import-Module ./src/powershell/Automation/Control.psm1
 
 # Factory pattern
-$ctrl = New-GitLabCtrl -Params @{ ClusterId = 'PROD-CLUSTER-01'; Action = 'enable' }
+$ctrl = New-GitLabCtrl -Params @{ TargetId = 'PROD-CLUSTER-01'; Action = 'enable' }
 $result = $ctrl | Run-GitLab
 ```
 
@@ -249,7 +249,7 @@ enable/disable path with real-time logs and audit records while skipping all
 subsystem mutations.
 
 ```powershell
-Send-GitLabMaintenanceRequest -Action enable -ClusterId 'PROD-CLUSTER-01' -DryRun
+Send-GitLabMaintenanceRequest -Action enable -TargetId 'PROD-CLUSTER-01' -DryRun
 ```
 
 ---
