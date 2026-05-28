@@ -1,0 +1,149 @@
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>Microsoft.PowerShell.Commands.PSRepositoryItemInfo</T>
+      <T>System.Management.Automation.PSCustomObject</T>
+      <T>System.Object</T>
+    </TN>
+    <MS>
+      <S N="Name">platyPS</S>
+      <S N="Version">0.14.0</S>
+      <S N="Type">Module</S>
+      <S N="Description">Generate PowerShell External Help files from Markdown</S>
+      <S N="Author">PowerShell team</S>
+      <Obj N="CompanyName" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+          <S>PowerShellTeam</S>
+          <S>adityapatwardhan</S>
+          <S>sewhee</S>
+          <S>Kanjiroo</S>
+        </LST>
+      </Obj>
+      <S N="Copyright">(c) 2016 PowerShell team. All rights reserved.</S>
+      <DT N="PublishedDate">2019-04-03T00:46:30+01:00</DT>
+      <Nil N="InstalledDate" />
+      <Nil N="UpdatedDate" />
+      <URI N="LicenseUri">https://github.com/PowerShell/platyPS/blob/master/LICENSE</URI>
+      <URI N="ProjectUri">https://github.com/PowerShell/platyPS</URI>
+      <Nil N="IconUri" />
+      <Obj N="Tags" RefId="2">
+        <TNRef RefId="1" />
+        <LST>
+          <S>help</S>
+          <S>markdown</S>
+          <S>MAML</S>
+          <S>PSEdition_Core</S>
+          <S>PSEdition_Desktop</S>
+          <S>PSModule</S>
+        </LST>
+      </Obj>
+      <Obj N="Includes" RefId="3">
+        <TN RefId="2">
+          <T>System.Collections.Hashtable</T>
+          <T>System.Object</T>
+        </TN>
+        <DCT>
+          <En>
+            <S N="Key">DscResource</S>
+            <Obj N="Value" RefId="4">
+              <TNRef RefId="1" />
+              <LST />
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Cmdlet</S>
+            <Ref N="Value" RefId="4" />
+          </En>
+          <En>
+            <S N="Key">RoleCapability</S>
+            <Ref N="Value" RefId="4" />
+          </En>
+          <En>
+            <S N="Key">Command</S>
+            <Obj N="Value" RefId="5">
+              <TNRef RefId="1" />
+              <LST>
+                <S>New-MarkdownHelp</S>
+                <S>Get-MarkdownMetadata</S>
+                <S>New-ExternalHelp</S>
+                <S>New-YamlHelp</S>
+                <S>Get-HelpPreview</S>
+                <S>New-ExternalHelpCab</S>
+                <S>Update-MarkdownHelp</S>
+                <S>Update-MarkdownHelpModule</S>
+                <S>New-MarkdownAboutHelp</S>
+                <S>Merge-MarkdownHelp</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Function</S>
+            <Obj N="Value" RefId="6">
+              <TNRef RefId="1" />
+              <LST>
+                <S>New-MarkdownHelp</S>
+                <S>Get-MarkdownMetadata</S>
+                <S>New-ExternalHelp</S>
+                <S>New-YamlHelp</S>
+                <S>Get-HelpPreview</S>
+                <S>New-ExternalHelpCab</S>
+                <S>Update-MarkdownHelp</S>
+                <S>Update-MarkdownHelpModule</S>
+                <S>New-MarkdownAboutHelp</S>
+                <S>Merge-MarkdownHelp</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Workflow</S>
+            <Ref N="Value" RefId="4" />
+          </En>
+        </DCT>
+      </Obj>
+      <Nil N="PowerShellGetFormatVersion" />
+      <Nil N="ReleaseNotes" />
+      <Obj N="Dependencies" RefId="7">
+        <TNRef RefId="1" />
+        <LST />
+      </Obj>
+      <S N="RepositorySourceLocation">https://www.powershellgallery.com/api/v2</S>
+      <S N="Repository">PSGallery</S>
+      <S N="PackageManagementProvider">NuGet</S>
+      <Obj N="AdditionalMetadata" RefId="8">
+        <TN RefId="3">
+          <T>System.Management.Automation.PSCustomObject</T>
+          <T>System.Object</T>
+        </TN>
+        <MS>
+          <S N="copyright">(c) 2016 PowerShell team. All rights reserved.</S>
+          <S N="description">Generate PowerShell External Help files from Markdown</S>
+          <S N="requireLicenseAcceptance">False</S>
+          <S N="isLatestVersion">False</S>
+          <S N="isAbsoluteLatestVersion">False</S>
+          <S N="versionDownloadCount">199793</S>
+          <S N="downloadCount">1675593</S>
+          <S N="packageSize">181308</S>
+          <S N="published">03/04/2019 00:46:30 +01:00</S>
+          <S N="created">03/04/2019 00:46:30 +01:00</S>
+          <S N="lastUpdated">15/05/2026 19:00:00 +01:00</S>
+          <S N="tags">help markdown MAML PSEdition_Core PSEdition_Desktop PSModule PSFunction_New-MarkdownHelp PSCommand_New-MarkdownHelp PSFunction_Get-MarkdownMetadata PSCommand_Get-MarkdownMetadata PSFunction_New-ExternalHelp PSCommand_New-ExternalHelp PSFunction_New-YamlHelp PSCommand_New-YamlHelp PSFunction_Get-HelpPreview PSCommand_Get-HelpPreview PSFunction_New-ExternalHelpCab PSCommand_New-ExternalHelpCab PSFunction_Update-MarkdownHelp PSCommand_Update-MarkdownHelp PSFunction_Update-MarkdownHelpModule PSCommand_Update-MarkdownHelpModule PSFunction_New-MarkdownAboutHelp PSCommand_New-MarkdownAboutHelp PSFunction_Merge-MarkdownHelp PSCommand_Merge-MarkdownHelp PSIncludes_Function</S>
+          <S N="developmentDependency">False</S>
+          <S N="updated">2026-05-15T19:00:00Z</S>
+          <S N="NormalizedVersion">0.14.0</S>
+          <S N="Authors">PowerShell team</S>
+          <S N="IsPrerelease">false</S>
+          <S N="ItemType">Module</S>
+          <S N="FileList">platyPS.nuspec|Markdown.MAML.dll|platyPS.psd1|platyPS.psm1|platyPS.Resources.psd1|platyPS.schema.md|YamlDotNet.dll|docs\about_platyPS.md|docs\Get-HelpPreview.md|docs\Get-MarkdownMetadata.md|docs\Merge-MarkdownHelp.md|docs\New-ExternalHelp.md|docs\New-ExternalHelpCab.md|docs\New-MarkdownAboutHelp.md|docs\New-MarkdownHelp.md|docs\New-YamlHelp.md|docs\Update-MarkdownHelp.md|docs\Update-MarkdownHelpModule.md|en-US\about_platyPS.help.txt|en-US\platyPS-help.xml|templates\aboutTemplate.md</S>
+          <S N="GUID">0bdcabef-a4b7-4a6d-bf7e-d879817ebbff</S>
+          <S N="CompanyName">Microsoft</S>
+        </MS>
+      </Obj>
+      <S N="InstalledLocation">/home/keverall/repos/image-build-automation/vendor/modules/platyPS/0.14.0</S>
+    </MS>
+  </Obj>
+</Objs>

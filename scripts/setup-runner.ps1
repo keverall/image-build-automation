@@ -1,8 +1,12 @@
 # =============================================================================
 # HPE ProLiant Windows Server ISO Automation — PowerShell Runner Setup Script
 # =============================================================================
-# Installs PowerShell 7+, all required modules, and project tooling.
-# Designed for: Windows runners, Linux with PowerShell, CI/CD pipelines.
+# Fully offline-capable setup script. All dependencies are bundled in the repo.
+#
+# Bundled dependencies:
+#   - vendor/modules/  : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS)
+#   - bin/make.exe     : GNU make for Windows (if available)
+#   - Git for Windows  : Provides make.exe in usr\bin\ (preferred source)
 #
 # Usage:
 #   pwsh -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
@@ -14,21 +18,14 @@ using namespace System
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 $LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+$VENDOR_MODULES_DIR = Join-Path $PROJECT_ROOT 'vendor/modules'
 
-# PowerShell Gallery configuration
+# PowerShell modules bundled in vendor/modules/
 $REQUIRED_MODULES = @(
-    @{ Name = 'Pester';        Version = '5.0.0';         Scope = 'CurrentUser' },
-    @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0';    Scope = 'CurrentUser' },
-    @{ Name = 'PlatyPS';       Version = '0.14.0';        Scope = 'CurrentUser' }
+    @{ Name = 'Pester';           Version = '5.0.0' },
+    @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
+    @{ Name = 'PlatyPS';          Version = '0.14.0' }
 )
-
-# Make binary configuration (for Windows)
-$MAKE_DOWNLOAD_URLS = @(
-    'https://eternallybored.org/misc/make/make-4.4.1.zip',
-    'https://sourceforge.net/projects/ezwinports/files/make-4.4.1-without-guile-w32-bin.zip/download'
-)
-$MAKE_DIRECT_URL = 'https://github.com/chocolatey/choco/raw/37575d0f7b3e2e3e5c8b3b1d0e6c1e0b5a4d3c2f/lib/make/tools/make.exe'
-$MAKE_EXPECTED_HASH = ''
 
 # Colors for terminal output (Windows/Linux compatible)
 $COLOR_GREEN = "`e[32m"
@@ -55,13 +52,31 @@ function Test-PowerShellVersion {
     Write-OK "PowerShell version check passed"
 }
 
-# ─── PowerShell Modules Installation ─────────────────────────────────────────
-function Install-PowerShellModule {
+# ─── PowerShell Modules Installation (Offline from bundled copies) ───────────
+function Get-BundledModulePath {
+    param([string]$Name, [string]$Version)
+
+    # Search for the module in vendor/modules/ (case-insensitive)
+    $moduleDir = Get-ChildItem -Path $VENDOR_MODULES_DIR -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ieq $Name } |
+        Select-Object -First 1
+
+    if ($moduleDir) {
+        $versionDir = Join-Path $moduleDir.FullName $Version
+        if (Test-Path $versionDir) {
+            return $versionDir
+        }
+    }
+    return $null
+}
+
+function Install-PowerShellModuleOffline {
     param(
         [string]$Name,
-        [string]$Version,
-        [string]$Scope
+        [string]$Version
     )
+
+    # Check if already installed
     $installed = Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue |
         Sort-Object Version -Descending | Select-Object -First 1
 
@@ -70,151 +85,126 @@ function Install-PowerShellModule {
         return
     }
 
-    Write-Log "Installing $Name $Version..."
+    # Try to find bundled copy
+    $bundledPath = Get-BundledModulePath -Name $Name -Version $Version
+    if ($bundledPath -and (Test-Path $bundledPath)) {
+        Write-Log "Installing $Name $Version from bundled copy..."
+
+        # Determine PowerShell module path
+        $userModulePath = $null
+        if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform) {
+            $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules'
+        } else {
+            $userModulePath = Join-Path $HOME '.local/share/powershell/Modules'
+        }
+
+        if (-not (Test-Path $userModulePath)) {
+            New-Item -ItemType Directory -Force -Path $userModulePath | Out-Null
+        }
+
+        $destPath = Join-Path $userModulePath $Name
+        if (-not (Test-Path $destPath)) {
+            New-Item -ItemType Directory -Force -Path $destPath | Out-Null
+        }
+
+        $destVersionPath = Join-Path $destPath $Version
+        Copy-Item -Path $bundledPath -Destination $destVersionPath -Recurse -Force
+        Write-OK "$Name installed from bundled copy"
+        return
+    }
+
+    # Fallback: try PSGallery if network available
+    Write-Warn "Bundled copy of $Name $Version not found. Attempting PSGallery..."
     try {
-        Install-Module -Name $Name -RequiredVersion $Version -Scope $Scope -Force -AllowClobber -Repository PSGallery 2>&1 | Tee-Object -FilePath $LOG_FILE
-        Write-OK "$Name installed"
+        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+        Install-Module -Name $Name -RequiredVersion $Version -Scope CurrentUser -Force -AllowClobber -Repository PSGallery 2>$null
+        Write-OK "$Name installed from PSGallery"
     } catch {
-        Write-Err "Failed to install ${Name}: $($_)"
-        Write-Err "Try: Set-PSRepository PSGallery -InstallationPolicy Trusted"
-        exit 1
+        Write-Err "Failed to install $Name. Bundled copy not found and PSGallery unavailable."
+        Write-Err "Ensure vendor/modules/$Name/$Version exists."
     }
 }
 
 function Install-RequiredModules {
-    Write-Log "Configuring PowerShell Gallery..."
-    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+    Write-Log "Installing PowerShell modules from bundled copies..."
 
     foreach ($mod in $REQUIRED_MODULES) {
-        Install-PowerShellModule -Name $mod.Name -Version $mod.Version -Scope $mod.Scope
+        Install-PowerShellModuleOffline -Name $mod.Name -Version $mod.Version
     }
 
-    # Update Help files
-    Write-Log "Updating PowerShell help..."
-    Update-Help -Force -ErrorAction SilentlyContinue 2>$null
-    Write-OK "Help updated"
+    # Update Help files (skipped offline — not critical)
+    Write-Log "Skipping Update-Help (offline mode)"
 }
 
-# ─── Make Installation (Windows) ─────────────────────────────────────────────
+# ─── Make Detection (Windows) ────────────────────────────────────────────────
 function Install-Make {
-    $runningOnWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSVersion.Major -le 5
+    $runningOnWindows = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
     if (-not $runningOnWindows) {
-        Write-Log "Non-Windows platform detected, skipping make installation"
+        Write-Log "Non-Windows platform detected, skipping make detection"
         return
     }
 
-    # Check if make is already available
+    Write-Log "Detecting make for Windows..."
+
+    # Check if make is already in PATH
     if (Get-Command make -ErrorAction SilentlyContinue) {
         $makeVersion = make --version 2>$null | Select-Object -First 1
-        Write-Log "make already installed: $makeVersion"
+        Write-Log "make already available: $makeVersion"
         Write-OK "make version check passed"
         return
     }
 
-    Write-Log "Installing make for Windows..."
+    function Add-PathPersistent {
+        param([string]$PathDir)
 
-    # Download precompiled binary to project-local bin directory
-    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
-    if (-not (Test-Path $localBinDir)) {
-        New-Item -ItemType Directory -Force -Path $localBinDir | Out-Null
-    }
-    $localMakePath = Join-Path $localBinDir 'make.exe'
+        # Add to current session
+        if ($env:PATH -notlike "*$PathDir*") {
+            $env:PATH = "$PathDir;$env:PATH"
+        }
 
-    # Check if already downloaded
-    if (Test-Path $localMakePath) {
-        Write-Log "make binary found at: $localMakePath"
-        $env:PATH = "$localBinDir;$env:PATH"
-        Write-OK "make available from local bin directory"
-        return
-    }
-
-    Write-Log "Downloading make binary..."
-
-    # Configure proxy if environment variables are set
-    $proxyParams = @{}
-    if ($env:HTTPS_PROXY) {
-        $proxyParams['Proxy'] = $env:HTTPS_PROXY
-        Write-Log "Using proxy: $env:HTTPS_PROXY"
-    } elseif ($env:HTTP_PROXY) {
-        $proxyParams['Proxy'] = $env:HTTP_PROXY
-        Write-Log "Using proxy: $env:HTTP_PROXY"
-    }
-
-    # Try zip archive URLs first
-    foreach ($url in $MAKE_DOWNLOAD_URLS) {
-        try {
-            Write-Log "Trying: $url"
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-            $downloadPath = Join-Path $localBinDir "make_$($url.GetHashCode()).zip"
-            Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
-
-            Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseBasicParsing -TimeoutSec 30 @proxyParams
-
-            if (Test-Path $downloadPath) {
-                try {
-                    Expand-Archive -Path $downloadPath -DestinationPath $localBinDir -Force -ErrorAction SilentlyContinue
-                    $foundMake = Get-ChildItem -Path $localBinDir -Filter 'make.exe' -Recurse | Select-Object -First 1
-                    if ($foundMake) {
-                        if ($foundMake.DirectoryName -ne $localBinDir) {
-                            Move-Item $foundMake.FullName $localMakePath -Force
-                        }
-                        Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
-
-                        if ($MAKE_EXPECTED_HASH) {
-                            $actualHash = (Get-FileHash $localMakePath -Algorithm SHA256).Hash
-                            if ($actualHash -ne $MAKE_EXPECTED_HASH) {
-                                Remove-Item $localMakePath -Force -ErrorAction SilentlyContinue
-                                throw "Hash mismatch for make.exe: expected $MAKE_EXPECTED_HASH, got $actualHash"
-                            }
-                            Write-Log "SHA-256 hash verified"
-                        }
-
-                        $env:PATH = "$localBinDir;$env:PATH"
-                        Write-OK "make downloaded and extracted to local bin directory"
-                        return
-                    }
-                } catch {
-                    Write-Warn "Extraction failed for $url, trying next URL..."
-                }
-                Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
-            }
-        } catch {
-            Write-Warn "Download failed from $url : $($_.Exception.Message)"
+        # Add to user PATH persistently
+        $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+        if ($userPath -notlike "*$PathDir*") {
+            $newUserPath = "$PathDir;$userPath"
+            [Environment]::SetEnvironmentVariable('PATH', $newUserPath, 'User')
+            Write-Log "Added $PathDir to user PATH (persistent)"
         }
     }
 
-    # Try direct .exe download as final fallback
-    try {
-        Write-Log "Trying direct .exe download: $MAKE_DIRECT_URL"
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-        Remove-Item $localMakePath -Force -ErrorAction SilentlyContinue
+    # Search for make.exe in Git for Windows installation
+    $gitMakePaths = @(
+        'C:\Program Files\Git\usr\bin\make.exe',
+        'C:\Program Files (x86)\Git\usr\bin\make.exe',
+        'C:\Program Files\Git\mingw64\bin\make.exe',
+        'C:\Program Files\Git\mingw32\bin\make.exe'
+    )
 
-        Invoke-WebRequest -Uri $MAKE_DIRECT_URL -OutFile $localMakePath -UseBasicParsing -TimeoutSec 30 @proxyParams
-
-        if (Test-Path $localMakePath) {
-            if ($MAKE_EXPECTED_HASH) {
-                $actualHash = (Get-FileHash $localMakePath -Algorithm SHA256).Hash
-                if ($actualHash -ne $MAKE_EXPECTED_HASH) {
-                    Remove-Item $localMakePath -Force -ErrorAction SilentlyContinue
-                    throw "Hash mismatch for make.exe: expected $MAKE_EXPECTED_HASH, got $actualHash"
-                }
-                Write-Log "SHA-256 hash verified"
-            }
-            $env:PATH = "$localBinDir;$env:PATH"
-            Write-OK "make downloaded directly to local bin directory"
+    foreach ($gitMakePath in $gitMakePaths) {
+        if (Test-Path $gitMakePath) {
+            Write-Log "Found make.exe in Git for Windows: $gitMakePath"
+            Add-PathPersistent -PathDir (Split-Path $gitMakePath -Parent)
+            Write-OK "make available from Git for Windows"
             return
         }
-    } catch {
-        Write-Warn "Direct .exe download failed: $($_.Exception.Message)"
     }
 
-    # All methods failed
-    Write-Warn "Could not automatically install make."
-    Write-Warn "To manually install make:"
-    Write-Warn "  1. Download make.exe from: https://eternallybored.org/misc/make/"
-    Write-Warn "  2. Place it in: $localBinDir\make.exe"
-    Write-Warn "  3. Or add make.exe to your system PATH"
-    Write-Warn "Alternatively, you can run PowerShell scripts directly without make:"
+    # Check project-local bin directory (bundled with repo)
+    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
+    if (Test-Path $localBinDir) {
+        $localMakePath = Join-Path $localBinDir 'make.exe'
+        if (Test-Path $localMakePath) {
+            Write-Log "Found make.exe in project bin directory: $localMakePath"
+            Add-PathPersistent -PathDir $localBinDir
+            Write-OK "make available from local bin directory"
+            return
+        }
+    }
+
+    # All methods failed — warn but don't fail
+    Write-Warn "make not found. It is typically bundled with Git for Windows."
+    Write-Warn "Git for Windows: https://git-scm.com/download/win"
+    Write-Warn "Alternatively, place make.exe in: $localBinDir\make.exe"
+    Write-Warn "You can run PowerShell scripts directly without make:"
     Write-Warn "  pwsh -File scripts/setup-runner.ps1"
     Write-Warn "  pwsh -File scripts/run-tests.ps1"
     Write-Warn "  pwsh -File scripts/lint.ps1"
