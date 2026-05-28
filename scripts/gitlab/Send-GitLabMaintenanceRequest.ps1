@@ -10,7 +10,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)][ValidateSet('enable', 'disable', 'validate')][string] $Action,
-    [Parameter(Mandatory = $false)][string] $ClusterId,
+    [Parameter(Mandatory = $false)][string] $TargetId,
     [string] $Start,
     [string] $End,
     [string] $ConfigDir = 'configs',
@@ -38,7 +38,7 @@ function _Trigger-Pipeline {
         [string] $TriggerToken,
         [string] $GitRef,
         [string] $Action,
-        [string] $ClusterId,
+        [string] $TargetId,
         [string] $ConfigDir,
         [bool] $DryRun,
         [string] $Start,
@@ -46,11 +46,11 @@ function _Trigger-Pipeline {
     )
 
     $payload = @{
-        token    = $TriggerToken
-        ref      = $GitRef
+        token     = $TriggerToken
+        ref       = $GitRef
         variables = @{
             ACTION     = $Action
-            CLUSTER_ID = $ClusterId
+            CLUSTER_ID = $TargetId
             CONFIG_DIR = $ConfigDir
             DRY_RUN    = if ($DryRun) { 'true' } else { 'false' }
         }
@@ -61,21 +61,21 @@ function _Trigger-Pipeline {
 
     $uri = "$GitLabUrl/api/v4/projects/$ProjectId/trigger/pipeline"
 
-    Write-Host "Triggering GitLab pipeline for cluster: $ClusterId, action: $Action"
+    Write-Host "Triggering GitLab pipeline for target: $TargetId, action: $Action"
     Write-Host "GitLab URL: $GitLabUrl, Project ID: $ProjectId"
 
     $response = Invoke-RestMethod -Uri $uri -Method Post -Body $payload -ContentType 'application/x-www-form-urlencoded'
 
     return @{
-        success      = $true
-        pipeline_id  = $response.pipeline_id
-        project_id   = $ProjectId
-        gitsha       = $response.sha
-        gitlab_url   = $GitLabUrl
-        web_url      = $response.web_url
-        created_at   = (Get-Date).ToString('o')
-        cluster_id   = $ClusterId
-        action       = $Action
+        success     = $true
+        pipeline_id = $response.pipeline_id
+        project_id  = $ProjectId
+        gitsha      = $response.sha
+        gitlab_url  = $GitLabUrl
+        web_url     = $response.web_url
+        created_at  = (Get-Date).ToString('o')
+        target_id   = $TargetId
+        action      = $Action
     }
 }
 
@@ -101,13 +101,15 @@ function Wait-GitLabMaintenanceResult {
             if ($pipeline.status -eq 'success') {
                 Write-Host "Pipeline completed successfully"
                 break
-            } elseif ($pipeline.status -in @('failed', 'canceled', 'skipped')) {
+            }
+            elseif ($pipeline.status -in @('failed', 'canceled', 'skipped')) {
                 Write-Error "Pipeline ended with status: $($pipeline.status)"
                 return $null
             }
 
             Start-Sleep -Seconds $PollInterval
-        } catch {
+        }
+        catch {
             Write-Warning "Failed to check pipeline status: $($_.Exception.Message)"
             Start-Sleep -Seconds $PollInterval
         }
@@ -116,7 +118,8 @@ function Wait-GitLabMaintenanceResult {
     try {
         $jobs = Invoke-RestMethod -Uri "$GitLabUrl/api/v4/projects/$ProjectId/pipelines/$PipelineId/jobs" -Headers $headers -Method Get
         return @{ pipeline = $pipeline; jobs = $jobs }
-    } catch {
+    }
+    catch {
         Write-Error "Failed to get job details: $($_.Exception.Message)"
         return $null
     }
@@ -129,7 +132,7 @@ function Send-GitLabMaintenanceRequest {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][ValidateSet('enable', 'disable', 'validate')][string] $Action,
-        [Parameter(Mandatory = $true)][string] $ClusterId,
+        [Parameter(Mandatory = $true)][string] $TargetId,
         [string] $Start,
         [string] $End,
         [string] $ConfigDir = 'configs',
@@ -151,7 +154,7 @@ function Send-GitLabMaintenanceRequest {
 
     try {
         $result = _Trigger-Pipeline -GitLabUrl $GitLabUrl -ProjectId $ProjectId -TriggerToken $TriggerToken -GitRef $GitRef `
-                    -Action $Action -ClusterId $ClusterId -ConfigDir $ConfigDir -DryRun $DryRun -Start $Start -End $End
+            -Action $Action -TargetId $TargetId -ConfigDir $ConfigDir -DryRun $DryRun -Start $Start -End $End
 
         Write-Host "Pipeline triggered successfully. Pipeline ID: $($result.pipeline_id)"
         Write-Host "Monitor at: $($result.web_url)"
@@ -162,13 +165,13 @@ function Send-GitLabMaintenanceRequest {
 
             if ($finalResult) {
                 $callbackPayload = @{
-                    pipeline_id    = $result.pipeline_id
-                    cluster_id     = $ClusterId
-                    action         = $Action
-                    success        = $finalResult.pipeline.status -eq 'success'
-                    status         = $finalResult.pipeline.status
-                    completed_at   = (Get-Date).ToString('o')
-                    job_details    = $finalResult.jobs
+                    pipeline_id  = $result.pipeline_id
+                    target_id    = $TargetId
+                    action       = $Action
+                    success      = $finalResult.pipeline.status -eq 'success'
+                    status       = $finalResult.pipeline.status
+                    completed_at = (Get-Date).ToString('o')
+                    job_details  = $finalResult.jobs
                 }
 
                 Send-WebCallback -Url $CallbackUrl -Data $callbackPayload -ApiKey $CallbackApiKey
@@ -178,14 +181,15 @@ function Send-GitLabMaintenanceRequest {
 
         return $result
 
-    } catch {
+    }
+    catch {
         $errorResult = @{
-            success     = $false
-            error       = $_.Exception.Message
-            gitlab_url  = $GitLabUrl
-            project_id  = $ProjectId
-            cluster_id  = $ClusterId
-            action      = $Action
+            success    = $false
+            error      = $_.Exception.Message
+            gitlab_url = $GitLabUrl
+            project_id = $ProjectId
+            target_id  = $TargetId
+            action     = $Action
         }
 
         Write-Error "Failed to trigger GitLab pipeline: $($_.Exception.Message)"
@@ -194,15 +198,16 @@ function Send-GitLabMaintenanceRequest {
 }
 
 # Main execution - only run if executed directly with required params
-if (-not $SkipValidation -and $Action -and $ClusterId -and $GitLabUrl -and $ProjectId -and $TriggerToken) {
-    $result = Send-GitLabMaintenanceRequest -Action $Action -ClusterId $ClusterId -Start $Start -End $End `
+if (-not $SkipValidation -and $Action -and $TargetId -and $GitLabUrl -and $ProjectId -and $TriggerToken) {
+    $result = Send-GitLabMaintenanceRequest -Action $Action -TargetId $TargetId -Start $Start -End $End `
         -ConfigDir $ConfigDir -DryRun:$DryRun -GitLabUrl $GitLabUrl -ProjectId $ProjectId `
         -TriggerToken $TriggerToken -GitRef $GitRef -CallbackUrl $CallbackUrl -CallbackApiKey $CallbackApiKey `
         -TimeoutSeconds $TimeoutSeconds -JobToken $JobToken
 
     if ($result.success) {
         exit 0
-    } else {
+    }
+    else {
         exit 1
     }
 }

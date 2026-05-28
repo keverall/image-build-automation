@@ -2,7 +2,7 @@
 # Provides enhanced test output with colored formatting and detailed command information
 # 
 # Usage: Import-Module ./TestOutputHelper.psm1
-#        Write-TestCommand -Command "Set-MaintenanceMode" -Params @{Action='enable'; ClusterId='TEST'}
+#        Write-TestCommand -Command "Set-MaintenanceMode" -Params @{Action='enable'; TargetId='TEST'}
 #        Write-TestResult -Success $true -Message "Maintenance enabled" -Details @{StartTime='2025-01-01'}
 
 # ANSI color codes for terminal output
@@ -223,7 +223,7 @@ function Write-MaintenanceResult {
     $details = @{}
     if ($startTime) { $details['StartTimeUtc'] = $startTime }
     if ($endTime) { $details['EndTimeUtc'] = $endTime }
-    if ($InputParams.ContainsKey('ClusterId')) { $details['Cluster'] = $InputParams['ClusterId'] }
+    if ($InputParams.ContainsKey('TargetId')) { $details['Cluster'] = $InputParams['TargetId'] }
     if ($InputParams.ContainsKey('Action')) { $details['Action'] = $InputParams['Action'] }
     if ($InputParams.ContainsKey('DryRun') -and $InputParams['DryRun']) { $details['Mode'] = 'DRY-RUN' }
     

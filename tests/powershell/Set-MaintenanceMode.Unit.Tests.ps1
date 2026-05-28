@@ -117,7 +117,7 @@ Describe 'Set-MaintenanceMode — Target ID validation' {
         }
 
         It 'Should reject unknown target ID [Action=validate, TargetId=NONEXISTENT-CLUSTER]' {
-            $params = @{ Action = 'validate'; TargetId = 'NONEXISTENT-CLUSTER'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = 'NONEXISTENT-CLUSTER'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -128,7 +128,7 @@ Describe 'Set-MaintenanceMode — Target ID validation' {
         }
 
         It 'Should reject empty target ID string [Action=validate, TargetId=""]' {
-            $params = @{ Action = 'validate'; TargetId = ''; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = ''; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             { Set-MaintenanceMode @params } | Should -Throw
@@ -482,7 +482,7 @@ Describe 'Set-MaintenanceMode — validate action' {
         }
 
         It 'Should reject with invalid cluster ID [Action=validate, TargetId=BAD-ID]' {
-            $params = @{ Action = 'validate'; TargetId = 'BAD-ID'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = 'BAD-ID'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params

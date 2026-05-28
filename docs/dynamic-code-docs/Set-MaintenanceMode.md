@@ -15,8 +15,8 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OneView for a 
 | Parameter | Description |
 |-----------|-------------|
 | `-Action` | 'enable', 'disable', or 'validate'. |
-| `-ClusterId` | Cluster identifier string. |
-| `-Mode` | 'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OneView. |
+| `-TargetId` | Target identifier string (cluster ID or server name). |
+| `-Mode` | 'scom' for SCOM-only or 'oneview' for HPE OneView-only. (required) |
 | `-PostDisableWaitSeconds` | Seconds to sleep after disabling SCOM maintenance mode to allow servers time to reboot and restart services before alerting resumes. Default is 120 (2 minutes). Set to 0 to skip the wait. |
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
 | `-Start` | Maintenance start datetime string (default: now) format YYYY-MM-DD HH:MM . |
@@ -28,17 +28,17 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OneView for a 
 
 ### Example 1
 ```powershell
-Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
+Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start now
 ```
 
 ### Example 2
 ```powershell
-Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
+Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
 ```
 
 ### Example 3
 ```powershell
-Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
+Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
 ```
 
 ## Original Comment-Based Help
@@ -59,11 +59,11 @@ Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
     .PARAMETER Action
         'enable', 'disable', or 'validate'.
 
-    .PARAMETER ClusterId
-        Cluster identifier string.
+    .PARAMETER TargetId
+        Target identifier string (cluster ID or server name).
 
     .PARAMETER Mode
-        'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OneView.
+        'scom' for SCOM-only or 'oneview' for HPE OneView-only.
 
     .PARAMETER PostDisableWaitSeconds
         Seconds to sleep after disabling SCOM maintenance mode to allow servers
@@ -89,13 +89,13 @@ Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
         [hashtable] with Success (bool) and details.
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start now
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start now
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
 
     .EXAMPLE
-        Set-MaintenanceMode -Action disable -ClusterId 'PROD-CLUSTER-01'
+        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
 ```
 
 ---

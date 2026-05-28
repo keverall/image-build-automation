@@ -21,7 +21,7 @@
 param(
     # ── Parameter set: Run a named job ─────────────────────────────────────────
     [Parameter(ParameterSetName = 'Run', Mandatory = $true)]
-    [ValidateSet('reporting','monitoring','firmware','windows','maintenance_enable','maintenance_disable','deploy','irequest','all')]
+    [ValidateSet('reporting', 'monitoring', 'firmware', 'windows', 'maintenance_enable', 'maintenance_disable', 'deploy', 'irequest', 'all')]
     [string] $Job,
 
     # ── Parameter set: Register a Windows Scheduled Task ───────────────────────
@@ -68,7 +68,7 @@ param(
 function Write-JobLog {
     [CmdletBinding()]
     param([string]$Message, [string]$Level = 'INFO')
-    $ts   = Get-UtcTimestamp
+    $ts = Get-UtcTimestamp
     $line = "[$ts] [$Level] $Message"
     Write-Host $line
 
@@ -96,21 +96,23 @@ function Invoke-JobReporting {
     $result = Start-AutomationOrchestrator -RequestType 'opsramp_report' -Params @{ DryRun = $DryRun }
     if ($result.Success) {
         Write-JobLog 'OpsRamp report completed.'
-    } else {
+    }
+    else {
         Write-JobLog "OpsRamp report failed: $($result.Error)", 'WARNING'
     }
 
     # Option B: full build pipeline via Control pattern (equivalent to the unified CI runner with BUILD_STAGE=all)
     $ctrl = New-CIPipelineCtrl -Params @{
-        BUILD_STAGE  = 'all'
-        DRY_RUN      = $DryRun
+        BUILD_STAGE   = 'all'
+        DRY_RUN       = $DryRun
         SERVER_FILTER = ''
         DEPLOY_METHOD = 'ilo'
     }
     $ctrlResult = $ctrl | Run-CIPipeline
     if ($ctrlResult.Success) {
         Write-JobLog "Reporting build pipeline succeeded."
-    } else {
+    }
+    else {
         Write-JobLog "Reporting build pipeline failed: $($ctrlResult.Error)", 'WARNING'
     }
     Write-JobLog '── Reporting job END ──'
@@ -133,7 +135,8 @@ function Invoke-JobMonitoring {
         Write-JobLog "Installing monitor for: $($srv.Hostname)"
         try {
             Start-InstallMonitor -Server $srv -UuidFile "output\\\\$($srv.Hostname).uuid" -Verbose -ErrorAction Stop
-        } catch {
+        }
+        catch {
             Write-JobLog "Monitor error for $($srv.Hostname): $($_.Exception.Message)" -Level 'WARNING'
         }
     }
@@ -157,7 +160,7 @@ function Invoke-JobFirmware {
     }
     $result = $ctrl | Run-CIPipeline
     if ($result.Success) { Write-JobLog 'Firmware build OK.' }
-    else                  { Write-JobLog "Firmware build FAILED: $($result.Error)" -Level 'ERROR' }
+    else { Write-JobLog "Firmware build FAILED: $($result.Error)" -Level 'ERROR' }
     Write-JobLog '── Firmware build job END ──'
 }
 
@@ -178,7 +181,7 @@ function Invoke-JobWindows {
     }
     $result = $ctrl | Run-CIPipeline
     if ($result.Success) { Write-JobLog 'Windows patch OK.' }
-    else                  { Write-JobLog "Windows patch FAILED: $($result.Error)" -Level 'ERROR' }
+    else { Write-JobLog "Windows patch FAILED: $($result.Error)" -Level 'ERROR' }
     Write-JobLog '── Windows patch job END ──'
 }
 
@@ -190,18 +193,18 @@ function Invoke-JobMaintenanceDisable {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string] $ClusterId
+        [Parameter(Mandatory)][string] $TargetId
     )
 
-    Write-JobLog "── Maintenance disable for cluster '$ClusterId' START ──"
+    Write-JobLog "── Maintenance disable for target '$TargetId' START ──"
     $ctrl = New-SchedulerCtrl -TaskParams @{
         task       = 'maintenance_disable'
-        cluster_id = $ClusterId
+        target_id  = $TargetId
         dry_run    = $DryRun
     }
     $result = $ctrl | Run-Scheduler
     if ($result.Success) { Write-JobLog 'Maintenance disable OK.' }
-    else                  { Write-JobLog "Maintenance disable FAILED: $($result.Error)" -Level 'ERROR' }
+    else { Write-JobLog "Maintenance disable FAILED: $($result.Error)" -Level 'ERROR' }
     Write-JobLog '── Maintenance disable END ──'
 }
 
@@ -217,8 +220,8 @@ function Invoke-JobIRequest {
 
     Write-JobLog '── iRequest entry START ──'
     $result = Run-IRequest -FormData $FormData
-    if ($result.Success) { Write-JobLog "iRequest OK: $($result.RequestType) for cluster $($result.Params.ClusterId)" }
-    else                  { Write-JobLog "iRequest FAILED: $($result.Error)" -Level 'ERROR' }
+    if ($result.Success) { Write-Log "iRequest OK: $($result.RequestType) for target $($result.Params.TargetId)" }
+    else { Write-JobLog "iRequest FAILED: $($result.Error)" -Level 'ERROR' }
     Write-JobLog '── iRequest entry END ──'
     return $result
 }
@@ -226,16 +229,16 @@ function Invoke-JobIRequest {
 # ─── Dispatch ────────────────────────────────────────────────────────────────
 
 $jobMap = @{
-    reporting          = { Invoke-JobReporting -DryRun:$DryRun }
-    monitoring         = { Invoke-JobMonitoring -DryRun:$DryRun }
-    firmware           = { Invoke-JobFirmware   -DryRun:$DryRun }
-    windows            = { Invoke-JobWindows    -DryRun:$DryRun }
-    maintenance_disable= { Invoke-JobMaintenanceDisable -ClusterId $SchedulerParams.cluster_id }
-    irequest           = { Invoke-JobIRequest    -FormData  $FormData            }
-    all                = {
-                              Invoke-JobReporting   -DryRun:$DryRun
-                              Invoke-JobMonitoring  -DryRun:$DryRun
-                          }
+    reporting           = { Invoke-JobReporting -DryRun:$DryRun }
+    monitoring          = { Invoke-JobMonitoring -DryRun:$DryRun }
+    firmware            = { Invoke-JobFirmware   -DryRun:$DryRun }
+    windows             = { Invoke-JobWindows    -DryRun:$DryRun }
+    maintenance_disable = { Invoke-JobMaintenanceDisable -TargetId $SchedulerParams.target_id }
+    irequest            = { Invoke-JobIRequest    -FormData  $FormData }
+    all                 = {
+        Invoke-JobReporting   -DryRun:$DryRun
+        Invoke-JobMonitoring  -DryRun:$DryRun
+    }
 }
 
 if ($PSCmdlet.ParameterSetName -eq 'Run') {
@@ -251,12 +254,13 @@ if ($PSCmdlet.ParameterSetName -eq 'Run') {
 
 if ($PSCmdlet.ParameterSetName -eq 'Register') {
     # Build schtasks.exe command
-    $taskCmd  = "pwsh -NoProfile -ExecutionPolicy Bypass -File `"$(Resolve-Path $PSCommandPath)`" -Job `"$Job`""
+    $taskCmd = "pwsh -NoProfile -ExecutionPolicy Bypass -File `"$(Resolve-Path $PSCommandPath)`" -Job `"$Job`""
     $schedOps = @('/Create', '/TN', $TaskName, '/TR', $taskCmd, '/RL', 'HIGHEST', '/F')
 
     if ($RunTime -match '^\d{2}:\d{2}$') {
         $schedOps += @('/SC', 'DAILY', '/ST', $RunTime)
-    } else {
+    }
+    else {
         $schedOps += @('/SC', 'ONCE', '/ST', '00:00', '/SD', (Get-Date -Format 'yyyy/MM/dd'))
     }
     if ($RepeatMinutes -gt 0) {
@@ -267,7 +271,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Register') {
     if ($Remove) {
         Write-JobLog "Removing scheduled task: $TaskName"
         & schtasks.exe /Delete /TN $TaskName /F 2>&1 | Out-Null
-    } elseif ($Add -or $Register) {
+    }
+    elseif ($Add -or $Register) {
         Write-JobLog "Registering scheduled task: $TaskName  ($Job at $RunTime)"
         & schtasks.exe @schedOps 2>&1 | ForEach-Object { Write-JobLog $_ }
     }
@@ -275,8 +280,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Register') {
     # Show existing tasks
     Write-JobLog 'Current automation tasks:'
     & schtasks.exe /Query /TN 'HPE-*' /F /V /FO LIST 2>&1 | Out-String -Stream |
-        Where-Object { $_ -match 'TaskName|Status|Next Run' } |
-        ForEach-Object { Write-JobLog $_ }
+    Where-Object { $_ -match 'TaskName|Status|Next Run' } |
+    ForEach-Object { Write-JobLog $_ }
     exit 0
 }
 
