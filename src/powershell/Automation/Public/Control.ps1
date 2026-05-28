@@ -75,7 +75,7 @@ function _Build-IRequestParams {
     return @{
         RequestType = "maintenance_$action"
         Params      = @{
-            ClusterId = $clusterId
+            TargetId  = $clusterId
             Start     = $FormData.Get_Item('start')
             End       = $FormData.Get_Item('end')
             DryRun    = $dryRun
@@ -110,7 +110,7 @@ function _Build-SchedulerParams {
     return @{
         RequestType = $requestType
         Params      = @{
-            ClusterId = $TaskParams.Get_Item('cluster_id')
+            TargetId  = $TaskParams.Get_Item('target_id')
             DryRun    = $dryRun
         }
         Source      = 'scheduler'

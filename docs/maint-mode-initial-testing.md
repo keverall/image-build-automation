@@ -7,8 +7,8 @@ The script supports both `-DryRun` and `-WhatIf` as equivalent parameters for si
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `-Action` | string | 'enable', 'disable', or 'validate' (default: enable) |
-| `-ClusterId` | string | Cluster identifier (required) |
-| `-Mode` | string | 'scom' for SCOM-only, 'oneview' for OneView-only, 'all' for SCOM + OneView (default: all) |
+| `-TargetId` | string | Cluster identifier (required) |
+| `-Mode` | string | 'scom' for SCOM-only, 'oneview' for OneView-only (required) |
 | `-PostDisableWaitSeconds` | int | Seconds to wait after SCOM disable for server stabilization (default: 120) |
 | `-ConfigDir` | string | Configuration directory (default: configs) |
 | `-Start` | string | Start datetime: 'now' or 'YYYY-MM-DD HH:MM' |
@@ -20,100 +20,85 @@ The script supports both `-DryRun` and `-WhatIf` as equivalent parameters for si
 
 ## SCOM Group Mode Behavior
 
-When maintenance mode is enabled or disabled for SCOM (via either `-Mode scom` or `-Mode all`), **ALL objects in the SCOM group** are affected — servers, network devices, cluster nodes, and the cluster server itself. This ensures complete alert suppression across the entire cluster.
+When maintenance mode is enabled or disabled for SCOM (via `-Mode scom`), **ALL objects in the SCOM group** are affected — servers, network devices, cluster nodes, and the cluster server itself. This ensures complete alert suppression across the entire cluster.
 
 After disabling SCOM maintenance mode, a configurable wait period (default 120 seconds) allows servers time to reboot, restart services, and stabilize before alerting resumes, preventing false alerts.
 
 ## Mode Behavior Summary
 
-| Mode | SCOM | OneView | ClusterId Required |
+| Mode | SCOM | OneView | TargetId Required |
 |------|------|---------|-------------------|
 | `scom` | Yes | No | Must be in `clusters_catalogue.json` |
 | `oneview` | No | Yes | Resolved via OneView API — checks if it's a ServerHardware or Scope |
-| `all` | Yes | Yes | Must be in `clusters_catalogue.json` |
 
 ## OneView Mode
 
 When `-Mode oneview` is used:
-- ClusterId is resolved via the OneView API using `ResolveTarget()`
+- TargetId is resolved via the OneView API using `ResolveTarget()`
 - OneView checks if the identifier matches a `ServerHardware` (single server) or a `Scope` (cluster/collection)
 - If ServerHardware: maintenance mode is applied to that single server
 - If Scope: maintenance mode is applied to all ServerHardware members within that scope
 - Returns per-object status with ACK/NACK details matching SCOM response format
-
-## ALL Mode
-
-When `-Mode all` is used (default):
-- SCOM maintenance is applied to all objects in the SCOM group (existing behavior)
-- OneView maintenance is applied to the resolved target (server or scope)
-- Both systems receive per-object status reporting
 
 ## Testing Commands
 
 **1. Dry-run first (recommended) to validate config:**
 
 ```powershell
-# All systems (SCOM + OneView) - default mode
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 'now' -End '+1hour' -DryRun
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -DryRun
-
 # SCOM-only mode
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode scom -DryRun
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -DryRun
 
 # OneView-only mode (resolves server or scope via OneView API)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'my-server-01' -Mode oneview -Start 'now' -End '+1hour' -DryRun
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'my-server-01' -Mode oneview -DryRun
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'my-server-01' -Mode oneview -Start 'now' -End '+1hour' -DryRun
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'my-server-01' -Mode oneview -DryRun
 ```
 
 **2. Using WhatIf (alias for DryRun):**
 
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode all -Start 'now' -End '+1hour' -WhatIf
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -WhatIf
 ```
 
 **3. Enable/disable with mode parameter:**
 
 ```powershell
-# SCOM + OneView (explicit all mode)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode all -Start 'now' -End '+1hour'
-
 # SCOM-only mode
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+2hours'
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+2hours'
 ```
 
 **4. Disable with stabilization wait period:**
 
 ```powershell
 # Disable with default 120-second wait (recommended)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode all
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
 
 # Disable with custom 60-second wait
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -Mode scom -PostDisableWaitSeconds 60
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -PostDisableWaitSeconds 60
 
 # Disable with no wait (immediate alerting resume — use with caution)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -ClusterId 'PROD-CLUSTER-01' -PostDisableWaitSeconds 0
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -PostDisableWaitSeconds 0
 ```
 
 **5. Using datetime format instead of relative:**
 
 ```powershell
 # Enable with explicit end time (Dublin time zone assumed for production)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 'now' -End '2026-05-25 17:00' -ConfigDir './configs'
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '2026-05-25 17:00' -ConfigDir './configs'
 ```
 
 **6. Using the module import approach:**
 
 ```powershell
 Import-Module ./src/powershell/Automation/Automation.psm1 -Force
-Set-MaintenanceMode -Action enable -ClusterId 'STAGING-CLUSTER-01' -Mode scom -Start 'now' -End '+30min' -DryRun
-Set-MaintenanceMode -Action disable -ClusterId 'STAGING-CLUSTER-01' -Mode all -PostDisableWaitSeconds 60
+Set-MaintenanceMode -Action enable -TargetId 'STAGING-CLUSTER-01' -Mode scom -Start 'now' -End '+30min' -DryRun
+Set-MaintenanceMode -Action disable -TargetId 'STAGING-CLUSTER-01' -Mode scom -PostDisableWaitSeconds 60
 ```
 
 **7. Validate cluster configuration:**
 
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -ClusterId 'PROD-CLUSTER-01'
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom
 ```
 
 ## Notes
@@ -236,14 +221,14 @@ Total Failed: 1
 
 ```powershell
 # Dry-run to see response structure without making changes
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Start 'now' -End '+1hour' -DryRun -Json | ConvertFrom-Json | Select-Object ScomObjects, ScomSummary, FailedObjects
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun -Json | ConvertFrom-Json | Select-Object ScomObjects, ScomSummary, FailedObjects
 
 # Live run with JSON output for iRequest CMDB integration
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+2hours' -Json
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+2hours' -Json
 
 # Verify per-object status in module approach
 Import-Module ./src/powershell/Automation/Automation.psm1 -Force
-$result = Set-MaintenanceMode -Action enable -ClusterId 'PROD-CLUSTER-01' -Mode all -Start 'now' -End '+1hour' -DryRun
+$result = Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
 $result.ScomObjects | Format-Table Name, Type, Status, NackReason
 $result.FailedObjects | ForEach-Object { Write-Host "$($_.Name): $($_.NackReason) -> $($_.Resolution)" }
 ```

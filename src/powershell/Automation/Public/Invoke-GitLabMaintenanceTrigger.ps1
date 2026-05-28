@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 function Invoke-GitLabMaintenanceTrigger {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)][string] $ClusterId,
+        [Parameter(Mandatory = $true)][string] $TargetId,
         [ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [string] $Start,
         [string] $End,
@@ -40,7 +40,7 @@ function Invoke-GitLabMaintenanceTrigger {
     }
 
     try {
-        $result = Send-GitLabMaintenanceRequest -Action $Action -ClusterId $ClusterId -Start $Start -End $End `
+        $result = Send-GitLabMaintenanceRequest -Action $Action -TargetId $TargetId -Start $Start -End $End `
             -ConfigDir $ConfigDir -DryRun:$DryRun -GitLabUrl $GitLabUrl -ProjectId $ProjectId `
             -TriggerToken $TriggerToken -GitRef $GitRef -CallbackUrl $CallbackUrl -CallbackApiKey $CallbackApiKey `
             -TimeoutSeconds $TimeoutSeconds -JobToken $JobToken
@@ -48,17 +48,17 @@ function Invoke-GitLabMaintenanceTrigger {
         return @{
             Success      = $result.success
             PipelineId   = $result.pipeline_id
-            ClusterId    = $ClusterId
+            TargetId     = $TargetId
             Action       = $Action
             GitLabUrl    = $result.gitlab_url
             WebUrl       = $result.web_url
-            Message      = "GitLab pipeline triggered for cluster $ClusterId"
+            Message      = "GitLab pipeline triggered for target $TargetId"
         }
     } catch {
         return @{
             Success   = $false
             Error     = $_.Exception.Message
-            ClusterId = $ClusterId
+            TargetId  = $TargetId
             Action    = $Action
         }
     }

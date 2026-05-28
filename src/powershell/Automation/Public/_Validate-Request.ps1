@@ -22,18 +22,18 @@ function _Validate-Request {
         $errors = _Validate-Request -RequestType 'build_iso' -Params @{ base_iso = 'C:\ISO.iso' }
 
     .EXAMPLE
-        $errors = _Validate-Request -RequestType 'maintenance_enable' -Params @{ cluster_id = 'PROD-CLUSTER-01' }
+        $errors = _Validate-Request -RequestType 'maintenance_enable' -Params @{ TargetId = 'PROD-CLUSTER-01' }
     #>
     [CmdletBinding()]
     [OutputType([string[]])]
     param([string]$RequestType, [hashtable]$Params)
     $errors = @()
-    if ($RequestType -in @('build_iso','patch_windows')) {
+    if ($RequestType -in @('build_iso', 'patch_windows')) {
         $errors += Test-BuildParams -BaseIsoPath $Params.Get_Item('base_iso')
     }
     if ($RequestType.StartsWith('maintenance_')) {
-        $def = Test-ClusterId -ClusterId $Params.Get_Item('cluster_id')
-        if (-not $def) { $errors += "Invalid cluster ID: $($Params.Get_Item('cluster_id'))" }
+        $def = Test-ClusterId -TargetId $Params.Get_Item('TargetId')
+        if (-not $def) { $errors += "Invalid target ID: $($Params.Get_Item('TargetId'))" }
     }
-    return ,$errors
+    return , $errors
 }

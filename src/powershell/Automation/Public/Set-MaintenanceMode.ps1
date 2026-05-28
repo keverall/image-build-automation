@@ -50,7 +50,7 @@ function Set-MaintenanceMode {
         Target identifier string (cluster ID or server name).
 
     .PARAMETER Mode
-        'scom' for SCOM maintenance mode only, or 'all' for both SCOM and OpenView.
+        'scom' for SCOM-only or 'oneview' for HPE OpenView-only. SCOM manages Windows cluster objects; OpenView manages hardware directly.
 
     .PARAMETER PostDisableWaitSeconds
         Seconds to sleep after disabling SCOM maintenance mode to allow servers
@@ -76,19 +76,19 @@ function Set-MaintenanceMode {
         [hashtable] with Success (bool) and details.
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Start now
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start now
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
 
     .EXAMPLE
-        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01'
+        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
     #>
     [CmdletBinding()]
     param(
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [Parameter(Mandatory, Position = 1)][string] $TargetId,
-        [Parameter(Position = 2)][ValidateSet('scom', 'oneview', 'all')][string] $Mode = 'all',
+        [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
         [int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
         [string] $Start = $null,
@@ -98,6 +98,12 @@ function Set-MaintenanceMode {
     )
 
     $ErrorActionPreference = 'Continue'
+
+    # Normalize Mode to lowercase for case-insensitive comparison
+    if ($Mode) { $Mode = $Mode.ToLower() }
+    else {
+        return @{ Success = $false; Error = "Mode is required and must be either 'scom' or 'oneview'." }
+    }
 
     # Use passed ConfigDir param or fall back to script-level variable
     $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) { $ConfigDir } else { $Script:ConfigDir }
@@ -124,7 +130,7 @@ function Set-MaintenanceMode {
         }
         # If not in catalogue, will be resolved via OneView API later
     } else {
-        # SCOM or ALL mode - must be in catalogue
+        # SCOM mode - must be in catalogue
         $clustersMap = $clustersCfg.Get_Item('clusters')
         if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
             Write-Verbose "Target '$TargetId' not found in catalogue."
@@ -134,8 +140,8 @@ function Set-MaintenanceMode {
         $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
     }
 
-    # Validate cluster definition if found (required for scom/all modes)
-    if ($clusterDef -and ($Mode -eq 'scom' -or $Mode -eq 'all')) {
+    # Validate cluster definition if found (required for scom mode)
+    if ($clusterDef -and $Mode -eq 'scom') {
         $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
         $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
         if ($missing) { Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"; return @{ Success = $false; Error = "Missing fields: $($missing -join ', ')" } }
@@ -185,11 +191,11 @@ function Set-MaintenanceMode {
     $oneviewMgr = $null
     $resolveResult = $null
 
-    if ($Mode -eq 'scom' -or $Mode -eq 'all') {
+    if ($Mode -eq 'scom') {
         try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
     }
 
-    if ($Mode -eq 'oneview' -or $Mode -eq 'all') {
+    if ($Mode -eq 'oneview') {
         try {
             $oneviewMgr = [OneViewClient]::new($oneviewCfg)
             # Resolve target for oneview - determine if server or cluster/scope
@@ -217,7 +223,7 @@ function Set-MaintenanceMode {
     if ($Action -eq 'enable') {
         # SCOM — use group mode to put ALL objects in the SCOM group into maintenance mode
         # (servers, network devices, nodes, cluster objects, everything under the group)
-        # Only for 'scom' and 'all' modes
+        # Only for 'scom' mode
         $scomOk = $true; $scomInfo = ''; $scomObjects = @(); $scomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
         if ($scomMgr) {
             $scomOk = $false
@@ -232,14 +238,14 @@ function Set-MaintenanceMode {
             $scomSummary = $scomRes.Summary
             $scomInfo = if ($scomRes.Output) { ($scomRes.Output -join "`n") } else { '' }
         }
-        if ($Mode -eq 'scom' -or $Mode -eq 'all') {
+    if ($Mode -eq 'scom') {
             $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo; Objects = $scomObjects; Summary = $scomSummary }
             if (-not $scomOk) { $overallOk = $false }
         }
 
-        # OneView — for 'oneview' and 'all' modes
+        # OneView — for 'oneview' mode
         $oneviewOk = $true; $oneviewMsg = ''; $oneviewObjects = @(); $oneviewSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
-        if ($Mode -eq 'oneview' -or $Mode -eq 'all') {
+        if ($Mode -eq 'oneview') {
             if ($oneviewMgr) {
                 $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
                 $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
@@ -299,9 +305,9 @@ function Set-MaintenanceMode {
     }
     elseif ($Action -eq 'disable') {
         # SCOM — exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
-        # Only for 'scom' and 'all' modes
+        # Only for 'scom' mode
         $scomExitOk = $true; $scomExitObjects = @(); $scomExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
-        if ($scomMgr -and ($Mode -eq 'scom' -or $Mode -eq 'all')) {
+        if ($scomMgr -and $Mode -eq 'scom') {
             $scomExitOk = $false
             Write-Verbose "Exiting SCOM maintenance mode for group '$($clusterDef.Get_Item('scom_group'))' (all objects)"
             $scomExitRes = $scomMgr.ExitMaintenance(
@@ -327,9 +333,9 @@ function Set-MaintenanceMode {
             }
         }
 
-        # OneView disable — for 'oneview' and 'all' modes
+        # OneView disable — for 'oneview' mode
         $oneviewExitOk = $true; $oneviewExitMsg = ''; $oneviewExitObjects = @(); $oneviewExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
-        if (($Mode -eq 'oneview' -or $Mode -eq 'all') -and $oneviewMgr) {
+        if ($Mode -eq 'oneview' -and $oneviewMgr) {
             $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
             $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
             $oneviewExitRes = $oneviewMgr.DisableMaintenance($targetName, $targetType, [bool]$DryRun)

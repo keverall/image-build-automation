@@ -67,7 +67,7 @@ function Test-ClusterDefinition {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][hashtable] $ClusterDef,
-        [Parameter(Mandatory)][string]   $ClusterId
+        [Parameter(Mandatory)][string]   $TargetId
     )
     $errors = [System.Collections.Generic.List[string]]::new()
     foreach ($f in @('display_name','servers','scom_group','environment')) {
