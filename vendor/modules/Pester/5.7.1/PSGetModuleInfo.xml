@@ -7,7 +7,7 @@
     </TN>
     <MS>
       <S N="Name">Pester</S>
-      <S N="Version">5.0.0</S>
+      <S N="Version">5.7.1</S>
       <S N="Type">Module</S>
       <S N="Description">Pester provides a framework for running BDD style Tests to execute and validate PowerShell commands inside of PowerShell and offers a powerful set of Mocking Functions that allow tests to mimic and mock the functionality of any command inside of a piece of PowerShell code being tested. Pester tests can execute any command or script that is accessible to a pester test file. This can include functions, Cmdlets, Modules and scripts. Pester can be run in ad hoc style in a console or it can be integrated into the Build scripts of a Continuous Integration system.</S>
       <S N="Author">Pester Team</S>
@@ -22,13 +22,13 @@
           <S>fflaten</S>
         </LST>
       </Obj>
-      <S N="Copyright">Copyright (c) 2020 by Pester Team, licensed under Apache 2.0 License.</S>
-      <DT N="PublishedDate">2020-05-27T07:05:37+01:00</DT>
+      <S N="Copyright">Copyright (c) 2025 by Pester Team, licensed under Apache 2.0 License.</S>
+      <DT N="PublishedDate">2025-01-08T21:12:39+00:00</DT>
       <Nil N="InstalledDate" />
       <Nil N="UpdatedDate" />
       <URI N="LicenseUri">https://www.apache.org/licenses/LICENSE-2.0.html</URI>
       <URI N="ProjectUri">https://github.com/Pester/Pester</URI>
-      <URI N="IconUri">https://raw.githubusercontent.com/pester/Pester/master/images/pester.PNG</URI>
+      <URI N="IconUri">https://raw.githubusercontent.com/pester/Pester/main/images/pester.PNG</URI>
       <Obj N="Tags" RefId="2">
         <TNRef RefId="1" />
         <LST>
@@ -52,14 +52,14 @@
         </TN>
         <DCT>
           <En>
-            <S N="Key">RoleCapability</S>
+            <S N="Key">Workflow</S>
             <Obj N="Value" RefId="4">
               <TNRef RefId="1" />
               <LST />
             </Obj>
           </En>
           <En>
-            <S N="Key">Workflow</S>
+            <S N="Key">RoleCapability</S>
             <Ref N="Value" RefId="4" />
           </En>
           <En>
@@ -73,6 +73,7 @@
                 <S>It</S>
                 <S>Mock</S>
                 <S>InModuleScope</S>
+                <S>BeforeDiscovery</S>
                 <S>BeforeAll</S>
                 <S>BeforeEach</S>
                 <S>AfterEach</S>
@@ -82,11 +83,16 @@
                 <S>Get-ShouldOperator</S>
                 <S>Export-NUnitReport</S>
                 <S>ConvertTo-NUnitReport</S>
+                <S>Export-JUnitReport</S>
+                <S>ConvertTo-JUnitReport</S>
                 <S>ConvertTo-Pester4Result</S>
+                <S>New-PesterContainer</S>
+                <S>New-PesterConfiguration</S>
                 <S>Assert-VerifiableMock</S>
                 <S>Assert-MockCalled</S>
                 <S>Set-ItResult</S>
                 <S>New-MockObject</S>
+                <S>New-Fixture</S>
               </LST>
             </Obj>
           </En>
@@ -109,6 +115,7 @@
                 <S>It</S>
                 <S>Mock</S>
                 <S>InModuleScope</S>
+                <S>BeforeDiscovery</S>
                 <S>BeforeAll</S>
                 <S>BeforeEach</S>
                 <S>AfterEach</S>
@@ -118,18 +125,23 @@
                 <S>Get-ShouldOperator</S>
                 <S>Export-NUnitReport</S>
                 <S>ConvertTo-NUnitReport</S>
+                <S>Export-JUnitReport</S>
+                <S>ConvertTo-JUnitReport</S>
                 <S>ConvertTo-Pester4Result</S>
+                <S>New-PesterContainer</S>
+                <S>New-PesterConfiguration</S>
                 <S>Assert-VerifiableMock</S>
                 <S>Assert-MockCalled</S>
                 <S>Set-ItResult</S>
                 <S>New-MockObject</S>
+                <S>New-Fixture</S>
               </LST>
             </Obj>
           </En>
         </DCT>
       </Obj>
       <Nil N="PowerShellGetFormatVersion" />
-      <S N="ReleaseNotes">https://github.com/pester/Pester/releases/tag/5.0.0</S>
+      <S N="ReleaseNotes">https://github.com/pester/Pester/releases/tag/5.7.1</S>
       <Obj N="Dependencies" RefId="7">
         <TNRef RefId="1" />
         <LST />
@@ -143,33 +155,33 @@
           <T>System.Object</T>
         </TN>
         <MS>
-          <S N="copyright">Copyright (c) 2020 by Pester Team, licensed under Apache 2.0 License.</S>
+          <S N="copyright">Copyright (c) 2025 by Pester Team, licensed under Apache 2.0 License.</S>
           <S N="description">Pester provides a framework for running BDD style Tests to execute and validate PowerShell commands inside of PowerShell and offers a powerful set of Mocking Functions that allow tests to mimic and mock the functionality of any command inside of a piece of PowerShell code being tested. Pester tests can execute any command or script that is accessible to a pester test file. This can include functions, Cmdlets, Modules and scripts. Pester can be run in ad hoc style in a console or it can be integrated into the Build scripts of a Continuous Integration system.</S>
           <S N="requireLicenseAcceptance">False</S>
-          <S N="releaseNotes">https://github.com/pester/Pester/releases/tag/5.0.0</S>
-          <S N="isLatestVersion">False</S>
+          <S N="releaseNotes">https://github.com/pester/Pester/releases/tag/5.7.1</S>
+          <S N="isLatestVersion">True</S>
           <S N="isAbsoluteLatestVersion">False</S>
-          <S N="versionDownloadCount">42188</S>
+          <S N="versionDownloadCount">10110395</S>
           <S N="downloadCount">38792446</S>
-          <S N="packageSize">193533</S>
-          <S N="published">27/05/2020 07:05:37 +01:00</S>
-          <S N="created">27/05/2020 07:05:37 +01:00</S>
-          <S N="lastUpdated">15/05/2026 07:20:00 +01:00</S>
+          <S N="packageSize">325233</S>
+          <S N="published">08/01/2025 21:12:39 +00:00</S>
+          <S N="created">08/01/2025 21:12:39 +00:00</S>
+          <S N="lastUpdated">15/05/2026 19:00:00 +01:00</S>
           <S N="tags">powershell unit_testing bdd tdd mocking PSEdition_Core PSEdition_Desktop Windows Linux MacOS PSModule</S>
           <S N="developmentDependency">False</S>
-          <S N="updated">2026-05-15T07:20:00Z</S>
-          <S N="NormalizedVersion">5.0.0</S>
+          <S N="updated">2026-05-15T19:00:00Z</S>
+          <S N="NormalizedVersion">5.7.1</S>
           <S N="Authors">Pester Team</S>
           <S N="IsPrerelease">false</S>
           <S N="ItemType">Module</S>
-          <S N="FileList">Pester.nuspec|junit_schema_4.xsd|nunit_schema_2.5.xsd|Pester.psd1|Pester.psm1|report.dtd|bin\net452\Pester.dll|bin\net452\Pester.pdb|bin\netstandard2.0\Pester.dll|bin\netstandard2.0\Pester.pdb|en-US\about_BeforeEach_AfterEach.help.txt|en-US\about_Mocking.help.txt|en-US\about_Pester.help.txt|en-US\about_Should.help.txt|en-US\about_TestDrive.help.txt</S>
-          <S N="Functions">Invoke-Pester Describe Context It Mock InModuleScope BeforeAll BeforeEach AfterEach AfterAll Should Add-ShouldOperator Get-ShouldOperator Export-NUnitReport ConvertTo-NUnitReport ConvertTo-Pester4Result Assert-VerifiableMock Assert-MockCalled Set-ItResult New-MockObject</S>
+          <S N="FileList">Pester.nuspec|Pester.Format.ps1xml|en-US\about_Pester.help.txt|en-US\about_PesterConfiguration.help.txt|Pester.ps1|schemas\Cobertura\coverage-loose.dtd|Pester.psd1|schemas\JaCoCo\report.dtd|Pester.psm1|schemas\JUnit4\junit_schema_4.xsd|PesterConfiguration.Format.ps1xml|schemas\NUnit25\nunit_schema_2.5.xsd|bin\net452\Pester.dll|schemas\NUnit3\TestDefinitions.xsd|bin\net452\Pester.pdb|schemas\NUnit3\TestFilterDefinitions.xsd|bin\netstandard2.0\Pester.dll|schemas\NUnit3\TestResult.xsd|bin\netstandard2.0\Pester.pdb</S>
+          <S N="Functions">Invoke-Pester Describe Context It Mock InModuleScope BeforeDiscovery BeforeAll BeforeEach AfterEach AfterAll Should Add-ShouldOperator Get-ShouldOperator Export-NUnitReport ConvertTo-NUnitReport Export-JUnitReport ConvertTo-JUnitReport ConvertTo-Pester4Result New-PesterContainer New-PesterConfiguration Assert-VerifiableMock Assert-MockCalled Set-ItResult New-MockObject New-Fixture</S>
           <S N="GUID">a699dea5-2c73-4616-a270-1f7abb777e71</S>
           <S N="PowerShellVersion">3.0</S>
           <S N="CompanyName">Pester</S>
         </MS>
       </Obj>
-      <S N="InstalledLocation">/home/keverall/repos/image-build-automation/vendor/modules/Pester/5.0.0</S>
+      <S N="InstalledLocation">/home/keverall/repos/image-build-automation/vendor/modules/Pester/5.7.1</S>
     </MS>
   </Obj>
 </Objs>
