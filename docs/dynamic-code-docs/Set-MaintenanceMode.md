@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-05-27 20:04 UTC
+generated: 2026-05-28 13:09 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Orchestrates maintenance-mode operations across SCOM 2015 and HPE OneView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications.  The function is the PowerShell implementation. automation.cli.maintenance_mode module.
+Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications.  The function is the PowerShell implementation. automation.cli.maintenance_mode module.
 
 ## Parameters
 
@@ -16,7 +16,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OneView for a 
 |-----------|-------------|
 | `-Action` | 'enable', 'disable', or 'validate'. |
 | `-TargetId` | Target identifier string (cluster ID or server name). |
-| `-Mode` | 'scom' for SCOM-only or 'oneview' for HPE OneView-only. (required) |
+| `-Mode` | 'scom' for SCOM-only or 'oneview' for HPE OpenView-only. SCOM manages Windows cluster objects; OpenView manages hardware directly. |
 | `-PostDisableWaitSeconds` | Seconds to sleep after disabling SCOM maintenance mode to allow servers time to reboot and restart services before alerting resumes. Default is 120 (2 minutes). Set to 0 to skip the wait. |
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
 | `-Start` | Maintenance start datetime string (default: now) format YYYY-MM-DD HH:MM . |
@@ -48,7 +48,7 @@ Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
         Callable from the module Router.
 
     .DESCRIPTION
-        Orchestrates maintenance-mode operations across SCOM 2015 and HPE OneView
+        Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView
         for a logical cluster defined in clusters_catalogue.json.
         Supports immediate enable/disable as well as scheduled windows with
         automatic disable via Windows Task Scheduler.
@@ -63,7 +63,7 @@ Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
         Target identifier string (cluster ID or server name).
 
     .PARAMETER Mode
-        'scom' for SCOM-only or 'oneview' for HPE OneView-only.
+        'scom' for SCOM-only or 'oneview' for HPE OpenView-only. SCOM manages Windows cluster objects; OpenView manages hardware directly.
 
     .PARAMETER PostDisableWaitSeconds
         Seconds to sleep after disabling SCOM maintenance mode to allow servers
