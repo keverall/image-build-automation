@@ -84,6 +84,14 @@ function Install-PowerShellModuleOffline {
         # Verify the installation is functional by trying to import it
         try {
             Import-Module $Name -RequiredVersion $Version -ErrorAction Stop -WarningAction SilentlyContinue
+            # For Pester, also verify the native DLL exists (Add-Type failure not caught by Import-Module)
+            if ($Name -eq 'Pester') {
+                $moduleBase = Split-Path $installed.Path -Parent
+                $dllPath = Join-Path $moduleBase 'bin\netstandard2.0\Pester.dll'
+                if (-not (Test-Path $dllPath)) {
+                    throw "Pester.dll missing at $dllPath"
+                }
+            }
             Write-Log "$Name $($installed.Version) already installed and verified"
             return
         } catch {
