@@ -10,9 +10,47 @@ using namespace System
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 
-# Ensure Pester is available
+# Ensure Pester is available and DLL is present
+$ErrorActionPreference = 'Continue'
+$pesterModule = Get-Module Pester -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
+$pesterOk = $true
+if ($pesterModule) {
+    $moduleBase = Split-Path $pesterModule.Path -Parent
+    $dllPath = Join-Path $moduleBase 'bin\netstandard2.0\Pester.dll'
+    if (-not (Test-Path $dllPath)) {
+        Write-Host "[repair] Pester.dll missing — repairing from vendor/modules/Pester..." -ForegroundColor Yellow
+        $pesterOk = $false
+    }
+} else {
+    Write-Host "[repair] Pester not found — installing from vendor/modules/Pester..." -ForegroundColor Yellow
+    $pesterOk = $false
+}
+
+# Repair Pester from bundled vendor copy if needed
+if (-not $pesterOk) {
+    $vendorPesterDir = Join-Path $PROJECT_ROOT 'vendor/modules/Pester'
+    $vendorVersionDir = Get-ChildItem -Path $vendorPesterDir -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+    if ($vendorVersionDir -and (Test-Path (Join-Path $vendorVersionDir.FullName 'bin/netstandard2.0/Pester.dll'))) {
+        if (-not $pesterModule) {
+            $userModulePath = if ($IsWindows) { Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules' } else { Join-Path $HOME '.local/share/powershell/Modules' }
+            $destDir = Join-Path $userModulePath "Pester/$($vendorVersionDir.Name)"
+            New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+            Copy-Item -Path "$($vendorVersionDir.FullName)/*" -Destination $destDir -Recurse -Force
+            Write-Host "[repair] Installed Pester $($vendorVersionDir.Name) from vendor copy" -ForegroundColor Green
+        } else {
+            $binDir = Join-Path $moduleBase 'bin'
+            Copy-Item -Path "$($vendorVersionDir.FullName)/bin" -Destination $moduleBase -Recurse -Force
+            Write-Host "[repair] Restored Pester bin/ folder from vendor copy" -ForegroundColor Green
+        }
+    } else {
+        Write-Error "Vendor Pester copy not found at $vendorPesterDir or DLL missing. Run 'make setup'."
+        exit 1
+    }
+}
+$ErrorActionPreference = 'Stop'
+
 if (-not (Get-Module Pester -ListAvailable)) {
-    Write-Error "Pester not installed. Run 'make pwsh-setup' or install manually: Install-Module Pester -Scope CurrentUser"
+    Write-Error "Pester not installed. Run 'make setup' or install manually: Install-Module Pester -Scope CurrentUser"
     exit 1
 }
 
