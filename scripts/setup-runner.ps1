@@ -18,9 +18,9 @@ using namespace System
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 $LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
-$VENDOR_MODULES_DIR = Join-Path $PROJECT_ROOT 'vendor/modules'
+$VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
 
-# PowerShell modules bundled in vendor/modules/
+# PowerShell modules bundled in scripts/modules/
 $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
@@ -154,6 +154,42 @@ function Install-RequiredModules {
 
     # Update Help files (skipped offline — not critical)
     Write-Log "Skipping Update-Help (offline mode)"
+}
+
+# ─── Oh My Posh Installation ─────────────────────────────────────────────────
+function Install-OhMyPosh {
+    $poshBin = Join-Path $PSScriptRoot 'bin/posh.exe'
+    if (-not (Test-Path $poshBin)) {
+        Write-Warn "Oh My Posh binary not found in scripts/bin/. Skipping."
+        return
+    }
+
+    $installDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'bin'
+    $destPath = Join-Path $installDir 'oh-my-posh.exe'
+    if (Test-Path $destPath) {
+        Write-Log "Oh My Posh already installed at $destPath"
+        return
+    }
+
+    Write-Log "Installing Oh My Posh..."
+    if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Force -Path $installDir | Out-Null }
+    Copy-Item -Path $poshBin -Destination $destPath -Force
+    Write-OK "Oh My Posh installed to $destPath"
+
+    # Add to current session PATH
+    if ($env:PATH -notlike "*$installDir*") { $env:PATH = "$installDir;$env:PATH" }
+
+    # Configure profile for VSCode/terminal prompt
+    $profileDir = Split-Path $PROFILE -Parent
+    if (-not (Test-Path $profileDir)) { New-Item -ItemType Directory -Force -Path $profileDir | Out-Null }
+    if (-not (Test-Path $PROFILE)) {
+        $profileContent = @"
+# Oh My Posh prompt (bundled, offline-capable)
+oh-my-posh init pwsh --config `$env:LOCALAPPDATA\Programs\oh-my-posh\themes\powerline.json | Invoke-Expression
+"@
+        Set-Content -Path $PROFILE -Value $profileContent -Force
+        Write-Log "Created PowerShell profile with Oh My Posh prompt"
+    }
 }
 
 # ─── Make Detection (Windows) ────────────────────────────────────────────────
@@ -298,6 +334,7 @@ function Main {
 
     Test-PowerShellVersion
     Install-RequiredModules
+    Install-OhMyPosh
     Install-Make
     Test-PowerShellTools
     Show-Summary
