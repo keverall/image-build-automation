@@ -27,3 +27,44 @@ Copy-Item -Path "<repo-path>\vendor\modules\Pester\5.7.1\*" -Destination $dest -
 # Verify
 Import-Module Pester 5.7.1 -PassThru
 Replace <repo-path> with the full path to your cloned repo on the Windows server.s
+
+
+Switch to GitStash (BMC Bitbucket):
+
+git remote set-url origin https://gitstash.bmc.com/scm/~keverall/image-build-automation.git
+Or with SSH:
+
+git remote set-url origin ssh://git@gitstash.bmc.com:7999/~keverall/image-build-automation.git
+
+Sourcetree (Atlassian's official client) — free, Bitbucket-native:
+
+Download: https://www.sourcetreeapp.com/
+GitKraken — polished, Bitbucket supported:
+
+https://www.gitkraken.com/
+TortoiseGit — Windows shell integration, works with any remote:
+
+https://tortoisegit.org/
+
+
+1. Generate the PAT in GitStash/Bitbucket:
+
+Go to: https://gitstash.bmc.com/plugins/servlet/access-tokens/users-and-groups (or your instance URL → Avatar → Manage account → HTTP access tokens → Create token)
+
+Give it scopes: REPO_READ, REPO_WRITE, PROJECT_READ
+
+2. Use it in git (Windows):
+
+Option A — Credential Manager (recommended):
+
+git config --global credential.helper manager-core
+git fetch origin
+# Prompted for username + paste PAT as password
+Option B — Embed in remote URL (no prompts):
+
+git remote set-url origin https://<your-username>:<PAT>@gitstash.bmc.com/scm/~keverall/image-build-automation.git
+Option C — Git credential store (plain text, cached):
+
+git config --global credential.helper store
+git fetch origin
+# Enter username + PAT once, saved to ~/.git-credentials
