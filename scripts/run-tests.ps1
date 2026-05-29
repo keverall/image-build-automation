@@ -14,37 +14,45 @@ $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 $ErrorActionPreference = 'Continue'
 $pesterModule = Get-Module Pester -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
 $pesterOk = $true
+$pesterUserPath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules\Pester'
 if ($pesterModule) {
     $moduleBase = Split-Path $pesterModule.Path -Parent
     $dllPath = Join-Path $moduleBase 'bin\netstandard2.0\Pester.dll'
     if (-not (Test-Path $dllPath)) {
-        Write-Host "[repair] Pester.dll missing — repairing from vendor/modules/Pester..." -ForegroundColor Yellow
+        Write-Host "[repair] Pester.dll missing — reinstalling Pester 5.7.1..." -ForegroundColor Yellow
         $pesterOk = $false
     }
 } else {
-    Write-Host "[repair] Pester not found — installing from vendor/modules/Pester..." -ForegroundColor Yellow
+    Write-Host "[repair] Pester not found — installing Pester 5.7.1..." -ForegroundColor Yellow
     $pesterOk = $false
 }
 
-# Repair Pester from bundled vendor copy if needed
+# Repair Pester using the same approach as manual fix
 if (-not $pesterOk) {
-    $vendorPesterDir = Join-Path $PROJECT_ROOT 'vendor/modules/Pester'
-    $vendorVersionDir = Get-ChildItem -Path $vendorPesterDir -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
-    if ($vendorVersionDir -and (Test-Path (Join-Path $vendorVersionDir.FullName 'bin/netstandard2.0/Pester.dll'))) {
-        if (-not $pesterModule) {
-            $userModulePath = if ($IsWindows) { Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules' } else { Join-Path $HOME '.local/share/powershell/Modules' }
-            $destDir = Join-Path $userModulePath "Pester/$($vendorVersionDir.Name)"
+    # Remove broken installation
+    if (Test-Path $pesterUserPath) {
+        Remove-Item -Recurse -Force $pesterUserPath -ErrorAction SilentlyContinue
+        Write-Host "[repair] Removed broken Pester installation" -ForegroundColor Yellow
+    }
+
+    # Try PSGallery first, fall back to bundled vendor copy
+    try {
+        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+        Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck -ErrorAction Stop
+        Write-Host "[repair] Installed Pester 5.7.1 from PSGallery" -ForegroundColor Green
+    } catch {
+        Write-Host "[repair] PSGallery unavailable, using bundled vendor copy..." -ForegroundColor Yellow
+        $vendorPesterDir = Join-Path $PROJECT_ROOT 'vendor/modules/Pester'
+        $vendorVersionDir = Get-ChildItem -Path $vendorPesterDir -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+        if ($vendorVersionDir -and (Test-Path (Join-Path $vendorVersionDir.FullName 'bin/netstandard2.0/Pester.dll'))) {
+            $destDir = Join-Path $pesterUserPath $vendorVersionDir.Name
             New-Item -ItemType Directory -Force -Path $destDir | Out-Null
             Copy-Item -Path "$($vendorVersionDir.FullName)/*" -Destination $destDir -Recurse -Force
             Write-Host "[repair] Installed Pester $($vendorVersionDir.Name) from vendor copy" -ForegroundColor Green
         } else {
-            $binDir = Join-Path $moduleBase 'bin'
-            Copy-Item -Path "$($vendorVersionDir.FullName)/bin" -Destination $moduleBase -Recurse -Force
-            Write-Host "[repair] Restored Pester bin/ folder from vendor copy" -ForegroundColor Green
+            Write-Error "Pester repair failed. PSGallery unreachable and vendor copy missing."
+            exit 1
         }
-    } else {
-        Write-Error "Vendor Pester copy not found at $vendorPesterDir or DLL missing. Run 'make setup'."
-        exit 1
     }
 }
 $ErrorActionPreference = 'Stop'
