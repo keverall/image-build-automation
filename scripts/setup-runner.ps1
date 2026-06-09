@@ -4,7 +4,7 @@
 # Fully offline-capable setup script. All dependencies are bundled in the repo.
 #
 # Bundled dependencies:
-#   - vendor/modules/  : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS)
+#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS)
 #   - bin/make.exe     : GNU make for Windows (if available)
 #   - Git for Windows  : Provides make.exe in usr\bin\ (preferred source)
 #
@@ -20,7 +20,8 @@ $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 $LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 $VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
 
-# PowerShell modules bundled in scripts/modules/
+# PowerShell modules bundled in vendor/modules/ (installed into PS module path)
+# Source copies also kept in scripts/modules/ for CI runner bootstrap
 $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },

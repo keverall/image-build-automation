@@ -148,6 +148,29 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 
 ---
 
+## Testing
+
+### Maintenance Mode Test Runner
+
+A dedicated test runner (`make maint-mode-tests`) runs high-priority Pester tests for the three primary actions:
+
+- **Enable** (`Set-MaintenanceMode.Enable.Tests.ps1`) — validates SCOM, iLO, and OneView enable paths
+- **Disable** (`Set-MaintenanceMode.Disable.Tests.ps1`) — validates reverse operations and post-disable waits
+- **Validate** (`Set-MaintenanceMode.Validation.Tests.ps1`) — validates cluster configuration without altering state
+
+```bash
+# Run maintenance mode tests only
+make maint-mode-tests
+
+# Or directly
+pwsh -File scripts/run-maint-mode-tests.ps1
+```
+
+Each test file contains BDD-style Pester `Describe`/`Context`/`It` blocks covering enable/disable/validate actions, parameter validation, dry-run behaviour, and error scenarios. Results include a Jest/Pytest-style summary block with pass/fail counts.
+
+---
+
 ## Change History
 
+- 2026-06-09: Added `make maint-mode-tests` target and dedicated test runner for high-priority enable/disable/validate scenarios
 - 2026-05-16: Initial version of language-agnostic maintenance-mode reference

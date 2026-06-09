@@ -22,7 +22,11 @@ All reports are archived as build artifacts.
 ### Command
 
 ```powershell
-Install-Module PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck -Force
+# Install from bundled vendor copy (offline-capable)
+Install-Module PSScriptAnalyzer -RequiredVersion 1.21.0 -Scope CurrentUser -SkipPublisherCheck -Force -AllowClobber
+
+# Or use the setup script which handles offline installation automatically
+pwsh -File scripts/setup-runner.ps1
 
 Invoke-ScriptAnalyzer -Path 'src\powershell\Automation' -Recurse -Severity Error,Warning -OutputFormat Json
 ```
