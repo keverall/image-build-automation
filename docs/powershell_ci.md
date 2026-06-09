@@ -57,10 +57,13 @@ For a Jenkins pipeline excerpt showing the bootstrap implementation, see [`gitla
 ### Minimal Prerequisites
 
 - PowerShell 7.2+ (cross-platform) or Windows PowerShell 5.1
-- Pester module for testing:
-
+- Pester 5.7.1 (bundled offline under `vendor/modules/Pester/5.7.1/`):
   ```powershell
-  Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
+  # Setup script installs from bundled copy automatically
+  pwsh -File scripts/setup-runner.ps1
+  
+  # Or install manually (offline-capable via vendor copy)
+  Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -SkipPublisherCheck -Force -AllowClobber
   ```
 
 - `powershell-yaml` module only if YAML configs are used:
@@ -79,7 +82,8 @@ powershell_tests:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
     - pwsh -Command "Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force"
   script:
-    - pwsh -File ./scripts/run-powershell-tests.ps1
+    - pwsh -File ./scripts/run-tests.ps1
+    - pwsh -File ./scripts/run-maint-mode-tests.ps1  # High-priority maintenance mode tests
   artifacts:
     paths:
       - generated/logs/

@@ -38,7 +38,7 @@ hpe-windows-iso-automation/
 | [PowerShell API Reference](powershell_api_reference.md) | Module overview, requirements, quick-start, cmdlet usage, orchestrator API |
 | [Auto-Generated Cmdlet Reference](dynamic-code-docs/INDEX.md) | Generated documentation for all PowerShell functions with parameters and examples |
 | [CI Run Requirements](powershell_ci.md) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
-| [Testing Guide](testing.md) | Full Pester v5 guide — runner commands, mocking, CI integration |
+| [Testing Guide](testing.md) | Full Pester v5 guide, runner commands, mocking, CI integration, maint-mode-tests |
 | [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, CI pipeline integration |
 | [Maintenance Mode](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
 | [GitLab CI/CD Integration](gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
