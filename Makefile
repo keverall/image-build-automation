@@ -66,6 +66,9 @@ test-integration: prune-logs ## Run Pester integration tests only
 		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
 		Invoke-Pester -Path \"$$pwd\$(PSTESTS)/Pester.Integration.ps1\" -PassThru"
 
+maint-mode-tests: prune-logs ## Run high-priority Set-MaintenanceMode tests
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-maint-mode-tests.ps1
+
 # ─── Code Coverage ────────────────────────────────────────────────────────────
 coverage: prune-logs ## Run Pester tests with code coverage and generate report
 	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage and generating report..."
