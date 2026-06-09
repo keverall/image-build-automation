@@ -10,7 +10,8 @@ The PowerShell module uses **Pester v5+** as its BDD-style testing framework. Te
 
 **Framework:** [Pester](https://pester.dev/) v5.7.1  
 **Test runner command:** `Invoke-Pester`  
-**Test discovery:** `*.Unit.Tests.ps1` files in `tests/powershell/`
+**Test discovery:** `*.Unit.Tests.ps1`, `*.Tests.ps1` files in `tests/powershell/`  
+**Offline support:** All dependencies are bundled under `vendor/modules/`
 
 ### BDD Keywords
 
@@ -41,7 +42,7 @@ Get-Module Pester -ListAvailable
 |---|---|
 | Windows PowerShell | 5.1 |
 | PowerShell 7 | 7.2+ |
-| Pester | 5.0.0+ |
+| Pester | 5.7.1 (bundled) |
 
 ---
 
@@ -55,6 +56,35 @@ Invoke-Pester -Path 'tests/powershell' -PassThru
 
 # Verbose output — shows every passing and failing test
 Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
+```
+
+### Run via Makefile
+
+```bash
+# Run all tests (default, lint + test)
+make test
+
+# Run unit tests only
+make test-unit
+
+# Run integration tests only
+make test-integration
+
+# Run high-priority Set-MaintenanceMode tests (enable/disable/validate)
+make maint-mode-tests
+
+# Run lint + tests combined (CI step)
+make lint-test
+```
+
+### Run via Wrapper Script
+
+```powershell
+# Run all tests with Pester auto-repair
+pwsh -File scripts/run-tests.ps1
+
+# Run high-priority maintenance mode tests only
+pwsh -File scripts/run-maint-mode-tests.ps1
 ```
 
 ### Run a Single Test File
@@ -91,7 +121,11 @@ Pester generates code coverage data for the PowerShell source modules. By defaul
 
 **To generate the coverage report:**
 ```bash
-make coverage-report
+# Via make
+make coverage
+
+# Direct script call
+pwsh -File scripts/coverage-report.ps1
 ```
 *Output: `coverage-results.xml` (Cobertura XML format)*
 
@@ -105,7 +139,7 @@ make coverage-report
 
 ```
 tests/powershell/
-├── Tests.Tests.ps1               # Shared BeforeAll/AfterAll (temp dirs, sample configs)
+├── Tests.Tests.ps1                      # Shared BeforeAll/AfterAll (temp dirs, sample configs)
 ├── Config.Unit.Tests.ps1
 ├── Credentials.Unit.Tests.ps1
 ├── Executor.Unit.Tests.ps1
@@ -115,7 +149,27 @@ tests/powershell/
 ├── Router.Unit.Tests.ps1
 ├── New-Uuid.Unit.Tests.ps1
 ├── Audit.Unit.Tests.ps1
-└── Set-MaintenanceMode.Unit.Tests.ps1
+├── Set-MaintenanceMode.Unit.Tests.ps1   # Core unit tests
+├── Set-MaintenanceMode.Enable.Tests.ps1  # High-priority enable action tests
+├── Set-MaintenanceMode.Disable.Tests.ps1 # High-priority disable action tests
+├── Set-MaintenanceMode.Validation.Tests.ps1 # High-priority validation tests
+├── Invoke-IsoDeploy.Unit.Tests.ps1
+├── Invoke-OpsRampClient.Unit.Tests.ps1
+├── New-IsoBuild.Unit.Tests.ps1
+├── New-OneViewMaintenanceScript.Unit.Tests.ps1
+├── New-ScomConnection.Unit.Tests.ps1
+├── New-ScomMaintenanceScript.Unit.Tests.ps1
+├── Start-AutomationOrchestrator.Unit.Tests.ps1
+├── Start-InstallMonitor.Unit.Tests.ps1
+├── Test-BuildParams.Unit.Tests.ps1
+├── Test-ClusterId.Unit.Tests.ps1
+├── Test-ServerList.Unit.Tests.ps1
+├── Update-Firmware.Unit.Tests.ps1
+├── Update-WindowsSecurity.Unit.Tests.ps1
+├── Generate-PSDocs.Unit.Tests.ps1
+├── Pester.Integration.ps1
+├── Test-GitLabIntegration.ps1
+└── Test-GitLabCallback.ps1
 ```
 
 ---
