@@ -56,8 +56,8 @@ cyberark-bootstrap:
       metrics: metrics.txt
     expire_in: 1 week
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 lint-powershell:
   <<: *lint_template
@@ -90,8 +90,8 @@ lint-powershell:
       - generated/output/coverage/coverage-report.txt
     expire_in: 1 week
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test-unit:
   <<: *test_template
@@ -111,21 +111,12 @@ security-scan:
     - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
     - pwsh -File ./scripts/prune-logs.ps1
   script:
-    # PSScriptAnalyzer security rules
-    - pwsh -NoProfile -Command "Import-Module PSScriptAnalyzer; \
-        `$results = Invoke-ScriptAnalyzer -Path 'src/powershell' -Recurse -Severity Error | \
-          Where-Object { `$_.RuleName -notin @('PSUseBOMForUnicodeEncodedFile', 'PSUseToExportFieldsInManifest', 'PSUseShouldProcessForStateChangingFunctions', 'PSUseApprovedVerbs', 'PSUseSingularNouns', 'PSAvoidUsingWriteHost', 'PSAvoidUsingConvertToSecureStringWithPlainText', 'PSAvoidUsingUsernameAndPasswordParams', 'TypeNotFound') }; \
-        `$results | Format-Table -AutoSize; \
-        if (`$results) { exit 1 }"
-    # Check for hardcoded secrets (basic pattern matching)
-    - pwsh -NoProfile -Command "Get-ChildItem -Path 'src/powershell' -Recurse -Include *.ps1,*.json | Select-String -Pattern 'password|secret|key|token' -List | ForEach-Object { Write-Warning \"Potential secret found in: `$(`$_.Path)`" }"
-    # Validate JSON config files
-    - pwsh -NoProfile -Command "Get-ChildItem -Path 'configs' -Recurse -Include *.json | ForEach-Object { try { Get-Content `$(`$_.FullName) -Raw | ConvertFrom-Json | Out-Null; Write-Host 'Valid JSON: `$(`$_.Name)' } catch { Write-Error \"Invalid JSON in `$(`$_.Name): `$(`$_.Exception.Message)\"; exit 1 } }"
+    - pwsh -File ./scripts/ci-security-check.ps1
   artifacts:
     expire_in: 1 week
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 # =============================================================================
 # Maintenance Stage (existing jobs)
