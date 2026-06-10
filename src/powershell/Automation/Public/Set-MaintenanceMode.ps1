@@ -216,12 +216,19 @@ function Set-MaintenanceMode {
     # Finalize Start / End with catalogue defaults if needed
     if ($Action -eq 'enable') {
         if (-not $End) {
+            $defaultHours = 4
+            if ($scomCfg) {
+                $scomSettings = $scomCfg.Get_Item('maintenance_settings')
+                if ($scomSettings -and $scomSettings.ContainsKey('default_duration_hours')) {
+                    $defaultHours = [int]$scomSettings['default_duration_hours']
+                }
+            }
+            $minEnd = $startDt.AddHours($defaultHours)
+            $endDt = $minEnd
             $schedule = $clusterDef.Get_Item('schedule')
-            if ($schedule) { $endDt = _Compute-NextWorkStart $schedule $startDt }
-            else {
-                $utcStartTmp = [DateTime]::SpecifyKind($startDt, [DateTimeKind]::Utc)
-                $endDt = _Compute-DefaultEnd $utcStartTmp
-                Write-Verbose "No --end and no schedule: defaulting to 7am UTC Monday following ($endDt)"
+            if ($schedule) {
+                $scheduleEnd = _Compute-NextWorkStart $schedule $startDt
+                if ($scheduleEnd -gt $endDt) { $endDt = $scheduleEnd }
             }
             $utcEnd = Convert-ToUtcIso8601 $endDt
         }
@@ -435,7 +442,11 @@ function Set-MaintenanceMode {
     
     $detailMessage = if ($overallOk) {
         if ($Action -eq 'enable') {
-            $durationStr = if ($duration) { " (Duration: $($duration.Hours)h $($duration.Minutes)m)" } else { "" }
+            $durationStr = if ($duration) {
+                $totalHours = [int]$duration.TotalHours
+                $mins = $duration.Minutes
+                " (Duration: ${totalHours}h ${mins}m)"
+            } else { "" }
             "Maintenance $Action completed for cluster '$clusterName' ($serverCount servers)$durationStr$dryRunNote. Window: $utcStart -> $utcEnd"
         } elseif ($Action -eq 'disable') {
             "Maintenance $Action completed for cluster '$clusterName' ($serverCount servers)$dryRunNote. Maintenance mode deactivated."
@@ -564,7 +575,7 @@ function _Compute-DefaultEnd([DateTime]$After) {
 function _Compute-NextWorkStart([hashtable]$Schedule, [DateTime]$After) {
     $workStartStr = $Schedule.Get_Item('work_start') ?? '08:00'
     $workStart = [DateTime]::ParseExact($workStartStr, 'HH:mm', $null).TimeOfDay
-    $dayMap = @{ Mon = 0; Tue = 1; Wed = 2; Thu = 3; Fri = 4; Sat = 5; Sun = 6 }
+    $dayMap = @{ Sun = 0; Mon = 1; Tue = 2; Wed = 3; Thu = 4; Fri = 5; Sat = 6 }
     $workDays = @($Schedule.Get_Item('work_days') ?? @('Mon', 'Tue', 'Wed', 'Thu', 'Fri')) | ForEach-Object { $dayMap[$_] }
     $candidate = $After.Date
     while ($true) {
