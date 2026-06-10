@@ -13,9 +13,9 @@ function Get-UtcTimestamp {
 function Get-LocalTimestamp {
     <#
     .SYNOPSIS
-        Returns current UTC timestamp in ISO 8601 format.
+        Returns current local timezone timestamp in ISO 8601 format.
     #>
-    return Get-UtcTimestamp
+    return [DateTime]::Now.ToString('o')
 }
 
 function Get-UtcFileTimestamp {
