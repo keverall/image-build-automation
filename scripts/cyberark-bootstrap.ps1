@@ -78,8 +78,8 @@ if ($ExportForGitLab) {
     Write-Host ""
     Write-Host "=== GitLab CI Export ===" -ForegroundColor Cyan
     foreach ($key in $FetchedSecrets.Keys) {
-        # GitLab CI uses masked variables; we output in a format that can be sourced
-        Write-Host "export $key='$($FetchedSecrets[$key])'"
+        # GitLab CI dotenv format: KEY=value (no quotes)
+        Write-Output "$key=$($FetchedSecrets[$key])"
     }
 }
 else {

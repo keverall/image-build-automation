@@ -10,6 +10,7 @@
 param(
     [Parameter(Mandatory = $true)][ValidateSet('enable', 'disable', 'validate')][string] $ACTION,
     [Parameter(Mandatory = $true)][string] $CLUSTER_ID,
+    [Parameter(Mandatory = $false)][ValidateSet('scom', 'oneview')][string] $MODE = 'scom',
     [string] $START = $null,
     [string] $END = $null,
     [string] $CONFIG_DIR = 'configs',
@@ -68,7 +69,8 @@ Write-Host "Action: $ACTION, Cluster: $CLUSTER_ID"
 # Build parameters for Set-MaintenanceMode
 $params = @{
     Action     = $ACTION
-    ClusterId  = $CLUSTER_ID
+    TargetId   = $CLUSTER_ID
+    Mode       = $MODE
     ConfigDir  = $CONFIG_DIR
     DryRun     = [bool]$DRY_RUN
     NoSchedule = [bool]$NO_SCHEDULE
