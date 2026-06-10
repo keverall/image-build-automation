@@ -28,24 +28,28 @@ endif
 COVERAGE_THRESHOLD := 70
 
 # Colors
-GREEN := \033[0;32m
-CYAN := \033[0;36m
-YELLOW := \033[1;33m
-RED := \033[0;31m
-NC := \033[0m
+ESCAPE := $(shell printf '\033')
+GREEN := $(ESCAPE)[0;32m
+CYAN := $(ESCAPE)[0;36m
+YELLOW := $(ESCAPE)[1;33m
+RED := $(ESCAPE)[0;31m
+NC := $(ESCAPE)[0m
 
-.PHONY: setup lint lint-test test test-unit test-integration coverage docs \
-        clean prune-logs help
+.PHONY: setup lint lint-make lint-test test test-unit test-integration coverage docs clean prune-logs help all ci
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: prune-logs ## Setup PowerShell environment (install modules, configure)
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 
-# ─── PowerShell Linting ─────────────────────────────────────────────────────
-lint: prune-logs ## Lint PowerShell files with PSScriptAnalyzer
+# ─── Linting ────────────────────────────────────────────────────────────────
+lint: prune-logs lint-make ## Lint PowerShell files and Makefile
 	@echo "$(CYAN)[lint]$(NC) Running PSScriptAnalyzer..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
+
+lint-make: ## Lint Makefile syntax and style
+	@echo "$(CYAN)[lint-make]$(NC) Checking Makefile..."
+	@bash scripts/lint-make.sh
 
 lint-test: prune-logs ## Lint and run tests (combined CI step)
 	@$(MAKE) lint && $(MAKE) test
