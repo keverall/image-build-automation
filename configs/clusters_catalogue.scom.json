@@ -1,0 +1,34 @@
+{
+  "clusters": {
+    "PROD-CLUSTER-01": {
+      "display_name": "Production Cluster 01",
+      "servers": [
+        "PROD-SERVER-01.ad.aib.pri",
+        "PROD-SERVER-02.ad.aib.pri",
+        "PROD-SERVER-03.ad.aib.pri"
+      ],
+      "scom_group": "SCOM_Prod_Cluster_01",
+      "scom_version": "2019",
+      "scom_management_server": "VR-OPM19P1-7382.ad.aib.pri",
+      "scom_environment": "production",
+      "ilo_addresses": {
+        "PROD-SERVER-01.ad.aib.pri": "192.168.1.101",
+        "PROD-SERVER-02.ad.aib.pri": "192.168.1.102",
+        "PROD-SERVER-03.ad.aib.pri": "192.168.1.103"
+      },
+      "oneview_scope": "Production_Cluster_01",
+      "oneview_node_ids": {
+        "PROD-SERVER-01.ad.aib.pri": "OV_NODE_001",
+        "PROD-SERVER-02.ad.aib.pri": "OV_NODE_002",
+        "PROD-SERVER-03.ad.aib.pri": "OV_NODE_003"
+      },
+      "schedule": {
+        "timezone": "Europe/Dublin",
+        "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+        "work_start": "08:00",
+        "work_end": "17:00"
+      },
+      "environment": "production"
+    }
+  }
+}
