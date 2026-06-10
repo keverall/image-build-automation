@@ -60,3 +60,14 @@ Do you know if your iRequest platform prefers calling REST Webhooks (HTTP POST),
 
 [1] https://www.reddit.com/r/PowerShell/comments/gdf401/run_scripts_simultaneously_on_different_servers/
 [2] https://www.youtube.com/watch?v=roqtA8JRKzU&t=283
+
+
+ make  maint-mode-tests
+process_begin: CreateProcess(NULL, pwd, ...) failed.
+process_begin: CreateProcess(NULL, printf \033, ...) failed.
+"[0;36m[prune-logs][0m Pruning old log files..." 
+[prune-logs] Pruning logs to keep maximum 10 per type... 
+[prune-logs] Pruned 0 excess log files. 
+Add-Type: Cannot bind parameter 'Path' to the target. Exception setting "Path": "Cannot find path 
+'C:\Users\adm_98253\Documents\PowerShell\Modules\Pester\5.7.1\bin\netstandard2.0\Pester.dll' because it does not exist." 
+make: *** [maint-mode-tests] Error 1 
