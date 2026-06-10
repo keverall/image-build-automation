@@ -23,7 +23,7 @@
         "PROD-SERVER-03.ad.aib.pri": "OV_NODE_003"
       },
       "schedule": {
-        "timezone": "Europe/Dublin",
+        "timezone": "UTC",
         "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
         "work_start": "08:00",
         "work_end": "17:00"

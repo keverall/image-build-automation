@@ -83,7 +83,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action di
 **5. Using datetime format instead of relative:**
 
 ```powershell
-# Enable with explicit end time (Dublin time zone assumed for production)
+# Enable with explicit end time (UTC time zone assumed for production)
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '2026-05-25 17:00' -ConfigDir './configs'
 ```
 
