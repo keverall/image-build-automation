@@ -127,8 +127,13 @@
         'Load-ServerList'
         'New-ServerInfo'
         'Test-ClusterDefinition'
-        # ── Logging / audit ─────────────────────────────────────────────────────
+        # ── Logging / audit / timestamps ────────────────────────────────────────
         'Get-Logger'
+        'Get-LocalTimestamp'
+        'Get-ProjectRoot'
+        'Get-UtcApiTimestamp'
+        'Get-UtcFileTimestamp'
+        'Get-UtcTimestamp'
         'Initialize-Logging'
         'New-AuditLogger'
         # ── Routing ─────────────────────────────────────────────────────────────

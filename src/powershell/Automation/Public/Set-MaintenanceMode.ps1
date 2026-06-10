@@ -10,10 +10,12 @@
 # Supports two output modes:
 # 1. Human-readable (default): for direct command-line usage
 # 2. JSON: for iRequest/REST API integration (when -Json flag is used)
+# Note: Mandatory is intentionally omitted here to allow the module to dot-source 
+# this script without throwing parameter binding errors during module load.
 param(
     [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
-    [Parameter(Mandatory, Position = 1)][string] $TargetId,
-    [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
+    [Parameter(Position = 1)][string] $TargetId,
+    [Parameter(Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
     [int] $PostDisableWaitSeconds = 120,
     [string] $ConfigDir = 'configs',
     [string] $Start = $null,
@@ -442,10 +444,23 @@ function Set-MaintenanceMode {
 }
 
 # ---- Constants (always defined so classes referencing them work on dot-source) ----
-# Determine base directory using shared utility
-$Script:BaseDir = Get-ProjectRoot
-if (-not $Script:BaseDir) {
-    $Script:BaseDir = Get-Location
+# Determine base directory using shared utility, with a robust fallback
+if (Get-Command Get-ProjectRoot -ErrorAction SilentlyContinue) {
+    $Script:BaseDir = Get-ProjectRoot
+} else {
+    # Fallback: walk up directories to find project root (kilo.json or Makefile)
+    $Script:BaseDir = $PSScriptRoot
+    $current = $Script:BaseDir
+    while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
+        $parent = Split-Path $current
+        if ($parent -eq $current -or -not $parent) { break }
+        $current = $parent
+    }
+    if (-not $current -or -not (Test-Path $current)) {
+        $Script:BaseDir = Get-Location
+    } else {
+        $Script:BaseDir = (Resolve-Path $current).Path
+    }
 }
 
 if (-not $Script:ConfigDir) { $Script:ConfigDir = Join-Path $Script:BaseDir 'configs' }
@@ -1410,6 +1425,12 @@ class EmailNotifier {
 
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     $ErrorActionPreference = 'Continue'
+
+    # Enforce mandatory parameters for CLI execution
+    if (-not $TargetId -or -not $Mode) {
+        Write-Error "TargetId and Mode are required for CLI execution."
+        exit 1
+    }
 
     $result = Set-MaintenanceMode @PSBoundParameters
 
