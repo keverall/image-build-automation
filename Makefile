@@ -82,7 +82,7 @@ docs: prune-logs ## Generate PowerShell Markdown docs via PlatyPS
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: prune-logs ## Show this help message
-	@pwsh -NoProfile -Command "Write-Host '╔══════════════════════════════════════════════════════════╗' -ForegroundColor Cyan; Write-Host '║  HPE ProLiant ISO Automation — Available Commands         ║' -ForegroundColor Cyan; Write-Host '╚══════════════════════════════════════════════════════════╝' -ForegroundColor Cyan; Write-Host ''; Select-String -Path 'Makefile' -Pattern '^[a-zA-Z_-]+:.*?## .*$$' | ForEach-Object { $$parts = $$_ .Line -split ':.*?## '; Write-Host ('  {0,-15} {1}' -f $$parts[0].Trim(), $$parts[1].Trim()) -ForegroundColor Green }; Write-Host ''"
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Show-Help.ps1
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
 clean: prune-logs ## Remove build artifacts and temp files
