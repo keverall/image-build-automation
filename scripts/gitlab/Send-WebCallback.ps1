@@ -9,13 +9,13 @@ function Send-WebCallback {
         POST JSON data to a webhook/callback URL.
 
     .PARAMETER Url
-        Callback endpoint URL.
+        Callback endpoint URL. Must use HTTPS for secure transmission.
 
     .PARAMETER Data
         Hashtable or string to send as the request body.
 
     .PARAMETER ApiKey
-        Optional API key added as X-API-Key header.
+        Optional API key added as X-API-Key header. Not logged for security.
     #>
     [CmdletBinding()]
     param(
@@ -23,6 +23,12 @@ function Send-WebCallback {
         [Parameter(Mandatory)]$Data,
         [string]$ApiKey
     )
+
+    # Validate HTTPS for secure callback transmission
+    if ($Url -notmatch '^https://') {
+        Write-Error "Callback URL must use HTTPS for secure transmission: $Url"
+        return
+    }
 
     try {
         $body = if ($Data -is [string]) { $Data } else { $Data | ConvertTo-Json -Depth 10 }
