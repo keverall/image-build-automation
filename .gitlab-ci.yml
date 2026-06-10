@@ -1,11 +1,12 @@
 # =============================================================================
 # HPE ProLiant Windows Server ISO Automation — GitLab CI Pipeline
 # =============================================================================
-# Stages: lint → test → security
+# Stages: bootstrap → lint → test → security → maintenance
 # Coverage threshold: 70%
 # =============================================================================
 
 stages:
+  - bootstrap
   - lint
   - test
   - security
@@ -14,9 +15,34 @@ stages:
 variables:
   POWERSHELL_VERSION: "7.4"
   COVERAGE_THRESHOLD: "70"
-  # Callback settings - must be set in GitLab CI/CD variables
+  # CyberArk settings - must be set in GitLab CI/CD variables (Masked)
+  CYBERARK_CCP_URL: "https://cyberark-ccp:443/AIMWebService/API/Accounts"
+  CYBERARK_APP_ID: "ci"
+  # Callback settings - must be set in GitLab CI/CD variables (Masked)
   # MAINTENANCE_CALLBACK_URL - webhook URL for completion callback
   # MAINTENANCE_API_KEY - optional API key for callback authentication
+
+# =============================================================================
+# Bootstrap Stage (CyberArk Secret Fetching)
+# =============================================================================
+cyberark-bootstrap:
+  stage: bootstrap
+  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
+  script:
+    # Fetch secrets and export them for subsequent stages
+    - |
+      $secrets = pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "$CYBERARK_CCP_URL" -AppId "$CYBERARK_APP_ID" -ExportForGitLab
+      # In GitLab CI, we write these to a file that subsequent jobs can source
+      $secrets | Out-File -FilePath "secrets.env" -Encoding utf8
+      Write-Host "Secrets exported to secrets.env"
+  artifacts:
+    paths:
+      - secrets.env
+    expire_in: 1 hour
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "trigger"
 
 # =============================================================================
 # Lint Stage
@@ -115,7 +141,19 @@ security-scan:
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
     - pwsh -File ./scripts/prune-logs.ps1
-artifacts:
+    # Source CyberArk secrets if available
+    - |
+      if (Test-Path "secrets.env") {
+          Get-Content "secrets.env" | ForEach-Object {
+              if ($_ -match '^export\s+([^=]+)=''(.*)''$') {
+                  [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
+              }
+          }
+          Write-Host "CyberArk secrets loaded from secrets.env"
+      } else {
+          Write-Warning "secrets.env not found. Ensure cyberark-bootstrap job ran."
+      }
+  artifacts:
     paths:
       - generated/logs/
     expire_in: 7 days
