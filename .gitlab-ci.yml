@@ -1,9 +1,16 @@
 # =============================================================================
 # HPE ProLiant Windows Server ISO Automation — GitLab CI Pipeline
+# Note: Pipeline disabled pending migration to Bank's GitLab instance
+# TODO: Remove the 'workflow' block (lines 10-15) before deploying to Bank's GitLab
 # =============================================================================
 # Stages: bootstrap → lint → test → security → maintenance
 # Coverage threshold: 70%
 # =============================================================================
+
+# Disable pipeline execution on current GitLab instance while retaining config
+workflow:
+  rules:
+    - when: never
 
 stages:
   - bootstrap
@@ -30,8 +37,7 @@ cyberark-bootstrap:
   image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   script:
     - pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "$CYBERARK_CCP_URL" -AppId "$CYBERARK_APP_ID" -ExportForGitLab > secrets.env
-    - |
-      pwsh -Command "if (Test-Path 'secrets.env') { Get-Content 'secrets.env' | Write-Host }" | tr -d '\r'
+    - pwsh -Command "if (Test-Path 'secrets.env') { Get-Content 'secrets.env' | Write-Host }"
   artifacts:
     reports:
       dotenv: secrets.env
