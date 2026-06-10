@@ -11,7 +11,16 @@
 # 1. Human-readable (default): for direct command-line usage
 # 2. JSON: for iRequest/REST API integration (when -Json flag is used)
 param(
-    [switch]$Json
+    [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
+    [Parameter(Mandatory, Position = 1)][string] $TargetId,
+    [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
+    [int] $PostDisableWaitSeconds = 120,
+    [string] $ConfigDir = 'configs',
+    [string] $Start = $null,
+    [string] $End = $null,
+    [switch] $DryRun,
+    [switch] $NoSchedule,
+    [switch] $Json
 )
 
 # ---- Module import for script mode ----
