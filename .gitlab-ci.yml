@@ -30,11 +30,12 @@ cyberark-bootstrap:
   image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   script:
     - pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "$CYBERARK_CCP_URL" -AppId "$CYBERARK_APP_ID" -ExportForGitLab > secrets.env
-    - pwsh -Command "if (Test-Path 'secrets.env') { Get-Content 'secrets.env' | Write-Host }"
+    - |
+      pwsh -Command "if (Test-Path 'secrets.env') { Get-Content 'secrets.env' | Write-Host }" | tr -d '\r'
   artifacts:
     reports:
       dotenv: secrets.env
-    expire_in: 1 hour
+    expire_in: 10 minutes
   rules:
     - if: '$CI_PIPELINE_SOURCE == "trigger"'
   allow_failure: false
