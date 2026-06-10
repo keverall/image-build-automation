@@ -1451,7 +1451,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Timestamp (Local): $($result['timestamp_local'])"
     Write-Host "Action: $Action"
     Write-Host "Target ID: $TargetId"
-    Write-Host "Cluster Name: $clusterName"
+    Write-Host "Cluster Name: $($result['ClusterName'] ?? $TargetId)"
     Write-Host "Mode: $Mode"
     Write-Host "Post-Disable Wait: ${PostDisableWaitSeconds}s"
     Write-Host "Config Dir: $ConfigDir"
