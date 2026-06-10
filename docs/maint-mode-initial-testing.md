@@ -47,11 +47,18 @@ When `-Mode oneview` is used:
 ```powershell
 # SCOM-only mode
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
+
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -DryRun
+
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start '2026-06-11 07:00' -End '2026-06-25 07:00' -ConfigDir './configs' -DryRun
 
 # OneView-only mode (resolves server or scope via OneView API)
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'my-server-01' -Mode oneview -Start 'now' -End '+1hour' -DryRun
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'my-server-01' -Mode oneview -DryRun
+
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-server-01' -Mode oneview -Start '2026-06-11 07:00' -End '2026-06-25 07:00' -ConfigDir './configs' -DryRun
+
+
 ```
 
 **2. Using WhatIf (alias for DryRun):**

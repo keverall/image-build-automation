@@ -254,7 +254,7 @@ function Set-MaintenanceMode {
             $oneviewMgr = [OneViewClient]::new($oneviewCfg)
             # Resolve target for oneview - determine if server or cluster/scope
             if ($oneviewMgr -and $isDirectServerMode) {
-                $resolveResult = $oneviewMgr.ResolveTarget($TargetId)
+                $resolveResult = $oneviewMgr.ResolveTarget($TargetId, [bool]$DryRun)
                 if (-not $resolveResult.Success) {
                     return @{ Success = $false; Error = "OneView could not resolve '$TargetId' as server or cluster: $($resolveResult.Message)" }
                 }
@@ -1312,9 +1312,17 @@ if ('$TargetType' -eq 'ServerHardware') {
         return $this._DisableViaModule($Target, $TargetType, $DryRun)
     }
 
-    [hashtable] ResolveTarget([string]$TargetId) {
+    [hashtable] ResolveTarget([string]$TargetId, [bool]$DryRun) {
+        # Return mock data for DryRun mode - allows testing without OneView module
+        if ($DryRun) {
+            return @{
+                Success = $true
+                TargetType = 'Scope'
+                TargetName = $TargetId
+                Message = 'Found scope (cluster) [DRY-RUN]'
+            }
+        }
         $ovModule = $this.ModuleName
-        $ovAppliance = $this.Appliance
         $scriptContent = @"
 Import-Module $ovModule -ErrorAction Stop
 `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
