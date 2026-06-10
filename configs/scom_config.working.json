@@ -1,0 +1,23 @@
+{
+  "scom": {
+    "management_server": "VR-OPM19P1-7382.ad.example.com",
+    "powershell_module": "OperationsManager",
+    "use_winrm": true,
+    "winrm": {
+      "transport": "ntlm",
+      "username_env": "SCOM_ADMIN_USER",
+      "password_env": "SCOM_ADMIN_PASSWORD",
+      "timeout_seconds": 300
+    },
+    "credentials": {
+      "username_env": "SCOM_ADMIN_USER",
+      "password_env": "SCOM_ADMIN_PASSWORD"
+    },
+    "maintenance_settings": {
+      "default_duration_hours": 4,
+      "comment_prefix": "iRequest Maintenance: ",
+      "suppress_alerts": true,
+      "health_state_reset": "green"
+    }
+  }
+}

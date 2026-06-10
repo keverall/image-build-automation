@@ -1,0 +1,109 @@
+# OneView Maintenance Mode - Authentication & Configuration
+
+Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware - no cluster/group nesting, just direct server targets.
+
+## Required Secrets (CyberArk Safe: `HPE-OneView`)
+
+| Environment Variable | Purpose |
+|-------------------|---------|
+| `ONEVIEW_USER` | OneView appliance admin username |
+| `ONEVIEW_PASSWORD` | OneView appliance admin password |
+
+## Configuration Files
+
+### `configs/oneview_config.json`
+
+```json
+{
+  "oneview": {
+    "appliance": "oneview.ad.example.com",
+    "module_name": "HPOneView.Managed",
+    "use_winrm": false,
+    "winrm": {
+      "server": "oneview.ad.example.com"
+    },
+    "credentials": {
+      "username_env": "ONEVIEW_USER",
+      "password_env": "ONEVIEW_PASSWORD"
+    }
+  }
+}
+```
+
+### `configs/oneview_servers_catalogue.json`
+
+```json
+{
+  "servers": {
+    "PROD-SERVER-01": {
+      "display_name": "Production Server 01",
+      "ilo_ip": "192.168.1.101",
+      "oneview_name": "PROD-SERVER-01.ad.example.com",
+      "rack": "Rack-A",
+      "environment": "production"
+    },
+    "STAGING-SERVER-01": {
+      "display_name": "Staging Server 01",
+      "ilo_ip": "192.168.2.101",
+      "oneview_name": "STAGING-SERVER-01.ad.example.com",
+      "rack": "Rack-B",
+      "environment": "staging"
+    }
+  }
+}
+```
+
+## GitLab CI Integration
+
+In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job before any maintenance operations. 
+
+### Required GitLab CI/CD Variables (Masked)
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `CYBERARK_CCP_URL` | CyberArk AIM Web Service URL | `https://cyberark-ccp:443/AIMWebService/API/Accounts` |
+| `CYBERARK_APP_ID` | Application ID registered in CyberArk | `ci` |
+
+### How it works
+
+1. The `cyberark-bootstrap` job runs `scripts/cyberark-bootstrap.ps1`
+2. It queries the CyberArk REST API for `ONEVIEW_USER` and `ONEVIEW_PASSWORD`
+3. Secrets are exported to `secrets.env` as artifacts
+4. Subsequent maintenance jobs source `secrets.env` to set environment variables
+5. `Set-MaintenanceMode.ps1` reads these variables via `Get-OneViewCredentials`
+
+### Manual Testing
+
+```powershell
+# Set variables manually for local testing
+$env:ONEVIEW_USER = 'oneview_admin'
+$env:ONEVIEW_PASSWORD = 'SecurePassword123!'
+
+# Or run the bootstrap script locally (requires network access to CyberArk)
+pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "https://cyberark-ccp:443/AIMWebService/API/Accounts" -AppId "ci"
+```
+
+## Setup Script
+
+```powershell
+# scripts/setup-oneview.ps1
+param([string]$ConfigDir = 'configs')
+
+# Import the Automation module
+Import-Module (Join-Path $PSScriptRoot 'src/powershell/Automation/Automation.psd1') -Force
+
+# Verify HPOneView module is available
+if (-not (Get-Module -ListAvailable -Name 'HPOneView.Managed')) {
+    Write-Warning "HPOneView.Managed module not found. Install from OneView appliance:"
+    Write-Warning "Save-Module -Name HPOneView.Managed -Path C:\temp"
+    Write-Warning "Import-Module C:\temp\HPOneView.Managed\*"
+}
+
+# Test credentials are available
+$ovUser = [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')
+$ovPass = [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')
+if (-not $ovUser -or -not $ovPass) {
+    Write-Warning "OneView credentials not found. Ensure CyberArk bootstrap ran or set manually:"
+    Write-Warning "`$env:ONEVIEW_USER`n`$env:ONEVIEW_PASSWORD"
+}
+```
