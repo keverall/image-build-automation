@@ -60,13 +60,12 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneV
         "web01.example.com": "OV001",
         "web02.example.com": "OV002",
         "db01.example.com": "OV003"
-      },
-      "schedule": {
-        "timezone": "Europe/Dublin",
-        "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
-        "work_start": "08:00",
-        "work_end": "17:00"
-      },
+      },"schedule": {
+         "timezone": "UTC",
+         "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+         "work_start": "08:00",
+         "work_end": "17:00"
+       },
       "environment": "production"
     }
   }
@@ -83,7 +82,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneV
 | `scom_management_server` | string | SCOM management server hostname/IP |
 | `ilo_addresses` | object | Map: `server_hostname → iLO IP/hostname` |
 | `oneview_node_ids` | object | Map: `server_hostname → OneView node identifier` |
-| `schedule.timezone` | string | IANA timezone (e.g., `Europe/Dublin`, `America/New_York`) |
+| `schedule.timezone` | string | IANA timezone (e.g., `UTC`, `America/New_York`) |
 | `schedule.work_days` | array of 3-char day codes | `["Mon","Tue","Wed","Thu","Fri"]` |
 | `schedule.work_start` | string | Daily maintenance start (HH:MM, 24h) |
 | `schedule.work_end` | string | Daily maintenance end (HH:MM, 24h) |
