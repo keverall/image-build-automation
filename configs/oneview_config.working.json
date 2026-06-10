@@ -1,0 +1,14 @@
+{
+  "oneview": {
+    "appliance": "oneview.ad.example.com",
+    "module_name": "HPOneView.Managed",
+    "use_winrm": false,
+    "winrm": {
+      "server": "oneview.ad.example.com"
+    },
+    "credentials": {
+      "username_env": "ONEVIEW_USER",
+      "password_env": "ONEVIEW_PASSWORD"
+    }
+  }
+}
