@@ -475,21 +475,26 @@ Export-ModuleMember -Function @(
     'Invoke-NativeCommand'
     'Invoke-NativeCommandWithRetry'
     'New-CommandResult'
-    # File I/O
+    # File I/O & Path Resolution
     'Ensure-DirectoryExists'
     'Save-Json'
     'Load-Json'
     'Save-JsonResult'
     'Test-PathEx'
+    'Get-Project*'
     # Inventory
     'Load-ServerList'
     'Load-ClusterCatalogue'
     'Test-ClusterDefinition'
     'New-ServerInfo'
-    # Logging / audit
+    # Logging / audit / timestamps
     'Initialize-Logging'
     'Get-Logger'
     'New-AuditLogger'
+    'Get-UtcTimestamp'
+    'Get-LocalTimestamp'
+    'Get-UtcFileTimestamp'
+    'Get-UtcApiTimestamp'
     # Routing
     'Invoke-RoutedRequest'
     # Debug / introspection
