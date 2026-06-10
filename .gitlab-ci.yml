@@ -20,7 +20,7 @@ variables:
   CYBERARK_APP_ID: "ci"
   # Callback settings - must be set in GitLab CI/CD variables (Masked)
   # MAINTENANCE_CALLBACK_URL - webhook URL for completion callback
-  # MAINTENANCE_API_KEY - optional API key for callback authentication
+  # MAINTENANCE_API_KEY - optional API key for callback authentication (MUST be masked in GitLab CI/CD variables)
 
 # =============================================================================
 # Bootstrap Stage (CyberArk Secret Fetching)
