@@ -68,3 +68,7 @@ Option C — Git credential store (plain text, cached):
 git config --global credential.helper store
 git fetch origin
 # Enter username + PAT once, saved to ~/.git-credentials
+
+
+https://monitoringguys.com/2020/07/30/control-scom-maintenance-mode-from-the-agent-with-scomagenthelper-management-pack/
+

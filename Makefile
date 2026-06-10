@@ -82,13 +82,24 @@ docs: prune-logs ## Generate PowerShell Markdown docs via PlatyPS
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: prune-logs ## Show this help message
-	@printf "\033[0;36m╔══════════════════════════════════════════════════════════╗\033[0m\n"
-	@printf "\033[0;36m║\033[0m  HPE ProLiant ISO Automation — Available Commands   \033[0;36m║\033[0m\n"
-	@printf "\033[0;36m╚══════════════════════════════════════════════════════════╝\033[0m\n"
-	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "} {printf "  \033[0;32m%-15s\033[0m %s\n", $$1, $$2}'
-	@echo ""
+	@pwsh -NoProfile -Command "Write-Host '╔══════════════════════════════════════════════════════════╗' -ForegroundColor Cyan; Write-Host '║  HPE ProLiant ISO Automation — Available Commands         ║' -ForegroundColor Cyan; Write-Host '╚══════════════════════════════════════════════════════════╝' -ForegroundColor Cyan; Write-Host ''; Select-String -Path 'Makefile' -Pattern '^[a-zA-Z_-]+:.*?## .*
+
+# ─── Cleanup ────────────────────────────────────────────────────────────────
+clean: prune-logs ## Remove build artifacts and temp files
+	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
+	@rm -rf generated/
+	@echo "$(GREEN)[clean]$(NC) Done"
+
+prune-logs: ## Prune log files older than 30 days
+	@echo "$(CYAN)[prune-logs]$(NC) Pruning old log files..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/prune-logs.ps1
+
+# ─── Aggregate Targets ───────────────────────────────────────────────────────
+all: lint test ## Run linting and tests
+
+# CI pipeline target
+ci: lint coverage ## Run full CI pipeline
+ | ForEach-Object { $parts = $_ .Line -split ':.*?## '; Write-Host ('  {0,-15} {1}' -f $parts[0].Trim(), $parts[1].Trim()) -ForegroundColor Green }; Write-Host ''"
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
 clean: prune-logs ## Remove build artifacts and temp files
