@@ -116,8 +116,23 @@ function Set-MaintenanceMode {
         return @{ Success = $false; Error = "Mode is required and must be either 'scom' or 'oneview'." }
     }
 
-    # Use passed ConfigDir param or fall back to script-level variable
-    $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) { $ConfigDir } else { $Script:ConfigDir }
+    # Use passed ConfigDir param or fall back to project-root configs
+    $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
+    $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) {
+        if (Split-Path $ConfigDir -IsAbsolute) { $ConfigDir } else { Join-Path (Get-Location) $ConfigDir }
+    } else {
+        Join-Path $projRoot 'configs'
+    }
+    
+    # If the user passed a relative path and it's not found from Get-Location, try from projRoot
+    if (-not (Test-Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json'))) {
+        if (-not (Split-Path $ConfigDir -IsAbsolute)) {
+            $fallback = Join-Path $projRoot $ConfigDir
+            if (Test-Path (Join-Path $fallback 'clusters_catalogue.json')) {
+                $EffectiveConfigDir = $fallback
+            }
+        }
+    }
 
     # Load configs
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
@@ -126,15 +141,26 @@ function Set-MaintenanceMode {
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
+    # Parse Start / End explicitly if provided, so we can output them even on early errors
+    $startDt = $null; $endDt = $null
+    $utcStart = $null; $utcEnd = $null
+    if ($Action -eq 'enable') {
+        if ($Start) { $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt }
+        else { $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt }
+        if ($End) { $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt }
+    }
+
     # For oneview mode, TargetId can be a server name - resolve via API
     # For scom mode, TargetId must be in catalogue (current behavior)
     $isDirectServerMode = ($Mode -eq 'oneview')
     $clusterDef = $null
     $clusterName = $TargetId
 
+    # Get clusters map once
+    $clustersMap = $clustersCfg.Get_Item('clusters')
+
     if ($isDirectServerMode) {
         # Try catalogue lookup first
-        $clustersMap = $clustersCfg.Get_Item('clusters')
         if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
             $clusterDef = $clustersMap[$TargetId]
             $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
@@ -142,10 +168,13 @@ function Set-MaintenanceMode {
         # If not in catalogue, will be resolved via OneView API later
     } else {
         # SCOM mode - must be in catalogue
-        $clustersMap = $clustersCfg.Get_Item('clusters')
         if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
             Write-Verbose "Target '$TargetId' not found in catalogue."
-            return @{ Success = $false; Error = "Target '$TargetId' not found in catalogue." }
+            $earlyErr = @{ Success = $false; Error = "Target '$TargetId' not found in catalogue."; ClusterName = $clusterName }
+            if ($DryRun) { 
+                $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
+            }
+            return $earlyErr
         }
         $clusterDef = $clustersMap[$TargetId]
         $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
@@ -155,11 +184,18 @@ function Set-MaintenanceMode {
     if ($clusterDef -and $Mode -eq 'scom') {
         $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
         $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
-        if ($missing) { Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"; return @{ Success = $false; Error = "Missing fields: $($missing -join ', ')" } }
+        if ($missing) { 
+            Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
+            $earlyErr = @{ Success = $false; Error = "Missing fields: $($missing -join ', ')"; ClusterName = $clusterName }
+            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+            return $earlyErr
+        }
         $servers = $clusterDef.Get_Item('servers')
         if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
             Write-Verbose "Cluster 'servers' must be a non-empty list."
-            return @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list." }
+            $earlyErr = @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list."; ClusterName = $clusterName }
+            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+            return $earlyErr
         }
     } elseif (-not $clusterDef -and $isDirectServerMode) {
         # Single server mode - derive servers array from TargetId
@@ -177,22 +213,29 @@ function Set-MaintenanceMode {
                   ScomObjects = @(); ScomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }; FailedObjects = @() }
     }
 
-    # Resolve Start / End
-    $startDt = $null; $endDt = $null
+    # Finalize Start / End with catalogue defaults if needed
     if ($Action -eq 'enable') {
-        if ($Start) { $startDt = _Parse-Datetime $Start }
-        else { $startDt = [DateTime]::UtcNow }
-        if ($End) { $endDt = _Parse-Datetime $End }
-        else {
+        if (-not $End) {
             $schedule = $clusterDef.Get_Item('schedule')
             if ($schedule) { $endDt = _Compute-NextWorkStart $schedule $startDt }
             else {
-                $utcStart = [DateTime]::SpecifyKind($startDt, [DateTimeKind]::Utc)
-                $endDt = _Compute-DefaultEnd $utcStart
+                $utcStartTmp = [DateTime]::SpecifyKind($startDt, [DateTimeKind]::Utc)
+                $endDt = _Compute-DefaultEnd $utcStartTmp
                 Write-Verbose "No --end and no schedule: defaulting to 7am UTC Monday following ($endDt)"
             }
+            $utcEnd = Convert-ToUtcIso8601 $endDt
         }
-        if ($endDt -le $startDt) { Write-Verbose 'End time must be after start time.'; return @{ Success = $false; Error = 'End time must be after start time.' } }
+
+        if ($endDt -le $startDt) { 
+            Write-Verbose 'End time must be after start time.'
+            return @{ 
+                Success = $false; 
+                Error = 'End time must be after start time.';
+                StartTimeUtc = $utcStart;
+                EndTimeUtc = $utcEnd;
+                ClusterName = $clusterName
+            } 
+        }
         $duration = $endDt - $startDt
         Write-Verbose "Maintenance window: $startDt → $endDt (duration: $duration)"
     }
@@ -228,8 +271,6 @@ function Set-MaintenanceMode {
     # Execute action
     $overallOk = $true
     $audit = @{ target_id = $TargetId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
-    $utcStart = $null
-    $utcEnd = $null
 
     if ($Action -eq 'enable') {
         # SCOM — use group mode to put ALL objects in the SCOM group into maintenance mode
@@ -310,9 +351,6 @@ function Set-MaintenanceMode {
             catch { $audit.steps.scheduled_task = @{ Created = $false; Error = $_.Exception.Message }; $overallOk = $false }
         }
         
-        # Capture computed UTC times for output
-        $utcStart = Convert-ToUtcIso8601 $startDt
-        $utcEnd = Convert-ToUtcIso8601 $endDt
     }
     elseif ($Action -eq 'disable') {
         # SCOM — exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
@@ -500,9 +538,15 @@ function _Parse-Datetime([string]$s) {
     $s2 = $s.Replace('T', ' ')
     $formats = @('yyyy-MM-dd HH:mm:ss', 'yyyy-MM-dd HH:mm')
     foreach ($fmt in $formats) {
-        try { return [DateTime]::ParseExact($s2, $fmt, $null) } catch { continue }
+        try { 
+            $parsed = [DateTime]::ParseExact($s2, $fmt, $null)
+            return [DateTime]::SpecifyKind($parsed, [DateTimeKind]::Utc)
+        } catch { continue }
     }
-    try { return [DateTime]::Parse($s2) } catch { Write-Debug "DateTime parse failed" }
+    try { 
+        $parsed = [DateTime]::Parse($s2)
+        return [DateTime]::SpecifyKind($parsed, [DateTimeKind]::Utc)
+    } catch { Write-Debug "DateTime parse failed" }
     throw "Invalid datetime format '$s'. Use 'now', '+1hour', or 'YYYY-MM-DD HH:MM[:SS]'."
 }
 
@@ -1431,6 +1475,11 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         Write-Error "TargetId and Mode are required for CLI execution."
         exit 1
     }
+
+    # Debug: show variable state
+    Write-Verbose "Script:BaseDir = '$Script:BaseDir'"
+    Write-Verbose "Script:ConfigDir = '$Script:ConfigDir'"
+    Write-Verbose "PSBoundParameters.ConfigDir = '$(if ($PSBoundParameters.ContainsKey('ConfigDir')) { 'SET' } else { 'NOT SET' })'"
 
     $result = Set-MaintenanceMode @PSBoundParameters
 
