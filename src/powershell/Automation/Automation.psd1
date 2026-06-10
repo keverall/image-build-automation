@@ -135,7 +135,7 @@
         'Get-UtcFileTimestamp'
         'Get-UtcTimestamp'
         'Initialize-Logging'
-        'New-AuditLogger'
+        'Convert-ToUtcIso8601'
         # ── Routing ─────────────────────────────────────────────────────────────
         'Invoke-RoutedRequest'
         # ── Introspection ─────────────────────────────────────────────────────────

@@ -487,14 +487,15 @@ Export-ModuleMember -Function @(
     'Load-ClusterCatalogue'
     'Test-ClusterDefinition'
     'New-ServerInfo'
-    # Logging / audit / timestamps
-    'Initialize-Logging'
-    'Get-Logger'
-    'New-AuditLogger'
-    'Get-UtcTimestamp'
-    'Get-LocalTimestamp'
-    'Get-UtcFileTimestamp'
-    'Get-UtcApiTimestamp'
+# Logging / audit / timestamps
+        'Initialize-Logging'
+        'Get-Logger'
+        'New-AuditLogger'
+        'Get-UtcTimestamp'
+        'Get-LocalTimestamp'
+        'Get-UtcFileTimestamp'
+        'Get-UtcApiTimestamp'
+        'Convert-ToUtcIso8601'
     # Routing
     'Invoke-RoutedRequest'
     # Debug / introspection
