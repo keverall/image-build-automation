@@ -1,6 +1,6 @@
 # OneView Maintenance Mode - Authentication & Configuration
 
-Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware - no cluster/group nesting, just direct server targets.
+Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](devops-guide-to-HPe-Terms.md) for the distinction between OneView maintenance mode and iLO maintenance mode.
 
 ## Required Secrets (CyberArk Safe: `HPE-OneView`)
 
