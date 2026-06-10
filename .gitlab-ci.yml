@@ -29,20 +29,15 @@ cyberark-bootstrap:
   stage: bootstrap
   image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   script:
-    # Fetch secrets and export them for subsequent stages
-    - |
-      $secrets = pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "$CYBERARK_CCP_URL" -AppId "$CYBERARK_APP_ID" -ExportForGitLab
-      # In GitLab CI, we write these to a file that subsequent jobs can source
-      $secrets | Out-File -FilePath "secrets.env" -Encoding utf8
-      Write-Host "Secrets exported to secrets.env"
+    - pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "$CYBERARK_CCP_URL" -AppId "$CYBERARK_APP_ID" -ExportForGitLab > secrets.env
+    - pwsh -Command "if (Test-Path 'secrets.env') { Get-Content 'secrets.env' | Write-Host }"
   artifacts:
-    paths:
-      - secrets.env
+    reports:
+      dotenv: secrets.env
     expire_in: 1 hour
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_PIPELINE_SOURCE == "trigger"
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
+  allow_failure: false
 
 # =============================================================================
 # Lint Stage
@@ -138,21 +133,10 @@ security-scan:
 .maintenance_defaults: &maintenance_defaults
   stage: maintenance
   image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
+  needs: ["cyberark-bootstrap"]
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
     - pwsh -File ./scripts/prune-logs.ps1
-    # Source CyberArk secrets if available
-    - |
-      if (Test-Path "secrets.env") {
-          Get-Content "secrets.env" | ForEach-Object {
-              if ($_ -match '^export\s+([^=]+)=''(.*)''$') {
-                  [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
-              }
-          }
-          Write-Host "CyberArk secrets loaded from secrets.env"
-      } else {
-          Write-Warning "secrets.env not found. Ensure cyberark-bootstrap job ran."
-      }
   artifacts:
     paths:
       - generated/logs/
@@ -166,6 +150,69 @@ maintenance-enable:
     - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
       -ACTION "enable"
       -CLUSTER_ID "$CLUSTER_ID"
+      -MODE "$MODE"
+      -START "$START"
+      -END "$END"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -DRY_RUN "$DRY_RUN"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  variables:
+    MODE: "scom"
+    FF_NETWORK_PER_BUILD: "true"
+
+maintenance-disable:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "disable"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -MODE "$MODE"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -DRY_RUN "$DRY_RUN"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  variables:
+    MODE: "scom"
+    FF_NETWORK_PER_BUILD: "true"
+
+maintenance-validate:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "validate"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -MODE "$MODE"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -DRY_RUN "$DRY_RUN"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  variables:
+    MODE: "scom"
+
+maintenance-auto-disable:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "disable"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -MODE "$MODE"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  variables:
+    MODE: "scom"
+  when: manual
+  allow_failure: true
+
+# OneView-specific jobs (hardware level, no cluster nesting)
+maintenance-oneview-enable:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "enable"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -MODE "oneview"
       -START "$START"
       -END "$END"
       -CONFIG_DIR "$CONFIG_DIR"
@@ -175,38 +222,16 @@ maintenance-enable:
   variables:
     FF_NETWORK_PER_BUILD: "true"
 
-maintenance-disable:
+maintenance-oneview-disable:
   <<: *maintenance_defaults
   script:
     - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
       -ACTION "disable"
       -CLUSTER_ID "$CLUSTER_ID"
+      -MODE "oneview"
       -CONFIG_DIR "$CONFIG_DIR"
       -DRY_RUN "$DRY_RUN"
       -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
       -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
   variables:
     FF_NETWORK_PER_BUILD: "true"
-
-maintenance-validate:
-  <<: *maintenance_defaults
-  script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
-      -ACTION "validate"
-      -CLUSTER_ID "$CLUSTER_ID"
-      -CONFIG_DIR "$CONFIG_DIR"
-      -DRY_RUN "$DRY_RUN"
-      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
-      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
-
-maintenance-auto-disable:
-  <<: *maintenance_defaults
-  script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
-      -ACTION "disable"
-      -CLUSTER_ID "$CLUSTER_ID"
-      -CONFIG_DIR "$CONFIG_DIR"
-      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
-      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
-  when: manual
-  allow_failure: true

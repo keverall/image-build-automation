@@ -41,7 +41,7 @@ OpsRamp           OPSRAMP_CLIENT_SECRET    → OPSRAMP_CLIENT_SECRET
 OpsRamp           OPSRAMP_TENANT_ID        → OPSRAMP_TENANT_ID
 SMTP-Mail         SMTP_USER                → SMTP_USER
 SMTP-Mail         SMTP_PASSWORD            → SMTP_PASSWORD
-OpenView          OPENVIEW_USER            → OPENVIEW_USER
+OpenView (Legacy)   OPENVIEW_USER            → OPENVIEW_USER
 OpenView          OPENVIEW_PASSWORD        → OPENVIEW_PASSWORD
 HPE-Download      hpe-download-user        → HPE_DOWNLOAD_USER
 HPE-Download      hpe-download-pass        → HPE_DOWNLOAD_PASS
