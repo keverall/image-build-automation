@@ -475,12 +475,13 @@ Export-ModuleMember -Function @(
     'Invoke-NativeCommand'
     'Invoke-NativeCommandWithRetry'
     'New-CommandResult'
-    # File I/O
+    # File I/O & Path Resolution
     'Ensure-DirectoryExists'
     'Save-Json'
     'Load-Json'
     'Save-JsonResult'
     'Test-PathEx'
+    'Get-ProjectRoot'
     # Inventory
     'Load-ServerList'
     'Load-ClusterCatalogue'
