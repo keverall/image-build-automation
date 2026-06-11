@@ -1,0 +1,26 @@
+{
+  "environments": {
+    "Test": {
+      "scom": {
+        "management_server": "VR-OPM19T1-7382.ad.aib.pri",
+        "group_id": "TEST-SERVERS-GROUP",
+        "environment": "test"
+      },
+      "oneview": {
+        "appliance": "oneview-test.ad.aib.pri",
+        "scope_name": "Test_Cluster_01"
+      }
+    },
+    "Prod": {
+      "scom": {
+        "management_server": "VR-OPM19P1-7382.ad.aib.pri",
+        "group_id": "PROD-SERVERS-GROUP",
+        "environment": "production"
+      },
+      "oneview": {
+        "appliance": "oneview.ad.aib.pri",
+        "scope_name": "Production_Cluster_01"
+      }
+    }
+  }
+}
