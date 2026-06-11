@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/gitlab/Send-WebCallback.ps1
-generated: 2026-06-08 10:16 UTC
+generated: 2026-06-11 13:03 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,9 +14,9 @@ POST JSON data to a webhook/callback URL.
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Url` | Callback endpoint URL. |
+| `-Url` | Callback endpoint URL. Must use HTTPS for secure transmission. |
 | `-Data` | Hashtable or string to send as the request body. |
-| `-ApiKey` | Optional API key added as X-API-Key header. |
+| `-ApiKey` | Optional API key added as X-API-Key header. Not logged for security. |
 
 ## Original Comment-Based Help
 ```powershell
@@ -24,13 +24,13 @@ POST JSON data to a webhook/callback URL.
         POST JSON data to a webhook/callback URL.
 
     .PARAMETER Url
-        Callback endpoint URL.
+        Callback endpoint URL. Must use HTTPS for secure transmission.
 
     .PARAMETER Data
         Hashtable or string to send as the request body.
 
     .PARAMETER ApiKey
-        Optional API key added as X-API-Key header.
+        Optional API key added as X-API-Key header. Not logged for security.
 ```
 
 ---
