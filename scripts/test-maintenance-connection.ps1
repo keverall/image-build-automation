@@ -24,17 +24,14 @@
 .PARAMETER Username
     Override username for authentication
 
-.PARAMETER ScomHost
-    Override SCOM management server hostname
-
-.PARAMETER OneViewHost
-    Override OneView appliance hostname
+.PARAMETER ManagementHost
+    Override management server/appliance hostname
 
 .EXAMPLE
     pwsh -File scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom
     
 .EXAMPLE
-    ./scripts/test-maintenance-connection.ps1 -Environment Prod -Mode oneview -DryRun
+    ./scripts/test-maintenance-connection.ps1 -Environment Prod -Mode oneview -DryRun -ManagementHost 'backup-server.local'
 #>
 
 [CmdletBinding()]
@@ -43,8 +40,7 @@ param(
     [ValidateSet('scom', 'oneview')][string]$Mode = 'scom',
     [switch]$DryRun,
     [string]$Username,
-    [string]$ScomHost,
-    [string]$OneViewHost
+    [string]$ManagementHost
 )
 
 $ErrorActionPreference = 'Continue'
@@ -81,8 +77,7 @@ $params = @{
 }
 
 if ($Username) { $params['Username'] = $Username }
-if ($ScomHost) { $params['ScomHost'] = $ScomHost }
-if ($OneViewHost) { $params['OneViewHost'] = $OneViewHost }
+if ($ManagementHost) { $params['ManagementHost'] = $ManagementHost }
 
 Write-Host "Parameters:" -ForegroundColor Yellow
 $params | Format-Table -AutoSize | Out-String | Write-Host
