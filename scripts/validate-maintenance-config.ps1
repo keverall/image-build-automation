@@ -3,6 +3,31 @@
 # validate-maintenance-config.ps1 - Validate maintenance mode configuration and new parameters
 #
 
+<#
+.SYNOPSIS
+    Validate maintenance mode configuration files and environment.
+
+.DESCRIPTION
+    Comprehensive validation of maintenance mode setup including:
+    - Configuration file existence (connection_hosts.json, scom_config, oneview_config, etc.)
+    - connection_hosts.json structure and environment definitions
+    - Required environment variables (SCOM/OneView credentials)
+    - PowerShell module import and function availability
+    - New parameter support (Environment, ScomHost, OneViewHost, Username)
+    - Dry-run validation test
+    
+    Displays detailed pass/fail status for each check.
+
+.PARAMETER Environment
+    Environment to validate: Test or Prod (default: 'Test')
+
+.EXAMPLE
+    pwsh -File scripts/validate-maintenance-config.ps1
+    
+.EXAMPLE
+    ./scripts/validate-maintenance-config.ps1 -Environment Prod
+#>
+
 [CmdletBinding()]
 param(
     [ValidateSet('Test', 'Prod')][string]$Environment = 'Test'

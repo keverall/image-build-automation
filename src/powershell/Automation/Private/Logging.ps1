@@ -3,11 +3,24 @@
 # Standard logging pattern implementation.
 #
 
-$script:_LogFile    = $null
-$script:_LogLevel   = 'Information'
-$script:_Configured = $false
-
 function Initialize-Logging {
+    <#
+    .SYNOPSIS
+        Initialize centralized logging system.
+
+    .DESCRIPTION
+        Configures logging with specified log file path and level.
+        Creates timestamped log files in generated/logs/testing or generated/logs/production directories.
+
+    .PARAMETER LogFile
+        Base name for the log file (without timestamp)
+
+    .PARAMETER Level
+        Minimum log level: Verbose, Debug, Information, Warning, or Error (default: Information)
+
+    .EXAMPLE
+        Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
+    #>
     [CmdletBinding()]
     param(
         [string] $LogFile = $null,

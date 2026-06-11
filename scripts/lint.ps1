@@ -2,6 +2,32 @@
 # HPE ProLiant Windows Server ISO Automation — PowerShell Lint Script
 # =============================================================================
 # Runs PSScriptAnalyzer on PowerShell source files.
+
+<#
+.SYNOPSIS
+    Run PSScriptAnalyzer linting on PowerShell source code.
+
+.DESCRIPTION
+    Scans all PowerShell files in src/powershell directory using PSScriptAnalyzer.
+    Excludes rules that flag intentional patterns (embedded scripts, credentials in scripts, etc.).
+    
+    Excluded rules:
+    - PSUseBOMForUnicodeEncodedFile
+    - PSUseToExportFieldsInManifest
+    - PSUseShouldProcessForStateChangingFunctions
+    - PSUseApprovedVerbs
+    - PSUseSingularNouns
+    - PSAvoidUsingWriteHost
+    - PSAvoidUsingConvertToSecureStringWithPlainText
+    - PSAvoidUsingUsernameAndPasswordParams
+    - TypeNotFound
+    
+    Exits with code 1 if errors are found.
+
+.EXAMPLE
+    pwsh -File scripts/lint.ps1
+#>
+
 #
 # Usage:
 #   pwsh -File scripts/lint-pwsh.ps1

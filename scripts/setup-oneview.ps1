@@ -1,5 +1,25 @@
 # scripts/setup-oneview.ps1
 # Setup script for HPE OneView hardware-level maintenance mode configuration
+
+<#
+.SYNOPSIS
+    Configure HPE OneView integration for maintenance mode.
+
+.DESCRIPTION
+    Validates OneView setup by checking:
+    - HPOneView.Managed PowerShell module availability
+    - ONEVIEW_USER and ONEVIEW_PASSWORD environment variables
+    - OneView configuration file (oneview_config.json) existence
+    
+    Displays warnings if components are missing but doesn't fail execution.
+
+.PARAMETER ConfigDir
+    Directory containing configuration files (default: 'configs')
+
+.EXAMPLE
+    pwsh -File scripts/setup-oneview.ps1
+#>
+
 param(
     [string]$ConfigDir = 'configs'
 )

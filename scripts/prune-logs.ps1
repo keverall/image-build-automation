@@ -3,6 +3,29 @@
 # =============================================================================
 # Prunes log files in the generated/logs directory that are older than a
 # specified standard age.
+
+<#
+.SYNOPSIS
+    Prune old log files to maintain maximum count per type.
+
+.DESCRIPTION
+    Scans generated/logs and generated/output directories for log files.
+    Groups logs by type (based on filename pattern) and removes excess files
+    beyond the configured maximum (default: 10 per type).
+    
+    Also removes legacy redundant log files (pester-log.txt, pester.log).
+    Skips coverage report files and .gitkeep files.
+
+.PARAMETER MaxLogsToKeep
+        Maximum number of log files to keep per type (default: 10)
+
+.EXAMPLE
+    pwsh -File scripts/prune-logs.ps1
+    
+.EXAMPLE
+    ./scripts/prune-logs.ps1 -MaxLogsToKeep 5
+#>
+
 # Usage: pwsh -File scripts/prune-logs.ps1 [-DaysToKeep 30]
 # =============================================================================
 
