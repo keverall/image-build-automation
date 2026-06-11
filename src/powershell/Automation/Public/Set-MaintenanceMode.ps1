@@ -56,16 +56,41 @@ function Set-MaintenanceMode {
         automatic disable via Windows Task Scheduler.
         Integrates with OpsRamp for metric/alert emission and can send email
         notifications.  The function is the PowerShell implementation.
-        automation.cli.maintenance_mode module.
+        
+        All datetime values are UTC only. Local time conversion is not performed.
 
     .PARAMETER Action
-        'enable', 'disable', or 'validate'.
+        'enable', 'disable', or 'validate'. Default is 'enable'.
 
     .PARAMETER TargetId
-        Target identifier string (cluster ID or server name).
+        Target identifier string (cluster ID or server name). Required.
 
     .PARAMETER Mode
-        'scom' for SCOM-only or 'oneview' for HPE OpenView-only. SCOM manages Windows cluster objects; OpenView manages hardware directly.
+        'scom' for SCOM-only or 'oneview' for HPE OpenView-only. 
+        SCOM manages Windows cluster objects; OpenView manages hardware directly.
+        Required.
+
+    .PARAMETER Environment
+        Environment selection: 'Test' or 'Prod'. 
+        Determines which hosts to connect to from connection_hosts.json.
+        If not specified, reads from $env:ENVIRONMENT environment variable.
+        Defaults to 'Prod' if neither is set.
+
+    .PARAMETER ScomHost
+        Optional override for SCOM management server hostname/IP.
+        Takes precedence over environment config.
+        Can also be set via $env:SCOM_HOST or $env:SCOM_OVERRIDE_HOST.
+
+    .PARAMETER OneViewHost
+        Optional override for OneView appliance hostname/IP.
+        Takes precedence over environment config.
+        Can also be set via $env:ONEVIEW_HOST or $env:ONEVIEW_OVERRIDE_HOST.
+
+    .PARAMETER Username
+        Optional direct username parameter (for testing only).
+        Not recommended for production use - use environment variables instead.
+        For SCOM: overrides $env:SCOM_ADMIN_USER
+        For OneView: overrides $env:ONEVIEW_USER
 
     .PARAMETER PostDisableWaitSeconds
         Seconds to sleep after disabling SCOM maintenance mode to allow servers
@@ -76,28 +101,64 @@ function Set-MaintenanceMode {
         Directory containing configuration files (default: 'configs').
 
     .PARAMETER Start
-        Maintenance start datetime string (default: now) format YYYY-MM-DD HH:MM .
+        Maintenance start datetime (UTC only). Supported formats:
+        - 'now': Current UTC time (default for enable action)
+        - Relative offset: '+Xhours', '+Xminutes', '+Xdays', '+Xseconds'
+          Examples: '+1hour', '+30minutes', '+2days', '+3600seconds'
+        - Absolute UTC: 'YYYY-MM-DD HH:MM' or 'YYYY-MM-DDTHH:MM:SS'
+          Examples: '2026-06-11 22:00', '2026-06-11T22:00:00'
+        
+        IMPORTANT: All times are UTC. No local timezone conversion is performed.
 
     .PARAMETER End
-        Maintenance end datetime string format YYYY-MM-DD HH:MM .
+        Maintenance end datetime (UTC only). Same formats as Start.
+        Required for 'enable' action.
+        Examples: '+2hours', '2026-06-12 02:00', '2026-06-12T02:00:00'
 
     .PARAMETER DryRun
-        Simulate without making changes.
+        Simulate without making changes. Shows what would happen.
 
     .PARAMETER NoSchedule
         Do not create a Windows Scheduled Task for automatic disable at end time.
 
+    .PARAMETER Json
+        Output as JSON for API/iRequest integration.
+
     .RETURNS
-        [hashtable] with Success (bool) and details.
+        [hashtable] with Success (bool), Message, StartTimeUtc, EndTimeUtc,
+        TargetId, ClusterName, ServerCount, DryRun, AuditFile,
+        ScomObjects, ScomSummary, OneViewObjects, OneViewSummary, FailedObjects.
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start now
+        # Validate configuration without making changes
+        Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom
 
     .EXAMPLE
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 2026-05-17 12:00 -End 2026-05-17 13:00 (default UTC format YYYY-MM-DD HH:MM )
+        # Enable maintenance in Test environment with relative time
+        Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom -Environment Test -Start 'now' -End '+2hours'
 
     .EXAMPLE
-        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
+        # Enable maintenance in Prod environment with absolute UTC time
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+
+    .EXAMPLE
+        # Disable maintenance with custom stabilization wait
+        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
+
+    .EXAMPLE
+        # Use host override for emergency maintenance
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ScomHost 'backup-scom.local' -Start 'now' -End '+4hours'
+
+    .EXAMPLE
+        # Dry run to test configuration
+        Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom -Environment Test -Start 'now' -End '+1hour' -DryRun
+
+    .EXAMPLE
+        # OneView single server maintenance
+        Set-MaintenanceMode -Action enable -TargetId 'server01.ad.example.com' -Mode oneview -Environment Test -Start 'now' -End '+1hour'
+
+    .LINK
+        https://github.com/yourorg/image-build-automation/docs/maint-mode-initial-testing.md
     #>
     [CmdletBinding()]
     param(
