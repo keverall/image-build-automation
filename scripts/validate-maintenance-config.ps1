@@ -13,7 +13,7 @@
     - connection_hosts.json structure and environment definitions
     - Required environment variables (SCOM/OneView credentials)
     - PowerShell module import and function availability
-    - New parameter support (Environment, ScomHost, OneViewHost, Username)
+    - New parameter support (Environment, Host, Username)
     - Dry-run validation test
     
     Displays detailed pass/fail status for each check.
@@ -147,7 +147,7 @@ try {
         Write-Host "  ✓ Set-MaintenanceMode function available" -ForegroundColor Green
         
         # Check for new parameters
-        $newParams = @('Environment', 'ScomHost', 'OneViewHost', 'Username')
+        $newParams = @('Environment', 'Host', 'Username')
         foreach ($param in $newParams) {
             if ($cmd.Parameters.ContainsKey($param)) {
                 Write-Host "  ✓ Parameter -$param available" -ForegroundColor Green

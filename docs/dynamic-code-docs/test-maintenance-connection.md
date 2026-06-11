@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/test-maintenance-connection.ps1
-generated: 2026-06-11 14:08 UTC
+generated: 2026-06-11 15:01 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,8 +18,7 @@ Validates connection to maintenance mode infrastructure (SCOM or OneView) using 
 | `-Mode` | Maintenance mode type: scom or oneview (default: 'scom') |
 | `-DryRun` | Validate connection without making changes |
 | `-Username` | Override username for authentication |
-| `-ScomHost` | Override SCOM management server hostname |
-| `-OneViewHost` | Override OneView appliance hostname |
+| `-ManagementHost` | Override management server/appliance hostname |
 
 ## Examples
 
@@ -52,17 +51,14 @@ pwsh -File scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom
 .PARAMETER Username
     Override username for authentication
 
-.PARAMETER ScomHost
-    Override SCOM management server hostname
-
-.PARAMETER OneViewHost
-    Override OneView appliance hostname
+.PARAMETER ManagementHost
+    Override management server/appliance hostname
 
 .EXAMPLE
     pwsh -File scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom
     
 .EXAMPLE
-    ./scripts/test-maintenance-connection.ps1 -Environment Prod -Mode oneview -DryRun
+    ./scripts/test-maintenance-connection.ps1 -Environment Prod -Mode oneview -DryRun -ManagementHost 'backup-server.local'
 ```
 
 ---

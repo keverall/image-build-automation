@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/validate-maintenance-config.ps1
-generated: 2026-06-11 14:08 UTC
+generated: 2026-06-11 15:01 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Comprehensive validation of maintenance mode setup including: - Configuration file existence (connection_hosts.json, scom_config, oneview_config, etc.) - connection_hosts.json structure and environment definitions - Required environment variables (SCOM/OneView credentials) - PowerShell module import and function availability - New parameter support (Environment, ScomHost, OneViewHost, Username) - Dry-run validation test Displays detailed pass/fail status for each check.
+Comprehensive validation of maintenance mode setup including: - Configuration file existence (connection_hosts.json, scom_config, oneview_config, etc.) - connection_hosts.json structure and environment definitions - Required environment variables (SCOM/OneView credentials) - PowerShell module import and function availability - New parameter support (Environment, Host, Username) - Dry-run validation test Displays detailed pass/fail status for each check.
 
 ## Parameters
 
@@ -34,7 +34,7 @@ pwsh -File scripts/validate-maintenance-config.ps1
     - connection_hosts.json structure and environment definitions
     - Required environment variables (SCOM/OneView credentials)
     - PowerShell module import and function availability
-    - New parameter support (Environment, ScomHost, OneViewHost, Username)
+    - New parameter support (Environment, Host, Username)
     - Dry-run validation test
     
     Displays detailed pass/fail status for each check.

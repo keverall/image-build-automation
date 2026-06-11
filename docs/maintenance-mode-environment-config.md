@@ -14,8 +14,7 @@ Set-MaintenanceMode `
     -TargetId <cluster-id> `
     -Mode <scom|oneview> `
     [-Environment <Test|Prod>] `
-    [-ScomHost <hostname>] `
-    [-OneViewHost <hostname>] `
+    [-ManagementHost <hostname>] `
     [-Username <username>] `
     [-PostDisableWaitSeconds <seconds>] `
     [-ConfigDir <path>] `
@@ -28,8 +27,7 @@ Set-MaintenanceMode `
 ### New Parameters Explained
 
 - **`-Environment`**: Specifies which environment to connect to (Test or Prod). If not provided, reads from `ENVIRONMENT` environment variable, defaults to `Prod`.
-- **`-ScomHost`**: Optional override for SCOM management server hostname/IP.
-- **`-OneViewHost`**: Optional override for OneView appliance hostname/IP.
+- **`-ManagementHost`**: Optional override for management server/appliance hostname/IP. Works for both SCOM and OneView modes.
 - **`-Username`**: Optional direct username parameter (for testing only; not recommended for production).
 
 ## Configuration Files
@@ -111,16 +109,16 @@ For passwords:
 ## Host Resolution Order
 
 For SCOM:
-1. `-ScomHost` parameter
-2. `SCOM_OVERRIDE_HOST` environment variable
-3. `SCOM_HOST` environment variable
+1. `-ManagementHost` parameter
+2. `$env:MAINTENANCE_HOST`
+3. `$env:SCOM_HOST`
 4. `connection_hosts.json` based on `-Environment` parameter
 5. Error if not configured
 
 For OneView:
-1. `-OneViewHost` parameter
-2. `ONEVIEW_OVERRIDE_HOST` environment variable
-3. `ONEVIEW_HOST` environment variable
+1. `-ManagementHost` parameter
+2. `$env:MAINTENANCE_HOST`
+3. `$env:ONEVIEW_HOST`
 4. `connection_hosts.json` based on `-Environment` parameter
 5. Error if not configured
 
@@ -156,7 +154,7 @@ Set-MaintenanceMode `
     -TargetId "PROD-CLUSTER-01" `
     -Mode scom `
     -Environment Prod `
-    -ScomHost "backup-scom.example.com"
+    -ManagementHost "backup-scom.example.com"
 ```
 
 ### Example 3: Test mode with interactive credentials

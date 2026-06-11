@@ -48,7 +48,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'backup-scom.local'
+    -ManagementHost 'backup-scom.local'
 ```
 
 ### Test 4: Different Time Formats
@@ -78,8 +78,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 
 ### New Parameters (All Optional)
 - `-Environment Test|Prod` - Select environment
-- `-ScomHost <hostname>` - Override SCOM server
-- `-OneViewHost <hostname>` - Override OneView appliance
+- `-ManagementHost <hostname>` - Override management server/appliance
 - `-Username <username>` - Direct username (testing only)
 
 ### New Features Tested
