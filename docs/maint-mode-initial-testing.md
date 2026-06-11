@@ -4,19 +4,92 @@
 
 The script supports both `-DryRun` and `-WhatIf` as equivalent parameters for simulation mode.
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `-Action` | string | 'enable', 'disable', or 'validate' (default: enable) |
-| `-TargetId` | string | Cluster identifier (required) |
-| `-Mode` | string | 'scom' for SCOM-only, 'oneview' for OneView-only (required) |
-| `-PostDisableWaitSeconds` | int | Seconds to wait after SCOM disable for server stabilization (default: 120) |
-| `-ConfigDir` | string | Configuration directory (default: configs) |
-| `-Start` | string | Start datetime: 'now' or 'YYYY-MM-DD HH:MM' |
-| `-End` | string | End datetime: relative ('+1hour') or absolute |
-| `-DryRun` | switch | Simulate without making changes |
-| `-WhatIf` | switch | Alias for -DryRun |
-| `-NoSchedule` | switch | Skip Windows Scheduled Task creation |
-| `-Json` | switch | Output as JSON for API integration |
+| Parameter | Type | Required | Description | Examples |
+|-----------|------|----------|-------------|----------|
+| `-Action` | string | No | 'enable', 'disable', or 'validate' (default: enable) | `-Action enable` |
+| `-TargetId` | string | **Yes** | Cluster identifier or server name | `-TargetId PROD-CLUSTER-01` |
+| `-Mode` | string | **Yes** | 'scom' or 'oneview' | `-Mode scom` |
+| `-Environment` | string | No | 'Test' or 'Prod' (default: Prod from ENVIRONMENT env var) | `-Environment Test` |
+| `-ScomHost` | string | No | Override SCOM management server | `-ScomHost scom-backup.local` |
+| `-OneViewHost` | string | No | Override OneView appliance | `-OneViewHost ov-test.local` |
+| `-Username` | string | No | Direct username (testing only, not recommended for prod) | `-Username admin` |
+| `-PostDisableWaitSeconds` | int | No | Seconds to wait after SCOM disable (default: 120) | `-PostDisableWaitSeconds 60` |
+| `-ConfigDir` | string | No | Configuration directory (default: configs) | `-ConfigDir ./configs` |
+| `-Start` | string | No* | Start datetime (see formats below) | `-Start 'now'`, `-Start '2026-06-11 22:00'` |
+| `-End` | string | No* | End datetime (see formats below) | `-End '+2hours'`, `-End '2026-06-12 02:00'` |
+| `-DryRun` | switch | No | Simulate without making changes | `-DryRun` |
+| `-WhatIf` | switch | No | Alias for -DryRun | `-WhatIf` |
+| `-NoSchedule` | switch | No | Skip Windows Scheduled Task creation | `-NoSchedule` |
+| `-Json` | switch | No | Output as JSON for API integration | `-Json` |
+
+\* Required for `-Action enable`
+
+### Date/Time Format Support
+
+The `-Start` and `-End` parameters support multiple formats:
+
+| Format Type | Syntax | Example | Notes |
+|-------------|--------|---------|-------|
+| Current time | `now` | `-Start 'now'` | Uses current UTC time |
+| Relative offset | `+<number><unit>` | `-End '+2hours'` | Units: seconds, minutes, hours, days |
+| Absolute (UTC) | `YYYY-MM-DD HH:MM` | `-End '2026-06-12 02:00'` | Assumed UTC unless specified |
+| Absolute (ISO) | `YYYY-MM-DDTHH:MM:SS` | `-End '2026-06-12T02:00:00'` | ISO 8601 format |
+| Culture-specific | `MM/DD/YYYY HH:MM` | `-End '06/12/2026 02:00'` | Depends on system locale |
+
+#### Relative Time Units
+
+- `seconds` or `second`: e.g., `+30seconds`, `+45second`
+- `minutes` or `minute`: e.g., `+90minutes`, `+15minute`
+- `hours` or `hour`: e.g., `+2hours`, `+1hour`
+- `days` or `day`: e.g., `+7days`, `+1day`
+
+## Environment-Based Host Selection
+
+### New Parameters Explained
+
+#### `-Environment` (Test|Prod)
+Selects which environment's hosts to use from `connection_hosts.json`:
+- **Test**: Uses test SCOM server and OneView appliance
+- **Prod**: Uses production SCOM server and OneView appliance
+- Falls back to `$env:ENVIRONMENT` if not specified
+- Defaults to `Prod` if neither is set
+
+#### `-ScomHost` / `-OneViewHost`
+Override the host from environment config:
+- Useful for backup servers or emergency scenarios
+- Takes precedence over environment config
+- Can also be set via env vars: `SCOM_HOST`, `ONEVIEW_HOST`
+
+### Host Resolution Priority
+
+**For SCOM:**
+1. `-ScomHost` parameter (highest priority)
+2. `$env:SCOM_OVERRIDE_HOST`
+3. `$env:SCOM_HOST`
+4. `connection_hosts.json` based on `-Environment`
+5. Error if not configured
+
+**For OneView:**
+1. `-OneViewHost` parameter (highest priority)
+2. `$env:ONEVIEW_OVERRIDE_HOST`
+3. `$env:ONEVIEW_HOST`
+4. `connection_hosts.json` based on `-Environment`
+5. Error if not configured
+
+### Credential Resolution Priority
+
+**For Username:**
+1. `-Username` parameter
+2. `$env:SCOM_ADMIN_USER` (for SCOM mode)
+3. `$env:ONEVIEW_USER` (for OneView mode)
+4. Interactive prompt (if running interactively)
+5. Error (if automated mode)
+
+**For Password:**
+1. `$env:SCOM_ADMIN_PASSWORD` (for SCOM mode)
+2. `$env:ONEVIEW_PASSWORD` (for OneView mode)
+3. Interactive secure prompt (masked input)
+4. Error (if automated mode)
 
 ## SCOM Group Mode Behavior
 
@@ -26,10 +99,10 @@ After disabling SCOM maintenance mode, a configurable wait period (default 120 s
 
 ## Mode Behavior Summary
 
-| Mode | SCOM | OneView | TargetId Required |
-|------|------|---------|-------------------|
-| `scom` | Yes | No | Must be in `clusters_catalogue.json` |
-| `oneview` | No | Yes | Resolved via OneView API — checks if it's a ServerHardware or Scope |
+| Mode | SCOM | OneView | TargetId Required | Environment Support |
+|------|------|---------|-------------------|---------------------|
+| `scom` | Yes | No | Must be in `clusters_catalogue.json` | ✅ Yes |
+| `oneview` | No | Yes | Resolved via OneView API | ✅ Yes |
 
 ## OneView Mode
 
@@ -40,72 +113,402 @@ When `-Mode oneview` is used:
 - If Scope: maintenance mode is applied to all ServerHardware members within that scope
 - Returns per-object status with ACK/NACK details matching SCOM response format
 
+## Connection Validation
+
+Before executing maintenance operations, the script now:
+1. Tests connectivity to SCOM management server or OneView appliance
+2. Validates credentials before attempting operations
+3. Returns clear error messages if connection fails
+4. Skips validation in `-DryRun` mode
+
 ## Testing Commands
 
-**1. Dry-run first (recommended) to validate config:**
+### Environment-Based Testing
+
+**1. Using Environment Parameter (Recommended):**
 
 ```powershell
-# SCOM-only mode
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
+# Test environment with automatic host selection
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'TEST-CLUSTER-01' `
+    -Mode scom `
+    -Environment Test `
+    -Start 'now' `
+    -End '+1hour' `
+    -DryRun
 
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -DryRun
-
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start '2026-06-11 07:00' -End '2026-06-25 07:00' -ConfigDir './configs' -DryRun
-
-# OneView-only mode (resolves server or scope via OneView API)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'my-server-01' -Mode oneview -Start 'now' -End '+1hour' -DryRun
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'my-server-01' -Mode oneview -DryRun
-
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-server-01' -Mode oneview -Start '2026-06-11 07:00' -End '2026-06-25 07:00' -ConfigDir './configs' -DryRun
-
-
+# Production environment
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours' `
+    -DryRun
 ```
 
-**2. Using WhatIf (alias for DryRun):**
+**2. With Host Override:**
 
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -WhatIf
+# Override SCOM host for specific environment
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -ScomHost 'backup-scom.ad.example.com' `
+    -Start 'now' `
+    -End '+1hour'
+
+# Override OneView host
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'my-server-01' `
+    -Mode oneview `
+    -Environment Test `
+    -OneViewHost 'oneview-backup.test.local' `
+    -Start 'now' `
+    -End '+1hour'
 ```
 
-**3. Enable/disable with mode parameter:**
+**3. Using Environment Variables:**
 
 ```powershell
-# SCOM-only mode
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+2hours'
+# Set environment variables
+$env:ENVIRONMENT = "Test"
+$env:SCOM_ADMIN_USER = "domain\testadmin"
+$env:SCOM_ADMIN_PASSWORD = "test_password"
+
+# Script will use Test environment hosts automatically
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'TEST-CLUSTER-01' `
+    -Mode scom `
+    -Start 'now' `
+    -End '+1hour'
 ```
 
-**4. Disable with stabilization wait period:**
+### Date/Time Format Testing
+
+**4. Relative Time Offsets:**
 
 ```powershell
-# Disable with default 120-second wait (recommended)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
+# Various relative time formats
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+30minutes' `
+    -DryRun
 
-# Disable with custom 60-second wait
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -PostDisableWaitSeconds 60
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours' `
+    -DryRun
 
-# Disable with no wait (immediate alerting resume — use with caution)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -PostDisableWaitSeconds 0
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+1day' `
+    -DryRun
 ```
 
-**5. Using datetime format instead of relative:**
+**5. Absolute Time Formats:**
 
 ```powershell
-# Enable with explicit end time (UTC time zone assumed for production)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '2026-05-25 17:00' -ConfigDir './configs'
+# Standard format (recommended)
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start '2026-06-11 22:00' `
+    -End '2026-06-12 02:00' `
+    -DryRun
+
+# ISO 8601 format
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start '2026-06-11T22:00:00' `
+    -End '2026-06-12T02:00:00' `
+    -DryRun
+
+# Mixed: relative start, absolute end
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '2026-06-12 02:00' `
+    -DryRun
 ```
 
-**6. Using the module import approach:**
+### SCOM Mode Testing
+
+**6. SCOM Group Mode (All Objects):**
 
 ```powershell
+# Enable maintenance for all objects in SCOM group
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours'
+
+# Disable with default stabilization wait (120 seconds)
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action disable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod
+
+# Disable with custom wait period
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action disable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -PostDisableWaitSeconds 60
+
+# Disable with no wait (immediate alerting)
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action disable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -PostDisableWaitSeconds 0
+```
+
+**7. SCOM with WhatIf:**
+
+```powershell
+# Using WhatIf alias instead of DryRun
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+1hour' `
+    -WhatIf
+```
+
+### OneView Mode Testing
+
+**8. OneView Single Server:**
+
+```powershell
+# Enable maintenance on single server
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'my-server-01' `
+    -Mode oneview `
+    -Environment Test `
+    -Start 'now' `
+    -End '+1hour' `
+    -DryRun
+
+# Disable maintenance on single server
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action disable `
+    -TargetId 'my-server-01' `
+    -Mode oneview `
+    -Environment Test `
+    -DryRun
+```
+
+**9. OneView Scope (Cluster):**
+
+```powershell
+# Enable maintenance on all servers in scope
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'Production_Cluster_01' `
+    -Mode oneview `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours' `
+    -DryRun
+```
+
+### Validation Testing
+
+**10. Validate Configuration:**
+
+```powershell
+# Validate cluster configuration without making changes
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action validate `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod
+
+# Validate OneView target resolution
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action validate `
+    -TargetId 'my-server-01' `
+    -Mode oneview `
+    -Environment Test
+```
+
+### Module Import Testing
+
+**11. Using Module Import:**
+
+```powershell
+# Import module and use function directly
 Import-Module ./src/powershell/Automation/Automation.psm1 -Force
-Set-MaintenanceMode -Action enable -TargetId 'STAGING-CLUSTER-01' -Mode scom -Start 'now' -End '+30min' -DryRun
-Set-MaintenanceMode -Action disable -TargetId 'STAGING-CLUSTER-01' -Mode scom -PostDisableWaitSeconds 60
+
+# Test environment
+Set-MaintenanceMode `
+    -Action enable `
+    -TargetId 'TEST-CLUSTER-01' `
+    -Mode scom `
+    -Environment Test `
+    -Start 'now' `
+    -End '+30min' `
+    -DryRun
+
+# Production with host override
+Set-MaintenanceMode `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -ScomHost 'backup-scom.local' `
+    -Start '2026-06-11 22:00' `
+    -End '2026-06-12 02:00'
+
+# Disable with stabilization wait
+Set-MaintenanceMode `
+    -Action disable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -PostDisableWaitSeconds 60
 ```
 
-**7. Validate cluster configuration:**
+### JSON Output Testing
+
+**12. JSON Output for iRequest Integration:**
 
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom
+# JSON output with environment selection
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours' `
+    -Json | ConvertFrom-Json
+
+# Parse specific fields from JSON output
+$result = pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+1hour' `
+    -Json | ConvertFrom-Json
+
+Write-Host "Success: $($result.Success)"
+Write-Host "SCOM Objects: $($result.ScomObjects.Count)"
+Write-Host "Failed Objects: $($result.FailedObjects.Count)"
+```
+
+### Interactive Testing
+
+**13. Interactive Credential Prompt:**
+
+```powershell
+# Don't set credentials - script will prompt you
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action validate `
+    -TargetId 'TEST-CLUSTER-01' `
+    -Mode scom `
+    -Environment Test
+
+# Will prompt:
+# Enter SCOM username: domain\admin
+# Enter SCOM password: ******** (masked)
+```
+
+### Comprehensive Test Scenarios
+
+**14. Full Maintenance Window (Enable → Wait → Disable):**
+
+```powershell
+# Step 1: Enable maintenance
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+1hour'
+
+# Step 2: Perform maintenance tasks here...
+Write-Host "Performing maintenance..."
+
+# Step 3: Disable with stabilization wait
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action disable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -PostDisableWaitSeconds 120
+```
+
+**15. Emergency Maintenance with Overrides:**
+
+```powershell
+# Use backup SCOM server for emergency maintenance
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -ScomHost 'emergency-scom.ad.example.com' `
+    -Start 'now' `
+    -End '+4hours' `
+    -NoSchedule
+```
+
+**16. Cross-Environment Testing:**
+
+```powershell
+# Test same operation in both environments
+$environments = @('Test', 'Prod')
+
+foreach ($env in $environments) {
+    Write-Host "Testing $env environment..." -ForegroundColor Cyan
+    
+    pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+        -Action validate `
+        -TargetId "$env-CLUSTER-01" `
+        -Mode scom `
+        -Environment $env `
+        -DryRun
+}
 ```
 
 ## Notes
@@ -116,6 +519,9 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action va
 - Use `-DryRun` or `-WhatIf` first to validate configuration loading without making changes.
 - **Post-disable wait**: After SCOM maintenance is disabled, servers need time to reboot and stabilize. The default 120-second wait prevents false alerts that support staff frequently report. Set `-PostDisableWaitSeconds 0` to skip.
 - JSON output mode (`-Json`) is available for iRequest/REST API integration.
+- **Environment parameter**: If not specified, reads from `$env:ENVIRONMENT`, defaults to `Prod`.
+- **Connection validation**: Script tests connectivity before executing operations (unless `-DryRun`).
+- **Credential security**: Never commit `.env` file with real passwords to git.
 
 ## Per-Object Status Reporting
 
@@ -127,11 +533,20 @@ Both JSON output (`-Json`) and the return hashtable contain these fields for iRe
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `Success` | bool | Overall operation success |
+| `Message` | string | Human-readable completion message |
+| `StartTimeUtc` | string | Maintenance window start time (ISO 8601) |
+| `EndTimeUtc` | string | Maintenance window end time (ISO 8601) |
+| `TargetId` | string | Original target identifier |
+| `ClusterName` | string | Resolved cluster display name |
+| `ServerCount` | int | Number of servers in target |
+| `DryRun` | bool | Whether operation was simulated |
+| `AuditFile` | string | Path to audit log file |
 | `ScomObjects` | array | Array of SCOM objects with their maintenance status |
-| `ScomSummary` | object | Aggregated SCOM counts (total, success, already_in_maintenance/not_in_maintenance, failed) |
+| `ScomSummary` | object | Aggregated SCOM counts |
 | `OneViewObjects` | array | Array of OneView objects with their maintenance status |
 | `OneViewSummary` | object | Aggregated OneView counts |
-| `FailedObjects` | array | Filtered list of only failed objects across all systems with NACK details |
+| `FailedObjects` | array | Filtered list of only failed objects with NACK details |
 
 ### Per-Object Object Structure
 
@@ -187,6 +602,13 @@ Total Failed: 1
 ```json
 {
   "Success": false,
+  "Message": "Maintenance enable finished with errors for cluster 'PROD-CLUSTER-01'",
+  "StartTimeUtc": "2026-06-11T13:00:00Z",
+  "EndTimeUtc": "2026-06-11T15:00:00Z",
+  "TargetId": "PROD-CLUSTER-01",
+  "ClusterName": "Production Cluster 01",
+  "ServerCount": 3,
+  "DryRun": false,
   "ScomObjects": [
     {
       "Name": "srv01.corp.local",
@@ -228,14 +650,122 @@ Total Failed: 1
 
 ```powershell
 # Dry-run to see response structure without making changes
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun -Json | ConvertFrom-Json | Select-Object ScomObjects, ScomSummary, FailedObjects
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+1hour' `
+    -DryRun `
+    -Json | ConvertFrom-Json | Select-Object Success, ScomObjects, ScomSummary, FailedObjects
 
 # Live run with JSON output for iRequest CMDB integration
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+2hours' -Json
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours' `
+    -Json
 
 # Verify per-object status in module approach
 Import-Module ./src/powershell/Automation/Automation.psm1 -Force
-$result = Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start 'now' -End '+1hour' -DryRun
+$result = Set-MaintenanceMode `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+1hour' `
+    -DryRun
+
 $result.ScomObjects | Format-Table Name, Type, Status, NackReason
 $result.FailedObjects | ForEach-Object { Write-Host "$($_.Name): $($_.NackReason) -> $($_.Resolution)" }
+
+# Test with different time formats
+$result = Set-MaintenanceMode `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start '2026-06-11 22:00' `
+    -End '2026-06-12 02:00'
+
+Write-Host "Window: $($result.StartTimeUtc) to $($result.EndTimeUtc)"
+```
+
+## Quick Reference: Common Command Patterns
+
+### Pattern 1: Standard Production Maintenance
+```powershell
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours'
+```
+
+### Pattern 2: Test with Validation First
+```powershell
+# Validate
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action validate `
+    -TargetId 'TEST-CLUSTER-01' `
+    -Mode scom `
+    -Environment Test
+
+# Execute
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'TEST-CLUSTER-01' `
+    -Mode scom `
+    -Environment Test `
+    -Start 'now' `
+    -End '+1hour'
+```
+
+### Pattern 3: Emergency with Host Override
+```powershell
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -ScomHost 'emergency-scom.local' `
+    -Start 'now' `
+    -End '+4hours' `
+    -NoSchedule
+```
+
+### Pattern 4: OneView Single Server
+```powershell
+pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'server01.ad.example.com' `
+    -Mode oneview `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+1hour'
+```
+
+### Pattern 5: Automated with JSON Output
+```powershell
+$result = pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId 'PROD-CLUSTER-01' `
+    -Mode scom `
+    -Environment Prod `
+    -Start 'now' `
+    -End '+2hours' `
+    -Json | ConvertFrom-Json
+
+if ($result.Success) {
+    Write-Host "Maintenance enabled successfully"
+} else {
+    Write-Error "Failed: $($result.Error)"
+}
 ```
