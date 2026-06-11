@@ -1,5 +1,20 @@
 param()
 
+<#
+.SYNOPSIS
+    Display available Makefile commands and targets.
+
+.DESCRIPTION
+    Parses Makefile for documented targets and displays them in a formatted table.
+    Shows all available 'make' commands with their descriptions from inline comments.
+
+.EXAMPLE
+    pwsh -File scripts/Show-Help.ps1
+    
+.EXAMPLE
+    ./scripts/Show-Help.ps1
+#>
+
 $ErrorActionPreference = 'SilentlyContinue'
 
 Write-Host ''

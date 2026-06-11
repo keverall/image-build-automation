@@ -7,6 +7,75 @@
 #   Direct: pwsh -File Send-GitLabMaintenanceRequest.ps1  # runs with param block
 #
 
+<#
+.SYNOPSIS
+    Trigger and monitor GitLab CI/CD pipeline for maintenance operations.
+
+.DESCRIPTION
+    Initiates GitLab pipeline via trigger API and optionally waits for completion.
+    Sends web callback with results when pipeline finishes.
+    
+    Can be used two ways:
+    1. Dot-sourced: Defines Send-GitLabMaintenanceRequest function for reuse
+    2. Direct execution: Runs immediately with provided parameters
+    
+    Integrates with GitLab trigger tokens, job tokens, and pipeline variables.
+
+.PARAMETER Action
+    Maintenance action: enable, disable, or validate (required when dot-sourcing)
+
+.PARAMETER TargetId
+    Target cluster or server identifier (required when dot-sourcing)
+
+.PARAMETER Start
+    Maintenance window start time (ISO 8601 format)
+
+.PARAMETER End
+    Maintenance window end time (ISO 8601 format)
+
+.PARAMETER ConfigDir
+    Configuration directory path (default: 'configs')
+
+.PARAMETER DryRun
+    Validate without executing changes
+
+.PARAMETER GitLabUrl
+    GitLab instance URL (from GITLAB_URL environment variable)
+
+.PARAMETER ProjectId
+    GitLab project ID (from GITLAB_PROJECT_ID environment variable)
+
+.PARAMETER TriggerToken
+    GitLab CI trigger token for pipeline initiation (from GITLAB_TRIGGER_TOKEN)
+
+.PARAMETER GitRef
+    Git branch/reference to trigger pipeline on (default: 'main')
+
+.PARAMETER CallbackUrl
+    URL to send completion notification (from MAINTENANCE_CALLBACK_URL)
+
+.PARAMETER CallbackApiKey
+    API key for callback authentication (from MAINTENANCE_API_KEY)
+
+.PARAMETER TimeoutSeconds
+    Maximum wait time for pipeline completion in seconds (default: 600)
+
+.PARAMETER JobToken
+    GitLab job token for API access (from GITLAB_JOB_TOKEN)
+
+.PARAMETER SkipValidation
+    Skip parameter validation when running directly (for testing)
+
+.EXAMPLE
+    # Dot-source and use as function
+    . scripts/gitlab/Send-GitLabMaintenanceRequest.ps1
+    Send-GitLabMaintenanceRequest -Action enable -TargetId 'CLUSTER01' -ProjectId '123' -TriggerToken 'abc'
+    
+.EXAMPLE
+    # Run directly with all parameters
+    pwsh -File scripts/gitlab/Send-GitLabMaintenanceRequest.ps1 -Action enable -TargetId 'CLUSTER01' -GitLabUrl 'https://gitlab.com' -ProjectId '123' -TriggerToken 'abc'
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)][ValidateSet('enable', 'disable', 'validate')][string] $Action,

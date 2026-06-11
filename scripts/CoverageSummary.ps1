@@ -1,6 +1,33 @@
 # =============================================================================
 # CoverageSummary.ps1 - Convert Cobertura XML coverage to human-readable table
 # =============================================================================
+
+<#
+.SYNOPSIS
+    Generate human-readable coverage summary from Cobertura XML.
+
+.DESCRIPTION
+    Parses Cobertura XML coverage file and generates formatted table showing:
+    - Per-file coverage statistics (rate, covered lines, missed lines)
+    - Overall coverage summary
+    - Output to both console and text file
+    
+    Default input: coverage-results.xml
+    Default output: coverage-report.txt
+
+.PARAMETER InputFile
+    Path to Cobertura XML coverage file (default: coverage-results.xml)
+
+.PARAMETER OutputFile
+    Path for text report output (default: coverage-report.txt)
+
+.EXAMPLE
+    pwsh -File scripts/CoverageSummary.ps1
+    
+.EXAMPLE
+    ./scripts/CoverageSummary.ps1 -InputFile 'custom.xml' -OutputFile 'summary.txt'
+#>
+
 param(
     [string]$InputFile = "coverage-results.xml",
     [string]$OutputFile = "coverage-report.txt"

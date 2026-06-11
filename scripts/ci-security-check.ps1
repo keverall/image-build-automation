@@ -2,6 +2,22 @@
 # CI pipeline security validation - PSScriptAnalyzer, secrets detection, and JSON validation
 # No hardcoded secrets or credentials - all validation commands are safe
 
+<#
+.SYNOPSIS
+    Run CI pipeline security checks.
+
+.DESCRIPTION
+    Performs security validation on PowerShell source files including:
+    - PSScriptAnalyzer security rule scanning
+    - Hardcoded secrets detection
+    - JSON configuration file validation
+    
+    Exits with code 1 if security issues are found.
+
+.EXAMPLE
+    pwsh -File scripts/ci-security-check.ps1
+#>
+
 # PSScriptAnalyzer security rules
 Write-Host "Running PSScriptAnalyzer security scan..." -ForegroundColor Cyan
 $results = Invoke-ScriptAnalyzer -Path 'src/powershell' -Recurse -Severity Error |
