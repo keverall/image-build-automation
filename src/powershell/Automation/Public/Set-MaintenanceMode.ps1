@@ -290,109 +290,6 @@ function Set-MaintenanceMode {
 
     $ErrorActionPreference = 'Continue'
 
-    # Load environment-based connection config
-    $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
-    $hostsCfg = if (Test-Path $hostsCfgPath) { Import-JsonConfig -Path $hostsCfgPath -Required:$false } else { @{} }
-    
-    # Determine environment: parameter > env var > default to Prod
-    $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) { 
-        $Environment 
-    } elseif ([System.Environment]::GetEnvironmentVariable('ENVIRONMENT')) {
-        [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
-    } else {
-        'Prod'
-    }
-    
-    Write-Verbose "Using environment: $effectiveEnv"
-    
-    # Resolve hosts from config or parameters
-    $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
-    $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
-    
-    if ($Mode -eq 'scom') {
-        $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
-        $resolvedScomHost = if ($PSBoundParameters.ContainsKey('ScomHost')) {
-            $ScomHost
-        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')
-        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('SCOM_HOST')
-        } else {
-            $scomEnvConfig.Get_Item('management_server')
-        }
-        
-        if (-not $resolvedScomHost) {
-            return @{ Success = $false; Error = "SCOM host not configured for environment '$effectiveEnv'. Set SCOM_HOST env var, use -ScomHost parameter, or update connection_hosts.json." }
-        }
-        
-        Write-Verbose "SCOM host resolved to: $resolvedScomHost"
-    }
-    
-    if ($Mode -eq 'oneview') {
-        $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
-        $resolvedOneViewHost = if ($PSBoundParameters.ContainsKey('OneViewHost')) {
-            $OneViewHost
-        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')
-        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')
-        } else {
-            $oneviewEnvConfig.Get_Item('appliance')
-        }
-        
-        if (-not $resolvedOneViewHost) {
-            return @{ Success = $false; Error = "OneView host not configured for environment '$effectiveEnv'. Set ONEVIEW_HOST env var, use -OneViewHost parameter, or update connection_hosts.json." }
-        }
-        
-        Write-Verbose "OneView host resolved to: $resolvedOneViewHost"
-    }
-    
-    # Resolve credentials: parameter > env var > interactive prompt
-    $resolvedUsername = if ($PSBoundParameters.ContainsKey('Username')) {
-        $Username
-    } elseif ($Mode -eq 'scom' -and [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_USER')) {
-        [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_USER')
-    } elseif ($Mode -eq 'oneview' -and [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')) {
-        [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')
-    } else {
-        $null
-    }
-    
-    $resolvedPassword = if ($Mode -eq 'scom' -and [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_PASSWORD')) {
-        [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_PASSWORD')
-    } elseif ($Mode -eq 'oneview' -and [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')) {
-        [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')
-    } else {
-        $null
-    }
-    
-    # Interactive prompt for missing credentials (only in interactive mode, not automated)
-    $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-    
-    if (-not $resolvedUsername -and -not $isAutomated) {
-        $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
-        Write-Host "Enter $credPrompt username:" -ForegroundColor Yellow
-        $resolvedUsername = Read-Host
-    }
-    
-    if (-not $resolvedPassword -and -not $isAutomated) {
-        $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
-        $securePass = Read-Host "Enter $credPrompt password" -AsSecureString
-        $resolvedPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
-            [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
-        )
-    }
-    
-    if (-not $resolvedUsername -or -not $resolvedPassword) {
-        $missingCreds = @()
-        if (-not $resolvedUsername) { $missingCreds += "username" }
-        if (-not $resolvedPassword) { $missingCreds += "password" }
-        return @{ 
-            Success = $false
-            Error = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
-        }
-    }
-
     # Normalize Mode to lowercase for case-insensitive comparison
     if ($Mode) { $Mode = $Mode.ToLower() }
     else {
@@ -487,13 +384,194 @@ function Set-MaintenanceMode {
         $servers = $clusterDef.Get_Item('servers')
     }
 
-    # VALIDATE action
+    # VALIDATE action - exit early, no credentials needed
     if ($Action -eq 'validate') {
         Write-Host "Target '$TargetId' validated. Servers: $($servers -join ', ')"
         $audit = @{ target_id = $TargetId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
         _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
         return @{ Success = $true; Message = "Target '$TargetId' validated."
+                  StartTimeUtc = if ($DryRun) { $utcStart } else { $null }
+                  EndTimeUtc = if ($DryRun) { $utcEnd } else { $null }
                   ScomObjects = @(); ScomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }; FailedObjects = @() }
+    }
+
+    # Load environment-based connection config
+    $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
+    $hostsCfg = if (Test-Path $hostsCfgPath) { Import-JsonConfig -Path $hostsCfgPath -Required:$false } else { @{} }
+    
+    # Determine environment: parameter > env var > default to Prod
+    $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) { 
+        $Environment 
+    } elseif ([System.Environment]::GetEnvironmentVariable('ENVIRONMENT')) {
+        [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
+    } else {
+        'Prod'
+    }
+    
+    Write-Verbose "Using environment: $effectiveEnv"
+    
+    # Resolve hosts from config or parameters
+    $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
+    $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
+    
+    if ($Mode -eq 'scom') {
+        $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
+        $resolvedScomHost = if ($PSBoundParameters.ContainsKey('ScomHost')) {
+            $ScomHost
+        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')
+        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('SCOM_HOST')
+        } else {
+            $scomEnvConfig.Get_Item('management_server')
+        }
+        
+        if (-not $resolvedScomHost) {
+            return @{ Success = $false; Error = "SCOM host not configured for environment '$effectiveEnv'. Set SCOM_HOST env var, use -ScomHost parameter, or update connection_hosts.json." }
+        }
+        
+        Write-Verbose "SCOM host resolved to: $resolvedScomHost"
+    }
+    
+    if ($Mode -eq 'oneview') {
+        $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
+        $resolvedOneViewHost = if ($PSBoundParameters.ContainsKey('OneViewHost')) {
+            $OneViewHost
+        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')
+        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')
+        } else {
+            $oneviewEnvConfig.Get_Item('appliance')
+        }
+        
+        if (-not $resolvedOneViewHost) {
+            return @{ Success = $false; Error = "OneView host not configured for environment '$effectiveEnv'. Set ONEVIEW_HOST env var, use -OneViewHost parameter, or update connection_hosts.json." }
+        }
+        
+        Write-Verbose "OneView host resolved to: $resolvedOneViewHost"
+    }
+    
+    # Resolve credentials: parameter > env var > interactive prompt
+    # Skip credential resolution entirely in DryRun mode (no actual connections needed)
+    if ($DryRun) {
+        $resolvedUsername = $null
+        $resolvedPassword = $null
+    } else {
+        $resolvedUsername = if ($PSBoundParameters.ContainsKey('Username')) {
+            $Username
+        } elseif ($Mode -eq 'scom' -and [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_USER')) {
+            [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_USER')
+        } elseif ($Mode -eq 'oneview' -and [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')) {
+            [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')
+        } else {
+            $null
+        }
+        
+        $resolvedPassword = if ($Mode -eq 'scom' -and [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_PASSWORD')) {
+            [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_PASSWORD')
+        } elseif ($Mode -eq 'oneview' -and [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')) {
+            [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')
+        } else {
+            $null
+        }
+        
+        # Interactive prompt for missing credentials (only in interactive mode, not automated)
+        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+        
+        if (-not $resolvedUsername -and -not $isAutomated) {
+            $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
+            Write-Host "Enter $credPrompt username:" -ForegroundColor Yellow
+            $resolvedUsername = Read-Host
+        }
+        
+        if (-not $resolvedPassword -and -not $isAutomated) {
+            $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
+            $securePass = Read-Host "Enter $credPrompt password" -AsSecureString
+            $resolvedPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
+            )
+        }
+        
+        if (-not $resolvedUsername -or -not $resolvedPassword) {
+            $missingCreds = @()
+            if (-not $resolvedUsername) { $missingCreds += "username" }
+            if (-not $resolvedPassword) { $missingCreds += "password" }
+            return @{ 
+                Success = $false
+                Error = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
+            }
+        }
+    }
+
+    # Load configs
+    $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
+    $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json')           -Required:$false
+    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json')        -Required:$false
+    $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
+    $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
+
+    # Parse Start / End explicitly if provided, so we can output them even on early errors
+    $startDt = $null; $endDt = $null
+    $utcStart = $null; $utcEnd = $null
+    if ($Action -eq 'enable') {
+        if ($Start) { $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt }
+        else { $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt }
+        if ($End) { $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt }
+    }
+
+    # For oneview mode, TargetId can be a server name - resolve via API
+    # For scom mode, TargetId must be in catalogue (current behavior)
+    $isDirectServerMode = ($Mode -eq 'oneview')
+    $clusterDef = $null
+    $clusterName = $TargetId
+
+    # Get clusters map once
+    $clustersMap = $clustersCfg.Get_Item('clusters')
+
+    if ($isDirectServerMode) {
+        # Try catalogue lookup first
+        if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
+            $clusterDef = $clustersMap[$TargetId]
+            $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
+        }
+        # If not in catalogue, will be resolved via OneView API later
+    } else {
+        # SCOM mode - must be in catalogue
+        if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
+            Write-Verbose "Target '$TargetId' not found in catalogue."
+            $earlyErr = @{ Success = $false; Error = "Target '$TargetId' not found in catalogue."; ClusterName = $clusterName }
+            if ($DryRun) { 
+                $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
+            }
+            return $earlyErr
+        }
+        $clusterDef = $clustersMap[$TargetId]
+        $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
+    }
+
+    # Validate cluster definition if found (required for scom mode)
+    if ($clusterDef -and $Mode -eq 'scom') {
+        $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
+        $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
+        if ($missing) { 
+            Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
+            $earlyErr = @{ Success = $false; Error = "Missing fields: $($missing -join ', ')"; ClusterName = $clusterName }
+            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+            return $earlyErr
+        }
+        $servers = $clusterDef.Get_Item('servers')
+        if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
+            Write-Verbose "Cluster 'servers' must be a non-empty list."
+            $earlyErr = @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list."; ClusterName = $clusterName }
+            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+            return $earlyErr
+        }
+    } elseif (-not $clusterDef -and $isDirectServerMode) {
+        # Single server mode - derive servers array from TargetId
+        $servers = @($TargetId)
+    } elseif ($clusterDef -and $isDirectServerMode) {
+        $servers = $clusterDef.Get_Item('servers')
     }
 
     # Finalize Start / End with catalogue defaults if needed

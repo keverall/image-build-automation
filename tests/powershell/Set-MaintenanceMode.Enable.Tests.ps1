@@ -14,6 +14,7 @@ BeforeAll {
     New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null
 
     Copy-Item (Join-Path $Script:ModuleRoot 'configs/clusters_catalogue.examples-only.json') (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -Force
+    Copy-Item (Join-Path $Script:ModuleRoot 'configs/connection_hosts.json') (Join-Path $Script:ConfigDir 'connection_hosts.json') -Force
     @{ management_server = 'localhost'; powershell_module = 'OperationsManager'; use_winrm = $false } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'scom_config.json')
     @{ oneview = @{ appliance = 'oneview.example.com'; module_name = 'HPOneView.Managed'; use_winrm = $false } } | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'oneview_config.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
@@ -46,7 +47,7 @@ Describe 'Set-MaintenanceMode — Enable action: Time variants' {
     It 'Should reject when end time is before start time' {
         $later = (Get-Date).AddHours(3).ToString('yyyy-MM-dd HH:mm:ss')
         $sooner = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
-        $result = Set-MaintenanceMode -Action enable -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir -Start $later -End $sooner
+        $result = Set-MaintenanceMode -Action enable -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir -DryRun -Start $later -End $sooner
         $result.Success | Should -Be $false
         $result.Error | Should -Match 'End time must be after start time'
     }
