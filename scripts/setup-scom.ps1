@@ -1,5 +1,25 @@
 # scripts/setup-scom.ps1
 # Setup script for SCOM cluster-level maintenance mode configuration
+
+<#
+.SYNOPSIS
+    Configure SCOM integration for maintenance mode.
+
+.DESCRIPTION
+    Validates SCOM setup by checking:
+    - OperationsManager PowerShell module availability
+    - SCOM_ADMIN_USER and SCOM_ADMIN_PASSWORD environment variables
+    - SCOM configuration file (scom_config.json) existence
+    
+    Displays warnings if components are missing but doesn't fail execution.
+
+.PARAMETER ConfigDir
+    Directory containing configuration files (default: 'configs')
+
+.EXAMPLE
+    pwsh -File scripts/setup-scom.ps1
+#>
+
 param(
     [string]$ConfigDir = 'configs'
 )

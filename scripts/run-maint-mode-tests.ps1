@@ -3,6 +3,26 @@
 # =============================================================================
 # Runs high-priority Pester tests for Set-MaintenanceMode.ps1 with a 
 # Jest/Pytest-style summary block.
+
+<#
+.SYNOPSIS
+    Run maintenance mode validation tests.
+
+.DESCRIPTION
+    Executes high-priority Pester tests specifically for Set-MaintenanceMode.ps1:
+    - Set-MaintenanceMode.Validation.Tests.ps1
+    - Set-MaintenanceMode.Enable.Tests.ps1
+    - Set-MaintenanceMode.Disable.Tests.ps1
+    
+    Displays detailed test summary with pass/fail/skip counts and duration.
+    Logs detailed output to generated/logs/{environment}/maint_mode_tests_*.log
+    
+    Exits with code 1 if any tests fail.
+
+.EXAMPLE
+    pwsh -File scripts/run-maint-mode-tests.ps1
+#>
+
 # Usage: pwsh -File scripts/run-maint-mode-tests.ps1
 # =============================================================================
 

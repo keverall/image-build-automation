@@ -2,6 +2,25 @@
 # HPE ProLiant Windows Server ISO Automation — PowerShell Runner Setup Script
 # =============================================================================
 # Fully offline-capable setup script. All dependencies are bundled in the repo.
+
+<#
+.SYNOPSIS
+    Set up PowerShell automation runner with all dependencies.
+
+.DESCRIPTION
+    Installs and configures:
+    - PowerShell 7+ version check
+    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS) from bundled copies
+    - Oh My Posh prompt customization
+    - GNU make detection (from Git for Windows or bundled)
+    
+    All dependencies are bundled in vendor/modules/ for offline capability.
+    Falls back to PSGallery if bundled copies not found.
+
+.EXAMPLE
+    pwsh -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
+#>
+
 #
 # Bundled dependencies:
 #   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS)
