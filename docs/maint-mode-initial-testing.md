@@ -65,16 +65,14 @@ Override the host from environment config:
 **For SCOM:**
 1. `-ManagementHost` parameter (highest priority)
 2. `$env:MAINTENANCE_HOST`
-3. `$env:SCOM_HOST`
-4. `connection_hosts.json` based on `-Environment`
-5. Error if not configured
+3. `connection_hosts.json` based on `-Environment`
+4. Error if not configured
 
 **For OneView:**
 1. `-ManagementHost` parameter (highest priority)
 2. `$env:MAINTENANCE_HOST`
-3. `$env:ONEVIEW_HOST`
-4. `connection_hosts.json` based on `-Environment`
-5. Error if not configured
+3. `connection_hosts.json` based on `-Environment`
+4. Error if not configured
 
 ### Credential Resolution Priority
 

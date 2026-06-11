@@ -16,8 +16,7 @@
 
 #### New Parameters Added:
 - `-Environment` (Test|Prod): Selects which environment to connect to
-- `-ScomHost`: Optional override for SCOM management server
-- `-OneViewHost`: Optional override for OneView appliance
+- `-ManagementHost`: Optional override for management server/appliance
 - `-Username`: Optional direct username parameter (testing only)
 
 #### New Functionality:
@@ -25,8 +24,8 @@
 **A. Environment-Based Host Resolution**
 ```
 Priority order:
-1. Command-line parameter (-ScomHost, -OneViewHost)
-2. Environment variable (SCOM_HOST, ONEVIEW_HOST, etc.)
+1. Command-line parameter (-ManagementHost)
+2. Environment variable (MAINTENANCE_HOST)
 3. connection_hosts.json based on -Environment parameter
 4. Error if not configured
 ```
@@ -101,7 +100,7 @@ Set-MaintenanceMode `
     -TargetId "TEST-CLUSTER-01" `
     -Mode scom `
     -Environment Test `
-    -ScomHost "backup-scom.test.local"
+    -ManagementHost "backup-scom.test.local"
 ```
 
 ### Example 3: Interactive testing

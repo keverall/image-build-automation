@@ -421,9 +421,8 @@ function Set-MaintenanceMode {
     }
     
     if (-not $resolvedHost) {
-        $hostType = if ($Mode -eq 'scom') { 'SCOM' } else { 'OneView' }
-        $envVar = if ($Mode -eq 'scom') { 'SCOM_HOST' } else { 'ONEVIEW_HOST' }
-        return @{ Success = $false; Error = "$hostType host not configured for environment '$effectiveEnv'. Set $envVar env var, use -Host parameter, or update connection_hosts.json." }
+        $envVar = '$env:MAINTENANCE_HOST'
+        return @{ Success = $false; Error = "Management host not configured for environment '$effectiveEnv'. Set $envVar, use -ManagementHost parameter, or update connection_hosts.json." }
     }
     
     Write-Verbose "Management host resolved to: $resolvedHost"

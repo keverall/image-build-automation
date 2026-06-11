@@ -77,17 +77,18 @@ Template credentials file (copy and fill in):
 
 ```bash
 # Environment: Test or Prod
-ENVIRONMENT=Test
+ENVIRONMENT=Prod
 
 # SCOM Connection Settings
 SCOM_ADMIN_USER=domain\adminuser
 SCOM_ADMIN_PASSWORD=your_password_here
-SCOM_HOST=  # Optional: override connection_hosts.json
 
 # OneView Connection Settings
 ONEVIEW_USER=oneview_admin
 ONEVIEW_PASSWORD=your_password_here
-ONEVIEW_HOST=  # Optional: override connection_hosts.json
+
+# Management Host Override (optional - overrides both SCOM and OneView)
+MAINTENANCE_HOST=
 ```
 
 **Security Note:** Never commit `.env` with real passwords. Add to `.gitignore`.
@@ -111,16 +112,14 @@ For passwords:
 For SCOM:
 1. `-ManagementHost` parameter
 2. `$env:MAINTENANCE_HOST`
-3. `$env:SCOM_HOST`
-4. `connection_hosts.json` based on `-Environment` parameter
-5. Error if not configured
+3. `connection_hosts.json` based on `-Environment` parameter
+4. Error if not configured
 
 For OneView:
 1. `-ManagementHost` parameter
 2. `$env:MAINTENANCE_HOST`
-3. `$env:ONEVIEW_HOST`
-4. `connection_hosts.json` based on `-Environment` parameter
-5. Error if not configured
+3. `connection_hosts.json` based on `-Environment` parameter
+4. Error if not configured
 
 ## Connection Validation
 
@@ -249,7 +248,7 @@ pwsh -Command "& { . src/powershell/Automation/Automation.psm1; Write-Host 'Conf
 
 ### Issue: "SCOM host not configured for environment 'Test'"
 
-**Solution:** Add Test environment to `connection_hosts.json` or set `SCOM_HOST` env var.
+**Solution:** Add Test environment to `connection_hosts.json` or set `$env:MAINTENANCE_HOST` env var.
 
 ### Issue: "Missing credentials: username, password"
 
