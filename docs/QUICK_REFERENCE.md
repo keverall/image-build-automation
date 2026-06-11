@@ -98,22 +98,20 @@ Set-MaintenanceMode `
 **For SCOM:**
 1. `-ManagementHost` parameter
 2. `$env:MAINTENANCE_HOST`
-3. `$env:SCOM_HOST`
-4. `connection_hosts.json` → Prod/Test config
-5. ❌ Error if not found
+3. `connection_hosts.json` → Prod/Test config
+4. ❌ Error if not found
 
 **For OneView:**
 1. `-ManagementHost` parameter
 2. `$env:MAINTENANCE_HOST`
-3. `$env:ONEVIEW_HOST`
-4. `connection_hosts.json` → Prod/Test config
-5. ❌ Error if not found
+3. `connection_hosts.json` → Prod/Test config
+4. ❌ Error if not found
 
 ## Troubleshooting Quick Fixes
 
 | Error | Solution |
 |-------|----------|
-| "SCOM host not configured" | Set `$env:SCOM_HOST` or add to `connection_hosts.json` |
+| "Management host not configured" | Set `$env:MAINTENANCE_HOST` or add to `connection_hosts.json` |
 | "Missing credentials: username" | Set env vars or run interactively |
 | "Failed to connect to SCOM" | Check network, firewall, credentials |
 | "Environment 'X' not found" | Use `Test` or `Prod` only |

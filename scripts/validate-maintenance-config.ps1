@@ -117,8 +117,7 @@ $envVars = @(
     'SCOM_ADMIN_PASSWORD',
     'ONEVIEW_USER',
     'ONEVIEW_PASSWORD',
-    'SCOM_HOST',
-    'ONEVIEW_HOST'
+    'MAINTENANCE_HOST'
 )
 
 foreach ($var in $envVars) {
