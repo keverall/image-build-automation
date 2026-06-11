@@ -1,0 +1,26 @@
+{
+  "environments": {
+    "Test": {
+      "scom": {
+        "management_server": "VR-OPM19T1-7382.ad.example.com",
+        "group_id": "TEST-SERVERS-GROUP",
+        "environment": "test"
+      },
+      "oneview": {
+        "appliance": "oneview-test.ad.example.com",
+        "scope_name": "Test_Cluster_01"
+      }
+    },
+    "Prod": {
+      "scom": {
+        "management_server": "VR-OPM19P1-7382.ad.example.com",
+        "group_id": "PROD-SERVERS-GROUP",
+        "environment": "production"
+      },
+      "oneview": {
+        "appliance": "oneview.ad.example.com",
+        "scope_name": "Production_Cluster_01"
+      }
+    }
+  }
+}

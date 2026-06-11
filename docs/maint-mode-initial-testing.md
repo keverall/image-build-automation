@@ -110,7 +110,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action va
 
 ## Notes
 
-- The script operates on **clusters** defined in `clusters_catalogue.json`, not individual servers from `server_list.txt`.
+- For SCOM mode, the script operates on **clusters** defined in `clusters_catalogue.json`. For OneView mode, it can target servers, scopes, or other object types resolved via the OneView API.
 - **SCOM group mode**: ALL objects in the SCOM group (servers, network devices, cluster nodes, cluster server) are put into maintenance mode — not just cluster nodes.
 - For "now" as the time parameter: `Start 'now'` works for start time; `End` must still be provided for enable action.
 - Use `-DryRun` or `-WhatIf` first to validate configuration loading without making changes.
