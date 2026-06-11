@@ -2,6 +2,26 @@
 # HPE ProLiant Windows Server ISO Automation — PowerShell Test Runner
 # =============================================================================
 # Runs all Pester tests for the automation module.
+
+<#
+.SYNOPSIS
+    Run full Pester test suite with code coverage.
+
+.DESCRIPTION
+    Executes comprehensive Pester tests for all automation module components:
+    - Audit, Config, Credentials, Executor, FileIO, Inventory, Router unit tests
+    - Set-MaintenanceMode unit tests
+    - Validators unit tests
+    
+    Automatically repairs Pester installation if broken (using PSGallery or bundled vendor copy).
+    Generates detailed test logs and Cobertura coverage reports.
+    
+    Exits with code 1 if any tests fail.
+
+.EXAMPLE
+    pwsh -File scripts/run-tests.ps1
+#>
+
 # Usage: pwsh -File scripts/run-pwsh-tests.ps1
 # =============================================================================
 

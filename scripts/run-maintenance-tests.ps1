@@ -3,6 +3,35 @@
 # run-maintenance-tests.ps1 - Run all maintenance mode tests including new environment features
 #
 
+<#
+.SYNOPSIS
+    Run comprehensive maintenance mode test suite.
+
+.DESCRIPTION
+    Executes Pester tests for maintenance mode functionality with support for:
+    - Environment-based host selection tests
+    - DateTime handling tests  
+    - Backward compatibility tests
+    - Connection validation tests
+    
+    Test suites can be filtered by TestSuite parameter.
+
+.PARAMETER TestSuite
+    Test suite to run: All, Environment, DateTime, BackwardCompat, or Connection (default: 'All')
+
+.PARAMETER Verbose
+    Enable verbose output during test execution
+
+.PARAMETER PassThru
+    Return detailed Pester test results object with counts
+
+.EXAMPLE
+    pwsh -File scripts/run-maintenance-tests.ps1
+    
+.EXAMPLE
+    ./scripts/run-maintenance-tests.ps1 -TestSuite Environment -PassThru
+#>
+
 [CmdletBinding()]
 param(
     [ValidateSet('All', 'Environment', 'DateTime', 'BackwardCompat', 'Connection')][string]$TestSuite = 'All',

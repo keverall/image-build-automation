@@ -1,6 +1,42 @@
 #!/usr/bin/env pwsh
 # Test script for maintenance mode connection with environment-based host selection
 
+<#
+.SYNOPSIS
+    Test maintenance mode connectivity to SCOM or OneView.
+
+.DESCRIPTION
+    Validates connection to maintenance mode infrastructure (SCOM or OneView)
+    using environment-based host selection from connection_hosts.json.
+    
+    Loads .env file if present, builds parameters, and executes validation
+    against Set-MaintenanceMode function.
+
+.PARAMETER Environment
+    Environment to test: Test or Prod (default: 'Test')
+
+.PARAMETER Mode
+    Maintenance mode type: scom or oneview (default: 'scom')
+
+.PARAMETER DryRun
+    Validate connection without making changes
+
+.PARAMETER Username
+    Override username for authentication
+
+.PARAMETER ScomHost
+    Override SCOM management server hostname
+
+.PARAMETER OneViewHost
+    Override OneView appliance hostname
+
+.EXAMPLE
+    pwsh -File scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom
+    
+.EXAMPLE
+    ./scripts/test-maintenance-connection.ps1 -Environment Prod -Mode oneview -DryRun
+#>
+
 [CmdletBinding()]
 param(
     [ValidateSet('Test', 'Prod')][string]$Environment = 'Test',

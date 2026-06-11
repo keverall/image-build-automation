@@ -4,10 +4,64 @@
 #
 # This is a router handler function that wraps Send-GitLabMaintenanceRequest.
 
-$ErrorActionPreference = 'Stop'
-
-# Function definition - this is what gets exported and called by the router
 function Invoke-GitLabMaintenanceTrigger {
+    <#
+    .SYNOPSIS
+        Trigger GitLab CI/CD pipeline for cluster maintenance.
+
+    .DESCRIPTION
+        Router handler that initiates GitLab CI/CD pipeline for maintenance operations.
+        Wraps Send-GitLabMaintenanceRequest to enable, disable, or validate maintenance mode
+        via GitLab pipelines instead of direct execution.
+
+    .PARAMETER TargetId
+        Cluster ID or target identifier for maintenance
+
+    .PARAMETER Action
+        Maintenance action: enable, disable, or validate
+
+    .PARAMETER Start
+        Maintenance window start time (ISO 8601 format)
+
+    .PARAMETER End
+        Maintenance window end time (ISO 8601 format)
+
+    .PARAMETER ConfigDir
+        Directory containing configuration files (default: 'configs')
+
+    .PARAMETER DryRun
+        Perform validation without executing changes
+
+    .PARAMETER GitLabUrl
+        GitLab instance URL (from GITLAB_URL environment variable)
+
+    .PARAMETER ProjectId
+        GitLab project ID (from GITLAB_PROJECT_ID environment variable)
+
+    .PARAMETER TriggerToken
+        GitLab CI trigger token (from GITLAB_TRIGGER_TOKEN environment variable)
+
+    .PARAMETER GitRef
+        Git reference/branch to trigger pipeline on (default: 'main')
+
+    .PARAMETER CallbackUrl
+        URL to send completion callback to (from MAINTENANCE_CALLBACK_URL)
+
+    .PARAMETER CallbackApiKey
+        API key for callback authentication (from MAINTENANCE_API_KEY)
+
+    .PARAMETER TimeoutSeconds
+        Timeout for waiting on pipeline completion (default: 600)
+
+    .PARAMETER JobToken
+        GitLab job token for API access (from GITLAB_JOB_TOKEN)
+
+    .EXAMPLE
+        Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'enable' -Start '2024-01-01T00:00:00Z' -End '2024-01-01T06:00:00Z'
+
+    .EXAMPLE
+        Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'disable' -DryRun
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string] $TargetId,

@@ -2,6 +2,33 @@
 # HPE ProLiant Windows Server ISO Automation — PowerShell Coverage Report
 # =============================================================================
 # Generates Cobertura XML code coverage reports using Pester.
+
+<#
+.SYNOPSIS
+    Generate code coverage report from Pester tests.
+
+.DESCRIPTION
+    Runs Pester tests with code coverage enabled and generates:
+    - Cobertura XML coverage file (coverage-results.xml)
+    - Markdown coverage report (coverage-report.md)
+    - Text coverage report (coverage-report.txt)
+    
+    Reports are written to generated/output/coverage directory.
+    Displays formatted coverage summary in console output.
+
+.PARAMETER InputFile
+    Path to Cobertura XML file (default: coverage-results.xml)
+
+.PARAMETER OutputFile
+    Path for text report output (default: coverage-report.txt)
+
+.EXAMPLE
+    pwsh -File scripts/coverage-report.ps1
+    
+.EXAMPLE
+    ./scripts/coverage-report.ps1 -InputFile 'custom-coverage.xml' -OutputFile 'my-report.txt'
+#>
+
 # Usage: pwsh -File scripts/coverage-report.ps1
 # =============================================================================
 
