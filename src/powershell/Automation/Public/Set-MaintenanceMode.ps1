@@ -16,6 +16,10 @@ param(
     [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
     [Parameter(Position = 1)][string] $TargetId,
     [Parameter(Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
+    [ValidateSet('Test', 'Prod')][string] $Environment,
+    [string] $ScomHost,
+    [string] $OneViewHost,
+    [string] $Username,
     [int] $PostDisableWaitSeconds = 120,
     [string] $ConfigDir = 'configs',
     [string] $Start = $null,
@@ -100,6 +104,10 @@ function Set-MaintenanceMode {
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [Parameter(Mandatory, Position = 1)][string] $TargetId,
         [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
+        [ValidateSet('Test', 'Prod')][string] $Environment,
+        [string] $ScomHost,
+        [string] $OneViewHost,
+        [string] $Username,
         [int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
         [string] $Start = $null,
@@ -109,6 +117,109 @@ function Set-MaintenanceMode {
     )
 
     $ErrorActionPreference = 'Continue'
+
+    # Load environment-based connection config
+    $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
+    $hostsCfg = if (Test-Path $hostsCfgPath) { Import-JsonConfig -Path $hostsCfgPath -Required:$false } else { @{} }
+    
+    # Determine environment: parameter > env var > default to Prod
+    $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) { 
+        $Environment 
+    } elseif ([System.Environment]::GetEnvironmentVariable('ENVIRONMENT')) {
+        [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
+    } else {
+        'Prod'
+    }
+    
+    Write-Verbose "Using environment: $effectiveEnv"
+    
+    # Resolve hosts from config or parameters
+    $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
+    $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
+    
+    if ($Mode -eq 'scom') {
+        $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
+        $resolvedScomHost = if ($PSBoundParameters.ContainsKey('ScomHost')) {
+            $ScomHost
+        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')
+        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('SCOM_HOST')
+        } else {
+            $scomEnvConfig.Get_Item('management_server')
+        }
+        
+        if (-not $resolvedScomHost) {
+            return @{ Success = $false; Error = "SCOM host not configured for environment '$effectiveEnv'. Set SCOM_HOST env var, use -ScomHost parameter, or update connection_hosts.json." }
+        }
+        
+        Write-Verbose "SCOM host resolved to: $resolvedScomHost"
+    }
+    
+    if ($Mode -eq 'oneview') {
+        $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
+        $resolvedOneViewHost = if ($PSBoundParameters.ContainsKey('OneViewHost')) {
+            $OneViewHost
+        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')
+        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')) {
+            [System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')
+        } else {
+            $oneviewEnvConfig.Get_Item('appliance')
+        }
+        
+        if (-not $resolvedOneViewHost) {
+            return @{ Success = $false; Error = "OneView host not configured for environment '$effectiveEnv'. Set ONEVIEW_HOST env var, use -OneViewHost parameter, or update connection_hosts.json." }
+        }
+        
+        Write-Verbose "OneView host resolved to: $resolvedOneViewHost"
+    }
+    
+    # Resolve credentials: parameter > env var > interactive prompt
+    $resolvedUsername = if ($PSBoundParameters.ContainsKey('Username')) {
+        $Username
+    } elseif ($Mode -eq 'scom' -and [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_USER')) {
+        [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_USER')
+    } elseif ($Mode -eq 'oneview' -and [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')) {
+        [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')
+    } else {
+        $null
+    }
+    
+    $resolvedPassword = if ($Mode -eq 'scom' -and [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_PASSWORD')) {
+        [System.Environment]::GetEnvironmentVariable('SCOM_ADMIN_PASSWORD')
+    } elseif ($Mode -eq 'oneview' -and [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')) {
+        [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')
+    } else {
+        $null
+    }
+    
+    # Interactive prompt for missing credentials (only in interactive mode, not automated)
+    $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+    
+    if (-not $resolvedUsername -and -not $isAutomated) {
+        $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
+        Write-Host "Enter $credPrompt username:" -ForegroundColor Yellow
+        $resolvedUsername = Read-Host
+    }
+    
+    if (-not $resolvedPassword -and -not $isAutomated) {
+        $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
+        $securePass = Read-Host "Enter $credPrompt password" -AsSecureString
+        $resolvedPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
+        )
+    }
+    
+    if (-not $resolvedUsername -or -not $resolvedPassword) {
+        $missingCreds = @()
+        if (-not $resolvedUsername) { $missingCreds += "username" }
+        if (-not $resolvedPassword) { $missingCreds += "password" }
+        return @{ 
+            Success = $false
+            Error = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
+        }
+    }
 
     # Normalize Mode to lowercase for case-insensitive comparison
     if ($Mode) { $Mode = $Mode.ToLower() }
@@ -253,12 +364,43 @@ function Set-MaintenanceMode {
     $resolveResult = $null
 
     if ($Mode -eq 'scom') {
-        try { $scomMgr = [SCOMManager]::new($scomCfg) } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
+        try { 
+            # Override management server if resolved from environment/parameter
+            if ($resolvedScomHost) {
+                $scomCfgCopy = $scomCfg.Clone()
+                $scomCfgCopy['management_server'] = $resolvedScomHost
+                $scomMgr = [SCOMManager]::new($scomCfgCopy)
+            } else {
+                $scomMgr = [SCOMManager]::new($scomCfg)
+            }
+            
+            # Override credentials if provided via parameter
+            if ($resolvedUsername -and $resolvedPassword) {
+                $scomMgr.Cred = @{ username = $resolvedUsername; password = $resolvedPassword }
+            }
+        } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
     }
 
     if ($Mode -eq 'oneview') {
         try {
-            $oneviewMgr = [OneViewClient]::new($oneviewCfg)
+            # Override appliance if resolved from environment/parameter
+            if ($resolvedOneViewHost) {
+                $oneviewCfgCopy = $oneviewCfg.Clone()
+                if (-not $oneviewCfgCopy.ContainsKey('oneview')) {
+                    $oneviewCfgCopy['oneview'] = @{}
+                }
+                $oneviewCfgCopy['oneview']['appliance'] = $resolvedOneViewHost
+                $oneviewMgr = [OneViewClient]::new($oneviewCfgCopy)
+            } else {
+                $oneviewMgr = [OneViewClient]::new($oneviewCfg)
+            }
+            
+            # Override credentials if provided via parameter
+            if ($resolvedUsername -and $resolvedPassword) {
+                $oneviewMgr.Username = $resolvedUsername
+                $oneviewMgr.Password = $resolvedPassword
+            }
+            
             # Resolve target for oneview - determine if server or cluster/scope
             if ($oneviewMgr -and $isDirectServerMode) {
                 $resolveResult = $oneviewMgr.ResolveTarget($TargetId, [bool]$DryRun)
@@ -274,6 +416,35 @@ function Set-MaintenanceMode {
 
     $opsrampClient = $null
     if ($opsrampCfg) { try { $opsrampClient = [OpsRamp_Client]::new((Join-Path $Script:ConfigDir 'opsramp_config.json')) } catch { Write-Debug "OpsRamp init failed" } }
+
+    # Test connection before proceeding (non-dry-run only)
+    if (-not $DryRun) {
+        if ($Mode -eq 'scom' -and $scomMgr) {
+            Write-Verbose "Testing SCOM connection to $($scomMgr.MgmtServer)..."
+            $connectionOk = Test-ScomConnection -ManagementServer $scomMgr.MgmtServer -Username $scomMgr.Cred.username -Password $scomMgr.Cred.password
+            if (-not $connectionOk) {
+                return @{ 
+                    Success = $false
+                    Error = "Failed to connect to SCOM management server '$($scomMgr.MgmtServer)'. Check credentials and network connectivity."
+                    ClusterName = $clusterName
+                }
+            }
+            Write-Verbose "SCOM connection verified successfully"
+        }
+        
+        if ($Mode -eq 'oneview' -and $oneviewMgr) {
+            Write-Verbose "Testing OneView connection to $($oneviewMgr.Appliance)..."
+            $connectionOk = Test-OneViewConnection -Appliance $oneviewMgr.Appliance -Username $oneviewMgr.Username -Password $oneviewMgr.Password
+            if (-not $connectionOk) {
+                return @{ 
+                    Success = $false
+                    Error = "Failed to connect to OneView appliance '$($oneviewMgr.Appliance)'. Check credentials and network connectivity."
+                    ClusterName = $clusterName
+                }
+            }
+            Write-Verbose "OneView connection verified successfully"
+        }
+    }
 
     # Execute action
     $overallOk = $true
@@ -523,6 +694,56 @@ if (-not (Test-Path $Script:MaintLogDir)) { Ensure-DirectoryExists -Path $Script
 
 # ---- Logging ----
 Initialize-Logging -LogFile 'maintenance.log'
+
+# ---- Connection validation helpers ----
+function Test-ScomConnection {
+    param(
+        [string]$ManagementServer,
+        [string]$Username,
+        [string]$Password,
+        [string]$ModuleName = 'OperationsManager'
+    )
+    
+    try {
+        $scriptContent = @"
+Import-Module $ModuleName -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$Password' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$Username', `$securePass)
+`$conn = New-SCOMManagementGroupConnection -ComputerName '$ManagementServer' -Credential `$cred -ErrorAction Stop
+Write-Output "CONNECTED"
+"@
+        $result = Invoke-PowerShellScript -Script $scriptContent
+        return $result.Success -and ($result.Output -match 'CONNECTED')
+    } catch {
+        Write-Warning "SCOM connection test failed: $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Test-OneViewConnection {
+    param(
+        [string]$Appliance,
+        [string]$Username,
+        [string]$Password,
+        [string]$ModuleName = 'HPOneView.Managed'
+    )
+    
+    try {
+        $scriptContent = @"
+Import-Module $ModuleName -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$Password' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$Username', `$securePass)
+Connect-OVMgmt -Appliance '$Appliance' -Credential `$cred -ErrorAction Stop
+Write-Output "CONNECTED"
+Disconnect-OVMgmt -ErrorAction SilentlyContinue
+"@
+        $result = Invoke-PowerShellScript -Script $scriptContent
+        return $result.Success -and ($result.Output -match 'CONNECTED')
+    } catch {
+        Write-Warning "OneView connection test failed: $($_.Exception.Message)"
+        return $false
+    }
+}
 
 # ---- Parse datetime helpers ----
 function _Parse-Datetime([string]$s) {
@@ -1071,6 +1292,8 @@ class OneViewClient {
         $passEnv = $credCfg.Get_Item('password_env') ?? 'ONEVIEW_PASSWORD'
         $this.Username = [System.Environment]::GetEnvironmentVariable($userEnv)
         $this.Password = [System.Environment]::GetEnvironmentVariable($passEnv)
+        
+        # Allow override after construction via direct property assignment
     }
 
     [hashtable] SetMaintenance([object]$Target, [string]$TargetType, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
@@ -1499,6 +1722,9 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Verbose "Script:BaseDir = '$Script:BaseDir'"
     Write-Verbose "Script:ConfigDir = '$Script:ConfigDir'"
     Write-Verbose "PSBoundParameters.ConfigDir = '$(if ($PSBoundParameters.ContainsKey('ConfigDir')) { 'SET' } else { 'NOT SET' })'"
+    Write-Verbose "Environment = '$(if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { 'NOT SET - will use ENVIRONMENT env var or default to Prod' })'"
+    Write-Verbose "ScomHost = '$(if ($PSBoundParameters.ContainsKey('ScomHost')) { $ScomHost } else { 'NOT SET' })'"
+    Write-Verbose "OneViewHost = '$(if ($PSBoundParameters.ContainsKey('OneViewHost')) { $OneViewHost } else { 'NOT SET' })'"
 
     $result = Set-MaintenanceMode @PSBoundParameters
 
@@ -1519,7 +1745,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Timestamp (Local): $($result['timestamp_local'])"
     Write-Host "Action: $Action"
     Write-Host "Target ID: $TargetId"
-    Write-Host "Cluster Name: $($result['ClusterName'] ?? $TargetId)"
+    Write-Host "Target Object Name: $($result['ClusterName'] ?? $TargetId)"
     Write-Host "Mode: $Mode"
     Write-Host "Post-Disable Wait: ${PostDisableWaitSeconds}s"
     Write-Host "Config Dir: $ConfigDir"
