@@ -16,19 +16,6 @@
 #   Run-Scheduler() ≡  run_scheduler()
 #
 
-function Run-CIPipeline {
-    <#
-    .SYNOPSIS
-        Execute CI pipeline automation request.
-
-    .DESCRIPTION
-        Processes CI pipeline requests by mapping BUILD_STAGE to orchestrator request types.
-        Supports stages: firmware, windows, deploy, scan, and all.
-
-    .EXAMPLE
-        Run-CIPipeline -Params @{ BUILD_STAGE = 'deploy'; DRY_RUN = $true }
-    #>
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Error actions used in the whole control surface
 # ─────────────────────────────────────────────────────────────────────────────
