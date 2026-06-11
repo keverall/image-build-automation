@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-Firmware.ps1
-generated: 2026-06-08 10:16 UTC
+generated: 2026-06-11 13:03 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
