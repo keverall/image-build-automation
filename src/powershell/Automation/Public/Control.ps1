@@ -16,6 +16,19 @@
 #   Run-Scheduler() ≡  run_scheduler()
 #
 
+function Run-CIPipeline {
+    <#
+    .SYNOPSIS
+        Execute CI pipeline automation request.
+
+    .DESCRIPTION
+        Processes CI pipeline requests by mapping BUILD_STAGE to orchestrator request types.
+        Supports stages: firmware, windows, deploy, scan, and all.
+
+    .EXAMPLE
+        Run-CIPipeline -Params @{ BUILD_STAGE = 'deploy'; DRY_RUN = $true }
+    #>
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Error actions used in the whole control surface
 # ─────────────────────────────────────────────────────────────────────────────
@@ -205,6 +218,17 @@ function Run-CIPipeline {
 # Entry-point used by the iRequest ISAPI closure
 # ─────────────────────────────────────────────────────────────────────────────
 function Run-IRequest {
+    <#
+    .SYNOPSIS
+        Execute iRequest maintenance mode operation.
+
+    .DESCRIPTION
+        Processes iRequest form data to enable or disable cluster maintenance mode.
+        Maps cluster_id and action to orchestrator request types.
+
+    .EXAMPLE
+        Run-IRequest -FormData @{ cluster_id = 'CLUSTER01'; action = 'enable' }
+    #>
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
@@ -219,6 +243,17 @@ function Run-IRequest {
 # Entry-point used by cron and Windows Scheduled Tasks
 # ─────────────────────────────────────────────────────────────────────────────
 function Run-Scheduler {
+    <#
+    .SYNOPSIS
+        Execute scheduled task automation request.
+
+    .DESCRIPTION
+        Processes scheduled task parameters to execute automated maintenance operations.
+        Maps task names to orchestrator request types for cron/scheduled task execution.
+
+    .EXAMPLE
+        Run-Scheduler -TaskParams @{ task = 'maintenance_disable'; dry_run = $false }
+    #>
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
@@ -265,6 +300,17 @@ function New-GitLabCtrl {
 # Entry-point used by iRequest to trigger GitLab CI/CD instead of direct execution
 # ─────────────────────────────────────────────────────────────────────────────
 function Run-GitLab {
+    <#
+    .SYNOPSIS
+        Trigger GitLab CI/CD pipeline for maintenance operations.
+
+    .DESCRIPTION
+        Initiates GitLab CI/CD pipeline for cluster maintenance instead of direct execution.
+        Used by iRequest to delegate maintenance to GitLab pipelines.
+
+    .EXAMPLE
+        Run-GitLab -Params @{ cluster_id = 'CLUSTER01'; action = 'enable' }
+    #>
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(

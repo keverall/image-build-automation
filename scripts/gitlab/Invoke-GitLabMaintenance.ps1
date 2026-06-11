@@ -6,6 +6,66 @@
 # The module loader skips it (no function definition). Use -File parameter in pwsh.
 #
 
+<#
+.SYNOPSIS
+    GitLab CI/CD entry point for maintenance mode operations.
+
+.DESCRIPTION
+    Standalone script executed by GitLab CI/CD pipelines to perform maintenance mode operations.
+    Wraps Set-MaintenanceMode with GitLab-specific context, logging, and callback support.
+    
+    Outputs results as JSON artifacts and sends web callbacks on completion.
+    Integrates with GitLab pipeline variables for configuration.
+
+.PARAMETER ACTION
+    Maintenance action: enable, disable, or validate (required)
+
+.PARAMETER CLUSTER_ID
+    Target cluster identifier (required)
+
+.PARAMETER MODE
+    Maintenance mode type: scom or oneview (default: 'scom')
+
+.PARAMETER START
+    Maintenance window start time (ISO 8601 format)
+
+.PARAMETER END
+    Maintenance window end time (ISO 8601 format)
+
+.PARAMETER CONFIG_DIR
+    Configuration directory path (default: 'configs')
+
+.PARAMETER DRY_RUN
+    Validate without executing changes
+
+.PARAMETER NO_SCHEDULE
+    Skip scheduling future maintenance window
+
+.PARAMETER GITLAB_TOKEN
+    GitLab job token (from GITLAB_JOB_TOKEN environment variable)
+
+.PARAMETER CI_PROJECT_ID
+    GitLab project ID (from CI_PROJECT_ID environment variable)
+
+.PARAMETER CI_PIPELINE_ID
+    Pipeline ID (from CI_PIPELINE_ID environment variable)
+
+.PARAMETER CI_JOB_ID
+    Job ID (from CI_JOB_ID environment variable)
+
+.PARAMETER CALLBACK_URL
+    URL for completion callback (from MAINTENANCE_CALLBACK_URL)
+
+.PARAMETER CALLBACK_API_KEY
+    API key for callback authentication (from MAINTENANCE_API_KEY)
+
+.EXAMPLE
+    pwsh -File scripts/gitlab/Invoke-GitLabMaintenance.ps1 -ACTION enable -CLUSTER_ID 'CLUSTER01'
+    
+.EXAMPLE
+    pwsh -File scripts/gitlab/Invoke-GitLabMaintenance.ps1 -ACTION validate -CLUSTER_ID 'CLUSTER01' -DRY_RUN
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][ValidateSet('enable', 'disable', 'validate')][string] $ACTION,
