@@ -1,4 +1,4 @@
-﻿#
+#
 # Set-MaintenanceMode.ps1 — SCOM / OpenView maintenance-mode orchestrator
 # Equivalent of reference implementation cli/maintenance_mode.py (~956 lines)
 #
@@ -18,6 +18,7 @@ param(
     [Parameter(Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
     [ValidateSet('Test', 'Prod')][string] $Environment,
     [string] $ManagementHost,
+    [string] $SerialNumber,
     [string] $Username,
     [int] $PostDisableWaitSeconds = 120,
     [string] $ConfigDir = 'configs',
@@ -41,7 +42,7 @@ if ($ShowHelp) {
     Write-Output "SYNTAX"
     Write-Output "    Set-MaintenanceMode -TargetId <string> -Mode <scom|oneview>"
     Write-Output "        [-Action <enable|disable|validate>] [-Environment <Test|Prod>]"
-    Write-Output "        [-ManagementHost <string>] [-Username <string>]"
+    Write-Output "        [-ManagementHost <string>] [-SerialNumber <string>] [-Username <string>]"
     Write-Output "        [-Start <datetime>] [-End <datetime>]"
     Write-Output "        [-PostDisableWaitSeconds <int>] [-DryRun] [-NoSchedule] [-Json]"
     Write-Output ""
@@ -57,7 +58,9 @@ if ($ShowHelp) {
     Write-Output "    Operation to perform (default: enable)"
     Write-Output ""
     Write-Output "  -TargetId <string> [REQUIRED]"
-    Write-Output "    Cluster ID from clusters_catalogue.json or server name"
+    Write-Output "    Cluster ID (starts with CLU-) or server name"
+    Write-Output "    For SCOM: CLU- prefix = cluster mode, no prefix = single server"
+    Write-Output "    For OneView: server name or cluster ID from catalogue"
     Write-Output ""
     Write-Output "  -Mode <scom|oneview> [REQUIRED]"
     Write-Output "    scom     - Manage via SCOM (Windows clusters/groups)"
@@ -70,6 +73,10 @@ if ($ShowHelp) {
     Write-Output ""
     Write-Output "  -ManagementHost <string>"
     Write-Output "    Override management server/appliance (takes precedence over environment config)"
+    Write-Output ""
+    Write-Output "  -SerialNumber <string>"
+    Write-Output "    OneView only: look up server by serial number (Marin's preference)"
+    Write-Output "    Invalid for SCOM mode - will return error if used"
     Write-Output ""
     Write-Output "  -Username <string>"
     Write-Output "    Direct username (testing only, not recommended for production)"
@@ -121,6 +128,14 @@ if ($ShowHelp) {
     Write-Output "  # Host override for emergency"
     Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
     Write-Output "      -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'"
+    Write-Output ""
+    Write-Output "  # OneView with serial number (Marin's preference)"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'server01.ad.example.com' -Mode oneview \"
+    Write-Output "      -SerialNumber 'ABC123XYZ' -Environment Test -Start 'now' -End '+1hour'"
+    Write-Output ""
+    Write-Output "  # SCOM single server (no CLU- prefix)"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'myserver01' -Mode scom \"
+    Write-Output "      -Environment Prod -Start 'now' -End '+2hours'"
     Write-Output ""
     Write-Output "CREDENTIALS"
     Write-Output "    Set via environment variables (recommended):"
@@ -189,6 +204,11 @@ function Set-MaintenanceMode {
         For SCOM mode: overrides SCOM management server
         For OneView mode: overrides OneView appliance
         Can also be set via $env:MAINTENANCE_HOST
+
+    .PARAMETER SerialNumber
+        Optional serial number for OneView mode (Marin's preference).
+        Only valid when -Mode is 'oneview'. Will reject if used with SCOM mode.
+        When provided, the script will look up the server by serial number in OneView.
 
     .PARAMETER Username
         Optional direct username parameter (for testing only).
@@ -261,16 +281,25 @@ function Set-MaintenanceMode {
         # OneView single server maintenance
         Set-MaintenanceMode -Action enable -TargetId 'server01.ad.example.com' -Mode oneview -Environment Test -Start 'now' -End '+1hour'
 
+    .EXAMPLE
+        # OneView with serial number (Marin's preference)
+        Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -Environment Test -Start 'now' -End '+1hour'
+
+    .EXAMPLE
+        # SCOM single server (no CLU- prefix)
+        Set-MaintenanceMode -Action enable -TargetId 'myserver01' -Mode scom -Environment Prod -Start 'now' -End '+2hours'
+
     .LINK
         https://github.com/yourorg/image-build-automation/docs/maint-mode-initial-testing.md
     #>
     [CmdletBinding()]
     param(
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
-        [Parameter(Mandatory, Position = 1)][string] $TargetId,
+        [Parameter(Position = 1)][string] $TargetId,
         [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
         [ValidateSet('Test', 'Prod')][string] $Environment,
         [string] $ManagementHost,
+        [string] $SerialNumber,
         [string] $Username,
         [int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
@@ -322,58 +351,72 @@ function Set-MaintenanceMode {
         if ($End) { $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt }
     }
 
-    # For oneview mode, TargetId can be a server name - resolve via API
-    # For scom mode, TargetId must be in catalogue (current behavior)
-    $isDirectServerMode = ($Mode -eq 'oneview')
-    $clusterDef = $null
-    $clusterName = $TargetId
+    # Validate SerialNumber parameter (only valid for oneview mode)
+    if ($SerialNumber -and $Mode -eq 'scom') {
+        return @{ Success = $false; Error = "SerialNumber parameter is only valid for OneView mode, not SCOM mode." }
+    }
 
     # Get clusters map once
     $clustersMap = $clustersCfg.Get_Item('clusters')
 
-    if ($isDirectServerMode) {
-        # Try catalogue lookup first
+    # Determine target type and resolve cluster/server info
+    $isDirectServerMode = $false
+    $clusterDef = $null
+    $clusterName = $TargetId
+    $servers = @()
+
+    if ($Mode -eq 'oneview' -and $SerialNumber) {
+        # OneView mode with SerialNumber - will be resolved via API later
+        $isDirectServerMode = $true
+        $clusterName = "Serial: $SerialNumber"
+        $servers = @($SerialNumber)  # Use SerialNumber as the identifier when TargetId is not provided
+    } elseif ($Mode -eq 'oneview') {
+        # OneView mode without SerialNumber - can be server name or cluster
+        $isDirectServerMode = $true
         if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
             $clusterDef = $clustersMap[$TargetId]
             $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
+            $servers = $clusterDef.Get_Item('servers') ?? @($TargetId)
+        } else {
+            $servers = @($TargetId)
         }
-        # If not in catalogue, will be resolved via OneView API later
     } else {
-        # SCOM mode - must be in catalogue
-        if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
-            Write-Verbose "Target '$TargetId' not found in catalogue."
-            $earlyErr = @{ Success = $false; Error = "Target '$TargetId' not found in catalogue."; ClusterName = $clusterName }
-            if ($DryRun) { 
-                $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
+        # SCOM mode - check if TargetId starts with CLU- prefix (cluster) or not (server)
+        if ($TargetId -match '^CLU-') {
+            # Cluster mode - must be in catalogue
+            if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
+                Write-Verbose "Cluster '$TargetId' not found in catalogue."
+                $earlyErr = @{ Success = $false; Error = "Cluster '$TargetId' not found in catalogue."; ClusterName = $TargetId }
+                if ($DryRun) { 
+                    $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
+                }
+                return $earlyErr
             }
-            return $earlyErr
+            $clusterDef = $clustersMap[$TargetId]
+            $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
+            
+            # Validate cluster definition
+            $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
+            $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
+            if ($missing) { 
+                Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
+                $earlyErr = @{ Success = $false; Error = "Missing fields: $($missing -join ', ')"; ClusterName = $clusterName }
+                if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+                return $earlyErr
+            }
+            $servers = $clusterDef.Get_Item('servers')
+            if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
+                Write-Verbose "Cluster 'servers' must be a non-empty list."
+                $earlyErr = @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list."; ClusterName = $clusterName }
+                if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+                return $earlyErr
+            }
+        } else {
+            # Single server mode for SCOM
+            $isDirectServerMode = $true
+            $servers = @($TargetId)
+            $clusterName = "Server: $TargetId"
         }
-        $clusterDef = $clustersMap[$TargetId]
-        $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
-    }
-
-    # Validate cluster definition if found (required for scom mode)
-    if ($clusterDef -and $Mode -eq 'scom') {
-        $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
-        $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
-        if ($missing) { 
-            Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
-            $earlyErr = @{ Success = $false; Error = "Missing fields: $($missing -join ', ')"; ClusterName = $clusterName }
-            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
-            return $earlyErr
-        }
-        $servers = $clusterDef.Get_Item('servers')
-        if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
-            Write-Verbose "Cluster 'servers' must be a non-empty list."
-            $earlyErr = @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list."; ClusterName = $clusterName }
-            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
-            return $earlyErr
-        }
-    } elseif (-not $clusterDef -and $isDirectServerMode) {
-        # Single server mode - derive servers array from TargetId
-        $servers = @($TargetId)
-    } elseif ($clusterDef -and $isDirectServerMode) {
-        $servers = $clusterDef.Get_Item('servers')
     }
 
     # VALIDATE action - exit early, no credentials needed
@@ -493,60 +536,6 @@ function Set-MaintenanceMode {
         if ($Start) { $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt }
         else { $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt }
         if ($End) { $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt }
-    }
-
-    # For oneview mode, TargetId can be a server name - resolve via API
-    # For scom mode, TargetId must be in catalogue (current behavior)
-    $isDirectServerMode = ($Mode -eq 'oneview')
-    $clusterDef = $null
-    $clusterName = $TargetId
-
-    # Get clusters map once
-    $clustersMap = $clustersCfg.Get_Item('clusters')
-
-    if ($isDirectServerMode) {
-        # Try catalogue lookup first
-        if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
-            $clusterDef = $clustersMap[$TargetId]
-            $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
-        }
-        # If not in catalogue, will be resolved via OneView API later
-    } else {
-        # SCOM mode - must be in catalogue
-        if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
-            Write-Verbose "Target '$TargetId' not found in catalogue."
-            $earlyErr = @{ Success = $false; Error = "Target '$TargetId' not found in catalogue."; ClusterName = $clusterName }
-            if ($DryRun) { 
-                $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
-            }
-            return $earlyErr
-        }
-        $clusterDef = $clustersMap[$TargetId]
-        $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
-    }
-
-    # Validate cluster definition if found (required for scom mode)
-    if ($clusterDef -and $Mode -eq 'scom') {
-        $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
-        $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
-        if ($missing) { 
-            Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
-            $earlyErr = @{ Success = $false; Error = "Missing fields: $($missing -join ', ')"; ClusterName = $clusterName }
-            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
-            return $earlyErr
-        }
-        $servers = $clusterDef.Get_Item('servers')
-        if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
-            Write-Verbose "Cluster 'servers' must be a non-empty list."
-            $earlyErr = @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list."; ClusterName = $clusterName }
-            if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
-            return $earlyErr
-        }
-    } elseif (-not $clusterDef -and $isDirectServerMode) {
-        # Single server mode - derive servers array from TargetId
-        $servers = @($TargetId)
-    } elseif ($clusterDef -and $isDirectServerMode) {
-        $servers = $clusterDef.Get_Item('servers')
     }
 
     # Finalize Start / End with catalogue defaults if needed
@@ -863,7 +852,8 @@ function Set-MaintenanceMode {
         Message = $detailMessage
         StartTimeUtc = if ($Action -eq 'enable') { $utcStart } else { $null }
         EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
-        TargetId = $TargetId
+        TargetId = if ($TargetId) { $TargetId } else { $null }
+        SerialNumber = if ($SerialNumber) { $SerialNumber } else { $null }
         ClusterName = $clusterName
         ServerCount = $serverCount
         DryRun = [bool]$DryRun
@@ -1926,8 +1916,20 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     $ErrorActionPreference = 'Continue'
 
     # Enforce mandatory parameters for CLI execution
-    if (-not $TargetId -or -not $Mode) {
-        Write-Error "TargetId and Mode are required for CLI execution."
+    # For OneView mode, either TargetId or SerialNumber is required
+    # For SCOM mode, TargetId is always required
+    if (-not $Mode) {
+        Write-Error "Mode is required for CLI execution."
+        exit 1
+    }
+    
+    if ($Mode -eq 'oneview' -and -not $TargetId -and -not $SerialNumber) {
+        Write-Error "For OneView mode, either TargetId or SerialNumber is required."
+        exit 1
+    }
+    
+    if ($Mode -eq 'scom' -and -not $TargetId) {
+        Write-Error "TargetId is required for SCOM mode."
         exit 1
     }
 
@@ -1939,6 +1941,28 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Verbose "ManagementHost = '$(if ($PSBoundParameters.ContainsKey('ManagementHost')) { $ManagementHost } else { 'NOT SET' })'"
 
     $result = Set-MaintenanceMode @PSBoundParameters
+
+    # Check if function returned an error (e.g., SerialNumber with SCOM mode)
+    if (-not $result.ContainsKey('Success') -or -not $result.Success) {
+        Write-Host "=== Maintenance Mode Command Audit ==="
+        Write-Host "Timestamp (UTC): $(Get-UtcTimestamp)"
+        Write-Host "Timestamp (Local): $(Get-LocalTimestamp)"
+        Write-Host "Action: $Action"
+        Write-Host "Target ID: $TargetId"
+        Write-Host "Mode: $Mode"
+        if ($PSBoundParameters.ContainsKey('Environment')) {
+            Write-Host "Environment: $Environment"
+        }
+        if ($PSBoundParameters.ContainsKey('SerialNumber')) {
+            Write-Host "Serial Number: $SerialNumber"
+        }
+        Write-Host ""
+        Write-Host "=== Command Result ==="
+        Write-Host "Success: False"
+        Write-Host "Error: $($result.Error)"
+        Write-Host "======================"
+        exit 1
+    }
 
     # Add request metadata for traceability
     $result['request_type'] = "maintenance_$Action"
@@ -1956,8 +1980,12 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Timestamp (UTC): $($result['timestamp'])"
     Write-Host "Timestamp (Local): $($result['timestamp_local'])"
     Write-Host "Action: $Action"
-    Write-Host "Target ID: $TargetId"
-    Write-Host "Target Object Name: $($result['ClusterName'] ?? $TargetId)"
+    if ($TargetId) {
+        Write-Host "Target ID: $TargetId"
+    } elseif ($SerialNumber) {
+        Write-Host "Serial Number: $SerialNumber"
+    }
+    Write-Host "Target Object Name: $($result['ClusterName'] ?? $TargetId ?? $SerialNumber)"
     Write-Host "Mode: $Mode"
     if ($PSBoundParameters.ContainsKey('Environment')) {
         Write-Host "Environment: $Environment"
