@@ -48,9 +48,8 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 ### 2. Host Override Tests ✅
 
 **What's tested:**
-- `-ScomHost` parameter acceptance
-- `-OneViewHost` parameter acceptance
-- Environment variable overrides (`SCOM_OVERRIDE_HOST`, `ONEVIEW_OVERRIDE_HOST`)
+- `-ManagementHost` parameter acceptance
+- Environment variable override (`$env:MAINTENANCE_HOST`)
 - Priority chain: parameter > env var > config file
 
 **Test file:** `Set-MaintenanceMode.Environment.Tests.ps1`
@@ -63,11 +62,11 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'backup-scom.local' `
+    -ManagementHost 'backup-scom.local' `
     -DryRun
 
 # Environment variable override
-$env:SCOM_OVERRIDE_HOST = 'override-scom.local'
+$env:MAINTENANCE_HOST = 'override-scom.local'
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -Action validate `
     -TargetId 'PROD-CLUSTER-01' `
@@ -176,7 +175,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'custom-scom.local' `
+    -ManagementHost 'custom-scom.local' `
     -Username 'admin' `
     -Start 'now' `
     -End '+2hours' `
@@ -300,7 +299,7 @@ Before deploying to production, manually test:
 
 - [ ] **Host override works**
   ```powershell
-  Set-MaintenanceMode -Action validate -TargetId TEST-01 -Mode scom -ScomHost custom.local
+  Set-MaintenanceMode -Action validate -TargetId TEST-01 -Mode scom -ManagementHost custom.local
   ```
 
 - [ ] **Relative time formats work**

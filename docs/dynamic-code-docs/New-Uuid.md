@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-Uuid.ps1
-generated: 2026-06-11 14:08 UTC
+generated: 2026-06-11 15:01 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

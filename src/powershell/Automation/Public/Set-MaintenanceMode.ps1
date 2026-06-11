@@ -17,8 +17,7 @@ param(
     [Parameter(Position = 1)][string] $TargetId,
     [Parameter(Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
     [ValidateSet('Test', 'Prod')][string] $Environment,
-    [string] $ScomHost,
-    [string] $OneViewHost,
+    [string] $ManagementHost,
     [string] $Username,
     [int] $PostDisableWaitSeconds = 120,
     [string] $ConfigDir = 'configs',
@@ -42,7 +41,7 @@ if ($ShowHelp) {
     Write-Output "SYNTAX"
     Write-Output "    Set-MaintenanceMode -TargetId <string> -Mode <scom|oneview>"
     Write-Output "        [-Action <enable|disable|validate>] [-Environment <Test|Prod>]"
-    Write-Output "        [-ScomHost <string>] [-OneViewHost <string>] [-Username <string>]"
+    Write-Output "        [-ManagementHost <string>] [-Username <string>]"
     Write-Output "        [-Start <datetime>] [-End <datetime>]"
     Write-Output "        [-PostDisableWaitSeconds <int>] [-DryRun] [-NoSchedule] [-Json]"
     Write-Output ""
@@ -69,11 +68,8 @@ if ($ShowHelp) {
     Write-Output "    Valid values: Test, Prod"
     Write-Output "    Default: Reads from `$env:ENVIRONMENT, then defaults to Prod"
     Write-Output ""
-    Write-Output "  -ScomHost <string>"
-    Write-Output "    Override SCOM management server (takes precedence over environment config)"
-    Write-Output ""
-    Write-Output "  -OneViewHost <string>"
-    Write-Output "    Override OneView appliance (takes precedence over environment config)"
+    Write-Output "  -ManagementHost <string>"
+    Write-Output "    Override management server/appliance (takes precedence over environment config)"
     Write-Output ""
     Write-Output "  -Username <string>"
     Write-Output "    Direct username (testing only, not recommended for production)"
@@ -124,7 +120,7 @@ if ($ShowHelp) {
     Write-Output ""
     Write-Output "  # Host override for emergency"
     Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
-    Write-Output "      -Environment Prod -ScomHost 'backup-scom.local' -Start 'now' -End '+4hours'"
+    Write-Output "      -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'"
     Write-Output ""
     Write-Output "CREDENTIALS"
     Write-Output "    Set via environment variables (recommended):"
@@ -187,15 +183,12 @@ function Set-MaintenanceMode {
         If not specified, reads from $env:ENVIRONMENT environment variable.
         Defaults to 'Prod' if neither is set.
 
-    .PARAMETER ScomHost
-        Optional override for SCOM management server hostname/IP.
+    .PARAMETER ManagementHost
+        Optional override for management server/appliance hostname/IP.
         Takes precedence over environment config.
-        Can also be set via $env:SCOM_HOST or $env:SCOM_OVERRIDE_HOST.
-
-    .PARAMETER OneViewHost
-        Optional override for OneView appliance hostname/IP.
-        Takes precedence over environment config.
-        Can also be set via $env:ONEVIEW_HOST or $env:ONEVIEW_OVERRIDE_HOST.
+        For SCOM mode: overrides SCOM management server
+        For OneView mode: overrides OneView appliance
+        Can also be set via $env:MAINTENANCE_HOST
 
     .PARAMETER Username
         Optional direct username parameter (for testing only).
@@ -258,7 +251,7 @@ function Set-MaintenanceMode {
 
     .EXAMPLE
         # Use host override for emergency maintenance
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ScomHost 'backup-scom.local' -Start 'now' -End '+4hours'
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
 
     .EXAMPLE
         # Dry run to test configuration
@@ -277,8 +270,7 @@ function Set-MaintenanceMode {
         [Parameter(Mandatory, Position = 1)][string] $TargetId,
         [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
         [ValidateSet('Test', 'Prod')][string] $Environment,
-        [string] $ScomHost,
-        [string] $OneViewHost,
+        [string] $ManagementHost,
         [string] $Username,
         [int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
@@ -414,43 +406,27 @@ function Set-MaintenanceMode {
     $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
     $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
     
-    if ($Mode -eq 'scom') {
-        $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
-        $resolvedScomHost = if ($PSBoundParameters.ContainsKey('ScomHost')) {
-            $ScomHost
-        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('SCOM_OVERRIDE_HOST')
-        } elseif ([System.Environment]::GetEnvironmentVariable('SCOM_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('SCOM_HOST')
-        } else {
+    $resolvedHost = if ($PSBoundParameters.ContainsKey('ManagementHost')) {
+        $ManagementHost
+    } elseif ([System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')) {
+        [System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')
+    } else {
+        if ($Mode -eq 'scom') {
+            $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
             $scomEnvConfig.Get_Item('management_server')
-        }
-        
-        if (-not $resolvedScomHost) {
-            return @{ Success = $false; Error = "SCOM host not configured for environment '$effectiveEnv'. Set SCOM_HOST env var, use -ScomHost parameter, or update connection_hosts.json." }
-        }
-        
-        Write-Verbose "SCOM host resolved to: $resolvedScomHost"
-    }
-    
-    if ($Mode -eq 'oneview') {
-        $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
-        $resolvedOneViewHost = if ($PSBoundParameters.ContainsKey('OneViewHost')) {
-            $OneViewHost
-        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('ONEVIEW_OVERRIDE_HOST')
-        } elseif ([System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('ONEVIEW_HOST')
         } else {
+            $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
             $oneviewEnvConfig.Get_Item('appliance')
         }
-        
-        if (-not $resolvedOneViewHost) {
-            return @{ Success = $false; Error = "OneView host not configured for environment '$effectiveEnv'. Set ONEVIEW_HOST env var, use -OneViewHost parameter, or update connection_hosts.json." }
-        }
-        
-        Write-Verbose "OneView host resolved to: $resolvedOneViewHost"
     }
+    
+    if (-not $resolvedHost) {
+        $hostType = if ($Mode -eq 'scom') { 'SCOM' } else { 'OneView' }
+        $envVar = if ($Mode -eq 'scom') { 'SCOM_HOST' } else { 'ONEVIEW_HOST' }
+        return @{ Success = $false; Error = "$hostType host not configured for environment '$effectiveEnv'. Set $envVar env var, use -Host parameter, or update connection_hosts.json." }
+    }
+    
+    Write-Verbose "Management host resolved to: $resolvedHost"
     
     # Resolve credentials: parameter > env var > interactive prompt
     # Skip credential resolution entirely in DryRun mode (no actual connections needed)
@@ -615,16 +591,10 @@ function Set-MaintenanceMode {
 
     if ($Mode -eq 'scom') {
         try { 
-            # Override management server if resolved from environment/parameter
-            if ($resolvedScomHost) {
-                $scomCfgCopy = $scomCfg.Clone()
-                $scomCfgCopy['management_server'] = $resolvedScomHost
-                $scomMgr = [SCOMManager]::new($scomCfgCopy)
-            } else {
-                $scomMgr = [SCOMManager]::new($scomCfg)
-            }
+            $scomCfgCopy = $scomCfg.Clone()
+            $scomCfgCopy['management_server'] = $resolvedHost
+            $scomMgr = [SCOMManager]::new($scomCfgCopy)
             
-            # Override credentials if provided via parameter
             if ($resolvedUsername -and $resolvedPassword) {
                 $scomMgr.Cred = @{ username = $resolvedUsername; password = $resolvedPassword }
             }
@@ -633,19 +603,13 @@ function Set-MaintenanceMode {
 
     if ($Mode -eq 'oneview') {
         try {
-            # Override appliance if resolved from environment/parameter
-            if ($resolvedOneViewHost) {
-                $oneviewCfgCopy = $oneviewCfg.Clone()
-                if (-not $oneviewCfgCopy.ContainsKey('oneview')) {
-                    $oneviewCfgCopy['oneview'] = @{}
-                }
-                $oneviewCfgCopy['oneview']['appliance'] = $resolvedOneViewHost
-                $oneviewMgr = [OneViewClient]::new($oneviewCfgCopy)
-            } else {
-                $oneviewMgr = [OneViewClient]::new($oneviewCfg)
+            $oneviewCfgCopy = $oneviewCfg.Clone()
+            if (-not $oneviewCfgCopy.ContainsKey('oneview')) {
+                $oneviewCfgCopy['oneview'] = @{}
             }
+            $oneviewCfgCopy['oneview']['appliance'] = $resolvedHost
+            $oneviewMgr = [OneViewClient]::new($oneviewCfgCopy)
             
-            # Override credentials if provided via parameter
             if ($resolvedUsername -and $resolvedPassword) {
                 $oneviewMgr.Username = $resolvedUsername
                 $oneviewMgr.Password = $resolvedPassword
@@ -1973,8 +1937,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Verbose "Script:ConfigDir = '$Script:ConfigDir'"
     Write-Verbose "PSBoundParameters.ConfigDir = '$(if ($PSBoundParameters.ContainsKey('ConfigDir')) { 'SET' } else { 'NOT SET' })'"
     Write-Verbose "Environment = '$(if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { 'NOT SET - will use ENVIRONMENT env var or default to Prod' })'"
-    Write-Verbose "ScomHost = '$(if ($PSBoundParameters.ContainsKey('ScomHost')) { $ScomHost } else { 'NOT SET' })'"
-    Write-Verbose "OneViewHost = '$(if ($PSBoundParameters.ContainsKey('OneViewHost')) { $OneViewHost } else { 'NOT SET' })'"
+    Write-Verbose "ManagementHost = '$(if ($PSBoundParameters.ContainsKey('ManagementHost')) { $ManagementHost } else { 'NOT SET' })'"
 
     $result = Set-MaintenanceMode @PSBoundParameters
 
@@ -2000,11 +1963,8 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     if ($PSBoundParameters.ContainsKey('Environment')) {
         Write-Host "Environment: $Environment"
     }
-    if ($PSBoundParameters.ContainsKey('ScomHost')) {
-        Write-Host "SCOM Host: $ScomHost"
-    }
-    if ($PSBoundParameters.ContainsKey('OneViewHost')) {
-        Write-Host "OneView Host: $OneViewHost"
+    if ($PSBoundParameters.ContainsKey('ManagementHost')) {
+        Write-Host "Management Host: $ManagementHost"
     }
     if ($PSBoundParameters.ContainsKey('Username')) {
         Write-Host "Username: $Username"
