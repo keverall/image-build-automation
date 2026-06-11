@@ -317,6 +317,11 @@ function Set-MaintenanceMode {
         return @{ Success = $false; Error = "Mode is required and must be either 'scom' or 'oneview'." }
     }
 
+    # Validate TargetId is not empty
+    if ([string]::IsNullOrWhiteSpace($TargetId)) {
+        throw "TargetId cannot be empty or whitespace."
+    }
+
     # Use passed ConfigDir param or fall back to project-root configs
     $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
     $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) {
@@ -381,17 +386,8 @@ function Set-MaintenanceMode {
             $servers = @($TargetId)
         }
     } else {
-        # SCOM mode - check if TargetId starts with CLU- prefix (cluster) or not (server)
-        if ($TargetId -match '^CLU-') {
-            # Cluster mode - must be in catalogue
-            if (-not $clustersMap -or -not $clustersMap.ContainsKey($TargetId)) {
-                Write-Verbose "Cluster '$TargetId' not found in catalogue."
-                $earlyErr = @{ Success = $false; Error = "Cluster '$TargetId' not found in catalogue."; ClusterName = $TargetId }
-                if ($DryRun) { 
-                    $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
-                }
-                return $earlyErr
-            }
+        # SCOM mode - target must exist in catalogue
+        if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
             $clusterDef = $clustersMap[$TargetId]
             $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
             
@@ -412,10 +408,12 @@ function Set-MaintenanceMode {
                 return $earlyErr
             }
         } else {
-            # Single server mode for SCOM
-            $isDirectServerMode = $true
-            $servers = @($TargetId)
-            $clusterName = "Server: $TargetId"
+            Write-Verbose "Target '$TargetId' not found in catalogue."
+            $earlyErr = @{ Success = $false; Error = "Target '$TargetId' not found in catalogue."; ClusterName = $TargetId }
+            if ($DryRun) { 
+                $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
+            }
+            return $earlyErr
         }
     }
 
