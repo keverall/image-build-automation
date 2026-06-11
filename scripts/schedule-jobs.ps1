@@ -17,6 +17,74 @@
 # This keeps schedule-jobs.ps1 DRY and consistent with DevOps principles.
 # ────────────────────────────────────────────────────────────────────────────
 
+<#
+.SYNOPSIS
+    Scheduled task dispatcher for automation jobs.
+
+.DESCRIPTION
+    Thin wrapper that maps scheduled job names to Control surface calls.
+    All real logic lives in Control.ps1 and Start-AutomationOrchestrator.
+    
+    Supports two modes:
+    1. Run mode: Execute a named job immediately
+    2. Register mode: Create/remove Windows Scheduled Tasks
+    
+    Available jobs:
+    - reporting: OpsRamp + audit reporting (daily/hourly)
+    - monitoring: Installation monitoring (every 5 min)
+    - firmware: Firmware ISO build (nightly)
+    - windows: Windows ISO build (nightly)
+    - maintenance_enable/disable: Cluster maintenance mode
+    - deploy: Deployment operations
+    - irequest: iRequest/BMC ISAPI form entry point
+    - all: Run reporting + monitoring together
+
+.PARAMETER Job
+    Job name to execute (from available job list)
+
+.PARAMETER Register
+    Register a Windows Scheduled Task instead of running immediately
+
+.PARAMETER Add
+    Add a new maintenance task to scheduler
+
+.PARAMETER Remove
+    Remove an existing maintenance task from scheduler
+
+.PARAMETER TaskName
+    Name for the Windows Scheduled Task (when using -Register)
+
+.PARAMETER TaskUser
+    User account to run task as (default: 'SYSTEM')
+
+.PARAMETER RunTime
+    Daily execution time in HH:MM format (default: '02:00')
+
+.PARAMETER RepeatMinutes
+    Repeat interval in minutes (0 = run once, >0 = repeat every N minutes)
+
+.PARAMETER FormData
+    Hashtable of form data for iRequest jobs
+
+.PARAMETER DryRun
+    Validate without executing changes
+
+.PARAMETER SchedulerParams
+    Additional parameters for scheduled tasks
+
+.PARAMETER LogDir
+    Directory for job log files (default: 'generated/logs/scheduled_jobs')
+
+.EXAMPLE
+    pwsh -File scripts/schedule-jobs.ps1 -Job reporting
+    
+.EXAMPLE
+    pwsh -File scripts/schedule-jobs.ps1 -Register -Add -TaskName 'HPE-Firmware-Build' -Job firmware -RunTime '03:00'
+    
+.EXAMPLE
+    pwsh -File scripts/schedule-jobs.ps1 -Job irequest -FormData @{ cluster_id = 'CLUSTER01'; action = 'enable' }
+#>
+
 [CmdletBinding(DefaultParameterSetName = 'Run')]
 param(
     # ── Parameter set: Run a named job ─────────────────────────────────────────
