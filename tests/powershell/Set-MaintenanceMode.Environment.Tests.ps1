@@ -84,22 +84,34 @@ Describe 'Set-MaintenanceMode - Environment Parameter Tests' {
 
 Describe 'Set-MaintenanceMode - Host Override Tests' {
     
-    Context 'ScomHost parameter' {
-        It 'Should accept custom SCOM host via parameter' {
+    Context 'ManagementHost parameter' {
+        It 'Should accept custom host via parameter for SCOM mode' {
             $result = Set-MaintenanceMode `
                 -Action validate `
                 -TargetId 'PROD-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
-                -ScomHost 'custom-scom.test.local' `
+                -ManagementHost 'custom-server.test.local' `
                 -DryRun
             
             $result | Should -Not -BeNullOrEmpty
         }
         
-        It 'Should accept SCOM override via environment variable' {
-            $originalOverride = $env:SCOM_OVERRIDE_HOST
-            $env:SCOM_OVERRIDE_HOST = 'override-scom.test.local'
+        It 'Should accept custom host via parameter for OneView mode' {
+            $result = Set-MaintenanceMode `
+                -Action validate `
+                -TargetId 'test-server-01' `
+                -Mode oneview `
+                -Environment Test `
+                -ManagementHost 'custom-oneview.test.local' `
+                -DryRun
+            
+            $result | Should -Not -BeNullOrEmpty
+        }
+        
+        It 'Should accept host override via MAINTENANCE_HOST environment variable' {
+            $originalOverride = $env:MAINTENANCE_HOST
+            $env:MAINTENANCE_HOST = 'override-server.test.local'
             
             try {
                 $result = Set-MaintenanceMode `
@@ -112,40 +124,7 @@ Describe 'Set-MaintenanceMode - Host Override Tests' {
                 $result | Should -Not -BeNullOrEmpty
             }
             finally {
-                $env:SCOM_OVERRIDE_HOST = $originalOverride
-            }
-        }
-    }
-    
-    Context 'OneViewHost parameter' {
-        It 'Should accept custom OneView host via parameter' {
-            $result = Set-MaintenanceMode `
-                -Action validate `
-                -TargetId 'test-server-01' `
-                -Mode oneview `
-                -Environment Test `
-                -OneViewHost 'custom-oneview.test.local' `
-                -DryRun
-            
-            $result | Should -Not -BeNullOrEmpty
-        }
-        
-        It 'Should accept OneView override via environment variable' {
-            $originalOverride = $env:ONEVIEW_OVERRIDE_HOST
-            $env:ONEVIEW_OVERRIDE_HOST = 'override-oneview.test.local'
-            
-            try {
-                $result = Set-MaintenanceMode `
-                    -Action validate `
-                    -TargetId 'test-server-01' `
-                    -Mode oneview `
-                    -Environment Test `
-                    -DryRun
-                
-                $result | Should -Not -BeNullOrEmpty
-            }
-            finally {
-                $env:ONEVIEW_OVERRIDE_HOST = $originalOverride
+                $env:MAINTENANCE_HOST = $originalOverride
             }
         }
     }
@@ -321,7 +300,7 @@ Describe 'Set-MaintenanceMode - Combined Parameter Tests' {
                 -TargetId 'PROD-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
-                -ScomHost 'custom-scom.local' `
+                -ManagementHost 'custom-server.local' `
                 -Username 'custom_admin' `
                 -DryRun
             

@@ -42,11 +42,10 @@
 - Uses ENVIRONMENT env var fallback
 - Defaults to Prod when not specified
 
-#### Host Override Tests (4 tests)
-- ScomHost parameter acceptance
-- OneViewHost parameter acceptance
-- SCOM_OVERRIDE_HOST env var
-- ONEVIEW_OVERRIDE_HOST env var
+#### Host Override Tests (3 tests)
+- ManagementHost parameter acceptance for SCOM mode
+- ManagementHost parameter acceptance for OneView mode
+- MAINTENANCE_HOST env var override
 
 #### Credential Parameter Tests (1 test)
 - Username parameter acceptance
@@ -124,7 +123,7 @@
 | Feature | Tests | Status |
 |---------|-------|--------|
 | Environment parameter (Test/Prod) | 5 | ✅ Complete |
-| Host override (ScomHost/OneViewHost) | 4 | ✅ Complete |
+| Host override (ManagementHost) | 3 | ✅ Complete |
 | Credential parameters | 1 | ✅ Complete |
 | Relative time formats | 4 | ✅ Complete |
 | Absolute time formats | 3 | ✅ Complete |
@@ -149,12 +148,10 @@
 -Environment Prod
 ```
 
-### Host Overrides (4 variants)
+### Host Overrides (2 variants)
 ```powershell
--ScomHost <hostname>
--OneViewHost <hostname>
-$env:SCOM_OVERRIDE_HOST
-$env:ONEVIEW_OVERRIDE_HOST
+-ManagementHost <hostname>
+$env:MAINTENANCE_HOST
 ```
 
 ### Credential Methods (3 variants)

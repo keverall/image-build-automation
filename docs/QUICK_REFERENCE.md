@@ -5,8 +5,7 @@
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `-Environment` | Test\|Prod | Select environment for host resolution | `-Environment Prod` |
-| `-ScomHost` | string | Override SCOM management server | `-ScomHost scom-backup.local` |
-| `-OneViewHost` | string | Override OneView appliance | `-OneViewHost ov-test.local` |
+| `-ManagementHost` | string | Override management server/appliance | `-ManagementHost backup-server.local` |
 | `-Username` | string | Direct username (testing only) | `-Username admin` |
 
 ## Credential Setup (Choose One Method)
@@ -62,7 +61,7 @@ Set-MaintenanceMode `
     -TargetId "TEST-CLUSTER-01" `
     -Mode scom `
     -Environment Test `
-    -ScomHost "scom-test-backup.local"
+    -ManagementHost "scom-test-backup.local"
 ```
 
 ### Scenario 3: Validate Configuration
@@ -97,15 +96,15 @@ Set-MaintenanceMode `
 ## Host Resolution Priority
 
 **For SCOM:**
-1. `-ScomHost` parameter
-2. `$env:SCOM_OVERRIDE_HOST`
+1. `-ManagementHost` parameter
+2. `$env:MAINTENANCE_HOST`
 3. `$env:SCOM_HOST`
 4. `connection_hosts.json` → Prod/Test config
 5. ❌ Error if not found
 
 **For OneView:**
-1. `-OneViewHost` parameter
-2. `$env:ONEVIEW_OVERRIDE_HOST`
+1. `-ManagementHost` parameter
+2. `$env:MAINTENANCE_HOST`
 3. `$env:ONEVIEW_HOST`
 4. `connection_hosts.json` → Prod/Test config
 5. ❌ Error if not found
