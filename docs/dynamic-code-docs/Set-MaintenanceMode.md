@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-06-11 14:08 UTC
+generated: 2026-06-11 15:01 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,8 +18,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 | `-TargetId` | Target identifier string (cluster ID or server name). Required. |
 | `-Mode` | 'scom' for SCOM-only or 'oneview' for HPE OpenView-only. SCOM manages Windows cluster objects; OpenView manages hardware directly. Required. |
 | `-Environment` | Environment selection: 'Test' or 'Prod'. Determines which hosts to connect to from connection_hosts.json. If not specified, reads from $env:ENVIRONMENT environment variable. Defaults to 'Prod' if neither is set. |
-| `-ScomHost` | Optional override for SCOM management server hostname/IP. Takes precedence over environment config. Can also be set via $env:SCOM_HOST or $env:SCOM_OVERRIDE_HOST. |
-| `-OneViewHost` | Optional override for OneView appliance hostname/IP. Takes precedence over environment config. Can also be set via $env:ONEVIEW_HOST or $env:ONEVIEW_OVERRIDE_HOST. |
+| `-ManagementHost` | Optional override for management server/appliance hostname/IP. Takes precedence over environment config. For SCOM mode: overrides SCOM management server For OneView mode: overrides OneView appliance Can also be set via $env:MAINTENANCE_HOST |
 | `-Username` | Optional direct username parameter (for testing only). Not recommended for production use - use environment variables instead. For SCOM: overrides $env:SCOM_ADMIN_USER For OneView: overrides $env:ONEVIEW_USER |
 | `-PostDisableWaitSeconds` | Seconds to sleep after disabling SCOM maintenance mode to allow servers time to reboot and restart services before alerting resumes. Default is 120 (2 minutes). Set to 0 to skip the wait. |
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
@@ -53,7 +52,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
 ### Example 5
 ```powershell
-# Use host override for emergency maintenance Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ScomHost 'backup-scom.local' -Start 'now' -End '+4hours'
+# Use host override for emergency maintenance Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
 ```
 
 ### Example 6
@@ -99,15 +98,12 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
         If not specified, reads from $env:ENVIRONMENT environment variable.
         Defaults to 'Prod' if neither is set.
 
-    .PARAMETER ScomHost
-        Optional override for SCOM management server hostname/IP.
+    .PARAMETER ManagementHost
+        Optional override for management server/appliance hostname/IP.
         Takes precedence over environment config.
-        Can also be set via $env:SCOM_HOST or $env:SCOM_OVERRIDE_HOST.
-
-    .PARAMETER OneViewHost
-        Optional override for OneView appliance hostname/IP.
-        Takes precedence over environment config.
-        Can also be set via $env:ONEVIEW_HOST or $env:ONEVIEW_OVERRIDE_HOST.
+        For SCOM mode: overrides SCOM management server
+        For OneView mode: overrides OneView appliance
+        Can also be set via $env:MAINTENANCE_HOST
 
     .PARAMETER Username
         Optional direct username parameter (for testing only).
@@ -170,7 +166,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
     .EXAMPLE
         # Use host override for emergency maintenance
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ScomHost 'backup-scom.local' -Start 'now' -End '+4hours'
+        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
 
     .EXAMPLE
         # Dry run to test configuration

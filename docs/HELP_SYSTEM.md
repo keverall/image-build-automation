@@ -67,8 +67,7 @@ Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom `
 
 ### Optional Parameters
 - `-Environment` - `Test` or `Prod` (defaults to Prod)
-- `-ScomHost` - SCOM server override
-- `-OneViewHost` - OneView appliance override
+- `-ManagementHost` - Management server/appliance override
 - `-Username` - Direct username (testing only)
 
 ### Date/Time Formats (UTC Only)

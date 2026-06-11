@@ -45,8 +45,7 @@ Get-Help Set-MaintenanceMode -Examples
 
 ### Host Overrides
 ```powershell
--ScomHost <hostname>      # Override SCOM management server
--OneViewHost <hostname>   # Override OneView appliance
+-ManagementHost <hostname>   # Override management server/appliance (SCOM or OneView)
 ```
 
 ### Credentials (Testing Only)
@@ -164,7 +163,7 @@ Set-MaintenanceMode `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'backup-scom.local' `
+    -ManagementHost 'backup-scom.local' `
     -Start 'now' `
     -End '+4hours'
 ```
@@ -239,8 +238,7 @@ Set-MaintenanceMode [-Action] <enable|disable|validate>
                     -TargetId <string> 
                     -Mode <scom|oneview> 
                     [-Environment <Test|Prod>] 
-                    [-ScomHost <string>] 
-                    [-OneViewHost <string>] 
+                    [-ManagementHost <string>] 
                     [-Username <string>] 
                     [-Start <datetime>] 
                     [-End <datetime>] 

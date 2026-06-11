@@ -10,8 +10,7 @@ The script supports both `-DryRun` and `-WhatIf` as equivalent parameters for si
 | `-TargetId` | string | **Yes** | Cluster identifier or server name | `-TargetId PROD-CLUSTER-01` |
 | `-Mode` | string | **Yes** | 'scom' or 'oneview' | `-Mode scom` |
 | `-Environment` | string | No | 'Test' or 'Prod' (default: Prod from ENVIRONMENT env var) | `-Environment Test` |
-| `-ScomHost` | string | No | Override SCOM management server | `-ScomHost scom-backup.local` |
-| `-OneViewHost` | string | No | Override OneView appliance | `-OneViewHost ov-test.local` |
+| `-ManagementHost` | string | No | Override management server/appliance | `-ManagementHost backup-server.local` |
 | `-Username` | string | No | Direct username (testing only, not recommended for prod) | `-Username admin` |
 | `-PostDisableWaitSeconds` | int | No | Seconds to wait after SCOM disable (default: 120) | `-PostDisableWaitSeconds 60` |
 | `-ConfigDir` | string | No | Configuration directory (default: configs) | `-ConfigDir ./configs` |
@@ -54,24 +53,25 @@ Selects which environment's hosts to use from `connection_hosts.json`:
 - Falls back to `$env:ENVIRONMENT` if not specified
 - Defaults to `Prod` if neither is set
 
-#### `-ScomHost` / `-OneViewHost`
+#### `-ManagementHost`
 Override the host from environment config:
+- Works for both SCOM and OneView modes
 - Useful for backup servers or emergency scenarios
 - Takes precedence over environment config
-- Can also be set via env vars: `SCOM_HOST`, `ONEVIEW_HOST`
+- Can also be set via env var: `$env:MAINTENANCE_HOST`
 
 ### Host Resolution Priority
 
 **For SCOM:**
-1. `-ScomHost` parameter (highest priority)
-2. `$env:SCOM_OVERRIDE_HOST`
+1. `-ManagementHost` parameter (highest priority)
+2. `$env:MAINTENANCE_HOST`
 3. `$env:SCOM_HOST`
 4. `connection_hosts.json` based on `-Environment`
 5. Error if not configured
 
 **For OneView:**
-1. `-OneViewHost` parameter (highest priority)
-2. `$env:ONEVIEW_OVERRIDE_HOST`
+1. `-ManagementHost` parameter (highest priority)
+2. `$env:MAINTENANCE_HOST`
 3. `$env:ONEVIEW_HOST`
 4. `connection_hosts.json` based on `-Environment`
 5. Error if not configured
@@ -152,13 +152,13 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 **2. With Host Override:**
 
 ```powershell
-# Override SCOM host for specific environment
+# Override management host for specific environment
 pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -Action enable `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'backup-scom.ad.aib.pri' `
+    -ManagementHost 'backup-scom.ad.aib.pri' `
     -Start 'now' `
     -End '+1hour'
 
@@ -168,7 +168,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -TargetId 'my-server-01' `
     -Mode oneview `
     -Environment Test `
-    -OneViewHost 'oneview-backup.test.local' `
+    -ManagementHost 'oneview-backup.test.local' `
     -Start 'now' `
     -End '+1hour'
 ```
@@ -392,7 +392,7 @@ Set-MaintenanceMode `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'backup-scom.local' `
+    -ManagementHost 'backup-scom.local' `
     -Start '2026-06-11 22:00' `
     -End '2026-06-12 02:00'
 
@@ -487,7 +487,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'emergency-scom.ad.aib.pri' `
+    -ManagementHost 'emergency-scom.ad.aib.pri' `
     -Start 'now' `
     -End '+4hours' `
     -NoSchedule
@@ -735,7 +735,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -TargetId 'PROD-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
-    -ScomHost 'emergency-scom.local' `
+    -ManagementHost 'emergency-scom.local' `
     -Start 'now' `
     -End '+4hours' `
     -NoSchedule
