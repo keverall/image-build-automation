@@ -32,111 +32,111 @@ param(
 
 # Handle help flag - display practical help and exit
 if ($ShowHelp) {
-    Write-Host ""
-    Write-Host "NAME" -ForegroundColor Cyan
-    Write-Host "    Set-MaintenanceMode" -ForegroundColor White
-    Write-Host ""
-    Write-Host "SYNOPSIS" -ForegroundColor Cyan
-    Write-Host "    Enable, disable, or validate maintenance mode for SCOM or OneView clusters." -ForegroundColor White
-    Write-Host ""
-    Write-Host "SYNTAX" -ForegroundColor Cyan
-    Write-Host "    Set-MaintenanceMode -TargetId <string> -Mode <scom|oneview>" -ForegroundColor White
-    Write-Host "        [-Action <enable|disable|validate>] [-Environment <Test|Prod>]" -ForegroundColor White
-    Write-Host "        [-ScomHost <string>] [-OneViewHost <string>] [-Username <string>]" -ForegroundColor White
-    Write-Host "        [-Start <datetime>] [-End <datetime>]" -ForegroundColor White
-    Write-Host "        [-PostDisableWaitSeconds <int>] [-DryRun] [-NoSchedule] [-Json]" -ForegroundColor White
-    Write-Host ""
-    Write-Host "DESCRIPTION" -ForegroundColor Cyan
-    Write-Host "    Manages maintenance mode for server clusters in SCOM or HPE OneView." -ForegroundColor White
-    Write-Host "    Supports environment-based host selection from connection_hosts.json." -ForegroundColor White
-    Write-Host ""
-    Write-Host "    IMPORTANT: All datetime values are UTC only. No local timezone conversion is performed." -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "PARAMETERS" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "  -Action <enable|disable|validate>" -ForegroundColor Green
-    Write-Host "    Operation to perform (default: enable)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -TargetId <string> [REQUIRED]" -ForegroundColor Green
-    Write-Host "    Cluster ID from clusters_catalogue.json or server name" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -Mode <scom|oneview> [REQUIRED]" -ForegroundColor Green
-    Write-Host "    scom     - Manage via SCOM (Windows clusters/groups)" -ForegroundColor White
-    Write-Host "    oneview  - Manage via HPE OneView (hardware/servers)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -Environment <Test|Prod>" -ForegroundColor Green
-    Write-Host "    Select environment for host resolution from connection_hosts.json" -ForegroundColor White
-    Write-Host "    Valid values: Test, Prod" -ForegroundColor Yellow
-    Write-Host "    Default: Reads from `$env:ENVIRONMENT, then defaults to Prod" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -ScomHost <string>" -ForegroundColor Green
-    Write-Host "    Override SCOM management server (takes precedence over environment config)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -OneViewHost <string>" -ForegroundColor Green
-    Write-Host "    Override OneView appliance (takes precedence over environment config)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -Username <string>" -ForegroundColor Green
-    Write-Host "    Direct username (testing only, not recommended for production)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -Start <datetime> / -End <datetime>" -ForegroundColor Green
-    Write-Host "    Maintenance window times (UTC ONLY)" -ForegroundColor Yellow
-    Write-Host "    Supported formats:" -ForegroundColor White
-    Write-Host "      now                    - Current UTC time" -ForegroundColor Gray
-    Write-Host "      +Xhours                - Relative hours (e.g., +2hours, +1hour)" -ForegroundColor Gray
-    Write-Host "      +Xminutes              - Relative minutes (e.g., +30minutes)" -ForegroundColor Gray
-    Write-Host "      +Xdays                 - Relative days (e.g., +1day, +7days)" -ForegroundColor Gray
-    Write-Host "      +Xseconds              - Relative seconds (e.g., +3600seconds)" -ForegroundColor Gray
-    Write-Host "      YYYY-MM-DD HH:MM       - Absolute UTC (e.g., 2026-06-11 22:00)" -ForegroundColor Gray
-    Write-Host "      YYYY-MM-DDTHH:MM:SS    - ISO 8601 UTC (e.g., 2026-06-11T22:00:00)" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "  -PostDisableWaitSeconds <int>" -ForegroundColor Green
-    Write-Host "    Wait after SCOM disable for stabilization (default: 120, set 0 to skip)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -DryRun" -ForegroundColor Green
-    Write-Host "    Simulate without making changes" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -NoSchedule" -ForegroundColor Green
-    Write-Host "    Skip Windows Task Scheduler creation" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  -Json" -ForegroundColor Green
-    Write-Host "    Output as JSON for API/iRequest integration" -ForegroundColor White
-    Write-Host ""
-    Write-Host "EXAMPLES" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "  # Validate configuration" -ForegroundColor Green
-    Write-Host "  Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  # Enable in Test environment with relative time" -ForegroundColor Green
-    Write-Host "  Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom \" -ForegroundColor White
-    Write-Host "      -Environment Test -Start 'now' -End '+2hours'" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  # Enable in Prod with absolute UTC time" -ForegroundColor Green
-    Write-Host "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \" -ForegroundColor White
-    Write-Host "      -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  # Disable with custom stabilization wait" -ForegroundColor Green
-    Write-Host "  Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom \" -ForegroundColor White
-    Write-Host "      -Environment Prod -PostDisableWaitSeconds 60" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  # Dry run test" -ForegroundColor Green
-    Write-Host "  Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom \" -ForegroundColor White
-    Write-Host "      -Environment Test -Start 'now' -End '+1hour' -DryRun" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  # Host override for emergency" -ForegroundColor Green
-    Write-Host "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \" -ForegroundColor White
-    Write-Host "      -Environment Prod -ScomHost 'backup-scom.local' -Start 'now' -End '+4hours'" -ForegroundColor White
-    Write-Host ""
-    Write-Host "CREDENTIALS" -ForegroundColor Cyan
-    Write-Host "    Set via environment variables (recommended):" -ForegroundColor White
-    Write-Host "      `$env:SCOM_ADMIN_USER / `$env:SCOM_ADMIN_PASSWORD" -ForegroundColor Gray
-    Write-Host "      `$env:ONEVIEW_USER / `$env:ONEVIEW_PASSWORD" -ForegroundColor Gray
-    Write-Host "    Or run interactively - script will prompt if missing" -ForegroundColor White
-    Write-Host ""
-    Write-Host "MORE INFORMATION" -ForegroundColor Cyan
-    Write-Host "    Full docs: Get-Help Set-MaintenanceMode -Full (after importing module)" -ForegroundColor White
-    Write-Host "    Testing:   docs/maint-mode-initial-testing.md" -ForegroundColor White
-    Write-Host "    Config:    docs/maintenance-mode-environment-config.md" -ForegroundColor White
-    Write-Host ""
+    Write-Output ""
+    Write-Output "NAME"
+    Write-Output "    Set-MaintenanceMode"
+    Write-Output ""
+    Write-Output "SYNOPSIS"
+    Write-Output "    Enable, disable, or validate maintenance mode for SCOM or OneView clusters."
+    Write-Output ""
+    Write-Output "SYNTAX"
+    Write-Output "    Set-MaintenanceMode -TargetId <string> -Mode <scom|oneview>"
+    Write-Output "        [-Action <enable|disable|validate>] [-Environment <Test|Prod>]"
+    Write-Output "        [-ScomHost <string>] [-OneViewHost <string>] [-Username <string>]"
+    Write-Output "        [-Start <datetime>] [-End <datetime>]"
+    Write-Output "        [-PostDisableWaitSeconds <int>] [-DryRun] [-NoSchedule] [-Json]"
+    Write-Output ""
+    Write-Output "DESCRIPTION"
+    Write-Output "    Manages maintenance mode for server clusters in SCOM or HPE OneView."
+    Write-Output "    Supports environment-based host selection from connection_hosts.json."
+    Write-Output ""
+    Write-Output "    IMPORTANT: All datetime values are UTC only. No local timezone conversion is performed."
+    Write-Output ""
+    Write-Output "PARAMETERS"
+    Write-Output ""
+    Write-Output "  -Action <enable|disable|validate>"
+    Write-Output "    Operation to perform (default: enable)"
+    Write-Output ""
+    Write-Output "  -TargetId <string> [REQUIRED]"
+    Write-Output "    Cluster ID from clusters_catalogue.json or server name"
+    Write-Output ""
+    Write-Output "  -Mode <scom|oneview> [REQUIRED]"
+    Write-Output "    scom     - Manage via SCOM (Windows clusters/groups)"
+    Write-Output "    oneview  - Manage via HPE OneView (hardware/servers)"
+    Write-Output ""
+    Write-Output "  -Environment <Test|Prod>"
+    Write-Output "    Select environment for host resolution from connection_hosts.json"
+    Write-Output "    Valid values: Test, Prod"
+    Write-Output "    Default: Reads from `$env:ENVIRONMENT, then defaults to Prod"
+    Write-Output ""
+    Write-Output "  -ScomHost <string>"
+    Write-Output "    Override SCOM management server (takes precedence over environment config)"
+    Write-Output ""
+    Write-Output "  -OneViewHost <string>"
+    Write-Output "    Override OneView appliance (takes precedence over environment config)"
+    Write-Output ""
+    Write-Output "  -Username <string>"
+    Write-Output "    Direct username (testing only, not recommended for production)"
+    Write-Output ""
+    Write-Output "  -Start <datetime> / -End <datetime>"
+    Write-Output "    Maintenance window times (UTC ONLY)"
+    Write-Output "    Supported formats:"
+    Write-Output "      now                    - Current UTC time"
+    Write-Output "      +Xhours                - Relative hours (e.g., +2hours, +1hour)"
+    Write-Output "      +Xminutes              - Relative minutes (e.g., +30minutes)"
+    Write-Output "      +Xdays                 - Relative days (e.g., +1day, +7days)"
+    Write-Output "      +Xseconds              - Relative seconds (e.g., +3600seconds)"
+    Write-Output "      YYYY-MM-DD HH:MM       - Absolute UTC (e.g., 2026-06-11 22:00)"
+    Write-Output "      YYYY-MM-DDTHH:MM:SS    - ISO 8601 UTC (e.g., 2026-06-11T22:00:00)"
+    Write-Output ""
+    Write-Output "  -PostDisableWaitSeconds <int>"
+    Write-Output "    Wait after SCOM disable for stabilization (default: 120, set 0 to skip)"
+    Write-Output ""
+    Write-Output "  -DryRun"
+    Write-Output "    Simulate without making changes"
+    Write-Output ""
+    Write-Output "  -NoSchedule"
+    Write-Output "    Skip Windows Task Scheduler creation"
+    Write-Output ""
+    Write-Output "  -Json"
+    Write-Output "    Output as JSON for API/iRequest integration"
+    Write-Output ""
+    Write-Output "EXAMPLES"
+    Write-Output ""
+    Write-Output "  # Validate configuration"
+    Write-Output "  Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom"
+    Write-Output ""
+    Write-Output "  # Enable in Test environment with relative time"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom \"
+    Write-Output "      -Environment Test -Start 'now' -End '+2hours'"
+    Write-Output ""
+    Write-Output "  # Enable in Prod with absolute UTC time"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
+    Write-Output "      -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'"
+    Write-Output ""
+    Write-Output "  # Disable with custom stabilization wait"
+    Write-Output "  Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
+    Write-Output "      -Environment Prod -PostDisableWaitSeconds 60"
+    Write-Output ""
+    Write-Output "  # Dry run test"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom \"
+    Write-Output "      -Environment Test -Start 'now' -End '+1hour' -DryRun"
+    Write-Output ""
+    Write-Output "  # Host override for emergency"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
+    Write-Output "      -Environment Prod -ScomHost 'backup-scom.local' -Start 'now' -End '+4hours'"
+    Write-Output ""
+    Write-Output "CREDENTIALS"
+    Write-Output "    Set via environment variables (recommended):"
+    Write-Output "      `$env:SCOM_ADMIN_USER / `$env:SCOM_ADMIN_PASSWORD"
+    Write-Output "      `$env:ONEVIEW_USER / `$env:ONEVIEW_PASSWORD"
+    Write-Output "    Or run interactively - script will prompt if missing"
+    Write-Output ""
+    Write-Output "MORE INFORMATION"
+    Write-Output "    Full docs: Get-Help Set-MaintenanceMode -Full (after importing module)"
+    Write-Output "    Testing:   docs/maint-mode-initial-testing.md"
+    Write-Output "    Config:    docs/maintenance-mode-environment-config.md"
+    Write-Output ""
     exit 0
 }
 
@@ -1897,8 +1897,8 @@ class EmailNotifier {
             Write-Warning "No distribution list for action '$Action'; skipping email"
             return $false
         }
-        $clusterName = $Cluster.Get_Item('display_name') ?? $Cluster.Get_Item('scom_group') ?? 'Unknown'
-        $environment = $Cluster.Get_Item('environment') ?? 'unknown'
+        $clusterName = if ($Cluster) { $Cluster.Get_Item('display_name') ?? $Cluster.Get_Item('scom_group') ?? 'Unknown' } else { 'Unknown' }
+        $environment = if ($Cluster) { $Cluster.Get_Item('environment') ?? 'unknown' } else { 'unknown' }
         $startStr = if ($StartTime -and $StartTime -ne [DateTime]::MinValue) { $StartTime.ToString('yyyy-MM-dd HH:mm:ss') } else { 'N/A' }
         $endStr = if ($EndTime -and $EndTime -ne [DateTime]::MinValue) { $EndTime.ToString('yyyy-MM-dd HH:mm:ss') }  else { 'N/A' }
         $tplVars = @{
