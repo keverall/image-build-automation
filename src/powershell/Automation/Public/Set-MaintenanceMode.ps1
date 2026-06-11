@@ -1997,6 +1997,18 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     Write-Host "Target ID: $TargetId"
     Write-Host "Target Object Name: $($result['ClusterName'] ?? $TargetId)"
     Write-Host "Mode: $Mode"
+    if ($PSBoundParameters.ContainsKey('Environment')) {
+        Write-Host "Environment: $Environment"
+    }
+    if ($PSBoundParameters.ContainsKey('ScomHost')) {
+        Write-Host "SCOM Host: $ScomHost"
+    }
+    if ($PSBoundParameters.ContainsKey('OneViewHost')) {
+        Write-Host "OneView Host: $OneViewHost"
+    }
+    if ($PSBoundParameters.ContainsKey('Username')) {
+        Write-Host "Username: $Username"
+    }
     Write-Host "Post-Disable Wait: ${PostDisableWaitSeconds}s"
     Write-Host "Config Dir: $ConfigDir"
     if ($Action -eq 'enable') {
