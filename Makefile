@@ -42,9 +42,6 @@ setup: prune-logs ## Setup PowerShell environment (install modules, configure pr
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Setup-Profile.ps1
-	@echo "$(CYAN)[setup]$(NC) Installing checkmake..."
-	@bash scripts/install-checkmake.sh
-	@echo "$(CYAN)[setup]$(NC) Installing checkmake..."
 	@bash scripts/install-checkmake.sh
 
 # ─── Linting ────────────────────────────────────────────────────────────────
@@ -52,9 +49,8 @@ lint: prune-logs lint-make lint-checkmake ## Lint PowerShell files and Makefile
 	@echo "$(CYAN)[lint]$(NC) Running PSScriptAnalyzer..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
-lint-checkmake: ## Lint Makefile with checkmake
-	@echo "$(CYAN)[lint-checkmake]$(NC) Checking Makefile with checkmake..."
-	@checkmake Makefile
+lint-checkmake: ## Lint Makefile with checkmake (optional)
+	@bash scripts/run-checkmake.sh </dev/null
 
 lint-make: ## Lint Makefile syntax and style
 	@echo "$(CYAN)[lint-make]$(NC) Checking Makefile..."
