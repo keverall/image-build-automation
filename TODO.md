@@ -71,3 +71,22 @@ process_begin: CreateProcess(NULL, printf \033, ...) failed.
 Add-Type: Cannot bind parameter 'Path' to the target. Exception setting "Path": "Cannot find path 
 'C:\Users\adm_98253\Documents\PowerShell\Modules\Pester\5.7.1\bin\netstandard2.0\Pester.dll' because it does not exist." 
 make: *** [maint-mode-tests] Error 1 
+
+
+
+
+
+
+alponeview01                        LibraryVersion Path
+------------                        -------------- ----
+ApplianceVersion: 9.40.00.505610.00 9.0.4020.1622  C:\Users\98253\Documents\PowerShell\Modules\HPEOneView.900\9.0…
+
+     image-build-automation  main  Get-HPEOVersion^C                                              0  12:36:34 
+     image-build-automation  main  Disconnect-OVMgmt                                              0  12:44:40 
+     image-build-automation  main  Get-OVVersion                                                  0  12:44:45 
+
+alponeview01                        LibraryVersion Path
+------------                        -------------- ----
+ApplianceVersion: 9.40.00.505610.00 9.0.4020.1622  C:\Users\98253\Documents\PowerShell\Modules\HPEOneView.900\9.0…
+
+     image-build-automation  main                                                                 

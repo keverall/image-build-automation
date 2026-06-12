@@ -1,6 +1,6 @@
 # OneView information
-
-
+$username = "adm_74957"
+$IP = "va-oneviewt-01.ad.example.com"
 
 $secpasswd = read-host  "Please enter the OneView password" -AsSecureString
 # Connection to the Synergy Composer
