@@ -22,7 +22,7 @@
 $ErrorActionPreference = 'Stop'
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build CI_PARAMS map equivalent to control.py stage_map
+# Helper — build CI_PARAMS map
 # ─────────────────────────────────────────────────────────────────────────────
 function _Build-CIParams {
     [CmdletBinding()]
@@ -59,7 +59,7 @@ function _Build-CIParams {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build IREQUEST_PARAMS map equivalent to control.py from_irequest()
+# Helper — build IREQUEST_PARAMS map
 # ─────────────────────────────────────────────────────────────────────────────
 function _Build-IRequestParams {
     [CmdletBinding()]
@@ -87,7 +87,7 @@ function _Build-IRequestParams {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build SCHEDULER_PARAMS map equivalent to control.py from_scheduler()
+# Helper — build SCHEDULER_PARAMS map
 # ─────────────────────────────────────────────────────────────────────────────
 function _Build-SchedulerParams {
     [CmdletBinding()]
@@ -98,7 +98,7 @@ function _Build-SchedulerParams {
     $task = $TaskParams.Get_Item('task')
     $dryRun = [bool]($TaskParams.Get_Item('dry_run'))
 
-    # Map scheduler task to request type  ← mirrors task_map in control.py
+    # Map scheduler task to request type
     $taskMap = @{
         maintenance_disable = 'maintenance_disable'
         build_firmware      = 'update_firmware'

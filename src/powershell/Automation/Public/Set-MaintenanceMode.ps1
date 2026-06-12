@@ -1,6 +1,5 @@
 #
 # Set-MaintenanceMode.ps1 — SCOM / OpenView maintenance-mode orchestrator
-# Equivalent of reference implementation cli/maintenance_mode.py (~956 lines)
 #
 # Contains: Set-MaintenanceMode wrapper function, helper functions, manager classes,
 #           and a script-mode guard for direct pwsh invocation.
