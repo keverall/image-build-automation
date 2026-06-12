@@ -7,15 +7,42 @@ Automated build pipelines for creating customized Windows Server installation IS
 ## Table of Contents
 
 ### Internal docs index
+
+#### Core Documentation
 | Document | Description |
 |---|---|
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview |
-| [🔧 Maintenance Mode](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
-| [📡 Orchestrator & Routing](docs/powershell_api_reference.md#orchestrator-api-reference) | Request types, call sequence, adding new handlers, return schemas |
-| [🔌 PowerShell Generated Cmdlets](docs/dynamic-code-docs/INDEX.md) | Auto-generated reference for all PowerShell cmdlets — `New-Uuid`, `Update-Firmware`, `Set-MaintenanceMode`, `Invoke-IsoDeploy`, etc. |
-| [🧪 PowerShell Testing (Pester)](docs/testing.md) | Pester v5 BDD testing guide, `make test`, `make maint-mode-tests` |
-| [⚙️ Code Quality & Security](docs/code_quality.md) | PSScriptAnalyzer, gitleaks configuration |
+| [📡 PowerShell API Reference](docs/powershell_api_reference.md) | Module overview, cmdlet usage, orchestrator API |
+| [🔌 PowerShell Generated Cmdlets](docs/dynamic-code-docs/INDEX.md) | Auto-generated reference for all PowerShell functions |
 | [🔌 CI Run Requirements](docs/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
+| [🧪 PowerShell Testing (Pester)](docs/testing.md) | Pester v5 BDD testing guide, test commands, mocking |
+| [⚙️ Code Quality & Security](docs/code_quality.md) | PSScriptAnalyzer, gitleaks configuration |
+| [🔗 GitLab CI/CD Integration](docs/gitlab.md) | REST API pipeline triggers, webhook configuration |
+
+#### Maintenance Mode & Scheduling
+| Document | Description |
+|---|---|
+| [🔧 Maintenance Mode Architecture](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp integration |
+| [🔧 Maintenance Mode Environment Config](docs/maintenance-mode-environment-config.md) | Environment variable configuration |
+| [🔧 Set-MaintenanceMode Help](docs/SET-MAINTENANCEMODE-HELP.md) | Detailed cmdlet help and examples |
+| [🔧 Maintenance Mode Testing Guide](docs/MAINTENANCE_MODE_TESTING.md) | Comprehensive testing strategies |
+
+#### Integration & Authentication
+| Document | Description |
+|---|---|
+| [🔐 SCOM Authentication](docs/scom-auth.md) | SCOM authentication setup and configuration |
+| [🔐 OneView Authentication](docs/oneview-auth.md) | HPE OneView authentication details |
+| [🔐 Authentication Overview](docs/auth-doc.md) | General authentication documentation |
+| [📊 Audit Process](docs/audit_process.md) | Audit trail and compliance process |
+| [📊 GDPR Compliance](docs/gdpr_compliance.md) | GDPR compliance documentation |
+
+#### Developer Resources
+| Document | Description |
+|---|---|
+| [📖 Quick Reference](docs/QUICK_REFERENCE.md) | Quick reference for common tasks |
+| [📖 Help System](docs/HELP_SYSTEM.md) | Built-in help system documentation |
+| [📖 Testing Quick Start](docs/TESTING_QUICK_START.md) | Quick start guide for testing |
+| [📖 DevOps Guide to HPE Terms](docs/devops-guide-to-HPe-Terms.md) | HPE terminology guide |
 
 ### In this document
 - [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)
@@ -65,33 +92,38 @@ hpe-windows-iso-automation/
 ├── src/powershell/                    # PowerShell module
 │   ├── Automation/                    # Module root
 │   │   ├── Public/                    # Exported cmdlets
-│   │   │   ├── New-Uuid.ps1
-│   │   │   ├── New-IsoBuild.ps1
-│   │   │   ├── Update-Firmware.ps1
-│   │   │   ├── Update-WindowsSecurity.ps1
-│   │   │   ├── Invoke-IsoDeploy.ps1
-│   │   │   ├── Start-InstallMonitor.ps1
-│   │   │   ├── Invoke-OpsRampClient.psm1
 │   │   │   ├── Set-MaintenanceMode.ps1
-│   │   │   ├── _Validate-Request.ps1
+│   │   │   ├── Invoke-GitLabMaintenanceTrigger.ps1
+│   │   │   ├── Get-RouteMap.ps1
+│   │   │   ├── Invoke-IsoDeploy.ps1
+│   │   │   ├── Invoke-OpsRampClient.ps1
 │   │   │   ├── Invoke-PowerShellScript.ps1
 │   │   │   ├── Invoke-PowerShellWinRM.ps1
+│   │   │   ├── New-IsoBuild.ps1
+│   │   │   ├── New-OneViewMaintenanceScript.ps1
+│   │   │   ├── New-ScomConnection.ps1
+│   │   │   ├── New-ScomMaintenanceScript.ps1
+│   │   │   ├── New-Uuid.ps1
 │   │   │   ├── Start-AutomationOrchestrator.ps1
+│   │   │   ├── Start-InstallMonitor.ps1
 │   │   │   ├── Test-BuildParams.ps1
 │   │   │   ├── Test-ClusterId.ps1
 │   │   │   ├── Test-ServerList.ps1
-│   │   │   ├── New-ScomConnection.ps1
-│   │   │   └── New-ScomMaintenanceScript.ps1
+│   │   │   ├── Update-Firmware.ps1
+│   │   │   ├── Update-WindowsSecurity.ps1
+│   │   │   ├── Control.ps1
+│   │   │   └── _Validate-Request.ps1
 │   │   └── Private/                    # Internal helpers
-│   │       ├── Config.psm1
-│   │       ├── Credentials.psm1
-│   │       ├── Executor.psm1
-│   │       ├── FileIO.psm1
-│   │       ├── Inventory.psm1
-│   │       ├── Audit.psm1
-│   │       ├── Logging.psm1
-│   │       ├── Base.psm1
-│   │       ├── Router.psm1
+│   │       ├── Audit.ps1
+│   │       ├── Base.ps1
+│   │       ├── Config.ps1
+│   │       ├── Credentials.ps1
+│   │       ├── Executor.ps1
+│   │       ├── FileIO.ps1
+│   │       ├── Inventory.ps1
+│   │       ├── Logging.ps1
+│   │       ├── PathResolver.ps1
+│   │       ├── Router.ps1
 │   │       └── Automation.psd1          # Module manifest
 ├── tests/powershell/                  # Pester v5 test suite
 │   ├── Tests.Tests.ps1
@@ -107,7 +139,23 @@ hpe-windows-iso-automation/
 │   ├── Set-MaintenanceMode.Unit.Tests.ps1
 │   ├── Set-MaintenanceMode.Enable.Tests.ps1
 │   ├── Set-MaintenanceMode.Disable.Tests.ps1
-│   └── Set-MaintenanceMode.Validation.Tests.ps1
+│   ├── Set-MaintenanceMode.Validation.Tests.ps1
+│   ├── Set-MaintenanceMode.Environment.Tests.ps1
+│   ├── Invoke-IsoDeploy.Unit.Tests.ps1
+│   ├── Invoke-OpsRampClient.Unit.Tests.ps1
+│   ├── New-IsoBuild.Unit.Tests.ps1
+│   ├── New-OneViewMaintenanceScript.Unit.Tests.ps1
+│   ├── New-ScomConnection.Unit.Tests.ps1
+│   ├── New-ScomMaintenanceScript.Unit.Tests.ps1
+│   ├── Start-AutomationOrchestrator.Unit.Tests.ps1
+│   ├── Start-InstallMonitor.Unit.Tests.ps1
+│   ├── Update-Firmware.Unit.Tests.ps1
+│   ├── Update-WindowsSecurity.Unit.Tests.ps1
+│   ├── Generate-PSDocs.Unit.Tests.ps1
+│   ├── Makefile.Unit.Tests.ps1
+│   ├── Pester.Integration.ps1
+│   ├── Test-GitLabIntegration.ps1
+│   └── Test-GitLabCallback.ps1
 └── scripts/                            # CI runner provisioning and helpers
     └── setup-runner.sh
 ```
