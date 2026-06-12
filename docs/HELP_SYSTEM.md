@@ -6,9 +6,9 @@ All of the following commands will display help:
 
 ```powershell
 # Standard PowerShell help flags (all work now)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Help
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -h
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -?
+mm -Help
+mm -h
+mm -?
 
 # Using module import (recommended for full documentation)
 Import-Module ./src/powershell/Automation/Automation.psm1 -Force
