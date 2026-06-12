@@ -356,10 +356,85 @@ function Main {
     Install-RequiredModules
     Install-OhMyPosh
     Install-Make
+    Install-Checkmake
     Test-PowerShellTools
     Show-Summary
 
     Write-OK "Setup complete!"
+}
+
+# ─── Checkmake Installation ──────────────────────────────────────────────────
+function Install-Checkmake {
+    Write-Log "Installing checkmake for Makefile linting..."
+    
+    $scriptPath = Join-Path $PSScriptRoot 'install-checkmake.sh'
+    if (Test-Path $scriptPath) {
+        try {
+            if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT') {
+                # Windows - try to run via Git Bash if available
+                $gitBash = @(
+                    'C:\Program Files\Git\bin\bash.exe',
+                    'C:\Program Files (x86)\Git\bin\bash.exe'
+                ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+                
+                if ($gitBash) {
+                    Write-Log "Running checkmake installer via Git Bash..."
+                    & $gitBash -c "`"$scriptPath`"" 2>&1 | ForEach-Object { Write-Log $_ }
+                    Write-OK "checkmake installation attempted"
+                } else {
+                    Write-Warn "Git Bash not found. Skipping checkmake installation."
+                    Write-Warn "Run manually: bash scripts/install-checkmake.sh"
+                }
+            } else {
+                # Linux/Mac
+                Write-Log "Running checkmake installer..."
+                & bash $scriptPath 2>&1 | ForEach-Object { Write-Log $_ }
+                Write-OK "checkmake installation attempted"
+            }
+        } catch {
+            Write-Warn "checkmake installation failed: $($_.Exception.Message)"
+            Write-Warn "You can install manually: go install github.com/mrtazz/checkmake@latest"
+        }
+    } else {
+        Write-Warn "install-checkmake.sh not found"
+    }
+}
+
+# ─── Checkmake Installation ──────────────────────────────────────────────────
+function Install-Checkmake {
+    Write-Log "Installing checkmake for Makefile linting..."
+    
+    $scriptPath = Join-Path $PSScriptRoot 'install-checkmake.sh'
+    if (Test-Path $scriptPath) {
+        try {
+            if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT') {
+                # Windows - try to run via Git Bash if available
+                $gitBash = @(
+                    'C:\Program Files\Git\bin\bash.exe',
+                    'C:\Program Files (x86)\Git\bin\bash.exe'
+                ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+                
+                if ($gitBash) {
+                    Write-Log "Running checkmake installer via Git Bash..."
+                    & $gitBash -c "`"$scriptPath`"" 2>&1 | ForEach-Object { Write-Log $_ }
+                    Write-OK "checkmake installation attempted"
+                } else {
+                    Write-Warn "Git Bash not found. Skipping checkmake installation."
+                    Write-Warn "Run manually: bash scripts/install-checkmake.sh"
+                }
+            } else {
+                # Linux/Mac
+                Write-Log "Running checkmake installer..."
+                & bash $scriptPath 2>&1 | ForEach-Object { Write-Log $_ }
+                Write-OK "checkmake installation attempted"
+            }
+        } catch {
+            Write-Warn "checkmake installation failed: $($_.Exception.Message)"
+            Write-Warn "You can install manually: go install github.com/mrtazz/checkmake@latest"
+        }
+    } else {
+        Write-Warn "install-checkmake.sh not found"
+    }
 }
 
 Main
