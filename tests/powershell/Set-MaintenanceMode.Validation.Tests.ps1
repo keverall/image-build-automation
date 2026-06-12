@@ -29,7 +29,7 @@ AfterAll {
 
 Describe 'Set-MaintenanceMode — Target ID validation' {
     It 'Should return success for valid target ID' {
-        $result = Set-MaintenanceMode -Action validate -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir
+        $result = Set-MaintenanceMode -Action validate -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir -DryRun
         $result.Success | Should -Be $true
     }
 
