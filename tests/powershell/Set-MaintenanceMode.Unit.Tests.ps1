@@ -17,6 +17,9 @@ BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
     $Script:TestRoot  = $PSScriptRoot
 
+    # Prevent interactive prompts during tests
+    $env:AUTOMATED_MODE = 'true'
+
     # Import test output helper for colored/detailed output
     Import-Module (Join-Path $PSScriptRoot 'TestOutputHelper.psm1') -Force -ErrorAction SilentlyContinue
 
@@ -63,6 +66,9 @@ BeforeAll {
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'opsramp_config.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'json_config.json')
+    
+    # Copy connection_hosts.json for environment resolution
+    Copy-Item (Join-Path $Script:ModuleRoot 'configs/connection_hosts.json') (Join-Path $Script:ConfigDir 'connection_hosts.json') -Force
 
     # ---- Log / output dirs ----
     $Script:LogDir = Join-Path $Script:TempDir 'logs'
@@ -107,7 +113,7 @@ function Get-TestParamsString {
 Describe 'Set-MaintenanceMode — Target ID validation' {
     Context 'When validating target existence' {
         It 'Should return success for valid target ID [Action=validate, TargetId=UNIT-TEST-CLUSTER]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -314,7 +320,7 @@ Describe 'Set-MaintenanceMode — enable action: End time validation' {
         It 'Should reject when end time is before start time [End < Start]' {
             $later = (Get-Date).AddHours(3).ToString('yyyy-MM-dd HH:mm:ss')
             $sooner = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
-            $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; Start = $later; End = $sooner }
+            $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; Start = $later; End = $sooner; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -472,7 +478,7 @@ Describe 'Set-MaintenanceMode — disable action' {
 Describe 'Set-MaintenanceMode — validate action' {
     Context 'When validating cluster configuration' {
         It 'Should exit successfully for a valid cluster [Action=validate, TargetId=UNIT-TEST-CLUSTER]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -547,7 +553,7 @@ Describe 'Set-MaintenanceMode — error handling' {
 
     Context 'When cluster definition is missing required fields' {
         It 'Should validate cluster with all required fields present [TargetId=UNIT-TEST-CLUSTER]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -585,7 +591,7 @@ Describe 'Set-MaintenanceMode — input field variants' {
         }
 
         It 'Should accept "validate" action [Action=validate]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -597,7 +603,7 @@ Describe 'Set-MaintenanceMode — input field variants' {
 
     Context 'When ConfigDir parameter varies' {
         It 'Should use provided ConfigDir parameter [ConfigDir=<temp>/configs]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -715,7 +721,7 @@ Describe 'Set-MaintenanceMode — mode parameter: SCOM only mode' {
         }
 
         It 'Should validate cluster with scom mode [Mode=scom, Action=validate]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -806,7 +812,7 @@ Describe 'Set-MaintenanceMode — mode parameter: SCOM mode' {
         }
 
         It 'Should validate cluster with SCOM mode [Mode=scom, Action=validate]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -1049,11 +1055,11 @@ Describe 'Set-MaintenanceMode — PostDisableWaitSeconds parameter' {
 
     Context 'When PostDisableWaitSeconds has negative values' {
         It 'Should reject negative PostDisableWaitSeconds [PostDisableWaitSeconds=-1]' {
-            { Set-MaintenanceMode -Action disable -TargetId $Script:TestTargetId -ConfigDir $Script:ConfigDir -Mode scom -PostDisableWaitSeconds -1 } | Should -Throw
+            { Set-MaintenanceMode -Action disable -TargetId $Script:TestTargetId -ConfigDir $Script:ConfigDir -Mode scom -PostDisableWaitSeconds -1 -DryRun } | Should -Throw
         }
 
         It 'Should reject very large PostDisableWaitSeconds [PostDisableWaitSeconds=99999999]' {
-            { Set-MaintenanceMode -Action disable -TargetId $Script:TestTargetId -ConfigDir $Script:ConfigDir -Mode scom -PostDisableWaitSeconds 99999999 } | Should -Throw
+            { Set-MaintenanceMode -Action disable -TargetId $Script:TestTargetId -ConfigDir $Script:ConfigDir -Mode scom -PostDisableWaitSeconds 99999999 -DryRun } | Should -Throw
         }
     }
 
@@ -1069,7 +1075,7 @@ Describe 'Set-MaintenanceMode — PostDisableWaitSeconds parameter' {
         }
 
         It 'Should accept PostDisableWaitSeconds with validate action (no-op but valid) [Action=validate, PostDisableWaitSeconds=60]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; PostDisableWaitSeconds = 60 }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; PostDisableWaitSeconds = 60; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
@@ -1140,16 +1146,16 @@ Describe 'Set-MaintenanceMode — per-object status reporting' {
 
     Context 'When validate action is executed' {
         It 'Should return ScomObjects field for validate [Action=validate]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             
             $result = Set-MaintenanceMode @params
             
             $result.Keys | Should -Contain 'ScomObjects'
-            $result.ScomObjects.Count | Should -Be 0
+            $result.ScomObjects.Count | Should -Be 3
         }
 
         It 'Should return FailedObjects field for validate [Action=validate]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             
             $result = Set-MaintenanceMode @params
             
