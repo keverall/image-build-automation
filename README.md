@@ -4,6 +4,29 @@ Automated build pipelines for creating customized Windows Server installation IS
 
 ---
 
+## 🚀 Quick Start - Setup & Installation
+
+**New to this project?** Start here:
+
+1. **[📖 Setup Guide](docs/SETUP-GUIDE.md)** - Complete setup instructions for PowerShell profile and maintenance mode
+2. **[🔧 Quick Client Setup](docs/CLIENT-QUICK-START.md)** - 5-minute setup for using maintenance mode commands
+3. **[⚡ Shortcut Reference](docs/MAINTENANCE_MODE_SHORTCUTS.md)** - All `mm` command options and examples
+
+### TL;DR - One-Line Setup
+
+```bash
+make setup && cp wip/vscodeprofile.ps1 ~/.config/powershell/Microsoft.VSCode_profile.ps1 && . $PROFILE
+```
+
+Then use:
+```powershell
+mmenable PROD-CLUSTER-01    # Enable maintenance mode
+mmdisable PROD-CLUSTER-01   # Disable maintenance mode
+mmvalidate PROD-CLUSTER-01  # Check status
+```
+
+---
+
 ## Table of Contents
 
 ### Internal docs index
@@ -12,6 +35,7 @@ Automated build pipelines for creating customized Windows Server installation IS
 | Document | Description |
 |---|---|
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview |
+| [🚀 Setup Guide](docs/SETUP-GUIDE.md) | **START HERE** - Profile setup, module installation, quick start |
 | [📡 PowerShell API Reference](docs/powershell_api_reference.md) | Module overview, cmdlet usage, orchestrator API |
 | [🔌 PowerShell Generated Cmdlets](docs/dynamic-code-docs/INDEX.md) | Auto-generated reference for all PowerShell functions |
 | [🔌 CI Run Requirements](docs/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
@@ -22,6 +46,8 @@ Automated build pipelines for creating customized Windows Server installation IS
 #### Maintenance Mode & Scheduling
 | Document | Description |
 |---|---|
+| [🔧 Client Quick Start](docs/CLIENT-QUICK-START.md) | **NEW USERS** - 5-minute setup and basic usage |
+| [⚡ Maintenance Mode Shortcuts](docs/MAINTENANCE_MODE_SHORTCUTS.md) | `mm` command reference and examples |
 | [🔧 Maintenance Mode Architecture](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp integration |
 | [🔧 Maintenance Mode Environment Config](docs/maintenance-mode-environment-config.md) | Environment variable configuration |
 | [🔧 Set-MaintenanceMode Help](docs/SET-MAINTENANCEMODE-HELP.md) | Detailed cmdlet help and examples |
