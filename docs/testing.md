@@ -139,7 +139,7 @@ pwsh -File scripts/coverage-report.ps1
 
 ```
 tests/powershell/
-├── Tests.Tests.ps1                      # Shared BeforeAll/AfterAll (temp dirs, sample configs)
+├── Tests.Tests.ps1                                # Shared BeforeAll/AfterAll (temp dirs, sample configs)
 ├── Config.Unit.Tests.ps1
 ├── Credentials.Unit.Tests.ps1
 ├── Executor.Unit.Tests.ps1
@@ -149,10 +149,11 @@ tests/powershell/
 ├── Router.Unit.Tests.ps1
 ├── New-Uuid.Unit.Tests.ps1
 ├── Audit.Unit.Tests.ps1
-├── Set-MaintenanceMode.Unit.Tests.ps1   # Core unit tests
-├── Set-MaintenanceMode.Enable.Tests.ps1  # High-priority enable action tests
-├── Set-MaintenanceMode.Disable.Tests.ps1 # High-priority disable action tests
-├── Set-MaintenanceMode.Validation.Tests.ps1 # High-priority validation tests
+├── Set-MaintenanceMode.Unit.Tests.ps1             # Core unit tests
+├── Set-MaintenanceMode.Enable.Tests.ps1           # High-priority enable action tests
+├── Set-MaintenanceMode.Disable.Tests.ps1          # High-priority disable action tests
+├── Set-MaintenanceMode.Validation.Tests.ps1       # High-priority validation tests
+├── Set-MaintenanceMode.Environment.Tests.ps1      # Environment variable handling tests
 ├── Invoke-IsoDeploy.Unit.Tests.ps1
 ├── Invoke-OpsRampClient.Unit.Tests.ps1
 ├── New-IsoBuild.Unit.Tests.ps1
@@ -161,15 +162,18 @@ tests/powershell/
 ├── New-ScomMaintenanceScript.Unit.Tests.ps1
 ├── Start-AutomationOrchestrator.Unit.Tests.ps1
 ├── Start-InstallMonitor.Unit.Tests.ps1
-├── Test-BuildParams.Unit.Tests.ps1
-├── Test-ClusterId.Unit.Tests.ps1
-├── Test-ServerList.Unit.Tests.ps1
 ├── Update-Firmware.Unit.Tests.ps1
 ├── Update-WindowsSecurity.Unit.Tests.ps1
 ├── Generate-PSDocs.Unit.Tests.ps1
-├── Pester.Integration.ps1
-├── Test-GitLabIntegration.ps1
-└── Test-GitLabCallback.ps1
+├── Makefile.Unit.Tests.ps1                        # Makefile target validation tests
+├── Pester.Integration.ps1                         # Integration test suite
+├── Test-GitLabIntegration.ps1                     # GitLab CI integration tests
+├── Test-GitLabCallback.ps1                        # GitLab webhook callback tests
+├── _import_test.ps1                               # Module import validation
+├── _mod_detail.ps1                                # Module detail inspection
+├── _cls_final.ps1                                 # Class-based tests (final)
+├── _class_test.ps1                                # Class-based test helpers
+└── _debug_module.ps1                              # Module debugging utilities
 ```
 
 ---
