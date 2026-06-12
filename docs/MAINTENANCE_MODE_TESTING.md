@@ -37,7 +37,7 @@ This document provides comprehensive testing information for the maintenance mod
 
 **Example command:**
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId TEST-CLUSTER-01 -Mode scom -Environment Test -DryRun
+mm -Action validate -TargetId TEST-CLUSTER-01 -Mode scom -Environment Test -DryRun
 ```
 
 ### 2. Host Override Tests ✅
@@ -52,10 +52,10 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action va
 **Example commands:**
 ```powershell
 # Parameter override
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.local -DryRun
+mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.local -DryRun
 
 # Environment variable override
-$env:MAINTENANCE_HOST = 'override-scom.local'; pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -DryRun
+$env:MAINTENANCE_HOST = 'override-scom.local'; mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 ```
 
 ### 3. Credential Parameter Tests ✅
@@ -70,7 +70,7 @@ $env:MAINTENANCE_HOST = 'override-scom.local'; pwsh -File ./src/powershell/Autom
 
 **Example command:**
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Username 'test_admin' -DryRun
+mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Username 'test_admin' -DryRun
 ```
 
 ### 4. Date/Time Format Tests ✅
@@ -86,13 +86,13 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action va
 **Example commands:**
 ```powershell
 # Relative time
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
+mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
 
 # Absolute time
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00' -DryRun
+mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00' -DryRun
 
 # ISO 8601
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11T22:00:00' -End '2026-06-12T02:00:00' -DryRun
+mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11T22:00:00' -End '2026-06-12T02:00:00' -DryRun
 ```
 
 ### 5. Connection Validation Tests ✅
@@ -107,7 +107,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action en
 
 **Example command:**
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -DryRun
+mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 ```
 
 ### 6. Combined Parameter Tests ✅
@@ -121,7 +121,7 @@ pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action va
 
 **Example command:**
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost 'custom-scom.local' -Username 'admin' -Start now -End +2hours -PostDisableWaitSeconds 60 -DryRun
+mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost 'custom-scom.local' -Username 'admin' -Start now -End +2hours -PostDisableWaitSeconds 60 -DryRun
 ```
 
 ### 7. Configuration File Tests ✅
@@ -151,7 +151,7 @@ pwsh scripts/validate-maintenance-config.ps1 -Environment Test
 **Example command:**
 ```powershell
 # Old-style command (no new parameters)
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Start now -End +1hour -DryRun
+mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Start now -End +1hour -DryRun
 ```
 
 ## Running Tests

@@ -38,9 +38,10 @@ NC := $(ESCAPE)[0m
 .PHONY: setup lint lint-make lint-test test test-unit test-integration coverage docs clean prune-logs help all ci
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
-setup: prune-logs ## Setup PowerShell environment (install modules, configure)
+setup: prune-logs ## Setup PowerShell environment (install modules, configure profiles)
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Setup-Profile.ps1
 
 # ─── Linting ────────────────────────────────────────────────────────────────
 lint: prune-logs lint-make ## Lint PowerShell files and Makefile
