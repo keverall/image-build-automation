@@ -369,7 +369,12 @@ function Set-MaintenanceMode {
 
     # Validate SerialNumber parameter (only valid for oneview mode)
     if ($SerialNumber -and $Mode -eq 'scom') {
-        return @{ Success = $false; Error = "SerialNumber parameter is only valid for OneView mode, not SCOM mode." }
+        return @{ 
+            Success = $false
+            Error = "SerialNumber parameter is only valid for OneView mode, not SCOM mode."
+            StartTimeUtc = $utcStart
+            EndTimeUtc = $utcEnd
+        }
     }
 
     # Get clusters map once
@@ -407,22 +412,35 @@ function Set-MaintenanceMode {
             $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
             if ($missing) { 
                 Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
-                $earlyErr = @{ Success = $false; Error = "Missing fields: $($missing -join ', ')"; ClusterName = $clusterName }
-                if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+                $earlyErr = @{ 
+                    Success = $false
+                    Error = "Missing fields: $($missing -join ', ')"
+                    ClusterName = $clusterName
+                    StartTimeUtc = $utcStart
+                    EndTimeUtc = $utcEnd
+                }
                 return $earlyErr
             }
             $servers = $clusterDef.Get_Item('servers')
             if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
                 Write-Verbose "Cluster 'servers' must be a non-empty list."
-                $earlyErr = @{ Success = $false; Error = "Cluster 'servers' must be a non-empty list."; ClusterName = $clusterName }
-                if ($DryRun) { $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd }
+                $earlyErr = @{ 
+                    Success = $false
+                    Error = "Cluster 'servers' must be a non-empty list."
+                    ClusterName = $clusterName
+                    StartTimeUtc = $utcStart
+                    EndTimeUtc = $utcEnd
+                }
                 return $earlyErr
             }
         } else {
             Write-Verbose "Target '$TargetId' not found in catalogue."
-            $earlyErr = @{ Success = $false; Error = "Target '$TargetId' not found in catalogue."; ClusterName = $TargetId }
-            if ($DryRun) { 
-                $earlyErr['StartTimeUtc'] = $utcStart; $earlyErr['EndTimeUtc'] = $utcEnd 
+            $earlyErr = @{ 
+                Success = $false
+                Error = "Target '$TargetId' not found in catalogue."
+                ClusterName = $TargetId
+                StartTimeUtc = $utcStart
+                EndTimeUtc = $utcEnd
             }
             return $earlyErr
         }
@@ -2552,6 +2570,10 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         }
         if ($PSBoundParameters.ContainsKey('SerialNumber')) {
             Write-Host "Serial Number: $SerialNumber"
+        }
+        if ($Action -eq 'enable') {
+            Write-Host "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"
+            Write-Host "End Time (UTC): $($result['EndTimeUtc'] ?? 'N/A')"
         }
         Write-Host ""
         Write-Host "=== Command Result ==="
