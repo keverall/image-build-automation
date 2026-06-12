@@ -142,20 +142,7 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-## 9. Python Implementation (Alternative)
-
-For teams using Python instead of PowerShell:
-
-- **Main entry**: [`maintenance_mode.py`](../src/python/automation/cli/maintenance_mode.py)
-  - **`SCOMManager`**: Python SCOM integration via PowerShell remoting
-  - **`ILOManager`**: iLO Redfish maintenance windows
-  - **`OpenViewClient`**: OneView REST API client
-  - **`OpsRampClient`**: Metrics and alerting integration
-  - **`EmailNotifier`**: Email notification service
-
----
-
-## 10. Testing & Validation
+## 9. Testing & Validation
 
 ### Test Scripts
 - **Connection testing**: [`test-maintenance-connection.ps1`](../scripts/test-maintenance-connection.ps1)
@@ -163,7 +150,6 @@ For teams using Python instead of PowerShell:
 - **Test runner**: [`run-maintenance-tests.ps1`](../scripts/run-maintenance-tests.ps1)
 
 ### Test Files
-- **Python tests**: [`test_maintenance_mode_main.py`](../tests/python/cli/test_maintenance_mode_main.py)
 - **PowerShell tests**: Search for `*.Tests.ps1` in `src/powershell/Tests/`
 
 ---
