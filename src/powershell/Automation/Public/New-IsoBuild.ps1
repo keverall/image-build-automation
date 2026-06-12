@@ -6,7 +6,6 @@ function New-IsoBuild {
     <#
     .SYNOPSIS
 Orchestrates the full ISO build pipeline, callable from the module Router.
-         Mirrors reference implementation cli/build_iso.py.
 
     .DESCRIPTION
         Coordinates firmware/driver ISO creation (via HPE SUT) and Windows security
