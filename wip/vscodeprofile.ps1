@@ -61,6 +61,84 @@ Import-ModuleSafe z
 Import-ModuleSafe posh-git
 Import-ModuleSafe Terminal-Icons
 
+# ─── Image Build Automation Module ──────────────────────────────────────────
+# Auto-load the Automation module if the repo is available
+$AutomationRepoPath = Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
+if (Test-Path $AutomationRepoPath)
+{
+    try
+    {
+        Import-Module $AutomationRepoPath -WarningAction SilentlyContinue
+        
+        # Maintenance mode convenience functions
+        function mm
+        { Set-MaintenanceMode @args 
+        }
+        
+        function mmenable
+        {
+            param(
+                [Parameter(Position = 0, Mandatory)]
+                [string]$TargetId,
+                [Parameter(Position = 1)]
+                [ValidateSet('scom', 'oneview')]
+                [string]$Mode = 'scom',
+                [Parameter(Position = 2)]
+                [ValidateSet('Test', 'Prod')]
+                [string]$Environment = 'Prod',
+                [string]$Start = 'now',
+                [string]$End = '+2hours',
+                [switch]$DryRun
+            )
+            $params = @{
+                Action = 'enable'
+                TargetId = $TargetId
+                Mode = $Mode
+                Environment = $Environment
+                Start = $Start
+                End = $End
+            }
+            if ($DryRun)
+            { $params['DryRun'] = $true 
+            }
+            Set-MaintenanceMode @params
+        }
+        
+        function mmdisable
+        {
+            param(
+                [Parameter(Position = 0, Mandatory)]
+                [string]$TargetId,
+                [Parameter(Position = 1)]
+                [ValidateSet('scom', 'oneview')]
+                [string]$Mode = 'scom',
+                [Parameter(Position = 2)]
+                [ValidateSet('Test', 'Prod')]
+                [string]$Environment = 'Prod'
+            )
+            Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
+        }
+        
+        function mmvalidate
+        {
+            param(
+                [Parameter(Position = 0, Mandatory)]
+                [string]$TargetId,
+                [Parameter(Position = 1)]
+                [ValidateSet('scom', 'oneview')]
+                [string]$Mode = 'scom',
+                [Parameter(Position = 2)]
+                [ValidateSet('Test', 'Prod')]
+                [string]$Environment = 'Prod'
+            )
+            Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
+        }
+    } catch
+    {
+        Write-Warning "Failed to load Automation module or maintenance mode functions"
+    }
+}
+
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
 if ($IsWindows) {
@@ -582,81 +660,3 @@ Set-PSReadLineOption -CommandValidationHandler {
     }
 }
 
-# ─── Image Build Automation Module ──────────────────────────────────────────
-# Auto-load the Automation module if the repo is available
-$AutomationRepoPath = Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
-if (Test-Path $AutomationRepoPath)
-{
-    try
-    {
-        Import-Module $AutomationRepoPath -WarningAction SilentlyContinue
-        
-        # Maintenance mode convenience functions
-        function mm
-        { Set-MaintenanceMode @args 
-        }
-        
-        function mmenable
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod',
-                [string]$Start = 'now',
-                [string]$End = '+2hours',
-                [switch]$DryRun
-            )
-            $params = @{
-                Action = 'enable'
-                TargetId = $TargetId
-                Mode = $Mode
-                Environment = $Environment
-                Start = $Start
-                End = $End
-            }
-            if ($DryRun)
-            { $params['DryRun'] = $true 
-            }
-            Set-MaintenanceMode @params
-        }
-        
-        function mmdisable
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod'
-            )
-            Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
-        }
-        
-        function mmvalidate
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod'
-            )
-            Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
-        }
-    } catch
-    {
-        Write-Warning "Failed to load Automation module or maintenance mode functions"
-    }
-}
-}
