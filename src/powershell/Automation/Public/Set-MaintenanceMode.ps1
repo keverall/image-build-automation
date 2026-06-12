@@ -311,7 +311,7 @@ function Set-MaintenanceMode {
         [string] $ManagementHost,
         [string] $SerialNumber,
         [string] $Username,
-        [int] $PostDisableWaitSeconds = 120,
+        [ValidateRange(0, 3600)][int] $PostDisableWaitSeconds = 120,
         [string] $ConfigDir = 'configs',
         [string] $Start = $null,
         [string] $End = $null,
