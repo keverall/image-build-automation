@@ -50,6 +50,7 @@ mmvalidate PROD-CLUSTER-01  # Check status
 | [⚡ Maintenance Mode Shortcuts](docs/MAINTENANCE_MODE_SHORTCUTS.md) | `mm` command reference and examples |
 | [🔧 Maintenance Mode Architecture](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp integration |
 | [🔧 Maintenance Mode Environment Config](docs/maintenance-mode-environment-config.md) | Environment variable configuration |
+| [🔧 Maintenance Mode Code Map](docs/MAINTENANCE_MODE_CODE_MAP.md) | Complete code map with links to all mm command functionality |
 | [🔧 Set-MaintenanceMode Help](docs/SET-MAINTENANCEMODE-HELP.md) | Detailed cmdlet help and examples |
 | [🔧 Maintenance Mode Testing Guide](docs/MAINTENANCE_MODE_TESTING.md) | Comprehensive testing strategies |
 
