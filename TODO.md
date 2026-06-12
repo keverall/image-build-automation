@@ -90,3 +90,22 @@ alponeview01                        LibraryVersion Path
 ApplianceVersion: 9.40.00.505610.00 9.0.4020.1622  C:\Users\98253\Documents\PowerShell\Modules\HPEOneView.900\9.0…
 
      image-build-automation  main                                                                 
+
+
+ 2       10.986 uninstall-module HPEOneView.1000 -force
+   3        0.137 remove-module HPEOneView.1000
+   4       13.049 Install-Module HPEOneView.900
+   5       11.103 Install-Module HPEOneView.900 -AllowClobber
+   6        2.310 import-module HPEOneView.900
+   7        0.333 remove-module HPEOneView.1000
+   8       45.914 Connect-OVMgmt
+   9       37.533 Connect-OVMgmt
+  10        0.376 Get-HPEOVVersion
+  11        0.252 Get-HPEOVersion
+  12        0.030 get-command -module HPOneView.900
+  13        0.014 Get-Command -module HPOneView.900
+  14        2.327 Get-Command -module HPEOneView.900
+  15        0.443 Get-OVUser  
+  16        0.112 Get-OVVersion 
+  17        0.235 Disconnect-OVMgmt
+  18        0.387 Get-OVVersion 
