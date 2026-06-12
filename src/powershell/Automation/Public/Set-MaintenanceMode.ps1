@@ -438,9 +438,19 @@ function Set-MaintenanceMode {
             $earlyErr = @{ 
                 Success = $false
                 Error = "Target '$TargetId' not found in catalogue."
+                Action = $Action
+                Mode = $Mode
+                Environment = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
                 ClusterName = $TargetId
+                TargetId = $TargetId
                 StartTimeUtc = $utcStart
                 EndTimeUtc = $utcEnd
+                ServerCount = 0
+                DryRun = [bool]$DryRun
+                AuditFile = $null
+                ScomSummary = @{}
+                OneViewSummary = @{}
+                FailedObjects = @()
             }
             return $earlyErr
         }
@@ -1165,6 +1175,9 @@ function Set-MaintenanceMode {
     return @{ 
         Success = $overallOk
         Message = $detailMessage
+        Action = $Action
+        Mode = $Mode
+        Environment = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
         StartTimeUtc = if ($Action -eq 'enable') { $utcStart } else { $null }
         EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
         TargetId = if ($TargetId) { $TargetId } else { $null }

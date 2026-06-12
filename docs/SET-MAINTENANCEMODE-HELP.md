@@ -4,7 +4,7 @@
 
 ### Quick Help (Syntax Only)
 ```powershell
-pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -?
+mm -?
 ```
 
 ### Full Help with All Parameters
