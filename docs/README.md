@@ -49,6 +49,7 @@ hpe-windows-iso-automation/
 |---|---|
 | [Maintenance Mode Architecture](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
 | [Maintenance Mode Environment Config](maintenance-mode-environment-config.md) | Environment variable configuration for maintenance mode |
+| [Maintenance Mode Code Map](MAINTENANCE_MODE_CODE_MAP.md) | Complete code map with links to all mm command functionality |
 | [Set-MaintenanceMode Help](SET-MAINTENANCEMODE-HELP.md) | Detailed help for Set-MaintenanceMode cmdlet |
 | [Maintenance Mode Testing Guide](MAINTENANCE_MODE_TESTING.md) | Comprehensive testing guide for maintenance mode |
 | [Maintenance Mode Initial Testing](maint-mode-initial-testing.md) | Initial testing notes and validation |
