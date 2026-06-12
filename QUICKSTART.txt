@@ -1,0 +1,33 @@
+================================================================================
+  MAINTENANCE MODE - QUICK START
+================================================================================
+
+STEP 1: Run Setup
+-----------------
+make setup
+
+STEP 2: Copy Profile
+--------------------
+For VS Code users:
+  cp wip/vscodeprofile.ps1 ~/.config/powershell/Microsoft.VSCode_profile.ps1
+
+For regular PowerShell:
+  cp wip/psprofile.ps1 ~/.config/powershell/Microsoft.PowerShell_profile.ps1
+
+STEP 3: Reload Profile
+----------------------
+. $PROFILE
+
+STEP 4: Test It Works
+---------------------
+mmvalidate PROD-CLUSTER-01
+
+================================================================================
+  DONE! You can now use:
+  - mmenable PROD-CLUSTER-01
+  - mmdisable PROD-CLUSTER-01  
+  - mmvalidate PROD-CLUSTER-01
+  - mm enable PROD-CLUSTER-01 -DryRun
+================================================================================
+
+For full documentation, see: docs/SETUP-GUIDE.md

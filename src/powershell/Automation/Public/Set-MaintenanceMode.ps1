@@ -328,9 +328,14 @@ function Set-MaintenanceMode {
         return @{ Success = $false; Error = "Mode is required and must be either 'scom' or 'oneview'." }
     }
 
-    # Validate TargetId is not empty
+    # Validate TargetId is not empty (unless using SerialNumber for OneView)
     if ([string]::IsNullOrWhiteSpace($TargetId)) {
-        throw "TargetId cannot be empty or whitespace."
+        if ($Mode -eq 'oneview' -and $SerialNumber) {
+            # OneView mode with SerialNumber - TargetId is optional
+            $TargetId = $null
+        } else {
+            throw "TargetId cannot be empty or whitespace."
+        }
     }
 
     # Use passed ConfigDir param or fall back to project-root configs
