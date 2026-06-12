@@ -141,11 +141,13 @@ if (Test-Path $AutomationRepoPath)
 
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
+if ($IsWindows) {
 $ohMyPoshPath = Join-Path $env:LOCALAPPDATA 'Programs\oh-my-posh\bin\oh-my-posh.exe'
 $ohMyPoshConfig = 'C:\Users\98253\Documents\WindowsPowerShell\pwsh10k.omp.json'
 if (Test-Path $ohMyPoshPath)
 {
     & $ohMyPoshPath init pwsh --config $ohMyPoshConfig | Invoke-Expression
+}
 }
 
 # ─── PSReadLine Configuration ────────────────────────────────────────────────
