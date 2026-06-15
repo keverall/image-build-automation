@@ -77,17 +77,6 @@
     "PSExecutionPolicyPreference": "Bypass"
   },
 
-  // ─── PowerShell Extension: Cross-Platform ────────────────────────────────
-  "powershell.powerShellDefaultVersion": "",
-
-  "powershell.powerShellAdditionalExePaths": [
-    { "versionName": "PowerShell 7",           "exePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe" },
-    { "versionName": "PowerShell 7 (x86)",     "exePath": "C:\\Program Files (x86)\\PowerShell\\7\\pwsh.exe" },
-    { "versionName": "pwsh (Linux)",           "exePath": "/usr/bin/pwsh" },
-    { "versionName": "pwsh (macOS Apple Silicon)", "exePath": "/opt/homebrew/bin/pwsh" },
-    { "versionName": "pwsh (macOS Intel)",     "exePath": "/usr/local/bin/pwsh" }
-  ],
-
   // ─── PowerShell Extension: Formatting ────────────────────────────────────
   "powershell.codeFormatting.preset": "OTBS",
   "powershell.codeFormatting.newLineAfterCloseBrace": true,
