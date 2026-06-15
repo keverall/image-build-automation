@@ -108,6 +108,7 @@ $config.Run.Path = @(
     (Join-Path $testPath 'Set-MaintenanceMode.Unit.Tests.ps1'),
     (Join-Path $testPath 'Validators.Unit.Tests.ps1')
 )
+$config.Run.PassThru = $true
 $config.Output.Verbosity = 'Detailed'
 $config.Output.RenderMode = 'Auto'
 
@@ -120,5 +121,24 @@ try {
 finally {
     Stop-Transcript | Out-Null
 }
+
+# Jest/Pytest-style summary block
+Write-Host "`n================================================================================" -ForegroundColor Cyan
+Write-Host "                           TEST SUMMARY BLOCK                                   " -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
+Write-Host " Total Tests   : $($results.TotalCount)" -ForegroundColor White
+Write-Host " Passed        : $($results.PassedCount) " -NoNewline
+if ($results.PassedCount -eq $results.TotalCount) { Write-Host "✔" -ForegroundColor Green } else { Write-Host "✔" -ForegroundColor Green }
+
+if ($results.FailedCount -gt 0) {
+    Write-Host " Failed        : $($results.FailedCount) " -NoNewline
+    Write-Host "✖ (CRITICAL)" -ForegroundColor Red
+} else {
+    Write-Host " Failed        : $($results.FailedCount) " -NoNewline
+    Write-Host "✔" -ForegroundColor Green
+}
+Write-Host " Skipped       : $($results.SkippedCount)" -ForegroundColor Yellow
+Write-Host " Duration      : $($results.Duration.TotalSeconds.ToString('0.00'))s" -ForegroundColor White
+Write-Host "================================================================================" -ForegroundColor Cyan
 
 exit ([int]($results.FailedCount -gt 0))
