@@ -381,82 +381,90 @@ function Set-MaintenanceMode {
         }
     }
 
-    # Get clusters map once
-    $clustersMap = $clustersCfg.Get_Item('clusters')
-
-    # Determine target type and resolve cluster/server info
-    $isDirectServerMode = $false
-    $clusterDef = $null
-    $clusterName = $TargetId
-    $servers = @()
-
-    if ($Mode -eq 'oneview' -and $SerialNumber) {
-        # OneView mode with SerialNumber - will be resolved via API later
+    # DRYRUN MODE: Skip catalogue validation and use mock data
+    if ($DryRun) {
+        Write-Verbose "DryRun mode enabled - skipping catalogue validation and using mock data"
         $isDirectServerMode = $true
-        $clusterName = "Serial: $SerialNumber"
-        $servers = @($SerialNumber)  # Use SerialNumber as the identifier when TargetId is not provided
-    } elseif ($Mode -eq 'oneview') {
-        # OneView mode without SerialNumber - can be server name or cluster
-        $isDirectServerMode = $true
-        if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
-            $clusterDef = $clustersMap[$TargetId]
-            $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
-            $servers = $clusterDef.Get_Item('servers') ?? @($TargetId)
-        } else {
-            $servers = @($TargetId)
-        }
+        $clusterName = $TargetId
+        $servers = if ($SerialNumber) { @($SerialNumber) } else { @($TargetId) }
     } else {
-        # SCOM mode - target must exist in catalogue
-        if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
-            $clusterDef = $clustersMap[$TargetId]
-            $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
-            
-            # Validate cluster definition
-            $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
-            $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
-            if ($missing) { 
-                Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
-                $earlyErr = @{ 
-                    Success = $false
-                    Error = "Missing fields: $($missing -join ', ')"
-                    ClusterName = $clusterName
-                    StartTimeUtc = $utcStart
-                    EndTimeUtc = $utcEnd
-                }
-                return $earlyErr
-            }
-            $servers = $clusterDef.Get_Item('servers')
-            if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
-                Write-Verbose "Cluster 'servers' must be a non-empty list."
-                $earlyErr = @{ 
-                    Success = $false
-                    Error = "Cluster 'servers' must be a non-empty list."
-                    ClusterName = $clusterName
-                    StartTimeUtc = $utcStart
-                    EndTimeUtc = $utcEnd
-                }
-                return $earlyErr
+        # NON-DRYRUN MODE: Load and validate against catalogue
+        $clustersMap = $clustersCfg.Get_Item('clusters')
+
+        # Determine target type and resolve cluster/server info
+        $isDirectServerMode = $false
+        $clusterDef = $null
+        $clusterName = $TargetId
+        $servers = @()
+
+        if ($Mode -eq 'oneview' -and $SerialNumber) {
+            # OneView mode with SerialNumber - will be resolved via API later
+            $isDirectServerMode = $true
+            $clusterName = "Serial: $SerialNumber"
+            $servers = @($SerialNumber)
+        } elseif ($Mode -eq 'oneview') {
+            # OneView mode without SerialNumber - can be server name or cluster
+            $isDirectServerMode = $true
+            if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
+                $clusterDef = $clustersMap[$TargetId]
+                $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
+                $servers = $clusterDef.Get_Item('servers') ?? @($TargetId)
+            } else {
+                $servers = @($TargetId)
             }
         } else {
-            Write-Verbose "Target '$TargetId' not found in catalogue."
-            $earlyErr = @{ 
-                Success = $false
-                Error = "Target '$TargetId' not found in catalogue."
-                Action = $Action
-                Mode = $Mode
-                Environment = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
-                ClusterName = $TargetId
-                TargetId = $TargetId
-                StartTimeUtc = $utcStart
-                EndTimeUtc = $utcEnd
-                ServerCount = 0
-                DryRun = [bool]$DryRun
-                AuditFile = $null
-                ScomSummary = @{}
-                OneViewSummary = @{}
-                FailedObjects = @()
+            # SCOM mode - target must exist in catalogue
+            if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
+                $clusterDef = $clustersMap[$TargetId]
+                $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
+                
+                # Validate cluster definition
+                $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
+                $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
+                if ($missing) { 
+                    Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
+                    $earlyErr = @{ 
+                        Success = $false
+                        Error = "Missing fields: $($missing -join ', ')"
+                        ClusterName = $clusterName
+                        StartTimeUtc = $utcStart
+                        EndTimeUtc = $utcEnd
+                    }
+                    return $earlyErr
+                }
+                $servers = $clusterDef.Get_Item('servers')
+                if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
+                    Write-Verbose "Cluster 'servers' must be a non-empty list."
+                    $earlyErr = @{ 
+                        Success = $false
+                        Error = "Cluster 'servers' must be a non-empty list."
+                        ClusterName = $clusterName
+                        StartTimeUtc = $utcStart
+                        EndTimeUtc = $utcEnd
+                    }
+                    return $earlyErr
+                }
+            } else {
+                Write-Verbose "Target '$TargetId' not found in catalogue."
+                $earlyErr = @{ 
+                    Success = $false
+                    Error = "Target '$TargetId' not found in catalogue."
+                    Action = $Action
+                    Mode = $Mode
+                    Environment = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
+                    ClusterName = $TargetId
+                    TargetId = $TargetId
+                    StartTimeUtc = $utcStart
+                    EndTimeUtc = $utcEnd
+                    ServerCount = 0
+                    DryRun = [bool]$DryRun
+                    AuditFile = $null
+                    ScomSummary = @{}
+                    OneViewSummary = @{}
+                    FailedObjects = @()
+                }
+                return $earlyErr
             }
-            return $earlyErr
         }
     }
 
@@ -1023,7 +1031,40 @@ function Set-MaintenanceMode {
         # (servers, network devices, nodes, cluster objects, everything under the group)
         # Only for 'scom' mode
         $scomOk = $true; $scomInfo = ''; $scomObjects = @(); $scomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
-        if ($scomMgr) {
+        if ($DryRun) {
+            # In DryRun mode, use mock data instead of calling SCOM API
+            $mockServers = @($servers | ForEach-Object { $_ })
+            if ($mockServers.Count -eq 0) { $mockServers = @($TargetId) }
+            
+            $mockState = $MockMaintenanceState.ToLower()
+            $mockInMaintenanceCount = switch ($mockState) {
+                'enable' { $mockServers.Count }
+                'partial' { [int][Math]::Ceiling($mockServers.Count / 2) }
+                default { $mockServers.Count }
+            }
+            
+            $scomObjects = @()
+            for ($i = 0; $i -lt $mockServers.Count; $i++) {
+                $inMaintenance = $i -lt $mockInMaintenanceCount
+                $scomObjects += @{
+                    Name = $mockServers[$i]
+                    Type = 'WindowsComputer'
+                    InMaintenanceMode = $inMaintenance
+                    Status = if ($inMaintenance) { 'in_maintenance' } else { 'not_in_maintenance' }
+                    Message = if ($inMaintenance) { 'Maintenance mode enabled (DryRun mock)' } else { 'Maintenance mode disabled (DryRun mock)' }
+                    DryRun = $true
+                }
+            }
+            
+            $scomSummary = @{
+                Total = $scomObjects.Count
+                Success = $mockInMaintenanceCount
+                AlreadyInMaintenance = 0
+                Failed = 0
+            }
+            $scomOk = $true
+            $scomInfo = "DryRun mode - no actual SCOM call made"
+        } elseif ($scomMgr) {
             $scomOk = $false
             $durHrs = $duration.TotalSeconds / 3600.0
             $comment = "iRequest Maintenance: $TargetId"
@@ -1044,7 +1085,40 @@ function Set-MaintenanceMode {
         # OneView — for 'oneview' mode
         $oneviewOk = $true; $oneviewMsg = ''; $oneviewObjects = @(); $oneviewSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
         if ($Mode -eq 'oneview') {
-            if ($oneviewMgr) {
+            if ($DryRun) {
+                # In DryRun mode, use mock data instead of calling OneView API
+                $mockServers = @($servers | ForEach-Object { $_ })
+                if ($mockServers.Count -eq 0) { $mockServers = @($TargetId) }
+                
+                $mockState = $MockMaintenanceState.ToLower()
+                $mockInMaintenanceCount = switch ($mockState) {
+                    'enable' { $mockServers.Count }
+                    'partial' { [int][Math]::Ceiling($mockServers.Count / 2) }
+                    default { $mockServers.Count }
+                }
+                
+                $oneviewObjects = @()
+                for ($i = 0; $i -lt $mockServers.Count; $i++) {
+                    $inMaintenance = $i -lt $mockInMaintenanceCount
+                    $oneviewObjects += @{
+                        Name = $mockServers[$i]
+                        Type = 'ServerHardware'
+                        InMaintenanceMode = $inMaintenance
+                        Status = if ($inMaintenance) { 'in_maintenance' } else { 'not_in_maintenance' }
+                        Message = if ($inMaintenance) { 'Maintenance mode enabled (DryRun mock)' } else { 'Maintenance mode disabled (DryRun mock)' }
+                        DryRun = $true
+                    }
+                }
+                
+                $oneviewSummary = @{
+                    Total = $oneviewObjects.Count
+                    Success = $mockInMaintenanceCount
+                    AlreadyInMaintenance = 0
+                    Failed = 0
+                }
+                $oneviewOk = $true
+                $oneviewMsg = "DryRun mode - no actual OneView call made"
+            } elseif ($oneviewMgr) {
                 $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
                 $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
                 $oneviewRes = $oneviewMgr.SetMaintenance($targetName, $targetType, $startDt, $endDt, [bool]$DryRun)

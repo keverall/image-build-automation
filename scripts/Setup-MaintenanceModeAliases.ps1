@@ -39,6 +39,7 @@ function mm {
         [string]$End = '+2hours',
         [string]$SerialNumber,
         [string]$Username,
+        [string]$ManagementHost,
         [switch]$DryRun
     )
     
@@ -88,6 +89,7 @@ function mm {
     if ($End) { $params['End'] = $End }
     if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
     if ($Username) { $params['Username'] = $Username }
+    if ($ManagementHost) { $params['ManagementHost'] = $ManagementHost }
     if ($DryRun) { $params['DryRun'] = $true }
     
     Set-MaintenanceMode @params
