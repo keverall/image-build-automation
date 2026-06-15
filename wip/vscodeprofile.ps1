@@ -63,7 +63,11 @@ Import-ModuleSafe Terminal-Icons
 
 # ─── Image Build Automation Module ──────────────────────────────────────────
 # Auto-load the Automation module if the repo is available
-$AutomationRepoPath = Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
+$AutomationRepoPath = if ($env:USERPROFILE) {
+    Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
+} elseif ($env:HOME) {
+    Join-Path $env:HOME 'repos/image-build-automation/src/powershell/Automation'
+}
 if (Test-Path $AutomationRepoPath)
 {
     try
@@ -227,13 +231,13 @@ if (Get-Command eza -ErrorAction SilentlyContinue)
 # ─── Directory Shortcuts (uses $env:USERPROFILE, not hardcoded names) ────────
 
 function Open-Docs
-{ Set-Location "$env:USERPROFILE\Documents" 
+{ Set-Location (Join-Path $HOME 'Documents') 
 }
 function Open-Downloads
-{ Set-Location "$env:USERPROFILE\Downloads" 
+{ Set-Location (Join-Path $HOME 'Downloads') 
 }
 function Open-Desktop
-{ Set-Location "$env:USERPROFILE\Desktop" 
+{ Set-Location (Join-Path $HOME 'Desktop') 
 }
 
 Set-Alias docs    Open-Docs
@@ -315,14 +319,16 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue)
 
 # ─── pyenv-win (if installed) ────────────────────────────────────────────────
 
-$pyenvRoot = "$env:USERPROFILE\.pyenv\pyenv-win"
-if (Test-Path "$pyenvRoot\bin\pyenv.bat")
-{
-    $env:PATH = "$pyenvRoot\bin;$pyenvRoot\shims;$env:PATH"
-    function pyenv
+if ($IsWindows) {
+    $pyenvRoot = Join-Path $env:USERPROFILE '.pyenv\pyenv-win'
+    if (Test-Path (Join-Path $pyenvRoot 'bin\pyenv.bat'))
     {
-        $bat = "$env:USERPROFILE\.pyenv\pyenv-win\bin\pyenv.bat"
-        & $bat @args
+        $env:PATH = "$pyenvRoot\bin;$pyenvRoot\shims;$env:PATH"
+        function pyenv
+        {
+            $bat = Join-Path $env:USERPROFILE '.pyenv\pyenv-win\bin\pyenv.bat'
+            & $bat @args
+        }
     }
 }
 
@@ -396,9 +402,13 @@ function Edit-Profile
 # Ensure PATH is fresh from the registry (fixes VS Code PATH caching issue)
 function Refresh-Path
 {
-    $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-    $userPath    = [System.Environment]::GetEnvironmentVariable('Path', 'User')
-    $env:PATH    = "$machinePath;$userPath"
+    if ($IsWindows) {
+        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+        $userPath    = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+        $env:PATH    = "$machinePath;$userPath"
+    } else {
+        Write-Verbose "PATH refresh not needed on non-Windows platforms"
+    }
 }
 Set-Alias rpath Refresh-Path
 
@@ -652,59 +662,10 @@ Set-PSReadLineOption -CommandValidationHandler {
                 'psuh'
                 { [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'push') 
                 }
-                'pulll'
+'pulll'
                 { [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'pull') 
                 }
             }
         }
-    }
-}
-
-
-# Image Build Automation module
-$automationModulePath = 'C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Automation.psd1'
-if (Test-Path $automationModulePath) {
-    Import-Module $automationModulePath -WarningAction SilentlyContinue
-    
-    # Maintenance mode convenience functions
-    function mm { Set-MaintenanceMode @args }
-    
-    function mmenable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
-            [string]$Start = 'now',
-            [string]$End = '+2hours',
-            [switch]$DryRun
-        )
-        $p = @{
-            Action = 'enable'
-            TargetId = $TargetId
-            Mode = $Mode
-            Environment = $Environment
-            Start = $Start
-            End = $End
-        }
-        if ($DryRun) { $p['DryRun'] = $true }
-        Set-MaintenanceMode @p
-    }
-    
-    function mmdisable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
-    }
-    
-    function mmvalidate {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
     }
 }

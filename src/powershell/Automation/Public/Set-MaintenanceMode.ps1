@@ -879,10 +879,12 @@ function Set-MaintenanceMode {
             }
             $minEnd = $startDt.AddHours($defaultHours)
             $endDt = $minEnd
-            $schedule = $clusterDef.Get_Item('schedule')
-            if ($schedule) {
-                $scheduleEnd = _Compute-NextWorkStart $schedule $startDt
-                if ($scheduleEnd -gt $endDt) { $endDt = $scheduleEnd }
+            if ($clusterDef) {
+                $schedule = $clusterDef.Get_Item('schedule')
+                if ($schedule) {
+                    $scheduleEnd = _Compute-NextWorkStart $schedule $startDt
+                    if ($scheduleEnd -gt $endDt) { $endDt = $scheduleEnd }
+                }
             }
             $utcEnd = Convert-ToUtcIso8601 $endDt
         }
