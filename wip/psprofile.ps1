@@ -63,7 +63,13 @@ Import-ModuleSafe Terminal-Icons
 
 # ─── Image Build Automation Module ──────────────────────────────────────────
 # Auto-load the Automation module if the repo is available
-$AutomationRepoPath = Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
+$AutomationRepoPath = if ($env:USERPROFILE)
+{
+    Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
+} elseif ($env:HOME)
+{
+    Join-Path $env:HOME 'repos/image-build-automation/src/powershell/Automation'
+}
 if (Test-Path $AutomationRepoPath)
 {
     try
@@ -141,13 +147,14 @@ if (Test-Path $AutomationRepoPath)
 
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
-if ($IsWindows) {
-$ohMyPoshPath = Join-Path $env:LOCALAPPDATA 'Programs\oh-my-posh\bin\oh-my-posh.exe'
-$ohMyPoshConfig = 'C:\Users\98253\Documents\WindowsPowerShell\pwsh10k.omp.json'
-if (Test-Path $ohMyPoshPath)
+if ($IsWindows)
 {
-    & $ohMyPoshPath init pwsh --config $ohMyPoshConfig | Invoke-Expression
-}
+    $ohMyPoshPath = Join-Path $env:LOCALAPPDATA 'Programs\oh-my-posh\bin\oh-my-posh.exe'
+    $ohMyPoshConfig = 'C:\Users\98253\Documents\WindowsPowerShell\pwsh10k.omp.json'
+    if (Test-Path $ohMyPoshPath)
+    {
+        & $ohMyPoshPath init pwsh --config $ohMyPoshConfig | Invoke-Expression
+    }
 }
 
 # ─── PSReadLine Configuration ────────────────────────────────────────────────
@@ -220,22 +227,21 @@ if (Get-Command eza -ErrorAction SilentlyContinue)
         Set-Alias lt2 ezalt2 -Force -Option AllScope
         Set-Alias lt3 ezalt3 -Force -Option AllScope
     }
-
 }
 
 
-# ─── Directory Shortcuts (uses $env:USERPROFILE, not hardcoded names) ────────
-
+# ─── Directory Shortcuts ─────────────────────────────────────────────────────
+ 
 function Open-Docs
-{ Set-Location "$env:USERPROFILE\Documents" 
+{ Set-Location (Join-Path $HOME 'Documents') 
 }
 function Open-Downloads
-{ Set-Location "$env:USERPROFILE\Downloads" 
+{ Set-Location (Join-Path $HOME 'Downloads') 
 }
 function Open-Desktop
-{ Set-Location "$env:USERPROFILE\Desktop" 
+{ Set-Location (Join-Path $HOME 'Desktop') 
 }
-
+ 
 Set-Alias docs    Open-Docs
 Set-Alias dl      Open-Downloads
 Set-Alias desktop Open-Desktop
@@ -314,15 +320,18 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue)
 }
 
 # ─── pyenv-win (if installed) ────────────────────────────────────────────────
-
-$pyenvRoot = "$env:USERPROFILE\.pyenv\pyenv-win"
-if (Test-Path "$pyenvRoot\bin\pyenv.bat")
+ 
+if ($IsWindows)
 {
-    $env:PATH = "$pyenvRoot\bin;$pyenvRoot\shims;$env:PATH"
-    function pyenv
+    $pyenvRoot = Join-Path $env:USERPROFILE '.pyenv\pyenv-win'
+    if (Test-Path (Join-Path $pyenvRoot 'bin\pyenv.bat'))
     {
-        $bat = "$env:USERPROFILE\.pyenv\pyenv-win\bin\pyenv.bat"
-        & $bat @args
+        $env:PATH = "$pyenvRoot\bin;$pyenvRoot\shims;$env:PATH"
+        function pyenv
+        {
+            $bat = Join-Path $env:USERPROFILE '.pyenv\pyenv-win\bin\pyenv.bat'
+            & $bat @args
+        }
     }
 }
 
@@ -396,9 +405,16 @@ function Edit-Profile
 # Ensure PATH is fresh from the registry (fixes VS Code PATH caching issue)
 function Refresh-Path
 {
-    $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-    $userPath    = [System.Environment]::GetEnvironmentVariable('Path', 'User')
-    $env:PATH    = "$machinePath;$userPath"
+    if ($IsWindows)
+    {
+        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+        $userPath    = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+        $env:PATH    = "$machinePath;$userPath"
+    } else
+    {
+        # Linux/macOS: just return current PATH, already set in early section
+        Write-Verbose "PATH refresh not needed on non-Windows platforms"
+    }
 }
 Set-Alias rpath Refresh-Path
 
@@ -657,54 +673,5 @@ Set-PSReadLineOption -CommandValidationHandler {
                 }
             }
         }
-    }
-}
-
-
-# Image Build Automation module
-$automationModulePath = 'C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Automation.psd1'
-if (Test-Path $automationModulePath) {
-    Import-Module $automationModulePath -WarningAction SilentlyContinue
-    
-    # Maintenance mode convenience functions
-    function mm { Set-MaintenanceMode @args }
-    
-    function mmenable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
-            [string]$Start = 'now',
-            [string]$End = '+2hours',
-            [switch]$DryRun
-        )
-        $p = @{
-            Action = 'enable'
-            TargetId = $TargetId
-            Mode = $Mode
-            Environment = $Environment
-            Start = $Start
-            End = $End
-        }
-        if ($DryRun) { $p['DryRun'] = $true }
-        Set-MaintenanceMode @p
-    }
-    
-    function mmdisable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
-    }
-    
-    function mmvalidate {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
     }
 }
