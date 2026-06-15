@@ -16,24 +16,11 @@ Then restart PowerShell or reload your profile:
 
 ## Usage
 
-### Simple Commands
-
-```powershell
-# Enable maintenance mode (defaults: scom, Prod, +2hours)
-mmenable PROD-CLUSTER-01
-
-# Disable maintenance mode
-mmdisable PROD-CLUSTER-01
-
-# Validate maintenance mode status
-mmvalidate PROD-CLUSTER-01
-```
-
 ### Full Control
 
 ```powershell
 # Enable with all options
-mm enable PROD-CLUSTER-01 scom Prod -Start now -End +4hours -DryRun
+mm enable PROD-CLUSTER-01 -mode scom -env Prod -Start now -End +4hours -DryRun
 
 # OneView with serial number
 mm enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -DryRun
