@@ -384,13 +384,23 @@ function Set-MaintenanceMode {
     # DRYRUN MODE: Skip catalogue validation and use mock data
     if ($DryRun) {
         Write-Verbose "DryRun mode enabled - skipping catalogue validation and using mock data"
-        $isDirectServerMode = $true
-        if ($SerialNumber) {
-            $clusterName = "Serial: $SerialNumber"
+        
+        if ($Mode -eq 'oneview' -and $SerialNumber) {
+            $isDirectServerMode = $true
+            $clusterName = $SerialNumber
             $servers = @($SerialNumber)
         } else {
-            $clusterName = $TargetId
-            $servers = @($TargetId)
+            $clustersMap = $clustersCfg.Get_Item('clusters')
+            if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
+                $isDirectServerMode = $false
+                $clusterDef = $clustersMap[$TargetId]
+                $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
+                $servers = $clusterDef.Get_Item('servers') ?? @($TargetId)
+            } else {
+                $isDirectServerMode = $true
+                $clusterName = $TargetId
+                $servers = @($TargetId)
+            }
         }
     } else {
         # NON-DRYRUN MODE: Load and validate against catalogue
@@ -1312,9 +1322,11 @@ function Set-MaintenanceMode {
             $targetName = $TargetId
         }
     } elseif ($Mode -eq 'scom') {
-        if ($TargetId -and $TargetId -notmatch '^CLU-' -and -not $clusterDef) {
+        if ($isDirectServerMode -and -not $clusterDef) {
             $targetEntity = 'server'
             $targetName = $TargetId
+        } elseif ($clusterDef) {
+            $targetName = $clusterDef.Get_Item('display_name') ?? $TargetId
         }
     }
     

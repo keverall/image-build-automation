@@ -64,3 +64,24 @@ Describe 'Set-MaintenanceMode — Enable action: Flags' {
         $result.Success | Should -Be $true
     }
 }
+
+Describe 'Set-MaintenanceMode — OneView SerialNumber mode' {
+    It 'Should accept SerialNumber without TargetId for OneView mode' {
+        $result = Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+1hour'
+        $result.Success | Should -Be $true
+        $result.SerialNumber | Should -Be 'ABC123XYZ'
+        $result.ClusterName | Should -Be 'ABC123XYZ'
+    }
+
+    It 'Should show "server with Serial Number" in message for OneView SerialNumber mode' {
+        $result = Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+1hour'
+        $result.Message | Should -Match 'server with Serial Number'
+        $result.Message | Should -Match '\[OneView mode\]'
+    }
+
+    It 'Should return SerialNumber in result for OneView mode' {
+        $result = Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'TEST-SN-123' -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+2hours'
+        $result.SerialNumber | Should -Be 'TEST-SN-123'
+        $result.ServerCount | Should -Be 1
+    }
+}
