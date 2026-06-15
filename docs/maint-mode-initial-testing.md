@@ -366,8 +366,9 @@ Both JSON output (`-Json`) and the return hashtable contain these fields for iRe
 | `Message` | string | Human-readable completion message |
 | `StartTimeUtc` | string | Maintenance window start time (ISO 8601) |
 | `EndTimeUtc` | string | Maintenance window end time (ISO 8601) |
-| `TargetId` | string | Original target identifier |
+| `TargetId` | string | Original target identifier (may be empty for SerialNumber-only mode) |
 | `SerialNumber` | string | Serial number for OneView lookups (when applicable) |
+| `ClusterName` | string | Cluster or server name (depends on mode and target type) |
 | `ServerCount` | int | Number of servers in target |
 | `DryRun` | bool | Whether operation was simulated |
 | `AuditFile` | string | Path to audit log file |
@@ -376,6 +377,8 @@ Both JSON output (`-Json`) and the return hashtable contain these fields for iRe
 | `OneViewObjects` | array | Array of OneView objects with their maintenance status |
 | `OneViewSummary` | object | Aggregated OneView counts |
 | `FailedObjects` | array | Filtered list of only failed objects with NACK details |
+
+> **Note**: The `clusters_catalogue.json` file is a local configuration file (not an API call) and is used in both DryRun and normal mode for target name resolution.
 
 ### Per-Object Object Structure
 
@@ -482,6 +485,9 @@ mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start 
 
 # Live run with JSON output for iRequest CMDB integration
 mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json
+
+# OneView SerialNumber mode (Marin's preference)
+mm -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -Start now -End +1hour -DryRun -Json
 
 # Verify per-object status in module approach
 Import-Module ./src/powershell/Automation/Automation.psm1 -Force
