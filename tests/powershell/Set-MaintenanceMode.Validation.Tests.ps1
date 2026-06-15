@@ -6,6 +6,9 @@ BeforeAll {
     Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
     Import-Module (Join-Path $Script:ModuleRoot 'src/powershell/Automation/Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 
+    # Prevent interactive prompts during tests
+    $env:AUTOMATED_MODE = 'true'
+
     if (-not $env:TEMP) { $env:TEMP = '/tmp' }
     $Script:TempDir = (Join-Path $env:TEMP "MMValTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
     if (-not (Test-Path -Path $Script:TempDir)) { New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null }
@@ -41,5 +44,79 @@ Describe 'Set-MaintenanceMode — Target ID validation' {
 
     It 'Should reject empty target ID string' {
         { Set-MaintenanceMode -Action validate -TargetId '' -Mode scom -ConfigDir $Script:ConfigDir } | Should -Throw
+    }
+}
+
+Describe 'Set-MaintenanceMode — Pre-check for mode change validation' {
+    Context 'DryRun mode (simulation)' {
+        It 'Should allow enable action in DryRun mode regardless of current state' {
+            $params = @{
+                Action = 'enable'
+                TargetId = $Script:TestTargetId
+                Mode = 'scom'
+                ConfigDir = $Script:ConfigDir
+                DryRun = $true
+                Start = 'now'
+                End = '+1hour'
+            }
+            $result = Set-MaintenanceMode @params
+            $result.Success | Should -Be $true
+        }
+
+        It 'Should allow disable action in DryRun mode regardless of current state' {
+            $params = @{
+                Action = 'disable'
+                TargetId = $Script:TestTargetId
+                Mode = 'scom'
+                ConfigDir = $Script:ConfigDir
+                DryRun = $true
+            }
+            $result = Set-MaintenanceMode @params
+            $result.Success | Should -Be $true
+        }
+    }
+
+    Context 'MockMaintenanceState simulates pre-existing state' {
+        It 'Should show partially enabled state in validate action with MockMaintenanceState=partial' {
+            $params = @{
+                Action = 'validate'
+                TargetId = $Script:TestTargetId
+                Mode = 'scom'
+                ConfigDir = $Script:ConfigDir
+                DryRun = $true
+                MockMaintenanceState = 'partial'
+            }
+            $result = Set-MaintenanceMode @params
+            $result.Success | Should -Be $true
+            $result.StatusText | Should -Match 'partially'
+        }
+
+        It 'Should show fully enabled state in validate action with MockMaintenanceState=enable' {
+            $params = @{
+                Action = 'validate'
+                TargetId = $Script:TestTargetId
+                Mode = 'scom'
+                ConfigDir = $Script:ConfigDir
+                DryRun = $true
+                MockMaintenanceState = 'enable'
+            }
+            $result = Set-MaintenanceMode @params
+            $result.Success | Should -Be $true
+            $result.StatusText | Should -Match 'enabled'
+        }
+
+        It 'Should show disabled state in validate action with MockMaintenanceState=disable' {
+            $params = @{
+                Action = 'validate'
+                TargetId = $Script:TestTargetId
+                Mode = 'scom'
+                ConfigDir = $Script:ConfigDir
+                DryRun = $true
+                MockMaintenanceState = 'disable'
+            }
+            $result = Set-MaintenanceMode @params
+            $result.Success | Should -Be $true
+            $result.StatusText | Should -Match 'disabled'
+        }
     }
 }
