@@ -70,7 +70,7 @@ mm enable TEST-CLUSTER-01 -DryRun
 
 ### Production with Custom Window
 ```powershell
-mm enable PROD-CLUSTER-01 scom Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
+mm enable PROD-CLUSTER-01 -mode scom -env Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
 ```
 
 ### OneView Server by Serial
@@ -80,7 +80,7 @@ mm enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test
 
 ### Quick Disable
 ```powershell
-mmdisable PROD-CLUSTER-01
+mm disable PROD-CLUSTER-01
 ```
 
 ## Troubleshooting
