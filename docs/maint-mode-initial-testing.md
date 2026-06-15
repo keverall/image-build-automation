@@ -367,7 +367,7 @@ Both JSON output (`-Json`) and the return hashtable contain these fields for iRe
 | `StartTimeUtc` | string | Maintenance window start time (ISO 8601) |
 | `EndTimeUtc` | string | Maintenance window end time (ISO 8601) |
 | `TargetId` | string | Original target identifier |
-| `ClusterName` | string | Resolved cluster display name |
+| `SerialNumber` | string | Serial number for OneView lookups (when applicable) |
 | `ServerCount` | int | Number of servers in target |
 | `DryRun` | bool | Whether operation was simulated |
 | `AuditFile` | string | Path to audit log file |
@@ -435,7 +435,6 @@ Total Failed: 1
   "StartTimeUtc": "2026-06-11T13:00:00Z",
   "EndTimeUtc": "2026-06-11T15:00:00Z",
   "TargetId": "PROD-CLUSTER-01",
-  "ClusterName": "Production Cluster 01",
   "ServerCount": 3,
   "DryRun": false,
   "ScomObjects": [

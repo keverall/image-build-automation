@@ -166,7 +166,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
     .RETURNS
         [hashtable] with Success (bool), Message, StartTimeUtc, EndTimeUtc,
-        TargetId, ClusterName, ServerCount, DryRun, AuditFile,
+        TargetId, SerialNumber, ServerCount, DryRun, AuditFile,
         ScomObjects, ScomSummary, OneViewObjects, OneViewSummary, FailedObjects.
 
     .EXAMPLE
