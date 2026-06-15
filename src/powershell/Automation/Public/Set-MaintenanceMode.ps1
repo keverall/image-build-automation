@@ -767,9 +767,8 @@ function Set-MaintenanceMode {
         return @{
             Success = $true
             Message = $message
-            TargetId = $TargetId
+            TargetId = if ($TargetId) { $TargetId } elseif ($SerialNumber) { $SerialNumber } else { $null }
             SerialNumber = if ($SerialNumber) { $SerialNumber } else { $null }
-            ClusterName = if ($Mode -eq 'scom') { $clusterName } else { $targetName }
             ServerCount = ($servers | Measure-Object).Count
             DryRun = [bool]$DryRun
             OverallStatus = $maintenanceStatus.OverallStatus
@@ -1374,9 +1373,8 @@ function Set-MaintenanceMode {
         Environment = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
         StartTimeUtc = if ($Action -eq 'enable') { $utcStart } else { $null }
         EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
-        TargetId = if ($TargetId) { $TargetId } else { $null }
+        TargetId = if ($TargetId) { $TargetId } elseif ($SerialNumber) { $SerialNumber } else { $null }
         SerialNumber = if ($SerialNumber) { $SerialNumber } else { $null }
-        ClusterName = if ($Mode -eq 'scom') { $clusterName } else { $targetName }
         ServerCount = $serverCount
         DryRun = [bool]$DryRun
         AuditFile = $auditFile
