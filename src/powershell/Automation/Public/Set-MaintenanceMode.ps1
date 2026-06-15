@@ -982,6 +982,41 @@ function Set-MaintenanceMode {
     $audit = @{ target_id = $TargetId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
 
     if ($Action -eq 'enable') {
+        # Check if already in maintenance mode
+        $alreadyEnabled = $false
+        if ($Mode -eq 'scom' -and $scomMgr -and $clusterDef) {
+            $preCheckGroup = $clusterDef.Get_Item('scom_group')
+            $preCheckResult = $scomMgr.GetMaintenanceStatus($preCheckGroup, $servers, $false)
+            if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -gt 0) {
+                $alreadyEnabled = $true
+            }
+        }
+        elseif ($Mode -eq 'oneview' -and $oneviewMgr) {
+            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
+            $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+            $preCheckResult = $oneviewMgr.GetMaintenanceStatus($targetName, $targetType)
+            if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -gt 0) {
+                $alreadyEnabled = $true
+            }
+        }
+        
+        if ($alreadyEnabled -and -not $DryRun) {
+            $msg = "Server is already in maintenance mode."
+            Write-Host $msg -ForegroundColor Red
+            $audit.steps['pre_check'] = @{ Skipped = $true; Reason = $msg }
+            $audit.success = $false
+            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+            _Save-AuditRecord $audit $auditFile
+            return @{
+                Success = $false
+                Error = $msg
+                Mode = $Mode
+                Action = $Action
+                TargetId = $TargetId
+                AuditFile = $auditFile
+            }
+        }
+        
         # SCOM — use group mode to put ALL objects in the SCOM group into maintenance mode
         # (servers, network devices, nodes, cluster objects, everything under the group)
         # Only for 'scom' mode
@@ -1062,6 +1097,41 @@ function Set-MaintenanceMode {
         
     }
     elseif ($Action -eq 'disable') {
+        # Check if already out of maintenance mode
+        $alreadyDisabled = $false
+        if ($Mode -eq 'scom' -and $scomMgr -and $clusterDef) {
+            $preCheckGroup = $clusterDef.Get_Item('scom_group')
+            $preCheckResult = $scomMgr.GetMaintenanceStatus($preCheckGroup, $servers, $false)
+            if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -eq 0) {
+                $alreadyDisabled = $true
+            }
+        }
+        elseif ($Mode -eq 'oneview' -and $oneviewMgr) {
+            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
+            $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+            $preCheckResult = $oneviewMgr.GetMaintenanceStatus($targetName, $targetType)
+            if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -eq 0) {
+                $alreadyDisabled = $true
+            }
+        }
+        
+        if ($alreadyDisabled -and -not $DryRun) {
+            $msg = "Server is already out of maintenance mode."
+            Write-Host $msg -ForegroundColor Red
+            $audit.steps['pre_check'] = @{ Skipped = $true; Reason = $msg }
+            $audit.success = $false
+            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+            _Save-AuditRecord $audit $auditFile
+            return @{
+                Success = $false
+                Error = $msg
+                Mode = $Mode
+                Action = $Action
+                TargetId = $TargetId
+                AuditFile = $auditFile
+            }
+        }
+        
         # SCOM — exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
         # Only for 'scom' mode
         $scomExitOk = $true; $scomExitObjects = @(); $scomExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
