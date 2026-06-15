@@ -147,14 +147,15 @@ if (Test-Path $AutomationRepoPath)
 
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
-if ($IsWindows)
+$ohMyPoshConfig = '/usr/share/oh-my-posh/themes/pwsh10k.omp.json'
+if (-not (Test-Path $ohMyPoshConfig))
 {
-    $ohMyPoshPath = Join-Path $env:LOCALAPPDATA 'Programs\oh-my-posh\bin\oh-my-posh.exe'
-    $ohMyPoshConfig = 'C:\Users\98253\Documents\WindowsPowerShell\pwsh10k.omp.json'
-    if (Test-Path $ohMyPoshPath)
-    {
-        & $ohMyPoshPath init pwsh --config $ohMyPoshConfig | Invoke-Expression
-    }
+    $ohMyPoshConfig = Join-Path $HOME '.local/share/pwsh10k.omp.json'
+}
+$ohMyPosh = Get-Command oh-my-posh -ErrorAction SilentlyContinue
+if ($ohMyPosh)
+{
+    & $ohMyPosh.Source init pwsh --config $ohMyPoshConfig | Invoke-Expression
 }
 
 # ─── PSReadLine Configuration ────────────────────────────────────────────────
