@@ -385,8 +385,13 @@ function Set-MaintenanceMode {
     if ($DryRun) {
         Write-Verbose "DryRun mode enabled - skipping catalogue validation and using mock data"
         $isDirectServerMode = $true
-        $clusterName = $TargetId
-        $servers = if ($SerialNumber) { @($SerialNumber) } else { @($TargetId) }
+        if ($SerialNumber) {
+            $clusterName = "Serial: $SerialNumber"
+            $servers = @($SerialNumber)
+        } else {
+            $clusterName = $TargetId
+            $servers = @($TargetId)
+        }
     } else {
         # NON-DRYRUN MODE: Load and validate against catalogue
         $clustersMap = $clustersCfg.Get_Item('clusters')
@@ -753,7 +758,8 @@ function Set-MaintenanceMode {
             Success = $true
             Message = $message
             TargetId = $TargetId
-            ClusterName = $clusterName
+            SerialNumber = if ($SerialNumber) { $SerialNumber } else { $null }
+            ClusterName = if ($Mode -eq 'scom') { $clusterName } else { $targetName }
             ServerCount = ($servers | Measure-Object).Count
             DryRun = [bool]$DryRun
             OverallStatus = $maintenanceStatus.OverallStatus
@@ -904,7 +910,6 @@ function Set-MaintenanceMode {
                 Error = 'End time must be after start time.';
                 StartTimeUtc = $utcStart;
                 EndTimeUtc = $utcEnd;
-                ClusterName = $clusterName
             } 
         }
         $duration = $endDt - $startDt
@@ -977,10 +982,12 @@ function Set-MaintenanceMode {
             Write-Verbose "Testing OneView connection to $($oneviewMgr.Appliance)..."
             $connectionOk = Test-OneViewConnection -Appliance $oneviewMgr.Appliance -Username $oneviewMgr.Username -Password $oneviewMgr.Password
             if (-not $connectionOk) {
+                $targetNameErr = if ($SerialNumber) { $SerialNumber } elseif ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
                 return @{ 
                     Success = $false
                     Error = "Failed to connect to OneView appliance '$($oneviewMgr.Appliance)'. Check credentials and network connectivity."
-                    ClusterName = $clusterName
+                    TargetId = $TargetId
+                    SerialNumber = $SerialNumber
                 }
             }
             Write-Verbose "OneView connection verified successfully"
@@ -1281,12 +1288,37 @@ function Set-MaintenanceMode {
     }
 
     $audit.success = $overallOk
-    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+    $auditTargetId = if ($TargetId) { $TargetId } elseif ($SerialNumber) { "serial-$SerialNumber" } else { "unknown" }
+    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${auditTargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
     _Save-AuditRecord $audit $auditFile
 
     # Build detailed completion message
     $serverCount = ($servers | Measure-Object).Count
     $dryRunNote = if ($DryRun) { " [DRY-RUN]" } else { "" }
+    
+    # Determine if target is a server or cluster based on mode and target type
+    $targetEntity = 'cluster'
+    $targetName = $clusterName
+    
+    if ($Mode -eq 'oneview') {
+        if ($SerialNumber) {
+            $targetEntity = 'server with Serial Number'
+            $targetName = $SerialNumber
+        } elseif ($resolveResult -and $resolveResult.TargetType -eq 'ServerHardware') {
+            $targetEntity = 'server'
+            $targetName = $resolveResult.TargetName
+        } elseif ($isDirectServerMode -and -not $clusterDef) {
+            $targetEntity = 'server'
+            $targetName = $TargetId
+        }
+    } elseif ($Mode -eq 'scom') {
+        if ($TargetId -and $TargetId -notmatch '^CLU-' -and -not $clusterDef) {
+            $targetEntity = 'server'
+            $targetName = $TargetId
+        }
+    }
+    
+    $modeName = if ($Mode -eq 'oneview') { 'OneView' } else { 'SCOM' }
     
     $detailMessage = if ($overallOk) {
         if ($Action -eq 'enable') {
@@ -1295,14 +1327,14 @@ function Set-MaintenanceMode {
                 $mins = $duration.Minutes
                 " (Duration: ${totalHours}h ${mins}m)"
             } else { "" }
-            "Maintenance $Action completed for cluster '$clusterName' ($serverCount servers)$durationStr$dryRunNote. Window: $utcStart -> $utcEnd"
+            "Maintenance $Action completed for $targetEntity '$targetName' ($serverCount servers) [$modeName mode]$durationStr$dryRunNote. Window: $utcStart -> $utcEnd"
         } elseif ($Action -eq 'disable') {
-            "Maintenance $Action completed for cluster '$clusterName' ($serverCount servers)$dryRunNote. Maintenance mode deactivated."
+            "Maintenance $Action completed for $targetEntity '$targetName' ($serverCount servers) [$modeName mode]$dryRunNote. Maintenance mode deactivated."
         } else {
-            "Validation completed for cluster '$clusterName' ($serverCount servers). Configuration is valid."
+            "Validation completed for $targetEntity '$targetName' ($serverCount servers) [$modeName mode]. Configuration is valid."
         }
     } else {
-        "Maintenance $Action finished with errors for cluster '$clusterName'$dryRunNote. Check audit: $auditFile"
+        "Maintenance $Action finished with errors for $targetEntity '$targetName' [$modeName mode]$dryRunNote. Check audit: $auditFile"
     }
     
     if ($overallOk) { Write-Host $detailMessage }
@@ -1332,7 +1364,7 @@ function Set-MaintenanceMode {
         EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
         TargetId = if ($TargetId) { $TargetId } else { $null }
         SerialNumber = if ($SerialNumber) { $SerialNumber } else { $null }
-        ClusterName = $clusterName
+        ClusterName = if ($Mode -eq 'scom') { $clusterName } else { $targetName }
         ServerCount = $serverCount
         DryRun = [bool]$DryRun
         AuditFile = $auditFile
