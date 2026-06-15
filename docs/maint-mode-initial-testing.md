@@ -366,9 +366,8 @@ Both JSON output (`-Json`) and the return hashtable contain these fields for iRe
 | `Message` | string | Human-readable completion message |
 | `StartTimeUtc` | string | Maintenance window start time (ISO 8601) |
 | `EndTimeUtc` | string | Maintenance window end time (ISO 8601) |
-| `TargetId` | string | Original target identifier (may be empty for SerialNumber-only mode) |
+| `TargetId` | string | Target identifier - serial number (OneView SerialNumber mode), server ID (non-CLU- prefix), or cluster ID (CLU- prefix) |
 | `SerialNumber` | string | Serial number for OneView lookups (when applicable) |
-| `ClusterName` | string | Cluster or server name (depends on mode and target type) |
 | `ServerCount` | int | Number of servers in target |
 | `DryRun` | bool | Whether operation was simulated |
 | `AuditFile` | string | Path to audit log file |
