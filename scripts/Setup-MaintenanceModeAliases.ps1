@@ -29,41 +29,68 @@ if ($profileContent -notmatch 'function mm ') {
 
 # Maintenance Mode shortcut
 function mm {
+    [CmdletBinding()]
     param(
-        [Parameter(Position=0)][string]$Action = 'enable',
-        [Parameter(Position=1)][string]$Target,
-        [Parameter(Position=2)][string]$Mode = 'scom',
-        [Parameter(Position=3)][string]$Environment = 'Prod',
-        [switch]$DryRun,
+        [Parameter(Position=0)][string]$Action,
+        [Parameter(Position=1)][string]$TargetId,
+        [string]$Mode,
+        [string]$Environment = 'Prod',
         [string]$Start = 'now',
         [string]$End = '+2hours',
-        [Parameter(ValueFromRemainingArguments=$true)]$ExtraArgs
+        [string]$SerialNumber,
+        [string]$Username,
+        [switch]$DryRun
     )
     
-    $params = @{
-        Action = $Action
-        Mode = $Mode
-        Environment = $Environment
-        Start = $Start
-        End = $End
+    # Detect double-dash arguments (bash syntax, not PowerShell)
+    $MyInvocation.Line -match '--\w+' | Out-Null
+    if ($Matches) {
+        Write-Error "Invalid arguments: $($Matches.Values -join ', '). PowerShell uses single-dash syntax (e.g., '-DryRun' not '--dryrun')"
+        return
     }
     
-    if ($Target) { $params['TargetId'] = $Target }
+    if (-not $Action) {
+        Get-Help Set-MaintenanceMode
+        return
+    }
+    
+    # Case-insensitive validation
+    $validActions = @('enable', 'disable', 'validate', 'status')
+    $actionLower = $Action.ToLower()
+    if ($validActions -notcontains $actionLower) {
+        Write-Error "Invalid action: '$Action'. Valid actions: $($validActions -join ', ')"
+        return
+    }
+    
+    if ($Mode) {
+        $modeLower = $Mode.ToLower()
+        if (@('scom', 'oneview') -notcontains $modeLower) {
+            Write-Error "Invalid mode: '$Mode'. Valid modes: scom, oneview"
+            return
+        }
+        $Mode = $modeLower
+    }
+    
+    if ($Environment) {
+        $envLower = $Environment.ToLower()
+        if (@('test', 'prod') -notcontains $envLower) {
+            Write-Error "Invalid environment: '$Environment'. Valid environments: Test, Prod"
+            return
+        }
+        $Environment = $envLower.Substring(0, 1).ToUpper() + $envLower.Substring(1)
+    }
+    
+    $params = @{ Action = $actionLower }
+    if ($TargetId) { $params['TargetId'] = $TargetId }
+    if ($Mode) { $params['Mode'] = $Mode }
+    if ($Environment) { $params['Environment'] = $Environment }
+    if ($Start) { $params['Start'] = $Start }
+    if ($End) { $params['End'] = $End }
+    if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
+    if ($Username) { $params['Username'] = $Username }
     if ($DryRun) { $params['DryRun'] = $true }
-    if ($ExtraArgs) { $params += $ExtraArgs }
     
-    $result = Set-MaintenanceMode @params
-    
-    # Format output
-    Write-Host "=== Maintenance Mode ===" -ForegroundColor Cyan
-    Write-Host "Action: $($result.Action) | Target: $($result.TargetId) | Mode: $($result.Mode)" -ForegroundColor Yellow
-    Write-Host "Environment: $($result.Environment) | Time: $($result.StartTimeUtc) → $($result.EndTimeUtc)" -ForegroundColor Yellow
-    Write-Host "Status: $(if($result.Success){'✓ Success'}else{'✗ Failed'})" -ForegroundColor $(if($result.Success){'Green'}else{'Red'})
-    if ($result.Error) { Write-Host "Error: $($result.Error)" -ForegroundColor Red }
-    if ($result.DryRun) { Write-Host "[DRY RUN MODE]" -ForegroundColor Magenta }
-    Write-Host "========================" -ForegroundColor Cyan
-    
-    return $result
+    Set-MaintenanceMode @params
 }
 
 # Quick aliases
