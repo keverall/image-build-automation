@@ -181,53 +181,50 @@ Set-Alias kill Stop-Process -Option AllScope -Force
 # ─── eza (ls replacement) ───────────────────────────────────────────────────
 if (Get-Command eza -ErrorAction SilentlyContinue)
 {
-    # Define clean wrapper functions using explicit native execution (.exe)
+    $script:EzaCmd = if ($IsWindows) { 'eza.exe' } else { 'eza' }
     function ezals
-    { eza.exe --icons=auto --color=always $args 
+    { & $script:EzaCmd --icons=auto --color=always $args 
     }
     function ezall
-    { eza.exe -lhG --icons=auto --color=always $args 
+    { & $script:EzaCmd -lhG --icons=auto --color=always $args 
     }
     function ezald
-    { eza.exe -lD  --icons=auto --color=always $args 
+    { & $script:EzaCmd -lD  --icons=auto --color=always $args 
     }
     function ezalf
-    { eza.exe -lf  --icons=auto --color=always $args 
+    { & $script:EzaCmd -lf  --icons=auto --color=always $args 
     }
     function ezala
-    { eza.exe -lag --icons=auto --color=always $args 
+    { & $script:EzaCmd -lag --icons=auto --color=always $args 
     }
     function ezalA
-    { eza.exe -lAg --icons=auto --color=always $args 
+    { & $script:EzaCmd -lAg --icons=auto --color=always $args 
     }
     function ezalaa
-    { eza.exe -aalg --icons=auto --color=always $args 
+    { & $script:EzaCmd -aalg --icons=auto --color=always $args 
     }
     function ezalt1
-    { eza.exe -l --tree --level=1 --icons=auto --color=always $args 
+    { & $script:EzaCmd -l --tree --level=1 --icons=auto --color=always $args 
     }
     function ezalt2
-    { eza.exe -l --tree --level=2 --icons=auto --color=always $args 
+    { & $script:EzaCmd -l --tree --level=2 --icons=auto --color=always $args 
     }
     function ezalt3
-    { eza.exe -l --tree --level=3 --icons=auto --color=always $args 
+    { & $script:EzaCmd -l --tree --level=3 --icons=auto --color=always $args 
     }
 
-    if (Get-Command eza -ErrorAction SilentlyContinue)
-    {
-        if (Test-Path alias:ls)
-        { Remove-Item alias:ls -Force 
-        }
-        Set-Alias ls  ezals  -Force -Option AllScope
-        Set-Alias ll  ezall  -Force -Option AllScope
-        Set-Alias la  ezala  -Force -Option AllScope
-        Set-Alias lA  ezalA  -Force -Option AllScope
-        Set-Alias laa ezalaa -Force -Option AllScope
-        Set-Alias ld  ezald  -Force -Option AllScope
-        Set-Alias lt1 ezalt1 -Force -Option AllScope
-        Set-Alias lt2 ezalt2 -Force -Option AllScope
-        Set-Alias lt3 ezalt3 -Force -Option AllScope
+    if (Test-Path alias:ls)
+    { Remove-Item alias:ls -Force 
     }
+    Set-Alias ls  ezals  -Force -Option AllScope
+    Set-Alias ll  ezall  -Force -Option AllScope
+    Set-Alias la  ezala  -Force -Option AllScope
+    Set-Alias lA  ezalA  -Force -Option AllScope
+    Set-Alias laa ezalaa -Force -Option AllScope
+    Set-Alias ld  ezald  -Force -Option AllScope
+    Set-Alias lt1 ezalt1 -Force -Option AllScope
+    Set-Alias lt2 ezalt2 -Force -Option AllScope
+    Set-Alias lt3 ezalt3 -Force -Option AllScope
 }
 
 
