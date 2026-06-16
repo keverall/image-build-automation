@@ -401,13 +401,19 @@ function Set-MaintenanceMode {
             $servers = @($SerialNumber)
         } else {
             $clustersMap = $clustersCfg.Get_Item('clusters')
-            # SCOM mode: ONLY treat as cluster if it exists in catalogue AND starts with 'CLU-'
-            if ($clustersMap -and $clustersMap.ContainsKey($TargetId) -and $TargetId -match '^CLU-') {
+            if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
                 $isDirectServerMode = $false
                 $clusterDef = $clustersMap[$TargetId]
                 $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
                 $servers = $clusterDef.Get_Item('servers') ?? @($TargetId)
             } else {
+                if ($Mode -eq 'scom') {
+                    Write-Verbose "Target '$TargetId' not found in catalogue."
+                    return @{ 
+                        Success = $false
+                        Error   = "Target '$TargetId' not found in catalogue."
+                    }
+                }
                 $isDirectServerMode = $true
                 $clusterName = $TargetId
                 $servers = @($TargetId)
@@ -439,8 +445,8 @@ function Set-MaintenanceMode {
                 $servers = @($TargetId)
             }
         } else {
-            # SCOM mode - target is ONLY treated as a cluster if it starts with 'CLU-' AND exists in catalogue
-            if ($clustersMap -and $clustersMap.ContainsKey($TargetId) -and $TargetId -match '^CLU-') {
+            # SCOM mode - target must exist in catalogue
+            if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
                 $isDirectServerMode = $false
                 $clusterDef = $clustersMap[$TargetId]
                 $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
@@ -476,11 +482,16 @@ function Set-MaintenanceMode {
                     return $earlyErr
                 }
             } else {
-                # Not prefixed with 'CLU-' OR not in catalogue -> Treat as direct single server mode
-                Write-Verbose "Target '$TargetId' does not start with 'CLU-' or is not in catalogue; treating as direct single server."
-                $isDirectServerMode = $true
-                $clusterName = $TargetId
-                $servers = @($TargetId)
+                # Target not found in catalogue - reject for SCOM mode
+                Write-Verbose "Target '$TargetId' not found in catalogue."
+                $earlyErr = @{ 
+                    Success      = $false
+                    Error        = "Target '$TargetId' not found in catalogue."
+                    ClusterName  = $TargetId
+                    StartTimeUtc = $utcStart
+                    EndTimeUtc   = $utcEnd
+                }
+                return $earlyErr
             }
         }
     }
