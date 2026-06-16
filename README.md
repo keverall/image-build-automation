@@ -73,13 +73,24 @@ mmvalidate CLU-CLUSTER-01  # Check status
 
 ### In this document
 - [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)
+  - [🚀 Quick Start - Setup \& Installation](#-quick-start---setup--installation)
+    - [TL;DR - One-Line Setup](#tldr---one-line-setup)
   - [Table of Contents](#table-of-contents)
     - [Internal docs index](#internal-docs-index)
+      - [Core Documentation](#core-documentation)
+      - [Maintenance Mode \& Scheduling](#maintenance-mode--scheduling)
+      - [Integration \& Authentication](#integration--authentication)
+      - [Developer Resources](#developer-resources)
     - [In this document](#in-this-document)
   - [Project Architecture](#project-architecture)
   - [Generated Audit Logs (JSON)](#generated-audit-logs-json)
   - [Quick Links for Common Tasks](#quick-links-for-common-tasks)
   - [GitLab Pipeline Files](#gitlab-pipeline-files)
+    - [Pipeline Activation](#pipeline-activation)
+  - [Contributing](#contributing)
+  - [Support](#support)
+  - [License](#license)
+  - [HPe Doc](#hpe-doc)
 
 ---
 
@@ -248,3 +259,17 @@ All changes should include:
 ## License
 
 MIT License — see `LICENSE` file for details.
+
+## HPe Doc
+
+[oneview-powershell-samples](https://github.com/HewlettPackard/oneview-powershell-samples/tree/master/Server%20Hardware/Creator-iLO)
+
+[community.hpe.com](https://community.hpe.com/t5/hpe-oneview/bd-p/oneview)
+
+[HPE OneView PowerShell Library](https://hpe-docs.gitbook.io/posh-hpeoneview)
+
+[HPE OneView Support Centre links](https://support.hpe.com/connect/s/product?language=en_US&tab=manuals&kmpmoid=5410258&manualsAndGuidesFilter=66000015%2C66000035&manualsFilter=66000002%2C66000003%2C66000004%2C66000006%2C66000008%2C66000033)
+
+[HPE OneView Powershell Library Guide and Versions](https://hpe-docs.gitbook.io/posh-hpeoneview)
+
+[HPE OneView PS releases](https://github.com/HewlettPackard/POSH-HPEOneView/releases)

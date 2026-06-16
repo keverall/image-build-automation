@@ -18,6 +18,7 @@ Describe 'New-OneViewMaintenanceScript — basic invocation and parameter valida
         $cmd.Parameters.Keys | Should -Contain 'Appliance'
         $cmd.Parameters.Keys | Should -Contain 'ScopeName'
         $cmd.Parameters.Keys | Should -Contain 'Operation'
+        $cmd.Parameters.Keys | Should -Contain 'ModuleName'
     }
 
     It 'Returns a string script block for enable operation with configurable module name' {

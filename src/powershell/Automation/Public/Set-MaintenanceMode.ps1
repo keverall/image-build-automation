@@ -2668,26 +2668,21 @@ class OneViewClient {
     }
 
     [void] _ValidateModuleCompat([string]$ModuleName, [string]$Appliance) {
-        $parsedVersion = $null
+        $moduleInfo = $null
         if ($ModuleName -match 'HPEOneView\.(\d+)') {
-            $parsedVersion = [int]$matches[1]
+            $moduleInfo = [OneViewClient]::OneViewModuleApplianceMap | Where-Object { $_.Module -eq $ModuleName }
         } elseif ($ModuleName -match 'HPOneView\.(\d+)') {
-            $parsedVersion = [int]$matches[1]
-            Write-Warning "Legacy module name detected: '$ModuleName'. Consider updating config to HPEOneView.Xxx format."
-        }
-        
-        if ($parsedVersion) {
             $moduleInfo = [OneViewClient]::OneViewModuleApplianceMap | Where-Object { $_.Module -eq $ModuleName }
             if (-not $moduleInfo) {
-                $moduleInfo = [OneViewClient]::OneViewModuleApplianceMap | Where-Object { $_.Module -match "\d+" -and [int]($_.Module -replace '[^\d]', '') -le $parsedVersion } |
-                    Sort-Object { [int]($_.Module -replace '[^\d]', '') } -Descending | Select-Object -First 1
+                Write-Warning "Legacy module name detected: '$ModuleName'. Consider updating config to HPEOneView.Xxx format."
             }
-            
-            if ($moduleInfo -and $moduleInfo.Note -match 'PS 7\+') {
-                $_psVer = $script:PSVersionTable.PSVersion.Major
-                if ($_psVer -lt 7) {
-                    Write-Warning "Module '$ModuleName' requires PowerShell 7.0+. Current: $($script:PSVersionTable.PSVersion). Use HPEOneView.720 or earlier for PS 5.1 compatibility."
-                }
+        }
+        
+        if ($moduleInfo -and $moduleInfo.Note -match 'PS 7\+') {
+            $psVerTable = Get-Variable -Name PSVersionTable -Scope Global -ErrorAction SilentlyContinue
+            if ($psVerTable -and $psVerTable.Value.PSVersion.Major -lt 7) {
+                $psVer = $psVerTable.Value.PSVersion.ToString()
+                Write-Warning "Module '$ModuleName' requires PowerShell 7.0+. Current: $psVer. Use HPEOneView.720 or earlier for PS 5.1 compatibility."
             }
         }
         
