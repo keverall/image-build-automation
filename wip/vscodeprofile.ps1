@@ -667,3 +667,51 @@ Set-PSReadLineOption -CommandValidationHandler {
         }
     }
 }
+
+# Image Build Automation module
+$automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
+if (Test-Path $automationModulePath) {
+    Import-Module $automationModulePath -WarningAction SilentlyContinue
+    
+    # Maintenance mode convenience functions
+    function mm { Set-MaintenanceMode @args }
+    
+    function mmenable {
+        param(
+            [Parameter(Position=0,Mandatory)][string]$TargetId,
+            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
+            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
+            [string]$Start = 'now',
+            [string]$End = '+2hours',
+            [switch]$DryRun
+        )
+        $p = @{
+            Action = 'enable'
+            TargetId = $TargetId
+            Mode = $Mode
+            Environment = $Environment
+            Start = $Start
+            End = $End
+        }
+        if ($DryRun) { $p['DryRun'] = $true }
+        Set-MaintenanceMode @p
+    }
+    
+    function mmdisable {
+        param(
+            [Parameter(Position=0,Mandatory)][string]$TargetId,
+            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
+            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
+        )
+        Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
+    }
+    
+    function mmvalidate {
+        param(
+            [Parameter(Position=0,Mandatory)][string]$TargetId,
+            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
+            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
+        )
+        Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
+    }
+}

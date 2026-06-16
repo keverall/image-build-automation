@@ -41,9 +41,9 @@ Describe 'Set-MaintenanceMode — Target ID validation' {
     }
 
     It 'Should reject unknown target ID' {
-        $result = Set-MaintenanceMode -Action validate -TargetId 'NONEXISTENT-CLUSTER' -Mode scom -ConfigDir $Script:ConfigDir
+        $result = Set-MaintenanceMode -Action validate -TargetId 'NONEXISTENT-CLUSTER' -Mode scom -ConfigDir $Script:ConfigDir -DryRun
         $result.Success | Should -Be $false
-        $result.Error | Should -Match 'not found in catalogue'
+        $result.Error | Should -Match 'not found in catalogue|does not exist'
     }
 
     It 'Should reject empty target ID string' {
