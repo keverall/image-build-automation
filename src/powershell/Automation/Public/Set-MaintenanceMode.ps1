@@ -1089,7 +1089,7 @@ function Set-MaintenanceMode {
         
         if ($Mode -eq 'oneview' -and $oneviewMgr) {
             Write-Verbose "Testing OneView connection to $($oneviewMgr.Appliance)..."
-            $connectionOk = Test-OneViewConnection -Appliance $oneviewMgr.Appliance -Username $oneviewMgr.Username -Password $oneviewMgr.Password
+            $connectionOk = Test-OneViewConnection -Appliance $oneviewMgr.Appliance -Username $oneviewMgr.Username -Password $oneviewMgr.Password -ModuleName $oneviewMgr.ModuleName
             if (-not $connectionOk) {
                 $targetNameErr = if ($SerialNumber) {
                     $SerialNumber 
@@ -1724,7 +1724,7 @@ function Test-OneViewConnection {
         [string]$Appliance,
         [string]$Username,
         [string]$Password,
-        [string]$ModuleName = 'HPOneView.Managed'
+        [string]$ModuleName = 'HPEOneView.840'
     )
     
     try {
@@ -1732,7 +1732,7 @@ function Test-OneViewConnection {
 Import-Module $ModuleName -ErrorAction Stop
 `$securePass = ConvertTo-SecureString '$Password' -AsPlainText -Force
 `$cred = New-Object System.Management.Automation.PSCredential('$Username', `$securePass)
-Connect-OVMgmt -Appliance '$Appliance' -Credential `$cred -ErrorAction Stop
+Connect-OVMgmt -Hostname '$Appliance' -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
 Disconnect-OVMgmt -ErrorAction SilentlyContinue
 "@
@@ -2615,7 +2615,11 @@ class OneViewClient {
         $ovConfig = $Config.Get_Item('oneview') ?? @{}
         $this.Config = $ovConfig
         $this.Appliance = $ovConfig.Get_Item('appliance') ?? 'oneview.example.com'
-        $this.ModuleName = $ovConfig.Get_Item('module_name') ?? 'HPOneView.Managed'
+        $this.ModuleName = $ovConfig.Get_Item('module_name')
+        if (-not $this.ModuleName) {
+            $this.ModuleName = $this._DetectRecommendedModule($this.Appliance)
+        }
+        $this._ValidateModuleCompat($this.ModuleName, $this.Appliance)
         $this.UseWinRM = [bool]($ovConfig.Get_Item('use_winrm') ?? $false)
         if ($this.UseWinRM) {
             $winrmCfg = $ovConfig.Get_Item('winrm') ?? @{}
@@ -2628,6 +2632,66 @@ class OneViewClient {
         $this.Password = [System.Environment]::GetEnvironmentVariable($passEnv)
         
         # Allow override after construction via direct property assignment
+    }
+
+    hidden static [hashtable[]] $OneViewModuleApplianceMap = @(
+        @{ Module = 'HPEOneView.1000'; MinAppliance = '10.00'; PsVersion = '7.0'; Note = 'Requires PS 7+' },
+        @{ Module = 'HPEOneView.910'; MinAppliance = '9.10'; PsVersion = '7.0'; Note = 'Requires PS 7+' },
+        @{ Module = 'HPEOneView.900'; MinAppliance = '9.00'; PsVersion = '7.0'; Note = 'Requires PS 7+' },
+        @{ Module = 'HPEOneView.860'; MinAppliance = '8.60'; PsVersion = '7.0'; Note = 'Requires PS 7+' },
+        @{ Module = 'HPEOneView.840'; MinAppliance = '8.40'; PsVersion = '7.0'; Note = 'Requires PS 7+' },
+        @{ Module = 'HPEOneView.830'; MinAppliance = '8.30'; PsVersion = '7.0'; Note = 'Requires PS 7+' },
+        @{ Module = 'HPEOneView.800'; MinAppliance = '8.00'; PsVersion = '7.0'; Note = 'Requires PS 7+' },
+        @{ Module = 'HPEOneView.720'; MinAppliance = '7.20'; PsVersion = '5.1'; Note = 'PS 5.1/7 compatible' },
+        @{ Module = 'HPEOneView.710'; MinAppliance = '7.10'; PsVersion = '5.1'; Note = 'PS 5.1/7 compatible' },
+        @{ Module = 'HPEOneView.700'; MinAppliance = '7.00'; PsVersion = '5.1'; Note = 'PS 5.1/7 compatible' }
+    )
+
+    [string] _DetectRecommendedModule([string]$Appliance) {
+        $availableModules = Get-Module -ListAvailable HPEOneView.* -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+        if (-not $availableModules) {
+            $availableModules = Get-Module -ListAvailable HPOneView.* -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+        }
+        
+        if ($availableModules) {
+            $sortedModules = $availableModules | Sort-Object { 
+                if ($_ -match 'HPEOneView\.(\d+)') { [int]$matches[1] }
+                elseif ($_ -match 'HPOneView\.(\d+)') { [int]$matches[1] }
+                else { 0 }
+            } -Descending
+            $recommended = $sortedModules[0]
+            Write-Information "HPE OneView module detected: $recommended" -InformationAction Continue
+            return $recommended
+        }
+        
+        return 'HPEOneView.860'
+    }
+
+    [void] _ValidateModuleCompat([string]$ModuleName, [string]$Appliance) {
+        $parsedVersion = $null
+        if ($ModuleName -match 'HPEOneView\.(\d+)') {
+            $parsedVersion = [int]$matches[1]
+        } elseif ($ModuleName -match 'HPOneView\.(\d+)') {
+            $parsedVersion = [int]$matches[1]
+            Write-Warning "Legacy module name detected: '$ModuleName'. Consider updating config to HPEOneView.Xxx format."
+        }
+        
+        if ($parsedVersion) {
+            $moduleInfo = [OneViewClient]::OneViewModuleApplianceMap | Where-Object { $_.Module -eq $ModuleName }
+            if (-not $moduleInfo) {
+                $moduleInfo = [OneViewClient]::OneViewModuleApplianceMap | Where-Object { $_.Module -match "\d+" -and [int]($_.Module -replace '[^\d]', '') -le $parsedVersion } |
+                    Sort-Object { [int]($_.Module -replace '[^\d]', '') } -Descending | Select-Object -First 1
+            }
+            
+            if ($moduleInfo -and $moduleInfo.Note -match 'PS 7\+') {
+                $_psVer = $script:PSVersionTable.PSVersion.Major
+                if ($_psVer -lt 7) {
+                    Write-Warning "Module '$ModuleName' requires PowerShell 7.0+. Current: $($script:PSVersionTable.PSVersion). Use HPEOneView.720 or earlier for PS 5.1 compatibility."
+                }
+            }
+        }
+        
+        Write-Verbose "OneView module selected: $ModuleName"
     }
 
     [hashtable] SetMaintenance([object]$Target, [string]$TargetType, [DateTime]$StartDt, [DateTime]$EndDt, [bool]$DryRun) {
