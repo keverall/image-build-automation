@@ -17,7 +17,7 @@ Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance m
 {
   "oneview": {
     "appliance": "oneview.ad.aib.pri",
-    "module_name": "HPOneView.Managed",
+    "module_name": "HPEOneView.860",
     "use_winrm": false,
     "winrm": {
       "server": "oneview.ad.aib.pri"
@@ -92,11 +92,15 @@ param([string]$ConfigDir = 'configs')
 # Import the Automation module
 Import-Module (Join-Path $PSScriptRoot 'src/powershell/Automation/Automation.psd1') -Force
 
-# Verify HPOneView module is available
-if (-not (Get-Module -ListAvailable -Name 'HPOneView.Managed')) {
-    Write-Warning "HPOneView.Managed module not found. Install from OneView appliance:"
-    Write-Warning "Save-Module -Name HPOneView.Managed -Path C:\temp"
-    Write-Warning "Import-Module C:\temp\HPOneView.Managed\*"
+# Verify HPE OneView module is available
+$ovModules = Get-Module -ListAvailable -Name 'HPEOneView.*' | Select-Object -ExpandProperty Name
+if (-not $ovModules) {
+    Write-Warning "No HPEOneView.* module found. Install from PowerShell Gallery:"
+    Write-Warning "Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force"
+}
+if ($ovModules -and $ovModules.Count -gt 1) {
+    Write-Warning "Multiple modules detected: ($($ovModules -join ', '))"
+    Write-Warning "Remove old versions: Uninstall-Module HPEOneView.OLD_VERSION -Force"
 }
 
 # Test credentials are available
