@@ -45,6 +45,24 @@ Save-Module HPEOneView.860 -Path C:\temp\oneview-modules
 Import-Module HPEOneView.860
 ```
 
+**Important:** Only ONE HPE OneView module version can be installed at a time. To switch versions:
+
+```powershell
+# Remove existing module(s)
+Uninstall-Module HPEOneView.860 -Force -ErrorAction SilentlyContinue
+Uninstall-Module HPEOneView.900 -Force -ErrorAction SilentlyContinue
+
+# Install new version (may need -AllowClobber if conflicts exist)
+Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force
+
+# Or use Save-Module for offline deployment
+Save-Module HPEOneView.860 -Path C:\temp\modules -Force
+```
+
+Common errors if multiple versions exist:
+- `Connect-OVMgmt: The term 'Connect-OVMgmt' is not recognized`
+- Cmdlet name conflicts between module versions
+
 ## Connection Command
 
 All module versions use the same connection pattern:
