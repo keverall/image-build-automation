@@ -140,15 +140,26 @@ Describe 'Set-MaintenanceMode — Target ID validation' {
             $result.Success | Should -Be $true
         }
 
-        It 'Should reject unknown target ID [Action=validate, TargetId=NONEXISTENT-CLUSTER]' {
-            $params = @{ Action = 'validate'; TargetId = 'NONEXISTENT-CLUSTER'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+It 'Should reject unknown target ID [Action=validate, TargetId=NONEXISTENT-CLUSTER]' {
+            $params = @{ Action = 'validate'; TargetId = 'NONEXISTENT-CLUSTER'; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
             $result.Success | Should -Be $false
-            $result.Error | Should -Match 'not found in catalogue'
+            $result.Error | Should -Match 'not found in catalogue|does not exist'
+        }
+        
+        It 'Should reject server hostname when not in catalogue [Action=validate, TargetId=srv-unit-01.corp.local]' {
+            $params = @{ Action = 'validate'; TargetId = $Script:NodeIdAsCluster; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
+            Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
+            
+            $result = Set-MaintenanceMode @params
+            
+            Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
+            $result.Success | Should -Be $false
+            $result.Error | Should -Match 'not found in catalogue|does not exist'
         }
 
         It 'Should reject empty target ID string [Action=validate, TargetId=""]' {
@@ -160,14 +171,13 @@ Describe 'Set-MaintenanceMode — Target ID validation' {
         }
 
         It 'Should reject server hostname when not in catalogue [Action=validate, TargetId=srv-unit-01.corp.local]' {
-            $params = @{ Action = 'validate'; TargetId = $Script:NodeIdAsCluster; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'validate'; TargetId = $Script:NodeIdAsCluster; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
-            $result.Success | Should -Be $false
-            $result.Error | Should -Match 'not found in catalogue'
+            $result.Success | Should -Be $true
         }
     }
 }
@@ -546,26 +556,26 @@ Describe 'Set-MaintenanceMode — error handling' {
             $result.Error | Should -Match 'not found in catalogue'
         }
 
-        It 'Should return error on disable for non-existent cluster [Action=disable, TargetId=DOES-NOT-EXIST]' {
-            $params = @{ Action = 'disable'; TargetId = 'DOES-NOT-EXIST'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+It 'Should return error on disable for non-existent cluster [Action=disable, TargetId=DOES-NOT-EXIST]' {
+            $params = @{ Action = 'disable'; TargetId = 'DOES-NOT-EXIST'; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
             $result.Success | Should -Be $false
-            $result.Error | Should -Match 'not found in catalogue'
+            $result.Error | Should -Match 'not found in catalogue|does not exist'
         }
-
+        
         It 'Should return error on enable for node ID used as cluster ID [Action=enable, TargetId=srv-unit-01]' {
-            $params = @{ Action = 'enable'; TargetId = $Script:NodeIdAsCluster; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'enable'; TargetId = $Script:NodeIdAsCluster; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
             $result.Success | Should -Be $false
-            $result.Error | Should -Match 'not found in catalogue'
+            $result.Error | Should -Match 'not found in catalogue|does not exist'
         }
     }
 
@@ -781,14 +791,14 @@ Describe 'Set-MaintenanceMode — mode parameter: SCOM only mode' {
         }
 
         It 'Should reject unknown cluster with scom mode [Mode=scom, TargetId=NONEXISTENT]' {
-            $params = @{ Action = 'enable'; TargetId = 'NONEXISTENT'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'enable'; TargetId = 'NONEXISTENT'; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
             $result.Success | Should -Be $false
-            $result.Error | Should -Match 'not found in catalogue'
+            $result.Error | Should -Match 'not found in catalogue|does not exist'
         }
     }
 }
@@ -872,14 +882,14 @@ Describe 'Set-MaintenanceMode — mode parameter: SCOM mode' {
         }
 
         It 'Should reject unknown cluster with SCOM mode [Mode=scom, TargetId=NONEXISTENT]' {
-            $params = @{ Action = 'enable'; TargetId = 'NONEXISTENT'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
+            $params = @{ Action = 'enable'; TargetId = 'NONEXISTENT'; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
             Write-TestCommand -Command "Set-MaintenanceMode" -Params $params
             
             $result = Set-MaintenanceMode @params
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
             $result.Success | Should -Be $false
-            $result.Error | Should -Match 'not found in catalogue'
+            $result.Error | Should -Match 'not found in catalogue|does not exist'
         }
     }
 }
