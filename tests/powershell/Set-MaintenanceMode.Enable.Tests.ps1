@@ -6,9 +6,13 @@ BeforeAll {
     Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
     Import-Module (Join-Path $Script:ModuleRoot 'src/powershell/Automation/Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 
-    if (-not $env:TEMP) { $env:TEMP = '/tmp' }
-    $Script:TempDir = (Join-Path $env:TEMP "MMEnaTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
-    if (-not (Test-Path -Path $Script:TempDir)) { New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null }
+    if (-not $env:TEMP) {
+        $env:TEMP = '/tmp' 
+    }
+    $Script:TempDir = (Join-Path $env:TEMP "MMEnaTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\', '/')
+    if (-not (Test-Path -Path $Script:TempDir)) {
+        New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null 
+    }
 
     $Script:ConfigDir = Join-Path $Script:TempDir 'configs'
     New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null
@@ -20,7 +24,7 @@ BeforeAll {
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'opsramp_config.json')
 
-    $Script:TestTargetId = 'PROD-CLUSTER-01'
+    $Script:TestTargetId = 'CLU-CLUSTER-01'
 }
 
 AfterAll {
@@ -70,7 +74,7 @@ Describe 'Set-MaintenanceMode — OneView SerialNumber mode' {
         $result = Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+1hour'
         $result.Success | Should -Be $true
         $result.SerialNumber | Should -Be 'ABC123XYZ'
-        $result.ClusterName | Should -Be 'ABC123XYZ'
+        $result.ServerName | Should -Be 'ABC123XYZ'
     }
 
     It 'Should show "server with Serial Number" in message for OneView SerialNumber mode' {

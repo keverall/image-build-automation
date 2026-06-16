@@ -7,7 +7,7 @@ The script supports both `-DryRun` and `-WhatIf` as equivalent parameters for si
 | Parameter | Type | Required | Description | Examples |
 |-----------|------|----------|-------------|----------|
 | `-Action` | string | No | 'enable', 'disable', or 'validate' (default: enable) | `-Action enable` |
-| `-TargetId` | string | **Yes** | Cluster identifier or server name | `-TargetId PROD-CLUSTER-01` |
+| `-TargetId` | string | **Yes** | Cluster identifier or server name | `-TargetId CLU-CLUSTER-01` |
 | `-Mode` | string | **Yes** | scom or oneview | `-Mode scom` |
 | `-Environment` | string | No | Test or Prod (default: Prod from ENVIRONMENT env var) | `-Environment Test` |
 | `-ManagementHost` | string | No | Override management server/appliance | `-ManagementHost backup-server.local` |
@@ -137,14 +137,14 @@ Before executing maintenance operations, the script now:
 mm -Action enable -TargetId TEST-CLUSTER-01 -Mode scom -Environment Test -Start now -End +1hour -DryRun
 
 # Production environment
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
 ```
 
 **2. With Host Override:**
 
 ```powershell
 # Override management host for specific environment
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.ad.example.com -Start now -End +1hour
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.ad.example.com -Start now -End +1hour
 
 # Override OneView host
 mm -Action enable -TargetId my-server-01 -Mode oneview -Environment Test -ManagementHost oneview-backup.test.local -Start now -End +1hour
@@ -182,24 +182,24 @@ mm -Action enable -TargetId TEST-CLUSTER-01 -Mode scom -Start now -End +1hour
 
 ```powershell
 # Various relative time formats
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +30minutes -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +30minutes -DryRun
 
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
 
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1day -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1day -DryRun
 ```
 
 **5. Absolute Time Formats:**
 
 ```powershell
 # Standard format (recommended)
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00' -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00' -DryRun
 
 # ISO 8601 format
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11T22:00:00' -End '2026-06-12T02:00:00' -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11T22:00:00' -End '2026-06-12T02:00:00' -DryRun
 
 # Mixed: relative start, absolute end
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End '2026-06-12 02:00' -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End '2026-06-12 02:00' -DryRun
 ```
 
 ### SCOM Mode Testing
@@ -208,23 +208,23 @@ mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start 
 
 ```powershell
 # Enable maintenance for all objects in SCOM group
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
 
 # Disable with default stabilization wait (120 seconds)
-mm -Action disable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod
+mm -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 
 # Disable with custom wait period
-mm -Action disable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 60
+mm -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 
 # Disable with no wait (immediate alerting)
-mm -Action disable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 0
+mm -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 0
 ```
 
 **7. SCOM with WhatIf:**
 
 ```powershell
 # Using WhatIf alias instead of DryRun
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -WhatIf
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -WhatIf
 ```
 
 ### OneView Mode Testing
@@ -252,7 +252,7 @@ mm -Action enable -TargetId Production_Cluster_01 -Mode oneview -Environment Pro
 
 ```powershell
 # Validate cluster configuration without making changes
-mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod
+mm -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 
 # Validate OneView target resolution
 mm -Action validate -TargetId my-server-01 -Mode oneview -Environment Test
@@ -270,10 +270,10 @@ Import-Module ./src/powershell/Automation/Automation.psm1 -Force
 Set-MaintenanceMode -Action enable -TargetId TEST-CLUSTER-01 -Mode scom -Environment Test -Start now -End '+30min' -DryRun
 
 # Production with host override
-Set-MaintenanceMode -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.local -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.local -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 
 # Disable with stabilization wait
-Set-MaintenanceMode -Action disable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 60
+Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 ```
 
 ### JSON Output Testing
@@ -282,10 +282,10 @@ Set-MaintenanceMode -Action disable -TargetId PROD-CLUSTER-01 -Mode scom -Enviro
 
 ```powershell
 # JSON output with environment selection
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json | ConvertFrom-Json
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json | ConvertFrom-Json
 
 # Parse specific fields from JSON output
-$result = mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -Json | ConvertFrom-Json
+$result = mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -Json | ConvertFrom-Json
 
 Write-Host "Success: $($result.Success)"
 Write-Host "SCOM Objects: $($result.ScomObjects.Count)"
@@ -311,20 +311,20 @@ mm -Action validate -TargetId TEST-CLUSTER-01 -Mode scom -Environment Test
 
 ```powershell
 # Step 1: Enable maintenance
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour
 
 # Step 2: Perform maintenance tasks here...
 Write-Host "Performing maintenance..."
 
 # Step 3: Disable with stabilization wait
-mm -Action disable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 120
+mm -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 120
 ```
 
 **15. Emergency Maintenance with Overrides:**
 
 ```powershell
 # Use backup SCOM server for emergency maintenance
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost emergency-scom.ad.example.com -Start now -End '+4hours' -NoSchedule
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost emergency-scom.ad.example.com -Start now -End '+4hours' -NoSchedule
 ```
 
 **16. Cross-Environment Testing:**
@@ -433,10 +433,10 @@ Total Failed: 1
 ```json
 {
   "Success": false,
-  "Message": "Maintenance enable finished with errors for cluster PROD-CLUSTER-01",
+  "Message": "Maintenance enable finished with errors for cluster CLU-CLUSTER-01",
   "StartTimeUtc": "2026-06-11T13:00:00Z",
   "EndTimeUtc": "2026-06-11T15:00:00Z",
-  "TargetId": "PROD-CLUSTER-01",
+  "TargetId": "CLU-CLUSTER-01",
   "ServerCount": 3,
   "DryRun": false,
   "ScomObjects": [
@@ -480,23 +480,23 @@ Total Failed: 1
 
 ```powershell
 # Dry-run to see response structure without making changes
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -DryRun -Json | ConvertFrom-Json | Select-Object Success, ScomObjects, ScomSummary, FailedObjects
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -DryRun -Json | ConvertFrom-Json | Select-Object Success, ScomObjects, ScomSummary, FailedObjects
 
 # Live run with JSON output for iRequest CMDB integration
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json
 
 # OneView SerialNumber mode (Marin's preference)
 mm -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -Start now -End +1hour -DryRun -Json
 
 # Verify per-object status in module approach
 Import-Module ./src/powershell/Automation/Automation.psm1 -Force
-$result = Set-MaintenanceMode -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -DryRun
+$result = Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -DryRun
 
 $result.ScomObjects | Format-Table Name, Type, Status, NackReason
 $result.FailedObjects | ForEach-Object { Write-Host "$($_.Name): $($_.NackReason) -> $($_.Resolution)" }
 
 # Test with different time formats
-$result = Set-MaintenanceMode -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+$result = Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 
 Write-Host "Window: $($result.StartTimeUtc) to $($result.EndTimeUtc)"
 ```
@@ -505,7 +505,7 @@ Write-Host "Window: $($result.StartTimeUtc) to $($result.EndTimeUtc)"
 
 ### Pattern 1: Standard Production Maintenance
 ```powershell
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
 ```
 
 ### Pattern 2: Test with Validation First
@@ -519,7 +519,7 @@ mm -Action enable -TargetId TEST-CLUSTER-01 -Mode scom -Environment Test -Start 
 
 ### Pattern 3: Emergency with Host Override
 ```powershell
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost emergency-scom.local -Start now -End '+4hours' -NoSchedule
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost emergency-scom.local -Start now -End '+4hours' -NoSchedule
 ```
 
 ### Pattern 4: OneView Single Server
@@ -529,7 +529,7 @@ mm -Action enable -TargetId server01.ad.example.com -Mode oneview -Environment P
 
 ### Pattern 5: Automated with JSON Output
 ```powershell
-$result = mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json | ConvertFrom-Json
+$result = mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json | ConvertFrom-Json
 
 if ($result.Success) {
     Write-Host "Maintenance enabled successfully"

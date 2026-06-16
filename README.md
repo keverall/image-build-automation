@@ -20,9 +20,9 @@ make setup && cp wip/vscodeprofile.ps1 ~/.config/powershell/Microsoft.VSCode_pro
 
 Then use:
 ```powershell
-mmenable PROD-CLUSTER-01    # Enable maintenance mode
-mmdisable PROD-CLUSTER-01   # Disable maintenance mode
-mmvalidate PROD-CLUSTER-01  # Check status
+mmenable CLU-CLUSTER-01    # Enable maintenance mode
+mmdisable CLU-CLUSTER-01   # Disable maintenance mode
+mmvalidate CLU-CLUSTER-01  # Check status
 ```
 
 ---

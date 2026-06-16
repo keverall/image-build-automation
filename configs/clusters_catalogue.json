@@ -1,6 +1,6 @@
 {
   "clusters": {
-    "PROD-CLUSTER-01": {
+    "CLU-CLUSTER-01": {
       "display_name": "Production Cluster 01",
       "servers": ["prod-server-01.example.com", "prod-server-02.example.com", "prod-server-03.example.com"],
       "scom_group": "SCOM_Prod_Cluster_01",

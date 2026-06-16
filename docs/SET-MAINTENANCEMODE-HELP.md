@@ -107,7 +107,7 @@ All datetime values are **UTC only**. No local timezone conversion is performed.
 ```powershell
 Set-MaintenanceMode `
     -Action validate `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Environment Prod
 ```
@@ -127,7 +127,7 @@ Set-MaintenanceMode `
 ```powershell
 Set-MaintenanceMode `
     -Action enable `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
     -Start '2026-06-11 22:00' `
@@ -138,7 +138,7 @@ Set-MaintenanceMode `
 ```powershell
 Set-MaintenanceMode `
     -Action disable `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
     -PostDisableWaitSeconds 60
@@ -160,7 +160,7 @@ Set-MaintenanceMode `
 ```powershell
 Set-MaintenanceMode `
     -Action enable `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
     -ManagementHost 'backup-scom.local' `
@@ -183,7 +183,7 @@ Set-MaintenanceMode `
 ```powershell
 $result = Set-MaintenanceMode `
     -Action enable `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
     -Start 'now' `
