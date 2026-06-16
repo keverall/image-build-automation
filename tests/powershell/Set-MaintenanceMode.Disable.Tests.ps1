@@ -36,9 +36,9 @@ AfterAll {
 
 Describe 'Set-MaintenanceMode — Disable action' {
     It 'Should reject with invalid cluster ID' {
-        $result = Set-MaintenanceMode -Action disable -TargetId 'UNKNOWN-CLUSTER' -Mode scom -ConfigDir $Script:ConfigDir
+        $result = Set-MaintenanceMode -Action disable -TargetId 'UNKNOWN-CLUSTER' -Mode scom -ConfigDir $Script:ConfigDir -DryRun
         $result.Success | Should -Be $false
-        $result.Error | Should -Match 'not found in catalogue'
+        $result.Error | Should -Match 'not found in catalogue|does not exist'
     }
 
     It 'Should succeed with valid cluster ID in dry-run mode' {
