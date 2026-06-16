@@ -14,7 +14,7 @@ Automated build pipelines for creating customized Windows Server installation IS
 
 ### TL;DR - One-Line Setup
 
-```bash
+```powershell
 make setup && cp wip/vscodeprofile.ps1 ~/.config/powershell/Microsoft.VSCode_profile.ps1 && . $PROFILE
 ```
 
@@ -195,7 +195,7 @@ hpe-windows-iso-automation/
 │   ├── Test-GitLabIntegration.ps1
 │   └── Test-GitLabCallback.ps1
 └── scripts/                            # CI runner provisioning and helpers
-    └── setup-runner.sh
+    └── setup-runner.ps1
 ```
 
 ## Generated Audit Logs (JSON)

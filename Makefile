@@ -58,11 +58,11 @@ lint: prune-logs lint-make lint-checkmake ## Lint PowerShell files and Makefile
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
 lint-checkmake: ## Lint Makefile with checkmake (optional)
-	@bash scripts/run-checkmake.sh </dev/null
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-checkmake.ps1
 
 lint-make: ## Lint Makefile syntax and style
 	@echo "$(CYAN)[lint-make]$(NC) Checking Makefile..."
-	@bash scripts/lint-make.sh
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint-make.ps1
 
 lint-test: prune-logs ## Lint and run tests (combined CI step)
 	@$(MAKE) lint && $(MAKE) test
