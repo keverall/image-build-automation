@@ -4,7 +4,7 @@
 
 ### Step 1: Install PowerShell Module
 
-```bash
+```powershell
 # From the project root directory
 make setup
 ```
@@ -16,7 +16,7 @@ This installs required PowerShell modules and configures your profile.
 #### Option A: VS Code Users (Recommended)
 
 1. Copy the VS Code profile to your PowerShell config:
-   ```bash
+   ```powershell
    cp wip/vscodeprofile.ps1 ~/.config/powershell/Microsoft.VSCode_profile.ps1
    ```
 
@@ -33,7 +33,7 @@ This installs required PowerShell modules and configures your profile.
 #### Option B: Regular PowerShell (Outside VS Code)
 
 1. Copy the PowerShell profile:
-   ```bash
+   ```powershell
    cp wip/psprofile.ps1 ~/.config/powershell/Microsoft.PowerShell_profile.ps1
    ```
 
@@ -164,7 +164,7 @@ Get-Command mm*
 
 Make sure you're using **PowerShell**, not bash/fish:
 
-```bash
+```powershell
 # Check current shell
 echo $SHELL        # Should show pwsh or powershell
 
