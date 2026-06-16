@@ -36,7 +36,14 @@
 
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
-$PSDIRS = Join-Path $PROJECT_ROOT 'src/powershell'
+$excludedDirectories = @('vendor', 'generated', '.git', 'bin')
+$allPowerShellFiles = Get-ChildItem -Path $PROJECT_ROOT -Recurse -Filter '*.ps1' -File |
+    Where-Object {
+        $relativePath = [System.IO.Path]::GetRelativePath($PROJECT_ROOT, $_.FullName)
+        $parts = $relativePath -split '[\\/]+'
+        $null -eq ($parts | Where-Object { $excludedDirectories -contains $_ })
+    } |
+    Select-Object -ExpandProperty FullName
 
 # Colors
 $COLOR_GREEN = "`e[32m"
@@ -44,7 +51,7 @@ $COLOR_CYAN  = "`e[36m"
 $COLOR_RED   = "`e[31m"
 $COLOR_RESET = "`e[0m"
 
-Write-Host "${COLOR_CYAN}[pwsh-lint]${COLOR_RESET} Running PSScriptAnalyzer..."
+Write-Host "${COLOR_CYAN}[pwsh-lint]${COLOR_RESET} Scanning $($allPowerShellFiles.Count) PowerShell files across the project..."
 
 $pssa = Get-Module PSScriptAnalyzer -ListAvailable -ErrorAction SilentlyContinue
 if (-not $pssa) {
@@ -65,8 +72,9 @@ $excludedRules = @(
     'TypeNotFound'
 )
 
-$errors = Invoke-ScriptAnalyzer -Path $PSDIRS -Recurse -Severity Error |
-    Where-Object { $excludedRules -notcontains $_.RuleName }
+$errors = $allPowerShellFiles | ForEach-Object {
+    Invoke-ScriptAnalyzer -Path $_ -Severity Error
+} | Where-Object { $excludedRules -notcontains $_.RuleName }
 
 if ($errors) {
     $errors | Format-Table -AutoSize
