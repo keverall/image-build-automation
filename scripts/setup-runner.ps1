@@ -10,7 +10,7 @@
 .DESCRIPTION
     Installs and configures:
     - PowerShell 7+ version check
-    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView) from bundled copies
+    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView, OperationsManager) from bundled copies
     - Powerline-style custom prompt (offline, no .exe required)
     - GNU make detection (from Git for Windows or bundled)
     
@@ -23,7 +23,7 @@
 
 #
 # Bundled dependencies:
-#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView)
+#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView, OperationsManager)
 #   - bin/make.exe     : GNU make for Windows (if available)
 #   - Git for Windows  : Provides make.exe in usr\bin\ (preferred source)
 #
@@ -40,12 +40,13 @@ $LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-D
 $VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
 
 # PowerShell modules bundled in scripts/modules/ (installed into PS module path)
-# Add HPEOneView here to support offline air-gapped environments
+# Add HPEOneView and OperationsManager (SCOM) here to support offline air-gapped environments
 $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
-    @{ Name = 'HPEOneView';       Version = '8.60' }
+    @{ Name = 'HPEOneView';       Version = '8.60' },
+    @{ Name = 'OperationsManager';Version = '10.19.10050.0' } # SCOM version; script will fallback to highest available if different
 )
 
 # Colors for terminal output (Windows/Linux compatible)
@@ -77,7 +78,7 @@ function Test-PowerShellVersion {
 function Get-BundledModulePath {
     param([string]$Name, [string]$Version)
 
-    # Search for the module in vendor/modules/ (case-insensitive)
+    # Search for the module in scripts/modules/ (case-insensitive)
     $moduleDir = Get-ChildItem -Path $VENDOR_MODULES_DIR -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -ieq $Name } |
         Select-Object -First 1
@@ -86,6 +87,18 @@ function Get-BundledModulePath {
         $versionDir = Join-Path $moduleDir.FullName $Version
         if (Test-Path $versionDir) {
             return $versionDir
+        }
+        
+        # Fallback: If exact version not found, get the highest available version.
+        # Useful for modules like OperationsManager where version varies by SCOM environment.
+        $availableVersions = Get-ChildItem -Path $moduleDir.FullName -Directory -ErrorAction SilentlyContinue | 
+            Where-Object { $_.Name -match '^\d+(\.\d+)+$' } |
+            Sort-Object { [version]$_.Name } -Descending | 
+            Select-Object -First 1
+            
+        if ($availableVersions) {
+            Write-Warn "Exact version $Version of $Name not found. Using available version $($availableVersions.Name)."
+            return $availableVersions.FullName
         }
     }
     return $null
@@ -162,8 +175,9 @@ function Install-PowerShellModuleOffline {
         Write-OK "$Name installed from PSGallery"
     } catch {
         Write-Err "Failed to install $Name. Bundled copy not found and PSGallery unavailable (air-gapped)."
-        Write-Err "To fix: Download '$Name' on a connected machine and copy the folder to:"
-        Write-Err "  scripts/modules/$Name/$Version/"
+        Write-Err "To fix: Download or copy '$Name' from a connected machine/SCOM server and place the version folder in:"
+        Write-Err "  scripts/modules/$Name/<version-folder>/"
+        Write-Err "  (Example: scripts/modules/OperationsManager/10.19.10050.0/)"
     }
 }
 
