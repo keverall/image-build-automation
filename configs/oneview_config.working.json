@@ -1,7 +1,7 @@
 {
   "oneview": {
     "appliance": "oneview.ad.aib.pri",
-    "module_name": "HPOneView.Managed",
+    "module_name": "HPEOneView.860",
     "use_winrm": false,
     "winrm": {
       "server": "oneview.ad.aib.pri"
