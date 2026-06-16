@@ -10,12 +10,12 @@
 .DESCRIPTION
     Installs and configures:
     - PowerShell 7+ version check
-    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS) from bundled copies
-    - Oh My Posh prompt customization
+    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView) from bundled copies
+    - Powerline-style custom prompt (offline, no .exe required)
     - GNU make detection (from Git for Windows or bundled)
     
-    All dependencies are bundled in vendor/modules/ for offline capability.
-    Falls back to PSGallery if bundled copies not found.
+    All dependencies are bundled in scripts/modules/ for offline capability.
+    Falls back to PSGallery if bundled copies not found (will warn on air-gapped systems).
 
 .EXAMPLE
     pwsh -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
@@ -23,7 +23,7 @@
 
 #
 # Bundled dependencies:
-#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS)
+#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView)
 #   - bin/make.exe     : GNU make for Windows (if available)
 #   - Git for Windows  : Provides make.exe in usr\bin\ (preferred source)
 #
@@ -39,12 +39,13 @@ $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 $LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 $VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
 
-# PowerShell modules bundled in vendor/modules/ (installed into PS module path)
-# Source copies also kept in scripts/modules/ for CI runner bootstrap
+# PowerShell modules bundled in scripts/modules/ (installed into PS module path)
+# Add HPEOneView here to support offline air-gapped environments
 $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
-    @{ Name = 'PlatyPS';          Version = '0.14.0' }
+    @{ Name = 'PlatyPS';          Version = '0.14.0' },
+    @{ Name = 'HPEOneView';       Version = '8.60' }
 )
 
 # Colors for terminal output (Windows/Linux compatible)
@@ -160,8 +161,9 @@ function Install-PowerShellModuleOffline {
         Install-Module -Name $Name -RequiredVersion $Version -Scope CurrentUser -Force -AllowClobber -Repository PSGallery 2>$null
         Write-OK "$Name installed from PSGallery"
     } catch {
-        Write-Err "Failed to install $Name. Bundled copy not found and PSGallery unavailable."
-        Write-Err "Ensure vendor/modules/$Name/$Version exists."
+        Write-Err "Failed to install $Name. Bundled copy not found and PSGallery unavailable (air-gapped)."
+        Write-Err "To fix: Download '$Name' on a connected machine and copy the folder to:"
+        Write-Err "  scripts/modules/$Name/$Version/"
     }
 }
 
