@@ -34,7 +34,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
 ### Example 1
 ```powershell
-# Validate configuration without making changes Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom
+# Validate configuration without making changes Set-MaintenanceMode -Action validate -TargetId 'CLU-CLUSTER-01' -Mode scom
 ```
 
 ### Example 2
@@ -44,17 +44,17 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
 ### Example 3
 ```powershell
-# Enable maintenance in Prod environment with absolute UTC time Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+# Enable maintenance in Prod environment with absolute UTC time Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 ```
 
 ### Example 4
 ```powershell
-# Disable maintenance with custom stabilization wait Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
+# Disable maintenance with custom stabilization wait Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 ```
 
 ### Example 5
 ```powershell
-# Use host override for emergency maintenance Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
+# Use host override for emergency maintenance Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
 ```
 
 ### Example 6
@@ -171,7 +171,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
     .EXAMPLE
         # Validate configuration without making changes
-        Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom
+        Set-MaintenanceMode -Action validate -TargetId 'CLU-CLUSTER-01' -Mode scom
 
     .EXAMPLE
         # Enable maintenance in Test environment with relative time
@@ -179,15 +179,15 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
     .EXAMPLE
         # Enable maintenance in Prod environment with absolute UTC time
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+        Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 
     .EXAMPLE
         # Disable maintenance with custom stabilization wait
-        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
+        Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 
     .EXAMPLE
         # Use host override for emergency maintenance
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
+        Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
 
     .EXAMPLE
         # Dry run to test configuration

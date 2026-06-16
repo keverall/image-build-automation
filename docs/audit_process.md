@@ -111,7 +111,7 @@ For maintenance operations, the record is more comprehensive:
 {
   "timestamp": "2025-11-14T22:00:00",
   "action": "maintenance_enable",
-  "cluster_id": "PROD-CLUSTER-01",
+  "cluster_id": "CLU-CLUSTER-01",
   "dry_run": false,
   "start_time": "2025-11-14T22:00:00",
   "end_time": "2025-11-15T08:00:00",
@@ -122,7 +122,7 @@ For maintenance operations, the record is more comprehensive:
     "email": {"success": true, "recipients": 5},
     "opsramp": {"success": true, "metrics_sent": 9}
   },
-  "scheduled_task": "MaintenanceDisable-PROD-CLUSTER-01",
+  "scheduled_task": "MaintenanceDisable-CLU-CLUSTER-01",
   "exit_code": 0
 }
 ```
@@ -169,7 +169,7 @@ Generated at midnight (or next build):
 tail -f generated/logs/audit/maintenance_audit.log | jq .
 
 # Search for cluster-specific maintenance entries
-grep "PROD-CLUSTER-01" generated/logs/audit/maintenance_audit.log | jq 'select(.cluster_id == "PROD-CLUSTER-01")'
+grep "CLU-CLUSTER-01" generated/logs/audit/maintenance_audit.log | jq 'select(.cluster_id == "CLU-CLUSTER-01")'
 
 # View latest maintenance action
 jq -s 'last' <(cat generated/logs/audit/maintenance_*.json)
@@ -353,7 +353,7 @@ Steps:
     "email": {"success": true},
     "opsramp": {"success": true}
   },
-  "scheduled_task": "MaintenanceDisable-PROD-CLUSTER-01",
+  "scheduled_task": "MaintenanceDisable-CLU-CLUSTER-01",
   "exit_code": 0
 }
 ```

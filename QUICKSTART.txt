@@ -20,14 +20,14 @@ STEP 3: Reload Profile
 
 STEP 4: Test It Works
 ---------------------
-mmvalidate PROD-CLUSTER-01
+mmvalidate CLU-CLUSTER-01
 
 ================================================================================
   DONE! You can now use:
-  - mmenable PROD-CLUSTER-01
-  - mmdisable PROD-CLUSTER-01  
-  - mmvalidate PROD-CLUSTER-01
-  - mm enable PROD-CLUSTER-01 -DryRun
+  - mmenable CLU-CLUSTER-01
+  - mmdisable CLU-CLUSTER-01  
+  - mmvalidate CLU-CLUSTER-01
+  - mm enable CLU-CLUSTER-01 -DryRun
 ================================================================================
 
 For full documentation, see: docs/SETUP-GUIDE.md

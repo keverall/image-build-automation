@@ -46,7 +46,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneV
 ```json
 {
   "clusters": {
-    "PROD-CLUSTER-01": {
+    "CLU-CLUSTER-01": {
       "display_name": "Production Cluster 01",
       "servers": ["web01.example.com", "web02.example.com", "db01.example.com"],
       "scom_group": "SCOM_Prod_WebDB",

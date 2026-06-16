@@ -26,7 +26,7 @@ Build a PowerShell script for SCOM maintenance mode start/stop. Supports two mod
 
 ### Example 1
 ```powershell
-# Group mode — set maintenance on all instances in a group $ps = New-ScomMaintenanceScript -GroupDisplayName 'PROD-CLUSTER-01' ` -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest'
+# Group mode — set maintenance on all instances in a group $ps = New-ScomMaintenanceScript -GroupDisplayName 'CLU-CLUSTER-01' ` -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest'
 ```
 
 ### Example 2
@@ -65,7 +65,7 @@ Build a PowerShell script for SCOM maintenance mode start/stop. Supports two mod
 
     .EXAMPLE
         # Group mode — set maintenance on all instances in a group
-        $ps = New-ScomMaintenanceScript -GroupDisplayName 'PROD-CLUSTER-01' `
+        $ps = New-ScomMaintenanceScript -GroupDisplayName 'CLU-CLUSTER-01' `
             -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest'
 
     .EXAMPLE

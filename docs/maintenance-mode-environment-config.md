@@ -142,7 +142,7 @@ $env:SCOM_ADMIN_USER = "domain\adminuser"
 $env:SCOM_ADMIN_PASSWORD = "secure_password"
 
 # Execute
-Set-MaintenanceMode -Action enable -TargetId "PROD-CLUSTER-01" -Mode scom
+Set-MaintenanceMode -Action enable -TargetId "CLU-CLUSTER-01" -Mode scom
 ```
 
 ### Example 2: Override host for specific environment
@@ -150,7 +150,7 @@ Set-MaintenanceMode -Action enable -TargetId "PROD-CLUSTER-01" -Mode scom
 ```powershell
 Set-MaintenanceMode `
     -Action enable `
-    -TargetId "PROD-CLUSTER-01" `
+    -TargetId "CLU-CLUSTER-01" `
     -Mode scom `
     -Environment Prod `
     -ManagementHost "backup-scom.example.com"
@@ -187,7 +187,7 @@ withCredentials([
     export ENVIRONMENT=Prod
     pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 \\
         -Action enable \\
-        -TargetId PROD-CLUSTER-01 \\
+        -TargetId CLU-CLUSTER-01 \\
         -Mode scom
     '''
 }

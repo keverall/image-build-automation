@@ -14,40 +14,40 @@ After adding the profile configuration, you can use these shortcuts:
 
 ### `mm` - Full maintenance mode command
 ```powershell
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
 ```
 
 ### `mmenable` - Quick enable maintenance mode
 ```powershell
 # Basic usage with defaults (scom, Prod, +2hours)
-mmenable PROD-CLUSTER-01
+mmenable CLU-CLUSTER-01
 
 # Specify mode and environment
-mmenable PROD-CLUSTER-01 scom Prod
+mmenable CLU-CLUSTER-01 scom Prod
 
 # Custom time window
-mmenable PROD-CLUSTER-01 scom Prod -Start now -End +4hours
+mmenable CLU-CLUSTER-01 scom Prod -Start now -End +4hours
 
 # Dry run
-mmenable PROD-CLUSTER-01 scom Test -DryRun
+mmenable CLU-CLUSTER-01 scom Test -DryRun
 ```
 
 ### `mmdisable` - Quick disable maintenance mode
 ```powershell
 # Basic usage with defaults
-mmdisable PROD-CLUSTER-01
+mmdisable CLU-CLUSTER-01
 
 # Specify mode and environment
-mmdisable PROD-CLUSTER-01 scom Prod
+mmdisable CLU-CLUSTER-01 scom Prod
 ```
 
 ### `mmvalidate` - Quick validate maintenance mode
 ```powershell
 # Basic usage with defaults
-mmvalidate PROD-CLUSTER-01
+mmvalidate CLU-CLUSTER-01
 
 # Specify mode and environment
-mmvalidate PROD-CLUSTER-01 scom Prod
+mmvalidate CLU-CLUSTER-01 scom Prod
 ```
 
 ## Time Format Options
@@ -70,22 +70,22 @@ mmenable TEST-CLUSTER-01 scom Test -Start now -End +1hour -DryRun
 
 ### Enable maintenance mode for production with custom window
 ```powershell
-mmenable PROD-CLUSTER-01 scom Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+mmenable CLU-CLUSTER-01 scom Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 ```
 
 ### Disable maintenance mode
 ```powershell
-mmdisable PROD-CLUSTER-01 scom Prod
+mmdisable CLU-CLUSTER-01 scom Prod
 ```
 
 ### Validate maintenance mode status
 ```powershell
-mmvalidate PROD-CLUSTER-01 scom Prod
+mmvalidate CLU-CLUSTER-01 scom Prod
 ```
 
 ### Full control with mm
 ```powershell
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod `
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod `
    -Start now -End +2hours -DryRun
 ```
 

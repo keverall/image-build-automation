@@ -20,13 +20,13 @@ Then restart PowerShell or reload your profile:
 
 ```powershell
 # Enable with all options
-mm enable PROD-CLUSTER-01 -mode scom -env Prod -Start now -End +4hours -DryRun
+mm enable CLU-CLUSTER-01 -mode scom -env Prod -Start now -End +4hours -DryRun
 
 # OneView with serial number
 mm enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -DryRun
 
 # Custom time window
-mm enable PROD-CLUSTER-01 scom Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
+mm enable CLU-CLUSTER-01 scom Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
 ```
 
 ### Time Formats
@@ -42,7 +42,7 @@ The `mm` command shows consistent, formatted output:
 
 ```
 === Maintenance Mode ===
-Action: enable | Target: PROD-CLUSTER-01 | Mode: scom
+Action: enable | Target: CLU-CLUSTER-01 | Mode: scom
 Environment: Prod | Time: 2026-06-12T13:00:00Z → 2026-06-12T15:00:00Z
 Status: ✓ Success
 [DRY RUN MODE]
@@ -70,7 +70,7 @@ mm enable TEST-CLUSTER-01 -DryRun
 
 ### Production with Custom Window
 ```powershell
-mm enable PROD-CLUSTER-01 -mode scom -env Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
+mm enable CLU-CLUSTER-01 -mode scom -env Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
 ```
 
 ### OneView Server by Serial
@@ -80,7 +80,7 @@ mm enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test
 
 ### Quick Disable
 ```powershell
-mm disable PROD-CLUSTER-01
+mm disable CLU-CLUSTER-01
 ```
 
 ## Troubleshooting

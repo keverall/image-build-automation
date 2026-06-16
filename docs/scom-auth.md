@@ -38,7 +38,7 @@ Configure `Set-MaintenanceMode.ps1` for SCOM cluster-level maintenance mode. SCO
 ```json
 {
   "clusters": {
-    "PROD-CLUSTER-01": {
+    "CLU-CLUSTER-01": {
       "display_name": "Production Cluster 01",
       "scom_group": "SCOM_Prod_Cluster_01",
       "scom_version": "2019",

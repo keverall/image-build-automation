@@ -112,18 +112,18 @@ if ($ShowHelp) {
     Write-Output "EXAMPLES"
     Write-Output ""
     Write-Output "  # Validate configuration"
-    Write-Output "  Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom"
+    Write-Output "  Set-MaintenanceMode -Action validate -TargetId 'CLU-CLUSTER-01' -Mode scom"
     Write-Output ""
     Write-Output "  # Enable in Test environment with relative time"
     Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom \"
     Write-Output "      -Environment Test -Start 'now' -End '+2hours'"
     Write-Output ""
     Write-Output "  # Enable in Prod with absolute UTC time"
-    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom \"
     Write-Output "      -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'"
     Write-Output ""
     Write-Output "  # Disable with custom stabilization wait"
-    Write-Output "  Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
+    Write-Output "  Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom \"
     Write-Output "      -Environment Prod -PostDisableWaitSeconds 60"
     Write-Output ""
     Write-Output "  # Dry run test"
@@ -131,7 +131,7 @@ if ($ShowHelp) {
     Write-Output "      -Environment Test -Start 'now' -End '+1hour' -DryRun"
     Write-Output ""
     Write-Output "  # Host override for emergency"
-    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom \"
+    Write-Output "  Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom \"
     Write-Output "      -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'"
     Write-Output ""
     Write-Output "  # OneView with serial number (Marin's preference)"
@@ -264,7 +264,7 @@ function Set-MaintenanceMode {
 
     .EXAMPLE
         # Validate configuration without making changes
-        Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom
+        Set-MaintenanceMode -Action validate -TargetId 'CLU-CLUSTER-01' -Mode scom
 
     .EXAMPLE
         # Enable maintenance in Test environment with relative time
@@ -272,15 +272,15 @@ function Set-MaintenanceMode {
 
     .EXAMPLE
         # Enable maintenance in Prod environment with absolute UTC time
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+        Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 
     .EXAMPLE
         # Disable maintenance with custom stabilization wait
-        Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
+        Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 
     .EXAMPLE
         # Use host override for emergency maintenance
-        Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
+        Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
 
     .EXAMPLE
         # Dry run to test configuration
@@ -322,8 +322,9 @@ function Set-MaintenanceMode {
     $ErrorActionPreference = 'Continue'
 
     # Normalize Mode to lowercase for case-insensitive comparison
-    if ($Mode) { $Mode = $Mode.ToLower() }
-    else {
+    if ($Mode) {
+        $Mode = $Mode.ToLower() 
+    } else {
         return @{ Success = $false; Error = "Mode is required and must be either 'scom' or 'oneview'." }
     }
 
@@ -340,7 +341,11 @@ function Set-MaintenanceMode {
     # Use passed ConfigDir param or fall back to project-root configs
     $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
     $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) {
-        if (Split-Path $ConfigDir -IsAbsolute) { $ConfigDir } else { Join-Path (Get-Location) $ConfigDir }
+        if (Split-Path $ConfigDir -IsAbsolute) {
+            $ConfigDir 
+        } else {
+            Join-Path (Get-Location) $ConfigDir 
+        }
     } else {
         Join-Path $projRoot 'configs'
     }
@@ -357,8 +362,8 @@ function Set-MaintenanceMode {
 
     # Load configs
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
-    $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json')           -Required:$false
-    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json')        -Required:$false
+    $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json') -Required:$false
+    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json') -Required:$false
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
@@ -366,18 +371,23 @@ function Set-MaintenanceMode {
     $startDt = $null; $endDt = $null
     $utcStart = $null; $utcEnd = $null
     if ($Action -eq 'enable') {
-        if ($Start) { $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt }
-        else { $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt }
-        if ($End) { $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt }
+        if ($Start) {
+            $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt 
+        } else {
+            $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt 
+        }
+        if ($End) {
+            $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt 
+        }
     }
 
     # Validate SerialNumber parameter (only valid for oneview mode)
     if ($SerialNumber -and $Mode -eq 'scom') {
         return @{ 
-            Success = $false
-            Error = "SerialNumber parameter is only valid for OneView mode, not SCOM mode."
+            Success      = $false
+            Error        = "SerialNumber parameter is only valid for OneView mode, not SCOM mode."
             StartTimeUtc = $utcStart
-            EndTimeUtc = $utcEnd
+            EndTimeUtc   = $utcEnd
         }
     }
 
@@ -391,7 +401,8 @@ function Set-MaintenanceMode {
             $servers = @($SerialNumber)
         } else {
             $clustersMap = $clustersCfg.Get_Item('clusters')
-            if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
+            # SCOM mode: ONLY treat as cluster if it exists in catalogue AND starts with 'CLU-'
+            if ($clustersMap -and $clustersMap.ContainsKey($TargetId) -and $TargetId -match '^CLU-') {
                 $isDirectServerMode = $false
                 $clusterDef = $clustersMap[$TargetId]
                 $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
@@ -428,22 +439,27 @@ function Set-MaintenanceMode {
                 $servers = @($TargetId)
             }
         } else {
-            # SCOM mode - target must exist in catalogue
-            if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
+            # SCOM mode - target is ONLY treated as a cluster if it starts with 'CLU-' AND exists in catalogue
+            if ($clustersMap -and $clustersMap.ContainsKey($TargetId) -and $TargetId -match '^CLU-') {
+                $isDirectServerMode = $false
                 $clusterDef = $clustersMap[$TargetId]
                 $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
                 
                 # Validate cluster definition
                 $requiredFields = @('display_name', 'servers', 'scom_group', 'environment')
-                $missing = foreach ($f in $requiredFields) { if (-not $clusterDef.ContainsKey($f)) { $f } }
+                $missing = foreach ($f in $requiredFields) {
+                    if (-not $clusterDef.ContainsKey($f)) {
+                        $f 
+                    } 
+                }
                 if ($missing) { 
                     Write-Verbose "Cluster definition missing required fields: $($missing -join ', ')"
                     $earlyErr = @{ 
-                        Success = $false
-                        Error = "Missing fields: $($missing -join ', ')"
-                        ClusterName = $clusterName
+                        Success      = $false
+                        Error        = "Missing fields: $($missing -join ', ')"
+                        ClusterName  = $clusterName
                         StartTimeUtc = $utcStart
-                        EndTimeUtc = $utcEnd
+                        EndTimeUtc   = $utcEnd
                     }
                     return $earlyErr
                 }
@@ -451,34 +467,20 @@ function Set-MaintenanceMode {
                 if (-not ($servers -is [System.Collections.IEnumerable]) -or -not ($servers | Measure-Object).Count) {
                     Write-Verbose "Cluster 'servers' must be a non-empty list."
                     $earlyErr = @{ 
-                        Success = $false
-                        Error = "Cluster 'servers' must be a non-empty list."
-                        ClusterName = $clusterName
+                        Success      = $false
+                        Error        = "Cluster 'servers' must be a non-empty list."
+                        ClusterName  = $clusterName
                         StartTimeUtc = $utcStart
-                        EndTimeUtc = $utcEnd
+                        EndTimeUtc   = $utcEnd
                     }
                     return $earlyErr
                 }
             } else {
-                Write-Verbose "Target '$TargetId' not found in catalogue."
-                $earlyErr = @{ 
-                    Success = $false
-                    Error = "Target '$TargetId' not found in catalogue."
-                    Action = $Action
-                    Mode = $Mode
-                    Environment = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
-                    ClusterName = $TargetId
-                    TargetId = $TargetId
-                    StartTimeUtc = $utcStart
-                    EndTimeUtc = $utcEnd
-                    ServerCount = 0
-                    DryRun = [bool]$DryRun
-                    AuditFile = $null
-                    ScomSummary = @{}
-                    OneViewSummary = @{}
-                    FailedObjects = @()
-                }
-                return $earlyErr
+                # Not prefixed with 'CLU-' OR not in catalogue -> Treat as direct single server mode
+                Write-Verbose "Target '$TargetId' does not start with 'CLU-' or is not in catalogue; treating as direct single server."
+                $isDirectServerMode = $true
+                $clusterName = $TargetId
+                $servers = @($TargetId)
             }
         }
     }
@@ -489,7 +491,11 @@ function Set-MaintenanceMode {
 
         # Load environment-based connection config
         $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
-        $hostsCfg = if (Test-Path $hostsCfgPath) { Import-JsonConfig -Path $hostsCfgPath -Required:$false } else { @{} }
+        $hostsCfg = if (Test-Path $hostsCfgPath) {
+            Import-JsonConfig -Path $hostsCfgPath -Required:$false 
+        } else {
+            @{} 
+        }
 
         # Determine environment
         $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) {
@@ -531,37 +537,61 @@ function Set-MaintenanceMode {
         $maintenanceStatus = $null
         $targetName = $TargetId
         $targetType = 'Scope'
-        $groupName = if ($clusterDef) { $clusterDef.Get_Item('scom_group') } else { $TargetId }
+        $groupName = if ($clusterDef) {
+            $clusterDef.Get_Item('scom_group') 
+        } else {
+            $TargetId 
+        }
 
         if ($DryRun) {
             $mockServers = @($servers | ForEach-Object { $_ })
-            if ($mockServers.Count -eq 0) { $mockServers = @($TargetId) }
+            if ($mockServers.Count -eq 0) {
+                $mockServers = @($TargetId) 
+            }
 
             $mockState = $MockMaintenanceState.ToLower()
             $mockInMaintenanceCount = switch ($mockState) {
-                'enable' { $mockServers.Count }
-                'partial' { [int][Math]::Ceiling($mockServers.Count / 2) }
-                default { 0 }
+                'enable' {
+                    $mockServers.Count 
+                }
+                'partial' {
+                    [int][Math]::Ceiling($mockServers.Count / 2) 
+                }
+                default {
+                    0 
+                }
             }
 
             $mockObjects = @()
             for ($i = 0; $i -lt $mockServers.Count; $i++) {
                 $inMaintenance = $i -lt $mockInMaintenanceCount
                 $mockObjects += @{
-                    Name = $mockServers[$i]
-                    Type = if ($Mode -eq 'scom') { 'WindowsComputer' } else { 'ServerHardware' }
+                    Name              = $mockServers[$i]
+                    Type              = if ($Mode -eq 'scom') {
+                        'WindowsComputer' 
+                    } else {
+                        'ServerHardware' 
+                    }
                     InMaintenanceMode = $inMaintenance
-                    Status = if ($inMaintenance) { 'in_maintenance' } else { 'not_in_maintenance' }
-                    Message = if ($inMaintenance) { 'Maintenance mode enabled (DryRun mock)' } else { 'Maintenance mode disabled (DryRun mock)' }
-                    DryRun = $true
+                    Status            = if ($inMaintenance) {
+                        'in_maintenance' 
+                    } else {
+                        'not_in_maintenance' 
+                    }
+                    Message           = if ($inMaintenance) {
+                        'Maintenance mode enabled (DryRun mock)' 
+                    } else {
+                        'Maintenance mode disabled (DryRun mock)' 
+                    }
+                    DryRun            = $true
                 }
             }
 
             $mockSummary = @{
-                Total = $mockObjects.Count
-                InMaintenance = $mockInMaintenanceCount
+                Total            = $mockObjects.Count
+                InMaintenance    = $mockInMaintenanceCount
                 NotInMaintenance = ($mockObjects.Count - $mockInMaintenanceCount)
-                Failed = 0
+                Failed           = 0
             }
 
             $mockOverallStatus = if ($mockObjects.Count -gt 0 -and $mockInMaintenanceCount -eq $mockObjects.Count) {
@@ -573,31 +603,36 @@ function Set-MaintenanceMode {
             }
 
             $stateText = switch ($mockOverallStatus) {
-                'fully_in_maintenance' { 'enabled' }
-                'partially_in_maintenance' { 'partially enabled' }
-                default { 'disabled' }
+                'fully_in_maintenance' {
+                    'enabled' 
+                }
+                'partially_in_maintenance' {
+                    'partially enabled' 
+                }
+                default {
+                    'disabled' 
+                }
             }
             $statusResult = @{
-                Success = $true
-                Objects = $mockObjects
-                Summary = $mockSummary
-                DryRun = $true
+                Success              = $true
+                Objects              = $mockObjects
+                Summary              = $mockSummary
+                DryRun               = $true
                 MockMaintenanceState = $mockState
             }
 
             if ($Mode -eq 'scom') {
                 $maintenanceStatus = @{
-                    Mode = 'scom'
-                    GroupName = $groupName
-                    OverallStatus = $mockOverallStatus
-                    Summary = $mockSummary
-                    Objects = $mockObjects
-                    DryRun = $true
+                    Mode                 = 'scom'
+                    GroupName            = $groupName
+                    OverallStatus        = $mockOverallStatus
+                    Summary              = $mockSummary
+                    Objects              = $mockObjects
+                    DryRun               = $true
                     MockMaintenanceState = $mockState
                 }
                 $message = "Maintenance mode ${Mode} is currently $stateText ($mockInMaintenanceCount/$($mockObjects.Count) objects in maintenance) [DRY-RUN mock: $mockState]"
-            }
-            else {
+            } else {
                 if ($clusterDef) {
                     $targetName = $TargetId
                     $targetType = 'Scope'
@@ -610,19 +645,18 @@ function Set-MaintenanceMode {
                 }
 
                 $maintenanceStatus = @{
-                    Mode = 'oneview'
-                    TargetType = $targetType
-                    TargetName = $targetName
-                    OverallStatus = $mockOverallStatus
-                    Summary = $mockSummary
-                    Objects = $mockObjects
-                    DryRun = $true
+                    Mode                 = 'oneview'
+                    TargetType           = $targetType
+                    TargetName           = $targetName
+                    OverallStatus        = $mockOverallStatus
+                    Summary              = $mockSummary
+                    Objects              = $mockObjects
+                    DryRun               = $true
                     MockMaintenanceState = $mockState
                 }
                 $message = "Maintenance mode ${Mode} is currently $stateText ($mockInMaintenanceCount/$($mockObjects.Count) objects in maintenance) [DRY-RUN mock: $mockState]"
             }
-        }
-        else {
+        } else {
             if ($Mode -eq 'scom') {
                 try {
                     $scomCfgCopy = $scomCfg.Clone()
@@ -653,26 +687,30 @@ function Set-MaintenanceMode {
                     }
 
                     $maintenanceStatus = @{
-                        Mode = 'scom'
-                        GroupName = $groupName
+                        Mode          = 'scom'
+                        GroupName     = $groupName
                         OverallStatus = $overallStatus
-                        Summary = $statusResult.Summary
-                        Objects = $statusResult.Objects
+                        Summary       = $statusResult.Summary
+                        Objects       = $statusResult.Objects
                     }
 
                     $stateText = switch ($overallStatus) {
-                        'fully_in_maintenance' { 'enabled' }
-                        'partially_in_maintenance' { 'partially enabled' }
-                        default { 'disabled' }
+                        'fully_in_maintenance' {
+                            'enabled' 
+                        }
+                        'partially_in_maintenance' {
+                            'partially enabled' 
+                        }
+                        default {
+                            'disabled' 
+                        }
                     }
 
                     $message = "Maintenance mode ${Mode} is currently $stateText ($inMaintenanceCount/$totalCount objects in maintenance)"
-                }
-                catch {
+                } catch {
                     return @{ Success = $false; Error = "SCOM validation failed: $($_.Exception.Message)" }
                 }
-            }
-            elseif ($Mode -eq 'oneview') {
+            } elseif ($Mode -eq 'oneview') {
                 try {
                     $oneviewCfgCopy = $oneviewCfg.Clone()
                     if (-not $oneviewCfgCopy.ContainsKey('oneview')) {
@@ -684,12 +722,10 @@ function Set-MaintenanceMode {
                     if ($clusterDef) {
                         $targetName = $TargetId
                         $targetType = 'Scope'
-                    }
-                    elseif ($SerialNumber) {
+                    } elseif ($SerialNumber) {
                         $targetName = $TargetId
                         $targetType = 'ServerHardware'
-                    }
-                    else {
+                    } else {
                         $resolveResult = $oneviewMgr.ResolveTarget($TargetId, $false)
                         if (-not $resolveResult.Success) {
                             return @{ Success = $false; Error = "OneView could not resolve '$TargetId' as server or scope: $($resolveResult.Message)" }
@@ -718,23 +754,28 @@ function Set-MaintenanceMode {
                     }
 
                     $maintenanceStatus = @{
-                        Mode = 'oneview'
-                        TargetType = $targetType
-                        TargetName = $targetName
+                        Mode          = 'oneview'
+                        TargetType    = $targetType
+                        TargetName    = $targetName
                         OverallStatus = $overallStatus
-                        Summary = $statusResult.Summary
-                        Objects = $statusResult.Objects
+                        Summary       = $statusResult.Summary
+                        Objects       = $statusResult.Objects
                     }
 
                     $stateText = switch ($overallStatus) {
-                        'fully_in_maintenance' { 'enabled' }
-                        'partially_in_maintenance' { 'partially enabled' }
-                        default { 'disabled' }
+                        'fully_in_maintenance' {
+                            'enabled' 
+                        }
+                        'partially_in_maintenance' {
+                            'partially enabled' 
+                        }
+                        default {
+                            'disabled' 
+                        }
                     }
 
                     $message = "Maintenance mode ${Mode} is currently $stateText ($inMaintenanceCount/$totalCount objects in maintenance)"
-                }
-                catch {
+                } catch {
                     return @{ Success = $false; Error = "OneView validation failed: $($_.Exception.Message)" }
                 }
             }
@@ -746,18 +787,18 @@ function Set-MaintenanceMode {
 
         # Save audit record
         $audit = @{
-            target_id = $TargetId
-            action = $Action
-            mode = $Mode
-            dry_run = [bool]$DryRun
+            target_id       = $TargetId
+            action          = $Action
+            mode            = $Mode
+            dry_run         = [bool]$DryRun
             timestamp_start = Get-UtcTimestamp
-            steps = @{
+            steps           = @{
                 maintenance_check = @{
                     Success = $true
-                    Status = $maintenanceStatus
+                    Status  = $maintenanceStatus
                 }
             }
-            success = $true
+            success         = $true
         }
         _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
 
@@ -765,26 +806,56 @@ function Set-MaintenanceMode {
         Write-Host "Servers: $($servers -join ', ')"
 
         return @{
-            Success = $true
-            Message = $message
-            TargetId = if ($TargetId) { $TargetId } elseif ($SerialNumber) { $SerialNumber } else { $null }
-            SerialNumber = if ($SerialNumber) { $SerialNumber } else { $null }
-            ServerCount = ($servers | Measure-Object).Count
-            DryRun = [bool]$DryRun
-            OverallStatus = $maintenanceStatus.OverallStatus
-            StatusText = $stateText
+            Success           = $true
+            Message           = $message
+            TargetId          = if ($TargetId) {
+                $TargetId 
+            } elseif ($SerialNumber) {
+                $SerialNumber 
+            } else {
+                $null 
+            }
+            SerialNumber      = if ($SerialNumber) {
+                $SerialNumber 
+            } else {
+                $null 
+            }
+            ServerCount       = ($servers | Measure-Object).Count
+            DryRun            = [bool]$DryRun
+            OverallStatus     = $maintenanceStatus.OverallStatus
+            StatusText        = $stateText
             MaintenanceStatus = $maintenanceStatus
-            ScomObjects = if ($Mode -eq 'scom') { $statusResult.Objects } else { @() }
-            ScomSummary = if ($Mode -eq 'scom') { $statusResult.Summary } else { @{ Total = 0; InMaintenance = 0; NotInMaintenance = 0; Failed = 0 } }
-            OneViewObjects = if ($Mode -eq 'oneview') { $statusResult.Objects } else { @() }
-            OneViewSummary = if ($Mode -eq 'oneview') { $statusResult.Summary } else { @{ Total = 0; InMaintenance = 0; NotInMaintenance = 0; Failed = 0 } }
-            FailedObjects = @()
+            ScomObjects       = if ($Mode -eq 'scom') {
+                $statusResult.Objects 
+            } else {
+                @() 
+            }
+            ScomSummary       = if ($Mode -eq 'scom') {
+                $statusResult.Summary 
+            } else {
+                @{ Total = 0; InMaintenance = 0; NotInMaintenance = 0; Failed = 0 } 
+            }
+            OneViewObjects    = if ($Mode -eq 'oneview') {
+                $statusResult.Objects 
+            } else {
+                @() 
+            }
+            OneViewSummary    = if ($Mode -eq 'oneview') {
+                $statusResult.Summary 
+            } else {
+                @{ Total = 0; InMaintenance = 0; NotInMaintenance = 0; Failed = 0 } 
+            }
+            FailedObjects     = @()
         }
     }
 
     # Load environment-based connection config
     $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
-    $hostsCfg = if (Test-Path $hostsCfgPath) { Import-JsonConfig -Path $hostsCfgPath -Required:$false } else { @{} }
+    $hostsCfg = if (Test-Path $hostsCfgPath) {
+        Import-JsonConfig -Path $hostsCfgPath -Required:$false 
+    } else {
+        @{} 
+    }
     
     # Determine environment: parameter > env var > default to Prod
     $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) { 
@@ -850,13 +921,21 @@ function Set-MaintenanceMode {
         $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
         
         if (-not $resolvedUsername -and -not $isAutomated) {
-            $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
+            $credPrompt = if ($Mode -eq 'scom') {
+                "SCOM" 
+            } else {
+                "OneView" 
+            }
             Write-Host "Enter $credPrompt username:" -ForegroundColor Yellow
             $resolvedUsername = Read-Host
         }
         
         if (-not $resolvedPassword -and -not $isAutomated) {
-            $credPrompt = if ($Mode -eq 'scom') { "SCOM" } else { "OneView" }
+            $credPrompt = if ($Mode -eq 'scom') {
+                "SCOM" 
+            } else {
+                "OneView" 
+            }
             $securePass = Read-Host "Enter $credPrompt password" -AsSecureString
             $resolvedPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
                 [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
@@ -865,19 +944,23 @@ function Set-MaintenanceMode {
         
         if (-not $resolvedUsername -or -not $resolvedPassword) {
             $missingCreds = @()
-            if (-not $resolvedUsername) { $missingCreds += "username" }
-            if (-not $resolvedPassword) { $missingCreds += "password" }
+            if (-not $resolvedUsername) {
+                $missingCreds += "username" 
+            }
+            if (-not $resolvedPassword) {
+                $missingCreds += "password" 
+            }
             return @{ 
                 Success = $false
-                Error = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
+                Error   = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
             }
         }
     }
 
     # Load configs
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
-    $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json')           -Required:$false
-    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json')        -Required:$false
+    $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json') -Required:$false
+    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json') -Required:$false
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
 
@@ -885,9 +968,14 @@ function Set-MaintenanceMode {
     $startDt = $null; $endDt = $null
     $utcStart = $null; $utcEnd = $null
     if ($Action -eq 'enable') {
-        if ($Start) { $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt }
-        else { $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt }
-        if ($End) { $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt }
+        if ($Start) {
+            $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt 
+        } else {
+            $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt 
+        }
+        if ($End) {
+            $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt 
+        }
     }
 
     # Finalize Start / End with catalogue defaults if needed
@@ -906,7 +994,9 @@ function Set-MaintenanceMode {
                 $schedule = $clusterDef.Get_Item('schedule')
                 if ($schedule) {
                     $scheduleEnd = _Compute-NextWorkStart $schedule $startDt
-                    if ($scheduleEnd -gt $endDt) { $endDt = $scheduleEnd }
+                    if ($scheduleEnd -gt $endDt) {
+                        $endDt = $scheduleEnd 
+                    }
                 }
             }
             $utcEnd = Convert-ToUtcIso8601 $endDt
@@ -915,10 +1005,10 @@ function Set-MaintenanceMode {
         if ($endDt -le $startDt) { 
             Write-Verbose 'End time must be after start time.'
             return @{ 
-                Success = $false; 
-                Error = 'End time must be after start time.';
+                Success      = $false; 
+                Error        = 'End time must be after start time.';
                 StartTimeUtc = $utcStart;
-                EndTimeUtc = $utcEnd;
+                EndTimeUtc   = $utcEnd;
             } 
         }
         $duration = $endDt - $startDt
@@ -939,7 +1029,9 @@ function Set-MaintenanceMode {
             if ($resolvedUsername -and $resolvedPassword) {
                 $scomMgr.Cred = @{ username = $resolvedUsername; password = $resolvedPassword }
             }
-        } catch { Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" }
+        } catch {
+            Write-Warning "SCOM manager unavailable: $($_.Exception.Message)" 
+        }
     }
 
     if ($Mode -eq 'oneview') {
@@ -957,20 +1049,28 @@ function Set-MaintenanceMode {
             }
             
             # Resolve target for oneview - determine if server or cluster/scope
-            if ($oneviewMgr -and $isDirectServerMode) {
+            if ($oneviewMgr -and $isDirectServerMode -and -not $DryRun) {
                 $resolveResult = $oneviewMgr.ResolveTarget($TargetId, [bool]$DryRun)
                 if (-not $resolveResult.Success) {
                     return @{ Success = $false; Error = "OneView could not resolve '$TargetId' as server or cluster: $($resolveResult.Message)" }
                 }
                 $clusterName = $resolveResult.TargetName
             }
-        } catch { Write-Warning "OneView client unavailable: $($_.Exception.Message)" }
+        } catch {
+            Write-Warning "OneView client unavailable: $($_.Exception.Message)" 
+        }
     }
 
     $emailer = [EmailNotifier]::new($emailCfg)
 
     $opsrampClient = $null
-    if ($opsrampCfg) { try { $opsrampClient = [OpsRamp_Client]::new((Join-Path $Script:ConfigDir 'opsramp_config.json')) } catch { Write-Debug "OpsRamp init failed" } }
+    if ($opsrampCfg) {
+        try {
+            $opsrampClient = [OpsRamp_Client]::new((Join-Path $Script:ConfigDir 'opsramp_config.json')) 
+        } catch {
+            Write-Debug "OpsRamp init failed" 
+        } 
+    }
 
     # Test connection before proceeding (non-dry-run only)
     if (-not $DryRun) {
@@ -979,8 +1079,8 @@ function Set-MaintenanceMode {
             $connectionOk = Test-ScomConnection -ManagementServer $scomMgr.MgmtServer -Username $scomMgr.Cred.username -Password $scomMgr.Cred.password
             if (-not $connectionOk) {
                 return @{ 
-                    Success = $false
-                    Error = "Failed to connect to SCOM management server '$($scomMgr.MgmtServer)'. Check credentials and network connectivity."
+                    Success     = $false
+                    Error       = "Failed to connect to SCOM management server '$($scomMgr.MgmtServer)'. Check credentials and network connectivity."
                     ClusterName = $clusterName
                 }
             }
@@ -991,11 +1091,17 @@ function Set-MaintenanceMode {
             Write-Verbose "Testing OneView connection to $($oneviewMgr.Appliance)..."
             $connectionOk = Test-OneViewConnection -Appliance $oneviewMgr.Appliance -Username $oneviewMgr.Username -Password $oneviewMgr.Password
             if (-not $connectionOk) {
-                $targetNameErr = if ($SerialNumber) { $SerialNumber } elseif ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
+                $targetNameErr = if ($SerialNumber) {
+                    $SerialNumber 
+                } elseif ($resolveResult) {
+                    $resolveResult.TargetName 
+                } else {
+                    $TargetId 
+                }
                 return @{ 
-                    Success = $false
-                    Error = "Failed to connect to OneView appliance '$($oneviewMgr.Appliance)'. Check credentials and network connectivity."
-                    TargetId = $TargetId
+                    Success      = $false
+                    Error        = "Failed to connect to OneView appliance '$($oneviewMgr.Appliance)'. Check credentials and network connectivity."
+                    TargetId     = $TargetId
                     SerialNumber = $SerialNumber
                 }
             }
@@ -1016,10 +1122,17 @@ function Set-MaintenanceMode {
             if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -gt 0) {
                 $alreadyEnabled = $true
             }
-        }
-        elseif ($Mode -eq 'oneview' -and $oneviewMgr) {
-            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
-            $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+        } elseif ($Mode -eq 'oneview' -and $oneviewMgr) {
+            $targetName = if ($resolveResult) {
+                $resolveResult.TargetName 
+            } else {
+                $TargetId 
+            }
+            $targetType = if ($resolveResult) {
+                $resolveResult.TargetType 
+            } else {
+                'Scope' 
+            }
             $preCheckResult = $oneviewMgr.GetMaintenanceStatus($targetName, $targetType)
             if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -gt 0) {
                 $alreadyEnabled = $true
@@ -1034,11 +1147,11 @@ function Set-MaintenanceMode {
             $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
             _Save-AuditRecord $audit $auditFile
             return @{
-                Success = $false
-                Error = $msg
-                Mode = $Mode
-                Action = $Action
-                TargetId = $TargetId
+                Success   = $false
+                Error     = $msg
+                Mode      = $Mode
+                Action    = $Action
+                TargetId  = $TargetId
                 AuditFile = $auditFile
             }
         }
@@ -1050,33 +1163,49 @@ function Set-MaintenanceMode {
         if ($DryRun) {
             # In DryRun mode, use mock data instead of calling SCOM API
             $mockServers = @($servers | ForEach-Object { $_ })
-            if ($mockServers.Count -eq 0) { $mockServers = @($TargetId) }
+            if ($mockServers.Count -eq 0) {
+                $mockServers = @($TargetId) 
+            }
             
             $mockState = $MockMaintenanceState.ToLower()
             $mockInMaintenanceCount = switch ($mockState) {
-                'enable' { $mockServers.Count }
-                'partial' { [int][Math]::Ceiling($mockServers.Count / 2) }
-                default { $mockServers.Count }
+                'enable' {
+                    $mockServers.Count 
+                }
+                'partial' {
+                    [int][Math]::Ceiling($mockServers.Count / 2) 
+                }
+                default {
+                    $mockServers.Count 
+                }
             }
             
             $scomObjects = @()
             for ($i = 0; $i -lt $mockServers.Count; $i++) {
                 $inMaintenance = $i -lt $mockInMaintenanceCount
                 $scomObjects += @{
-                    Name = $mockServers[$i]
-                    Type = 'WindowsComputer'
+                    Name              = $mockServers[$i]
+                    Type              = 'WindowsComputer'
                     InMaintenanceMode = $inMaintenance
-                    Status = if ($inMaintenance) { 'in_maintenance' } else { 'not_in_maintenance' }
-                    Message = if ($inMaintenance) { 'Maintenance mode enabled (DryRun mock)' } else { 'Maintenance mode disabled (DryRun mock)' }
-                    DryRun = $true
+                    Status            = if ($inMaintenance) {
+                        'in_maintenance' 
+                    } else {
+                        'not_in_maintenance' 
+                    }
+                    Message           = if ($inMaintenance) {
+                        'Maintenance mode enabled (DryRun mock)' 
+                    } else {
+                        'Maintenance mode disabled (DryRun mock)' 
+                    }
+                    DryRun            = $true
                 }
             }
             
             $scomSummary = @{
-                Total = $scomObjects.Count
-                Success = $mockInMaintenanceCount
+                Total                = $scomObjects.Count
+                Success              = $mockInMaintenanceCount
                 AlreadyInMaintenance = 0
-                Failed = 0
+                Failed               = 0
             }
             $scomOk = $true
             $scomInfo = "DryRun mode - no actual SCOM call made"
@@ -1091,11 +1220,17 @@ function Set-MaintenanceMode {
             $scomOk = $scomRes.Success
             $scomObjects = $scomRes.Objects
             $scomSummary = $scomRes.Summary
-            $scomInfo = if ($scomRes.Output) { ($scomRes.Output -join "`n") } else { '' }
+            $scomInfo = if ($scomRes.Output) {
+                ($scomRes.Output -join "`n") 
+            } else {
+                '' 
+            }
         }
-    if ($Mode -eq 'scom') {
+        if ($Mode -eq 'scom') {
             $audit.steps['scom'] = @{ Success = $scomOk; Info = $scomInfo; Objects = $scomObjects; Summary = $scomSummary }
-            if (-not $scomOk) { $overallOk = $false }
+            if (-not $scomOk) {
+                $overallOk = $false 
+            }
         }
 
         # OneView — for 'oneview' mode
@@ -1104,39 +1239,63 @@ function Set-MaintenanceMode {
             if ($DryRun) {
                 # In DryRun mode, use mock data instead of calling OneView API
                 $mockServers = @($servers | ForEach-Object { $_ })
-                if ($mockServers.Count -eq 0) { $mockServers = @($TargetId) }
+                if ($mockServers.Count -eq 0) {
+                    $mockServers = @($TargetId) 
+                }
                 
                 $mockState = $MockMaintenanceState.ToLower()
                 $mockInMaintenanceCount = switch ($mockState) {
-                    'enable' { $mockServers.Count }
-                    'partial' { [int][Math]::Ceiling($mockServers.Count / 2) }
-                    default { $mockServers.Count }
+                    'enable' {
+                        $mockServers.Count 
+                    }
+                    'partial' {
+                        [int][Math]::Ceiling($mockServers.Count / 2) 
+                    }
+                    default {
+                        $mockServers.Count 
+                    }
                 }
                 
                 $oneviewObjects = @()
                 for ($i = 0; $i -lt $mockServers.Count; $i++) {
                     $inMaintenance = $i -lt $mockInMaintenanceCount
                     $oneviewObjects += @{
-                        Name = $mockServers[$i]
-                        Type = 'ServerHardware'
+                        Name              = $mockServers[$i]
+                        Type              = 'ServerHardware'
                         InMaintenanceMode = $inMaintenance
-                        Status = if ($inMaintenance) { 'in_maintenance' } else { 'not_in_maintenance' }
-                        Message = if ($inMaintenance) { 'Maintenance mode enabled (DryRun mock)' } else { 'Maintenance mode disabled (DryRun mock)' }
-                        DryRun = $true
+                        Status            = if ($inMaintenance) {
+                            'in_maintenance' 
+                        } else {
+                            'not_in_maintenance' 
+                        }
+                        Message           = if ($inMaintenance) {
+                            'Maintenance mode enabled (DryRun mock)' 
+                        } else {
+                            'Maintenance mode disabled (DryRun mock)' 
+                        }
+                        DryRun            = $true
                     }
                 }
                 
                 $oneviewSummary = @{
-                    Total = $oneviewObjects.Count
-                    Success = $mockInMaintenanceCount
+                    Total                = $oneviewObjects.Count
+                    Success              = $mockInMaintenanceCount
                     AlreadyInMaintenance = 0
-                    Failed = 0
+                    Failed               = 0
                 }
                 $oneviewOk = $true
                 $oneviewMsg = "DryRun mode - no actual OneView call made"
             } elseif ($oneviewMgr) {
-                $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
-                $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+                $targetName = if ($resolveResult) {
+                    $resolveResult.TargetName 
+                } else {
+                    $TargetId 
+                }
+                $targetType = if ($resolveResult) {
+                    $resolveResult.TargetType 
+                } else {
+                    'Scope' 
+                }
                 $oneviewRes = $oneviewMgr.SetMaintenance($targetName, $targetType, $startDt, $endDt, [bool]$DryRun)
                 $oneviewOk = $oneviewRes.Success; $oneviewMsg = $oneviewRes.Message
                 $oneviewObjects = $oneviewRes.Objects ?? @()
@@ -1145,19 +1304,31 @@ function Set-MaintenanceMode {
                 $oneviewOk = $false; $oneviewMsg = 'OneView client not available'
             }
             $audit.steps['oneview'] = @{ Success = $oneviewOk; Message = $oneviewMsg; Objects = $oneviewObjects; Summary = $oneviewSummary }
-            if (-not $oneviewOk) { $overallOk = $false }
+            if (-not $oneviewOk) {
+                $overallOk = $false 
+            }
         }
 
         # Email
         $emailOk = $emailer.SendMaintenanceNotification('enabled', $clusterDef, $servers, $startDt, $endDt, [bool]$DryRun)
         $audit.steps['email'] = @{ Sent = $emailOk }
-        if (-not $emailOk -and -not $DryRun) { $overallOk = $false }
+        if (-not $emailOk -and -not $DryRun) {
+            $overallOk = $false 
+        }
 
         # OpsRamp
         $opsOk = $false
         if ($opsrampClient -and -not $DryRun) {
-            $env = if ($clusterDef) { $clusterDef.Get_Item('environment') } else { 'unknown' }
-            $displayName = if ($clusterDef) { $clusterDef.Get_Item('display_name') } else { $clusterName }
+            $env = if ($clusterDef) {
+                $clusterDef.Get_Item('environment') 
+            } else {
+                'unknown' 
+            }
+            $displayName = if ($clusterDef) {
+                $clusterDef.Get_Item('display_name') 
+            } else {
+                $clusterName 
+            }
             foreach ($s in $servers) {
                 $opsrampClient.SendMetric($s, 'maintenance.mode', 1, [DateTime]::MinValue, @{ cluster = $TargetId; environment = $env })
             }
@@ -1183,12 +1354,12 @@ function Set-MaintenanceMode {
                 schtasks /Create /TN $taskName /TR "`"$($PSHOME)\pwsh.exe`" `"$scriptAbs`" -Action disable -TargetId $TargetId -NoSchedule" `
                     /SC ONCE /ST $stTime /SD $sdDate /RL HIGHEST /RU SYSTEM /F 2>&1 | Out-Null
                 $audit.steps.scheduled_task = @{ Created = $true }
+            } catch {
+                $audit.steps.scheduled_task = @{ Created = $false; Error = $_.Exception.Message }; $overallOk = $false 
             }
-            catch { $audit.steps.scheduled_task = @{ Created = $false; Error = $_.Exception.Message }; $overallOk = $false }
         }
         
-    }
-    elseif ($Action -eq 'disable') {
+    } elseif ($Action -eq 'disable') {
         # Check if already out of maintenance mode
         $alreadyDisabled = $false
         if ($Mode -eq 'scom' -and $scomMgr -and $clusterDef) {
@@ -1197,10 +1368,17 @@ function Set-MaintenanceMode {
             if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -eq 0) {
                 $alreadyDisabled = $true
             }
-        }
-        elseif ($Mode -eq 'oneview' -and $oneviewMgr) {
-            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
-            $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+        } elseif ($Mode -eq 'oneview' -and $oneviewMgr) {
+            $targetName = if ($resolveResult) {
+                $resolveResult.TargetName 
+            } else {
+                $TargetId 
+            }
+            $targetType = if ($resolveResult) {
+                $resolveResult.TargetType 
+            } else {
+                'Scope' 
+            }
             $preCheckResult = $oneviewMgr.GetMaintenanceStatus($targetName, $targetType)
             if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -eq 0) {
                 $alreadyDisabled = $true
@@ -1215,11 +1393,11 @@ function Set-MaintenanceMode {
             $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
             _Save-AuditRecord $audit $auditFile
             return @{
-                Success = $false
-                Error = $msg
-                Mode = $Mode
-                Action = $Action
-                TargetId = $TargetId
+                Success   = $false
+                Error     = $msg
+                Mode      = $Mode
+                Action    = $Action
+                TargetId  = $TargetId
                 AuditFile = $auditFile
             }
         }
@@ -1237,7 +1415,9 @@ function Set-MaintenanceMode {
             $scomExitObjects = $scomExitRes.Objects
             $scomExitSummary = $scomExitRes.Summary
             $audit.steps['scom_exit'] = @{ Success = $scomExitOk; Objects = $scomExitObjects; Summary = $scomExitSummary }
-            if (-not $scomExitOk) { $overallOk = $false }
+            if (-not $scomExitOk) {
+                $overallOk = $false 
+            }
 
             # Wait/sleep period after disabling SCOM maintenance to allow servers time
             # to reboot, restart services, and stabilize before alerting resumes.
@@ -1247,36 +1427,60 @@ function Set-MaintenanceMode {
                 Start-Sleep -Seconds $PostDisableWaitSeconds
                 Write-Host 'Stabilization wait complete. Alerting is now active.'
                 $audit.steps['post_disable_wait'] = @{ Seconds = $PostDisableWaitSeconds }
-            }
-            else {
-                $audit.steps['post_disable_wait'] = @{ Skipped = $true; Reason = if ($DryRun) { 'DryRun' } else { 'PostDisableWaitSeconds=0' } }
+            } else {
+                $audit.steps['post_disable_wait'] = @{ Skipped = $true; Reason = if ($DryRun) {
+                        'DryRun' 
+                    } else {
+                        'PostDisableWaitSeconds=0' 
+                    } 
+                }
             }
         }
 
         # OneView disable — for 'oneview' mode
         $oneviewExitOk = $true; $oneviewExitMsg = ''; $oneviewExitObjects = @(); $oneviewExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
         if ($Mode -eq 'oneview' -and $oneviewMgr) {
-            $targetName = if ($resolveResult) { $resolveResult.TargetName } else { $TargetId }
-            $targetType = if ($resolveResult) { $resolveResult.TargetType } else { 'Scope' }
+            $targetName = if ($resolveResult) {
+                $resolveResult.TargetName 
+            } else {
+                $TargetId 
+            }
+            $targetType = if ($resolveResult) {
+                $resolveResult.TargetType 
+            } else {
+                'Scope' 
+            }
             $oneviewExitRes = $oneviewMgr.DisableMaintenance($targetName, $targetType, [bool]$DryRun)
             $oneviewExitOk = $oneviewExitRes.Success; $oneviewExitMsg = $oneviewExitRes.Message
             $oneviewExitObjects = $oneviewExitRes.Objects ?? @()
             $oneviewExitSummary = $oneviewExitRes.Summary ?? @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
             $audit.steps['oneview_exit'] = @{ Success = $oneviewExitOk; Message = $oneviewExitMsg; Objects = $oneviewExitObjects; Summary = $oneviewExitSummary }
-            if (-not $oneviewExitOk) { $overallOk = $false }
+            if (-not $oneviewExitOk) {
+                $overallOk = $false 
+            }
         }
 
         # Email disable notification
         if ($clusterDef) {
             $emailOk = $emailer.SendMaintenanceNotification('disabled', $clusterDef, $servers, $null, [DateTime]::UtcNow, [bool]$DryRun)
             $audit.steps['email'] = @{ Sent = $emailOk }
-            if (-not $emailOk) { $overallOk = $false }
+            if (-not $emailOk) {
+                $overallOk = $false 
+            }
         }
 
         # OpsRamp
         if ($opsrampClient -and -not $DryRun) {
-            $env = if ($clusterDef) { $clusterDef.Get_Item('environment') } else { 'unknown' }
-            $displayName = if ($clusterDef) { $clusterDef.Get_Item('display_name') } else { $clusterName }
+            $env = if ($clusterDef) {
+                $clusterDef.Get_Item('environment') 
+            } else {
+                'unknown' 
+            }
+            $displayName = if ($clusterDef) {
+                $clusterDef.Get_Item('display_name') 
+            } else {
+                $clusterName 
+            }
             foreach ($s in $servers) {
                 $opsrampClient.SendMetric($s, 'maintenance.mode', 0, [DateTime]::MinValue, @{ cluster = $TargetId; environment = $env })
             }
@@ -1291,19 +1495,32 @@ function Set-MaintenanceMode {
         # Clean up scheduled task
         if ($IsWindows) {
             $taskName = "MaintenanceDisable-$TargetId"
-            try { schtasks /Delete /TN $taskName /F 2>&1 | Out-Null; $audit.steps.scheduled_task_cleanup = @{ Deleted = $true } }
-            catch { $audit.steps.scheduled_task_cleanup = @{ Deleted = $false; Error = $_.Exception.Message } }
+            try {
+                schtasks /Delete /TN $taskName /F 2>&1 | Out-Null; $audit.steps.scheduled_task_cleanup = @{ Deleted = $true } 
+            } catch {
+                $audit.steps.scheduled_task_cleanup = @{ Deleted = $false; Error = $_.Exception.Message } 
+            }
         }
     }
 
     $audit.success = $overallOk
-    $auditTargetId = if ($TargetId) { $TargetId } elseif ($SerialNumber) { "serial-$SerialNumber" } else { "unknown" }
+    $auditTargetId = if ($TargetId) {
+        $TargetId 
+    } elseif ($SerialNumber) {
+        "serial-$SerialNumber" 
+    } else {
+        "unknown" 
+    }
     $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${auditTargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
     _Save-AuditRecord $audit $auditFile
 
     # Build detailed completion message
     $serverCount = ($servers | Measure-Object).Count
-    $dryRunNote = if ($DryRun) { " [DRY-RUN]" } else { "" }
+    $dryRunNote = if ($DryRun) {
+        " [DRY-RUN]" 
+    } else {
+        "" 
+    }
     
     # Determine if target is a server or cluster based on mode and target type
     $targetEntity = 'cluster'
@@ -1329,7 +1546,11 @@ function Set-MaintenanceMode {
         }
     }
     
-    $modeName = if ($Mode -eq 'oneview') { 'OneView' } else { 'SCOM' }
+    $modeName = if ($Mode -eq 'oneview') {
+        'OneView' 
+    } else {
+        'SCOM' 
+    }
     
     $detailMessage = if ($overallOk) {
         if ($Action -eq 'enable') {
@@ -1337,7 +1558,9 @@ function Set-MaintenanceMode {
                 $totalHours = [int]$duration.TotalHours
                 $mins = $duration.Minutes
                 " (Duration: ${totalHours}h ${mins}m)"
-            } else { "" }
+            } else {
+                "" 
+            }
             "Maintenance $Action completed for $targetEntity '$targetName' ($serverCount servers) [$modeName mode]$durationStr$dryRunNote. Window: $utcStart -> $utcEnd"
         } elseif ($Action -eq 'disable') {
             "Maintenance $Action completed for $targetEntity '$targetName' ($serverCount servers) [$modeName mode]$dryRunNote. Maintenance mode deactivated."
@@ -1348,8 +1571,11 @@ function Set-MaintenanceMode {
         "Maintenance $Action finished with errors for $targetEntity '$targetName' [$modeName mode]$dryRunNote. Check audit: $auditFile"
     }
     
-    if ($overallOk) { Write-Host $detailMessage }
-    else { Write-Warning $detailMessage }
+    if ($overallOk) {
+        Write-Host $detailMessage 
+    } else {
+        Write-Warning $detailMessage 
+    }
     
     # Build per-object results for response
     $allScomObjects = @($scomObjects ?? @())
@@ -1365,25 +1591,67 @@ function Set-MaintenanceMode {
     
     $failedObjects = [array]@($actionObjects | Where-Object { $_.Status -eq 'failed' })
     
-    return @{ 
-        Success = $overallOk
-        Message = $detailMessage
-        Action = $Action
-        Mode = $Mode
-        Environment = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
-        StartTimeUtc = if ($Action -eq 'enable') { $utcStart } else { $null }
-        EndTimeUtc = if ($Action -eq 'enable') { $utcEnd } else { $null }
-        TargetId = if ($TargetId) { $TargetId } elseif ($SerialNumber) { $SerialNumber } else { $null }
-        SerialNumber = if ($SerialNumber) { $SerialNumber } else { $null }
-        ServerCount = $serverCount
-        DryRun = [bool]$DryRun
-        AuditFile = $auditFile
-        ScomObjects = $allScomObjects
-        ScomSummary = if ($Action -eq 'enable') { $scomSummary } elseif ($Action -eq 'disable') { $scomExitSummary } else { @{} }
+    $result = @{ 
+        Success        = $overallOk
+        Message        = $detailMessage
+        Action         = $Action
+        Mode           = $Mode
+        Environment    = if ($PSBoundParameters.ContainsKey('Environment')) {
+            $Environment 
+        } else {
+            $null 
+        }
+        StartTimeUtc   = if ($Action -eq 'enable') {
+            $utcStart 
+        } else {
+            $null 
+        }
+        EndTimeUtc     = if ($Action -eq 'enable') {
+            $utcEnd 
+        } else {
+            $null 
+        }
+        TargetId       = if ($TargetId) {
+            $TargetId 
+        } elseif ($SerialNumber) {
+            $SerialNumber 
+        } else {
+            $null 
+        }
+        SerialNumber   = if ($SerialNumber) {
+            $SerialNumber 
+        } else {
+            $null 
+        }
+        ServerCount    = $serverCount
+        DryRun         = [bool]$DryRun
+        AuditFile      = $auditFile
+        ScomObjects    = $allScomObjects
+        ScomSummary    = if ($Action -eq 'enable') {
+            $scomSummary 
+        } elseif ($Action -eq 'disable') {
+            $scomExitSummary 
+        } else {
+            @{} 
+        }
         OneViewObjects = $allOneviewObjects
-        OneViewSummary = if ($Action -eq 'enable') { $oneviewSummary } elseif ($Action -eq 'disable') { $oneviewExitSummary } else { @{} }
-        FailedObjects = $failedObjects
+        OneViewSummary = if ($Action -eq 'enable') {
+            $oneviewSummary 
+        } elseif ($Action -eq 'disable') {
+            $oneviewExitSummary 
+        } else {
+            @{} 
+        }
+        FailedObjects  = $failedObjects
     }
+
+    if ($isDirectServerMode) {
+        $result['ServerName'] = $clusterName
+    } else {
+        $result['ClusterName'] = $clusterName
+    }
+
+    return $result
 }
 
 # ---- Constants (always defined so classes referencing them work on dot-source) ----
@@ -1396,7 +1664,9 @@ if (Get-Command Get-ProjectRoot -ErrorAction SilentlyContinue) {
     $current = $Script:BaseDir
     while ($current -and -not (Test-Path (Join-Path $current 'kilo.json')) -and -not (Test-Path (Join-Path $current 'Makefile'))) {
         $parent = Split-Path $current
-        if ($parent -eq $current -or -not $parent) { break }
+        if ($parent -eq $current -or -not $parent) {
+            break 
+        }
         $current = $parent
     }
     if (-not $current -or -not (Test-Path $current)) {
@@ -1406,14 +1676,20 @@ if (Get-Command Get-ProjectRoot -ErrorAction SilentlyContinue) {
     }
 }
 
-if (-not $Script:ConfigDir) { $Script:ConfigDir = Join-Path $Script:BaseDir 'configs' }
+if (-not $Script:ConfigDir) {
+    $Script:ConfigDir = Join-Path $Script:BaseDir 'configs' 
+}
 if (-not $Script:MaintLogDir) {
     $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
     $Script:MaintLogDir = Join-Path $Script:BaseDir "generated/logs/$($isTesting ? 'testing' : 'audit')"
 }
-if (-not $Script:DistList) { $Script:DistList = Join-Path $Script:BaseDir 'maintenance_distribution_list.txt' }
+if (-not $Script:DistList) {
+    $Script:DistList = Join-Path $Script:BaseDir 'maintenance_distribution_list.txt' 
+}
 
-if (-not (Test-Path $Script:MaintLogDir)) { Ensure-DirectoryExists -Path $Script:MaintLogDir }
+if (-not (Test-Path $Script:MaintLogDir)) {
+    Ensure-DirectoryExists -Path $Script:MaintLogDir 
+}
 
 # ---- Logging ----
 Initialize-Logging -LogFile 'maintenance.log'
@@ -1470,22 +1746,42 @@ Disconnect-OVMgmt -ErrorAction SilentlyContinue
 
 # ---- Parse datetime helpers ----
 function _Parse-Datetime([string]$s) {
-    if ($s.ToLower() -eq 'now') { return [DateTime]::UtcNow }
+    if ($s.ToLower() -eq 'now') {
+        return [DateTime]::UtcNow 
+    }
     
     # Handle relative time offsets like +1hour, +30minutes, +2days
     if ($s -match '^\+([\d]+)(seconds?|minutes?|hours?|days?)$') {
         $value = [int]$Matches[1]
         $unit = $Matches[2].ToLower()
         $offset = switch ($unit) {
-            'second' { [TimeSpan]::FromSeconds($value) }
-            'seconds' { [TimeSpan]::FromSeconds($value) }
-            'minute' { [TimeSpan]::FromMinutes($value) }
-            'minutes' { [TimeSpan]::FromMinutes($value) }
-            'hour' { [TimeSpan]::FromHours($value) }
-            'hours' { [TimeSpan]::FromHours($value) }
-            'day' { [TimeSpan]::FromDays($value) }
-            'days' { [TimeSpan]::FromDays($value) }
-            default { [TimeSpan]::Zero }
+            'second' {
+                [TimeSpan]::FromSeconds($value) 
+            }
+            'seconds' {
+                [TimeSpan]::FromSeconds($value) 
+            }
+            'minute' {
+                [TimeSpan]::FromMinutes($value) 
+            }
+            'minutes' {
+                [TimeSpan]::FromMinutes($value) 
+            }
+            'hour' {
+                [TimeSpan]::FromHours($value) 
+            }
+            'hours' {
+                [TimeSpan]::FromHours($value) 
+            }
+            'day' {
+                [TimeSpan]::FromDays($value) 
+            }
+            'days' {
+                [TimeSpan]::FromDays($value) 
+            }
+            default {
+                [TimeSpan]::Zero 
+            }
         }
         return ([DateTime]::UtcNow).Add($offset)
     }
@@ -1496,12 +1792,16 @@ function _Parse-Datetime([string]$s) {
         try { 
             $parsed = [DateTime]::ParseExact($s2, $fmt, $null)
             return [DateTime]::SpecifyKind($parsed, [DateTimeKind]::Utc)
-        } catch { continue }
+        } catch {
+            continue 
+        }
     }
     try { 
         $parsed = [DateTime]::Parse($s2)
         return [DateTime]::SpecifyKind($parsed, [DateTimeKind]::Utc)
-    } catch { Write-Debug "DateTime parse failed" }
+    } catch {
+        Write-Debug "DateTime parse failed" 
+    }
     throw "Invalid datetime format '$s'. Use 'now', '+1hour', or 'YYYY-MM-DD HH:MM[:SS]'."
 }
 
@@ -1509,10 +1809,14 @@ function _Compute-DefaultEnd([DateTime]$After) {
     # Default end time: 7am UTC Monday following the start time
     $candidate = $After.Date
     $daysUntilMonday = [int][DayOfWeek]::Monday - [int]$candidate.DayOfWeek
-    if ($daysUntilMonday -lt 0) { $daysUntilMonday += 7 }
+    if ($daysUntilMonday -lt 0) {
+        $daysUntilMonday += 7 
+    }
     $monday = $candidate.AddDays($daysUntilMonday)
     $defaultEnd = $monday.Date.AddHours(7)
-    if ($defaultEnd -le $After) { $defaultEnd = $defaultEnd.AddDays(7) }
+    if ($defaultEnd -le $After) {
+        $defaultEnd = $defaultEnd.AddDays(7) 
+    }
     return [DateTime]::SpecifyKind($defaultEnd, [DateTimeKind]::Utc)
 }
 
@@ -1525,7 +1829,9 @@ function _Compute-NextWorkStart([hashtable]$Schedule, [DateTime]$After) {
     while ($true) {
         if ($candidate.DayOfWeek -in $workDays) {
             $dt = $candidate.Date + $workStart
-            if ($dt -gt $After) { return $dt }
+            if ($dt -gt $After) {
+                return $dt 
+            }
         }
         $candidate = $candidate.AddDays(1)
     }
@@ -1533,7 +1839,9 @@ function _Compute-NextWorkStart([hashtable]$Schedule, [DateTime]$After) {
 
 function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
     $dir = Split-Path $Path -Parent
-    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null 
+    }
     
     # Add GitLab context if available
     if ($Script:GitlabContext) {
@@ -1572,7 +1880,9 @@ class SCOMManager {
             if ($uenv -and $penv) {
                 $u = [System.Environment]::GetEnvironmentVariable($uenv)
                 $p = [System.Environment]::GetEnvironmentVariable($penv)
-                if ($u -and $p) { $this.Cred = @{ username = $u; password = $p } }
+                if ($u -and $p) {
+                    $this.Cred = @{ username = $u; password = $p } 
+                }
             }
         }
         # Detect SCOM version and REST-API readiness on first use (lazy, on demand)
@@ -1580,18 +1890,23 @@ class SCOMManager {
 
     [hashtable] _RunPs([string]$Script) {
         if ($this.UseWinRM) {
-            if (-not $this.Cred) { return @{ Success = $false; Output = 'WinRM credentials not configured' } }
+            if (-not $this.Cred) {
+                return @{ Success = $false; Output = 'WinRM credentials not configured' } 
+            }
             return Invoke-PowerShellWinRM -Script $Script `
                 -Server $this.MgmtServer -Username $this.Cred['username'] -Password $this.Cred['password']
-        }
-        else {
+        } else {
             return Invoke-PowerShellScript -Script $Script
         }
     }
 
     [void] _DetectVersion() {
-        if ($this.ScomVersion -gt 0) { return }
-        if (-not $this.Cred) { return }
+        if ($this.ScomVersion -gt 0) {
+            return 
+        }
+        if (-not $this.Cred) {
+            return 
+        }
         $script = @"
 Import-Module $($this.ModuleName) -ErrorAction Stop
 `$null = New-SCOMManagementGroupConnection -ComputerName "$($this.MgmtServer)" -ErrorAction Stop
@@ -1612,11 +1927,17 @@ Write-Output "SCOM_REST_READY: `$restOk"
         if ($r.Success) {
             foreach ($line in ($r.Output -split "`n")) {
                 $trimmed = $line.Trim()
-                if ($trimmed -match '^SCOM_VERSION:\s*(\d+)')         { $this.ScomVersion = [int]$Matches[1] }
-                if ($trimmed -match '^SCOM_REST_READY:\s*(True|true)') { $this.RestApiReady = $true }
+                if ($trimmed -match '^SCOM_VERSION:\s*(\d+)') {
+                    $this.ScomVersion = [int]$Matches[1] 
+                }
+                if ($trimmed -match '^SCOM_REST_READY:\s*(True|true)') {
+                    $this.RestApiReady = $true 
+                }
             }
         }
-        if ($this.ScomVersion -eq 0) { $this.ScomVersion = 2016 }   # safe default
+        if ($this.ScomVersion -eq 0) {
+            $this.ScomVersion = 2016 
+        }   # safe default
         Write-Verbose "SCOM version detected: $($this.ScomVersion), REST ready: $($this.RestApiReady)"
     }
 
@@ -1630,7 +1951,9 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
 `$instances | ForEach-Object { `$_.Name }
 "@
         $r = $this._RunPs($script)
-        if (-not $r.Success) { return @() }
+        if (-not $r.Success) {
+            return @() 
+        }
         return ($r.Output -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() })
     }
 
@@ -1642,33 +1965,37 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
         if ($DryRun) {
             # Return mock per-object status data for DryRun testing
             # Based on clusters_catalogue.examples-only.json template
-            $mockServers = if ($ServerHostnames) { $ServerHostnames } else { @('mock-server-01.example.com', 'mock-server-02.example.com', 'mock-server-03.example.com') }
+            $mockServers = if ($ServerHostnames) {
+                $ServerHostnames 
+            } else {
+                @('mock-server-01.example.com', 'mock-server-02.example.com', 'mock-server-03.example.com') 
+            }
             $mockObjects = @()
             foreach ($srv in $mockServers) {
                 $mockObjects += @{
-                    Name = $srv
-                    Type = 'WindowsComputer'
-                    Action = 'enable'
-                    Status = 'success'
-                    Message = 'Maintenance mode enabled (DryRun)'
+                    Name       = $srv
+                    Type       = 'WindowsComputer'
+                    Action     = 'enable'
+                    Status     = 'success'
+                    Message    = 'Maintenance mode enabled (DryRun)'
                     NackReason = $null
                     Resolution = $null
                 }
             }
             $mockObjects += @{
-                Name = $GroupDisplayName
-                Type = 'WindowsCluster'
-                Action = 'enable'
-                Status = 'success'
-                Message = 'Cluster maintenance mode enabled (DryRun)'
+                Name       = $GroupDisplayName
+                Type       = 'WindowsCluster'
+                Action     = 'enable'
+                Status     = 'success'
+                Message    = 'Cluster maintenance mode enabled (DryRun)'
                 NackReason = $null
                 Resolution = $null
             }
             $mockSummary = @{
-                Total = $mockObjects.Count
-                Success = $mockObjects.Count
+                Total                = $mockObjects.Count
+                Success              = $mockObjects.Count
                 AlreadyInMaintenance = 0
-                Failed = 0
+                Failed               = 0
             }
             Write-Verbose "[DRY RUN] Would enable SCOM maintenance for group '$GroupDisplayName' ($($mockObjects.Count) objects)"
             return @{ Success = $true; Output = @(); Objects = $mockObjects; Summary = $mockSummary }
@@ -1704,30 +2031,55 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
                 try {
                     $obj = $Matches[1] | ConvertFrom-Json
                     $objects += @{
-                        Name = $obj.name
-                        Type = $obj.type
-                        Action = $obj.action
-                        Status = $obj.status
-                        Message = if ($obj.PSObject.Properties['message']) { $obj.message } else { '' }
-                        NackReason = if ($obj.PSObject.Properties['nack_reason']) { $obj.nack_reason } else { $null }
-                        Resolution = if ($obj.PSObject.Properties['resolution']) { $obj.resolution } else { $null }
+                        Name       = $obj.name
+                        Type       = $obj.type
+                        Action     = $obj.action
+                        Status     = $obj.status
+                        Message    = if ($obj.PSObject.Properties['message']) {
+                            $obj.message 
+                        } else {
+                            '' 
+                        }
+                        NackReason = if ($obj.PSObject.Properties['nack_reason']) {
+                            $obj.nack_reason 
+                        } else {
+                            $null 
+                        }
+                        Resolution = if ($obj.PSObject.Properties['resolution']) {
+                            $obj.resolution 
+                        } else {
+                            $null 
+                        }
                     }
                     switch ($obj.status) {
-                        'success' { $summary.Success++ }
-                        'already_in_maintenance' { $summary.AlreadyInMaintenance++ }
-                        default { $summary.Failed++ }
+                        'success' {
+                            $summary.Success++ 
+                        }
+                        'already_in_maintenance' {
+                            $summary.AlreadyInMaintenance++ 
+                        }
+                        default {
+                            $summary.Failed++ 
+                        }
                     }
-                } catch { continue }
-            }
-            elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
+                } catch {
+                    continue 
+                }
+            } elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
                 try {
                     $sum = $Matches[1] | ConvertFrom-Json
-                    if ($sum.PSObject.Properties['total_objects']) { $summary.Total = $sum.total_objects }
-                } catch { continue }
+                    if ($sum.PSObject.Properties['total_objects']) {
+                        $summary.Total = $sum.total_objects 
+                    }
+                } catch {
+                    continue 
+                }
             }
         }
         $summary.Failed = @($objects | Where-Object { $_.Status -eq 'failed' }).Count
-        if ($summary.Total -eq 0) { $summary.Total = $objects.Count }
+        if ($summary.Total -eq 0) {
+            $summary.Total = $objects.Count 
+        }
 
         if ($r.Success) {
             Write-Verbose "SCOM maintenance enabled: $($objects.Count) objects processed"
@@ -1743,33 +2095,37 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
 
         if ($DryRun) {
             # Return mock per-object status data for DryRun testing
-            $mockServers = if ($ServerHostnames) { $ServerHostnames } else { @('mock-server-01.example.com', 'mock-server-02.example.com', 'mock-server-03.example.com') }
+            $mockServers = if ($ServerHostnames) {
+                $ServerHostnames 
+            } else {
+                @('mock-server-01.example.com', 'mock-server-02.example.com', 'mock-server-03.example.com') 
+            }
             $mockObjects = @()
             foreach ($srv in $mockServers) {
                 $mockObjects += @{
-                    Name = $srv
-                    Type = 'WindowsComputer'
-                    Action = 'disable'
-                    Status = 'success'
-                    Message = 'Maintenance mode stopped (DryRun)'
+                    Name       = $srv
+                    Type       = 'WindowsComputer'
+                    Action     = 'disable'
+                    Status     = 'success'
+                    Message    = 'Maintenance mode stopped (DryRun)'
                     NackReason = $null
                     Resolution = $null
                 }
             }
             $mockObjects += @{
-                Name = $GroupDisplayName
-                Type = 'WindowsCluster'
-                Action = 'disable'
-                Status = 'success'
-                Message = 'Cluster maintenance mode stopped (DryRun)'
+                Name       = $GroupDisplayName
+                Type       = 'WindowsCluster'
+                Action     = 'disable'
+                Status     = 'success'
+                Message    = 'Cluster maintenance mode stopped (DryRun)'
                 NackReason = $null
                 Resolution = $null
             }
             $mockSummary = @{
-                Total = $mockObjects.Count
-                Success = $mockObjects.Count
+                Total            = $mockObjects.Count
+                Success          = $mockObjects.Count
                 NotInMaintenance = 0
-                Failed = 0
+                Failed           = 0
             }
             Write-Verbose "[DRY RUN] Would disable SCOM maintenance for group '$GroupDisplayName' ($($mockObjects.Count) objects)"
             return @{ Success = $true; Output = @(); Objects = $mockObjects; Summary = $mockSummary }
@@ -1788,30 +2144,55 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
                     try {
                         $obj = $Matches[1] | ConvertFrom-Json
                         $objects += @{
-                            Name = $obj.name
-                            Type = $obj.type
-                            Action = $obj.action
-                            Status = $obj.status
-                            Message = if ($obj.PSObject.Properties['message']) { $obj.message } else { '' }
-                            NackReason = if ($obj.PSObject.Properties['nack_reason']) { $obj.nack_reason } else { $null }
-                            Resolution = if ($obj.PSObject.Properties['resolution']) { $obj.resolution } else { $null }
+                            Name       = $obj.name
+                            Type       = $obj.type
+                            Action     = $obj.action
+                            Status     = $obj.status
+                            Message    = if ($obj.PSObject.Properties['message']) {
+                                $obj.message 
+                            } else {
+                                '' 
+                            }
+                            NackReason = if ($obj.PSObject.Properties['nack_reason']) {
+                                $obj.nack_reason 
+                            } else {
+                                $null 
+                            }
+                            Resolution = if ($obj.PSObject.Properties['resolution']) {
+                                $obj.resolution 
+                            } else {
+                                $null 
+                            }
                         }
                         switch ($obj.status) {
-                            'success' { $summary.Success++ }
-                            'not_in_maintenance' { $summary.NotInMaintenance++ }
-                            default { $summary.Failed++ }
+                            'success' {
+                                $summary.Success++ 
+                            }
+                            'not_in_maintenance' {
+                                $summary.NotInMaintenance++ 
+                            }
+                            default {
+                                $summary.Failed++ 
+                            }
                         }
-                    } catch { continue }
-                }
-                elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
+                    } catch {
+                        continue 
+                    }
+                } elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
                     try {
                         $sum = $Matches[1] | ConvertFrom-Json
-                        if ($sum.PSObject.Properties['total_objects']) { $summary.Total = $sum.total_objects }
-                    } catch { continue }
+                        if ($sum.PSObject.Properties['total_objects']) {
+                            $summary.Total = $sum.total_objects 
+                        }
+                    } catch {
+                        continue 
+                    }
                 }
             }
             $summary.Failed = @($objects | Where-Object { $_.Status -eq 'failed' }).Count
-            if ($summary.Total -eq 0) { $summary.Total = $objects.Count }
+            if ($summary.Total -eq 0) {
+                $summary.Total = $objects.Count 
+            }
             return @{ Success = $r.Success; Output = @($r.Output); Objects = $objects; Summary = $summary }
         }
 
@@ -1834,30 +2215,55 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
                 try {
                     $obj = $Matches[1] | ConvertFrom-Json
                     $objects += @{
-                        Name = $obj.name
-                        Type = $obj.type
-                        Action = $obj.action
-                        Status = $obj.status
-                        Message = if ($obj.PSObject.Properties['message']) { $obj.message } else { '' }
-                        NackReason = if ($obj.PSObject.Properties['nack_reason']) { $obj.nack_reason } else { $null }
-                        Resolution = if ($obj.PSObject.Properties['resolution']) { $obj.resolution } else { $null }
+                        Name       = $obj.name
+                        Type       = $obj.type
+                        Action     = $obj.action
+                        Status     = $obj.status
+                        Message    = if ($obj.PSObject.Properties['message']) {
+                            $obj.message 
+                        } else {
+                            '' 
+                        }
+                        NackReason = if ($obj.PSObject.Properties['nack_reason']) {
+                            $obj.nack_reason 
+                        } else {
+                            $null 
+                        }
+                        Resolution = if ($obj.PSObject.Properties['resolution']) {
+                            $obj.resolution 
+                        } else {
+                            $null 
+                        }
                     }
                     switch ($obj.status) {
-                        'success' { $summary.Success++ }
-                        'not_in_maintenance' { $summary.NotInMaintenance++ }
-                        default { $summary.Failed++ }
+                        'success' {
+                            $summary.Success++ 
+                        }
+                        'not_in_maintenance' {
+                            $summary.NotInMaintenance++ 
+                        }
+                        default {
+                            $summary.Failed++ 
+                        }
                     }
-                } catch { continue }
-            }
-            elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
+                } catch {
+                    continue 
+                }
+            } elseif ($trimmed -match '^SUMMARY:(\{.*\})$') {
                 try {
                     $sum = $Matches[1] | ConvertFrom-Json
-                    if ($sum.PSObject.Properties['total_objects']) { $summary.Total = $sum.total_objects }
-                } catch { continue }
+                    if ($sum.PSObject.Properties['total_objects']) {
+                        $summary.Total = $sum.total_objects 
+                    }
+                } catch {
+                    continue 
+                }
             }
         }
         $summary.Failed = @($objects | Where-Object { $_.Status -eq 'failed' }).Count
-        if ($summary.Total -eq 0) { $summary.Total = $objects.Count }
+        if ($summary.Total -eq 0) {
+            $summary.Total = $objects.Count 
+        }
 
         Write-Verbose "SCOM maintenance disable output: $($r.Output)"
         return @{ Success = $r.Success; Output = @($r.Output); Objects = $objects; Summary = $summary }
@@ -1870,7 +2276,9 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
     [hashtable] _EnterMaintenanceRest([string]$EndTimeStr, [string]$Comment,
         [string[]]$ServerHostnames, [bool]$UseClusterMode) {
 
-        if (-not $this.Cred) { return @{ Success = $false; Output = 'No SCOM REST credentials' } }
+        if (-not $this.Cred) {
+            return @{ Success = $false; Output = 'No SCOM REST credentials' } 
+        }
 
         # The REST script authenticates, resolves monitoring object IDs, calls POST /ScheduleMaintenance
         $serverJson = ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join ","
@@ -1956,7 +2364,9 @@ try {
     }
 
     [hashtable] _ExitMaintenanceRest([string]$GroupDisplayName, [string[]]$ServerHostnames, [bool]$UseClusterMode) {
-        if (-not $this.Cred) { return @{ Success = $false; Output = 'No SCOM REST credentials' } }
+        if (-not $this.Cred) {
+            return @{ Success = $false; Output = 'No SCOM REST credentials' } 
+        }
 
         # Exit maintenance for REST SCOM:
         # Use PowerShell cmdlets to disable because the REST API does not expose
@@ -1969,7 +2379,11 @@ try {
                 -Comment 'exit' -Operation 'stop'
         }
         if (-not $script) {
-            $serverJson = if ($ServerHostnames) { ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join "," } else { '' }
+            $serverJson = if ($ServerHostnames) {
+                ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join "," 
+            } else {
+                '' 
+            }
             $endTimeStr = Get-UtcApiTimestamp
             $script = @"
 Import-Module $($this.ModuleName) -ErrorAction Stop
@@ -2054,14 +2468,14 @@ foreach (`$inst in `$instances) {
             try {
                 $result = $r.Output | ConvertFrom-Json
                 return @{
-                    Success = $true
+                    Success   = $true
                     GroupName = $result.GroupName
-                    Objects = @($result.Objects | ForEach-Object { $_ })
-                    Summary = @{
-                        Total = $result.Summary.Total
-                        InMaintenance = $result.Summary.InMaintenance
+                    Objects   = @($result.Objects | ForEach-Object { $_ })
+                    Summary   = @{
+                        Total            = $result.Summary.Total
+                        InMaintenance    = $result.Summary.InMaintenance
                         NotInMaintenance = $result.Summary.NotInMaintenance
-                        Failed = $result.Summary.Failed
+                        Failed           = $result.Summary.Failed
                     }
                 }
             } catch {
@@ -2072,7 +2486,9 @@ foreach (`$inst in `$instances) {
     }
 
     [hashtable] _GetMaintenanceStatusRest([string]$GroupDisplayName, [string[]]$ServerHostnames, [bool]$UseClusterMode) {
-        if (-not $this.Cred) { return @{ Success = $false; Error = 'No SCOM REST credentials' } }
+        if (-not $this.Cred) {
+            return @{ Success = $false; Error = 'No SCOM REST credentials' } 
+        }
 
         $script = @"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -2167,14 +2583,14 @@ foreach (`$obj in `$classData) {
             try {
                 $result = $r.Output | ConvertFrom-Json
                 return @{
-                    Success = $true
+                    Success   = $true
                     GroupName = $result.GroupName
-                    Objects = @($result.Objects | ForEach-Object { $_ })
-                    Summary = @{
-                        Total = $result.Summary.Total
-                        InMaintenance = $result.Summary.InMaintenance
+                    Objects   = @($result.Objects | ForEach-Object { $_ })
+                    Summary   = @{
+                        Total            = $result.Summary.Total
+                        InMaintenance    = $result.Summary.InMaintenance
                         NotInMaintenance = $result.Summary.NotInMaintenance
-                        Failed = $result.Summary.Failed
+                        Failed           = $result.Summary.Failed
                     }
                 }
             } catch {
@@ -2318,14 +2734,13 @@ if ('$TargetType' -eq 'ServerHardware') {
                 Message = $result.Message
                 Objects = @($result.Objects | ForEach-Object { $_ })
                 Summary = @{
-                    Total = $result.Summary.Total
-                    Success = $result.Summary.Success
+                    Total                = $result.Summary.Total
+                    Success              = $result.Summary.Success
                     AlreadyInMaintenance = $result.Summary.AlreadyInMaintenance
-                    Failed = $result.Summary.Failed
+                    Failed               = $result.Summary.Failed
                 }
             }
-        }
-        catch {
+        } catch {
             return @{
                 Success = $false
                 Message = "OneView maintenance failed: $($_.Exception.Message)"
@@ -2443,14 +2858,13 @@ if ('$TargetType' -eq 'ServerHardware') {
                 Message = $result.Message
                 Objects = @($result.Objects | ForEach-Object { $_ })
                 Summary = @{
-                    Total = $result.Summary.Total
-                    Success = $result.Summary.Success
+                    Total            = $result.Summary.Total
+                    Success          = $result.Summary.Success
                     NotInMaintenance = $result.Summary.NotInMaintenance
-                    Failed = $result.Summary.Failed
+                    Failed           = $result.Summary.Failed
                 }
             }
-        }
-        catch {
+        } catch {
             return @{
                 Success = $false
                 Message = "OneView disable maintenance failed: $($_.Exception.Message)"
@@ -2468,10 +2882,10 @@ if ('$TargetType' -eq 'ServerHardware') {
         # Return mock data for DryRun mode - allows testing without OneView module
         if ($DryRun) {
             return @{
-                Success = $true
+                Success    = $true
                 TargetType = 'Scope'
                 TargetName = $TargetId
-                Message = 'Found scope (cluster) [DRY-RUN]'
+                Message    = 'Found scope (cluster) [DRY-RUN]'
             }
         }
         $ovModule = $this.ModuleName
@@ -2505,18 +2919,17 @@ if (`$scope) {
             }
             $result = $output | ConvertFrom-Json
             return @{
-                Success = $result.Success
+                Success    = $result.Success
                 TargetType = $result.TargetType
                 TargetName = $result.TargetName
-                Message = $result.Message
+                Message    = $result.Message
             }
-        }
-        catch {
+        } catch {
             return @{
-                Success = $false
+                Success    = $false
                 TargetType = 'Unknown'
                 TargetName = $TargetId
-                Message = "Resolve failed: $($_.Exception.Message)"
+                Message    = "Resolve failed: $($_.Exception.Message)"
             }
         }
     }
@@ -2600,22 +3013,21 @@ if ('$TargetType' -eq 'ServerHardware') {
             }
             $result = $output | ConvertFrom-Json
             return @{
-                Success = $result.Success
+                Success    = $result.Success
                 TargetType = $result.TargetType
                 TargetName = $result.TargetName
-                Objects = @($result.Objects | ForEach-Object { $_ })
-                Summary = @{
-                    Total = $result.Summary.Total
-                    InMaintenance = $result.Summary.InMaintenance
+                Objects    = @($result.Objects | ForEach-Object { $_ })
+                Summary    = @{
+                    Total            = $result.Summary.Total
+                    InMaintenance    = $result.Summary.InMaintenance
                     NotInMaintenance = $result.Summary.NotInMaintenance
-                    Failed = $result.Summary.Failed
+                    Failed           = $result.Summary.Failed
                 }
             }
-        }
-        catch {
+        } catch {
             return @{
                 Success = $false
-                Error = "OneView maintenance status check failed: $($_.Exception.Message)"
+                Error   = "OneView maintenance status check failed: $($_.Exception.Message)"
                 Objects = @()
                 Summary = @{ Total = 0; InMaintenance = 0; NotInMaintenance = 0; Failed = 1 }
             }
@@ -2657,9 +3069,13 @@ class EmailNotifier {
     }
 
     [string[]] _GetRecipients([string]$Action) {
-        if ($this.UseSimple) { return $this.SimpleRecipients }
+        if ($this.UseSimple) {
+            return $this.SimpleRecipients 
+        }
         $key = "maintenance_$Action"
-        if ($this.DistLists.ContainsKey($key)) { return $this.DistLists[$key] }
+        if ($this.DistLists.ContainsKey($key)) {
+            return $this.DistLists[$key] 
+        }
         return @()
     }
 
@@ -2670,10 +3086,26 @@ class EmailNotifier {
             Write-Warning "No distribution list for action '$Action'; skipping email"
             return $false
         }
-        $clusterName = if ($Cluster) { $Cluster.Get_Item('display_name') ?? $Cluster.Get_Item('scom_group') ?? 'Unknown' } else { 'Unknown' }
-        $environment = if ($Cluster) { $Cluster.Get_Item('environment') ?? 'unknown' } else { 'unknown' }
-        $startStr = if ($StartTime -and $StartTime -ne [DateTime]::MinValue) { $StartTime.ToString('yyyy-MM-dd HH:mm:ss') } else { 'N/A' }
-        $endStr = if ($EndTime -and $EndTime -ne [DateTime]::MinValue) { $EndTime.ToString('yyyy-MM-dd HH:mm:ss') }  else { 'N/A' }
+        $clusterName = if ($Cluster) {
+            $Cluster.Get_Item('display_name') ?? $Cluster.Get_Item('scom_group') ?? 'Unknown' 
+        } else {
+            'Unknown' 
+        }
+        $environment = if ($Cluster) {
+            $Cluster.Get_Item('environment') ?? 'unknown' 
+        } else {
+            'unknown' 
+        }
+        $startStr = if ($StartTime -and $StartTime -ne [DateTime]::MinValue) {
+            $StartTime.ToString('yyyy-MM-dd HH:mm:ss') 
+        } else {
+            'N/A' 
+        }
+        $endStr = if ($EndTime -and $EndTime -ne [DateTime]::MinValue) {
+            $EndTime.ToString('yyyy-MM-dd HH:mm:ss') 
+        } else {
+            'N/A' 
+        }
         $tplVars = @{
             cluster_name    = $clusterName
             environment     = $environment
@@ -2681,17 +3113,29 @@ class EmailNotifier {
             start_time      = $startStr
             end_time        = $endStr
             triggered_by    = 'iRequest'
-            additional_info = if ($Action -eq 'enabled') { 'Maintenance mode is now ACTIVE.' }
-            elseif ($Action -eq 'disabled') { 'Maintenance mode has ENDED.' }
-            else { "Maintenance action: $Action" }
+            additional_info = if ($Action -eq 'enabled') {
+                'Maintenance mode is now ACTIVE.' 
+            } elseif ($Action -eq 'disabled') {
+                'Maintenance mode has ENDED.' 
+            } else {
+                "Maintenance action: $Action" 
+            }
         }
         $subjTpl = $this.Templates.Get_Item("subject_$Action") ?? "Maintenance {action} - {cluster_name} ({environment})"
         $subject = $subjTpl.Replace('{action}', $Action).Replace('{cluster_name}', $clusterName).Replace('{environment}', $environment)
         $bodyTpl = $this.Templates.Get_Item('body_template') ??
         "Dear Team,`n`nMaintenance window for cluster '$clusterName' has $Action.`n`nStart: $startStr`nEnd: $endStr`nServers: $($Servers -join ', ')`n`n$($tplVars['additional_info'])`n`nRegards,`nMaintenance Bot"
-        $bodyAction = if ($Action -eq 'enabled') { 'been ENABLED' } elseif ($Action -eq 'disabled') { 'been DISABLED' } else { $Action }
+        $bodyAction = if ($Action -eq 'enabled') {
+            'been ENABLED' 
+        } elseif ($Action -eq 'disabled') {
+            'been DISABLED' 
+        } else {
+            $Action 
+        }
         $body = $bodyTpl.Replace('{action}', $bodyAction)
-        foreach ($k in $tplVars.Keys) { $body = $body.Replace("{${k}}", $tplVars[$k]); $subject = $subject.Replace("{${k}}", $tplVars[$k]) }
+        foreach ($k in $tplVars.Keys) {
+            $body = $body.Replace("{${k}}", $tplVars[$k]); $subject = $subject.Replace("{${k}}", $tplVars[$k]) 
+        }
 
         if ($DryRun) {
             Write-Verbose "[DRY RUN] Email to: $($recipients -join ', ')"
@@ -2702,16 +3146,19 @@ class EmailNotifier {
 
         try {
             $mailMsg = New-Object System.Net.Mail.MailMessage($this.FromAddr, $recipients[0])
-            foreach ($r in $recipients) { $mailMsg.To.Add($r) | Out-Null }
+            foreach ($r in $recipients) {
+                $mailMsg.To.Add($r) | Out-Null 
+            }
             $mailMsg.Subject = $subject
             $mailMsg.Body = $body
             $mailMsg.IsBodyHtml = $false
             $smtp = if ($this.UseSsl) {
                 [System.Net.Mail.SmtpClient]::new($this.SmtpServer, $this.SmtpPort)
-            }
-            else {
+            } else {
                 $s = [System.Net.Mail.SmtpClient]::new($this.SmtpServer, $this.SmtpPort)
-                if ($this.UseTls) { $s.EnableSsl = $true }
+                if ($this.UseTls) {
+                    $s.EnableSsl = $true 
+                }
                 $s
             }
             if ($this.Username) {
@@ -2721,8 +3168,7 @@ class EmailNotifier {
             $smtp.Send($mailMsg)
             Write-Verbose "Notification email sent to $($recipients -join ', ')"
             return $true
-        }
-        catch {
+        } catch {
             Write-Error "Failed to send email: $($_.Exception.Message)"
             return $false
         }
@@ -2796,7 +3242,11 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
 
     if ($Json) {
         $result | ConvertTo-Json -Depth 64
-        exit $(if ($result.Success) { 0 } else { 1 })
+        exit $(if ($result.Success) {
+                0 
+            } else {
+                1 
+            })
     }
 
     # Human-readable output
@@ -2846,10 +3296,18 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         Write-Host ""
         foreach ($obj in $scomObjects) {
             $statusIcon = switch ($obj.Status) {
-                'success' { '[OK]' }
-                'already_in_maintenance' { '[SKIP]' }
-                'not_in_maintenance' { '[SKIP]' }
-                default { '[FAIL]' }
+                'success' {
+                    '[OK]' 
+                }
+                'already_in_maintenance' {
+                    '[SKIP]' 
+                }
+                'not_in_maintenance' {
+                    '[SKIP]' 
+                }
+                default {
+                    '[FAIL]' 
+                }
             }
             Write-Host "${statusIcon} $($obj.Name) ($($obj.Type)) - $($obj.Status)"
             if ($obj.Message -and $obj.Status -ne 'success' -and $obj.Status -ne 'already_in_maintenance' -and $obj.Status -ne 'not_in_maintenance') {
@@ -2873,7 +3331,9 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         Write-Host "Total Failed: $($failedObjects.Count)"
         foreach ($obj in $failedObjects) {
             Write-Host "  - $($obj.Name): $($obj.NackReason ?? $obj.Status)"
-            if ($obj.Resolution) { Write-Host "    Fix: $($obj.Resolution)" }
+            if ($obj.Resolution) {
+                Write-Host "    Fix: $($obj.Resolution)" 
+            }
         }
         Write-Host "==================================="
         Write-Host ""
@@ -2884,16 +3344,30 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     if ($result.Message) {
         $message = $result.Message
         if ($result.StatusText) {
-            $bold = if ($PSStyle) { $PSStyle.Bold } else { '' }
-            $reset = if ($PSStyle) { $PSStyle.Reset } else { '' }
+            $bold = if ($PSStyle) {
+                $PSStyle.Bold 
+            } else {
+                '' 
+            }
+            $reset = if ($PSStyle) {
+                $PSStyle.Reset 
+            } else {
+                '' 
+            }
             $message = $message -replace "currently $([regex]::Escape($result.StatusText))", "currently ${bold}$($result.StatusText)${reset}"
         }
         Write-Host "Message: $message"
     }
-    if ($result.Error) { Write-Host "Error: $($result.Error)" }
+    if ($result.Error) {
+        Write-Host "Error: $($result.Error)" 
+    }
     Write-Host "======================"
 
-    exit $(if ($result.Success) { 0 } else { 1 })
+    exit $(if ($result.Success) {
+            0 
+        } else {
+            1 
+        })
 }
 
 # vim: ts=4 sw=4 et

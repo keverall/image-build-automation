@@ -36,7 +36,7 @@ The `cyberark-bootstrap` job fetches secrets and makes them available to downstr
 
 ```powershell
 # SCOM - cluster maintenance (all servers/resources under group)
-Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom
+Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom
 
 # OneView - individual server maintenance
 Set-MaintenanceMode -Action enable -TargetId 'PROD-SERVER-01' -Mode oneview

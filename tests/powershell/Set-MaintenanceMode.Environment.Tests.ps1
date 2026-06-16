@@ -27,7 +27,7 @@ Describe 'Set-MaintenanceMode - Environment Parameter Tests' {
         It 'Should accept Prod environment' {
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -DryRun
@@ -73,7 +73,7 @@ Describe 'Set-MaintenanceMode - Environment Parameter Tests' {
             
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -DryRun
             
@@ -88,7 +88,7 @@ Describe 'Set-MaintenanceMode - Host Override Tests' {
         It 'Should accept custom host via parameter for SCOM mode' {
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -ManagementHost 'custom-server.test.local' `
@@ -116,14 +116,13 @@ Describe 'Set-MaintenanceMode - Host Override Tests' {
             try {
                 $result = Set-MaintenanceMode `
                     -Action validate `
-                    -TargetId 'PROD-CLUSTER-01' `
+                    -TargetId 'CLU-CLUSTER-01' `
                     -Mode scom `
                     -Environment Prod `
                     -DryRun
                 
                 $result | Should -Not -BeNullOrEmpty
-            }
-            finally {
+            } finally {
                 $env:MAINTENANCE_HOST = $originalOverride
             }
         }
@@ -148,7 +147,7 @@ Describe 'Set-MaintenanceMode - Credential Parameter Tests' {
         It 'Should accept username via parameter' {
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Username 'param_user' `
@@ -165,7 +164,7 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         It 'Should accept +Xhours format' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start 'now' `
@@ -179,7 +178,7 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         It 'Should accept +Xminutes format' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start 'now' `
@@ -193,7 +192,7 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         It 'Should accept +Xdays format' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start 'now' `
@@ -207,7 +206,7 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         It 'Should accept +Xseconds format' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start 'now' `
@@ -223,7 +222,7 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         It 'Should accept YYYY-MM-DD HH:MM format' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start '2026-06-11 22:00' `
@@ -237,7 +236,7 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         It 'Should accept ISO 8601 format' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start '2026-06-11T22:00:00' `
@@ -251,7 +250,7 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         It 'Should accept mixed relative start and absolute end' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start 'now' `
@@ -270,7 +269,7 @@ Describe 'Set-MaintenanceMode - Connection Validation Tests' {
         It 'Should validate SCOM connection in dry-run mode' {
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -DryRun
@@ -297,7 +296,7 @@ Describe 'Set-MaintenanceMode - Combined Parameter Tests' {
         It 'Should work with environment, host override, and username' {
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -ManagementHost 'custom-server.local' `
@@ -310,7 +309,7 @@ Describe 'Set-MaintenanceMode - Combined Parameter Tests' {
         It 'Should work with all time and environment parameters' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start 'now' `
@@ -370,7 +369,7 @@ Describe 'Set-MaintenanceMode - Backward Compatibility Tests' {
         It 'Should work without Environment parameter (backward compatible)' {
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -DryRun
             
@@ -380,7 +379,7 @@ Describe 'Set-MaintenanceMode - Backward Compatibility Tests' {
         It 'Should work without host override parameters' {
             $result = Set-MaintenanceMode `
                 -Action validate `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -DryRun
@@ -391,7 +390,7 @@ Describe 'Set-MaintenanceMode - Backward Compatibility Tests' {
         It 'Should maintain existing behavior with old parameters' {
             $result = Set-MaintenanceMode `
                 -Action enable `
-                -TargetId 'PROD-CLUSTER-01' `
+                -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Start 'now' `
                 -End '+1hour' `
