@@ -11,7 +11,7 @@
 # =============================================================================
 
 # ─── Configuration ───────────────────────────────────────────────────────────
-CURDIR := $(shell pwd)
+# Use built-in CURDIR to avoid $(shell pwd) failing on Windows without sh.exe
 PSMODULE := src/powershell/Automation/Automation.psd1
 PSDIRS   := src/powershell
 PSTESTS  := tests/powershell
@@ -27,13 +27,21 @@ endif
 # Coverage threshold (percentage)
 COVERAGE_THRESHOLD := 70
 
-# Colors
-ESCAPE := $(shell printf '\033')
-GREEN := $(ESCAPE)[0;32m
-CYAN := $(ESCAPE)[0;36m
-YELLOW := $(ESCAPE)[1;33m
-RED := $(ESCAPE)[0;31m
-NC := $(ESCAPE)[0m
+# Colors: fallback to empty on Windows to avoid $(shell printf) errors without sh.exe
+ifeq ($(OS),Windows_NT)
+  GREEN := 
+  CYAN := 
+  YELLOW := 
+  RED := 
+  NC := 
+else
+  ESCAPE := $(shell printf '\033')
+  GREEN := $(ESCAPE)[0;32m
+  CYAN := $(ESCAPE)[0;36m
+  YELLOW := $(ESCAPE)[1;33m
+  RED := $(ESCAPE)[0;31m
+  NC := $(ESCAPE)[0m
+endif
 
 .PHONY: setup lint lint-make lint-test test test-unit test-integration coverage docs clean prune-logs help all ci
 
@@ -42,7 +50,7 @@ setup: prune-logs ## Setup PowerShell environment (install modules, configure pr
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Setup-Profile.ps1
-	@bash scripts/install-checkmake.sh
+	# Note: checkmake installation is now handled gracefully by setup-runner.ps1
 
 # ─── Linting ────────────────────────────────────────────────────────────────
 lint: prune-logs lint-make lint-checkmake ## Lint PowerShell files and Makefile
