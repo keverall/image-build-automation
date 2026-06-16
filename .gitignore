@@ -92,8 +92,7 @@ tools/dism.exe
 .DS_Store
 Thumbs.db
 
-# === Local Bin (make.exe etc downloaded by setup) ===
-bin/
+
 
 # === AI Workspace Configs ===
 .kilo/
