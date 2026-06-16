@@ -28,7 +28,7 @@ function Test-ClusterId {
         Path to clusters_catalogue.json (default: configs\clusters_catalogue.json).
 
     .EXAMPLE
-        $def = Test-ClusterId -TargetId 'PROD-CLUSTER-01'
+        $def = Test-ClusterId -TargetId 'CLU-CLUSTER-01'
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]

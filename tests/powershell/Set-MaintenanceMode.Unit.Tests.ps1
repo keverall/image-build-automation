@@ -15,7 +15,7 @@
 
 BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-    $Script:TestRoot  = $PSScriptRoot
+    $Script:TestRoot = $PSScriptRoot
 
     # Prevent interactive prompts during tests
     $env:AUTOMATED_MODE = 'true'
@@ -23,38 +23,46 @@ BeforeAll {
     # Import test output helper for colored/detailed output
     Import-Module (Join-Path $PSScriptRoot 'TestOutputHelper.psm1') -Force -ErrorAction SilentlyContinue
 
-    if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
-    if (-not $env:TMP)   { $env:TMP   = '/tmp' }
-    $Script:TempDir = (Join-Path $env:TEMP "MMTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
-    if (-not (Test-Path -Path $Script:TempDir)) { New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null }
+    if (-not $env:TEMP) {
+        $env:TEMP = '/tmp' 
+    }
+    if (-not $env:TMP) {
+        $env:TMP = '/tmp' 
+    }
+    $Script:TempDir = (Join-Path $env:TEMP "MMTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\', '/')
+    if (-not (Test-Path -Path $Script:TempDir)) {
+        New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null 
+    }
 
     # ---- Sample cluster catalogue ----
-    $Script:TestTargetId  = 'UNIT-TEST-CLUSTER'
+    $Script:TestTargetId = 'UNIT-TEST-CLUSTER'
     $Script:TestClusterDef = @{
-        display_name  = 'Unit Test Cluster'
-        servers       = @('srv-unit-01.corp.local','srv-unit-02.corp.local')
-        scom_group    = 'Unit Test SCOM Group'
+        display_name     = 'Unit Test Cluster'
+        servers          = @('srv-unit-01.corp.local', 'srv-unit-02.corp.local')
+        scom_group       = 'Unit Test SCOM Group'
         oneview_node_ids = @{}
-        schedule      = @{ work_days = @('Mon','Tue','Wed','Thu','Fri'); work_start = '08:00'; work_end = '17:00'; timezone = 'Europe/Dublin' }
-        environment   = 'unittest'
+        schedule         = @{ work_days = @('Mon', 'Tue', 'Wed', 'Thu', 'Fri'); work_start = '08:00'; work_end = '17:00'; timezone = 'Europe/Dublin' }
+        environment      = 'unittest'
     }
-    $Script:OtherTargetId  = 'OTHER-CLUSTER'
+    $Script:OtherTargetId = 'OTHER-CLUSTER'
     $Script:OtherClusterDef = @{
-        display_name  = 'Other Cluster'
-        servers       = @('srv-other-01.corp.local')
-        scom_group    = 'Other SCOM Group'
-        environment   = 'unittest'
+        display_name = 'Other Cluster'
+        servers      = @('srv-other-01.corp.local')
+        scom_group   = 'Other SCOM Group'
+        environment  = 'unittest'
     }
     $Script:NodeIdAsCluster = 'srv-unit-01.corp.local'
 
     # ---- Config dir ----
     $Script:ConfigDir = Join-Path $Script:TempDir 'configs'
-    if (-not (Test-Path -Path $Script:ConfigDir)) { New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null }
+    if (-not (Test-Path -Path $Script:ConfigDir)) {
+        New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null 
+    }
 
     # Write config files using examples-only.json as template
     Copy-Item (Join-Path $Script:ModuleRoot 'configs/clusters_catalogue.examples-only.json') (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -Force
     # Use example cluster definitions for tests
-    $Script:TestTargetId  = 'PROD-CLUSTER-01'
+    $Script:TestTargetId = 'CLU-CLUSTER-01'
     $Script:TestClusterDef = $null
     $Script:OtherTargetId = 'STAGING-CLUSTER-01'
     $Script:OtherClusterDef = $null
@@ -73,8 +81,12 @@ BeforeAll {
     # ---- Log / output dirs ----
     $Script:LogDir = Join-Path $Script:TempDir 'logs'
     $Script:OutDir = Join-Path $Script:TempDir 'output'
-    if (-not (Test-Path -Path $Script:LogDir))  { New-Item -ItemType Directory $Script:LogDir  -Force | Out-Null }
-    if (-not (Test-Path -Path $Script:OutDir))  { New-Item -ItemType Directory $Script:OutDir  -Force | Out-Null }
+    if (-not (Test-Path -Path $Script:LogDir)) {
+        New-Item -ItemType Directory $Script:LogDir -Force | Out-Null 
+    }
+    if (-not (Test-Path -Path $Script:OutDir)) {
+        New-Item -ItemType Directory $Script:OutDir -Force | Out-Null 
+    }
 
     # ---- Import module ----
     Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
@@ -97,9 +109,15 @@ function Get-TestParamsString {
     foreach ($k in ($Params.Keys | Sort-Object)) {
         $v = $Params[$k]
         if ($v -is [switch]) { 
-            if ($v.IsPresent) { $parts += "-$k" }
+            if ($v.IsPresent) {
+                $parts += "-$k" 
+            }
         } elseif ($null -ne $v -and "$v" -ne "") {
-            $displayVal = if ("$v".Length -gt 30) { "$v".Substring(0,27) + "..." } else { "$v" }
+            $displayVal = if ("$v".Length -gt 30) {
+                "$v".Substring(0, 27) + "..." 
+            } else {
+                "$v" 
+            }
             $parts += "-$k '$displayVal'"
         }
     }

@@ -38,22 +38,22 @@ The setup adds these convenience functions to your PowerShell profiles:
 
 ```powershell
 # Quick enable with defaults (scom, Prod, +2hours)
-mmenable PROD-CLUSTER-01
+mmenable CLU-CLUSTER-01
 
 # Enable with custom time window
-mmenable PROD-CLUSTER-01 scom Prod -Start now -End +4hours
+mmenable CLU-CLUSTER-01 scom Prod -Start now -End +4hours
 
 # Dry run test
 mmenable TEST-CLUSTER-01 scom Test -DryRun
 
 # Disable maintenance
-mmdisable PROD-CLUSTER-01
+mmdisable CLU-CLUSTER-01
 
 # Validate status
-mmvalidate PROD-CLUSTER-01
+mmvalidate CLU-CLUSTER-01
 
 # Full control
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
 ```
 
 ## Profiles Updated

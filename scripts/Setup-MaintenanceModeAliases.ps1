@@ -107,7 +107,7 @@ function mmvalidate { mm validate @args }
 
 Write-Host "`n✅ Setup complete! Restart PowerShell or run: . `$PROFILE"
 Write-Host "`nUsage examples:"
-Write-Host "  mm enable PROD-CLUSTER-01 scom Prod -DryRun"
-Write-Host "  mmenable PROD-CLUSTER-01"
-Write-Host "  mmdisable PROD-CLUSTER-01"
-Write-Host "  mmvalidate PROD-CLUSTER-01"
+Write-Host "  mm enable CLU-CLUSTER-01 scom Prod -DryRun"
+Write-Host "  mmenable CLU-CLUSTER-01"
+Write-Host "  mmdisable CLU-CLUSTER-01"
+Write-Host "  mmvalidate CLU-CLUSTER-01"

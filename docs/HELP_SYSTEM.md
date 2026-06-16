@@ -40,18 +40,18 @@ Get-Help Set-MaintenanceMode -Examples
 
 ```powershell
 # Validate configuration
-Set-MaintenanceMode -Action validate -TargetId 'PROD-CLUSTER-01' -Mode scom
+Set-MaintenanceMode -Action validate -TargetId 'CLU-CLUSTER-01' -Mode scom
 
 # Enable in Test environment with relative time
 Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom `
     -Environment Test -Start 'now' -End '+2hours'
 
 # Enable in Prod with absolute UTC time
-Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom `
+Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom `
     -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 
 # Disable with custom wait
-Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom `
+Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom `
     -Environment Prod -PostDisableWaitSeconds 60
 
 # Dry run test

@@ -48,7 +48,7 @@ $env:SCOM_ADMIN_PASSWORD = "cyberark_retrieved_password"
 
 Set-MaintenanceMode `
     -Action enable `
-    -TargetId "PROD-CLUSTER-01" `
+    -TargetId "CLU-CLUSTER-01" `
     -Mode scom `
     -Start "2026-06-11 22:00" `
     -End "2026-06-12 02:00"
@@ -69,7 +69,7 @@ Set-MaintenanceMode `
 # Test connection without making changes
 Set-MaintenanceMode `
     -Action validate `
-    -TargetId "PROD-CLUSTER-01" `
+    -TargetId "CLU-CLUSTER-01" `
     -Mode scom `
     -Environment Prod
 ```
@@ -78,7 +78,7 @@ Set-MaintenanceMode `
 ```powershell
 Set-MaintenanceMode `
     -Action enable `
-    -TargetId "PROD-CLUSTER-01" `
+    -TargetId "CLU-CLUSTER-01" `
     -Mode scom `
     -Environment Prod `
     -DryRun

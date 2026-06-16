@@ -21,7 +21,7 @@ Checks the cluster catalogue JSON file for the specified TargetId and validates 
 
 ### Example 1
 ```powershell
-$def = Test-ClusterId -TargetId 'PROD-CLUSTER-01'
+$def = Test-ClusterId -TargetId 'CLU-CLUSTER-01'
 ```
 
 ## Original Comment-Based Help
@@ -50,7 +50,7 @@ $def = Test-ClusterId -TargetId 'PROD-CLUSTER-01'
         Path to clusters_catalogue.json (default: configs\clusters_catalogue.json).
 
     .EXAMPLE
-        $def = Test-ClusterId -TargetId 'PROD-CLUSTER-01'
+        $def = Test-ClusterId -TargetId 'CLU-CLUSTER-01'
 ```
 
 ---
