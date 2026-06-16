@@ -90,7 +90,7 @@ $env:ENVIRONMENT = "Prod"
 $env:SCOM_ADMIN_USER = "domain\admin"
 $env:SCOM_ADMIN_PASSWORD = "secure_pass"
 
-Set-MaintenanceMode -Action enable -TargetId "PROD-CLUSTER-01" -Mode scom
+Set-MaintenanceMode -Action enable -TargetId "CLU-CLUSTER-01" -Mode scom
 ```
 
 ### Example 2: Test with parameter override

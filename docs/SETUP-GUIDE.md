@@ -49,7 +49,7 @@ This installs required PowerShell modules and configures your profile.
 Get-Command mm
 
 # Test with a dry run
-mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -DryRun
+mm -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 ```
 
 ---
@@ -68,10 +68,10 @@ mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -DryR
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `mm` | Full maintenance mode control | `mm enable PROD-CLUSTER-01 scom Prod` |
-| `mmenable` | Quick enable | `mmenable PROD-CLUSTER-01` |
-| `mmdisable` | Quick disable | `mmdisable PROD-CLUSTER-01` |
-| `mmvalidate` | Check status | `mmvalidate PROD-CLUSTER-01` |
+| `mm` | Full maintenance mode control | `mm enable CLU-CLUSTER-01 scom Prod` |
+| `mmenable` | Quick enable | `mmenable CLU-CLUSTER-01` |
+| `mmdisable` | Quick disable | `mmdisable CLU-CLUSTER-01` |
+| `mmvalidate` | Check status | `mmvalidate CLU-CLUSTER-01` |
 
 ---
 

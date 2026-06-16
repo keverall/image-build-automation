@@ -23,7 +23,7 @@ Import-Module ./src/powershell/Automation/Automation.psd1 -WarningAction Silentl
 ### Basic Command
 
 ```powershell
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
 ```
 
 ### Parameters
@@ -46,7 +46,7 @@ The `mm` command provides consistent output for both success and error cases:
 === Maintenance Mode Command Audit ===
 Timestamp (UTC): 2026-06-12T13:11:05.5793468Z
 Action: enable
-Target ID: PROD-CLUSTER-01
+Target ID: CLU-CLUSTER-01
 Mode: scom
 Environment: Prod
 Start Time (UTC): 2026-06-12T13:11:05.4885780Z
@@ -73,25 +73,25 @@ SCOM: 4/4 success
 ### Enable Maintenance Mode (Dry Run)
 
 ```powershell
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
 ```
 
 ### Enable Maintenance Mode (Live)
 
 ```powershell
-mm -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
 ```
 
 ### Validate Maintenance Mode
 
 ```powershell
-mm -Action validate -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod
+mm -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 ```
 
 ### Disable Maintenance Mode
 
 ```powershell
-mm -Action disable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod
+mm -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 ```
 
 ## Time Formats
@@ -118,7 +118,7 @@ If `mm` is not recognized, reload your profile:
 Or use the full command:
 
 ```powershell
-Set-MaintenanceMode -Action enable -TargetId PROD-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
 ```
 
 ### Profile Errors

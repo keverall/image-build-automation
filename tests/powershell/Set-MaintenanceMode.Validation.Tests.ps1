@@ -9,9 +9,13 @@ BeforeAll {
     # Prevent interactive prompts during tests
     $env:AUTOMATED_MODE = 'true'
 
-    if (-not $env:TEMP) { $env:TEMP = '/tmp' }
-    $Script:TempDir = (Join-Path $env:TEMP "MMValTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
-    if (-not (Test-Path -Path $Script:TempDir)) { New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null }
+    if (-not $env:TEMP) {
+        $env:TEMP = '/tmp' 
+    }
+    $Script:TempDir = (Join-Path $env:TEMP "MMValTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\', '/')
+    if (-not (Test-Path -Path $Script:TempDir)) {
+        New-Item -ItemType Directory $Script:TempDir -Force -ErrorAction SilentlyContinue | Out-Null 
+    }
 
     $Script:ConfigDir = Join-Path $Script:TempDir 'configs'
     New-Item -ItemType Directory $Script:ConfigDir -Force -ErrorAction SilentlyContinue | Out-Null
@@ -23,7 +27,7 @@ BeforeAll {
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'opsramp_config.json')
 
-    $Script:TestTargetId = 'PROD-CLUSTER-01'
+    $Script:TestTargetId = 'CLU-CLUSTER-01'
 }
 
 AfterAll {
@@ -51,13 +55,13 @@ Describe 'Set-MaintenanceMode — Pre-check for mode change validation' {
     Context 'DryRun mode (simulation)' {
         It 'Should allow enable action in DryRun mode regardless of current state' {
             $params = @{
-                Action = 'enable'
-                TargetId = $Script:TestTargetId
-                Mode = 'scom'
+                Action    = 'enable'
+                TargetId  = $Script:TestTargetId
+                Mode      = 'scom'
                 ConfigDir = $Script:ConfigDir
-                DryRun = $true
-                Start = 'now'
-                End = '+1hour'
+                DryRun    = $true
+                Start     = 'now'
+                End       = '+1hour'
             }
             $result = Set-MaintenanceMode @params
             $result.Success | Should -Be $true
@@ -65,11 +69,11 @@ Describe 'Set-MaintenanceMode — Pre-check for mode change validation' {
 
         It 'Should allow disable action in DryRun mode regardless of current state' {
             $params = @{
-                Action = 'disable'
-                TargetId = $Script:TestTargetId
-                Mode = 'scom'
+                Action    = 'disable'
+                TargetId  = $Script:TestTargetId
+                Mode      = 'scom'
                 ConfigDir = $Script:ConfigDir
-                DryRun = $true
+                DryRun    = $true
             }
             $result = Set-MaintenanceMode @params
             $result.Success | Should -Be $true
@@ -79,11 +83,11 @@ Describe 'Set-MaintenanceMode — Pre-check for mode change validation' {
     Context 'MockMaintenanceState simulates pre-existing state' {
         It 'Should show partially enabled state in validate action with MockMaintenanceState=partial' {
             $params = @{
-                Action = 'validate'
-                TargetId = $Script:TestTargetId
-                Mode = 'scom'
-                ConfigDir = $Script:ConfigDir
-                DryRun = $true
+                Action               = 'validate'
+                TargetId             = $Script:TestTargetId
+                Mode                 = 'scom'
+                ConfigDir            = $Script:ConfigDir
+                DryRun               = $true
                 MockMaintenanceState = 'partial'
             }
             $result = Set-MaintenanceMode @params
@@ -93,11 +97,11 @@ Describe 'Set-MaintenanceMode — Pre-check for mode change validation' {
 
         It 'Should show fully enabled state in validate action with MockMaintenanceState=enable' {
             $params = @{
-                Action = 'validate'
-                TargetId = $Script:TestTargetId
-                Mode = 'scom'
-                ConfigDir = $Script:ConfigDir
-                DryRun = $true
+                Action               = 'validate'
+                TargetId             = $Script:TestTargetId
+                Mode                 = 'scom'
+                ConfigDir            = $Script:ConfigDir
+                DryRun               = $true
                 MockMaintenanceState = 'enable'
             }
             $result = Set-MaintenanceMode @params
@@ -107,11 +111,11 @@ Describe 'Set-MaintenanceMode — Pre-check for mode change validation' {
 
         It 'Should show disabled state in validate action with MockMaintenanceState=disable' {
             $params = @{
-                Action = 'validate'
-                TargetId = $Script:TestTargetId
-                Mode = 'scom'
-                ConfigDir = $Script:ConfigDir
-                DryRun = $true
+                Action               = 'validate'
+                TargetId             = $Script:TestTargetId
+                Mode                 = 'scom'
+                ConfigDir            = $Script:ConfigDir
+                DryRun               = $true
                 MockMaintenanceState = 'disable'
             }
             $result = Set-MaintenanceMode @params

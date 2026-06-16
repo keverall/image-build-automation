@@ -24,7 +24,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 ```powershell
 pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -Action validate `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Environment Prod
 ```
@@ -45,7 +45,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 ```powershell
 pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -Action validate `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Environment Prod `
     -ManagementHost 'backup-scom.local'

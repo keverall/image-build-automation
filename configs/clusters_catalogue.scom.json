@@ -1,6 +1,6 @@
 {
   "clusters": {
-    "PROD-CLUSTER-01": {
+    "CLU-CLUSTER-01": {
       "display_name": "Production Cluster 01",
       "servers": [
         "PROD-SERVER-01.ad.aib.pri",
