@@ -9,9 +9,9 @@ Checkmake is automatically installed during `make setup`:
 make setup
 ```
 
-Or manually:
-```bash
-bash scripts/install-checkmake.sh
+Or manually via the setup script:
+```powershell
+pwsh -File scripts/setup-runner.ps1
 ```
 
 ## Usage
@@ -33,7 +33,7 @@ This runs:
 
 ## How It Works
 
-1. **Setup**: `scripts/install-checkmake.sh` downloads checkmake from GitHub releases
+1. **Setup**: `scripts/setup-runner.ps1` downloads checkmake from GitHub releases based on OS/architecture
 2. **Fallback**: If GitHub download fails, tries package managers (brew, apt-get with Go)
 3. **Installation**: Places binary in `bin/checkmake` for offline use
 4. **Validation**: `make lint-checkmake` runs checkmake with a 5-second timeout
@@ -52,8 +52,8 @@ brew install checkmake
 # Via Go
 go install github.com/mrtazz/checkmake@latest
 
-# Via the installer script
-bash scripts/install-checkmake.sh
+# Via the setup script
+pwsh -File scripts/setup-runner.ps1
 ```
 
 ### Checkmake finds violations
