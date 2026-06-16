@@ -74,20 +74,20 @@ Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
 
 ```powershell
 # Enable immediately (start=now; end computed from cluster schedule)
-Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -Start now
+Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Start now
 
 # Enable with explicit timestamps
 Set-MaintenanceMode -Action enable `
-    -TargetId 'PROD-CLUSTER-01' `
+    -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Start   '2026-05-16 22:00' `
     -End     '2026-05-17 06:00'
 
 # Disable immediately
-Set-MaintenanceMode -Action disable -TargetId 'PROD-CLUSTER-01' -Mode scom
+Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom
 
 # Dry-run — no SCOM/iLO/OneView changes
-Set-MaintenanceMode -Action enable -TargetId 'PROD-CLUSTER-01' `
+Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
 ```

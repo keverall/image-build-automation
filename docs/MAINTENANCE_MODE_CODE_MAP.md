@@ -12,10 +12,10 @@ This document provides a complete map of all code locations hit by the `mm` main
 
 ### Command Syntax
 ```powershell
-mm enable PROD-CLUSTER-01 scom Prod -Start now -End +2hours
-mmenable PROD-CLUSTER-01
-mmdisable PROD-CLUSTER-01
-mmvalidate PROD-CLUSTER-01
+mm enable CLU-CLUSTER-01 scom Prod -Start now -End +2hours
+mmenable CLU-CLUSTER-01
+mmdisable CLU-CLUSTER-01
+mmvalidate CLU-CLUSTER-01
 ```
 
 ---
@@ -168,7 +168,7 @@ All configurations loaded from `configs/` directory:
 ## 12. Execution Flow Summary
 
 ```
-mm enable PROD-CLUSTER-01 scom Prod
+mm enable CLU-CLUSTER-01 scom Prod
     ↓
 PowerShell Profile (mm function)
     ↓

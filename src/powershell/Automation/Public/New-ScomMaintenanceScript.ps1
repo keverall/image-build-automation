@@ -34,7 +34,7 @@ function New-ScomMaintenanceScript {
 
     .EXAMPLE
         # Group mode — set maintenance on all instances in a group
-        $ps = New-ScomMaintenanceScript -GroupDisplayName 'PROD-CLUSTER-01' `
+        $ps = New-ScomMaintenanceScript -GroupDisplayName 'CLU-CLUSTER-01' `
             -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest'
 
     .EXAMPLE
@@ -50,7 +50,7 @@ function New-ScomMaintenanceScript {
         [Parameter(Mandatory = $false)][string]      $EndTimeStr,
         [Parameter(Mandatory = $false)][string]      $Reason = 'PlannedOther',
         [Parameter(Mandatory, Position = 1)][string] $Comment,
-        [ValidateSet('start','stop')]
+        [ValidateSet('start', 'stop')]
         [Parameter(Mandatory = $false)][string]      $Operation = 'start',
         [Parameter(Mandatory = $false)][switch]      $UseClusterMode
     )
@@ -59,7 +59,9 @@ function New-ScomMaintenanceScript {
     $serversBlock = if ($ServerHostnames -and $ServerHostnames.Count -gt 0) {
         $serverLines = $ServerHostnames | ForEach-Object { "                `"$($_.Replace('"','\"'))`"," }
         "`n                $($serverLines -join "`n")`n            "
-    } else { '' }
+    } else {
+        '' 
+    }
 
     if ($Operation -eq 'start') {
         if ($UseClusterMode) {
@@ -173,8 +175,7 @@ if (`$failed.Count -gt 0) {
 }
 "@
         }
-    }
-    else {
+    } else {
         # ─── STOP ───────────────────────────────────────────────────────────────
         if ($UseClusterMode) {
             return @"
