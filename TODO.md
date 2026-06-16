@@ -112,74 +112,48 @@ ApplianceVersion: 9.40.00.505610.00 9.0.4020.1622  C:\Users\98253\Documents\Powe
 
   install-module HPOneView.860  -scope currentuser
 
-   make setup
-process_begin: CreateProcess(NULL, pwd, ...) failed.
-process_begin: CreateProcess(NULL, printf \033, ...) failed.
-"[0;36m[prune-logs][0m Pruning old log files..."
-[prune-logs] Pruning logs to keep maximum 10 per type...
-[prune-logs] Pruned 0 excess log files.
-"[0;36m[setup][0m Setting up PowerShell environment..."
- 
-╔══════════════════════════════════════════════════════════╗
-║  HPE ProLiant ISO Automation — PowerShell Setup       ║
-╚══════════════════════════════════════════════════════════╝
- 
-[INFO] PowerShell version: 7.4.6
-[OK] PowerShell version check passed
-[INFO] Installing PowerShell modules from bundled copies...
-[INFO] Pester 5.7.1 already installed and verified 
-[INFO] PSScriptAnalyzer 1.21.0 already installed and verified 
-[INFO] PlatyPS 0.14.0 already installed and verified 
-[INFO] Skipping Update-Help (offline mode) 
-[WARN] Oh My Posh binary not found in scripts/bin/. Skipping. 
-[INFO] Detecting make for Windows... 
-[INFO] make already available: GNU Make 3.81 
-[OK] make version check passed 
-[INFO] Installing checkmake for Makefile linting... 
-[INFO] Running checkmake installer via Git Bash... 
-[INFO] [checkmake] Installing checkmake v0.2.2... 
-[INFO] [checkmake] Already installed: unknown 
-[OK] checkmake installation attempted 
-[INFO] Verifying PowerShell tools... 
-[OK] Pester 5.7.1 
-[OK] PSScriptAnalyzer 1.21.0 
-[OK] PlatyPS 0.14.0 
-[INFO] Verifying Pester test discovery... 
-[OK] Found 35 PowerShell test files 
- 
-╔══════════════════════════════════════════════════════════╗ 
-║  HPE ProLiant ISO Automation — PowerShell Setup Complete   ║
-╚══════════════════════════════════════════════════════════╝
+   
+   
 
-  Project root: C:\Products\repos\image-build-automation
-  Log file:     C:\Users\ADM_98~2\AppData\Local\Temp\15\hpe-automation-pwsh-setup-20260616-151031.log
+I have updated the setup script to include `HPEOneView` (version 8.60) in the offline preinstallation list. The script will now look for it in the bundled modules directory and install it locally without needing PSGallery or internet access.
 
-To run PowerShell tests:
-    cd C:\Products\repos\image-build-automation
-    pwsh -File scripts/run-tests.ps1
+### How to Preinstall `HPEOneView` for the Offline Server
 
-To lint PowerShell files:
-    pwsh -NoProfile -Command 'Invoke-ScriptAnalyzer -Path src/powershell -Recurse'
+Since the test server is air-gapped, you will need to download the module on a machine with internet access and copy it into the repository. Here is the exact process:
 
-Makefile targets:
-    make setup      # Run this setup script
-    make test       # Run all Pester tests
-    make lint       # Lint PowerShell with PSScriptAnalyzer
-    make coverage   # Run tests with code coverage
-    make clean      # Remove build artifacts
+#### Step 1: Download the Module (On a Connected Machine)
+Open PowerShell on a machine with internet access and run:
+```powershell
+# Create a temporary directory
+New-Item -ItemType Directory -Force -Path .\temp-modules
 
-[OK] Setup complete! 
-[setup] Configuring PowerShell profiles with Automation module... 
-[setup] Found 4 profile(s) to update 
-[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module 
-[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module 
-[setup] psprofile.ps1 already contains Automation module 
-[setup] vscodeprofile.ps1 already contains Automation module 
+# Download HPEOneView and all its dependencies
+Save-Module -Name HPEOneView -Path .\temp-modules -Force
+```
+*Note: This will create a folder like `.\temp-modules\HPEOneView\8.60.xxxx\` (the exact version number will depend on the latest 8.60.x release).*
 
-[setup] ✓ Profile configuration complete
-[setup] Restart your PowerShell session or run '. $PROFILE' to load 
+#### Step 2: Bundle It Into the Repository
+1. Navigate to the downloaded folder: `.\temp-modules\HPEOneView\`
+2. You will see a folder named with the version number (e.g., `8.60.3915.0`).
+3. Copy that **version folder** into your repository at this exact path:
+   ```
+   image-build-automation/scripts/modules/HPEOneView/<version-folder>/
+   ```
+   *(Create the `HPEOneView` folder inside `scripts/modules/` if it doesn't exist yet).*
 
-process_begin: CreateProcess(NULL, bash scripts/install-checkmake.sh, ...) failed. 
-make (e=2): The system cannot find the file specified. 
-make: *** [setup] Error 2
-PS C:\Products\repos\image-build-automation>  
+#### Step 3: Transfer to the Offline Server
+Commit this change to your repository, or simply copy the entire `scripts/modules/` directory to the offline Windows Server via USB, secure network share, or your preferred air-gap transfer method.
+
+#### Step 4: Run Setup
+On the offline Windows Server, run:
+```powershell
+make setup
+```
+The script will now detect the bundled `HPEOneView` folder, copy it to the server's PowerShell user module path (`~\Documents\PowerShell\Modules`), and report `[OK] HPEOneView installed from bundled copy`.
+
+### What Changed in the Code
+1. Added `@{ Name = 'HPEOneView'; Version = '8.60' }` to the `$REQUIRED_MODULES` array in `scripts/setup-runner.ps1`.
+2. Updated the script's header documentation to reflect the new module and the Powerline prompt.
+3. Improved the fallback error message to give explicit, copy-pasteable instructions on where to place the module folder if the bundle is ever missing.
+
+This ensures your automation suite is 100% self-contained and ready for strict air-gapped environments.
