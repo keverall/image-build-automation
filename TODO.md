@@ -111,3 +111,75 @@ ApplianceVersion: 9.40.00.505610.00 9.0.4020.1622  C:\Users\98253\Documents\Powe
   18        0.387 Get-OVVersion 
 
   install-module HPOneView.860  -scope currentuser
+
+   make setup
+process_begin: CreateProcess(NULL, pwd, ...) failed.
+process_begin: CreateProcess(NULL, printf \033, ...) failed.
+"[0;36m[prune-logs][0m Pruning old log files..."
+[prune-logs] Pruning logs to keep maximum 10 per type...
+[prune-logs] Pruned 0 excess log files.
+"[0;36m[setup][0m Setting up PowerShell environment..."
+ 
+╔══════════════════════════════════════════════════════════╗
+║  HPE ProLiant ISO Automation — PowerShell Setup       ║
+╚══════════════════════════════════════════════════════════╝
+ 
+[INFO] PowerShell version: 7.4.6
+[OK] PowerShell version check passed
+[INFO] Installing PowerShell modules from bundled copies...
+[INFO] Pester 5.7.1 already installed and verified 
+[INFO] PSScriptAnalyzer 1.21.0 already installed and verified 
+[INFO] PlatyPS 0.14.0 already installed and verified 
+[INFO] Skipping Update-Help (offline mode) 
+[WARN] Oh My Posh binary not found in scripts/bin/. Skipping. 
+[INFO] Detecting make for Windows... 
+[INFO] make already available: GNU Make 3.81 
+[OK] make version check passed 
+[INFO] Installing checkmake for Makefile linting... 
+[INFO] Running checkmake installer via Git Bash... 
+[INFO] [checkmake] Installing checkmake v0.2.2... 
+[INFO] [checkmake] Already installed: unknown 
+[OK] checkmake installation attempted 
+[INFO] Verifying PowerShell tools... 
+[OK] Pester 5.7.1 
+[OK] PSScriptAnalyzer 1.21.0 
+[OK] PlatyPS 0.14.0 
+[INFO] Verifying Pester test discovery... 
+[OK] Found 35 PowerShell test files 
+ 
+╔══════════════════════════════════════════════════════════╗ 
+║  HPE ProLiant ISO Automation — PowerShell Setup Complete   ║
+╚══════════════════════════════════════════════════════════╝
+
+  Project root: C:\Products\repos\image-build-automation
+  Log file:     C:\Users\ADM_98~2\AppData\Local\Temp\15\hpe-automation-pwsh-setup-20260616-151031.log
+
+To run PowerShell tests:
+    cd C:\Products\repos\image-build-automation
+    pwsh -File scripts/run-tests.ps1
+
+To lint PowerShell files:
+    pwsh -NoProfile -Command 'Invoke-ScriptAnalyzer -Path src/powershell -Recurse'
+
+Makefile targets:
+    make setup      # Run this setup script
+    make test       # Run all Pester tests
+    make lint       # Lint PowerShell with PSScriptAnalyzer
+    make coverage   # Run tests with code coverage
+    make clean      # Remove build artifacts
+
+[OK] Setup complete! 
+[setup] Configuring PowerShell profiles with Automation module... 
+[setup] Found 4 profile(s) to update 
+[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module 
+[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module 
+[setup] psprofile.ps1 already contains Automation module 
+[setup] vscodeprofile.ps1 already contains Automation module 
+
+[setup] ✓ Profile configuration complete
+[setup] Restart your PowerShell session or run '. $PROFILE' to load 
+
+process_begin: CreateProcess(NULL, bash scripts/install-checkmake.sh, ...) failed. 
+make (e=2): The system cannot find the file specified. 
+make: *** [setup] Error 2
+PS C:\Products\repos\image-build-automation>  
