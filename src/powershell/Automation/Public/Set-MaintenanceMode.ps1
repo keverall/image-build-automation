@@ -942,7 +942,8 @@ function Set-MaintenanceMode {
             )
         }
         
-        if (-not $resolvedUsername -or -not $resolvedPassword) {
+if (-not $resolvedUsername -or -not $resolvedPassword) {
+        if (-not $DryRun -and -not $isAutomated) {
             $missingCreds = @()
             if (-not $resolvedUsername) {
                 $missingCreds += "username" 
@@ -955,6 +956,7 @@ function Set-MaintenanceMode {
                 Error   = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
             }
         }
+    }
     }
 
     # Load configs
@@ -1116,13 +1118,13 @@ function Set-MaintenanceMode {
     if ($Action -eq 'enable') {
         # Check if already in maintenance mode
         $alreadyEnabled = $false
-        if ($Mode -eq 'scom' -and $scomMgr -and $clusterDef) {
+        if ($Mode -eq 'scom' -and $scomMgr -and $clusterDef -and -not $DryRun) {
             $preCheckGroup = $clusterDef.Get_Item('scom_group')
             $preCheckResult = $scomMgr.GetMaintenanceStatus($preCheckGroup, $servers, $false)
             if ($preCheckResult.Success -and $preCheckResult.Summary.InMaintenance -gt 0) {
                 $alreadyEnabled = $true
             }
-        } elseif ($Mode -eq 'oneview' -and $oneviewMgr) {
+        } elseif ($Mode -eq 'oneview' -and $oneviewMgr -and -not $DryRun) {
             $targetName = if ($resolveResult) {
                 $resolveResult.TargetName 
             } else {
