@@ -1,7 +1,7 @@
 {
   "oneview": {
     "appliance": "oneview.example.com",
-    "module_name": "HPOneView.Managed",
+    "module_name": "HPEOneView.860",
     "use_winrm": false,
     "winrm": {
       "server": "oneview.example.com"
@@ -11,5 +11,5 @@
       "password_env": "ONEVIEW_PASSWORD"
     }
   },
-  "notes": "HPE OneView configuration. Uses HPOneView.Managed PowerShell module for server/scope management. Set use_winrm to true if executing commands via WinRM to a jump server."
+  "notes": "HPE OneView configuration. Module name format is HPEOneView.<major><minor> (e.g., HPEOneView.860 for OneView 8.60). See docs/oneview-module-versions.md. Set use_winrm to true if executing commands via WinRM to a jump server."
 }

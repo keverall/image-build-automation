@@ -69,7 +69,7 @@ BeforeAll {
 
     @{ management_server = 'localhost'; powershell_module = 'OperationsManager'; use_winrm = $false } |
         ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'scom_config.json')
-    @{ oneview = @{ appliance = 'oneview.example.com'; module_name = 'HPOneView.Managed'; use_winrm = $false } } |
+    @{ oneview = @{ appliance = 'oneview.example.com'; module_name = 'HPEOneView.860'; use_winrm = $false } } |
         ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'oneview_config.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'opsramp_config.json')

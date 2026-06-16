@@ -7,7 +7,7 @@
 
 .DESCRIPTION
     Validates OneView setup by checking:
-    - HPOneView.Managed PowerShell module availability
+    - HPEOneView.Xxx PowerShell module availability (only ONE version allowed)
     - ONEVIEW_USER and ONEVIEW_PASSWORD environment variables
     - OneView configuration file (oneview_config.json) existence
     
@@ -18,6 +18,15 @@
 
 .EXAMPLE
     pwsh -File scripts/setup-oneview.ps1
+
+.EXAMPLE
+    pwsh -File scripts/setup-oneview.ps1 -ConfigDir './configs'
+
+.NOTES
+    Module name format: HPEOneView.<major><minor> (e.g., HPEOneView.860 for OneView 8.60)
+    Only ONE HPE OneView module version can be installed at a time.
+    To switch versions: Uninstall-Module HPEOneView.OLD_VERSION -Force
+    See docs/oneview-module-versions.md for compatibility table.
 #>
 
 param(
@@ -29,12 +38,25 @@ $ErrorActionPreference = 'Stop'
 # Import the Automation module
 Import-Module (Join-Path $PSScriptRoot 'src/powershell/Automation/Automation.psd1') -Force
 
-# Verify HPOneView module is available
-if (-not (Get-Module -ListAvailable -Name 'HPOneView.Managed')) {
-    Write-Warning "HPOneView.Managed module not found."
-    Write-Warning "Install from OneView appliance:"
-    Write-Warning "  Save-Module -Name HPOneView.Managed -Path C:\temp"
-    Write-Warning "  Import-Module C:\temp\HPOneView.Managed\*"
+# Verify HPE OneView module is available
+$ovModules = Get-Module -ListAvailable -Name 'HPEOneView.*' | Select-Object -ExpandProperty Name
+if (-not $ovModules) {
+    $ovModules = Get-Module -ListAvailable -Name 'HPOneView.*' | Select-Object -ExpandProperty Name
+}
+if ($ovModules) {
+    Write-Host "[OK] OneView module(s) found: ($($ovModules -join ', '))" -ForegroundColor Green
+    Write-Host "  Recommended module format: HPEOneView.860 (for OneView 8.60+)"
+    Write-Host "  See docs/oneview-module-versions.md for compatibility table."
+    if ($ovModules.Count -gt 1) {
+        Write-Warning "[WARNING] Multiple modules detected. Only ONE HPE OneView module should be installed."
+        Write-Warning "  Remove old versions: Uninstall-Module HPEOneView.840 -Force"
+        Write-Warning "  Or use: Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force"
+    }
+} else {
+    Write-Warning "[MISSING] No HPEOneView.* module found."
+    Write-Warning "Install from PowerShell Gallery:"
+    Write-Warning "  Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force"
+    Write-Warning "  See: https://github.com/HewlettPackard/POSH-HPEOneView"
 }
 
 # Test OneView credentials are available
