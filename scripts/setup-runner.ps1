@@ -178,38 +178,32 @@ function Install-RequiredModules {
 
 # ─── Oh My Posh Installation ─────────────────────────────────────────────────
 function Install-OhMyPosh {
-    $poshBin = Join-Path $PSScriptRoot 'bin/posh.exe'
-    if (-not (Test-Path $poshBin)) {
-        Write-Warn "Oh My Posh binary not found in scripts/bin/. Skipping."
+    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
+    $poshBin = Join-Path $localBinDir 'oh-my-posh.exe'
+    
+    if (Test-Path $poshBin) {
+        Write-Log "Found bundled oh-my-posh.exe at $poshBin"
+        $installDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'bin'
+        $destPath = Join-Path $installDir 'oh-my-posh.exe'
+        
+        if (-not (Test-Path $destPath)) {
+            if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Force -Path $installDir | Out-Null }
+            Copy-Item -Path $poshBin -Destination $destPath -Force
+            Write-OK "Oh My Posh installed to $destPath"
+        }
+        
+        if ($env:PATH -notlike "*$installDir*") { 
+            $env:PATH = "$installDir;$env:PATH" 
+        }
         return
     }
 
-    $installDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'bin'
-    $destPath = Join-Path $installDir 'oh-my-posh.exe'
-    if (Test-Path $destPath) {
-        Write-Log "Oh My Posh already installed at $destPath"
-        return
-    }
-
-    Write-Log "Installing Oh My Posh..."
-    if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Force -Path $installDir | Out-Null }
-    Copy-Item -Path $poshBin -Destination $destPath -Force
-    Write-OK "Oh My Posh installed to $destPath"
-
-    # Add to current session PATH
-    if ($env:PATH -notlike "*$installDir*") { $env:PATH = "$installDir;$env:PATH" }
-
-    # Configure profile for VSCode/terminal prompt
-    $profileDir = Split-Path $PROFILE -Parent
-    if (-not (Test-Path $profileDir)) { New-Item -ItemType Directory -Force -Path $profileDir | Out-Null }
-    if (-not (Test-Path $PROFILE)) {
-        $profileContent = @"
-# Oh My Posh prompt (bundled, offline-capable)
-oh-my-posh init pwsh --config `$env:LOCALAPPDATA\Programs\oh-my-posh\themes\powerline.json | Invoke-Expression
-"@
-        Set-Content -Path $PROFILE -Value $profileContent -Force
-        Write-Log "Created PowerShell profile with Oh My Posh prompt"
-    }
+    Write-Warn "Oh My Posh binary not found in bin/. Skipping."
+    Write-Warn "NOTE: If .exe execution is blocked by admin policy (e.g., AppLocker), using 'git clone' will NOT bypass this,"
+    Write-Warn "      because compiling from source still produces an .exe file. To use Oh My Posh, you must either:"
+    Write-Warn "      1. Download oh-my-posh.exe and place it in the project's 'bin/' folder (if your IT policy allows it)."
+    Write-Warn "      2. Request an IT exception for the oh-my-posh executable."
+    Write-Warn "      3. Use a pure PowerShell custom prompt (no .exe required) by adding a prompt function to your `$PROFILE."
 }
 
 # ─── Make Detection (Windows) ────────────────────────────────────────────────
@@ -365,72 +359,55 @@ function Main {
 
 # ─── Checkmake Installation ──────────────────────────────────────────────────
 function Install-Checkmake {
-    Write-Log "Installing checkmake for Makefile linting..."
+    Write-Log "Checking for checkmake (Makefile linting)..."
     
-    $scriptPath = Join-Path $PSScriptRoot 'install-checkmake.sh'
-    if (Test-Path $scriptPath) {
-        try {
-            if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT') {
-                # Windows - try to run via Git Bash if available
-                $gitBash = @(
-                    'C:\Program Files\Git\bin\bash.exe',
-                    'C:\Program Files (x86)\Git\bin\bash.exe'
-                ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-                
-                if ($gitBash) {
-                    Write-Log "Running checkmake installer via Git Bash..."
-                    & $gitBash -c "`"$scriptPath`"" 2>&1 | ForEach-Object { Write-Log $_ }
-                    Write-OK "checkmake installation attempted"
-                } else {
-                    Write-Warn "Git Bash not found. Skipping checkmake installation."
-                    Write-Warn "Run manually: bash scripts/install-checkmake.sh"
-                }
-            } else {
-                # Linux/Mac
-                Write-Log "Running checkmake installer..."
-                & bash $scriptPath 2>&1 | ForEach-Object { Write-Log $_ }
-                Write-OK "checkmake installation attempted"
+    # 1. Check for bundled checkmake.exe in project bin/ directory (offline support)
+    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
+    $checkmakeExe = Join-Path $localBinDir 'checkmake.exe'
+    
+    if (Test-Path $checkmakeExe) {
+        Write-Log "Found bundled checkmake.exe at $checkmakeExe"
+        if ($env:PATH -notlike "*$localBinDir*") {
+            $env:PATH = "$localBinDir;$env:PATH"
+            # Persist to User PATH
+            $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+            if ($userPath -notlike "*$localBinDir*") {
+                [Environment]::SetEnvironmentVariable('PATH', "$localBinDir;$userPath", 'User')
             }
-        } catch {
-            Write-Warn "checkmake installation failed: $($_.Exception.Message)"
-            Write-Warn "You can install manually: go install github.com/mrtazz/checkmake@latest"
         }
-    } else {
-        Write-Warn "install-checkmake.sh not found"
+        Write-OK "checkmake available from local bin directory"
+        return
     }
-}
 
-# ─── Checkmake Installation ──────────────────────────────────────────────────
-function Install-Checkmake {
-    Write-Log "Installing checkmake for Makefile linting..."
-    
+    # 2. Fallback: Try to run the bash installer if Git Bash is available
     $scriptPath = Join-Path $PSScriptRoot 'install-checkmake.sh'
     if (Test-Path $scriptPath) {
-        try {
-            if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT') {
-                # Windows - try to run via Git Bash if available
-                $gitBash = @(
-                    'C:\Program Files\Git\bin\bash.exe',
-                    'C:\Program Files (x86)\Git\bin\bash.exe'
-                ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-                
-                if ($gitBash) {
-                    Write-Log "Running checkmake installer via Git Bash..."
+        if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT') {
+            $gitBash = @(
+                'C:\Program Files\Git\bin\bash.exe',
+                'C:\Program Files (x86)\Git\bin\bash.exe'
+            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+            
+            if ($gitBash) {
+                Write-Log "Running checkmake installer via Git Bash..."
+                try {
                     & $gitBash -c "`"$scriptPath`"" 2>&1 | ForEach-Object { Write-Log $_ }
                     Write-OK "checkmake installation attempted"
-                } else {
-                    Write-Warn "Git Bash not found. Skipping checkmake installation."
-                    Write-Warn "Run manually: bash scripts/install-checkmake.sh"
+                } catch {
+                    Write-Warn "checkmake installation failed: $($_.Exception.Message)"
                 }
             } else {
-                # Linux/Mac
-                Write-Log "Running checkmake installer..."
+                Write-Warn "Git Bash not found. Skipping checkmake installation."
+                Write-Warn "To install offline: Download checkmake-windows-amd64.exe and place it in '$localBinDir\checkmake.exe'"
+            }
+        } else {
+            Write-Log "Running checkmake installer..."
+            try {
                 & bash $scriptPath 2>&1 | ForEach-Object { Write-Log $_ }
                 Write-OK "checkmake installation attempted"
+            } catch {
+                Write-Warn "checkmake installation failed: $($_.Exception.Message)"
             }
-        } catch {
-            Write-Warn "checkmake installation failed: $($_.Exception.Message)"
-            Write-Warn "You can install manually: go install github.com/mrtazz/checkmake@latest"
         }
     } else {
         Write-Warn "install-checkmake.sh not found"

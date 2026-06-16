@@ -177,7 +177,8 @@ It 'Should reject unknown target ID [Action=validate, TargetId=NONEXISTENT-CLUST
             $result = Set-MaintenanceMode @params
             
             Write-MaintenanceResult -Result $result -InputParams $params -ExpectedSuccess $false
-            $result.Success | Should -Be $true
+            $result.Success | Should -Be $false
+            $result.Error | Should -Match 'not found in catalogue'
         }
     }
 }
