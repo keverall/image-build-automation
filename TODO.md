@@ -157,3 +157,50 @@ The script will now detect the bundled `HPEOneView` folder, copy it to the serve
 3. Improved the fallback error message to give explicit, copy-pasteable instructions on where to place the module folder if the bundle is ever missing.
 
 This ensures your automation suite is 100% self-contained and ready for strict air-gapped environments.
+
+The setup script has been fully updated to support offline preinstallation of the `OperationsManager` (SCOM) module alongside `HPEOneView`. 
+
+I also enhanced the module detection logic to automatically find and use the highest available version of the module if the exact version string doesn't match. This is crucial for SCOM, as the module version changes depending on whether you are using SCOM 2019 (`10.19.x`), SCOM 2022 (`10.22.x`), etc.
+
+### How to Bundle `OperationsManager` for the Offline Server
+
+Because the `OperationsManager` module is tied to the SCOM console installation and isn't reliably hosted on PSGallery, the best approach is to copy it directly from your SCOM management server or a machine with the SCOM console installed.
+
+#### Step 1: Locate or Copy the Module
+On a machine that has the SCOM console installed (or via a network share to the SCOM server), locate the module. It is typically found at:
+```powershell
+# Common SCOM Console installation path
+C:\Program Files\WindowsPowerShell\Modules\OperationsManager
+# OR
+C:\Program Files\Microsoft System Center\Operations Manager\Powershell\OperationsManager
+```
+Alternatively, as noted in your `setup-scom.ps1` script, you can copy it from a SCOM server share:
+```powershell
+# Example from your docs
+Copy-Item -Path "\\VR-OPM19P1-7382.ad.example.com\share\OperationsManager" -Destination .\temp-scom -Recurse -Force
+```
+
+#### Step 2: Bundle It Into the Repository
+1. Inside the copied `OperationsManager` folder, you will see a folder named with the version number (e.g., `10.19.10050.0` or `10.22.x.x`).
+2. Copy that **version folder** into your repository at this exact path:
+   ```text
+   image-build-automation/scripts/modules/OperationsManager/<version-folder>/
+   ```
+   *(Create the `OperationsManager` folder inside `scripts/modules/` if it doesn't exist yet).*
+
+#### Step 3: Transfer to the Offline Server
+Commit this change to your repository, or transfer the updated `scripts/modules/` directory to the offline Windows Server via your approved air-gap transfer method (USB, secure network share, etc.).
+
+#### Step 4: Run Setup
+On the offline Windows Server, run:
+```powershell
+make setup
+```
+
+### What the Script Will Do Now
+1. It will scan `scripts/modules/OperationsManager/`.
+2. Even if you specified `10.19.10050.0` in the config but copied `10.22.1234.0`, the script's new fallback logic will detect the available folder and say:  
+   `[WARN] Exact version 10.19.10050.0 of OperationsManager not found. Using available version 10.22.1234.0.`
+3. It will copy it to the local PowerShell user module path and report:  
+   `[OK] OperationsManager installed from bundled copy`.
+4. The setup will complete successfully with zero internet access and zero `.exe` execution blocks.
