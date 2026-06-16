@@ -6,6 +6,9 @@ BeforeAll {
     Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
     Import-Module (Join-Path $Script:ModuleRoot 'src/powershell/Automation/Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 
+    # Prevent interactive prompts during tests
+    $env:AUTOMATED_MODE = 'true'
+    
     if (-not $env:TEMP) {
         $env:TEMP = '/tmp' 
     }
@@ -20,7 +23,7 @@ BeforeAll {
     Copy-Item (Join-Path $Script:ModuleRoot 'configs/clusters_catalogue.examples-only.json') (Join-Path $Script:ConfigDir 'clusters_catalogue.json') -Force
     Copy-Item (Join-Path $Script:ModuleRoot 'configs/connection_hosts.json') (Join-Path $Script:ConfigDir 'connection_hosts.json') -Force
     @{ management_server = 'localhost'; powershell_module = 'OperationsManager'; use_winrm = $false } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'scom_config.json')
-    @{ oneview = @{ appliance = 'oneview.example.com'; module_name = 'HPOneView.Managed'; use_winrm = $false } } | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'oneview_config.json')
+    @{ oneview = @{ appliance = 'oneview.example.com'; module_name = 'HPEOneView.860'; use_winrm = $false } } | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'oneview_config.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'opsramp_config.json')
 
