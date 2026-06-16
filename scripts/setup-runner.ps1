@@ -377,15 +377,33 @@ function Main {
 function Install-Checkmake {
     Write-Log "Checking for checkmake (Makefile linting)..."
     
-    # 1. Check for bundled checkmake.exe in project bin/ directory (offline support)
     $localBinDir = Join-Path $PROJECT_ROOT 'bin'
-    $checkmakeExe = Join-Path $localBinDir 'checkmake.exe'
     
+    # Determine OS and Architecture
+    $os = if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform) { 'windows' } 
+          elseif ($IsLinux) { 'linux' } 
+          elseif ($IsMacOS) { 'darwin' } 
+          else { 'windows' }
+          
+    $arch = 'amd64'
+    if ($IsMacOS -or $IsLinux) {
+        try {
+            $archInfo = & uname -m 2>$null
+            if ($archInfo -match 'aarch64|arm64') { $arch = 'arm64' }
+        } catch { }
+    } else {
+        if ($env:PROCESSOR_ARCHITECTURE -match 'ARM64') { $arch = 'arm64' }
+        elseif ($env:PROCESSOR_ARCHITECTURE -match 'X86') { $arch = '386' }
+    }
+    
+    $checkmakeBin = if ($os -eq 'windows') { 'checkmake.exe' } else { 'checkmake' }
+    $checkmakeExe = Join-Path $localBinDir $checkmakeBin
+
+    # 1. Check if already installed in bin/
     if (Test-Path $checkmakeExe) {
-        Write-Log "Found bundled checkmake.exe at $checkmakeExe"
+        Write-Log "Found checkmake at $checkmakeExe"
         if ($env:PATH -notlike "*$localBinDir*") {
             $env:PATH = "$localBinDir;$env:PATH"
-            # Persist to User PATH
             $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
             if ($userPath -notlike "*$localBinDir*") {
                 [Environment]::SetEnvironmentVariable('PATH', "$localBinDir;$userPath", 'User')
@@ -395,38 +413,41 @@ function Install-Checkmake {
         return
     }
 
-    # 2. Fallback: Try to run the bash installer if Git Bash is available
-    $scriptPath = Join-Path $PSScriptRoot 'install-checkmake.sh'
-    if (Test-Path $scriptPath) {
-        if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT') {
-            $gitBash = @(
-                'C:\Program Files\Git\bin\bash.exe',
-                'C:\Program Files (x86)\Git\bin\bash.exe'
-            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-            
-            if ($gitBash) {
-                Write-Log "Running checkmake installer via Git Bash..."
-                try {
-                    & $gitBash -c "`"$scriptPath`"" 2>&1 | ForEach-Object { Write-Log $_ }
-                    Write-OK "checkmake installation attempted"
-                } catch {
-                    Write-Warn "checkmake installation failed: $($_.Exception.Message)"
-                }
-            } else {
-                Write-Warn "Git Bash not found. Skipping checkmake installation."
-                Write-Warn "To install offline: Download checkmake-windows-amd64.exe and place it in '$localBinDir\checkmake.exe'"
-            }
-        } else {
-            Write-Log "Running checkmake installer..."
-            try {
-                & bash $scriptPath 2>&1 | ForEach-Object { Write-Log $_ }
-                Write-OK "checkmake installation attempted"
-            } catch {
-                Write-Warn "checkmake installation failed: $($_.Exception.Message)"
+    # 2. Check system-wide installation
+    if (Get-Command checkmake -ErrorAction SilentlyContinue) {
+        Write-OK "checkmake already available in PATH"
+        return
+    }
+
+    # 3. Attempt download from GitHub Releases
+    $version = "0.2.2"
+    $url = "https://github.com/mrtazz/checkmake/releases/download/$version/checkmake-$version.$os.$arch"
+    
+    Write-Log "Downloading checkmake v$version for $os/$arch..."
+    try {
+        if (-not (Test-Path $localBinDir)) {
+            New-Item -ItemType Directory -Force -Path $localBinDir | Out-Null
+        }
+        
+        Invoke-WebRequest -Uri $url -OutFile $checkmakeExe -UseBasicParsing
+        
+        if ($os -ne 'windows') {
+            chmod +x $checkmakeExe
+        }
+        
+        Write-OK "checkmake downloaded successfully to $checkmakeExe"
+        
+        if ($env:PATH -notlike "*$localBinDir*") {
+            $env:PATH = "$localBinDir;$env:PATH"
+            $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+            if ($userPath -notlike "*$localBinDir*") {
+                [Environment]::SetEnvironmentVariable('PATH', "$localBinDir;$userPath", 'User')
             }
         }
-    } else {
-        Write-Warn "install-checkmake.sh not found"
+    } catch {
+        Write-Warn "Failed to download checkmake: $($_.Exception.Message)"
+        Write-Warn "To install offline: Download checkmake-$version.$os.$arch from https://github.com/mrtazz/checkmake/releases"
+        Write-Warn "and place it in '$localBinDir\$checkmakeBin'"
     }
 }
 
