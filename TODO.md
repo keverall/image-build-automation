@@ -109,3 +109,5 @@ ApplianceVersion: 9.40.00.505610.00 9.0.4020.1622  C:\Users\98253\Documents\Powe
   16        0.112 Get-OVVersion 
   17        0.235 Disconnect-OVMgmt
   18        0.387 Get-OVVersion 
+
+  install-module HPOneView.860  -scope currentuser
