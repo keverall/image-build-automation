@@ -1,4 +1,25 @@
 #!/usr/bin/env pwsh
+<#
+.SYNOPSIS
+    Setup-Profile.ps1 — Configure PowerShell profiles with Automation module.
+
+.DESCRIPTION
+    Adds maintenance mode convenience functions to PowerShell profiles.
+    Can be run from anywhere - uses the script's repo root as the base path.
+    Updates or installs the Automation module import block into all discovered
+    PowerShell profile locations.
+
+.PARAMETER Uninstall
+    Remove the Automation module block from profiles instead of installing.
+
+.PARAMETER DryRun
+    Simulate changes without actually modifying profile files.
+
+.EXAMPLE
+    pwsh -File scripts/Setup-Profile.ps1
+    pwsh -File scripts/Setup-Profile.ps1 -Uninstall
+#>
+
 # =============================================================================
 # Setup-Profile.ps1 — Configure PowerShell profiles with Automation module
 # =============================================================================

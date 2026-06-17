@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-IsoBuild.ps1
-generated: 2026-06-17 15:29 UTC
+generated: 2026-06-17 15:47 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
