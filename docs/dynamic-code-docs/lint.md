@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/lint.ps1
-generated: 2026-06-12 09:46 UTC
+generated: 2026-06-17 15:29 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Scans all PowerShell files in src/powershell directory using PSScriptAnalyzer. Excludes rules that flag intentional patterns (embedded scripts, credentials in scripts, etc.). Excluded rules: - PSUseBOMForUnicodeEncodedFile - PSUseToExportFieldsInManifest - PSUseShouldProcessForStateChangingFunctions - PSUseApprovedVerbs - PSUseSingularNouns - PSAvoidUsingWriteHost - PSAvoidUsingConvertToSecureStringWithPlainText - PSAvoidUsingUsernameAndPasswordParams - TypeNotFound Exits with code 1 if errors are found.
+Two-phase linting process: 1. SYNTAX VALIDATION: Parses each file to catch syntax/parse errors - Uses PowerShell's built-in Parser - Catches missing braces, invalid syntax, etc. - FATAL: Exits immediately if syntax errors found 2. CODE QUALITY: Runs PSScriptAnalyzer for best practices - Style, performance, design patterns - Respects excluded rules (see below) Directories excluded: vendor/, generated/, .git/, bin/, scripts/modules/ Rules excluded from PSScriptAnalyzer: - PSUseBOMForUnicodeEncodedFile - PSUseToExportFieldsInManifest - PSUseShouldProcessForStateChangingFunctions - PSUseApprovedVerbs - PSUseSingularNouns - PSAvoidUsingWriteHost - PSAvoidUsingConvertToSecureStringWithPlainText - PSAvoidUsingUsernameAndPasswordParams - TypeNotFound
 
 ## Examples
 
@@ -20,13 +20,23 @@ pwsh -File scripts/lint.ps1
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-    Run PSScriptAnalyzer linting on PowerShell source code.
+    Lint all PowerShell files - syntax validation and code quality checks.
 
 .DESCRIPTION
-    Scans all PowerShell files in src/powershell directory using PSScriptAnalyzer.
-    Excludes rules that flag intentional patterns (embedded scripts, credentials in scripts, etc.).
+    Two-phase linting process:
     
-    Excluded rules:
+    1. SYNTAX VALIDATION: Parses each file to catch syntax/parse errors
+       - Uses PowerShell's built-in Parser
+       - Catches missing braces, invalid syntax, etc.
+       - FATAL: Exits immediately if syntax errors found
+    
+    2. CODE QUALITY: Runs PSScriptAnalyzer for best practices
+       - Style, performance, design patterns
+       - Respects excluded rules (see below)
+    
+    Directories excluded: vendor/, generated/, .git/, bin/, scripts/modules/
+    
+    Rules excluded from PSScriptAnalyzer:
     - PSUseBOMForUnicodeEncodedFile
     - PSUseToExportFieldsInManifest
     - PSUseShouldProcessForStateChangingFunctions
@@ -36,8 +46,6 @@ pwsh -File scripts/lint.ps1
     - PSAvoidUsingConvertToSecureStringWithPlainText
     - PSAvoidUsingUsernameAndPasswordParams
     - TypeNotFound
-    
-    Exits with code 1 if errors are found.
 
 .EXAMPLE
     pwsh -File scripts/lint.ps1

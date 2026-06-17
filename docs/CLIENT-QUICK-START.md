@@ -2,10 +2,10 @@
 
 ## Setup (One-Time)
 
-Run this script once to add the `mm` command to your PowerShell profile:
+Run this script once to configure your PowerShell profile with the Automation module:
 
 ```powershell
-./scripts/Setup-MaintenanceModeAliases.ps1
+./scripts/Setup-Profile.ps1
 ```
 
 Then restart PowerShell or reload your profile:
@@ -20,13 +20,13 @@ Then restart PowerShell or reload your profile:
 
 ```powershell
 # Enable with all options
-mm enable CLU-CLUSTER-01 -mode scom -env Prod -Start now -End +4hours -DryRun
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +4hours -DryRun
 
 # OneView with serial number
-mm enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -DryRun
+Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -DryRun
 
 # Custom time window
-mm enable CLU-CLUSTER-01 scom Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
 ```
 
 ### Time Formats
@@ -38,49 +38,59 @@ mm enable CLU-CLUSTER-01 scom Prod -Start '2026-06-12 22:00' -End '2026-06-13 02
 
 ## Output
 
-The `mm` command shows consistent, formatted output:
+The `Set-MaintenanceMode` command shows consistent, formatted output:
 
 ```
-=== Maintenance Mode ===
-Action: enable | Target: CLU-CLUSTER-01 | Mode: scom
-Environment: Prod | Time: 2026-06-12T13:00:00Z → 2026-06-12T15:00:00Z
-Status: ✓ Success
-[DRY RUN MODE]
-========================
+=== Maintenance Mode Command Audit ===
+Timestamp (UTC): 2026-06-12T14:00:00.1234567Z
+Action: enable
+Target ID: CLU-CLUSTER-01
+Mode: scom
+Environment: Prod
+Start Time (UTC): 2026-06-12T14:00:00.1234567Z
+End Time (UTC): 2026-06-12T16:00:00.1234567Z
+
+=== Command Result ===
+Success: True
+Server Count: 3
+SCOM: 4/4 success
+=====================
 ```
 
 ## Parameters
 
-| Parameter | Position | Description | Default |
+| Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| Action | 0 | `enable`, `disable`, `validate` | `enable` |
-| Target | 1 | Cluster/server ID | Required |
-| Mode | 2 | `scom` or `oneview` | `scom` |
-| Environment | 3 | `Test` or `Prod` | `Prod` |
-| Start | - | Start time | `now` |
-| End | - | End time | `+2hours` |
-| DryRun | - | Simulate only | `false` |
+| `-Action` | Yes | `enable`, `disable`, or `validate` | - |
+| `-TargetId` | Yes | Cluster/server ID | - |
+| `-Mode` | Yes | `scom` or `oneview` | - |
+| `-Environment` | No | `Test` or `Prod` | `Prod` |
+| `-Start` | No | Maintenance window start time | `now` |
+| `-End` | No | Maintenance window end time | `+2hours` |
+| `-DryRun` | No | Simulate only | `false` |
+| `-ManagementHost` | No | Override management server hostname | - |
+| `-SerialNumber` | No | OneView: look up server by serial number | - |
 
 ## Examples
 
 ### Test Before Running
 ```powershell
-mm enable TEST-CLUSTER-01 -DryRun
+Set-MaintenanceMode -Action enable -TargetId TEST-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 ```
 
 ### Production with Custom Window
 ```powershell
-mm enable CLU-CLUSTER-01 -mode scom -env Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-12 22:00' -End '2026-06-13 02:00'
 ```
 
 ### OneView Server by Serial
 ```powershell
-mm enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test
+Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -Start now -End +2hours
 ```
 
-### Quick Disable
+### Disable Maintenance
 ```powershell
-mm disable CLU-CLUSTER-01
+Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 ```
 
 ## Troubleshooting
@@ -96,5 +106,5 @@ Import-Module ./src/powershell/Automation/Automation.psd1
 
 ### Check Available Commands
 ```powershell
-Get-Command mm*
+Get-Command Set-MaintenanceMode
 ```

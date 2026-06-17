@@ -45,11 +45,11 @@ This installs required PowerShell modules and configures your profile.
 ### Step 3: Verify Installation
 
 ```powershell
-# Check if mm command is available
-Get-Command mm
+# Check if Set-MaintenanceMode is available
+Get-Command Set-MaintenanceMode
 
 # Test with a dry run
-mm -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRun
+Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 ```
 
 ---
@@ -59,8 +59,7 @@ mm -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRu
 ### Profile Features
 - ✅ **oh-my-posh theme** (cross-platform: Windows/Linux/macOS)
 - ✅ **Automation module** auto-import
-- ✅ **mm command** for maintenance mode
-- ✅ **Quick aliases**: `mmenable`, `mmdisable`, `mmvalidate`
+- ✅ **Set-MaintenanceMode** command for maintenance mode
 - ✅ **Git integration** (posh-git)
 - ✅ **Terminal icons** and enhanced UX
 
@@ -68,10 +67,7 @@ mm -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRu
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `mm` | Full maintenance mode control | `mm enable CLU-CLUSTER-01 scom Prod` |
-| `mmenable` | Quick enable | `mmenable CLU-CLUSTER-01` |
-| `mmdisable` | Quick disable | `mmdisable CLU-CLUSTER-01` |
-| `mmvalidate` | Check status | `mmvalidate CLU-CLUSTER-01` |
+| `Set-MaintenanceMode` | Full maintenance mode control | `Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod` |
 
 ---
 
@@ -88,19 +84,14 @@ if (Test-Path $AutomationModulePath) {
 }
 ```
 
-### 2. Add the mm Function
+### 2. Import the Module
+
+Add this to your PowerShell profile (`$PROFILE`):
 
 ```powershell
-function mm {
-    $result = Set-MaintenanceMode @args
-    Write-Host "=== Maintenance Mode ===" -ForegroundColor Cyan
-    Write-Host "Action: $($result.Action) | Target: $($result.TargetId) | Mode: $($result.Mode)" -ForegroundColor Yellow
-    Write-Host "Environment: $($result.Environment) | Time: $($result.StartTimeUtc) → $($result.EndTimeUtc)" -ForegroundColor Yellow
-    Write-Host "Status: $(if($result.Success){'✓ Success'}else{'✗ Failed'})" -ForegroundColor $(if($result.Success){'Green'}else{'Red'})
-    if ($result.Error) { Write-Host "Error: $($result.Error)" -ForegroundColor Red }
-    if ($result.DryRun) { Write-Host "[DRY RUN MODE]" -ForegroundColor Magenta }
-    Write-Host "========================" -ForegroundColor Cyan
-    return $result
+$AutomationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
+if (Test-Path $AutomationModulePath) {
+    Import-Module $AutomationModulePath -WarningAction SilentlyContinue
 }
 ```
 
@@ -133,27 +124,6 @@ If you prefer to add the functions manually:
 $automationModulePath = '/path/to/image-build-automation/src/powershell/Automation/Automation.psd1'
 if (Test-Path $automationModulePath) {
     Import-Module $automationModulePath -WarningAction SilentlyContinue
-    function mm { Set-MaintenanceMode @args }
-    function mmenable { 
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
-            [string]$Start = 'now',
-            [string]$End = '+2hours',
-            [switch]$DryRun
-        )
-        $p = @{
-            Action = 'enable'
-            TargetId = $TargetId
-            Mode = $Mode
-            Environment = $Environment
-            Start = $Start
-            End = $End
-        }
-        if ($DryRun) { $p['DryRun'] = $true }
-        Set-MaintenanceMode @p
-    }
 }
 ```
 
@@ -192,17 +162,14 @@ Test-Path /home/keverall/repos/image-build-automation/src/powershell/Automation/
 Import-Module /home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1 -Force
 ```
 
-### mm Command Not Available
+### Set-MaintenanceMode Command Not Available
 
 ```powershell
 # Reload profile
 . $PROFILE
 
-# Check if function exists
-Get-Command mm -ErrorAction SilentlyContinue
-
-# List all mm* commands
-Get-Command mm*
+# Check if Set-MaintenanceMode is available
+Get-Command Set-MaintenanceMode -ErrorAction SilentlyContinue
 ```
 
 ### Wrong Terminal Type
