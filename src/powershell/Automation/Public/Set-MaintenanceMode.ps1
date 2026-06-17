@@ -496,53 +496,54 @@ function Set-MaintenanceMode {
         }
     }
 
+    # Load environment-based connection config (shared by all actions)
+    $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
+    $hostsCfg = if (Test-Path $hostsCfgPath) {
+        Import-JsonConfig -Path $hostsCfgPath -Required:$false 
+    } else {
+        @{} 
+    }
+    
+    # Determine environment: parameter > env var > default to Prod
+    $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) { 
+        $Environment 
+    } elseif ([System.Environment]::GetEnvironmentVariable('ENVIRONMENT')) {
+        [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
+    } else {
+        'Prod'
+    }
+    
+    Write-Verbose "Using environment: $effectiveEnv"
+    
+    # Resolve hosts from config or parameters
+    $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
+    $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
+    
+    $resolvedHost = if ($PSBoundParameters.ContainsKey('ManagementHost')) {
+        $ManagementHost
+    } elseif ([System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')) {
+        [System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')
+    } else {
+        if ($Mode -eq 'scom') {
+            $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
+            $scomEnvConfig.Get_Item('management_server')
+        } else {
+            $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
+            $oneviewEnvConfig.Get_Item('appliance')
+        }
+    }
+    
+    if (-not $resolvedHost) {
+        $envVar = '$env:MAINTENANCE_HOST'
+        return @{ Success = $false; Error = "Management host not configured for environment '$effectiveEnv'. Set $envVar, use -ManagementHost parameter, or update connection_hosts.json." }
+    }
+    
+    Write-Verbose "Management host resolved to: $resolvedHost"
+
     # VALIDATE action - check actual maintenance mode status
     if ($Action -eq 'validate') {
         Write-Verbose "Validating target '$TargetId' and checking maintenance mode status..."
-
-        # Load environment-based connection config
-        $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
-        $hostsCfg = if (Test-Path $hostsCfgPath) {
-            Import-JsonConfig -Path $hostsCfgPath -Required:$false 
-        } else {
-            @{} 
-        }
-
-        # Determine environment
-        $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) {
-            $Environment
-        } elseif ([System.Environment]::GetEnvironmentVariable('ENVIRONMENT')) {
-            [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
-        } else {
-            'Prod'
-        }
-
-        Write-Verbose "Using environment: $effectiveEnv"
-
-        # Resolve management host
-        $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
-        $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
-
-        $resolvedHost = if ($PSBoundParameters.ContainsKey('ManagementHost')) {
-            $ManagementHost
-        } elseif ([System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')) {
-            [System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')
-        } else {
-            if ($Mode -eq 'scom') {
-                $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
-                $scomEnvConfig.Get_Item('management_server')
-            } else {
-                $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
-                $oneviewEnvConfig.Get_Item('appliance')
-            }
-        }
-
-        if (-not $resolvedHost) {
-            $envVar = '$env:MAINTENANCE_HOST'
-            return @{ Success = $false; Error = "Management host not configured for environment '$effectiveEnv'. Set $envVar, use -ManagementHost parameter, or update connection_hosts.json." }
-        }
-
-        Write-Verbose "Management host resolved to: $resolvedHost"
+        # hostsCfg, effectiveEnv, resolvedHost already resolved above
 
         $statusResult = $null
         $maintenanceStatus = $null
@@ -605,25 +606,8 @@ function Set-MaintenanceMode {
                 Failed           = 0
             }
 
-            $mockOverallStatus = if ($mockObjects.Count -gt 0 -and $mockInMaintenanceCount -eq $mockObjects.Count) {
-                'fully_in_maintenance'
-            } elseif ($mockInMaintenanceCount -gt 0) {
-                'partially_in_maintenance'
-            } else {
-                'not_in_maintenance'
-            }
-
-            $stateText = switch ($mockOverallStatus) {
-                'fully_in_maintenance' {
-                    'enabled' 
-                }
-                'partially_in_maintenance' {
-                    'partially enabled' 
-                }
-                default {
-                    'disabled' 
-                }
-            }
+            $mockOverallStatus = _Compute-OverallStatus -InMaintenance $mockInMaintenanceCount -Total $mockObjects.Count
+            $stateText = _Format-StatusState $mockOverallStatus
             $statusResult = @{
                 Success              = $true
                 Objects              = $mockObjects
@@ -642,7 +626,7 @@ function Set-MaintenanceMode {
                     DryRun               = $true
                     MockMaintenanceState = $mockState
                 }
-                $message = "Maintenance mode ${Mode} is currently $stateText ($mockInMaintenanceCount/$($mockObjects.Count) objects in maintenance) [DRY-RUN mock: $mockState]"
+                $message = _Format-StatusMessage -Mode $Mode -OverallStatus $mockOverallStatus -InMaintenance $mockInMaintenanceCount -Total $mockObjects.Count -DryRun $true -MockState $mockState
             } else {
                 if ($clusterDef) {
                     $targetName = $TargetId
@@ -665,7 +649,7 @@ function Set-MaintenanceMode {
                     DryRun               = $true
                     MockMaintenanceState = $mockState
                 }
-                $message = "Maintenance mode ${Mode} is currently $stateText ($mockInMaintenanceCount/$($mockObjects.Count) objects in maintenance) [DRY-RUN mock: $mockState]"
+                $message = _Format-StatusMessage -Mode $Mode -OverallStatus $mockOverallStatus -InMaintenance $mockInMaintenanceCount -Total $mockObjects.Count -DryRun $true -MockState $mockState
             }
         } else {
             if ($Mode -eq 'scom') {
@@ -689,13 +673,7 @@ function Set-MaintenanceMode {
                     $notInMaintenanceCount = $statusResult.Summary.NotInMaintenance
                     $totalCount = $statusResult.Summary.Total
 
-                    $overallStatus = if ($totalCount -gt 0 -and $inMaintenanceCount -eq $totalCount) {
-                        'fully_in_maintenance'
-                    } elseif ($inMaintenanceCount -gt 0) {
-                        'partially_in_maintenance'
-                    } else {
-                        'not_in_maintenance'
-                    }
+                    $overallStatus = _Compute-OverallStatus -InMaintenance $inMaintenanceCount -Total $totalCount
 
                     $maintenanceStatus = @{
                         Mode          = 'scom'
@@ -705,19 +683,7 @@ function Set-MaintenanceMode {
                         Objects       = $statusResult.Objects
                     }
 
-                    $stateText = switch ($overallStatus) {
-                        'fully_in_maintenance' {
-                            'enabled' 
-                        }
-                        'partially_in_maintenance' {
-                            'partially enabled' 
-                        }
-                        default {
-                            'disabled' 
-                        }
-                    }
-
-                    $message = "Maintenance mode ${Mode} is currently $stateText ($inMaintenanceCount/$totalCount objects in maintenance)"
+                    $message = _Format-StatusMessage -Mode $Mode -OverallStatus $overallStatus -InMaintenance $inMaintenanceCount -Total $totalCount -DryRun $false -MockState $null
                 } catch {
                     return @{ Success = $false; Error = "SCOM validation failed: $($_.Exception.Message)" }
                 }
@@ -756,13 +722,7 @@ function Set-MaintenanceMode {
                     $notInMaintenanceCount = $statusResult.Summary.NotInMaintenance
                     $totalCount = $statusResult.Summary.Total
 
-                    $overallStatus = if ($totalCount -gt 0 -and $inMaintenanceCount -eq $totalCount) {
-                        'fully_in_maintenance'
-                    } elseif ($inMaintenanceCount -gt 0) {
-                        'partially_in_maintenance'
-                    } else {
-                        'not_in_maintenance'
-                    }
+                    $overallStatus = _Compute-OverallStatus -InMaintenance $inMaintenanceCount -Total $totalCount
 
                     $maintenanceStatus = @{
                         Mode          = 'oneview'
@@ -773,19 +733,7 @@ function Set-MaintenanceMode {
                         Objects       = $statusResult.Objects
                     }
 
-                    $stateText = switch ($overallStatus) {
-                        'fully_in_maintenance' {
-                            'enabled' 
-                        }
-                        'partially_in_maintenance' {
-                            'partially enabled' 
-                        }
-                        default {
-                            'disabled' 
-                        }
-                    }
-
-                    $message = "Maintenance mode ${Mode} is currently $stateText ($inMaintenanceCount/$totalCount objects in maintenance)"
+                    $message = _Format-StatusMessage -Mode $Mode -OverallStatus $overallStatus -InMaintenance $inMaintenanceCount -Total $totalCount -DryRun $false -MockState $null
                 } catch {
                     return @{ Success = $false; Error = "OneView validation failed: $($_.Exception.Message)" }
                 }
@@ -860,50 +808,6 @@ function Set-MaintenanceMode {
         }
     }
 
-    # Load environment-based connection config
-    $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
-    $hostsCfg = if (Test-Path $hostsCfgPath) {
-        Import-JsonConfig -Path $hostsCfgPath -Required:$false 
-    } else {
-        @{} 
-    }
-    
-    # Determine environment: parameter > env var > default to Prod
-    $effectiveEnv = if ($PSBoundParameters.ContainsKey('Environment')) { 
-        $Environment 
-    } elseif ([System.Environment]::GetEnvironmentVariable('ENVIRONMENT')) {
-        [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
-    } else {
-        'Prod'
-    }
-    
-    Write-Verbose "Using environment: $effectiveEnv"
-    
-    # Resolve hosts from config or parameters
-    $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
-    $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
-    
-    $resolvedHost = if ($PSBoundParameters.ContainsKey('ManagementHost')) {
-        $ManagementHost
-    } elseif ([System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')) {
-        [System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')
-    } else {
-        if ($Mode -eq 'scom') {
-            $scomEnvConfig = $selectedEnv.Get_Item('scom') ?? @{}
-            $scomEnvConfig.Get_Item('management_server')
-        } else {
-            $oneviewEnvConfig = $selectedEnv.Get_Item('oneview') ?? @{}
-            $oneviewEnvConfig.Get_Item('appliance')
-        }
-    }
-    
-    if (-not $resolvedHost) {
-        $envVar = '$env:MAINTENANCE_HOST'
-        return @{ Success = $false; Error = "Management host not configured for environment '$effectiveEnv'. Set $envVar, use -ManagementHost parameter, or update connection_hosts.json." }
-    }
-    
-    Write-Verbose "Management host resolved to: $resolvedHost"
-    
     # Resolve credentials: parameter > env var > interactive prompt
     # Skip credential resolution entirely in DryRun mode (no actual connections needed)
     if ($DryRun) {
@@ -970,26 +874,8 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
     }
     }
 
-    # Load configs
-    $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
-    $scomCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'scom_config.json') -Required:$false
-    $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json') -Required:$false
-    $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
-    $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
-
-    # Parse Start / End explicitly if provided, so we can output them even on early errors
-    $startDt = $null; $endDt = $null
-    $utcStart = $null; $utcEnd = $null
-    if ($Action -eq 'enable') {
-        if ($Start) {
-            $startDt = _Parse-Datetime $Start; $utcStart = Convert-ToUtcIso8601 $startDt 
-        } else {
-            $startDt = [DateTime]::UtcNow; $utcStart = Convert-ToUtcIso8601 $startDt 
-        }
-        if ($End) {
-            $endDt = _Parse-Datetime $End; $utcEnd = Convert-ToUtcIso8601 $endDt 
-        }
-    }
+    # configs (clustersCfg, scomCfg, oneviewCfg, emailCfg, opsrampCfg) already loaded above
+    # startDt, endDt, utcStart, utcEnd already parsed above
 
     # Finalize Start / End with catalogue defaults if needed
     if ($Action -eq 'enable') {
@@ -1848,6 +1734,30 @@ function _Compute-NextWorkStart([hashtable]$Schedule, [DateTime]$After) {
         }
         $candidate = $candidate.AddDays(1)
     }
+}
+
+
+function _Compute-OverallStatus([int]$InMaintenance, [int]$Total) {
+    if ($Total -gt 0 -and $InMaintenance -eq $Total) { 'fully_in_maintenance' }
+    elseif ($InMaintenance -gt 0) { 'partially_in_maintenance' }
+    else { 'not_in_maintenance' }
+}
+
+function _Format-StatusState([string]$OverallStatus) {
+    switch ($OverallStatus) {
+        'fully_in_maintenance'       { 'enabled' }
+        'partially_in_maintenance'   { 'partially enabled' }
+        default                      { 'disabled' }
+    }
+}
+
+function _Format-StatusMessage([string]$Mode, [string]$OverallStatus, [int]$InMaintenance, [int]$Total, [bool]$DryRun, [string]$MockState) {
+    $stateText = _Format-StatusState $OverallStatus
+    $base = "Maintenance mode ${Mode} is currently $stateText ($InMaintenance/$Total objects in maintenance)"
+    if ($DryRun -and $MockState) {
+        return "$base [DRY-RUN mock: $MockState]"
+    }
+    return $base
 }
 
 function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
