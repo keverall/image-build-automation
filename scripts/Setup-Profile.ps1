@@ -224,7 +224,15 @@ foreach ($ProfilePath in $ProfilePaths) {
         }
         
         if ($Content -match '# Image Build Automation module') {
-            Write-Color $Yellow "[setup] $ProfileName already contains Automation module"
+            Write-Color $Yellow "[setup] Updating Automation module path in $ProfileName..."
+            if (-not $DryRun) {
+                # Replace the old block with the new one to ensure paths are updated if the repo was moved
+                $NewContent = $Content -replace '(?s)# Image Build Automation module.*?(?=\n\n#|\n$|$)', $ProfileBlock.Trim()
+                $NewContent | Set-Content $ProfilePath -Encoding UTF8
+                Write-Color $Green "[setup] ✓ Updated in $ProfileName"
+            } else {
+                Write-Color $Yellow "[setup] DRY RUN: Would update $ProfileName"
+            }
         } else {
             Write-Color $Green "[setup] Adding Automation module to $ProfileName..."
             if (-not $DryRun) {
