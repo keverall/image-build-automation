@@ -1,456 +1,336 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — PowerShell Runner Setup Script
+# HPE ProLiant Windows Server ISO Automation — PowerShell Runner Setup
 # =============================================================================
-# Fully offline-capable setup script. All dependencies are bundled in the repo.
-
-<#
-.SYNOPSIS
-    Set up PowerShell automation runner with all dependencies.
-
-.DESCRIPTION
-    Installs and configures:
-    - PowerShell 7+ version check
-    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView.860, OperationsManager) from bundled copies
-    - Powerline-style custom prompt (offline, no .exe required)
-    - GNU make detection (from Git for Windows or bundled)
-    
-    All dependencies are bundled in scripts/modules/ for offline capability.
-    Falls back to PSGallery if bundled copies not found (will warn on air-gapped systems).
-
-.EXAMPLE
-    pwsh -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
-#>
-
-#
-# Bundled dependencies:
-#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView.860, OperationsManager)
-#   - bin/make.exe     : GNU make for Windows (if available)
-#   - Git for Windows  : Provides make.exe in usr\bin\ (preferred source)
-#
-# Usage:
-#   pwsh -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
+# Fully offline-capable.  Bundled copies live in scripts/modules/; if absent we
+# attempt a PSGallery download via Save-Module (no admin rights needed).
 # =============================================================================
 
 using namespace System
 
-# ─── Configuration ───────────────────────────────────────────────────────────
+# ── Configuration ────────────────────────────────────────────────────────────
 $ErrorActionPreference = 'Stop'
-$PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
-$LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+$PROJECT_ROOT    = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
+$LOG_FILE        = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 $VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
+$BIN_DIR         = Join-Path $PROJECT_ROOT 'bin'
 
-# PowerShell modules bundled in scripts/modules/ (installed into PS module path)
-# Add HPEOneView.860 and OperationsManager (SCOM) here to support offline air-gapped environments
+# Bundled module manifest — name + minimum version (version is the *requested*
+# floor; the actual installed version may be higher for modules like
+# OperationsManager that ship with SCOM in arbitrary versions).
 $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
     @{ Name = 'HPEOneView.860';   Version = '8.60' },
-    @{ Name = 'OperationsManager';Version = '1.0' } # SCOM module base version from PSGallery; script will fallback to highest available (e.g., 10.19.x or 10.22.x)
+    @{ Name = 'OperationsManager';Version = '1.0' }   # floor only; real SCOM versions are 10.x
 )
 
-# Colors for terminal output (Windows/Linux compatible)
-$COLOR_GREEN = "`e[32m"
-$COLOR_CYAN  = "`e[36m"
-$COLOR_YELLOW = "`e[33m"
-$COLOR_RED   = "`e[31m"
-$COLOR_RESET = "`e[0m"
+# Colours (ANSI — works in all hosts that support colour)
+$C_RESET  = "`e[0m"
+$C_CYAN   = "`e[36m"
+$C_GREEN  = "`e[32m"
+$C_YELLOW = "`e[33m"
+$C_RED    = "`e[31m"
 
-# ─── Helper Functions ────────────────────────────────────────────────────────
-function Write-Log   { param($msg) Write-Host "${COLOR_CYAN}[INFO]${COLOR_RESET} $msg" ; Add-Content $LOG_FILE "[INFO] $msg" }
-function Write-OK    { param($msg) Write-Host "${COLOR_GREEN}[OK]${COLOR_RESET} $msg" ; Add-Content $LOG_FILE "[OK] $msg" }
-function Write-Warn  { param($msg) Write-Host "${COLOR_YELLOW}[WARN]${COLOR_RESET} $msg" ; Add-Content $LOG_FILE "[WARN] $msg" }
-function Write-Err   { param($msg) Write-Host "${COLOR_RED}[ERROR]${COLOR_RESET} $msg" ; Add-Content $LOG_FILE "[ERROR] $msg" }
+# ── Log helpers ──────────────────────────────────────────────────────────────
+function _WL { param($tag, $colour, $msg)
+    Write-Host "${colour}${tag}${C_RESET} $msg"
+    Add-Content $LOG_FILE "${tag} $msg" }
+function Write-Log  { param($m) _WL '[INFO]'  $C_CYAN   $m }
+function Write-OK   { param($m) _WL '[OK]'    $C_GREEN  $m }
+function Write-Warn { param($m) _WL '[WARN]'  $C_YELLOW $m }
+function Write-Err  { param($m) _WL '[ERROR]' $C_RED    $m }
 
-# ─── Prerequisites Check ─────────────────────────────────────────────────────
-function Test-PowerShellVersion {
-    $ver = $PSVersionTable.PSVersion
-    if ($ver.Major -lt 7) {
-        Write-Err "PowerShell 7+ required. Current: $($ver.ToString())"
-        Write-Err "Install via: winget install Microsoft.PowerShell; or: brew install pwsh"
-        exit 1
-    }
-    Write-Log "PowerShell version: $($ver.ToString())"
-    Write-OK "PowerShell version check passed"
+# ── Utility: user PS module path (OS-aware) ─────────────────────────────────
+function Get-UserModulePath {
+    $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform
+    $base  = if ($isWin) { [Environment]::GetFolderPath('MyDocuments') } else { $HOME }
+    $rel   = if ($isWin) { 'PowerShell\Modules' }         else { '.local/share/powershell/Modules' }
+    return Join-Path $base $rel
 }
 
-# ─── PowerShell Modules Installation (Offline from bundled copies) ───────────
+# ── Utility: add directory to session + persistent user PATH ─────────────────
+function Add-BinToPath {
+    param([string]$Dir)
+    if ($env:PATH -notlike "*$Dir*") { $env:PATH = "$Dir;$env:PATH" }
+    $persisted = [Environment]::GetEnvironmentVariable('PATH', 'User')
+    if ($persisted -notlike "*$Dir*") {
+        [Environment]::SetEnvironmentVariable('PATH', "$Dir;$persisted", 'User')
+        Write-Log "Added $Dir to user PATH (persistent)"
+    }
+}
+
+# =============================================================================
+# PREREQUISITES
+# =============================================================================
+
+function Test-PowerShellVersion {
+    $v = $PSVersionTable.PSVersion
+    if ($v.Major -lt 7) {
+        Write-Err "PowerShell 7+ required. Current: $($v.ToString())"
+        Write-Err "Install via: winget install Microsoft.PowerShell  ·  brew install pwsh"
+        exit 1
+    }
+    Write-OK "PowerShell $($v.ToString())"
+}
+
+# =============================================================================
+# MODULE INSTALLATION (offline-first, PSGallery fallback via Save-Module)
+# =============================================================================
+
 function Get-BundledModulePath {
     param([string]$Name, [string]$Version)
 
-    # Search for the module in scripts/modules/ (case-insensitive)
-    $moduleDir = Get-ChildItem -Path $VENDOR_MODULES_DIR -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -ieq $Name } |
-        Select-Object -First 1
+    $parent = Get-ChildItem -Path $VENDOR_MODULES_DIR -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ieq $Name } | Select-Object -First 1
+    if (-not $parent) { return $null }
 
-    if ($moduleDir) {
-        $versionDir = Join-Path $moduleDir.FullName $Version
-        if (Test-Path $versionDir) {
-            return @{ Path = $versionDir; ActualVersion = $Version }
-        }
-        
-        # Fallback: If exact version not found, get the highest available version.
-        # Useful for modules like OperationsManager where version varies by SCOM environment.
-        $availableVersions = Get-ChildItem -Path $moduleDir.FullName -Directory -ErrorAction SilentlyContinue | 
+    # Helper: resolve highest version from a directory containing version sub-dirs
+    function _HighestVersion([string]$Dir) {
+        Get-ChildItem -Path $Dir -Directory -ErrorAction SilentlyContinue |
             Where-Object { $_.Name -match '^\d+(\.\d+)+$' } |
-            Sort-Object { [version]$_.Name } -Descending | 
+            Sort-Object { [version]$_.Name } -Descending |
             Select-Object -First 1
-            
-        if ($availableVersions) {
-            Write-Warn "Exact version $Version of $Name not found. Using available version $($availableVersions.Name)."
-            return @{ Path = $availableVersions.FullName; ActualVersion = $availableVersions.Name }
+    }
+
+    # Layout A (canonical): scripts/modules/<Name>/<version>/
+    $exact = Join-Path $parent.FullName $Version
+    if (Test-Path $exact) { return @{ Path = $exact; ActualVersion = $Version } }
+
+    $highest = _HighestVersion $parent.FullName
+    if ($highest) {
+        Write-Warn "Exact version $Version of $Name not found. Using $($highest.Name)."
+        return @{ Path = $highest.FullName; ActualVersion = $highest.Name }
+    }
+
+    # Layout B (legacy nesting): Save-Module into <Name>/ subfolder creates
+    #   scripts/modules/<Name>/<Name>/<version>/  — handle for backwards compat.
+    $inner = Get-ChildItem -Path $parent.FullName -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ieq $Name } | Select-Object -First 1
+    if ($inner) {
+        $innerExact = Join-Path $inner.FullName $Version
+        if (Test-Path $innerexact) { return @{ Path = $innerexact; ActualVersion = $Version } }
+        $innerHighest = _HighestVersion $inner.FullName
+        if ($innerHighest) {
+            Write-Warn "Exact version $Version of $Name not found (nested layout). Using $($innerHighest.Name)."
+            return @{ Path = $innerHighest.FullName; ActualVersion = $innerHighest.Name }
         }
     }
     return $null
 }
 
-function Install-PowerShellModuleOffline {
-    param(
-        [string]$Name,
-        [string]$Version
-    )
+function Copy-ModuleToUserPath {
+    param([string]$Name, [string]$Version, [string]$SrcDir)
+    
+    # Extract the actual module name from the .psd1 file in the source
+    # This ensures the directory name matches the manifest (case-sensitive on Linux)
+    $psd1File = Get-ChildItem -Path $SrcDir -Filter "*.psd1" -ErrorAction SilentlyContinue | Select-Object -First 1
+    $actualName = if ($psd1File) { $psd1File.BaseName } else { $Name }
+    
+    $dest = Join-Path (Get-UserModulePath) "$actualName/$Version"
+    New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
+    
+    # Copy CONTENTS of source directory, not the directory itself
+    Get-ChildItem -Path $SrcDir | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
+    }
+    Write-OK "$actualName $Version installed"
+}
 
-    $installed = Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue |
+function Install-RequiredModule {
+    param([string]$Name, [string]$Version)
+
+    # 1. Already installed and importable?
+    $existing = Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue |
         Sort-Object Version -Descending | Select-Object -First 1
-
-    if ($installed -and $installed.Version -ge [version]$Version) {
+    if ($existing -and $existing.Version -ge [version]$Version) {
         try {
-            Import-Module $Name -RequiredVersion $installed.Version -ErrorAction Stop -WarningAction SilentlyContinue
-            if ($Name -eq 'Pester') {
-                $moduleBase = Split-Path $installed.Path -Parent
-                $dllPath = Join-Path $moduleBase 'bin\netstandard2.0\Pester.dll'
-                if (-not (Test-Path $dllPath)) {
-                    throw "Pester.dll missing at $dllPath"
-                }
+            Import-Module $Name -RequiredVersion $existing.Version -ErrorAction Stop -WarningAction SilentlyContinue
+            if ($Name -eq 'Pester') {   # well-known silent corruption
+                $dll = Join-Path (Split-Path $existing.Path) 'bin\netstandard2.0\Pester.dll'
+                if (-not (Test-Path $dll)) { throw "Pester.dll missing" }
             }
-            Write-Log "$Name $($installed.Version) already installed and verified"
+            Write-OK "$Name $($existing.Version) already verified"
             return
         } catch {
-            Write-Warn "$Name $($installed.Version) found but failed to import (possibly corrupted), reinstalling..."
-            $moduleDir = Split-Path (Split-Path $installed.Path -Parent) -Parent
-            if (Test-Path $moduleDir) {
+            Write-Warn "$Name $($existing.Version) corrupt — removing and reinstalling"
+            # Safely calculate the module directory (2 levels up from .psd1)
+            $versionDir = Split-Path $existing.Path -Parent
+            $moduleDir = Split-Path $versionDir -Parent
+            # Verify this is actually a module directory before deleting
+            $containsPsd1 = Get-ChildItem -Path $versionDir -Filter "*.psd1" -ErrorAction SilentlyContinue
+            if ($containsPsd1 -and (Test-Path $moduleDir -PathType Container)) {
+                Write-Log "Removing corrupt module directory: $moduleDir"
                 Remove-Item -Recurse -Force $moduleDir -ErrorAction SilentlyContinue
-                Write-Log "Removed corrupted $Name installation"
+            } else {
+                Write-Warn "Cannot verify module directory structure, skipping removal: $moduleDir"
             }
         }
     }
 
-    $bundledInfo = Get-BundledModulePath -Name $Name -Version $Version
-    if (-not $bundledInfo) {
-        Write-Log "No bundled copy of $Name $Version found. Attempting PSGallery..."
-        try {
-            $saveDir = Join-Path $VENDOR_MODULES_DIR $Name
-            if (-not (Test-Path $saveDir)) {
-                New-Item -ItemType Directory -Force -Path $saveDir | Out-Null
-            }
-            Save-Module -Name $Name -MinimumVersion $Version -Path $saveDir -Force -Repository PSGallery -ErrorAction Stop
-            Write-OK "$Name saved to scripts/modules/$Name/"
-        } catch {
-            $installError = $_.Exception.Message
-            Write-Err "Failed to save $Name from PSGallery: $installError"
-            Write-Err "To fix: Download or copy '$Name' from a connected machine/SCOM server and place the version folder in:"
-            Write-Err "  scripts/modules/$Name/<version-folder>/"
-            Write-Err "  (Example: scripts/modules/OperationsManager/10.22.1234.0/)"
+    # 2. Bundled copy in scripts/modules/ ?
+    $bundled = Get-BundledModulePath -Name $Name -Version $Version
+    if ($bundled) {
+        Write-Log "Installing $Name $($bundled.ActualVersion) from bundle"
+        Copy-ModuleToUserPath -Name $Name -Version $bundled.ActualVersion -SrcDir $bundled.Path
+        return
+    }
+
+    # 3. PSGallery fallback (Save-Module → no admin rights required)
+    Write-Log "No bundled $Name $Version. Downloading from PSGallery…"
+    try {
+        Save-Module -Name $Name -MinimumVersion $Version -Path $VENDOR_MODULES_DIR `
+            -Force -Repository PSGallery -ErrorAction Stop
+        Write-OK "$Name saved to scripts/modules/$Name/"
+        $bundled = Get-BundledModulePath -Name $Name -Version $Version
+        if ($bundled) {
+            Copy-ModuleToUserPath -Name $Name -Version $bundled.ActualVersion -SrcDir $bundled.Path
             return
         }
-        $bundledInfo = Get-BundledModulePath -Name $Name -Version $Version
+    } catch {
+        Write-Err "PSGallery download failed: $($_.Exception.Message)"
     }
-
-    if ($bundledInfo -and (Test-Path $bundledInfo.Path)) {
-        $actualVersion = $bundledInfo.ActualVersion
-        $bundledPath = $bundledInfo.Path
-        Write-Log "Installing $Name $actualVersion from bundled location..."
-
-        $userModulePath = $null
-        if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform) {
-            $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules'
-        } else {
-            $userModulePath = Join-Path $HOME '.local/share/powershell/Modules'
-        }
-
-        if (-not (Test-Path $userModulePath)) {
-            New-Item -ItemType Directory -Force -Path $userModulePath | Out-Null
-        }
-
-        $destPath = Join-Path $userModulePath $Name
-        if (-not (Test-Path $destPath)) {
-            New-Item -ItemType Directory -Force -Path $destPath | Out-Null
-        }
-
-        $destVersionPath = Join-Path $destPath $actualVersion
-        Copy-Item -Path $bundledPath -Destination $destVersionPath -Recurse -Force
-        Write-OK "$Name $actualVersion installed"
-    }
+    Write-Err "To fix: copy '$Name' from a SCOM server / connected machine to scripts/modules/$Name/<version>/"
 }
 
 function Install-RequiredModules {
-    Write-Log "Installing PowerShell modules from bundled copies..."
-
-    foreach ($mod in $REQUIRED_MODULES) {
-        Install-PowerShellModuleOffline -Name $mod.Name -Version $mod.Version
-    }
-
-    # Update Help files (skipped offline — not critical)
-    Write-Log "Skipping Update-Help (offline mode)"
+    Write-Log "Installing PowerShell modules…"
+    foreach ($m in $REQUIRED_MODULES) { Install-RequiredModule -Name $m.Name -Version $m.Version }
 }
 
-# ─── Oh My Posh Installation ─────────────────────────────────────────────────
+# =============================================================================
+# BINARY TOOLS (Oh My Posh, GNU make, checkmake)
+# =============================================================================
+
+# Generic helper: locate a binary in the project bin/ dir or system PATH.
+# If found, ensures it's on PATH (both session and persistent).  Returns $true.
+function Find-LocalBinary {
+    param([string]$BinaryName)            # e.g. 'checkmake.exe'
+    # 1. Already in PATH?
+    if (Get-Command $BinaryName -ErrorAction SilentlyContinue) { return $true }
+    # 2. Project bin/?
+    $binPath = Join-Path $BIN_DIR $BinaryName
+    if (Test-Path $binPath) { Add-BinToPath -Dir $BIN_DIR; return $true }
+    return $false
+}
+
 function Install-OhMyPosh {
-    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
-    $poshBin = Join-Path $localBinDir 'oh-my-posh.exe'
-    
-    if (Test-Path $poshBin) {
-        Write-Log "Found bundled oh-my-posh.exe at $poshBin"
-        $installDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'bin'
-        $destPath = Join-Path $installDir 'oh-my-posh.exe'
-        
-        if (-not (Test-Path $destPath)) {
-            if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Force -Path $installDir | Out-Null }
-            Copy-Item -Path $poshBin -Destination $destPath -Force
-            Write-OK "Oh My Posh installed to $destPath"
-        }
-        
-        if ($env:PATH -notlike "*$installDir*") { 
-            $env:PATH = "$installDir;$env:PATH" 
+    $bin = 'oh-my-posh.exe'
+    if (Find-LocalBinary -BinaryName $bin) {
+        $src = Join-Path $BIN_DIR $bin
+        if (Test-Path $src) {
+            $destDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'bin'
+            $dest    = Join-Path $destDir $bin
+            if (-not (Test-Path $dest)) {
+                New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+                Copy-Item -Path $src -Destination $dest -Force
+                Write-OK "Oh My Posh installed to $dest"
+            }
         }
         return
     }
-
     Write-Warn "Oh My Posh binary not found in bin/. Skipping."
-    Write-Warn "NOTE: If .exe execution is blocked by admin policy (e.g., AppLocker), using 'git clone' will NOT bypass this,"
-    Write-Warn "      because compiling from source still produces an .exe file. To use Oh My Posh, you must either:"
-    Write-Warn "      1. Download oh-my-posh.exe and place it in the project's 'bin/' folder (if your IT policy allows it)."
-    Write-Warn "      2. Request an IT exception for the oh-my-posh executable."
-    Write-Warn "      3. Use a pure PowerShell custom prompt (no .exe required) by adding a prompt function to your `$PROFILE."
+    Write-Warn "If .exe execution is blocked (AppLocker etc.), add oh-my-posh.exe to bin/ or use a pure-PS profile prompt."
 }
 
-# ─── Make Detection (Windows) ────────────────────────────────────────────────
 function Install-Make {
-    $runningOnWindows = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
-    if (-not $runningOnWindows) {
-        Write-Log "Non-Windows platform detected, skipping make detection"
+    $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
+             $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
+    if (-not $isWin) { Write-Log "Non-Windows platform — skipping make detection"; return }
+
+    if (Find-LocalBinary -BinaryName 'make.exe') {
+        Write-OK "make: $((make --version 2>$null | Select-Object -First 1))"
         return
     }
 
-    Write-Log "Detecting make for Windows..."
-
-    # Check if make is already in PATH
-    if (Get-Command make -ErrorAction SilentlyContinue) {
-        $makeVersion = make --version 2>$null | Select-Object -First 1
-        Write-Log "make already available: $makeVersion"
-        Write-OK "make version check passed"
-        return
-    }
-
-    function Add-PathPersistent {
-        param([string]$PathDir)
-
-        # Add to current session
-        if ($env:PATH -notlike "*$PathDir*") {
-            $env:PATH = "$PathDir;$env:PATH"
-        }
-
-        # Add to user PATH persistently
-        $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
-        if ($userPath -notlike "*$PathDir*") {
-            $newUserPath = "$PathDir;$userPath"
-            [Environment]::SetEnvironmentVariable('PATH', $newUserPath, 'User')
-            Write-Log "Added $PathDir to user PATH (persistent)"
-        }
-    }
-
-    # Search for make.exe in Git for Windows installation
-    $gitMakePaths = @(
+    # Search known Git-for-Windows install locations
+    $candidates = @(
         'C:\Program Files\Git\usr\bin\make.exe',
         'C:\Program Files (x86)\Git\usr\bin\make.exe',
-        'C:\Program Files\Git\mingw64\bin\make.exe',
-        'C:\Program Files\Git\mingw32\bin\make.exe'
+        'C:\Program Files\Git\mingw64\bin\make.exe'
     )
-
-    foreach ($gitMakePath in $gitMakePaths) {
-        if (Test-Path $gitMakePath) {
-            Write-Log "Found make.exe in Git for Windows: $gitMakePath"
-            Add-PathPersistent -PathDir (Split-Path $gitMakePath -Parent)
+    foreach ($p in $candidates) {
+        if (Test-Path $p) {
+            Add-BinToPath -Dir (Split-Path $p)
             Write-OK "make available from Git for Windows"
             return
         }
     }
 
-    # Check project-local bin directory (bundled with repo)
-    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
-    if (Test-Path $localBinDir) {
-        $localMakePath = Join-Path $localBinDir 'make.exe'
-        if (Test-Path $localMakePath) {
-            Write-Log "Found make.exe in project bin directory: $localMakePath"
-            Add-PathPersistent -PathDir $localBinDir
-            Write-OK "make available from local bin directory"
-            return
-        }
-    }
-
-    # All methods failed — warn but don't fail
-    Write-Warn "make not found. It is typically bundled with Git for Windows."
-    Write-Warn "Git for Windows: https://git-scm.com/download/win"
-    Write-Warn "Alternatively, place make.exe in: $localBinDir\make.exe"
-    Write-Warn "You can run PowerShell scripts directly without make:"
-    Write-Warn "  pwsh -File scripts/setup-runner.ps1"
-    Write-Warn "  pwsh -File scripts/run-tests.ps1"
-    Write-Warn "  pwsh -File scripts/lint.ps1"
-    Write-Warn "  pwsh -File scripts/coverage-report.ps1"
+    Write-Warn "make not found. Install Git for Windows or place make.exe in $BIN_DIR"
 }
 
-# ─── Verify Installation ───────────────────────────────────────────────────────
-function Test-PowerShellTools {
-    Write-Log "Verifying PowerShell tools..."
+function Install-Checkmake {
+    if (Find-LocalBinary -BinaryName 'checkmake.exe') { Write-OK "checkmake found"; return }
 
-    foreach ($mod in $REQUIRED_MODULES) {
-        $installed = Get-Module $mod.Name -ListAvailable -ErrorAction SilentlyContinue |
-            Sort-Object Version -Descending | Select-Object -First 1
-
-        if ($installed) {
-            Write-OK "$($mod.Name) $($installed.Version)"
-        } else {
-            Write-Err "$($mod.Name) NOT FOUND"
-        }
+    $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform
+    $os    = if ($isWin)   { 'windows' }
+             elseif ($IsLinux)  { 'linux' }
+             elseif ($IsMacOS)  { 'darwin' } else { 'windows' }
+    $arch  = if ($isWin) {
+        if ($env:PROCESSOR_ARCHITECTURE -match 'ARM64') { 'arm64' }
+        elseif ($env:PROCESSOR_ARCHITECTURE -match 'X86') { '386' } else { 'amd64' }
+    } else {
+        try { if ((& uname -m 2>$null) -match 'aarch64|arm64') { 'arm64' } else { 'amd64' } } catch { 'amd64' }
     }
+    $ver  = '0.2.2'
+    $exe  = if ($os -eq 'windows') { 'checkmake.exe' } else { 'checkmake' }
+    $dest = Join-Path $BIN_DIR $exe
 
-    # Verify Pester can run tests
-    $pester = Get-Module Pester -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
-    if ($pester) {
-        Write-Log "Verifying Pester test discovery..."
-        $testCount = (Get-ChildItem -Path (Join-Path $PROJECT_ROOT 'tests/powershell') -Filter '*.ps1' -Recurse | Measure-Object).Count
-        Write-OK "Found $testCount PowerShell test files"
+    New-Item -ItemType Directory -Force -Path $BIN_DIR | Out-Null
+    try {
+        $url = "https://github.com/mrtazz/checkmake/releases/download/$ver/checkmake-$ver.$os.$arch"
+        Write-Log "Downloading checkmake v$ver for $os/$arch…"
+        Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -ErrorAction Stop
+        if ($os -ne 'windows') { chmod +x $dest }
+        Add-BinToPath -Dir $BIN_DIR
+        Write-OK "checkmake v$ver downloaded"
+    } catch {
+        Write-Warn "checkmake download failed (404 / offline). Manual install: $dest"
     }
 }
 
-# ─── Print Summary ─────────────────────────────────────────────────────────────
+# =============================================================================
+# SUMMARY + MAIN
+# =============================================================================
+
 function Show-Summary {
+    $ok = ($REQUIRED_MODULES | ForEach-Object {
+        $m = Get-Module $_.Name -ListAvailable -ErrorAction SilentlyContinue |
+             Sort-Object Version -Descending | Select-Object -First 1
+        [pscustomobject]@{ Name = $_.Name; Version = if ($m) { $m.Version } else { '— MISSING' } }
+    })
     Write-Host ""
-    Write-Host "${COLOR_GREEN}╔══════════════════════════════════════════════════════════╗${COLOR_RESET}"
-    Write-Host "${COLOR_GREEN}║${COLOR_RESET}  ${COLOR_CYAN}HPE ProLiant ISO Automation — PowerShell Setup Complete${COLOR_RESET}   ${COLOR_GREEN}║${COLOR_RESET}"
-    Write-Host "${COLOR_GREEN}╚══════════════════════════════════════════════════════════╝${COLOR_RESET}"
+    Write-Host "${C_GREEN}╔══════════════════════════════════════════════════════╗${C_RESET}"
+    Write-Host "${C_GREEN}║  ${C_CYAN}HPE ProLiant ISO Automation — Setup Complete${C_GREEN}         ║${C_RESET}"
+    Write-Host "${C_GREEN}╚══════════════════════════════════════════════════════╝${C_RESET}"
     Write-Host ""
-    Write-Host "  Project root: $PROJECT_ROOT"
-    Write-Host "  Log file:     $LOG_FILE"
+    foreach ($item in $ok) {
+        $icon = if ($item.Version -eq '— MISSING') { "${C_RED}✗${C_RESET}" } else { "${C_GREEN}✓${C_RESET}" }
+        Write-Host "  $icon $($item.Name) $($item.Version)"
+    }
     Write-Host ""
-    Write-Host "${COLOR_YELLOW}To run PowerShell tests:${COLOR_RESET}"
-    Write-Host "    cd $PROJECT_ROOT"
-    Write-Host "    pwsh -File scripts/run-tests.ps1"
-    Write-Host ""
-    Write-Host "${COLOR_YELLOW}To lint PowerShell files:${COLOR_RESET}"
-    Write-Host "    pwsh -NoProfile -Command 'Invoke-ScriptAnalyzer -Path src/powershell -Recurse'"
-    Write-Host ""
-    Write-Host "${COLOR_CYAN}Makefile targets:${COLOR_RESET}"
-    Write-Host "    make setup      # Run this setup script"
-    Write-Host "    make test       # Run all Pester tests"
-    Write-Host "    make lint       # Lint PowerShell with PSScriptAnalyzer"
-    Write-Host "    make coverage   # Run tests with code coverage"
-    Write-Host "    make clean      # Remove build artifacts"
-    Write-Host ""
+    Write-Host "  Log file : $LOG_FILE"
+    Write-Host "  Tests    : make test"
+    Write-Host "  Lint     : make lint"
     if (-not (Get-Command make -ErrorAction SilentlyContinue)) {
-        Write-Host "${COLOR_YELLOW}make not found - run PowerShell scripts directly:${COLOR_RESET}"
-        Write-Host "    pwsh -File scripts/setup-runner.ps1"
-        Write-Host "    pwsh -File scripts/run-tests.ps1"
-        Write-Host "    pwsh -File scripts/lint.ps1"
-        Write-Host "    pwsh -File scripts/coverage-report.ps1"
+        Write-Host "  ${C_YELLOW}make not installed — run scripts directly:${C_RESET} pwsh -File scripts/run-tests.ps1"
     }
 }
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
 function Main {
     Write-Host ""
-    Write-Host "${COLOR_CYAN}╔══════════════════════════════════════════════════════════╗${COLOR_RESET}"
-    Write-Host "${COLOR_CYAN}║${COLOR_RESET}  HPE ProLiant ISO Automation — PowerShell Setup       ${COLOR_RESET}║${COLOR_RESET}"
-    Write-Host "${COLOR_CYAN}╚══════════════════════════════════════════════════════════╝${COLOR_RESET}"
+    Write-Host "${C_CYAN}╔══════════════════════════════════════════════════════╗${C_RESET}"
+    Write-Host "${C_CYAN}║  HPE ProLiant ISO Automation — PowerShell Setup     ║${C_RESET}"
+    Write-Host "${C_CYAN}╚══════════════════════════════════════════════════════╝${C_RESET}"
     Write-Host ""
-
     Test-PowerShellVersion
     Install-RequiredModules
     Install-OhMyPosh
     Install-Make
     Install-Checkmake
-    Test-PowerShellTools
     Show-Summary
-
-    Write-OK "Setup complete!"
-}
-
-# ─── Checkmake Installation ──────────────────────────────────────────────────
-function Install-Checkmake {
-    Write-Log "Checking for checkmake (Makefile linting)..."
-    
-    $localBinDir = Join-Path $PROJECT_ROOT 'bin'
-    
-    # Determine OS and Architecture
-    $os = if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform) { 'windows' } 
-          elseif ($IsLinux) { 'linux' } 
-          elseif ($IsMacOS) { 'darwin' } 
-          else { 'windows' }
-          
-    $arch = 'amd64'
-    if ($IsMacOS -or $IsLinux) {
-        try {
-            $archInfo = & uname -m 2>$null
-            if ($archInfo -match 'aarch64|arm64') { $arch = 'arm64' }
-        } catch { }
-    } else {
-        if ($env:PROCESSOR_ARCHITECTURE -match 'ARM64') { $arch = 'arm64' }
-        elseif ($env:PROCESSOR_ARCHITECTURE -match 'X86') { $arch = '386' }
-    }
-    
-    $checkmakeBin = if ($os -eq 'windows') { 'checkmake.exe' } else { 'checkmake' }
-    $checkmakeExe = Join-Path $localBinDir $checkmakeBin
-
-    # 1. Check if already installed in bin/
-    if (Test-Path $checkmakeExe) {
-        Write-Log "Found checkmake at $checkmakeExe"
-        if ($env:PATH -notlike "*$localBinDir*") {
-            $env:PATH = "$localBinDir;$env:PATH"
-            $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
-            if ($userPath -notlike "*$localBinDir*") {
-                [Environment]::SetEnvironmentVariable('PATH', "$localBinDir;$userPath", 'User')
-            }
-        }
-        Write-OK "checkmake available from local bin directory"
-        return
-    }
-
-    # 2. Check system-wide installation
-    if (Get-Command checkmake -ErrorAction SilentlyContinue) {
-        Write-OK "checkmake already available in PATH"
-        return
-    }
-
-    # 3. Attempt download from GitHub Releases
-    $version = "0.2.2"
-    $url = "https://github.com/mrtazz/checkmake/releases/download/$version/checkmake-$version.$os.$arch"
-    
-    Write-Log "Downloading checkmake v$version for $os/$arch..."
-    try {
-        if (-not (Test-Path $localBinDir)) {
-            New-Item -ItemType Directory -Force -Path $localBinDir | Out-Null
-        }
-        
-        Invoke-WebRequest -Uri $url -OutFile $checkmakeExe -UseBasicParsing
-        
-        if ($os -ne 'windows') {
-            chmod +x $checkmakeExe
-        }
-        
-        Write-OK "checkmake downloaded successfully to $checkmakeExe"
-        
-        if ($env:PATH -notlike "*$localBinDir*") {
-            $env:PATH = "$localBinDir;$env:PATH"
-            $userPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
-            if ($userPath -notlike "*$localBinDir*") {
-                [Environment]::SetEnvironmentVariable('PATH', "$localBinDir;$userPath", 'User')
-            }
-        }
-    } catch {
-        Write-Warn "Failed to download checkmake: $($_.Exception.Message)"
-        Write-Warn "To install offline: Download checkmake-$version.$os.$arch from https://github.com/mrtazz/checkmake/releases"
-        Write-Warn "and place it in '$localBinDir\$checkmakeBin'"
-    }
+    Write-OK 'Setup complete'
 }
 
 Main
