@@ -178,3 +178,61 @@ Re-run make setup — HPEOneView.860 should now install correctly into HPEOneVie
 OperationsManager: The error message will now show why PSGallery failed. Since the OperationsManager module isn't on PSGallery, you'll need to copy it from a SCOM server:
 Copy-Item -Recurse \\scom-server\c$\Program Files\Microsoft System Center\OperationsManager\Powershell\OperationsManager `
   scripts/modules/OperationsManager/
+
+  
+ ⚡ ADMIN  ~\repos\image-build-automation   main  #  dir scripts\modules
+
+    Directory: C:\Users\98253\repos\image-build-automation\scripts\modules
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d----          16/06/2026    17:02                HPEOneView.860
+d----          09/06/2026    15:55                Pester
+d----          09/06/2026    15:55                platyPS
+d----          09/06/2026    15:55                PSScriptAnalyzer
+
+code  C:\Users\98253\AppData\Local\Temp\hpe-automation-pwsh-setup-20260617-122020.log
+>                                                                                                   
+ ⚡ ADMIN  ~\repos\image-build-automation   main  #  echo $omPath
+ ⚡ ADMIN  ~\repos\image-build-automation   main  #   Save-Module -Name OperationsManager -Path scripts\modules\OperationsManager -Force
+
+ from log - 
+
+ [INFO] PowerShell version: 7.6.3
+[OK] PowerShell version check passed
+[INFO] Installing PowerShell modules from bundled copies...
+[INFO] Pester 5.7.1 already installed and verified
+[INFO] PSScriptAnalyzer 1.21.0 already installed and verified
+[INFO] PlatyPS 0.14.0 already installed and verified
+[INFO] HPEOneView.860 8.60.3997.3057 already installed and verified
+[WARN] OperationsManager 1.0 found but failed to import (possibly corrupted), reinstalling...
+[INFO] Removed corrupted OperationsManager installation
+[WARN] Bundled copy of OperationsManager 1.0 not found. Attempting PSGallery...
+[ERROR] Failed to install OperationsManager from PSGallery: Administrator rights are required to install or update. Log on to the computer with an account that has Administrator rights, and then try again, or install by adding "-Scope CurrentUser" to your command. You can also try running the Windows PowerShell session with elevated rights (Run as Administrator).
+[ERROR] To fix: Download or copy 'OperationsManager' from a connected machine/SCOM server and place the version folder in:
+[ERROR]   scripts/modules/OperationsManager/<version-folder>/
+[ERROR]   (Example: scripts/modules/OperationsManager/10.22.1234.0/)
+[INFO] Skipping Update-Help (offline mode)
+[WARN] Oh My Posh binary not found in bin/. Skipping.
+[WARN] NOTE: If .exe execution is blocked by admin policy (e.g., AppLocker), using 'git clone' will NOT bypass this,
+[WARN]       because compiling from source still produces an .exe file. To use Oh My Posh, you must either:
+[WARN]       1. Download oh-my-posh.exe and place it in the project's 'bin/' folder (if your IT policy allows it).
+[WARN]       2. Request an IT exception for the oh-my-posh executable.
+[WARN]       3. Use a pure PowerShell custom prompt (no .exe required) by adding a prompt function to your $PROFILE.
+[INFO] Detecting make for Windows...
+[INFO] make already available: GNU Make 3.81
+[OK] make version check passed
+[INFO] Checking for checkmake (Makefile linting)...
+[INFO] Downloading checkmake v0.2.2 for windows/amd64...
+[WARN] Failed to download checkmake: Response status code does not indicate success: 404 (Not Found).
+[WARN] To install offline: Download checkmake-0.2.2.windows.amd64 from https://github.com/mrtazz/checkmake/releases
+[WARN] and place it in 'C:\Users\98253\repos\image-build-automation\bin\checkmake.exe'
+[INFO] Verifying PowerShell tools...
+[OK] Pester 5.7.1
+[OK] PSScriptAnalyzer 1.21.0
+[OK] PlatyPS 0.14.0
+[OK] HPEOneView.860 8.60.3997.3057
+[ERROR] OperationsManager NOT FOUND
+[INFO] Verifying Pester test discovery...
+[OK] Found 35 PowerShell test files
+[OK] Setup complete!
