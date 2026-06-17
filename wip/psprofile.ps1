@@ -8,13 +8,11 @@
 # ─── Fix VS Code PATH Caching (cross-platform) ──────────────────────────────
 # VS Code may inherit a stale environment from its launch process.
 # This ensures the terminal gets the current system + user PATH.
-if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $IsWindows)
-{
+if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $IsWindows) {
     # Windows: read directly from registry (Machine + User)
     $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') +
     ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
-} elseif ($IsLinux -or $IsMacOS)
-{
+} elseif ($IsLinux -or $IsMacOS) {
     # Linux/macOS: ensure common user bin directories are in PATH
     $sep = [System.IO.Path]::PathSeparator  # ':' on Unix
     $userBins = @(
@@ -25,14 +23,11 @@ if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $IsWindow
         "$HOME/.nvm/versions/node/*/bin",
         "$HOME/go/bin"
     )
-    foreach ($bin in $userBins)
-    {
+    foreach ($bin in $userBins) {
         # Expand wildcards for paths like nvm
         $resolved = Resolve-Path $bin -ErrorAction SilentlyContinue
-        foreach ($r in $resolved)
-        {
-            if ($r -and ($env:PATH -notlike "*$r*"))
-            {
+        foreach ($r in $resolved) {
+            if ($r -and ($env:PATH -notlike "*$r*")) {
                 $env:PATH = "$r$sep$env:PATH"
             }
         }
@@ -41,18 +36,14 @@ if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $IsWindow
 
 # ─── Module Imports (safe — won't break profile if missing) ──────────────────
 
-function Import-ModuleSafe
-{
+function Import-ModuleSafe {
     param([string]$Name)
-    if (-not (Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue))
-    {
+    if (-not (Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue)) {
         return
     }
-    try
-    {
+    try {
         Import-Module $Name -ErrorAction SilentlyContinue
-    } catch
-    {
+    } catch {
         Write-Warning "Failed to import module: $Name"
     }
 }
@@ -61,92 +52,82 @@ Import-ModuleSafe z
 Import-ModuleSafe posh-git
 Import-ModuleSafe Terminal-Icons
 
-# ─── Image Build Automation Module ──────────────────────────────────────────
-# Auto-load the Automation module if the repo is available
-$AutomationRepoPath = if ($env:USERPROFILE)
-{
-    Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
-} elseif ($env:HOME)
-{
-    Join-Path $env:HOME 'repos/image-build-automation/src/powershell/Automation'
-}
-
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
 $ohMyPoshConfig = '/usr/share/oh-my-posh/themes/pwsh10k.omp.json'
-if (-not (Test-Path $ohMyPoshConfig))
-{
+if (-not (Test-Path $ohMyPoshConfig)) {
     $ohMyPoshConfig = Join-Path $HOME '.local/share/pwsh10k.omp.json'
 }
 $ohMyPosh = Get-Command oh-my-posh -ErrorAction SilentlyContinue
-if ($ohMyPosh)
-{
+if ($ohMyPosh) {
     & $ohMyPosh.Source init pwsh --config $ohMyPoshConfig | Invoke-Expression
 }
 
 # ─── PSReadLine Configuration ────────────────────────────────────────────────
 
-if ($PSVersionTable.PSVersion.Major -ge 7)
-{
+if ($PSVersionTable.PSVersion.Major -ge 7) {
     Set-PSReadLineOption -PredictionSource History
     Set-PSReadLineOption -PredictionViewStyle ListView
 }
 Set-PSReadLineOption -EditMode Windows
-Set-PSReadLineKeyHandler -Key UpArrow   -Function HistorySearchBackward
+Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
 Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 
 # ─── Unix-style Aliases ──────────────────────────────────────────────────────
 
-Set-Alias cat  Get-Content  -Option AllScope -Force
-Set-Alias rm   Remove-Item  -Option AllScope -Force
-Set-Alias mv   Move-Item    -Option AllScope -Force
-Set-Alias ps   Get-Process  -Option AllScope -Force
+Set-Alias cat Get-Content -Option AllScope -Force
+Set-Alias rm Remove-Item -Option AllScope -Force
+Set-Alias mv Move-Item -Option AllScope -Force
+Set-Alias ps Get-Process -Option AllScope -Force
 Set-Alias kill Stop-Process -Option AllScope -Force
 
 # ─── eza (ls replacement) ───────────────────────────────────────────────────
-if (Get-Command eza -ErrorAction SilentlyContinue)
-{
-    $script:EzaCmd = if ($IsWindows) { 'eza.exe' } else { 'eza' }
-    function ezals
-    { & $script:EzaCmd --icons=auto --color=always $args 
+if (Get-Command eza -ErrorAction SilentlyContinue) {
+    $script:EzaCmd = if ($IsWindows) {
+        'eza.exe' 
+    } else {
+        'eza' 
     }
-    function ezall
-    { & $script:EzaCmd -lhG --icons=auto --color=always $args 
+    function ezals {
+        & $script:EzaCmd --icons=auto --color=always $args 
     }
-    function ezald
-    { & $script:EzaCmd -lD  --icons=auto --color=always $args 
+    function ezall {
+        & $script:EzaCmd -lhG --icons=auto --color=always $args 
     }
-    function ezalf
-    { & $script:EzaCmd -lf  --icons=auto --color=always $args 
+    function ezald {
+        & $script:EzaCmd -lD --icons=auto --color=always $args 
     }
-    function ezala
-    { & $script:EzaCmd -lag --icons=auto --color=always $args 
+    function ezalf {
+        & $script:EzaCmd -lf --icons=auto --color=always $args 
     }
-    function ezalA
-    { & $script:EzaCmd -lAg --icons=auto --color=always $args 
+    function ezala {
+        & $script:EzaCmd -lag --icons=auto --color=always $args 
     }
-    function ezalaa
-    { & $script:EzaCmd -aalg --icons=auto --color=always $args 
+    function ezalA {
+        & $script:EzaCmd -lAg --icons=auto --color=always $args 
     }
-    function ezalt1
-    { & $script:EzaCmd -l --tree --level=1 --icons=auto --color=always $args 
+    function ezalaa {
+        & $script:EzaCmd -aalg --icons=auto --color=always $args 
     }
-    function ezalt2
-    { & $script:EzaCmd -l --tree --level=2 --icons=auto --color=always $args 
+    function ezalt1 {
+        & $script:EzaCmd -l --tree --level=1 --icons=auto --color=always $args 
     }
-    function ezalt3
-    { & $script:EzaCmd -l --tree --level=3 --icons=auto --color=always $args 
+    function ezalt2 {
+        & $script:EzaCmd -l --tree --level=2 --icons=auto --color=always $args 
+    }
+    function ezalt3 {
+        & $script:EzaCmd -l --tree --level=3 --icons=auto --color=always $args 
     }
 
-    if (Test-Path alias:ls)
-    { Remove-Item alias:ls -Force 
+    if (Test-Path alias:ls) {
+        Remove-Item alias:ls -Force 
     }
-    Set-Alias ls  ezals  -Force -Option AllScope
-    Set-Alias ll  ezall  -Force -Option AllScope
-    Set-Alias la  ezala  -Force -Option AllScope
-    Set-Alias lA  ezalA  -Force -Option AllScope
+    Set-Alias ls ezals -Force -Option AllScope
+    Set-Alias ll ezall -Force -Option AllScope
+    Set-Alias la ezala -Force -Option AllScope
+    Set-Alias lA ezalA -Force -Option AllScope
     Set-Alias laa ezalaa -Force -Option AllScope
-    Set-Alias ld  ezald  -Force -Option AllScope
+    Set-Alias ld ezald -Force -Option AllScope
     Set-Alias lt1 ezalt1 -Force -Option AllScope
     Set-Alias lt2 ezalt2 -Force -Option AllScope
     Set-Alias lt3 ezalt3 -Force -Option AllScope
@@ -154,103 +135,99 @@ if (Get-Command eza -ErrorAction SilentlyContinue)
 
 # ─── Directory Shortcuts ─────────────────────────────────────────────────────
  
-function Open-Docs
-{ Set-Location (Join-Path $HOME 'Documents') 
+function Open-Docs {
+    Set-Location (Join-Path $HOME 'Documents') 
 }
-function Open-Downloads
-{ Set-Location (Join-Path $HOME 'Downloads') 
+function Open-Downloads {
+    Set-Location (Join-Path $HOME 'Downloads') 
 }
-function Open-Desktop
-{ Set-Location (Join-Path $HOME 'Desktop') 
+function Open-Desktop {
+    Set-Location (Join-Path $HOME 'Desktop') 
 }
  
-Set-Alias docs    Open-Docs
-Set-Alias dl      Open-Downloads
+Set-Alias docs Open-Docs
+Set-Alias dl Open-Downloads
 Set-Alias desktop Open-Desktop
 
 # ─── Git Aliases ─────────────────────────────────────────────────────────────
 
-function gst
-{ git status @args 
+function gst {
+    git status @args 
 }
-function gpl
-{ git pull @args 
+function gpl {
+    git pull @args 
 }
-function gps
-{ git push @args 
+function gps {
+    git push @args 
 }
-function gco
-{ param([string]$branch) git checkout $branch @args 
+function gco {
+    param([string]$branch) git checkout $branch @args 
 }
-function gcm
-{ param([string]$message) git commit -m $message @args 
+function gcm {
+    param([string]$message) git commit -m $message @args 
 }
-function gba
-{ git branch -a @args 
+function gba {
+    git branch -a @args 
 }
 
 # ─── Chezmoi Aliases ─────────────────────────────────────────────────────────
 
-if (Get-Command chezmoi -ErrorAction SilentlyContinue)
-{
-    Set-Alias cz   chezmoi
-    function cza
-    { chezmoi add @args 
+if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
+    Set-Alias cz chezmoi
+    function cza {
+        chezmoi add @args 
     }
-    function czap
-    { chezmoi apply @args 
+    function czap {
+        chezmoi apply @args 
     }
-    function czcd
-    { Set-Location (chezmoi cd @args) 
+    function czcd {
+        Set-Location (chezmoi cd @args) 
     }
-    function czd
-    { chezmoi diff @args 
+    function czd {
+        chezmoi diff @args 
     }
-    function cze
-    { chezmoi edit @args 
+    function cze {
+        chezmoi edit @args 
     }
-    function czs
-    { chezmoi status @args 
+    function czs {
+        chezmoi status @args 
     }
-    function czu
-    { chezmoi update @args 
+    function czu {
+        chezmoi update @args 
     }
-    function czr
-    { chezmoi re-add @args 
+    function czr {
+        chezmoi re-add @args 
     }
-    function czm
-    { chezmoi merge @args 
+    function czm {
+        chezmoi merge @args 
     }
-    function czpu
-    { chezmoi git push @args 
+    function czpu {
+        chezmoi git push @args 
     }
-    function czpl
-    { chezmoi git pull @args 
+    function czpl {
+        chezmoi git pull @args 
     }
-    function czst
-    { chezmoi git status @args 
+    function czst {
+        chezmoi git status @args 
     }
-    function czco
-    { chezmoi git commit @args 
+    function czco {
+        chezmoi git commit @args 
     }
-    function czga
-    { chezmoi git add . 
+    function czga {
+        chezmoi git add . 
     }
-    function czgca
-    { chezmoi git add . ; chezmoi git commit @args 
+    function czgca {
+        chezmoi git add . ; chezmoi git commit @args 
     }
 }
 
 # ─── pyenv-win (if installed) ────────────────────────────────────────────────
  
-if ($IsWindows)
-{
+if ($IsWindows) {
     $pyenvRoot = Join-Path $env:USERPROFILE '.pyenv\pyenv-win'
-    if (Test-Path (Join-Path $pyenvRoot 'bin\pyenv.bat'))
-    {
+    if (Test-Path (Join-Path $pyenvRoot 'bin\pyenv.bat')) {
         $env:PATH = "$pyenvRoot\bin;$pyenvRoot\shims;$env:PATH"
-        function pyenv
-        {
+        function pyenv {
             $bat = Join-Path $env:USERPROFILE '.pyenv\pyenv-win\bin\pyenv.bat'
             & $bat @args
         }
@@ -260,22 +237,18 @@ if ($IsWindows)
 # ─── Editor ──────────────────────────────────────────────────────────────────
 
 $notepadPlusPlus = 'C:\Program Files\Notepad++\notepad++.exe'
-if (Test-Path $notepadPlusPlus)
-{
-    try
-    {
+if (Test-Path $notepadPlusPlus) {
+    try {
         $fso = New-Object -ComObject Scripting.FileSystemObject
         $env:EDITOR = '{0} -nosession' -f $fso.GetFile($notepadPlusPlus).ShortPath.Replace('\', '/')
-    } catch
-    {
+    } catch {
         $env:EDITOR = "notepad"
     }
 }
 
 # ─── Argument Completers ─────────────────────────────────────────────────────
 
-if (Get-Command winget -ErrorAction SilentlyContinue)
-{
+if (Get-Command winget -ErrorAction SilentlyContinue) {
     Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
         param($wordToComplete, $commandAst, $cursorPosition)
         [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
@@ -287,8 +260,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue)
     }
 }
 
-if (Get-Command dotnet -ErrorAction SilentlyContinue)
-{
+if (Get-Command dotnet -ErrorAction SilentlyContinue) {
     Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock {
         param($commandName, $wordToComplete, $cursorPosition)
         dotnet complete --position $cursorPosition "$wordToComplete" | ForEach-Object {
@@ -306,34 +278,27 @@ $PSDefaultParameterValues['Add-Content:Encoding'] = 'utf8'
 # ─── Utility Functions ───────────────────────────────────────────────────────
 
 # Reload the current profile without restarting the terminal
-function Refresh-Profile
-{
+function Refresh-Profile {
     . $PROFILE
 }
 Set-Alias reload Refresh-Profile
 
 # Quick profile edit — opens this file
-function Edit-Profile
-{
-    if ($env:EDITOR)
-    {
+function Edit-Profile {
+    if ($env:EDITOR) {
         & $env:EDITOR.Split(' ')[0] $PROFILE
-    } else
-    {
+    } else {
         code $PROFILE
     }
 }
 
 # Ensure PATH is fresh from the registry (fixes VS Code PATH caching issue)
-function Refresh-Path
-{
-    if ($IsWindows)
-    {
+function Refresh-Path {
+    if ($IsWindows) {
         $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-        $userPath    = [System.Environment]::GetEnvironmentVariable('Path', 'User')
-        $env:PATH    = "$machinePath;$userPath"
-    } else
-    {
+        $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+        $env:PATH = "$machinePath;$userPath"
+    } else {
         # Linux/macOS: just return current PATH, already set in early section
         Write-Verbose "PATH refresh not needed on non-Windows platforms"
     }
@@ -349,38 +314,34 @@ Set-PSReadLineKeyHandler -Key F7 `
     -ScriptBlock {
     $pattern = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$pattern, [ref]$null)
-    if ($pattern)
-    { $pattern = [regex]::Escape($pattern) 
+    if ($pattern) {
+        $pattern = [regex]::Escape($pattern) 
     }
 
     $history = [System.Collections.ArrayList]@(
         $last = ''
         $lines = ''
-        foreach ($line in [System.IO.File]::ReadLines((Get-PSReadLineOption).HistorySavePath))
-        {
-            if ($line.EndsWith('`'))
-            {
+        foreach ($line in [System.IO.File]::ReadLines((Get-PSReadLineOption).HistorySavePath)) {
+            if ($line.EndsWith('`')) {
                 $line = $line.Substring(0, $line.Length - 1)
-                $lines = if ($lines)
-                { "$lines`n$line" 
-                } else
-                { $line 
+                $lines = if ($lines) {
+                    "$lines`n$line" 
+                } else {
+                    $line 
                 }
                 continue
             }
-            if ($lines)
-            { $line = "$lines`n$line"; $lines = '' 
+            if ($lines) {
+                $line = "$lines`n$line"; $lines = '' 
             }
-            if (($line -cne $last) -and (!$pattern -or ($line -match $pattern)))
-            {
+            if (($line -cne $last) -and (!$pattern -or ($line -match $pattern))) {
                 $last = $line; $line
             }
         }
     )
     $history.Reverse()
     $command = $history | Out-GridView -Title History -PassThru
-    if ($command)
-    {
+    if ($command) {
         [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert(($command -join "`n"))
     }
@@ -397,17 +358,14 @@ Set-PSReadLineKeyHandler -Key '"', "'" `
     [Microsoft.PowerShell.PSConsoleReadLine]::GetSelectionState([ref]$selectionStart, [ref]$selectionLength)
     $line = $null; $cursor = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
-    if ($selectionStart -ne -1)
-    {
+    if ($selectionStart -ne -1) {
         [Microsoft.PowerShell.PSConsoleReadLine]::Replace($selectionStart, $selectionLength, $quote + $line.SubString($selectionStart, $selectionLength) + $quote)
         [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($selectionStart + $selectionLength + 2)
         return
     }
-    if ($line[0..$cursor].Where{ $_ -eq $quote }.Count % 2 -eq 1)
-    {
+    if ($line[0..$cursor].Where{ $_ -eq $quote }.Count % 2 -eq 1) {
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert($quote)
-    } else
-    {
+    } else {
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert("$quote$quote")
         [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($cursor + 1)
     }
@@ -418,28 +376,25 @@ Set-PSReadLineKeyHandler -Key '(', '{', '[' `
     -LongDescription "Insert matching braces" `
     -ScriptBlock {
     param($key, $arg)
-    $closeChar = switch ($key.KeyChar)
-    {
-        '('
-        { [char]')'; break 
+    $closeChar = switch ($key.KeyChar) {
+        '(' {
+            [char]')'; break 
         }
-        '{'
-        { [char]'}'; break 
+        '{' {
+            [char]'}'; break 
         }
-        '['
-        { [char]']'; break 
+        '[' {
+            [char]']'; break 
         }
     }
     $selectionStart = $null; $selectionLength = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetSelectionState([ref]$selectionStart, [ref]$selectionLength)
     $line = $null; $cursor = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
-    if ($selectionStart -ne -1)
-    {
+    if ($selectionStart -ne -1) {
         [Microsoft.PowerShell.PSConsoleReadLine]::Replace($selectionStart, $selectionLength, $key.KeyChar + $line.SubString($selectionStart, $selectionLength) + $closeChar)
         [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($selectionStart + $selectionLength + 2)
-    } else
-    {
+    } else {
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert("$($key.KeyChar)$closeChar")
         [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($cursor + 1)
     }
@@ -452,11 +407,9 @@ Set-PSReadLineKeyHandler -Key ')', ']', '}' `
     param($key, $arg)
     $line = $null; $cursor = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
-    if ($line[$cursor] -eq $key.KeyChar)
-    {
+    if ($line[$cursor] -eq $key.KeyChar) {
         [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($cursor + 1)
-    } else
-    {
+    } else {
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert("$($key.KeyChar)")
     }
 }
@@ -468,35 +421,30 @@ Set-PSReadLineKeyHandler -Key Backspace `
     param($key, $arg)
     $line = $null; $cursor = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
-    if ($cursor -gt 0)
-    {
+    if ($cursor -gt 0) {
         $toMatch = $null
-        if ($cursor -lt $line.Length)
-        {
-            switch ($line[$cursor])
-            {
-                '"'
-                { $toMatch = '"'; break 
+        if ($cursor -lt $line.Length) {
+            switch ($line[$cursor]) {
+                '"' {
+                    $toMatch = '"'; break 
                 }
-                "'"
-                { $toMatch = "'"; break 
+                "'" {
+                    $toMatch = "'"; break 
                 }
-                ')'
-                { $toMatch = '('; break 
+                ')' {
+                    $toMatch = '('; break 
                 }
-                ']'
-                { $toMatch = '['; break 
+                ']' {
+                    $toMatch = '['; break 
                 }
-                '}'
-                { $toMatch = '{'; break 
+                '}' {
+                    $toMatch = '{'; break 
                 }
             }
         }
-        if ($toMatch -ne $null -and $line[$cursor - 1] -eq $toMatch)
-        {
+        if ($toMatch -ne $null -and $line[$cursor - 1] -eq $toMatch) {
             [Microsoft.PowerShell.PSConsoleReadLine]::Delete($cursor - 1, 2)
-        } else
-        {
+        } else {
             [Microsoft.PowerShell.PSConsoleReadLine]::BackwardDeleteChar($key, $arg)
         }
     }
@@ -522,11 +470,9 @@ Set-PSReadLineKeyHandler -Key RightArrow `
     param($key, $arg)
     $line = $null; $cursor = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
-    if ($cursor -lt $line.Length)
-    {
+    if ($cursor -lt $line.Length) {
         [Microsoft.PowerShell.PSConsoleReadLine]::ForwardChar($key, $arg)
-    } else
-    {
+    } else {
         [Microsoft.PowerShell.PSConsoleReadLine]::AcceptNextSuggestionWord($key, $arg)
     }
 }
@@ -544,29 +490,25 @@ Set-PSReadLineKeyHandler -Key Alt+a `
             $args[0].Parent -is [System.Management.Automation.Language.CommandAst] -and
             $args[0].Extent.StartOffset -ne $args[0].Parent.Extent.StartOffset
         }, $true)
-    if ($asts.Count -eq 0)
-    { [Microsoft.PowerShell.PSConsoleReadLine]::Ding(); return 
+    if ($asts.Count -eq 0) {
+        [Microsoft.PowerShell.PSConsoleReadLine]::Ding(); return 
     }
     $nextAst = $null
-    if ($null -ne $arg)
-    {
+    if ($null -ne $arg) {
         $nextAst = $asts[$arg - 1]
-    } else
-    {
-        foreach ($ast in $asts)
-        {
-            if ($ast.Extent.StartOffset -ge $cursor)
-            { $nextAst = $ast; break 
+    } else {
+        foreach ($ast in $asts) {
+            if ($ast.Extent.StartOffset -ge $cursor) {
+                $nextAst = $ast; break 
             }
         }
-        if ($null -eq $nextAst)
-        { $nextAst = $asts[0] 
+        if ($null -eq $nextAst) {
+            $nextAst = $asts[0] 
         }
     }
     $startOffsetAdjustment = 0; $endOffsetAdjustment = 0
     if ($nextAst -is [System.Management.Automation.Language.StringConstantExpressionAst] -and
-        $nextAst.StringConstantType -ne [System.Management.Automation.Language.StringConstantType]::BareWord)
-    {
+        $nextAst.StringConstantType -ne [System.Management.Automation.Language.StringConstantType]::BareWord) {
         $startOffsetAdjustment = 1; $endOffsetAdjustment = 2
     }
     [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($nextAst.Extent.StartOffset + $startOffsetAdjustment)
@@ -577,21 +519,18 @@ Set-PSReadLineKeyHandler -Key Alt+a `
 # Auto-correct common typos
 Set-PSReadLineOption -CommandValidationHandler {
     param([CommandAst]$CommandAst)
-    switch ($CommandAst.GetCommandName())
-    {
-        'git'
-        {
+    switch ($CommandAst.GetCommandName()) {
+        'git' {
             $gitCmd = $CommandAst.CommandElements[1].Extent
-            switch ($gitCmd.Text)
-            {
-                'cmt'
-                { [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'commit') 
+            switch ($gitCmd.Text) {
+                'cmt' {
+                    [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'commit') 
                 }
-                'psuh'
-                { [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'push') 
+                'psuh' {
+                    [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'push') 
                 }
-                'pulll'
-                { [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'pull') 
+                'pulll' {
+                    [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'pull') 
                 }
             }
         }
@@ -602,122 +541,8 @@ Set-PSReadLineOption -CommandValidationHandler {
 $automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
 if (Test-Path $automationModulePath) {
     Import-Module $automationModulePath -WarningAction SilentlyContinue
-if ($DryRun) { $p['DryRun'] = $true }
-        Set-MaintenanceMode @p
-    }
-
 }
-
-# Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
-function global:prompt {
-    $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
-    
-    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    
-    # Path normalization
-    $path = $PWD.Path
-    if ($env:USERPROFILE -and $path.StartsWith($env:USERPROFILE, "CurrentCultureIgnoreCase")) {
-        $path = "~" + $path.Substring($env:USERPROFILE.Length)
-    }
-    $path = $path -replace '\\\\', '/'
-    
-    # Git branch detection
-    $gitBranch = $null
-    if (Test-Path .git) {
-        $gitBranch = & git branch --show-current 2>$null
-    }
-    
-    # Segment 1: Admin/User Indicator
-    if ($isAdmin) {
-        Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
-    } else {
-        Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
-    }
-    
-    # Separator to Path
-    if ($isAdmin) {
-        Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
-    } else {
-        Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
-    }
-    
-    # Segment 2: Current Path
-    Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
-    
-    # Segment 3: Git Branch (if in a repository)
-    if ($gitBranch) {
-        Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
-        Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
-        $lastBg = "DarkYellow"
-    } else {
-        $lastBg = "Blue"
-    }
-    
-    # Final Prompt Character
-    Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
-    if ($isAdmin) {
-        Write-Host " # " -NoNewline -ForegroundColor Red
-    } else {
-        Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
-    }
-    
-    return " "
+if ($DryRun) {
+    $p['DryRun'] = $true 
 }
-
-# Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
-function global:prompt {
-    $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
-    
-    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    
-    # Path normalization
-    $path = $PWD.Path
-    if ($env:USERPROFILE -and $path.StartsWith($env:USERPROFILE, "CurrentCultureIgnoreCase")) {
-        $path = "~" + $path.Substring($env:USERPROFILE.Length)
-    }
-    $path = $path -replace '\\\\', '/'
-    
-    # Git branch detection
-    $gitBranch = $null
-    if (Test-Path .git) {
-        $gitBranch = & git branch --show-current 2>$null
-    }
-    
-    # Segment 1: Admin/User Indicator
-    if ($isAdmin) {
-        Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
-    } else {
-        Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
-    }
-    
-    # Separator to Path
-    if ($isAdmin) {
-        Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
-    } else {
-        Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
-    }
-    
-    # Segment 2: Current Path
-    Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
-    
-    # Segment 3: Git Branch (if in a repository)
-    if ($gitBranch) {
-        Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
-        Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
-        $lastBg = "DarkYellow"
-    } else {
-        $lastBg = "Blue"
-    }
-    
-    # Final Prompt Character
-    Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
-    if ($isAdmin) {
-        Write-Host " # " -NoNewline -ForegroundColor Red
-    } else {
-        Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
-    }
-    
-    return " "
-}
-
-
+Set-MaintenanceMode @p
