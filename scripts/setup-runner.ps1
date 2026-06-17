@@ -110,15 +110,12 @@ function Install-PowerShellModuleOffline {
         [string]$Version
     )
 
-    # Check if already installed
     $installed = Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue |
         Sort-Object Version -Descending | Select-Object -First 1
 
     if ($installed -and $installed.Version -ge [version]$Version) {
-        # Verify the installation is functional by trying to import it
         try {
             Import-Module $Name -RequiredVersion $installed.Version -ErrorAction Stop -WarningAction SilentlyContinue
-            # For Pester, also verify the native DLL exists (Add-Type failure not caught by Import-Module)
             if ($Name -eq 'Pester') {
                 $moduleBase = Split-Path $installed.Path -Parent
                 $dllPath = Join-Path $moduleBase 'bin\netstandard2.0\Pester.dll'
@@ -130,7 +127,6 @@ function Install-PowerShellModuleOffline {
             return
         } catch {
             Write-Warn "$Name $($installed.Version) found but failed to import (possibly corrupted), reinstalling..."
-            # Remove the corrupted installation
             $moduleDir = Split-Path (Split-Path $installed.Path -Parent) -Parent
             if (Test-Path $moduleDir) {
                 Remove-Item -Recurse -Force $moduleDir -ErrorAction SilentlyContinue
@@ -139,14 +135,32 @@ function Install-PowerShellModuleOffline {
         }
     }
 
-    # Try to find bundled copy
     $bundledInfo = Get-BundledModulePath -Name $Name -Version $Version
+    if (-not $bundledInfo) {
+        Write-Log "No bundled copy of $Name $Version found. Attempting PSGallery..."
+        try {
+            $saveDir = Join-Path $VENDOR_MODULES_DIR $Name
+            if (-not (Test-Path $saveDir)) {
+                New-Item -ItemType Directory -Force -Path $saveDir | Out-Null
+            }
+            Save-Module -Name $Name -MinimumVersion $Version -Path $saveDir -Force -Repository PSGallery -ErrorAction Stop
+            Write-OK "$Name saved to scripts/modules/$Name/"
+        } catch {
+            $installError = $_.Exception.Message
+            Write-Err "Failed to save $Name from PSGallery: $installError"
+            Write-Err "To fix: Download or copy '$Name' from a connected machine/SCOM server and place the version folder in:"
+            Write-Err "  scripts/modules/$Name/<version-folder>/"
+            Write-Err "  (Example: scripts/modules/OperationsManager/10.22.1234.0/)"
+            return
+        }
+        $bundledInfo = Get-BundledModulePath -Name $Name -Version $Version
+    }
+
     if ($bundledInfo -and (Test-Path $bundledInfo.Path)) {
         $actualVersion = $bundledInfo.ActualVersion
         $bundledPath = $bundledInfo.Path
-        Write-Log "Installing $Name $actualVersion from bundled copy..."
+        Write-Log "Installing $Name $actualVersion from bundled location..."
 
-        # Determine PowerShell module path
         $userModulePath = $null
         if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform) {
             $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules'
@@ -163,29 +177,9 @@ function Install-PowerShellModuleOffline {
             New-Item -ItemType Directory -Force -Path $destPath | Out-Null
         }
 
-        # CRITICAL: Use the ACTUAL version directory name from the bundled source,
-        # not the requested version string. PowerShell requires the folder name to
-        # match the version declared in the module manifest (.psd1).
         $destVersionPath = Join-Path $destPath $actualVersion
         Copy-Item -Path $bundledPath -Destination $destVersionPath -Recurse -Force
-        Write-OK "$Name $actualVersion installed from bundled copy"
-        return
-    }
-
-    # Fallback: try PSGallery if network available
-    Write-Warn "Bundled copy of $Name $Version not found. Attempting PSGallery..."
-    $installError = $null
-    try {
-        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
-        # Use -MinimumVersion so we get '8.60.xxxx' for HPEOneView.860 and '>= X.Y.Z' for others
-        Install-Module -Name $Name -MinimumVersion $Version -Scope CurrentUser -Force -AllowClobber -Repository PSGallery -ErrorAction Stop
-        Write-OK "$Name installed from PSGallery"
-    } catch {
-        $installError = $_.Exception.Message
-        Write-Err "Failed to install $Name from PSGallery: $installError"
-        Write-Err "To fix: Download or copy '$Name' from a connected machine/SCOM server and place the version folder in:"
-        Write-Err "  scripts/modules/$Name/<version-folder>/"
-        Write-Err "  (Example: scripts/modules/OperationsManager/10.22.1234.0/)"
+        Write-OK "$Name $actualVersion installed"
     }
 }
 
