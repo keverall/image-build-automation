@@ -37,7 +37,7 @@ mmvalidate CLU-CLUSTER-01  # Check status
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview |
 | [🚀 Setup Guide](docs/SETUP-GUIDE.md) | **START HERE** - Profile setup, module installation, quick start |
 | [📡 PowerShell API Reference](docs/powershell_api_reference.md) | Module overview, cmdlet usage, orchestrator API |
-| [🔌 PowerShell Generated Cmdlets](docs/dynamic-code-docs/INDEX.md) | Auto-generated reference for all PowerShell functions |
+| [📘 PowerShell Function Reference](docs/dynamic-code-docs/INDEX.md) | **Complete coverage of ALL PowerShell functions and cmdlets** - comprehensive parameter documentation, examples, and usage for every function in src/powershell/Automation/. Auto-generated from source code. |
 | [🔌 CI Run Requirements](docs/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
 | [🧪 PowerShell Testing (Pester)](docs/testing.md) | Pester v5 BDD testing guide, test commands, mocking |
 | [⚙️ Code Quality & Security](docs/code_quality.md) | PSScriptAnalyzer, gitleaks configuration |
@@ -51,8 +51,6 @@ mmvalidate CLU-CLUSTER-01  # Check status
 | [🔧 Maintenance Mode Architecture](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp integration |
 | [🔧 Maintenance Mode Environment Config](docs/maintenance-mode-environment-config.md) | Environment variable configuration |
 | [🔧 Maintenance Mode Code Map](docs/MAINTENANCE_MODE_CODE_MAP.md) | Complete code map with links to all mm command functionality |
-| [🔧 Set-MaintenanceMode Help](docs/SET-MAINTENANCEMODE-HELP.md) | Detailed cmdlet help and examples |
-| [🔧 Maintenance Mode Testing Guide](docs/MAINTENANCE_MODE_TESTING.md) | Comprehensive testing strategies |
 
 #### Integration & Authentication
 | Document | Description |
@@ -66,9 +64,6 @@ mmvalidate CLU-CLUSTER-01  # Check status
 #### Developer Resources
 | Document | Description |
 |---|---|
-| [📖 Quick Reference](docs/QUICK_REFERENCE.md) | Quick reference for common tasks |
-| [📖 Help System](docs/HELP_SYSTEM.md) | Built-in help system documentation |
-| [📖 Testing Quick Start](docs/TESTING_QUICK_START.md) | Quick start guide for testing |
 | [📖 DevOps Guide to HPE Terms](docs/devops-guide-to-HPe-Terms.md) | HPE terminology guide |
 
 ### In this document

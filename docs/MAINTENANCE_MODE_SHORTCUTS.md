@@ -1,46 +1,197 @@
-# Maintenance Mode Shortcuts
+# Set-MaintenanceMode Command Reference
 
-## Overview
+> Full command help for the `mm` maintenance mode shortcuts.
 
-The `mm` command provides a quick way to use maintenance mode with consistent, formatted output.
+## Quick Start
 
-## Setup
-
-The shortcuts are automatically available when you load your PowerShell profile:
-
+### Setup (One-Time)
 ```powershell
+# From project root
+make setup
+
+# Or run the profile setup script
+pwsh -File scripts/Setup-Profile.ps1
+
+# Reload your profile
 . $PROFILE
 ```
 
-Or import the module directly:
-
+### Getting Help
 ```powershell
-Import-Module ./src/powershell/Automation/Automation.psd1 -WarningAction SilentlyContinue
+# Quick syntax help
+mm -?      # or -h, -Help
+
+# Full parameter documentation
+Get-Help Set-MaintenanceMode -Full
+
+# Specific parameter help
+Get-Help Set-MaintenanceMode -Parameter Environment
+Get-Help Set-MaintenanceMode -Parameter Start
 ```
 
-## Usage
+---
 
-### Basic Command
+## Quick Aliases
+
+| Command | Description |
+|---------|-------------|
+| `mm` | Full control with all parameters |
+| `mmenable` | Quick enable (defaults: scom, Prod, +2hours) |
+| `mmdisable` | Quick disable maintenance mode |
+| `mmvalidate` | Quick validate current status |
+
+### Examples
 
 ```powershell
-mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
+# Basic usage
+mmenable CLU-CLUSTER-01
+mmenable CLU-CLUSTER-01 scom Prod
+mmenable CLU-CLUSTER-01 scom Test -DryRun
+
+# Custom time window
+mmenable CLU-CLUSTER-01 scom Prod -Start 'now' -End '+4hours'
+
+# Disable and validate
+mmdisable CLU-CLUSTER-01
+mmvalidate CLU-CLUSTER-01
 ```
 
-### Parameters
+---
 
-All standard `Set-MaintenanceMode` parameters are supported:
+## Parameters
 
-- **-Action**: `enable`, `disable`, or `validate`
-- **-TargetId**: Cluster or server identifier
-- **-Mode**: `scom` or `oneview`
-- **-Environment**: `Test` or `Prod`
-- **-Start**: Start time (`now`, `+1hour`, `2026-06-12T14:00:00`)
-- **-End**: End time (`+2hours`, `2026-06-12T16:00:00`)
-- **-DryRun**: Simulate without making changes
+### Required
+
+| Parameter | Description |
+|-----------|-------------|
+| `-Action` | `enable`, `disable`, or `validate` |
+| `-TargetId` | Cluster ID (e.g., `CLU-CLUSTER-01`) or server name |
+| `-Mode` | `scom` or `oneview` |
+
+### Optional
+
+| Parameter | Description |
+|-----------|-------------|
+| `-Environment` | `Test` or `Prod` (default: `Prod`) |
+| `-ManagementHost` | Override management server/appliance hostname |
+| `-Start` | Maintenance window start time |
+| `-End` | Maintenance window end time |
+| `-PostDisableWaitSeconds` | Wait after SCOM disable (default: 120, 0 to skip) |
+| `-DryRun` | Simulate without making changes |
+| `-SerialNumber` | OneView mode: look up server by serial number |
+| `-Username` | Direct username (testing only) |
+| `-Json` | Output as JSON for API integration |
+
+---
+
+## Time Formats
+
+**All times are UTC only.** No local timezone conversion.
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| `now` | `-Start now` | Current UTC time |
+| `+Xhours` | `-End +2hours` | Relative hours/minutes/days/seconds |
+| `+Xminutes` | `-End +30minutes` | Relative from now |
+| `+Xdays` | `-End +1day` | Relative from now |
+| `YYYY-MM-DD HH:MM` | `-End '2026-06-12 02:00'` | Absolute UTC |
+| `YYYY-MM-DDTHH:MM:SS` | `-End '2026-06-12T02:00:00'` | ISO 8601 UTC |
+
+---
+
+## Credential Setup
+
+### Method 1: Environment Variables (Recommended)
+
+```powershell
+$env:ENVIRONMENT = "Prod"
+$env:SCOM_ADMIN_USER = "svc_maintenance_admin"
+$env:SCOM_ADMIN_PASSWORD = "password"
+
+# Or for OneView
+$env:ONEVIEW_USER = "maintenance_admin"
+$env:ONEVIEW_PASSWORD = "password"
+```
+
+### Method 2: PowerShell Profile
+
+Add to your `$PROFILE`:
+```powershell
+$env:SCOM_ADMIN_USER = "svc_maintenance_admin"
+$env:SCOM_ADMIN_PASSWORD = "password"
+```
+
+### Method 3: Interactive Prompt
+
+```powershell
+# Just run the command - you'll be prompted for credentials
+mmenable CLU-CLUSTER-01
+```
+
+---
+
+## Full Command Examples
+
+### Example 1: Basic Enable with Defaults
+```powershell
+mmenable CLU-CLUSTER-01 scom Prod -Start now -End '+2hours'
+```
+
+### Example 2: Dry Run (Test First!)
+```powershell
+mmenable CLU-CLUSTER-01 scom Prod -Start now -End '+1hour' -DryRun
+```
+
+### Example 3: Custom Time Window
+```powershell
+# Absolute times
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+
+# Mixed: relative start, absolute end
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start 'now' -End '2026-06-12 02:00'
+```
+
+### Example 4: Disable with Custom Wait
+```powershell
+# Disable maintenance and wait 60 seconds for stabilization
+Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 60
+```
+
+### Example 5: OneView Server Maintenance
+```powershell
+# By server name
+Set-MaintenanceMode -Action enable -TargetId server01.ad.example.com -Mode oneview -Environment Prod -Start now -End +1hour
+
+# By serial number (Marin's preference)
+Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -Start now -End +1hour
+```
+
+### Example 6: Host Override
+```powershell
+# Emergency: use backup SCOM server
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.local -Start now -End +4hours
+```
+
+### Example 7: JSON Output
+```powershell
+# Get structured JSON output for automation/API integration
+mmenable CLU-CLUSTER-01 scom Prod -Start now -End +2hours -Json
+```
+
+---
+
+## Host Resolution Priority
+
+Both SCOM and OneView use the same resolution order:
+
+1. `-ManagementHost` parameter (highest priority)
+2. `$env:MAINTENANCE_HOST` environment variable
+3. `configs/connection_hosts.json` → Environment config
+4. Error if not found
+
+---
 
 ## Output Format
-
-The `mm` command provides consistent output for both success and error cases:
 
 ```
 === Maintenance Mode Command Audit ===
@@ -56,77 +207,64 @@ End Time (UTC): 2026-06-12T15:11:05.4886846Z
 Success: True
 Server Count: 3
 SCOM: 4/4 success
-[DRY-RUN]
 ======================
 ```
 
-### Key Features
+---
 
-- **Consistent fields** for both success and error cases
-- **UTC ISO datetimes** for start and end times
-- **Relative time conversion** (`now`, `+1hour` → actual UTC times)
-- **Mode-specific summaries** (SCOM or OneView)
-- **DRY-RUN indicator** when simulating
+## Config Files
 
-## Examples
+| File | Purpose |
+|------|---------|
+| `configs/connection_hosts.json` | Environment-specific hosts (Test/Prod) |
+| `configs/clusters_catalogue.json` | Cluster definitions and mappings |
+| `configs/scom_config.json` | SCOM server configuration |
+| `configs/oneview_config.json` | OneView appliance configuration |
+| `.env` | Credential template (gitignored) |
 
-### Enable Maintenance Mode (Dry Run)
-
-```powershell
-mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
-```
-
-### Enable Maintenance Mode (Live)
-
-```powershell
-mm -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
-```
-
-### Validate Maintenance Mode
-
-```powershell
-mm -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
-```
-
-### Disable Maintenance Mode
-
-```powershell
-mm -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
-```
-
-## Time Formats
-
-Supported time formats:
-
-- `now` - Current UTC time
-- `+Xhours` - Relative hours (e.g., `+1hour`, `+2hours`)
-- `+Xminutes` - Relative minutes (e.g., `+30minutes`)
-- `+Xdays` - Relative days (e.g., `+1day`)
-- `YYYY-MM-DD HH:MM` - Absolute UTC time
-- `YYYY-MM-DDTHH:MM:SS` - ISO 8601 UTC format
+---
 
 ## Troubleshooting
 
-### Command Not Found
+| Error | Solution |
+|-------|----------|
+| "Management host not configured" | Set `$env:MAINTENANCE_HOST` or update `connection_hosts.json` |
+| "Missing credentials: username" | Set env vars or run interactively |
+| "Failed to connect to SCOM" | Check network, firewall, credentials |
+| "Environment 'X' not found" | Use `Test` or `Prod` only |
+| `mm` command not found | Run `. $PROFILE` or `make setup` |
+| Profile errors | Check `$PROFILE` syntax, re-run `Setup-Profile.ps1` |
 
-If `mm` is not recognized, reload your profile:
+---
+
+## Security Notes
+
+❌ **DON'T** hardcode passwords in scripts  
+❌ **DON'T** commit `.env` files with real credentials  
+✅ **DO** use CyberArk or environment variables  
+✅ **DO** use `-DryRun` to test before applying changes
+
+---
+
+
+## Quick Commands
 
 ```powershell
-. $PROFILE
+# List available environments
+(Import-JsonConfig configs/connection_hosts.json).environments.Keys
+
+# Test connection before running maintenance
+pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRun
+
+# Load module if needed
+Import-Module ./src/powershell/Automation/Automation.psm1
 ```
 
-Or use the full command:
+---
+## Related Documentation
 
-```powershell
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
-```
-
-### Profile Errors
-
-Check your profile for syntax errors:
-
-```powershell
-pwsh -NoProfile -Command "Test-Path \$PROFILE"
-```
-
-If there are issues, restore the default profile or remove the maintenance mode section and re-add it.
+- **Architecture & Flow**: [docs/maintenance_mode.md](maintenance_mode.md)
+- **Setup Guide**: [docs/SETUP-GUIDE.md](SETUP-GUIDE.md)
+- **Testing Guide**: [docs/testing.md](testing.md)
+- **Environment Config**: [docs/maintenance-mode-environment-config.md](maintenance-mode-environment-config.md)
+- **PowerShell Function Reference**: [docs/dynamic-code-docs/INDEX.md](dynamic-code-docs/INDEX.md) - Complete coverage of ALL PowerShell functions and cmdlets.

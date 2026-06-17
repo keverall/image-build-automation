@@ -120,7 +120,52 @@ notepad $PROFILE     # Windows Notepad
 nano $PROFILE        # Linux/Mac terminal editor
 ```
 
+
+
+## Manual Installation
+
+## Manual Installation
+
+If you prefer to add the functions manually:
+
+```powershell
+# Add to your profile
+$automationModulePath = '/path/to/image-build-automation/src/powershell/Automation/Automation.psd1'
+if (Test-Path $automationModulePath) {
+    Import-Module $automationModulePath -WarningAction SilentlyContinue
+    function mm { Set-MaintenanceMode @args }
+    function mmenable { 
+        param(
+            [Parameter(Position=0,Mandatory)][string]$TargetId,
+            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
+            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
+            [string]$Start = 'now',
+            [string]$End = '+2hours',
+            [switch]$DryRun
+        )
+        $p = @{
+            Action = 'enable'
+            TargetId = $TargetId
+            Mode = $Mode
+            Environment = $Environment
+            Start = $Start
+            End = $End
+        }
+        if ($DryRun) { $p['DryRun'] = $true }
+        Set-MaintenanceMode @p
+    }
+}
+```
+
 ---
+
+## Uninstall
+
+To remove the functions from your profiles:
+
+```bash
+pwsh -File scripts/Setup-Profile.ps1 -Uninstall
+```---
 
 ## Troubleshooting
 
