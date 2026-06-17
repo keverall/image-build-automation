@@ -63,98 +63,79 @@ Import-ModuleSafe z
 Import-ModuleSafe posh-git
 Import-ModuleSafe Terminal-Icons
 
-# ─── Image Build Automation Module ──────────────────────────────────────────
-# Auto-load the Automation module if the repo is available
-$AutomationRepoPath = if ($env:USERPROFILE)
-{
-    Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
-} elseif ($env:HOME)
-{
-    Join-Path $env:HOME 'repos/image-build-automation/src/powershell/Automation'
-}
-if (Test-Path $AutomationRepoPath)
-{
-    try
-    {
-        Import-Module $AutomationRepoPath -WarningAction SilentlyContinue
-        
-        # Maintenance mode convenience functions
-        function mm
-        { Set-MaintenanceMode @args 
-        }
-        
-        function mmenable
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod',
-                [string]$Start = 'now',
-                [string]$End = '+2hours',
-                [switch]$DryRun
-            )
-            $params = @{
-                Action = 'enable'
-                TargetId = $TargetId
-                Mode = $Mode
-                Environment = $Environment
-                Start = $Start
-                End = $End
-            }
-            if ($DryRun)
-            { $params['DryRun'] = $true 
-            }
-            Set-MaintenanceMode @params
-        }
-        
-        function mmdisable
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod'
-            )
-            Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
-        }
-        
-        function mmvalidate
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod'
-            )
-            Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
-        }
-    } catch
-    {
-        Write-Warning "Failed to load Automation module or maintenance mode functions"
-    }
-}
+
 
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
-$ohMyPoshConfig = Join-Path $env:USERPROFILE 'products\pwsh10k.omp.json'
+$ohMyPoshConfigs = @(
+    (Join-Path (Join-Path $HOME 'products') 'pwsh10k.omp.json'),
+    '/usr/share/oh-my-posh/themes/pwsh10k.omp.json',
+    (Join-Path $HOME '.local/share/oh-my-posh/themes/pwsh10k.omp.json'),
+    '/opt/homebrew/share/oh-my-posh/themes/pwsh10k.omp.json',
+    '/usr/local/share/oh-my-posh/themes/pwsh10k.omp.json',
+    (Join-Path (Join-Path $HOME '.poshthemes') 'pwsh10k.omp.json')
+)
+
+$ohMyPoshConfig = $null
+foreach ($path in $ohMyPoshConfigs) {
+    if (Test-Path $path) {
+        $ohMyPoshConfig = $path
+        break
+    }
+}
 
 $ohMyPosh = Get-Command oh-my-posh -ErrorAction SilentlyContinue
-if ($ohMyPosh)
-{
+if ($ohMyPosh -and $ohMyPoshConfig) {
     & $ohMyPosh.Source init pwsh --config $ohMyPoshConfig | Invoke-Expression
+} else {
+    # Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
+    function global:prompt {
+        $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
+        
+        $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        
+        $path = $PWD.Path
+        if ($env:USERPROFILE -and $path.StartsWith($env:USERPROFILE, "CurrentCultureIgnoreCase")) {
+            $path = "~" + $path.Substring($env:USERPROFILE.Length)
+        }
+        $path = $path -replace '\\\\', '/'
+        
+        $gitBranch = $null
+        if (Test-Path .git) {
+            $gitBranch = & git branch --show-current 2>$null
+        }
+        
+        if ($isAdmin) {
+            Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
+        } else {
+            Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
+        }
+        
+        if ($isAdmin) {
+            Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
+        } else {
+            Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
+        }
+        
+        Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
+        
+        if ($gitBranch) {
+            Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
+            Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
+            $lastBg = "DarkYellow"
+        } else {
+            $lastBg = "Blue"
+        }
+        
+        Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
+        if ($isAdmin) {
+            Write-Host " # " -NoNewline -ForegroundColor Red
+        } else {
+            Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
+        }
+        
+        return " "
+    }
 }
 
 # ─── PSReadLine Configuration ────────────────────────────────────────────────
@@ -673,107 +654,7 @@ Set-PSReadLineOption -CommandValidationHandler {
     }
 }
 
-# Image Build Automation module
-$automationModulePath = Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation\Automation.psd1'
-if (Test-Path $automationModulePath) {
-    Import-Module $automationModulePath -WarningAction SilentlyContinue
-    
-    # Maintenance mode convenience functions
-    function mm { Set-MaintenanceMode @args }
-    
-    function mmenable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
-            [string]$Start = 'now',
-            [string]$End = '+2hours',
-            [switch]$DryRun
-        )
-        $p = @{
-            Action = 'enable'
-            TargetId = $TargetId
-            Mode = $Mode
-            Environment = $Environment
-            Start = $Start
-            End = $End
-        }
-        if ($DryRun) { $p['DryRun'] = $true }
-        Set-MaintenanceMode @p
-    }
-    
-    function mmdisable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
-    }
-    
-    function mmvalidate {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
-    }
-}
 
-# Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
-function global:prompt {
-    $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
-    
-    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    
-    # Path normalization
-    $path = $PWD.Path
-    if ($env:USERPROFILE -and $path.StartsWith($env:USERPROFILE, "CurrentCultureIgnoreCase")) {
-        $path = "~" + $path.Substring($env:USERPROFILE.Length)
-    }
-    $path = $path -replace '\\\\', '/'
-    
-    # Git branch detection
-    $gitBranch = $null
-    if (Test-Path .git) {
-        $gitBranch = & git branch --show-current 2>$null
-    }
-    
-    # Segment 1: Admin/User Indicator
-    if ($isAdmin) {
-        Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
-    } else {
-        Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
-    }
-    
-    # Separator to Path
-    if ($isAdmin) {
-        Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
-    } else {
-        Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
-    }
-    
-    # Segment 2: Current Path
-    Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
-    
-    # Segment 3: Git Branch (if in a repository)
-    if ($gitBranch) {
-        Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
-        Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
-        $lastBg = "DarkYellow"
-    } else {
-        $lastBg = "Blue"
-    }
-    
-    # Final Prompt Character
-    Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
-    if ($isAdmin) {
-        Write-Host " # " -NoNewline -ForegroundColor Red
-    } else {
-        Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
-    }
-    
-    return " "
-}
+
+
 
