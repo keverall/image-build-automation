@@ -85,101 +85,7 @@ Do you know if your iRequest platform prefers calling REST Webhooks (HTTP POST),
   install-module HPOneView.860  -scope currentuser
 
    
-   
-
-I have updated the setup script to include `HPEOneView` (version 8.60) in the offline preinstallation list. The script will now look for it in the bundled modules directory and install it locally without needing PSGallery or internet access.
-
-### How to Preinstall `HPEOneView` for the Offline Server
-
-Since the test server is air-gapped, you will need to download the module on a machine with internet access and copy it into the repository. Here is the exact process:
-
-#### Step 1: Download the Module (On a Connected Machine)
-Open PowerShell on a machine with internet access and run:
-```powershell
-# Create a temporary directory
-New-Item -ItemType Directory -Force -Path .\temp-modules
-
-# Download HPEOneView and all its dependencies
-Save-Module -Name HPEOneView.860 -Path .\temp-modules -Force
-```
-*Note: This will create a folder like `.\temp-modules\HPEOneView\8.60.xxxx\` (the exact version number will depend on the latest 8.60.x release).*
-
-#### Step 2: Bundle It Into the Repository
-1. Navigate to the downloaded folder: `.\temp-modules\HPEOneView\`
-2. You will see a folder named with the version number (e.g., `8.60.3915.0`).
-3. Copy that **version folder** into your repository at this exact path:
-   ```
-   image-build-automation/scripts/modules/HPEOneView/<version-folder>/
-   ```
-   *(Create the `HPEOneView` folder inside `scripts/modules/` if it doesn't exist yet).*
-
-#### Step 3: Transfer to the Offline Server
-Commit this change to your repository, or simply copy the entire `scripts/modules/` directory to the offline Windows Server via USB, secure network share, or your preferred air-gap transfer method.
-
-#### Step 4: Run Setup
-On the offline Windows Server, run:
-```powershell
-make setup
-```
-The script will now detect the bundled `HPEOneView` folder, copy it to the server's PowerShell user module path (`~\Documents\PowerShell\Modules`), and report `[OK] HPEOneView installed from bundled copy`.
-
-### What Changed in the Code
-1. Added `@{ Name = 'HPEOneView'; Version = '8.60' }` to the `$REQUIRED_MODULES` array in `scripts/setup-runner.ps1`.
-2. Updated the script's header documentation to reflect the new module and the Powerline prompt.
-3. Improved the fallback error message to give explicit, copy-pasteable instructions on where to place the module folder if the bundle is ever missing.
-
-This ensures your automation suite is 100% self-contained and ready for strict air-gapped environments.
-
-The setup script has been fully updated to support offline preinstallation of BOTH `HPEOneView.860` and `OperationsManager` (SCOM) modules directly from the PowerShell Gallery via the `Bundle-OfflineModules.ps1` script. 
-
-### How to Bundle Modules for the Offline Server
-
-Since both `HPEOneView.860` and `OperationsManager` (v1.0) are available on the PowerShell Gallery, you no longer need a local SCOM console installation to bundle them.
-
-#### Step 1: Download the Modules (On a Connected Machine)
-Open PowerShell on a machine with internet access and run the provided bundling script:
-```powershell
-cd image-build-automation
-pwsh -File scripts/Bundle-OfflineModules.ps1
-```
-*Note: This script will automatically download `HPEOneView.860` and `OperationsManager` from PSGallery into the `scripts/modules/` directory. If the `OperationsManager` download fails for any reason, it will fall back to checking local SCOM console paths.*
-
-#### Step 2: Transfer to the Offline Server
-Commit this change to your repository, or transfer the updated `scripts/modules/` directory to the offline Windows Server via your approved air-gap transfer method (USB, secure network share, etc.).
-
-#### Step 3: Run Setup
-On the offline Windows Server, run:
-```powershell
-make setup
-```
-*(Or directly: `pwsh -File scripts/setup-runner.ps1`)*
-
-### What the Script Will Do Now
-1. It will scan `scripts/modules/HPEOneView.860/` and `scripts/modules/OperationsManager/`.
-2. It will automatically detect the downloaded version folders (e.g., `8.60.xxxx` for HPEOneView, `1.0` for OperationsManager).
-3. It will copy them to the local PowerShell user module path and report:  
-   `[OK] HPEOneView.860 installed from bundled copy`  
-   `[OK] OperationsManager installed from bundled copy`
-4. The setup will complete successfully with zero internet access.
-
-
-
-[WARN] Bundled copy of HPEOneView 8.60 not found. Attempting PSGallery...
-[ERROR] Failed to install HPEOneView. Bundled copy not found and PSGallery unavailable (air-gapped).
-[ERROR] To fix: Download or copy 'HPEOneView' from a connected machine/SCOM server and place the version folder in:
-[ERROR]   scripts/modules/HPEOneView/<version-folder>/
-[ERROR]   (Example: scripts/modules/OperationsManager/10.19.10050.0/)
-[WARN] Bundled copy of OperationsManager 10.19.10050.0 not found. Attempting PSGallery...
-[ERROR] Failed to install OperationsManager. Bundled copy not found and PSGallery unavailable (air-gapped).
-[ERROR] To fix: Download or copy 'OperationsManager' from a connected machine/SCOM server and place the version folder in:
-[ERROR]   scripts/modules/OperationsManager/<version-folder>/
-[ERROR]   (Example: scripts/modules/OperationsManager/10.19.10050.0/)
-
-
-
-from tech vdi today - 
-
- make setup                                                                                  0  678ms  09:16:05 
+   make setup
 [prune-logs] Pruning old log files...
 [prune-logs] Pruning logs to keep maximum 10 per type...
 [prune-logs] Pruned 0 excess log files.
@@ -189,22 +95,22 @@ from tech vdi today -
 ║  HPE ProLiant ISO Automation — PowerShell Setup       ║
 ╚══════════════════════════════════════════════════════════╝
 
-[INFO] PowerShell version: 7.6.2
+[INFO] PowerShell version: 7.6.3
 [OK] PowerShell version check passed
 [INFO] Installing PowerShell modules from bundled copies...
 [INFO] Pester 5.7.1 already installed and verified
 [INFO] PSScriptAnalyzer 1.21.0 already installed and verified
 [INFO] PlatyPS 0.14.0 already installed and verified
-[WARN] Bundled copy of HPEOneView 8.60 not found. Attempting PSGallery...
-[ERROR] Failed to install HPEOneView. Bundled copy not found and PSGallery unavailable (air-gapped).
-[ERROR] To fix: Download or copy 'HPEOneView' from a connected machine/SCOM server and place the version folder in:
-[ERROR]   scripts/modules/HPEOneView/<version-folder>/
-[ERROR]   (Example: scripts/modules/OperationsManager/10.19.10050.0/)
-[WARN] Bundled copy of OperationsManager 10.19.10050.0 not found. Attempting PSGallery...
+[WARN] Exact version 8.60 of HPEOneView.860 not found. Using available version 8.60.3997.3057.
+[INFO] Installing HPEOneView.860 8.60 from bundled copy...
+[OK] HPEOneView.860 installed from bundled copy
+[WARN] OperationsManager 1.0 found but failed to import (possibly corrupted), reinstalling...
+[INFO] Removed corrupted OperationsManager installation
+[WARN] Bundled copy of OperationsManager 1.0 not found. Attempting PSGallery...
 [ERROR] Failed to install OperationsManager. Bundled copy not found and PSGallery unavailable (air-gapped).
 [ERROR] To fix: Download or copy 'OperationsManager' from a connected machine/SCOM server and place the version folder in:
 [ERROR]   scripts/modules/OperationsManager/<version-folder>/
-[ERROR]   (Example: scripts/modules/OperationsManager/10.19.10050.0/)
+[ERROR]   (Example: scripts/modules/OperationsManager/10.22.1234.0/)
 [INFO] Skipping Update-Help (offline mode)
 [WARN] Oh My Posh binary not found in bin/. Skipping.
 [WARN] NOTE: If .exe execution is blocked by admin policy (e.g., AppLocker), using 'git clone' will NOT bypass this,
@@ -224,7 +130,7 @@ from tech vdi today -
 [OK] Pester 5.7.1
 [OK] PSScriptAnalyzer 1.21.0
 [OK] PlatyPS 0.14.0
-[ERROR] HPEOneView NOT FOUND
+[ERROR] HPEOneView.860 NOT FOUND
 [ERROR] OperationsManager NOT FOUND
 [INFO] Verifying Pester test discovery...
 [OK] Found 35 PowerShell test files
@@ -234,7 +140,7 @@ from tech vdi today -
 ╚══════════════════════════════════════════════════════════╝
 
   Project root: C:\Users\98253\repos\image-build-automation
-  Log file:     C:\Users\98253\AppData\Local\Temp\hpe-automation-pwsh-setup-20260617-092005.log
+  Log file:     C:\Users\98253\AppData\Local\Temp\hpe-automation-pwsh-setup-20260617-112116.log
 
 To run PowerShell tests:
     cd C:\Users\98253\repos\image-build-automation
@@ -253,108 +159,14 @@ Makefile targets:
 [OK] Setup complete!
 [setup] Configuring PowerShell profiles with Automation module...
 [setup] Found 4 profile(s) to update
-[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module
-[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module
-[setup] psprofile.ps1 already contains Automation module
-[setup] vscodeprofile.ps1 already contains Automation module
+[setup] Updating Automation module path in Microsoft.PowerShell_profile.ps1...
+[setup] ✓ Updated in Microsoft.PowerShell_profile.ps1
+[setup] Updating Automation module path in Microsoft.PowerShell_profile.ps1...
+[setup] ✓ Updated in Microsoft.PowerShell_profile.ps1
+[setup] Updating Automation module path in psprofile.ps1...
+[setup] ✓ Updated in psprofile.ps1
+[setup] Updating Automation module path in vscodeprofile.ps1...
+[setup] ✓ Updated in vscodeprofile.ps1
 
 [setup] ✓ Profile configuration complete
 [setup] Restart your PowerShell session or run '. $PROFILE' to load
-
-# Note: checkmake installation is now handled gracefully by setup-runner.ps1
-
-
-on test server -
-
-
-make setup
-"[prune-logs] Pruning old log files..."
-[prune-logs] Pruning logs to keep maximum 10 per type...
-[prune-logs] Pruned 0 excess log files.
-"[setup] Setting up PowerShell environment..."
- 
-╔══════════════════════════════════════════════════════════╗
-║  HPE ProLiant ISO Automation — PowerShell Setup       ║
-╚══════════════════════════════════════════════════════════╝
-
-[INFO] PowerShell version: 7.4.6
-[OK] PowerShell version check passed
-[INFO] Installing PowerShell modules from bundled copies...
-[INFO] Pester 5.7.1 already installed and verified 
-[INFO] PSScriptAnalyzer 1.21.0 already installed and verified 
-[INFO] PlatyPS 0.14.0 already installed and verified 
-[WARN] Bundled copy of HPEOneView 8.60 not found. Attempting PSGallery... 
-[ERROR] Failed to install HPEOneView. Bundled copy not found and PSGallery unavailable (air-gapped). 
-[ERROR] To fix: Download or copy 'HPEOneView' from a connected machine/SCOM server and place the version folder in: 
-[ERROR]   scripts/modules/HPEOneView/<version-folder>/ 
-[ERROR]   (Example: scripts/modules/OperationsManager/10.19.10050.0/) 
-[WARN] Bundled copy of OperationsManager 10.19.10050.0 not found. Attempting PSGallery... 
-[ERROR] Failed to install OperationsManager. Bundled copy not found and PSGallery unavailable (air-gapped). 
-[ERROR] To fix: Download or copy 'OperationsManager' from a connected machine/SCOM server and place the version folder in: 
-[ERROR]   scripts/modules/OperationsManager/<version-folder>/ 
-[ERROR]   (Example: scripts/modules/OperationsManager/10.19.10050.0/) 
-[INFO] Skipping Update-Help (offline mode) 
-[WARN] Oh My Posh binary not found in bin/. Skipping. 
-[WARN] NOTE: If .exe execution is blocked by admin policy (e.g., AppLocker), using 'git clone' will NOT bypass this, 
-[WARN]       because compiling from source still produces an .exe file. To use Oh My Posh, you must either: 
-[WARN]       1. Download oh-my-posh.exe and place it in the project's 'bin/' folder (if your IT policy allows it). 
-[WARN]       2. Request an IT exception for the oh-my-posh executable. 
-[WARN]       3. Use a pure PowerShell custom prompt (no .exe required) by adding a prompt function to your $PROFILE. 
-[INFO] Detecting make for Windows... 
-[INFO] make already available: GNU Make 3.81 
-[OK] make version check passed 
-[INFO] Checking for checkmake (Makefile linting)... 
-[INFO] Downloading checkmake v0.2.2 for windows/amd64... 
-[WARN] Failed to download checkmake: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond. (github.com:443)
-[WARN] To install offline: Download checkmake-0.2.2.windows.amd64 from https://github.com/mrtazz/checkmake/releases 
-[WARN] and place it in 'C:\Products\repos\image-build-automation\bin\checkmake.exe' 
-[INFO] Verifying PowerShell tools... 
-[OK] Pester 5.7.1 
-[OK] PSScriptAnalyzer 1.21.0 
-[OK] PlatyPS 0.14.0 
-[ERROR] HPEOneView NOT FOUND 
-[OK] OperationsManager 1.0 
-[INFO] Verifying Pester test discovery... 
-[OK] Found 35 PowerShell test files 
- 
-╔══════════════════════════════════════════════════════════╗
-║  HPE ProLiant ISO Automation — PowerShell Setup Complete   ║ 
-╚══════════════════════════════════════════════════════════╝
-
-  Project root: C:\Products\repos\image-build-automation
-  Log file:     C:\Users\ADM_98~2\AppData\Local\Temp\15\hpe-automation-pwsh-setup-20260617-100804.log
-
-To run PowerShell tests:
-    cd C:\Products\repos\image-build-automation 
-    pwsh -File scripts/run-tests.ps1 
- 
-To lint PowerShell files: 
-    pwsh -NoProfile -Command 'Invoke-ScriptAnalyzer -Path src/powershell -Recurse' 
-
-Makefile targets: 
-    make setup      # Run this setup script
-    make test       # Run all Pester tests
-    make lint       # Lint PowerShell with PSScriptAnalyzer
-    make coverage   # Run tests with code coverage
-    make clean      # Remove build artifacts
-
-[OK] Setup complete! 
-[setup] Configuring PowerShell profiles with Automation module... 
-[setup] Found 4 profile(s) to update 
-[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module 
-[setup] Microsoft.PowerShell_profile.ps1 already contains Automation module 
-[setup] psprofile.ps1 already contains Automation module
-[setup] vscodeprofile.ps1 already contains Automation module 
-
-[setup] ✓ Profile configuration complete
-[setup] Restart your PowerShell session or run '. $PROFILE' to load
-
-# Note: checkmake installation is now handled gracefully by setup-runner.ps1 
-process_begin: CreateProcess(NULL, # Note: checkmake installation is now handled gracefully by setup-runner.ps1, ...) failed. 
-make (e=2): The system cannot find the file specified. 
-make: *** [setup] Error 2
-
-
-(If make is still acting up, run the scripts directly: pwsh -File scripts/setup-runner.ps1 followed by pwsh -File scripts/Setup-Profile.ps1)
-Restart your PowerShell session or run . $PROFILE to load the updated profile with the corrected path.
-Step 4: Verify Powerline Prompt The fallback prompt uses Nerd Font Unicode characters (, ). If these render as empty boxes, squares, or question marks on the test server, configure your terminal emulator (Windows Terminal, VS Code, etc.) to use a Nerd Font (e.g., "Cascadia Code NF" or "MesloLGS NF") in its font settings. The prompt logic itself is now correctly injected and functional.
