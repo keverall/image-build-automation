@@ -1,3 +1,15 @@
+<#
+.SYNOPSIS
+    Run checkmake to validate Makefile (Windows-compatible).
+
+.DESCRIPTION
+    Validates Makefile syntax using the checkmake tool. If checkmake is not
+    installed, the script exits gracefully with a warning message.
+
+.EXAMPLE
+    pwsh -File scripts/run-checkmake.ps1
+#>
+
 # =============================================================================
 # Run checkmake to validate Makefile (Windows-compatible)
 # =============================================================================
