@@ -150,7 +150,7 @@ if ($ShowHelp) {
     Write-Output ""
     Write-Output "MORE INFORMATION"
     Write-Output "    Full docs: Get-Help Set-MaintenanceMode -Full (after importing module)"
-    Write-Output "    Testing:   docs/maint-mode-initial-testing.md"
+    Write-Output "    Testing:   docs/testing.md"
     Write-Output "    Config:    docs/maintenance-mode-environment-config.md"
     Write-Output ""
     exit 0
@@ -299,7 +299,7 @@ function Set-MaintenanceMode {
         Set-MaintenanceMode -Action enable -TargetId 'myserver01' -Mode scom -Environment Prod -Start 'now' -End '+2hours'
 
     .LINK
-        https://github.com/yourorg/image-build-automation/docs/maint-mode-initial-testing.md
+        https://github.com/yourorg/image-build-automation/docs/testing.md
     #>
     [CmdletBinding()]
     param(
