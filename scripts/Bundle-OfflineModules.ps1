@@ -24,13 +24,13 @@ if (-not (Test-Path $ModulesDir)) {
 
 Write-Host "Bundling modules for offline deployment..." -ForegroundColor Cyan
 
-# 1. HPEOneView (Download from PSGallery)
-Write-Host "Downloading HPEOneView (this may take a moment)..." -ForegroundColor Yellow
-$hvPath = Join-Path $ModulesDir 'HPEOneView'
+# 1. HPEOneView.860 (Download from PSGallery)
+Write-Host "Downloading HPEOneView.860 (this may take a moment)..." -ForegroundColor Yellow
+$hvPath = Join-Path $ModulesDir 'HPEOneView.860'
 try {
-    Save-Module -Name HPEOneView -Path $hvPath -RequiredVersion 8.60 -Force -ErrorAction Stop
+    Save-Module -Name HPEOneView.860 -Path $hvPath -Force -ErrorAction Stop
     $downloadedVersion = (Get-ChildItem -Path $hvPath -Directory | Select-Object -First 1).Name
-    Write-Host "  -> Saved HPEOneView version $downloadedVersion to $hvPath" -ForegroundColor Green
+    Write-Host "  -> Saved HPEOneView.860 version $downloadedVersion to $hvPath" -ForegroundColor Green
 } catch {
     Write-Host "  [ERROR] Failed to download HPEOneView. Ensure you have internet access and PSGallery is reachable." -ForegroundColor Red
     Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red
