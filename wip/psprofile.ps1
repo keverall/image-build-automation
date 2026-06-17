@@ -70,22 +70,6 @@ $AutomationRepoPath = if ($env:USERPROFILE)
 {
     Join-Path $env:HOME 'repos/image-build-automation/src/powershell/Automation'
 }
-if (Test-Path $AutomationRepoPath)
-{
-    try
-    {
-        Import-Module $AutomationRepoPath -WarningAction SilentlyContinue
-if ($DryRun)
-            { $params['DryRun'] = $true 
-            }
-            Set-MaintenanceMode @params
-        }
-
-} catch
-    {
-        Write-Warning "Failed to load Automation module or maintenance mode functions"
-    }
-}
 
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
@@ -618,10 +602,6 @@ Set-PSReadLineOption -CommandValidationHandler {
 $automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
 if (Test-Path $automationModulePath) {
     Import-Module $automationModulePath -WarningAction SilentlyContinue
-if ($DryRun) { $p['DryRun'] = $true }
-        Set-MaintenanceMode @p
-    }
-
 }
 
 # Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
