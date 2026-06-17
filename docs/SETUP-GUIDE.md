@@ -221,6 +221,6 @@ pwsh
 
 ## Next Steps
 
-- Read [CLIENT-QUICK-START.md](CLIENT-QUICK-START.md) for usage examples
+- Read [MAINTENANCE_MODE_SHORTCUTS.md](MAINTENANCE_MODE_SHORTCUTS.md) for usage examples
 - See [MAINTENANCE_MODE_SHORTCUTS.md](MAINTENANCE_MODE_SHORTCUTS.md) for all options
 - Check [README.md](../README.md) for project overview
