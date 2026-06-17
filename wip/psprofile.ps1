@@ -75,71 +75,13 @@ if (Test-Path $AutomationRepoPath)
     try
     {
         Import-Module $AutomationRepoPath -WarningAction SilentlyContinue
-        
-        # Maintenance mode convenience functions
-        function mm
-        { Set-MaintenanceMode @args 
-        }
-        
-        function mmenable
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod',
-                [string]$Start = 'now',
-                [string]$End = '+2hours',
-                [switch]$DryRun
-            )
-            $params = @{
-                Action = 'enable'
-                TargetId = $TargetId
-                Mode = $Mode
-                Environment = $Environment
-                Start = $Start
-                End = $End
-            }
-            if ($DryRun)
+if ($DryRun)
             { $params['DryRun'] = $true 
             }
             Set-MaintenanceMode @params
         }
-        
-        function mmdisable
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod'
-            )
-            Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
-        }
-        
-        function mmvalidate
-        {
-            param(
-                [Parameter(Position = 0, Mandatory)]
-                [string]$TargetId,
-                [Parameter(Position = 1)]
-                [ValidateSet('scom', 'oneview')]
-                [string]$Mode = 'scom',
-                [Parameter(Position = 2)]
-                [ValidateSet('Test', 'Prod')]
-                [string]$Environment = 'Prod'
-            )
-            Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
-        }
-    } catch
+
+} catch
     {
         Write-Warning "Failed to load Automation module or maintenance mode functions"
     }
@@ -176,7 +118,6 @@ Set-Alias rm   Remove-Item  -Option AllScope -Force
 Set-Alias mv   Move-Item    -Option AllScope -Force
 Set-Alias ps   Get-Process  -Option AllScope -Force
 Set-Alias kill Stop-Process -Option AllScope -Force
-
 
 # ─── eza (ls replacement) ───────────────────────────────────────────────────
 if (Get-Command eza -ErrorAction SilentlyContinue)
@@ -226,7 +167,6 @@ if (Get-Command eza -ErrorAction SilentlyContinue)
     Set-Alias lt2 ezalt2 -Force -Option AllScope
     Set-Alias lt3 ezalt3 -Force -Option AllScope
 }
-
 
 # ─── Directory Shortcuts ─────────────────────────────────────────────────────
  
@@ -678,48 +618,10 @@ Set-PSReadLineOption -CommandValidationHandler {
 $automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
 if (Test-Path $automationModulePath) {
     Import-Module $automationModulePath -WarningAction SilentlyContinue
-    
-    # Maintenance mode convenience functions
-    function mm { Set-MaintenanceMode @args }
-    
-    function mmenable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
-            [string]$Start = 'now',
-            [string]$End = '+2hours',
-            [switch]$DryRun
-        )
-        $p = @{
-            Action = 'enable'
-            TargetId = $TargetId
-            Mode = $Mode
-            Environment = $Environment
-            Start = $Start
-            End = $End
-        }
-        if ($DryRun) { $p['DryRun'] = $true }
+if ($DryRun) { $p['DryRun'] = $true }
         Set-MaintenanceMode @p
     }
-    
-    function mmdisable {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
-    }
-    
-    function mmvalidate {
-        param(
-            [Parameter(Position=0,Mandatory)][string]$TargetId,
-            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
-            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
-        )
-        Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
-    }
+
 }
 
 # Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
