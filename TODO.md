@@ -170,3 +170,11 @@ Makefile targets:
 
 [setup] ✓ Profile configuration complete
 [setup] Restart your PowerShell session or run '. $PROFILE' to load
+
+What to do on the test VDI
+Pull the fixed script to the Windows VDI
+Clean up the bad install — delete Documents\PowerShell\Modules\HPEOneView.860\8.60\ if it exists (stale folder from the previous broken run)
+Re-run make setup — HPEOneView.860 should now install correctly into HPEOneView.860\8.60.3997.3057\ and pass verification
+OperationsManager: The error message will now show why PSGallery failed. Since the OperationsManager module isn't on PSGallery, you'll need to copy it from a SCOM server:
+Copy-Item -Recurse \\scom-server\c$\Program Files\Microsoft System Center\OperationsManager\Powershell\OperationsManager `
+  scripts/modules/OperationsManager/

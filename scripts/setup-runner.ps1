@@ -86,7 +86,7 @@ function Get-BundledModulePath {
     if ($moduleDir) {
         $versionDir = Join-Path $moduleDir.FullName $Version
         if (Test-Path $versionDir) {
-            return $versionDir
+            return @{ Path = $versionDir; ActualVersion = $Version }
         }
         
         # Fallback: If exact version not found, get the highest available version.
@@ -98,7 +98,7 @@ function Get-BundledModulePath {
             
         if ($availableVersions) {
             Write-Warn "Exact version $Version of $Name not found. Using available version $($availableVersions.Name)."
-            return $availableVersions.FullName
+            return @{ Path = $availableVersions.FullName; ActualVersion = $availableVersions.Name }
         }
     }
     return $null
@@ -140,9 +140,11 @@ function Install-PowerShellModuleOffline {
     }
 
     # Try to find bundled copy
-    $bundledPath = Get-BundledModulePath -Name $Name -Version $Version
-    if ($bundledPath -and (Test-Path $bundledPath)) {
-        Write-Log "Installing $Name $Version from bundled copy..."
+    $bundledInfo = Get-BundledModulePath -Name $Name -Version $Version
+    if ($bundledInfo -and (Test-Path $bundledInfo.Path)) {
+        $actualVersion = $bundledInfo.ActualVersion
+        $bundledPath = $bundledInfo.Path
+        Write-Log "Installing $Name $actualVersion from bundled copy..."
 
         # Determine PowerShell module path
         $userModulePath = $null
@@ -161,21 +163,26 @@ function Install-PowerShellModuleOffline {
             New-Item -ItemType Directory -Force -Path $destPath | Out-Null
         }
 
-        $destVersionPath = Join-Path $destPath $Version
+        # CRITICAL: Use the ACTUAL version directory name from the bundled source,
+        # not the requested version string. PowerShell requires the folder name to
+        # match the version declared in the module manifest (.psd1).
+        $destVersionPath = Join-Path $destPath $actualVersion
         Copy-Item -Path $bundledPath -Destination $destVersionPath -Recurse -Force
-        Write-OK "$Name installed from bundled copy"
+        Write-OK "$Name $actualVersion installed from bundled copy"
         return
     }
 
     # Fallback: try PSGallery if network available
     Write-Warn "Bundled copy of $Name $Version not found. Attempting PSGallery..."
+    $installError = $null
     try {
-        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
         # Use -MinimumVersion so we get '8.60.xxxx' for HPEOneView.860 and '>= X.Y.Z' for others
-        Install-Module -Name $Name -MinimumVersion $Version -Scope CurrentUser -Force -AllowClobber -Repository PSGallery 2>$null
+        Install-Module -Name $Name -MinimumVersion $Version -Scope CurrentUser -Force -AllowClobber -Repository PSGallery -ErrorAction Stop
         Write-OK "$Name installed from PSGallery"
     } catch {
-        Write-Err "Failed to install $Name. Bundled copy not found and PSGallery unavailable (air-gapped)."
+        $installError = $_.Exception.Message
+        Write-Err "Failed to install $Name from PSGallery: $installError"
         Write-Err "To fix: Download or copy '$Name' from a connected machine/SCOM server and place the version folder in:"
         Write-Err "  scripts/modules/$Name/<version-folder>/"
         Write-Err "  (Example: scripts/modules/OperationsManager/10.22.1234.0/)"
