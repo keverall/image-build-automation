@@ -149,7 +149,7 @@ if (Test-Path $AutomationRepoPath)
 
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
-$ohMyPoshConfig = 'C:\Users\98253\products\pwsh10k.omp.json'
+$ohMyPoshConfig = Join-Path $env:USERPROFILE 'products\pwsh10k.omp.json'
 
 $ohMyPosh = Get-Command oh-my-posh -ErrorAction SilentlyContinue
 if ($ohMyPosh)
@@ -674,7 +674,7 @@ Set-PSReadLineOption -CommandValidationHandler {
 }
 
 # Image Build Automation module
-$automationModulePath = 'C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Automation.psd1'
+$automationModulePath = Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation\Automation.psd1'
 if (Test-Path $automationModulePath) {
     Import-Module $automationModulePath -WarningAction SilentlyContinue
     
