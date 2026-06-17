@@ -50,7 +50,8 @@ setup: prune-logs ## Setup PowerShell environment (install modules, configure pr
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Setup-Profile.ps1
-	# Note: checkmake installation is now handled gracefully by setup-runner.ps1
+
+# Note: checkmake installation is now handled gracefully by setup-runner.ps1
 
 # ─── Linting ────────────────────────────────────────────────────────────────
 lint: prune-logs lint-make lint-checkmake ## Lint PowerShell files and Makefile
