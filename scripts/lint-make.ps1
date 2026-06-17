@@ -1,3 +1,16 @@
+<#
+.SYNOPSIS
+    Lint Makefile syntax and style (Windows-compatible).
+
+.DESCRIPTION
+    Validates Makefile syntax using checkmake if available, otherwise performs
+    a basic dry-run validation. Acts as a fallback for environments without
+    checkmake installed.
+
+.EXAMPLE
+    pwsh -File scripts/lint-make.ps1
+#>
+
 # =============================================================================
 # Lint Makefile syntax and style (Windows-compatible)
 # =============================================================================
