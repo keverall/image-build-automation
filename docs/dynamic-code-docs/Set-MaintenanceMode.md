@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-06-12 09:46 UTC
+generated: 2026-06-17 15:29 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -166,7 +166,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 
     .RETURNS
         [hashtable] with Success (bool), Message, StartTimeUtc, EndTimeUtc,
-        TargetId, SerialNumber, ServerCount, DryRun, AuditFile,
+        TargetId, ClusterName, ServerCount, DryRun, AuditFile,
         ScomObjects, ScomSummary, OneViewObjects, OneViewSummary, FailedObjects.
 
     .EXAMPLE
@@ -206,7 +206,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
         Set-MaintenanceMode -Action enable -TargetId 'myserver01' -Mode scom -Environment Prod -Start 'now' -End '+2hours'
 
     .LINK
-        https://github.com/yourorg/image-build-automation/docs/maint-mode-initial-testing.md
+        https://github.com/yourorg/image-build-automation/docs/testing.md
 ```
 
 ---
