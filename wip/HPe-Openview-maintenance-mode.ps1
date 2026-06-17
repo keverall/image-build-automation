@@ -42,7 +42,8 @@
 )
 # 1. Fetch Cluster Members using OneView Scopes (Best Practice for Clusters)
 Write-Host "Fetching cluster resources linked to Scope: $ClusterScopeName..." -ForegroundColor Cyan
-$Scope = Get-OVScope -Name $ClusterScopeNameif (-not $Scope) {
+$Scope = Get-OVScope -Name $ClusterScopeName
+if (-not $Scope) {
     Write-Error "Scope '$ClusterScopeName' not found inside OneView appliance."
     return
 }
@@ -54,7 +55,8 @@ if ($ClusterServers.Count -eq 0) {
 }
 
 Write-Host "Targeting cluster nodes: $(($ClusterServers.Name) -join ', ')" -ForegroundColor Yellow
-# Helper Functionsfunction Set-OVClusterMaintenanceState ([string]$TargetState) {
+# Helper Functions
+function Set-OVClusterMaintenanceState ([string]$TargetState) {
     foreach ($Server in $ClusterServers) {
         if ($TargetState -eq "Enable") {
             Write-Host "Enabling Maintenance Mode on: $($Server.Name)" -ForegroundColor Green
