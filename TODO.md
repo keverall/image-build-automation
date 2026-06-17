@@ -368,3 +368,8 @@ Makefile targets:
 process_begin: CreateProcess(NULL, # Note: checkmake installation is now handled gracefully by setup-runner.ps1, ...) failed. 
 make (e=2): The system cannot find the file specified. 
 make: *** [setup] Error 2
+
+
+(If make is still acting up, run the scripts directly: pwsh -File scripts/setup-runner.ps1 followed by pwsh -File scripts/Setup-Profile.ps1)
+Restart your PowerShell session or run . $PROFILE to load the updated profile with the corrected path.
+Step 4: Verify Powerline Prompt The fallback prompt uses Nerd Font Unicode characters (, ). If these render as empty boxes, squares, or question marks on the test server, configure your terminal emulator (Windows Terminal, VS Code, etc.) to use a Nerd Font (e.g., "Cascadia Code NF" or "MesloLGS NF") in its font settings. The prompt logic itself is now correctly injected and functional.
