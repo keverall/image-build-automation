@@ -46,7 +46,7 @@ $REQUIRED_MODULES = @(
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
     @{ Name = 'HPEOneView.860';   Version = '8.60' },
-    @{ Name = 'OperationsManager';Version = '10.19.10050.0' } # SCOM version; script will fallback to highest available if different
+    @{ Name = 'OperationsManager';Version = '1.0' } # SCOM module base version from PSGallery; script will fallback to highest available (e.g., 10.19.x or 10.22.x)
 )
 
 # Colors for terminal output (Windows/Linux compatible)
@@ -178,7 +178,7 @@ function Install-PowerShellModuleOffline {
         Write-Err "Failed to install $Name. Bundled copy not found and PSGallery unavailable (air-gapped)."
         Write-Err "To fix: Download or copy '$Name' from a connected machine/SCOM server and place the version folder in:"
         Write-Err "  scripts/modules/$Name/<version-folder>/"
-        Write-Err "  (Example: scripts/modules/OperationsManager/10.19.10050.0/)"
+        Write-Err "  (Example: scripts/modules/OperationsManager/10.22.1234.0/)"
     }
 }
 

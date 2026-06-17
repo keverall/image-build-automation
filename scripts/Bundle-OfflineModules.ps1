@@ -3,9 +3,10 @@
     Bundles required PowerShell modules for offline/air-gapped deployment.
 
 .DESCRIPTION
-    Downloads or copies the required PowerShell modules (HPEOneView, OperationsManager) 
+    Downloads the required PowerShell modules (HPEOneView.860, OperationsManager) from the PowerShell Gallery 
     into the scripts/modules/ directory so they can be safely copied to an air-gapped environment.
-    Run this script on a machine with internet access and/or SCOM console installed BEFORE copying the repo.
+    Run this script on a machine with internet access BEFORE copying the repo.
+    Falls back to local SCOM installation paths for OperationsManager only if PSGallery download fails.
 
 .EXAMPLE
     pwsh -File scripts/Bundle-OfflineModules.ps1
@@ -36,34 +37,41 @@ try {
     Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# 2. OperationsManager (Copy from local SCOM installation)
-Write-Host "Locating OperationsManager (SCOM) module..." -ForegroundColor Yellow
-$scomPaths = @(
-    'C:\Program Files\WindowsPowerShell\Modules\OperationsManager',
-    'C:\Program Files\Microsoft System Center\Operations Manager\Powershell\OperationsManager'
-)
+# 2. OperationsManager (Download from PSGallery)
+Write-Host "Downloading OperationsManager (this may take a moment)..." -ForegroundColor Yellow
+$omPath = Join-Path $ModulesDir 'OperationsManager'
+try {
+    Save-Module -Name OperationsManager -Path $omPath -Force -ErrorAction Stop
+    $downloadedVersion = (Get-ChildItem -Path $omPath -Directory | Select-Object -First 1).Name
+    Write-Host "  -> Saved OperationsManager version $downloadedVersion to $omPath" -ForegroundColor Green
+} catch {
+    Write-Host "  [WARN] Failed to download OperationsManager from PSGallery. Attempting local SCOM paths fallback..." -ForegroundColor Yellow
+    $scomPaths = @(
+        'C:\Program Files\WindowsPowerShell\Modules\OperationsManager',
+        'C:\Program Files\Microsoft System Center\Operations Manager\Powershell\OperationsManager'
+    )
 
-$foundScom = $false
-foreach ($path in $scomPaths) {
-    if (Test-Path $path) {
-        $omDir = Join-Path $ModulesDir 'OperationsManager'
-        if (-not (Test-Path $omDir)) { New-Item -ItemType Directory -Path $omDir -Force | Out-Null }
-        
-        # Copy the version folder(s)
-        Get-ChildItem -Path $path -Directory | ForEach-Object {
-            Write-Host "  -> Copying version $($_.Name)..." -ForegroundColor Yellow
-            Copy-Item -Path $_.FullName -Destination (Join-Path $omDir $_.Name) -Recurse -Force
+    $foundScom = $false
+    foreach ($path in $scomPaths) {
+        if (Test-Path $path) {
+            if (-not (Test-Path $omPath)) { New-Item -ItemType Directory -Path $omPath -Force | Out-Null }
+            
+            # Copy the version folder(s)
+            Get-ChildItem -Path $path -Directory | ForEach-Object {
+                Write-Host "  -> Copying version $($_.Name)..." -ForegroundColor Yellow
+                Copy-Item -Path $_.FullName -Destination (Join-Path $omPath $_.Name) -Recurse -Force
+            }
+            $foundScom = $true
+            Write-Host "  -> Saved OperationsManager to $omPath" -ForegroundColor Green
+            break
         }
-        $foundScom = $true
-        Write-Host "  -> Saved OperationsManager to $omDir" -ForegroundColor Green
-        break
     }
-}
 
-if (-not $foundScom) {
-    Write-Host "  [WARN] OperationsManager not found in standard SCOM paths." -ForegroundColor Red
-    Write-Host "  Please manually copy the OperationsManager folder from your SCOM server to:" -ForegroundColor Yellow
-    Write-Host "  $ModulesDir\OperationsManager\<version-folder>" -ForegroundColor Yellow
+    if (-not $foundScom) {
+        Write-Host "  [ERROR] OperationsManager not found in standard SCOM paths and PSGallery download failed." -ForegroundColor Red
+        Write-Host "  Please manually copy the OperationsManager folder from your SCOM server to:" -ForegroundColor Yellow
+        Write-Host "  $omPath\<version-folder>" -ForegroundColor Yellow
+    }
 }
 
 Write-Host ""
