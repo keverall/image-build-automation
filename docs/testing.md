@@ -273,3 +273,347 @@ stage('PowerShell Tests') {
 - **CI integration:** [powershell_ci.md](powershell_ci.md)
 - **Code quality:** [code_quality.md](code_quality.md)
 - **Pester documentation:** https://pester.dev/docs/
+
+---
+
+## Maintenance Mode Testing
+
+Comprehensive testing for maintenance mode operations across SCOM and OneView systems.
+
+### Test Files
+
+| File | Purpose | Description |
+|------|---------|-------------|
+| `tests/powershell/Environment.Tests.ps1` | Environment/parameter tests | Tests for environment selection, host override, parameters |
+| `tests/powershell/DateTime.Tests.ps1` | Date/time format tests | Tests for time parsing, format validation |
+| `tests/powershell/BackwardCompat.Tests.ps1` | Backward compatibility tests | Tests for existing behavior preservation |
+| `tests/powershell/Connection.Tests.ps1` | Connection validation tests | Tests for connectivity validation |
+
+### Test Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `scripts/validate-maintenance-config.ps1` | Validate configuration | `pwsh scripts/validate-maintenance-config.ps1 -Environment Test` |
+| `scripts/run-maintenance-tests.ps1` | Run test suite | `pwsh scripts/run-maintenance-tests.ps1 -TestSuite All -PassThru` |
+| `scripts/test-maintenance-connection.ps1` | Interactive connection test | `pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom` |
+
+### Running Maintenance Mode Tests
+
+```powershell
+# Validate configuration first
+pwsh scripts/validate-maintenance-config.ps1 -Environment Test
+
+# Run specific test suite
+pwsh scripts/run-maintenance-tests.ps1 -TestSuite Environment -PassThru
+
+# Run all maintenance mode tests
+pwsh scripts/run-maintenance-tests.ps1 -TestSuite All -PassThru
+
+# Run with detailed output
+Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -Output Detailed
+
+# Quick test: validate a cluster
+pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test -DryRun
+```
+
+### Test Coverage Areas
+
+| Area | Description | Test File |
+|------|-------------|----------|
+| Environment parameter | Test/Prod environment selection | Environment.Tests.ps1 |
+| Host override | ManagementHost parameter and env var | Environment.Tests.ps1 |
+| Credential parameters | Username parameter | Environment.Tests.ps1 |
+| Relative time formats | +Xhours, +Xminutes, +Xdays, +Xseconds | DateTime.Tests.ps1 |
+| Absolute time formats | YYYY-MM-DD HH:MM, ISO 8601 | DateTime.Tests.ps1 |
+| Connection validation | SCOM/OneView pre-flight checks | Connection.Tests.ps1 |
+| Combined parameters | Multiple parameters together | Environment.Tests.ps1 |
+| Configuration files | connection_hosts.json structure | Environment.Tests.ps1 |
+| Backward compatibility | Existing behavior preservation | BackwardCompat.Tests.ps1 |
+
+### Interpreting Test Results
+
+**Test Status Indicators:**
+
+```powershell
+# Pester output symbols
+✓  # Test passed
+✗  # Test failed
+!  # Test skipped (prerequisites not met)
+```
+
+**Success Criteria:**
+
+```powershell
+# All tests pass
+Tests Passed: 100, Failed: 0, Skipped: 0, Duration: 25s
+
+# Some tests skipped (e.g., requires actual SCOM server)
+Tests Passed: 95, Failed: 0, Skipped: 5, Duration: 30s
+
+# Test failure - investigate
+Tests Passed: 90, Failed: 10, Skipped: 0, Duration: 25s
+```
+
+**Test Output Analysis:**
+
+```powershell
+# Each test shows:
+[+] Should connect to SCOM with admin credentials 150ms  # Passed
+[-] Should handle invalid environment 50ms                # Failed
+    Expected: $true but got: $false
+[!] Should test OneView maintenance mode 20ms             # Skipped (no OneView server)
+```
+
+**Common Test Failures:**
+
+| Failure | Cause | Solution |
+|---------|-------|----------|
+| "SCOM host not configured" | Missing environment config | Add to `connection_hosts.json` or set `$env:MAINTENANCE_HOST` |
+| "Missing credentials" | No credentials provided | Set `$env:SCOM_ADMIN_USER` and `$env:SCOM_ADMIN_PASSWORD` |
+| "Failed to connect" | Network/auth issue | Verify server URL and credentials |
+| "Invalid environment" | Wrong parameter value | Use `Test` or `Prod` only |
+| "Module not found" | Pester not installed | Run `make setup` or install Pester manually |
+
+**Troubleshooting Tips:**
+
+```powershell
+# Run with verbose output
+Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -Output Detailed
+
+# Run specific test
+Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -TestName "*Environment parameter*"
+
+# Export results to XML
+Invoke-Pester -Path tests/powershell/ -OutputFile test-results.xml -OutputFormat NUnitXml
+```
+
+### Manual Testing Checklist
+
+Before deploying maintenance mode changes:
+
+- [ ] **Configuration valid** - `pwsh scripts/validate-maintenance-config.ps1`
+- [ ] **Test environment works** - `-Environment Test -DryRun`
+- [ ] **Prod environment works** - `-Environment Prod -DryRun`
+- [ ] **Host override works** - `-ManagementHost backup-server.local`
+- [ ] **Relative time formats work** - `-Start now -End +1hour`
+- [ ] **Absolute time formats work** - `-Start 2025-01-15T10:00:00Z -End 2025-01-15T12:00:00Z`
+- [ ] **Serial number lookup works** - Only OneView mode, requires real OneView server
+- [ ] **Connection validation works** - Both SCOM and OneView
+- [ ] **Credential resolution works** - Environment vars and interactive prompt
+- [ ] **JSON output works** - `-Json` flag
+- [ ] **Backward compatibility** - Old command syntax still works
+
+**SCOM-specific checks:**
+- [ ] Group mode applies to all cluster objects
+- [ ] Post-disable wait works (`-PostDisableWaitSeconds`)
+- [ ] SCOM version detection works
+- [ ] REST API connection works (SCOM 2019+)
+- [ ] PowerShell cmdlet fallback works (legacy versions)
+
+**OneView-specific checks:**
+- [ ] Server scope resolution works
+- [ ] Maintenance window creation works
+- [ ] Per-object status reporting works
+
+### Maintenance Mode Behavior
+
+| Mode | Description | Target Resolution |
+|------|-------------|-------------------|
+| `scom` | SCOM cluster maintenance | Group name from `clusters_catalogue.json` |
+| `oneview` | OneView server maintenance | Server hardware from OneView API |
+
+**SCOM Mode:**
+- Applies maintenance mode to entire cluster group
+- Includes all nested objects (servers, databases, services)
+- Uses REST API for SCOM 2019+, PowerShell cmdlets for legacy
+- Optional post-disable wait for stability
+
+**OneView Mode:**
+- Applies maintenance mode to specific server or scope
+- Creates maintenance window in OneView
+- Supports serial number lookup
+- Per-object status with ACK/NACK details
+
+**Environment Resolution:**
+1. `-ManagementHost` parameter (highest priority)
+2. `$env:MAINTENANCE_HOST` environment variable
+3. `connection_hosts.json` → Environment config
+
+**Credential Resolution:**
+
+*Username:*
+1. `-Username` parameter
+2. `$env:SCOM_ADMIN_USER` (SCOM) or `$env:ONEVIEW_USER` (OneView)
+3. Interactive prompt (not recommended for automation)
+
+*Password:*
+1. `$env:SCOM_ADMIN_PASSWORD` (SCOM) or `$env:ONEVIEW_PASSWORD` (OneView)
+2. Interactive prompt
+
+### Maintenance Mode Testing Examples
+
+**Example 1: Basic Validation (No Changes)**
+```powershell
+pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action validate `
+    -TargetId CLU-CLUSTER-01 `
+    -Mode scom `
+    -Environment Test`
+```
+
+**Example 2: Dry Run Enable**
+```powershell
+pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId CLU-CLUSTER-01 `
+    -Mode scom `
+    -Start now `
+    -End '+1hour' `
+    -Environment Test `
+    -DryRun
+```
+
+**Example 3: Host Override**
+```powershell
+pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action validate `
+    -TargetId CLU-CLUSTER-01 `
+    -Mode scom `
+    -Environment Prod `
+    -ManagementHost backup-scom.local `
+    -DryRun`
+```
+
+**Example 4: OneView with Serial Number**
+```powershell
+pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -Mode oneview `
+    -TargetId '' `
+    -SerialNumber 'ABC123XYZ' `
+    -Start now `
+    -End '+1hour' `
+    -Environment Test `
+    -DryRun
+```
+
+**Example 5: JSON Output for Automation**
+```powershell
+$result = pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action validate `
+    -TargetId CLU-CLUSTER-01 `
+    -Mode scom `
+    -Environment Test `
+    -Json | ConvertFrom-Json
+
+# Check success
+if ($result.Success) {
+    Write-Host "Validation passed: $($result.State)"
+}
+```
+
+### Per-Object Status Reporting
+
+When maintenance mode is enabled or disabled, the response includes detailed status for each object:
+
+**Enable Response:**
+```json
+{
+  "Cluster": "CLU-CLUSTER-01",
+  "Action": "enable",
+  "StartTime": "2025-01-15T10:00:00Z",
+  "EndTime": "2025-01-15T12:00:00Z",
+  "Environment": "Test",
+  "DryRun": false,
+  "PerObjectStatus": [
+    {
+      "Name": "PROD-SERVER-01",
+      "Mode": "scom",
+      "Status": "Success",
+      "Message": "Maintenance mode enabled successfully",
+      "AckRequired": false,
+      "NackReason": null
+    },
+    {
+      "Name": "PROD-SERVER-02",
+      "Mode": "scom",
+      "Status": "Failed",
+      "Message": "Maintenance mode failed",
+      "AckRequired": false,
+      "NackReason": "Server not in maintenance window"
+    }
+  ]
+}
+```
+
+**Status Values:**
+
+| Status | Description | Requires Ack |
+|--------|-------------|--------------|
+| `Success` | Maintenance mode applied successfully | No |
+| `Failed` | Maintenance mode failed | No |
+| `NeedsAck` | Waiting for acknowledgment | Yes |
+| `Unknown` | Status unknown | No |
+
+**Common NACK Reasons:**
+- Permission denied
+- SCOM agent unreachable
+- Object not found in SCOM
+- Agent not found in SCOM
+- SCOM operation failed
+
+**Testing Per-Object Reporting:**
+```powershell
+# Enable and check status
+$result = pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId CLU-CLUSTER-01 `
+    -Mode scom `
+    -Environment Test `
+    -Start now `
+    -End '+1hour' `
+    -Json | ConvertFrom-Json
+
+# Analyze per-object status
+$result.PerObjectStatus | Format-Table Name, Status, Message -AutoSize
+
+# Count successes and failures
+$successes = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Success' }).Count
+$failures = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Failed' }).Count
+
+Write-Host "Successes: $successes, Failures: $failures"
+```
+
+### Safety Warnings
+
+⚠️ **Always test with `-DryRun` first**
+
+```powershell
+# DryRun is safe - no changes to systems
+pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId CLU-CLUSTER-01 `
+    -Mode scom `
+    -Environment Test `
+    -Start now `
+    -End '+1hour' `
+    -DryRun
+
+# Remove -DryRun to ACTUALLY enable maintenance mode
+pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+    -Action enable `
+    -TargetId CLU-CLUSTER-01 `
+    -Mode scom `
+    -Environment Test `
+    -Start now `
+    -End '+1hour'
+```
+
+**Safety Checklist:**
+- ✅ `-DryRun` mode does NOT modify any systems
+- ✅ `-Action validate` only checks configuration
+- ⚠️  `-Action enable` without `-DryRun` WILL enable maintenance mode
+- ⚠️  `-Action disable` without `-DryRun` WILL disable maintenance mode
+- ✅ Always review dry-run output before removing `-DryRun`
+- ✅ Use `-Environment Test` for initial testing
+- ✅ Verify credentials before applying to production
