@@ -606,9 +606,12 @@ Set-PSReadLineOption -CommandValidationHandler {
 # Image Build Automation module
 $automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
 if (Test-Path $automationModulePath) {
-}
     Import-Module $automationModulePath -WarningAction SilentlyContinue
+if ($DryRun) { $p['DryRun'] = $true }
+        Set-MaintenanceMode @p
+    }
 
+}
 
 # Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
 function global:prompt {
@@ -665,4 +668,61 @@ function global:prompt {
     
     return " "
 }
+
+# Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
+function global:prompt {
+    $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
+    
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    
+    # Path normalization
+    $path = $PWD.Path
+    if ($env:USERPROFILE -and $path.StartsWith($env:USERPROFILE, "CurrentCultureIgnoreCase")) {
+        $path = "~" + $path.Substring($env:USERPROFILE.Length)
+    }
+    $path = $path -replace '\\\\', '/'
+    
+    # Git branch detection
+    $gitBranch = $null
+    if (Test-Path .git) {
+        $gitBranch = & git branch --show-current 2>$null
+    }
+    
+    # Segment 1: Admin/User Indicator
+    if ($isAdmin) {
+        Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
+    } else {
+        Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
+    }
+    
+    # Separator to Path
+    if ($isAdmin) {
+        Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
+    } else {
+        Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
+    }
+    
+    # Segment 2: Current Path
+    Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
+    
+    # Segment 3: Git Branch (if in a repository)
+    if ($gitBranch) {
+        Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
+        Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
+        $lastBg = "DarkYellow"
+    } else {
+        $lastBg = "Blue"
+    }
+    
+    # Final Prompt Character
+    Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
+    if ($isAdmin) {
+        Write-Host " # " -NoNewline -ForegroundColor Red
+    } else {
+        Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
+    }
+    
+    return " "
+}
+
 
