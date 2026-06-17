@@ -153,7 +153,7 @@ $scriptsDir = Join-Path $repoRoot 'scripts'
 
 $files = Get-ChildItem $publicDir -Filter *.ps1 -Recurse | Where-Object { $_.Name -ne '_Validate-Request.ps1' }
 $files += Get-ChildItem $privateDir -Filter *.ps1 -Recurse
-$files += Get-ChildItem $scriptsDir -Filter *.ps1 -Recurse
+$files += Get-ChildItem $scriptsDir -Filter *.ps1 -Recurse | Where-Object { $_.FullName -notlike '*modules*' }
 
 $generated = @()
 
