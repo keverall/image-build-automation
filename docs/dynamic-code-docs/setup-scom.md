@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/setup-scom.ps1
-generated: 2026-06-17 15:48 UTC
+generated: 2026-06-17 16:30 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
