@@ -1,21 +1,16 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
-This document provides a complete map of all code locations hit by the `mm` maintenance mode command, with direct links to source files for client review.
+This document provides a complete map of all code locations hit by the `Set-MaintenanceMode` command, with direct links to source files for client review.
 
 ---
 
 ## 1. Entry Points & User Interface
 
 ### PowerShell Profile Functions
-- **`mm` wrapper function**: [`SETUP-GUIDE.md`](SETUP-GUIDE.md) - Main command definition
-- **Quick aliases**: [`MAINTENANCE_MODE_SHORTCUTS.md`](MAINTENANCE_MODE_SHORTCUTS.md) - `mmenable`, `mmdisable`, `mmvalidate`
-
-### Command Syntax
+- **`Set-MaintenanceMode`**: [`Setup-Profile.ps1`](../scripts/Setup-Profile.ps1) - Adds module import to profile
+- **Command Syntax**:
 ```powershell
-mm enable CLU-CLUSTER-01 scom Prod -Start now -End +2hours
-mmenable CLU-CLUSTER-01
-mmdisable CLU-CLUSTER-01
-mmvalidate CLU-CLUSTER-01
+Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mode <scom|oneview> [-Environment <Test|Prod>] [options]
 ```
 
 ---
@@ -165,12 +160,12 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-## 12. Execution Flow Summary
+## 10. Execution Flow Summary
 
 ```
-mm enable CLU-CLUSTER-01 scom Prod
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
     ↓
-PowerShell Profile (mm function)
+PowerShell Profile (module import via Setup-Profile.ps1)
     ↓
 Set-MaintenanceMode (Public/Set-MaintenanceMode.ps1:174)
     ↓

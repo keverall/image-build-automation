@@ -1,6 +1,6 @@
-================================================================================
+===============================================================================
   MAINTENANCE MODE - QUICK START
-================================================================================
+===============================================================================
 
 STEP 1: Run Setup
 -----------------
@@ -20,14 +20,14 @@ STEP 3: Reload Profile
 
 STEP 4: Test It Works
 ---------------------
-mmvalidate CLU-CLUSTER-01
+Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 
-================================================================================
+===============================================================================
   DONE! You can now use:
-  - mmenable CLU-CLUSTER-01
-  - mmdisable CLU-CLUSTER-01  
-  - mmvalidate CLU-CLUSTER-01
-  - mm enable CLU-CLUSTER-01 -DryRun
-================================================================================
+  - Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
+  - Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
+  - Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
+  - Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRun
+===============================================================================
 
 For full documentation, see: docs/SETUP-GUIDE.md
