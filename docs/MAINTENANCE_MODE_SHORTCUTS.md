@@ -1,6 +1,6 @@
 # Set-MaintenanceMode Command Reference
 
-> Full command help for the `mm` maintenance mode shortcuts.
+> Complete guide for using `Set-MaintenanceMode` from the project root.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ pwsh -File scripts/Setup-Profile.ps1
 ### Getting Help
 ```powershell
 # Quick syntax help
-mm -?      # or -h, -Help
+Set-MaintenanceMode -?
 
 # Full parameter documentation
 Get-Help Set-MaintenanceMode -Full
@@ -31,30 +31,15 @@ Get-Help Set-MaintenanceMode -Parameter Start
 
 ---
 
-## Quick Aliases
-
-| Command | Description |
-|---------|-------------|
-| `mm` | Full control with all parameters |
-| `mmenable` | Quick enable (defaults: scom, Prod, +2hours) |
-| `mmdisable` | Quick disable maintenance mode |
-| `mmvalidate` | Quick validate current status |
-
-### Examples
-
+## Command Syntax
 ```powershell
-# Basic usage
-mmenable CLU-CLUSTER-01
-mmenable CLU-CLUSTER-01 scom Prod
-mmenable CLU-CLUSTER-01 scom Test -DryRun
-
-# Custom time window
-mmenable CLU-CLUSTER-01 scom Prod -Start 'now' -End '+4hours'
-
-# Disable and validate
-mmdisable CLU-CLUSTER-01
-mmvalidate CLU-CLUSTER-01
+Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mode <scom|oneview> [-Environment <Test|Prod>] [options]
 ```
+
+- **Action**: `enable`, `disable`, or `validate`
+- **TargetId**: Cluster ID or server name
+- **Mode**: `scom` or `oneview`
+- **Environment**: `Test` or `Prod` (optional, defaults to `Prod`)
 
 ---
 
@@ -125,7 +110,25 @@ $env:SCOM_ADMIN_PASSWORD = "password"
 
 ```powershell
 # Just run the command - you'll be prompted for credentials
-mmenable CLU-CLUSTER-01
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
+```
+
+---
+
+## Basic Examples
+
+```powershell
+# Enable maintenance mode
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+
+# Disable maintenance mode
+Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
+
+# Validate maintenance mode status
+Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom
+
+# Dry run (test without making changes)
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 ```
 
 ---
@@ -134,12 +137,12 @@ mmenable CLU-CLUSTER-01
 
 ### Example 1: Basic Enable with Defaults
 ```powershell
-mmenable CLU-CLUSTER-01 scom Prod -Start now -End '+2hours'
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
 ```
 
 ### Example 2: Dry Run (Test First!)
 ```powershell
-mmenable CLU-CLUSTER-01 scom Prod -Start now -End '+1hour' -DryRun
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -DryRun
 ```
 
 ### Example 3: Custom Time Window
@@ -162,8 +165,8 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 # By server name
 Set-MaintenanceMode -Action enable -TargetId server01.ad.example.com -Mode oneview -Environment Prod -Start now -End +1hour
 
-# By serial number (Marin's preference)
-Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test -Start now -End +1hour
+# By serial number
+Set-MaintenanceMode -Action enable -Mode oneview -Environment Test -SerialNumber ABC123XYZ -Start now -End +1hour
 ```
 
 ### Example 6: Host Override
@@ -175,7 +178,7 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environm
 ### Example 7: JSON Output
 ```powershell
 # Get structured JSON output for automation/API integration
-mmenable CLU-CLUSTER-01 scom Prod -Start now -End +2hours -Json
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json
 ```
 
 ---
@@ -232,7 +235,7 @@ SCOM: 4/4 success
 | "Missing credentials: username" | Set env vars or run interactively |
 | "Failed to connect to SCOM" | Check network, firewall, credentials |
 | "Environment 'X' not found" | Use `Test` or `Prod` only |
-| `mm` command not found | Run `. $PROFILE` or `make setup` |
+| `Set-MaintenanceMode` command not found | Import module: `Import-Module ./src/powershell/Automation/Automation.psd1` or run `make setup` |
 | Profile errors | Check `$PROFILE` syntax, re-run `Setup-Profile.ps1` |
 
 ---

@@ -1,8 +1,8 @@
 # =============================================================================
-# PowerShell Profile — VS Code (Windows Server)
+# PowerShell Profile — Windows Terminal (Windows Server)
 # =============================================================================
 # Optimized for fast load, coding productivity, and stability.
-# Loaded automatically when PowerShell starts inside VS Code.
+# Loaded automatically when PowerShell starts in Windows Terminal.
 # =============================================================================
 
 # ─── Fix VS Code PATH Caching (cross-platform) ──────────────────────────────
@@ -63,9 +63,11 @@ Import-ModuleSafe Terminal-Icons
 
 # ─── Image Build Automation Module ──────────────────────────────────────────
 # Auto-load the Automation module if the repo is available
-$AutomationRepoPath = if ($env:USERPROFILE) {
+$AutomationRepoPath = if ($env:USERPROFILE)
+{
     Join-Path $env:USERPROFILE 'repos\image-build-automation\src\powershell\Automation'
-} elseif ($env:HOME) {
+} elseif ($env:HOME)
+{
     Join-Path $env:HOME 'repos/image-build-automation/src/powershell/Automation'
 }
 if (Test-Path $AutomationRepoPath)
@@ -73,13 +75,150 @@ if (Test-Path $AutomationRepoPath)
     try
     {
         Import-Module $AutomationRepoPath -WarningAction SilentlyContinue
-if ($DryRun)
+        
+        # Maintenance mode convenience functions
+        function mm
+        {
+            [CmdletBinding()]
+            param(
+                [Parameter(Position = 0)]
+                [string]$Action,
+                
+                [Parameter(Position = 1)]
+                [string]$TargetId,
+                
+                [string]$Mode,
+                
+                [string]$Environment = 'Prod',
+                
+                [string]$Start = 'now',
+                [string]$End = '+2hours',
+                
+                [string]$SerialNumber,
+                
+                [string]$Username,
+                
+                [string]$ManagementHost,
+                
+                [switch]$DryRun
+            )
+            
+            $MyInvocation.Line -match '--\w+' | Out-Null
+            if ($Matches)
+            {
+                Write-Error "Invalid arguments: $($Matches.Values -join ', '). PowerShell uses single-dash syntax (e.g., '-DryRun' not '--dryrun')"
+                return
+            }
+            
+            if (-not $Action)
+            {
+                Get-Help Set-MaintenanceMode
+                return
+            }
+            
+            $validActions = @('enable', 'disable', 'validate', 'status')
+            $actionLower = $Action.ToLower()
+            if ($validActions -notcontains $actionLower)
+            {
+                Write-Error "Invalid action: '$Action'. Valid actions: $($validActions -join ', ')"
+                return
+            }
+            
+            if ($Mode)
+            {
+                $modeLower = $Mode.ToLower()
+                if (@('scom', 'oneview') -notcontains $modeLower)
+                {
+                    Write-Error "Invalid mode: '$Mode'. Valid modes: scom, oneview"
+                    return
+                }
+                $Mode = $modeLower
+            }
+            
+            if ($Environment)
+            {
+                $envLower = $Environment.ToLower()
+                if (@('test', 'prod') -notcontains $envLower)
+                {
+                    Write-Error "Invalid environment: '$Environment'. Valid environments: Test, Prod"
+                    return
+                }
+                $Environment = $envLower.Substring(0, 1).ToUpper() + $envLower.Substring(1)
+            }
+            
+            $params = @{ Action = $actionLower }
+            if ($TargetId) { $params['TargetId'] = $TargetId }
+            if ($Mode) { $params['Mode'] = $Mode }
+            if ($Environment) { $params['Environment'] = $Environment }
+            if ($Start) { $params['Start'] = $Start }
+            if ($End) { $params['End'] = $End }
+            if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
+            if ($Username) { $params['Username'] = $Username }
+            if ($ManagementHost) { $params['ManagementHost'] = $ManagementHost }
+            if ($DryRun) { $params['DryRun'] = $true }
+            
+            Set-MaintenanceMode @params
+        }
+        
+        function mmenable
+        {
+            param(
+                [Parameter(Position = 0, Mandatory)]
+                [string]$TargetId,
+                [Parameter(Position = 1)]
+                [ValidateSet('scom', 'oneview')]
+                [string]$Mode = 'scom',
+                [Parameter(Position = 2)]
+                [ValidateSet('Test', 'Prod')]
+                [string]$Environment = 'Prod',
+                [string]$Start = 'now',
+                [string]$End = '+2hours',
+                [switch]$DryRun
+            )
+            $params = @{
+                Action = 'enable'
+                TargetId = $TargetId
+                Mode = $Mode
+                Environment = $Environment
+                Start = $Start
+                End = $End
+            }
+            if ($DryRun)
             { $params['DryRun'] = $true 
             }
             Set-MaintenanceMode @params
         }
-
-} catch
+        
+        function mmdisable
+        {
+            param(
+                [Parameter(Position = 0, Mandatory)]
+                [string]$TargetId,
+                [Parameter(Position = 1)]
+                [ValidateSet('scom', 'oneview')]
+                [string]$Mode = 'scom',
+                [Parameter(Position = 2)]
+                [ValidateSet('Test', 'Prod')]
+                [string]$Environment = 'Prod'
+            )
+            Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
+        }
+        
+        function mmvalidate
+        {
+            param(
+                [Parameter(Position = 0, Mandatory)]
+                [string]$TargetId,
+                [Parameter(Position = 1)]
+                [ValidateSet('scom', 'oneview')]
+                [string]$Mode = 'scom',
+                [Parameter(Position = 2)]
+                [ValidateSet('Test', 'Prod')]
+                [string]$Environment = 'Prod'
+            )
+            Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
+        }
+    } catch
     {
         Write-Warning "Failed to load Automation module or maintenance mode functions"
     }
@@ -116,6 +255,7 @@ Set-Alias rm   Remove-Item  -Option AllScope -Force
 Set-Alias mv   Move-Item    -Option AllScope -Force
 Set-Alias ps   Get-Process  -Option AllScope -Force
 Set-Alias kill Stop-Process -Option AllScope -Force
+
 
 # ─── eza (ls replacement) ───────────────────────────────────────────────────
 if (Get-Command eza -ErrorAction SilentlyContinue)
@@ -166,8 +306,9 @@ if (Get-Command eza -ErrorAction SilentlyContinue)
     Set-Alias lt3 ezalt3 -Force -Option AllScope
 }
 
-# ─── Directory Shortcuts (uses $env:USERPROFILE, not hardcoded names) ────────
 
+# ─── Directory Shortcuts ─────────────────────────────────────────────────────
+ 
 function Open-Docs
 { Set-Location (Join-Path $HOME 'Documents') 
 }
@@ -177,7 +318,7 @@ function Open-Downloads
 function Open-Desktop
 { Set-Location (Join-Path $HOME 'Desktop') 
 }
-
+ 
 Set-Alias docs    Open-Docs
 Set-Alias dl      Open-Downloads
 Set-Alias desktop Open-Desktop
@@ -256,8 +397,9 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue)
 }
 
 # ─── pyenv-win (if installed) ────────────────────────────────────────────────
-
-if ($IsWindows) {
+ 
+if ($IsWindows)
+{
     $pyenvRoot = Join-Path $env:USERPROFILE '.pyenv\pyenv-win'
     if (Test-Path (Join-Path $pyenvRoot 'bin\pyenv.bat'))
     {
@@ -340,11 +482,14 @@ function Edit-Profile
 # Ensure PATH is fresh from the registry (fixes VS Code PATH caching issue)
 function Refresh-Path
 {
-    if ($IsWindows) {
+    if ($IsWindows)
+    {
         $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
         $userPath    = [System.Environment]::GetEnvironmentVariable('Path', 'User')
         $env:PATH    = "$machinePath;$userPath"
-    } else {
+    } else
+    {
+        # Linux/macOS: just return current PATH, already set in early section
         Write-Verbose "PATH refresh not needed on non-Windows platforms"
     }
 }
@@ -600,7 +745,7 @@ Set-PSReadLineOption -CommandValidationHandler {
                 'psuh'
                 { [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'push') 
                 }
-'pulll'
+                'pulll'
                 { [Microsoft.PowerShell.PSConsoleReadLine]::Replace($gitCmd.StartOffset, $gitCmd.EndOffset - $gitCmd.StartOffset, 'pull') 
                 }
             }
@@ -612,10 +757,48 @@ Set-PSReadLineOption -CommandValidationHandler {
 $automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
 if (Test-Path $automationModulePath) {
     Import-Module $automationModulePath -WarningAction SilentlyContinue
-if ($DryRun) { $p['DryRun'] = $true }
+    
+    # Maintenance mode convenience functions
+    function mm { Set-MaintenanceMode @args }
+    
+    function mmenable {
+        param(
+            [Parameter(Position=0,Mandatory)][string]$TargetId,
+            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
+            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod',
+            [string]$Start = 'now',
+            [string]$End = '+2hours',
+            [switch]$DryRun
+        )
+        $p = @{
+            Action = 'enable'
+            TargetId = $TargetId
+            Mode = $Mode
+            Environment = $Environment
+            Start = $Start
+            End = $End
+        }
+        if ($DryRun) { $p['DryRun'] = $true }
         Set-MaintenanceMode @p
     }
-
+    
+    function mmdisable {
+        param(
+            [Parameter(Position=0,Mandatory)][string]$TargetId,
+            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
+            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
+        )
+        Set-MaintenanceMode -Action disable -TargetId $TargetId -Mode $Mode -Environment $Environment
+    }
+    
+    function mmvalidate {
+        param(
+            [Parameter(Position=0,Mandatory)][string]$TargetId,
+            [Parameter(Position=1)][ValidateSet('scom','oneview')][string]$Mode = 'scom',
+            [Parameter(Position=2)][ValidateSet('Test','Prod')][string]$Environment = 'Prod'
+        )
+        Set-MaintenanceMode -Action validate -TargetId $TargetId -Mode $Mode -Environment $Environment
+    }
 }
 
 # Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
@@ -673,4 +856,61 @@ function global:prompt {
     
     return " "
 }
+
+# Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
+function global:prompt {
+    $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
+    
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    
+    # Path normalization
+    $path = $PWD.Path
+    if ($env:USERPROFILE -and $path.StartsWith($env:USERPROFILE, "CurrentCultureIgnoreCase")) {
+        $path = "~" + $path.Substring($env:USERPROFILE.Length)
+    }
+    $path = $path -replace '\\\\', '/'
+    
+    # Git branch detection
+    $gitBranch = $null
+    if (Test-Path .git) {
+        $gitBranch = & git branch --show-current 2>$null
+    }
+    
+    # Segment 1: Admin/User Indicator
+    if ($isAdmin) {
+        Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
+    } else {
+        Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
+    }
+    
+    # Separator to Path
+    if ($isAdmin) {
+        Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
+    } else {
+        Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
+    }
+    
+    # Segment 2: Current Path
+    Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
+    
+    # Segment 3: Git Branch (if in a repository)
+    if ($gitBranch) {
+        Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
+        Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
+        $lastBg = "DarkYellow"
+    } else {
+        $lastBg = "Blue"
+    }
+    
+    # Final Prompt Character
+    Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
+    if ($isAdmin) {
+        Write-Host " # " -NoNewline -ForegroundColor Red
+    } else {
+        Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
+    }
+    
+    return " "
+}
+
 
