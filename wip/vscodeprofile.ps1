@@ -73,15 +73,10 @@ if (Test-Path $AutomationRepoPath)
     try
     {
         Import-Module $AutomationRepoPath -WarningAction SilentlyContinue
-if ($DryRun)
-            { $params['DryRun'] = $true 
-            }
-            Set-MaintenanceMode @params
-        }
-
-} catch
+    }
+    catch
     {
-        Write-Warning "Failed to load Automation module or maintenance mode functions"
+        Write-Warning "Failed to load Automation module"
     }
 }
 
@@ -611,12 +606,9 @@ Set-PSReadLineOption -CommandValidationHandler {
 # Image Build Automation module
 $automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
 if (Test-Path $automationModulePath) {
-    Import-Module $automationModulePath -WarningAction SilentlyContinue
-if ($DryRun) { $p['DryRun'] = $true }
-        Set-MaintenanceMode @p
-    }
-
 }
+    Import-Module $automationModulePath -WarningAction SilentlyContinue
+
 
 # Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
 function global:prompt {
