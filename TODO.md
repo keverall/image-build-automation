@@ -236,3 +236,46 @@ code  C:\Users\98253\AppData\Local\Temp\hpe-automation-pwsh-setup-20260617-12202
 [INFO] Verifying Pester test discovery...
 [OK] Found 35 PowerShell test files
 [OK] Setup complete!
+
+
+dir scripts\modules                                            
+
+    Directory: C:\Users\98253\repos\image-build-automation\scripts\modules
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d----          16/06/2026    17:02                HPEOneView.860
+d----          17/06/2026    12:31                OperationsManager
+d----          09/06/2026    15:55                Pester
+d----          09/06/2026    15:55                platyPS
+d----          09/06/2026    15:55                PSScriptAnalyzer
+
+
+dir .\scripts\modules\OperationsManager\OperationsManager\1.0
+
+    Directory: C:\Users\98253\repos\image-build-automation\scripts\modules\OperationsManager\OperationsManager\1.0
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d----          17/06/2026    12:31                DE
+d----          17/06/2026    12:31                en
+d----          17/06/2026    12:31                ES
+d----          17/06/2026    12:31                FR
+d----          17/06/2026    12:31                IT
+d----          17/06/2026    12:31                JA
+d----          17/06/2026    12:31                KO
+d----          17/06/2026    12:31                OM10.Commands
+d----          17/06/2026    12:31                OM10.CoreCommands
+d----          17/06/2026    12:31                OM10.CrossPlatform
+d----          17/06/2026    12:31                pt-BR
+d----          17/06/2026    12:31                RU
+d----          17/06/2026    12:31                zh-CHS
+d----          17/06/2026    12:31                zh-CHT
+-a---          06/09/2013    14:17          45886 Functions.ps1
+-a---          27/08/2013    17:20        4078280 Microsoft.EnterpriseManagement.Core.dll
+-a---          06/09/2013    14:23        1088216 Microsoft.EnterpriseManagement.OperationsManager.dll
+-a---          06/09/2013    14:22          88792 Microsoft.EnterpriseManagement.Runtime.dll
+-a---          07/08/2013    21:52          10540 OM10.CrossPlatform.Start.ps1
+-a---          05/04/2019    13:51           1446 OperationsManager.psd1
+-a---          05/04/2019    13:42          51665 OperationsManager.psm1
+-a---          06/09/2013    14:17          10911 Startup.ps1
