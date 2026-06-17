@@ -63,14 +63,25 @@ Import-ModuleSafe Terminal-Icons
 
 # ─── Prompt Theme ────────────────────────────────────────────────────────────
 
-$ohMyPoshConfig = '/usr/share/oh-my-posh/themes/pwsh10k.omp.json'
-if (-not (Test-Path $ohMyPoshConfig))
-{
-    $ohMyPoshConfig = Join-Path $HOME '.local/share/pwsh10k.omp.json'
+$ohMyPoshConfigs = @(
+    (Join-Path (Join-Path $HOME 'products') 'pwsh10k.omp.json'),
+    '/usr/share/oh-my-posh/themes/pwsh10k.omp.json',
+    (Join-Path $HOME '.local/share/oh-my-posh/themes/pwsh10k.omp.json'),
+    '/opt/homebrew/share/oh-my-posh/themes/pwsh10k.omp.json',
+    '/usr/local/share/oh-my-posh/themes/pwsh10k.omp.json',
+    (Join-Path (Join-Path $HOME '.poshthemes') 'pwsh10k.omp.json')
+)
+
+$ohMyPoshConfig = $null
+foreach ($path in $ohMyPoshConfigs) {
+    if (Test-Path $path) {
+        $ohMyPoshConfig = $path
+        break
+    }
 }
+
 $ohMyPosh = Get-Command oh-my-posh -ErrorAction SilentlyContinue
-if ($ohMyPosh)
-{
+if ($ohMyPosh -and $ohMyPoshConfig) {
     & $ohMyPosh.Source init pwsh --config $ohMyPoshConfig | Invoke-Expression
 }
 
@@ -584,10 +595,4 @@ Set-PSReadLineOption -CommandValidationHandler {
     }
 }
 
-# Image Build Automation module
-$automationModulePath = '/home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1'
-if (Test-Path $automationModulePath) {
-    Import-Module $automationModulePath -WarningAction SilentlyContinue
-}
-if ($DryRun) { $p['DryRun'] = $true }
-Set-MaintenanceMode @p
+
