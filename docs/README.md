@@ -37,8 +37,8 @@ hpe-windows-iso-automation/
 | Document | Description |
 |---|---|
 | [PowerShell API Reference](powershell_api_reference.md) | Module overview, requirements, quick-start, cmdlet usage, orchestrator API |
-| [Auto-Generated Cmdlet Reference](dynamic-code-docs/INDEX.md) | Generated documentation for all PowerShell functions with parameters and examples |
-| [Testing Guide](testing.md) | Full Pester v5 guide, runner commands, mocking, CI integration, maint-mode-tests |
+| [📘 Auto-Generated Function Reference](dynamic-code-docs/INDEX.md) | **Comprehensive coverage of ALL PowerShell functions and cmdlets** - complete parameter documentation, examples, and usage for every function in the codebase. Auto-generated from source code. |
+| [Testing Guide](testing.md) | Comprehensive Pester v5 guide, runner commands, mocking, CI integration, maintenance mode testing |
 | [CI Run Requirements](powershell_ci.md) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
 | [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, CI pipeline integration |
 | [GitLab CI/CD Integration](gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
@@ -50,9 +50,6 @@ hpe-windows-iso-automation/
 | [Maintenance Mode Architecture](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
 | [Maintenance Mode Environment Config](maintenance-mode-environment-config.md) | Environment variable configuration for maintenance mode |
 | [Maintenance Mode Code Map](MAINTENANCE_MODE_CODE_MAP.md) | Complete code map with links to all mm command functionality |
-| [Set-MaintenanceMode Help](SET-MAINTENANCEMODE-HELP.md) | Detailed help for Set-MaintenanceMode cmdlet |
-| [Maintenance Mode Testing Guide](MAINTENANCE_MODE_TESTING.md) | Comprehensive testing guide for maintenance mode |
-| [Maintenance Mode Initial Testing](maint-mode-initial-testing.md) | Initial testing notes and validation |
 
 ### Integration & Authentication
 
@@ -60,6 +57,7 @@ hpe-windows-iso-automation/
 |---|---|
 | [SCOM Authentication](scom-auth.md) | SCOM authentication setup and configuration |
 | [OneView Authentication](oneview-auth.md) | HPE OneView authentication details |
+| [OneView Module Versions](oneview-module-versions.md) | HPE OneView PowerShell module version compatibility table |
 | [Authentication Overview](auth-doc.md) | General authentication documentation |
 | [Audit Process](audit_process.md) | Audit trail and compliance process |
 | [GDPR Compliance](gdpr_compliance.md) | GDPR compliance documentation |
@@ -68,11 +66,8 @@ hpe-windows-iso-automation/
 
 | Document | Description |
 |---|---|
-| [Quick Reference](QUICK_REFERENCE.md) | Quick reference guide for common tasks |
-| [Help System](HELP_SYSTEM.md) | Documentation for the built-in help system |
-| [Testing Quick Start](TESTING_QUICK_START.md) | Quick start guide for testing |
-| [Test Implementation Complete](TEST_IMPLEMENTATION_COMPLETE.md) | Test implementation status and summary |
 | [DevOps Guide to HPE Terms](devops-guide-to-HPe-Terms.md) | HPE terminology guide for DevOps engineers |
+| [Checkmake Integration](CHECKMAKE_INTEGRATION.md) | Makefile validation with checkmake |
 
 ---
 
