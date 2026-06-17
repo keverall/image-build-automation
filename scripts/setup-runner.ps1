@@ -10,7 +10,7 @@
 .DESCRIPTION
     Installs and configures:
     - PowerShell 7+ version check
-    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView, OperationsManager) from bundled copies
+    - Required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView.860, OperationsManager) from bundled copies
     - Powerline-style custom prompt (offline, no .exe required)
     - GNU make detection (from Git for Windows or bundled)
     
@@ -23,7 +23,7 @@
 
 #
 # Bundled dependencies:
-#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView, OperationsManager)
+#   - scripts/modules/ : PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS, HPEOneView.860, OperationsManager)
 #   - bin/make.exe     : GNU make for Windows (if available)
 #   - Git for Windows  : Provides make.exe in usr\bin\ (preferred source)
 #
@@ -40,12 +40,12 @@ $LOG_FILE = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-D
 $VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
 
 # PowerShell modules bundled in scripts/modules/ (installed into PS module path)
-# Add HPEOneView and OperationsManager (SCOM) here to support offline air-gapped environments
+# Add HPEOneView.860 and OperationsManager (SCOM) here to support offline air-gapped environments
 $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
-    @{ Name = 'HPEOneView';       Version = '8.60' },
+    @{ Name = 'HPEOneView.860';   Version = '8.60' },
     @{ Name = 'OperationsManager';Version = '10.19.10050.0' } # SCOM version; script will fallback to highest available if different
 )
 
@@ -117,7 +117,7 @@ function Install-PowerShellModuleOffline {
     if ($installed -and $installed.Version -ge [version]$Version) {
         # Verify the installation is functional by trying to import it
         try {
-            Import-Module $Name -RequiredVersion $Version -ErrorAction Stop -WarningAction SilentlyContinue
+            Import-Module $Name -RequiredVersion $installed.Version -ErrorAction Stop -WarningAction SilentlyContinue
             # For Pester, also verify the native DLL exists (Add-Type failure not caught by Import-Module)
             if ($Name -eq 'Pester') {
                 $moduleBase = Split-Path $installed.Path -Parent
@@ -171,7 +171,8 @@ function Install-PowerShellModuleOffline {
     Write-Warn "Bundled copy of $Name $Version not found. Attempting PSGallery..."
     try {
         Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
-        Install-Module -Name $Name -RequiredVersion $Version -Scope CurrentUser -Force -AllowClobber -Repository PSGallery 2>$null
+        # Use -MinimumVersion so we get '8.60.xxxx' for HPEOneView.860 and '>= X.Y.Z' for others
+        Install-Module -Name $Name -MinimumVersion $Version -Scope CurrentUser -Force -AllowClobber -Repository PSGallery 2>$null
         Write-OK "$Name installed from PSGallery"
     } catch {
         Write-Err "Failed to install $Name. Bundled copy not found and PSGallery unavailable (air-gapped)."
