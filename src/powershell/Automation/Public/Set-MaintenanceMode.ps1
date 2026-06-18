@@ -260,7 +260,9 @@ function Set-MaintenanceMode {
     .RETURNS
         [hashtable] with Success (bool), Message, StartTimeUtc, EndTimeUtc,
         TargetId, ClusterName, ServerCount, DryRun, AuditFile,
-        ScomObjects, ScomSummary, OneViewObjects, OneViewSummary, FailedObjects.
+        FailedObjects, and mode-specific fields:
+        - scom mode only: ScomObjects, ScomSummary
+        - oneview mode only: OneViewObjects, OneViewSummary
 
     .EXAMPLE
         # Validate configuration without making changes
@@ -366,6 +368,49 @@ function Set-MaintenanceMode {
     $oneviewCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'oneview_config.json') -Required:$false
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
+    $serversCatalogue = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'servers_catalogue.oneview.json') -Required:$false
+
+    # Build lookup tables from servers catalogue
+    $serialLookup = @{}
+    $nameLookup = @{}
+    if ($serversCatalogue -and $serversCatalogue.ContainsKey('servers')) {
+        foreach ($entry in $serversCatalogue['servers'].GetEnumerator()) {
+            $serverInfo = @{
+                key           = $entry.Key
+                display_name  = $entry.Value['display_name'] ?? $entry.Key
+                oneview_name  = $entry.Value['oneview_name'] ?? $entry.Key
+                serial_number = $entry.Value['serial_number']
+            }
+            $sn = $serverInfo['serial_number']
+            if ($sn) {
+                $serialLookup[$sn] = $serverInfo
+            }
+            if (-not $nameLookup.ContainsKey($serverInfo['oneview_name'].ToLower())) {
+                $nameLookup[$serverInfo['oneview_name'].ToLower()] = $serverInfo
+            }
+            if (-not $nameLookup.ContainsKey($serverInfo['key'].ToLower())) {
+                $nameLookup[$serverInfo['key'].ToLower()] = $serverInfo
+            }
+        }
+    }
+
+    function _Resolve-ServerNameFromSerial([string]$Serial) {
+        if (-not $Serial -or -not $serialLookup.ContainsKey($Serial)) {
+            return $null
+        }
+        return $serialLookup[$Serial]['oneview_name']
+    }
+
+    function _Resolve-ServerFromName([string]$Name) {
+        if (-not $Name) {
+            return $null
+        }
+        $key = $Name.ToLower()
+        if ($nameLookup.ContainsKey($key)) {
+            return $nameLookup[$key]
+        }
+        return $null
+    }
 
     # Parse Start / End explicitly if provided, so we can output them even on early errors
     $startDt = $null; $endDt = $null
@@ -391,13 +436,16 @@ function Set-MaintenanceMode {
         }
     }
 
+    $resolvedServerName = $null
+
     # DRYRUN MODE: Skip catalogue validation and use mock data
     if ($DryRun) {
         Write-Verbose "DryRun mode enabled - skipping catalogue validation and using mock data"
         
         if ($Mode -eq 'oneview' -and $SerialNumber) {
             $isDirectServerMode = $true
-            $clusterName = $SerialNumber
+            $resolvedServerName = _Resolve-ServerNameFromSerial $SerialNumber
+            $clusterName = if ($resolvedServerName) { $resolvedServerName } else { "Serial:$SerialNumber" }
             $servers = @($SerialNumber)
         } else {
             $clustersMap = $clustersCfg.Get_Item('clusters')
@@ -415,7 +463,16 @@ function Set-MaintenanceMode {
                     }
                 }
                 $isDirectServerMode = $true
-                $clusterName = $TargetId
+                $serverFromCatalogue = _Resolve-ServerFromName $TargetId
+                if ($serverFromCatalogue) {
+                    $clusterName = $serverFromCatalogue['oneview_name']
+                    $resolvedServerName = $serverFromCatalogue['oneview_name']
+                    if (-not $SerialNumber -and $serverFromCatalogue['serial_number']) {
+                        $SerialNumber = $serverFromCatalogue['serial_number']
+                    }
+                } else {
+                    $clusterName = $TargetId
+                }
                 $servers = @($TargetId)
             }
         }
@@ -430,19 +487,37 @@ function Set-MaintenanceMode {
         $servers = @()
 
         if ($Mode -eq 'oneview' -and $SerialNumber) {
-            # OneView mode with SerialNumber - will be resolved via API later
+            # OneView mode with SerialNumber - resolved via API in non-DryRun, or from catalogue in DryRun
             $isDirectServerMode = $true
-            $clusterName = "Serial: $SerialNumber"
+            if ($DryRun) {
+                $resolvedServerName = _Resolve-ServerNameFromSerial $SerialNumber
+                $clusterName = if ($resolvedServerName) { $resolvedServerName } else { $SerialNumber }
+            } else {
+                # Placeholder; resolved via API after OneViewClient init
+                $clusterName = $SerialNumber
+            }
             $servers = @($SerialNumber)
         } elseif ($Mode -eq 'oneview') {
-            # OneView mode without SerialNumber - can be server name or cluster
+            # OneView mode without SerialNumber — check clusters first, then servers catalogue, then raw TargetId
             $isDirectServerMode = $true
             if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
                 $clusterDef = $clustersMap[$TargetId]
                 $clusterName = $clusterDef.Get_Item('display_name') ?? $TargetId
                 $servers = $clusterDef.Get_Item('servers') ?? @($TargetId)
+                $isDirectServerMode = $false
             } else {
-                $servers = @($TargetId)
+                $serverFromCatalogue = _Resolve-ServerFromName $TargetId
+                if ($serverFromCatalogue) {
+                    $clusterName = $serverFromCatalogue['oneview_name']
+                    $resolvedServerName = $serverFromCatalogue['oneview_name']
+                    if (-not $SerialNumber -and $serverFromCatalogue['serial_number']) {
+                        $SerialNumber = $serverFromCatalogue['serial_number']
+                    }
+                    $servers = @($TargetId)
+                } else {
+                    $clusterName = $TargetId
+                    $servers = @($TargetId)
+                }
             }
         } else {
             # SCOM mode - target must exist in catalogue
@@ -700,8 +775,13 @@ function Set-MaintenanceMode {
                         $targetName = $TargetId
                         $targetType = 'Scope'
                     } elseif ($SerialNumber) {
-                        $targetName = $TargetId
+                        $serialResult = $oneviewMgr.ResolveServerBySerial($SerialNumber)
+                        if (-not $serialResult.Success) {
+                            return @{ Success = $false; Error = "OneView could not resolve server with serial number '$SerialNumber': $($serialResult.Message)" }
+                        }
+                        $targetName = $serialResult.ServerName
                         $targetType = 'ServerHardware'
+                        $resolvedServerName = $serialResult.ServerName
                     } else {
                         $resolveResult = $oneviewMgr.ResolveTarget($TargetId, $false)
                         if (-not $resolveResult.Success) {
@@ -709,6 +789,12 @@ function Set-MaintenanceMode {
                         }
                         $targetName = $resolveResult.TargetName
                         $targetType = $resolveResult.TargetType
+                        if ($resolveResult.TargetType -eq 'ServerHardware') {
+                            if ($resolveResult.SerialNumber -and -not $SerialNumber) {
+                                $SerialNumber = $resolveResult.SerialNumber
+                            }
+                            $resolvedServerName = $resolveResult.TargetName
+                        }
                     }
 
                     Write-Verbose "Querying OneView maintenance status for ${targetType}: ${targetName}"
@@ -745,26 +831,42 @@ function Set-MaintenanceMode {
         }
 
         # Save audit record
+        $validateAuditId = if ($SerialNumber) {
+            $SerialNumber 
+        } elseif ($TargetId) {
+            $TargetId 
+        } else {
+            "unknown" 
+        }
         $audit = @{
-            target_id       = $TargetId
-            action          = $Action
-            mode            = $Mode
-            dry_run         = [bool]$DryRun
-            timestamp_start = Get-UtcTimestamp
-            steps           = @{
+            action              = $Action
+            mode                = $Mode
+            environment         = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
+            target_id           = if ($TargetId) { $TargetId } else { $null }
+            serial_number       = if ($SerialNumber) { $SerialNumber } else { $null }
+            cluster_name        = if ($isDirectServerMode) { $null } else { $clusterName }
+            server_name         = if ($SerialNumber) { $resolvedServerName } elseif ($isDirectServerMode) { $clusterName } else { $null }
+            servers             = @($servers | ForEach-Object { $_ })
+            server_count        = ($servers | Measure-Object).Count
+            dry_run             = [bool]$DryRun
+            timestamp_start     = Get-UtcTimestamp
+            timestamp_end       = Get-UtcTimestamp
+            duration_seconds    = $null
+            message             = $message
+            steps               = @{
                 maintenance_check = @{
                     Success = $true
                     Status  = $maintenanceStatus
                 }
             }
-            success         = $true
+            success             = $true
         }
-        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
+        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${validateAuditId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
 
         Write-Host $message
         Write-Host "Servers: $($servers -join ', ')"
 
-        return @{
+        $validateResult = @{
             Success           = $true
             Message           = $message
             TargetId          = if ($TargetId) {
@@ -784,28 +886,18 @@ function Set-MaintenanceMode {
             OverallStatus     = $maintenanceStatus.OverallStatus
             StatusText        = $stateText
             MaintenanceStatus = $maintenanceStatus
-            ScomObjects       = if ($Mode -eq 'scom') {
-                $statusResult.Objects 
-            } else {
-                @() 
-            }
-            ScomSummary       = if ($Mode -eq 'scom') {
-                $statusResult.Summary 
-            } else {
-                @{ Total = 0; InMaintenance = 0; NotInMaintenance = 0; Failed = 0 } 
-            }
-            OneViewObjects    = if ($Mode -eq 'oneview') {
-                $statusResult.Objects 
-            } else {
-                @() 
-            }
-            OneViewSummary    = if ($Mode -eq 'oneview') {
-                $statusResult.Summary 
-            } else {
-                @{ Total = 0; InMaintenance = 0; NotInMaintenance = 0; Failed = 0 } 
-            }
             FailedObjects     = @()
         }
+
+        if ($Mode -eq 'scom') {
+            $validateResult['ScomObjects'] = $statusResult.Objects
+            $validateResult['ScomSummary'] = $statusResult.Summary
+        } elseif ($Mode -eq 'oneview') {
+            $validateResult['OneViewObjects'] = $statusResult.Objects
+            $validateResult['OneViewSummary'] = $statusResult.Summary
+        }
+
+        return $validateResult
     }
 
     # Resolve credentials: parameter > env var > interactive prompt
@@ -949,11 +1041,26 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             
             # Resolve target for oneview - determine if server or cluster/scope
             if ($oneviewMgr -and $isDirectServerMode -and -not $DryRun) {
-                $resolveResult = $oneviewMgr.ResolveTarget($TargetId, [bool]$DryRun)
-                if (-not $resolveResult.Success) {
-                    return @{ Success = $false; Error = "OneView could not resolve '$TargetId' as server or cluster: $($resolveResult.Message)" }
+                if ($SerialNumber) {
+                    $serialLookupResult = $oneviewMgr.ResolveServerBySerial($SerialNumber)
+                    if (-not $serialLookupResult.Success) {
+                        return @{ Success = $false; SerialNumber = $SerialNumber; Error = "OneView could not resolve server with serial number '$SerialNumber': $($serialLookupResult.Message)" }
+                    }
+                    $resolvedServerName = $serialLookupResult.ServerName
+                    $clusterName = $serialLookupResult.ServerName
+                } elseif ($TargetId) {
+                    $resolveResult = $oneviewMgr.ResolveTarget($TargetId, [bool]$DryRun)
+                    if (-not $resolveResult.Success) {
+                        return @{ Success = $false; Error = "OneView could not resolve '$TargetId' as server or cluster: $($resolveResult.Message)" }
+                    }
+                    $clusterName = $resolveResult.TargetName
+                    if ($resolveResult.TargetType -eq 'ServerHardware') {
+                        $resolvedServerName = $resolveResult.TargetName
+                        if ($resolveResult.SerialNumber -and -not $SerialNumber) {
+                            $SerialNumber = $resolveResult.SerialNumber
+                        }
+                    }
                 }
-                $clusterName = $resolveResult.TargetName
             }
         } catch {
             Write-Warning "OneView client unavailable: $($_.Exception.Message)" 
@@ -1010,7 +1117,43 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
 
     # Execute action
     $overallOk = $true
-    $audit = @{ target_id = $TargetId; action = $Action; dry_run = [bool]$DryRun; timestamp_start = Get-UtcTimestamp; steps = @{}; success = $true }
+    $auditTargetId = if ($SerialNumber) {
+        $SerialNumber 
+    } elseif ($TargetId) {
+        $TargetId 
+    } else {
+        "unknown" 
+    }
+    $auditClusterName = if ($isDirectServerMode) {
+        $null 
+    } else {
+        $clusterName 
+    }
+    $auditServerName = if ($SerialNumber) {
+        $resolvedServerName 
+    } elseif ($isDirectServerMode) {
+        $clusterName 
+    } else {
+        $null 
+    }
+    $audit = @{
+        action              = $Action
+        mode                = $Mode
+        environment         = if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { $null }
+        target_id           = if ($TargetId) { $TargetId } else { $null }
+        serial_number       = if ($SerialNumber) { $SerialNumber } else { $null }
+        cluster_name        = $auditClusterName
+        server_name         = $auditServerName
+        servers             = @($servers | ForEach-Object { $_ })
+        server_count        = ($servers | Measure-Object).Count
+        dry_run             = [bool]$DryRun
+        timestamp_start     = Get-UtcTimestamp
+        timestamp_end       = $null
+        duration_seconds    = $null
+        message             = $null
+        steps               = @{}
+        success             = $true
+    }
 
     if ($Action -eq 'enable') {
         # Check if already in maintenance mode
@@ -1043,14 +1186,16 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             Write-Host $msg -ForegroundColor Red
             $audit.steps['pre_check'] = @{ Skipped = $true; Reason = $msg }
             $audit.success = $false
-            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+            $audit.message = $msg
+            $audit.timestamp_end = Get-UtcTimestamp
+            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
             _Save-AuditRecord $audit $auditFile
             return @{
                 Success   = $false
                 Error     = $msg
                 Mode      = $Mode
                 Action    = $Action
-                TargetId  = $TargetId
+                TargetId  = if ($TargetId) { $TargetId } elseif ($SerialNumber) { $SerialNumber } else { $null }
                 AuditFile = $auditFile
             }
         }
@@ -1059,7 +1204,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
         # (servers, network devices, nodes, cluster objects, everything under the group)
         # Only for 'scom' mode
         $scomOk = $true; $scomInfo = ''; $scomObjects = @(); $scomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
-        if ($DryRun) {
+        if ($DryRun -and $Mode -eq 'scom') {
             # In DryRun mode, use mock data instead of calling SCOM API
             $mockServers = @($servers | ForEach-Object { $_ })
             if ($mockServers.Count -eq 0) {
@@ -1108,7 +1253,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             }
             $scomOk = $true
             $scomInfo = "DryRun mode - no actual SCOM call made"
-        } elseif ($scomMgr) {
+        } elseif (-not $DryRun -and $scomMgr -and $Mode -eq 'scom') {
             $scomOk = $false
             $durHrs = $duration.TotalSeconds / 3600.0
             $comment = "iRequest Maintenance: $TargetId"
@@ -1158,8 +1303,14 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
                 $oneviewObjects = @()
                 for ($i = 0; $i -lt $mockServers.Count; $i++) {
                     $inMaintenance = $i -lt $mockInMaintenanceCount
+                    $mockName = if ($mockServers[$i] -eq $SerialNumber -and $resolvedServerName) {
+                        $resolvedServerName 
+                    } else {
+                        $mockServers[$i] 
+                    }
                     $oneviewObjects += @{
-                        Name              = $mockServers[$i]
+                        Name              = $mockName
+                        SerialNumber      = $mockServers[$i]
                         Type              = 'ServerHardware'
                         InMaintenanceMode = $inMaintenance
                         Status            = if ($inMaintenance) {
@@ -1289,14 +1440,16 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             Write-Host $msg -ForegroundColor Red
             $audit.steps['pre_check'] = @{ Skipped = $true; Reason = $msg }
             $audit.success = $false
-            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${TargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+            $audit.message = $msg
+            $audit.timestamp_end = Get-UtcTimestamp
+            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
             _Save-AuditRecord $audit $auditFile
             return @{
                 Success   = $false
                 Error     = $msg
                 Mode      = $Mode
                 Action    = $Action
-                TargetId  = $TargetId
+                TargetId  = if ($TargetId) { $TargetId } elseif ($SerialNumber) { $SerialNumber } else { $null }
                 AuditFile = $auditFile
             }
         }
@@ -1403,15 +1556,18 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
     }
 
     $audit.success = $overallOk
-    $auditTargetId = if ($TargetId) {
-        $TargetId 
-    } elseif ($SerialNumber) {
-        "serial-$SerialNumber" 
+    $audit.server_count = ($servers | Measure-Object).Count
+    $audit.servers = @($servers | ForEach-Object { $_ })
+    $audit.cluster_name = if (-not $isDirectServerMode) { $clusterName } else { $null }
+    $audit.server_name = if ($SerialNumber) { $resolvedServerName } elseif ($isDirectServerMode) { $clusterName } else { $null }
+    if ($Action -eq 'enable') {
+        $audit.timestamp_start = $utcStart
+        $audit.timestamp_end = $utcEnd
+        $audit.duration_seconds = if ($duration) { [int]$duration.TotalSeconds } else { $null }
     } else {
-        "unknown" 
+        $audit.timestamp_end = Get-UtcTimestamp
     }
-    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_${auditTargetId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
-    _Save-AuditRecord $audit $auditFile
+    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
 
     # Build detailed completion message
     $serverCount = ($servers | Measure-Object).Count
@@ -1469,7 +1625,9 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
     } else {
         "Maintenance $Action finished with errors for $targetEntity '$targetName' [$modeName mode]$dryRunNote. Check audit: $auditFile"
     }
-    
+    $audit.message = $detailMessage
+    _Save-AuditRecord $audit $auditFile
+
     if ($overallOk) {
         Write-Host $detailMessage 
     } else {
@@ -1525,26 +1683,34 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
         ServerCount    = $serverCount
         DryRun         = [bool]$DryRun
         AuditFile      = $auditFile
-        ScomObjects    = $allScomObjects
-        ScomSummary    = if ($Action -eq 'enable') {
+        FailedObjects  = $failedObjects
+    }
+
+    if ($Mode -eq 'scom') {
+        $result['ScomObjects'] = $allScomObjects
+        $result['ScomSummary'] = if ($Action -eq 'enable') {
             $scomSummary 
         } elseif ($Action -eq 'disable') {
             $scomExitSummary 
         } else {
             @{} 
         }
-        OneViewObjects = $allOneviewObjects
-        OneViewSummary = if ($Action -eq 'enable') {
+    } elseif ($Mode -eq 'oneview') {
+        $result['OneViewObjects'] = $allOneviewObjects
+        $result['OneViewSummary'] = if ($Action -eq 'enable') {
             $oneviewSummary 
         } elseif ($Action -eq 'disable') {
             $oneviewExitSummary 
         } else {
             @{} 
         }
-        FailedObjects  = $failedObjects
     }
 
-    if ($isDirectServerMode) {
+    if ($SerialNumber) {
+        if ($resolvedServerName) {
+            $result['ServerName'] = $resolvedServerName
+        }
+    } elseif ($isDirectServerMode) {
         $result['ServerName'] = $clusterName
     } else {
         $result['ClusterName'] = $clusterName
@@ -2861,34 +3027,36 @@ if ('$TargetType' -eq 'ServerHardware') {
     }
 
     [hashtable] ResolveTarget([string]$TargetId, [bool]$DryRun) {
-        # Return mock data for DryRun mode - allows testing without OneView module
         if ($DryRun) {
             return @{
                 Success    = $true
                 TargetType = 'Scope'
                 TargetName = $TargetId
+                SerialNumber = $null
+                MaintenanceModeEnabled = $null
                 Message    = 'Found scope (cluster) [DRY-RUN]'
             }
         }
         $ovModule = $this.ModuleName
+        $ovAppliance = $this.Appliance
         $scriptContent = @"
 Import-Module $ovModule -ErrorAction Stop
 `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
 `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
-Connect-OVMgmt -Appliance '$($this.Appliance)' -Credential `$cred -ErrorAction Stop
+Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 `$server = Get-OVServer -Name '$TargetId' -ErrorAction SilentlyContinue
 if (`$server) {
-    `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; Message = 'Found server' }
-    `$result | ConvertTo-Json -Depth 3
+    `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; SerialNumber = `$server.serialNumber; MaintenanceModeEnabled = [bool]`$server.MaintenanceModeEnabled; Model = `$server.model; State = `$server.state; Message = 'Found server' }
+    `$result | ConvertTo-Json -Depth 5
     return
 }
 `$scope = Get-OVSCOPE -Name '$TargetId' -ErrorAction SilentlyContinue
 if (`$scope) {
-    `$result = @{ Success = `$true; TargetType = 'Scope'; TargetName = `$scope.Name; Message = 'Found scope (cluster)' }
-    `$result | ConvertTo-Json -Depth 3
+    `$result = @{ Success = `$true; TargetType = 'Scope'; TargetName = `$scope.Name; SerialNumber = `$null; MaintenanceModeEnabled = `$null; Message = 'Found scope (cluster)' }
+    `$result | ConvertTo-Json -Depth 5
     return
 }
-`$result = @{ Success = `$false; TargetType = 'Unknown'; TargetName = '$TargetId'; Message = 'Not found as server or scope' }
+`$result = @{ Success = `$false; TargetType = 'Unknown'; TargetName = '$TargetId'; SerialNumber = `$null; MaintenanceModeEnabled = `$null; Message = 'Not found as server or scope' }
 `$result | ConvertTo-Json -Depth 3
 "@
         try {
@@ -2901,17 +3069,25 @@ if (`$scope) {
             }
             $result = $output | ConvertFrom-Json
             return @{
-                Success    = $result.Success
-                TargetType = $result.TargetType
-                TargetName = $result.TargetName
-                Message    = $result.Message
+                Success                = $result.Success
+                TargetType             = $result.TargetType
+                TargetName             = $result.TargetName
+                SerialNumber           = $result.SerialNumber
+                MaintenanceModeEnabled = $result.MaintenanceModeEnabled
+                Model                  = $result.Model
+                State                  = $result.State
+                Message                = $result.Message
             }
         } catch {
             return @{
-                Success    = $false
-                TargetType = 'Unknown'
-                TargetName = $TargetId
-                Message    = "Resolve failed: $($_.Exception.Message)"
+                Success                = $false
+                TargetType             = 'Unknown'
+                TargetName             = $TargetId
+                SerialNumber           = $null
+                MaintenanceModeEnabled = $null
+                Model                  = $null
+                State                  = $null
+                Message                = "Resolve failed: $($_.Exception.Message)"
             }
         }
     }
@@ -3018,6 +3194,156 @@ if ('$TargetType' -eq 'ServerHardware') {
 
     [hashtable] _GetMaintenanceStatusViaWinRM([object]$Target, [string]$TargetType) {
         return $this._GetMaintenanceStatusViaModule($Target, $TargetType)
+    }
+
+    [hashtable] ResolveServerBySerial([string]$SerialNumber) {
+        $ovModule = $this.ModuleName
+        $ovAppliance = $this.Appliance
+        $scriptContent = @"
+Import-Module $ovModule -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+
+`$server = `$null
+
+`$session = `$null
+try {
+    `$session = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -and `$_.Name -like '*$ovAppliance*' } | Select-Object -First 1
+    if (-not `$session) {
+        `$session = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+    }
+} catch {
+    try {
+        `$session = Get-OVApplianceSession | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+    } catch { }
+}
+
+`$applianceVersion = `$null
+`$apiVersion = `$null
+if (`$session) {
+    `$applianceVersion = try { [version]`$session.ApplianceVersion } catch { `$null }
+    if (`$applianceVersion) {
+        `$apiVersion = switch (`$true) {
+            (`$applianceVersion.Major -ge 10) { 2400 }
+            (`$applianceVersion.Major -ge 9 -and `$applianceVersion.Minor -ge 10) { 2200 }
+            (`$applianceVersion.Major -ge 9) { 2000 }
+            (`$applianceVersion.Major -ge 8 -and `$applianceVersion.Minor -ge 60) { 1800 }
+            (`$applianceVersion.Major -ge 8 -and `$applianceVersion.Minor -ge 40) { 1400 }
+            (`$applianceVersion.Major -ge 8 -and `$applianceVersion.Minor -ge 10) { 1200 }
+            (`$applianceVersion.Major -ge 8) { 1000 }
+            (`$applianceVersion.Major -ge 7 -and `$applianceVersion.Minor -ge 20) { 400 }
+            (`$applianceVersion.Major -ge 7 -and `$applianceVersion.Minor -ge 10) { 300 }
+            (`$applianceVersion.Major -ge 7) { 200 }
+            default { 0 }
+        }
+    }
+}
+
+`$restOk = `$false
+if (`$apiVersion -and `$apiVersion -ge 200) {
+    try {
+        `$sessionId = `$null
+        if (`$session.SessionID) {
+            `$sessionId = `$session.SessionID
+        } elseif (`$session -and `$session.GetType().Name -eq 'AuthSession') {
+            `$sessionId = `$session.Id
+        }
+        `$ovAuthVar = Get-Variable -Name 'OVDefaultAuth' -Scope Global -ValueOnly -ErrorAction SilentlyContinue
+        if (-not `$sessionId -and `$ovAuthVar.SessionID) {
+            `$sessionId = `$ovAuthVar.SessionID
+        }
+
+        if (`$sessionId) {
+            `$headers = @{
+                'Accept'       = 'application/json'
+                'Content-Type' = 'application/json'
+                'auth'         = `$sessionId
+                'X-API-Version'= [string]`$apiVersion
+            }
+            `$restUri = "https://`$(`$session.Name)/rest/server-hardware?filter=serialNumber='`$using:SerialNumber'"
+            `$resp = Invoke-RestMethod -Uri `$restUri -Headers `$headers -Method GET -ErrorAction Stop
+            if (`$resp.members -and `$resp.members.Count -gt 0) {
+                `$restMember = `$resp.members[0]
+                `$server = @{
+                    Name         = `$restMember.name
+                    SerialNumber = `$restMember.serialNumber
+                    Model        = `$restMember.model
+                    State        = `$restMember.state
+                }
+                `$restOk = `$true
+            }
+        }
+    } catch {
+        Write-Verbose "REST serial lookup failed (API v`$apiVersion): `$(`$_.Exception.Message)"
+    }
+}
+
+if (-not `$restOk) {
+    try {
+        `$cmd = Get-Command Get-OVServer -ErrorAction Stop
+        if (`$cmd.Parameters.ContainsKey('SerialNumber')) {
+            `$ovServer = Get-OVServer -SerialNumber '$SerialNumber' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (`$ovServer) {
+                `$server = @{
+                    Name         = `$ovServer.name
+                    SerialNumber = `$ovServer.serialNumber
+                    Model        = `$ovServer.model
+                    State        = `$ovServer.state
+                }
+            }
+        } else {
+            `$allServers = Get-OVServer -ErrorAction Stop
+            `$ovServer = `$allServers | Where-Object { `$_.serialNumber -eq '$SerialNumber' } | Select-Object -First 1
+            if (`$ovServer) {
+                `$server = @{
+                    Name         = `$ovServer.name
+                    SerialNumber = `$ovServer.serialNumber
+                    Model        = `$ovServer.model
+                    State        = `$ovServer.state
+                }
+            }
+        }
+    } catch {
+        Write-Verbose "Module cmdlet fallback failed: `$(`$_.Exception.Message)"
+    }
+}
+
+if (`$server) {
+    `$out = @{ Success = `$true; ServerName = `$server.Name; SerialNumber = `$server.SerialNumber; Model = `$server.Model; State = `$server.State; ApiVersion = `$apiVersion; Message = "Resolved via OneView API (v`$apiVersion)" }
+    `$out | ConvertTo-Json -Depth 5
+} else {
+    `$out = @{ Success = `$false; ServerName = `$null; SerialNumber = '$SerialNumber'; ApiVersion = `$apiVersion; Message = "No server found with serial number '$SerialNumber' in OneView appliance '$ovAppliance' (module $ovModule, API version resolved: `$apiVersion)" }
+    `$out | ConvertTo-Json -Depth 3
+}
+"@
+        try {
+            if ($this.UseWinRM) {
+                $session = New-PSSession -ComputerName $this.WinRMServer
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                Remove-PSSession $session
+            } else {
+                $output = Invoke-Expression $scriptContent
+            }
+            $result = $output | ConvertFrom-Json
+            return @{
+                Success      = $result.Success
+                ServerName   = $result.ServerName
+                SerialNumber = $result.SerialNumber
+                Model        = $result.Model
+                State        = $result.State
+                ApiVersion   = $result.ApiVersion
+                Message      = $result.Message
+            }
+        } catch {
+            return @{
+                Success      = $false
+                ServerName   = $null
+                SerialNumber = $SerialNumber
+                ApiVersion   = $null
+                Message      = "Resolve by serial failed: $($_.Exception.Message)"
+            }
+        }
     }
 }
 
@@ -3303,6 +3629,45 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
             }
         }
         Write-Host "==============================="
+        Write-Host ""
+    }
+
+    $oneviewObjects = $result['OneViewObjects']
+    $oneviewSummary = $result['OneViewSummary']
+    if ($oneviewObjects -and $oneviewObjects.Count -gt 0) {
+        Write-Host "=== OneView Per-Object Status ==="
+        Write-Host "Total Objects: $($oneviewSummary.Total)"
+        Write-Host "Success: $($oneviewSummary.Success)"
+        Write-Host "In Maintenance: $($oneviewSummary.AlreadyInMaintenance ?? $oneviewSummary.InMaintenance ?? $oneviewSummary.NotInMaintenance ?? 0)"
+        Write-Host "Failed: $($oneviewSummary.Failed)"
+        Write-Host ""
+        foreach ($obj in $oneviewObjects) {
+            $statusIcon = switch ($obj.Status) {
+                'success' {
+                    '[OK]' 
+                }
+                'already_in_maintenance' {
+                    '[SKIP]' 
+                }
+                'not_in_maintenance' {
+                    '[SKIP]' 
+                }
+                default {
+                    '[FAIL]' 
+                }
+            }
+            Write-Host "${statusIcon} $($obj.Name) ($($obj.Type)) - $($obj.Status)"
+            if ($obj.Message -and $obj.Status -ne 'success' -and $obj.Status -ne 'already_in_maintenance' -and $obj.Status -ne 'not_in_maintenance') {
+                Write-Host "  Message: $($obj.Message)"
+            }
+            if ($obj.NackReason) {
+                Write-Host "  NACK Reason: $($obj.NackReason)"
+            }
+            if ($obj.Resolution) {
+                Write-Host "  Resolution: $($obj.Resolution)"
+            }
+        }
+        Write-Host "================================="
         Write-Host ""
     }
 
