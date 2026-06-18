@@ -369,6 +369,24 @@ function Set-MaintenanceMode {
     $emailCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'email_distribution_lists.json') -Required:$false
     $opsrampCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'opsramp_config.json') -Required:$false
     $serversCatalogue = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'servers_catalogue.oneview.json') -Required:$false
+    $scomClustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.scom.json') -Required:$false
+
+    $scomHostnameLookup = @{}
+    if ($scomClustersCfg -and $scomClustersCfg.ContainsKey('clusters')) {
+        foreach ($entry in $scomClustersCfg['clusters'].GetEnumerator()) {
+            $srvList = $entry.Value.Get_Item('servers')
+            if (-not $srvList) { continue }
+            foreach ($srv in $srvList) {
+                $hostname = ($srv.Split('.'))[0].ToLower()
+                if (-not $scomHostnameLookup.ContainsKey($hostname)) {
+                    $scomHostnameLookup[$hostname] = @{
+                        Fqdn = $srv
+                        ClusterKey = $entry.Key
+                    }
+                }
+            }
+        }
+    }
 
     # Build lookup tables from servers catalogue
     $serialLookup = @{}
@@ -408,6 +426,57 @@ function Set-MaintenanceMode {
         $key = $Name.ToLower()
         if ($nameLookup.ContainsKey($key)) {
             return $nameLookup[$key]
+        }
+        return $null
+    }
+
+    function _Resolve-ScomServerToCluster([string]$ServerName, $clustersMap) {
+        if (-not $ServerName -or -not $clustersMap) { return $null }
+        $lookupKey = $ServerName.ToLower()
+        foreach ($entry in $clustersMap.GetEnumerator()) {
+            $clusterKey = $entry.Key
+            $cDef = $entry.Value
+            $srvList = $cDef.Get_Item('servers')
+            if (-not $srvList) { continue }
+            foreach ($srv in $srvList) {
+                if ($srv.ToLower() -eq $lookupKey) {
+                    return @{
+                        ClusterKey = $clusterKey
+                        ClusterDef = $cDef
+                        MatchedServer = $srv
+                    }
+                }
+            }
+        }
+        $hostname = ($ServerName.Split('.'))[0].ToLower()
+        if ($scomHostnameLookup.ContainsKey($hostname)) {
+            $match = $scomHostnameLookup[$hostname]
+            $matchedFqdn = $match.Fqdn
+            $scomClusterKey = $match.ClusterKey
+            $scomClusterDef = if ($scomClustersCfg -and $scomClustersCfg.ContainsKey('clusters')) {
+                $scomClustersCfg['clusters'][$scomClusterKey]
+            } else { $null }
+            if (-not $scomClusterDef) {
+                foreach ($entry in $clustersMap.GetEnumerator()) {
+                    $srvList = $entry.Value.Get_Item('servers')
+                    if (-not $srvList) { continue }
+                    foreach ($srv in $srvList) {
+                        if (($srv.Split('.'))[0].ToLower() -eq $hostname) {
+                            return @{
+                                ClusterKey = $entry.Key
+                                ClusterDef = $entry.Value
+                                MatchedServer = $matchedFqdn
+                            }
+                        }
+                    }
+                }
+            } else {
+                return @{
+                    ClusterKey = $scomClusterKey
+                    ClusterDef = $scomClusterDef
+                    MatchedServer = $matchedFqdn
+                }
+            }
         }
         return $null
     }
@@ -456,24 +525,32 @@ function Set-MaintenanceMode {
                 $servers = $clusterDef.Get_Item('servers') ?? @($TargetId)
             } else {
                 if ($Mode -eq 'scom') {
-                    Write-Verbose "Target '$TargetId' not found in catalogue."
-                    return @{ 
-                        Success = $false
-                        Error   = "Target '$TargetId' not found in catalogue."
+                    $scomServerMatch = _Resolve-ScomServerToCluster -ServerName $TargetId -clustersMap $clustersMap
+                    if (-not $scomServerMatch) {
+                        Write-Verbose "Target '$TargetId' not found in catalogue."
+                        return @{ 
+                            Success = $false
+                            Error   = "Target '$TargetId' not found in catalogue."
+                        }
                     }
-                }
-                $isDirectServerMode = $true
-                $serverFromCatalogue = _Resolve-ServerFromName $TargetId
-                if ($serverFromCatalogue) {
-                    $clusterName = $serverFromCatalogue['oneview_name']
-                    $resolvedServerName = $serverFromCatalogue['oneview_name']
-                    if (-not $SerialNumber -and $serverFromCatalogue['serial_number']) {
-                        $SerialNumber = $serverFromCatalogue['serial_number']
-                    }
+                    $isDirectServerMode = $true
+                    $clusterDef = $scomServerMatch.ClusterDef
+                    $clusterName = $clusterDef.Get_Item('display_name') ?? $scomServerMatch.ClusterKey
+                    $servers = @($scomServerMatch.MatchedServer)
                 } else {
-                    $clusterName = $TargetId
+                    $isDirectServerMode = $true
+                    $serverFromCatalogue = _Resolve-ServerFromName $TargetId
+                    if ($serverFromCatalogue) {
+                        $clusterName = $serverFromCatalogue['oneview_name']
+                        $resolvedServerName = $serverFromCatalogue['oneview_name']
+                        if (-not $SerialNumber -and $serverFromCatalogue['serial_number']) {
+                            $SerialNumber = $serverFromCatalogue['serial_number']
+                        }
+                    } else {
+                        $clusterName = $TargetId
+                    }
+                    $servers = @($TargetId)
                 }
-                $servers = @($TargetId)
             }
         }
     } else {
@@ -557,16 +634,22 @@ function Set-MaintenanceMode {
                     return $earlyErr
                 }
             } else {
-                # Target not found in catalogue - reject for SCOM mode
-                Write-Verbose "Target '$TargetId' not found in catalogue."
-                $earlyErr = @{ 
-                    Success      = $false
-                    Error        = "Target '$TargetId' not found in catalogue."
-                    ClusterName  = $TargetId
-                    StartTimeUtc = $utcStart
-                    EndTimeUtc   = $utcEnd
+                $scomServerMatch = _Resolve-ScomServerToCluster -ServerName $TargetId -clustersMap $clustersMap
+                if (-not $scomServerMatch) {
+                    Write-Verbose "Target '$TargetId' not found in catalogue."
+                    $earlyErr = @{ 
+                        Success      = $false
+                        Error        = "Target '$TargetId' not found in catalogue."
+                        ClusterName  = $TargetId
+                        StartTimeUtc = $utcStart
+                        EndTimeUtc   = $utcEnd
+                    }
+                    return $earlyErr
                 }
-                return $earlyErr
+                $isDirectServerMode = $true
+                $clusterDef = $scomServerMatch.ClusterDef
+                $clusterName = $clusterDef.Get_Item('display_name') ?? $scomServerMatch.ClusterKey
+                $servers = @($scomServerMatch.MatchedServer)
             }
         }
     }
