@@ -366,6 +366,7 @@ function Main {
     Write-Host "${C_CYAN}╚══════════════════════════════════════════════════════╝${C_RESET}"
     Write-Host ""
     Test-PowerShellVersion
+    Repair-TempModulesDirectory
     Install-RequiredModules
     Install-OhMyPosh
     Install-Make
