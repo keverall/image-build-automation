@@ -4,10 +4,17 @@
     Setup-Profile.ps1 — Configure PowerShell profiles with Automation module.
 
 .DESCRIPTION
-    Adds maintenance mode convenience functions to PowerShell profiles.
+    Copies the correct WIP profile template to the live profile location
+    (platform-aware: windowspsprofile.ps1 on Windows, psprofile.ps1 on
+    Linux/macOS, vscodeprofile.ps1 for the VS Code profile), then injects
+    the Automation module import block (with the machine-specific absolute
+    path) into the live profile(s).
     Can be run from anywhere - uses the script's repo root as the base path.
-    Updates or installs the Automation module import block into all discovered
-    PowerShell profile locations.
+
+.PARAMETER SkipTemplateCopy
+    Skip copying the WIP template over the live profile. Only inject/refresh
+    the Automation module import block. Useful if the live profile has been
+    manually customised and should not be overwritten.
 
 .PARAMETER Uninstall
     Remove the Automation module block from profiles instead of installing.
@@ -17,20 +24,27 @@
 
 .EXAMPLE
     pwsh -File scripts/Setup-Profile.ps1
+    pwsh -File scripts/Setup-Profile.ps1 -SkipTemplateCopy
     pwsh -File scripts/Setup-Profile.ps1 -Uninstall
 #>
 
 # =============================================================================
 # Setup-Profile.ps1 — Configure PowerShell profiles with Automation module
 # =============================================================================
-# Adds maintenance mode convenience functions to PowerShell profiles.
+# 1. Copies the platform-appropriate WIP profile template to the live
+#    profile location (Windows Terminal/PowerShell + VS Code).
+# 2. Injects the Automation module import block (machine-specific path) into
+#    the live profile(s).
 # Can be run from anywhere - uses the script's repo root as the base path.
 # =============================================================================
 
 [CmdletBinding()]
 param(
     [switch]$Uninstall,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$SkipTemplateCopy,
+    [switch]$Merge,
+    [switch]$ForceOverwrite
 )
 
 $ErrorActionPreference = 'Stop'
@@ -60,114 +74,129 @@ if (-not (Test-Path $AutomationModule)) {
 
 Write-Color $Cyan "[setup] Configuring PowerShell profiles with Automation module..."
 
-# The block to add to profiles
+# ─── Determine platform-appropriate WIP template paths ───────────────────────
+$isWin = $IsWindows -or $null -eq $IsWindows
+
+# Primary terminal profile template (Windows Terminal / pwsh console)
+$TerminalTemplate = if ($isWin) {
+    Join-Path $RepoRoot 'wip/windowspsprofile.ps1'
+} else {
+    Join-Path $RepoRoot 'wip/psprofile.ps1'
+}
+# VS Code profile template (cross-platform, identical regardless of OS)
+$VsCodeTemplate = Join-Path $RepoRoot 'wip/vscodeprofile.ps1'
+
+# ─── Determine live profile destination paths ────────────────────────────────
+$LiveProfiles = @{}
+
+if ($isWin) {
+    # PowerShell 7+ ("Core") profile location
+    $LiveProfiles['Terminal'] = Join-Path $env:USERPROFILE 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
+    $LiveProfiles['VsCode'] = Join-Path $env:USERPROFILE 'Documents\PowerShell\Microsoft.VSCode_profile.ps1'
+    # Windows PowerShell 5.1 profile location (separate directory)
+    $LiveProfiles['Terminal51'] = Join-Path $env:USERPROFILE 'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
+} else {
+    $LiveProfiles['Terminal'] = Join-Path $HOME '.config/powershell/Microsoft.PowerShell_profile.ps1'
+    $LiveProfiles['VsCode'] = Join-Path $HOME '.config/powershell/Microsoft.VSCode_profile.ps1'
+}
+
+# ─── Copy WIP templates to live profile locations ────────────────────────────
+if (-not $Uninstall -and -not $SkipTemplateCopy) {
+    Write-Color $Cyan "[setup] Copying WIP profile templates to live profile locations..."
+
+    if (Test-Path $TerminalTemplate) {
+        $dest = $LiveProfiles['Terminal']
+        $destDir = Split-Path $dest -Parent
+        if (-not (Test-Path $destDir)) {
+            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+        }
+        if ($DryRun) {
+            Write-Color $Yellow "[setup] DRY RUN: Would copy $(Split-Path $TerminalTemplate -Leaf) -> $dest"
+        } else {
+            # Backup existing profile before overwrite (preserves user customisations/secrets)
+            if (Test-Path $dest) {
+                $backup = "$dest.bak.$(Get-Date -Format yyyyMMddHHmmss)"
+                Copy-Item $dest $backup -Force
+                Write-Color $Cyan "[setup]   Backed up existing profile to $(Split-Path $backup -Leaf)"
+            }
+            Copy-Item -Path $TerminalTemplate -Destination $dest -Force
+            Write-Color $Green "[setup] ✓ Copied $(Split-Path $TerminalTemplate -Leaf) -> $(Split-Path $dest -Leaf)"
+        }
+    } else {
+        Write-Color $Yellow "[setup] WIP template not found: $TerminalTemplate"
+    }
+
+    # Windows PowerShell 5.1 profile (only if that profile dir already exists —
+    # avoid creating Documents\WindowsPowerShell\ on PS 7-only machines)
+    if ($isWin -and (Test-Path $TerminalTemplate)) {
+        $ps51Path = $LiveProfiles['Terminal51']
+        $ps51Dir = Split-Path $ps51Path -Parent
+        if (Test-Path $ps51Dir) {
+            if ($DryRun) {
+                Write-Color $Yellow "[setup] DRY RUN: Would copy $(Split-Path $TerminalTemplate -Leaf) -> $ps51Path (PS 5.1)"
+            } else {
+                # Backup existing before overwrite (see backup logic below)
+                $backup = "$ps51Path.bak.$(Get-Date -Format yyyyMMddHHmmss)"
+                if (Test-Path $ps51Path) { Copy-Item $ps51Path $backup -Force }
+                Copy-Item -Path $TerminalTemplate -Destination $ps51Path -Force
+                Write-Color $Green "[setup] ✓ Copied $(Split-Path $TerminalTemplate -Leaf) -> $(Split-Path $ps51Path -Leaf) (PS 5.1)"
+            }
+        }
+    }
+
+    # VS Code profile (only if VS Code profile dir exists — avoid creating it
+    # on machines where VS Code isn't installed)
+    $vsCodeDir = Split-Path $LiveProfiles['VsCode'] -Parent
+    if ((Test-Path $VsCodeTemplate) -and (Test-Path $vsCodeDir)) {
+        $dest = $LiveProfiles['VsCode']
+        if ($DryRun) {
+            Write-Color $Yellow "[setup] DRY RUN: Would copy $(Split-Path $VsCodeTemplate -Leaf) -> $dest"
+        } else {
+            # Backup existing before overwrite
+            if (Test-Path $dest) {
+                $backup = "$dest.bak.$(Get-Date -Format yyyyMMddHHmmss)"
+                Copy-Item $dest $backup -Force
+            }
+            Copy-Item -Path $VsCodeTemplate -Destination $dest -Force
+            Write-Color $Green "[setup] ✓ Copied $(Split-Path $VsCodeTemplate -Leaf) -> $(Split-Path $dest -Leaf)"
+        }
+    } elseif (-not (Test-Path $vsCodeDir)) {
+        Write-Color $Cyan "[setup] VS Code profile dir not found — skipping VS Code profile"
+    }
+} elseif ($SkipTemplateCopy -and -not $Uninstall) {
+    Write-Color $Cyan "[setup] -SkipTemplateCopy: leaving existing profiles, only refreshing module import"
+}
+
+# The block to add to profiles.
+# NOTE: This block intentionally does NOT define a prompt function. The
+# oh-my-posh prompt is configured by the WIP profile templates themselves,
+# and the Powerline fallback prompt lives in each WIP template
+# (windowspsprofile/psprofile/vscodeprofile), wrapped in an `else` branch
+# so it only activates when oh-my-posh is unavailable. Injecting a
+# global:prompt here would override oh-my-posh on every platform.
 $ProfileBlock = @"
 
 # Image Build Automation module
 `$automationModulePath = '$AutomationModule'
 if (Test-Path `$automationModulePath) {
     Import-Module `$automationModulePath -WarningAction SilentlyContinue
-if (`$DryRun) { `$p['DryRun'] = `$true }
-        Set-MaintenanceMode @p
-    }
-
-}
-
-# Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
-function global:prompt {
-    `$host.UI.RawUI.WindowTitle = "Automation: `$(Get-Location)"
-    
-    `$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    
-    # Path normalization
-    `$path = `$PWD.Path
-    if (`$env:USERPROFILE -and `$path.StartsWith(`$env:USERPROFILE, "CurrentCultureIgnoreCase")) {
-        `$path = "~" + `$path.Substring(`$env:USERPROFILE.Length)
-    }
-    `$path = `$path -replace '\\\\', '/'
-    
-    # Git branch detection
-    `$gitBranch = `$null
-    if (Test-Path .git) {
-        `$gitBranch = & git branch --show-current 2>`$null
-    }
-    
-    # Segment 1: Admin/User Indicator
-    if (`$isAdmin) {
-        Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
-    } else {
-        Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
-    }
-    
-    # Separator to Path
-    if (`$isAdmin) {
-        Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
-    } else {
-        Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
-    }
-    
-    # Segment 2: Current Path
-    Write-Host " `$path " -NoNewline -BackgroundColor Blue -ForegroundColor White
-    
-    # Segment 3: Git Branch (if in a repository)
-    if (`$gitBranch) {
-        Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
-        Write-Host "  `$gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
-        `$lastBg = "DarkYellow"
-    } else {
-        `$lastBg = "Blue"
-    }
-    
-    # Final Prompt Character
-    Write-Host "" -NoNewline -BackgroundColor `$lastBg -ForegroundColor Black
-    if (`$isAdmin) {
-        Write-Host " # " -NoNewline -ForegroundColor Red
-    } else {
-        Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
-    }
-    
-    return " "
 }
 "@
 
-# Find all profile paths to update
+# Find all profile paths to update (live profiles only — not WIP templates).
 $ProfilePaths = @()
 
-# Standard PowerShell profile locations
-if ($PROFILE) {
+# Add the live profiles we identified above (if they exist or were just copied)
+foreach ($key in @('Terminal', 'Terminal51', 'VsCode')) {
+    $p = $LiveProfiles[$key]
+    if ($p -and (Test-Path $p)) {
+        $ProfilePaths += $p
+    }
+}
+
+# Also pick up $PROFILE in case it points somewhere unexpected
+if ($PROFILE -and ($ProfilePaths -notcontains $PROFILE) -and (Test-Path $PROFILE)) {
     $ProfilePaths += $PROFILE
-}
-
-# Cross-platform profile locations
-if ($IsLinux -or $IsMacOS) {
-    $LinuxProfile = '~/.config/powershell/Microsoft.PowerShell_profile.ps1'
-    if (Test-Path $LinuxProfile) {
-        $ProfilePaths += $LinuxProfile
-    }
-} elseif ($IsWindows -or $null -eq $IsWindows) {
-    $WindowsProfile = Join-Path $env:USERPROFILE 'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
-    if (Test-Path $WindowsProfile) {
-        $ProfilePaths += $WindowsProfile
-    }
-}
-
-# Add WIP profiles if they exist in the repo (platform-aware selection)
-$WipProfiles = @()
-if ($IsWindows -or $null -eq $IsWindows) {
-    $WipProfiles += @(
-        (Join-Path $RepoRoot 'wip/windowspsprofile.ps1'),
-        (Join-Path $RepoRoot 'wip/vscodeprofile.ps1')
-    )
-} else {
-    $WipProfiles += @(
-        (Join-Path $RepoRoot 'wip/psprofile.ps1'),
-        (Join-Path $RepoRoot 'wip/vscodeprofile.ps1')
-    )
-}
-foreach ($wip in $WipProfiles) {
-    if (Test-Path $wip) {
-        $ProfilePaths += $wip
-    }
 }
 
 if ($ProfilePaths.Count -eq 0) {
