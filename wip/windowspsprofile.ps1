@@ -5,8 +5,6 @@
 # Loaded automatically when PowerShell starts in Windows Terminal.
 # =============================================================================
 
-$PROFILE | gm | ? membertype -eq noteproperty
-
 # ─── Fix VS Code PATH Caching (cross-platform) ──────────────────────────────
 # VS Code may inherit a stale environment from its launch process.
 # This ensures the terminal gets the current system + user PATH.
@@ -88,52 +86,69 @@ $ohMyPosh = Get-Command oh-my-posh -ErrorAction SilentlyContinue
 if ($ohMyPosh -and $ohMyPoshConfig) {
     & $ohMyPosh.Source init pwsh --config $ohMyPoshConfig | Invoke-Expression
 } else {
-    # Offline, no-.exe fallback prompt (Powerline-style, bypasses Oh-My-Posh AppLocker blocks)
+    # Fallback prompt (Powerline-style) when oh-my-posh is unavailable
+    # (e.g. AppLocker blocks on Windows Server)
     function global:prompt {
         $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
-        
-        $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-        
-        $path = $PWD.Path
-        if ($env:USERPROFILE -and $path.StartsWith($env:USERPROFILE, "CurrentCultureIgnoreCase")) {
-            $path = "~" + $path.Substring($env:USERPROFILE.Length)
+
+        $isAdmin = $false
+        if ($IsWindows -or $null -eq $IsWindows) {
+            $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
         }
-        $path = $path -replace '\\\\', '/'
-        
+
+        # Path normalization (cross-platform, case-sensitive on Unix)
+        $path = $PWD.Path
+        $homePath = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+        $comparison = if ($IsWindows -or $null -eq $IsWindows) {
+            [System.StringComparison]::OrdinalIgnoreCase
+        } else {
+            [System.StringComparison]::Ordinal
+        }
+        if ($homePath -and $path.StartsWith($homePath, $comparison)) {
+            $path = "~" + $path.Substring($homePath.Length)
+        }
+        $path = $path -replace '\\', '/'
+
+        # Git branch detection
         $gitBranch = $null
         if (Test-Path .git) {
             $gitBranch = & git branch --show-current 2>$null
         }
-        
+
+        # Segment 1: Admin/User Indicator
         if ($isAdmin) {
             Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
         } else {
             Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
         }
-        
+
+        # Separator to Path
         if ($isAdmin) {
-            Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
+            Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
         } else {
-            Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
+            Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
         }
-        
+
+        # Segment 2: Current Path
         Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
-        
+
+        # Segment 3: Git Branch (if in a repository)
         if ($gitBranch) {
-            Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
-            Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
+            Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
+            Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
             $lastBg = "DarkYellow"
         } else {
             $lastBg = "Blue"
         }
-        
-        Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
+
+        # Final Prompt Character
+        Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
         if ($isAdmin) {
             Write-Host " # " -NoNewline -ForegroundColor Red
         } else {
             Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
         }
-        
+
         return " "
     }
 }
