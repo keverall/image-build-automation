@@ -26,7 +26,8 @@ $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT    = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 $LOG_FILE        = Join-Path (${env:TEMP} ?? '/tmp') "hpe-automation-pwsh-setup-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 $VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
-$BIN_DIR         = Join-Path $PROJECT_ROOT 'bin'
+$TEMP_MODULES_DIR   = Join-Path $PROJECT_ROOT 'temp-modules'
+$BIN_DIR            = Join-Path $PROJECT_ROOT 'bin'
 
 # Bundled module manifest — name + minimum version (version is the *requested*
 # floor; the actual installed version may be higher for modules like
@@ -35,7 +36,7 @@ $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
-    @{ Name = 'HPEOneView.860';   Version = '8.60' },
+    @{ Name = 'HPEOneView.840';   Version = '8.40' },
     @{ Name = 'OperationsManager';Version = '1.0' }   # floor only; real SCOM versions are 10.x
 )
 
@@ -123,7 +124,7 @@ function Get-BundledModulePath {
         Where-Object { $_.Name -ieq $Name } | Select-Object -First 1
     if ($inner) {
         $innerExact = Join-Path $inner.FullName $Version
-        if (Test-Path $innerexact) { return @{ Path = $innerexact; ActualVersion = $Version } }
+        if (Test-Path $innerExact) { return @{ Path = $innerExact; ActualVersion = $Version } }
         $innerHighest = _HighestVersion $inner.FullName
         if ($innerHighest) {
             Write-Warn "Exact version $Version of $Name not found (nested layout). Using $($innerHighest.Name)."
@@ -131,6 +132,30 @@ function Get-BundledModulePath {
         }
     }
     return $null
+}
+
+function Repair-TempModulesDirectory {
+    if (-not (Test-Path $TEMP_MODULES_DIR -PathType Container)) { return }
+
+    Write-Warn "Found legacy temp-modules directory; moving contents into scripts/modules"
+    New-Item -ItemType Directory -Force -Path $VENDOR_MODULES_DIR | Out-Null
+
+    foreach ($module in Get-ChildItem -Path $TEMP_MODULES_DIR -Directory -ErrorAction SilentlyContinue) {
+        $dest = Join-Path $VENDOR_MODULES_DIR $module.Name
+        if (Test-Path $dest) {
+            Write-Warn "Existing $dest found; removing stale temp copy $module.FullName"
+            Remove-Item -Recurse -Force $module.FullName -ErrorAction SilentlyContinue
+            continue
+        }
+
+        Write-Log "Moving $module.FullName -> $dest"
+        Move-Item -Path $module.FullName -Destination $dest -Force
+    }
+
+    if (-not (Get-ChildItem -Path $TEMP_MODULES_DIR -Force -ErrorAction SilentlyContinue)) {
+        Remove-Item -Recurse -Force $TEMP_MODULES_DIR -ErrorAction SilentlyContinue
+        Write-OK "Removed legacy temp-modules directory"
+    }
 }
 
 function Copy-ModuleToUserPath {
@@ -195,6 +220,7 @@ function Install-RequiredModule {
     try {
         Save-Module -Name $Name -MinimumVersion $Version -Path $VENDOR_MODULES_DIR `
             -Force -Repository PSGallery -ErrorAction Stop
+        Repair-TempModulesDirectory
         Write-OK "$Name saved to scripts/modules/$Name/"
         $bundled = Get-BundledModulePath -Name $Name -Version $Version
         if ($bundled) {
@@ -202,6 +228,7 @@ function Install-RequiredModule {
             return
         }
     } catch {
+        Repair-TempModulesDirectory
         Write-Err "PSGallery download failed: $($_.Exception.Message)"
     }
     Write-Err "To fix: copy '$Name' from a SCOM server / connected machine to scripts/modules/$Name/<version>/"
