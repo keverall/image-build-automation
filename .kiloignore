@@ -25,3 +25,8 @@ Thumbs.db
 # Block uv internal cache storage blocks
 .uv/
 uv.lock
+
+# Vendored PowerShell modules & binaries (not project code)
+scripts/modules/
+vendor/
+bin/
