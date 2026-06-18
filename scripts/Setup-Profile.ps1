@@ -151,11 +151,19 @@ if ($IsLinux -or $IsMacOS) {
     }
 }
 
-# Add WIP profiles if they exist in the repo
-$WipProfiles = @(
-    (Join-Path $RepoRoot 'wip/psprofile.ps1'),
-    (Join-Path $RepoRoot 'wip/vscodeprofile.ps1')
-)
+# Add WIP profiles if they exist in the repo (platform-aware selection)
+$WipProfiles = @()
+if ($IsWindows -or $null -eq $IsWindows) {
+    $WipProfiles += @(
+        (Join-Path $RepoRoot 'wip/windowspsprofile.ps1'),
+        (Join-Path $RepoRoot 'wip/vscodeprofile.ps1')
+    )
+} else {
+    $WipProfiles += @(
+        (Join-Path $RepoRoot 'wip/psprofile.ps1'),
+        (Join-Path $RepoRoot 'wip/vscodeprofile.ps1')
+    )
+}
 foreach ($wip in $WipProfiles) {
     if (Test-Path $wip) {
         $ProfilePaths += $wip
