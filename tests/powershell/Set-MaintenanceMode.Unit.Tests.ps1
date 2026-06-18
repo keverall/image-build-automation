@@ -74,6 +74,24 @@ BeforeAll {
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'email_distribution_lists.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'opsramp_config.json')
     @{ } | ConvertTo-Json | Set-Content (Join-Path $Script:ConfigDir 'json_config.json')
+    @{
+        servers = @{
+            'TEST-SERVER-01' = @{
+                serial_number = 'PROD-SN-001'
+                display_name  = 'Test Server 01'
+                oneview_name  = 'test-server-01.example.com'
+                ilo_ip        = '10.0.0.1'
+                environment   = 'test'
+            }
+            'TEST-SERVER-02' = @{
+                serial_number = 'PROD-SN-002'
+                display_name  = 'Test Server 02'
+                oneview_name  = 'test-server-02.example.com'
+                ilo_ip        = '10.0.0.2'
+                environment   = 'test'
+            }
+        }
+    } | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Script:ConfigDir 'servers_catalogue.oneview.json')
     
     # Copy connection_hosts.json for environment resolution
     Copy-Item (Join-Path $Script:ModuleRoot 'configs/connection_hosts.json') (Join-Path $Script:ConfigDir 'connection_hosts.json') -Force
@@ -1194,7 +1212,7 @@ Describe 'Set-MaintenanceMode — per-object status reporting' {
     }
 
     Context 'When mode parameter varies (DryRun)' {
-        It 'Should return per-object status fields with scom mode [Mode=scom, -DryRun]' {
+        It 'Should include only scom-specific fields in scom mode [Mode=scom, -DryRun]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
             
             $result = Set-MaintenanceMode @params
@@ -1203,17 +1221,116 @@ Describe 'Set-MaintenanceMode — per-object status reporting' {
             $result.Keys | Should -Contain 'ScomObjects'
             $result.Keys | Should -Contain 'ScomSummary'
             $result.Keys | Should -Contain 'FailedObjects'
+            $result.Keys | Should -Not -Contain 'OneViewObjects'
+            $result.Keys | Should -Not -Contain 'OneViewSummary'
         }
 
-        It 'Should return per-object status fields with SCOM mode [Mode=scom, -DryRun]' {
-            $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+        It 'Should include only oneview-specific fields in oneview mode [Mode=oneview, -DryRun]' {
+            $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'oneview'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
             
             $result = Set-MaintenanceMode @params
             
-            $result.Success | Should -Be $true
+            $result | Should -Not -BeNullOrEmpty
+            $result.Keys | Should -Contain 'OneViewObjects'
+            $result.Keys | Should -Contain 'OneViewSummary'
+            $result.Keys | Should -Not -Contain 'ScomObjects'
+            $result.Keys | Should -Not -Contain 'ScomSummary'
+        }
+
+        It 'Should not include ScomObjects or ScomSummary in oneview mode validate [Action=validate, Mode=oneview, -DryRun]' {
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'oneview'; ConfigDir = $Script:ConfigDir; DryRun = $true }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Keys | Should -Not -Contain 'ScomObjects'
+            $result.Keys | Should -Not -Contain 'ScomSummary'
+            $result.Keys | Should -Contain 'OneViewObjects'
+            $result.Keys | Should -Contain 'OneViewSummary'
+        }
+
+        It 'Should not include OneViewObjects or OneViewSummary in scom mode validate [Action=validate, Mode=scom, -DryRun]' {
+            $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
+            
+            $result = Set-MaintenanceMode @params
+            
+            $result.Keys | Should -Not -Contain 'OneViewObjects'
+            $result.Keys | Should -Not -Contain 'OneViewSummary'
             $result.Keys | Should -Contain 'ScomObjects'
             $result.Keys | Should -Contain 'ScomSummary'
-            $result.Keys | Should -Contain 'FailedObjects'
+        }
+    }
+}
+
+# =============================================================================
+# Serial Number resolution: ServerName must not show the serial number
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — serial number to server name resolution' {
+    Context 'When -SerialNumber is passed with a known serial (in catalogue)' {
+        It 'Should set SerialNumber field and resolve ServerName from catalogue, not serial [Mode=oneview, -DryRun, -SerialNumber known]' {
+            $params = @{ Action = 'enable'; Mode = 'oneview'; SerialNumber = 'PROD-SN-001'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+
+            $result = Set-MaintenanceMode @params
+
+            $result.Success | Should -Be $true
+            $result.Keys | Should -Contain 'SerialNumber'
+            $result.SerialNumber | Should -Be 'PROD-SN-001'
+            $result.Keys | Should -Contain 'ServerName'
+            $result.ServerName | Should -Be 'test-server-01.example.com'
+            $result.ServerName | Should -Not -Be $result.SerialNumber
+        }
+
+        It 'Should set SerialNumber field in audit with correct value [Mode=oneview, -DryRun, -SerialNumber known]' {
+            $params = @{ Action = 'enable'; Mode = 'oneview'; SerialNumber = 'PROD-SN-002'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+
+            $result = Set-MaintenanceMode @params
+
+            $result.SerialNumber | Should -Be 'PROD-SN-002'
+            $result.ServerName | Should -Be 'test-server-02.example.com'
+        }
+    }
+
+    Context 'When -SerialNumber is passed with an unknown serial (not in catalogue)' {
+        It 'Should set SerialNumber but not set ServerName [Mode=oneview, -DryRun, -SerialNumber unknown]' {
+            $params = @{ Action = 'enable'; Mode = 'oneview'; SerialNumber = 'UNKNOWN-SN-999'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+
+            $result = Set-MaintenanceMode @params
+
+            $result | Should -Not -BeNullOrEmpty
+            $result.Keys | Should -Contain 'SerialNumber'
+            $result.SerialNumber | Should -Be 'UNKNOWN-SN-999'
+            if ($result.ContainsKey('ServerName')) {
+                $result.ServerName | Should -Not -Be 'UNKNOWN-SN-999'
+            }
+        }
+    }
+}
+
+# =============================================================================
+# TargetId resolution for OneView mode — resolve server details via API/catalogue
+# =============================================================================
+
+Describe 'Set-MaintenanceMode — TargetId resolution for OneView server mode' {
+    Context 'When -TargetId is passed with OneView mode for a server (not scope/cluster)' {
+        It 'Should set ServerName from the resolved server, not the raw TargetId [Mode=oneview, -TargetId known-server, -DryRun]' {
+            $params = @{ Action = 'enable'; TargetId = 'TEST-SERVER-01'; Mode = 'oneview'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+
+            $result = Set-MaintenanceMode @params
+
+            $result.Success | Should -Be $true
+            $result.Keys | Should -Contain 'ServerName'
+            $result.ServerName | Should -Be 'test-server-01.example.com'
+        }
+    }
+
+    Context 'When -TargetId is passed with OneView mode for an unknown server' {
+        It 'Should keep ServerName as the TargetId when not in catalogue [Mode=oneview, -TargetId=unknown, -DryRun]' {
+            $params = @{ Action = 'enable'; TargetId = 'UNKNOWN-SERVER-99'; Mode = 'oneview'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
+
+            $result = Set-MaintenanceMode @params
+
+            $result | Should -Not -BeNullOrEmpty
+            $result.Keys | Should -Contain 'ServerName'
         }
     }
 }
