@@ -38,6 +38,7 @@ env/
 .idea/
 *.swp
 *.swo
+node_modules/
 
 # === Logs, Reports & Linters ===
 htmlcov/
