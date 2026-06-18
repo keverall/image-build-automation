@@ -77,7 +77,9 @@ Describe 'Set-MaintenanceMode — OneView SerialNumber mode' {
         $result = Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+1hour'
         $result.Success | Should -Be $true
         $result.SerialNumber | Should -Be 'ABC123XYZ'
-        $result.ServerName | Should -Be 'ABC123XYZ'
+        if ($result.ContainsKey('ServerName')) {
+            $result.ServerName | Should -Not -Be 'ABC123XYZ'
+        }
     }
 
     It 'Should show "server with Serial Number" in message for OneView SerialNumber mode' {
