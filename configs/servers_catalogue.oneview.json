@@ -1,6 +1,7 @@
 {
   "servers": {
     "PROD-SERVER-01": {
+      "serial_number": "MXQ1234567",
       "display_name": "Production Server 01",
       "ilo_ip": "192.168.1.101",
       "oneview_name": "PROD-SERVER-01.ad.example.com",
@@ -8,6 +9,7 @@
       "environment": "production"
     },
     "PROD-SERVER-02": {
+      "serial_number": "MXQ7654321",
       "display_name": "Production Server 02",
       "ilo_ip": "192.168.1.102",
       "oneview_name": "PROD-SERVER-02.ad.example.com",
