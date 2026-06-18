@@ -74,6 +74,71 @@ foreach ($path in $ohMyPoshConfigs) {
 $ohMyPosh = Get-Command oh-my-posh -ErrorAction SilentlyContinue
 if ($ohMyPosh -and $ohMyPoshConfig) {
     & $ohMyPosh.Source init pwsh --config $ohMyPoshConfig | Invoke-Expression
+} else {
+    # Fallback prompt (Powerline-style) when oh-my-posh is not installed/available
+    function global:prompt {
+        $host.UI.RawUI.WindowTitle = "Automation: $(Get-Location)"
+
+        $isAdmin = $false
+        if ($IsWindows -or $null -eq $IsWindows) {
+            $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        }
+
+        # Path normalization (cross-platform, case-sensitive on Unix)
+        $path = $PWD.Path
+        $homePath = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+        $comparison = if ($IsWindows -or $null -eq $IsWindows) {
+            [System.StringComparison]::OrdinalIgnoreCase
+        } else {
+            [System.StringComparison]::Ordinal
+        }
+        if ($homePath -and $path.StartsWith($homePath, $comparison)) {
+            $path = "~" + $path.Substring($homePath.Length)
+        }
+        $path = $path -replace '\\', '/'
+
+        # Git branch detection
+        $gitBranch = $null
+        if (Test-Path .git) {
+            $gitBranch = & git branch --show-current 2>$null
+        }
+
+        # Segment 1: Admin/User Indicator
+        if ($isAdmin) {
+            Write-Host " ⚡ ADMIN " -NoNewline -BackgroundColor DarkRed -ForegroundColor White
+        } else {
+            Write-Host " 👤 USER " -NoNewline -BackgroundColor DarkGray -ForegroundColor White
+        }
+
+        # Separator to Path
+        if ($isAdmin) {
+            Write-Host "" -NoNewline -BackgroundColor DarkRed -ForegroundColor Blue
+        } else {
+            Write-Host "" -NoNewline -BackgroundColor DarkGray -ForegroundColor Blue
+        }
+
+        # Segment 2: Current Path
+        Write-Host " $path " -NoNewline -BackgroundColor Blue -ForegroundColor White
+
+        # Segment 3: Git Branch (if in a repository)
+        if ($gitBranch) {
+            Write-Host "" -NoNewline -BackgroundColor Blue -ForegroundColor DarkYellow
+            Write-Host "  $gitBranch " -NoNewline -BackgroundColor DarkYellow -ForegroundColor Black
+            $lastBg = "DarkYellow"
+        } else {
+            $lastBg = "Blue"
+        }
+
+        # Final Prompt Character
+        Write-Host "" -NoNewline -BackgroundColor $lastBg -ForegroundColor Black
+        if ($isAdmin) {
+            Write-Host " # " -NoNewline -ForegroundColor Red
+        } else {
+            Write-Host " ❯ " -NoNewline -ForegroundColor Cyan
+        }
+
+        return " "
+    }
 }
 
 # ─── PSReadLine Configuration ────────────────────────────────────────────────
@@ -549,5 +614,4 @@ Set-PSReadLineOption -CommandValidationHandler {
         }
     }
 }
-
 
