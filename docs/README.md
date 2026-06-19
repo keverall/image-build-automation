@@ -49,7 +49,7 @@ hpe-windows-iso-automation/
 |---|---|
 | [Maintenance Mode Architecture](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
 | [Maintenance Mode Environment Config](maintenance-mode-environment-config.md) | Environment variable configuration for maintenance mode |
-| [Maintenance Mode Code Map](MAINTENANCE_MODE_CODE_MAP.md) | Complete code map with links to all mm command functionality |
+| [Maintenance Mode Code Map](Code_Map_Maitenance_Mode.md) | Complete code map with links to all mm command functionality |
 
 ### Integration & Authentication
 
