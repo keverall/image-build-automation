@@ -13,15 +13,34 @@
 # =============================================================================
 # Run checkmake to validate Makefile (Windows-compatible)
 # =============================================================================
-$cmd = Get-Command checkmake -ErrorAction SilentlyContinue
-if (-not $cmd -or -not $cmd.Source -or $cmd.Source -eq '') {
+$PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
+$BIN_DIR      = Join-Path $PROJECT_ROOT 'bin'
+$isWin        = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform
+$checkmakeExe = if ($isWin) { 'checkmake.exe' } else { 'checkmake' }
+
+$checkmake = $null
+foreach ($candidate in @((Join-Path $BIN_DIR $checkmakeExe), $checkmakeExe)) {
+    if (Test-Path $candidate) {
+        $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source -and $cmd.Source -ne '') {
+            $checkmake = $cmd.Source
+            break
+        }
+    }
+}
+if (-not $checkmake) {
+    $cmd = Get-Command $checkmakeExe -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -and $cmd.Source -ne '') { $checkmake = $cmd.Source }
+}
+
+if (-not $checkmake) {
     Write-Host "[checkmake] Not installed (install with: make setup)" -ForegroundColor Yellow
     exit 0
 }
 
 Write-Host "[checkmake] Validating Makefile..."
 try {
-    $output = & $cmd.Source Makefile 2>&1
+    $output = & $checkmake Makefile 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[checkmake] No issues found" -ForegroundColor Green
     } else {
