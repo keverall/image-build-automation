@@ -14,10 +14,48 @@
 # =============================================================================
 # Lint Makefile syntax and style (Windows-compatible)
 # =============================================================================
-if (Get-Command checkmake -ErrorAction SilentlyContinue) {
-    checkmake Makefile
-} else {
-    Write-Host "[lint-make] 'checkmake' missing. Running basic syntax check..." -ForegroundColor Yellow
+$PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
+$BIN_DIR      = Join-Path $PROJECT_ROOT 'bin'
+$checkmakeExe = if ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform) { 'checkmake.exe' } else { 'checkmake' }
+
+$checkmake = $null
+$candidates = @(
+    (Join-Path $BIN_DIR $checkmakeExe),
+    $checkmakeExe
+)
+foreach ($c in $candidates) {
+    if (Test-Path $c) {
+        $cmd = Get-Command $c -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source -and $cmd.Source -ne '') {
+            $checkmake = $cmd.Source
+            break
+        }
+    }
+}
+
+if (-not $checkmake) {
+    $cmd = Get-Command $checkmakeExe -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -and $cmd.Source -ne '') { $checkmake = $cmd.Source }
+}
+
+if ($checkmake) {
+    try {
+        $output = & $checkmake Makefile 2>&1
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -eq 0) {
+            Write-Host "[lint-make] checkmake: no issues found" -ForegroundColor Green
+        } else {
+            Write-Host "[lint-make] checkmake issues:" -ForegroundColor Yellow
+            Write-Host $output
+        }
+    } catch {
+        Write-Host "[lint-make] checkmake failed: $_" -ForegroundColor Yellow
+        $checkmake = $null
+    }
+}
+
+if (-not $checkmake) {
+    Write-Host "[lint-make] 'checkmake' not found. Running basic syntax check..." -ForegroundColor Yellow
     $null = make --dry-run --quiet help 2>&1
     Write-Host "[lint-make] Makefile syntax OK" -ForegroundColor Green
 }
