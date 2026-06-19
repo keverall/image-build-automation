@@ -50,7 +50,7 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 | [⚡ Maintenance Mode Shortcuts](docs/MAINTENANCE_MODE_SHORTCUTS.md) | `mm` command reference and examples |
 | [🔧 Maintenance Mode Architecture](docs/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp integration |
 | [🔧 Maintenance Mode Environment Config](docs/maintenance-mode-environment-config.md) | Environment variable configuration |
-| [🔧 Maintenance Mode Code Map](docs/MAINTENANCE_MODE_CODE_MAP.md) | Complete code map with links to all mm command functionality |
+| [🔧 Maintenance Mode Code Map](docs/Code_Map_Maitenance_Mode.md) | Complete code map with links to all mm command functionality |
 
 #### Integration & Authentication
 | Document | Description |

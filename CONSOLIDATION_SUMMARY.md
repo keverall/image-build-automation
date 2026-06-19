@@ -93,7 +93,8 @@ This consolidation removed redundant documentation and scripts, improved discove
 - `maintenance_mode.md` (architecture)
 - `maintenance-mode-environment-config.md` (environment config)
 - `MAINTENANCE_MODE_SHORTCUTS.md` (command reference)
-- `MAINTENANCE_MODE_CODE_MAP.md` (code map)
+- `Code_Map_Maitenance_Mode.md` (maintenance mode code map)
+- `Code_Map_Automations.md` (automation code map)
 
 **Integration & Authentication (6 files):**
 - `scom-auth.md`
