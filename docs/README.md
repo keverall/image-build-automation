@@ -23,7 +23,7 @@ hpe-windows-iso-automation/
 
 ## Quick Start
 
-- **PowerShell** module import and first command: see [powershell_api_reference.md](powershell_api_reference.md#quick-start)
+- **PowerShell** module import and first command: see [powershell_api_reference.md](powershell_api_reference.md#markdown-header-quick-start)
 - **Configuration files reference:** see [configs/README.md](../configs/README.md)
 - **Running tests:** see [testing.md](testing.md)
 - **CI integration:** see [powershell_ci.md](powershell_ci.md)
