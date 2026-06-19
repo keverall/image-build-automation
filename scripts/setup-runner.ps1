@@ -245,13 +245,21 @@ function Install-RequiredModules {
 
 # Generic helper: locate a binary in the project bin/ dir or system PATH.
 # If found, ensures it's on PATH (both session and persistent).  Returns $true.
+# Guards against Windows App Execution Aliases (real exes must have a Source path).
 function Find-LocalBinary {
     param([string]$BinaryName)            # e.g. 'checkmake.exe'
-    # 1. Already in PATH?
-    if (Get-Command $BinaryName -ErrorAction SilentlyContinue) { return $true }
-    # 2. Project bin/?
+    # 1. Project bin/ (most reliable — avoids Windows app-picker stubs)
     $binPath = Join-Path $BIN_DIR $BinaryName
-    if (Test-Path $binPath) { Add-BinToPath -Dir $BIN_DIR; return $true }
+    if (Test-Path $binPath) {
+        $fileSize = (Get-Item $binPath).Length
+        if ($fileSize -gt 0) {
+            Add-BinToPath -Dir $BIN_DIR
+            return $true
+        }
+    }
+    # 2. System PATH — but only if it resolves to a real executable
+    $cmd = Get-Command $BinaryName -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -and $cmd.Source -ne '') { return $true }
     return $false
 }
 
@@ -301,33 +309,86 @@ function Install-Make {
     Write-Warn "make not found. Install Git for Windows or place make.exe in $BIN_DIR"
 }
 
-function Install-Checkmake {
-    if (Find-LocalBinary -BinaryName 'checkmake.exe') { Write-OK "checkmake found"; return }
-
+function Test-ValidExecutable {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return $false }
+    $size = (Get-Item $Path).Length
+    if ($size -lt 4) { return $false }
+    $bytes = [byte[]]::new(4)
+    try {
+        $stream = [IO.File]::OpenRead($Path)
+        try { $stream.Read($bytes, 0, 4) | Out-Null } finally { $stream.Close() }
+    } catch { return $false }
     $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform
-    $os    = if ($isWin)   { 'windows' }
-             elseif ($IsLinux)  { 'linux' }
-             elseif ($IsMacOS)  { 'darwin' } else { 'windows' }
+    if ($isWin) {
+        return ($bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A)   # PE: MZ
+    } else {
+        return ($bytes[0] -eq 0x7F -and $bytes[1] -eq 0x45 -and
+                $bytes[2] -eq 0x4C -and $bytes[3] -eq 0x46)    # ELF: \x7fELF
+    }
+}
+
+function Install-Checkmake {
+    $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform
+    $exe   = if ($isWin) { 'checkmake.exe' } else { 'checkmake' }
+    $dest  = Join-Path $BIN_DIR $exe
+
+    if (Find-LocalBinary -BinaryName $exe) {
+        if (Test-ValidExecutable -Path $dest) {
+            Write-OK "checkmake found"
+            return
+        }
+        Write-Warn "checkmake at $dest appears corrupt — re-downloading"
+        Remove-Item $dest -Force -ErrorAction SilentlyContinue
+    }
+
+    $os    = if ($isWin)         { 'windows' }
+             elseif ($IsLinux)   { 'linux' }
+             elseif ($IsMacOS)   { 'darwin' } else { 'windows' }
     $arch  = if ($isWin) {
         if ($env:PROCESSOR_ARCHITECTURE -match 'ARM64') { 'arm64' }
         elseif ($env:PROCESSOR_ARCHITECTURE -match 'X86') { '386' } else { 'amd64' }
     } else {
         try { if ((& uname -m 2>$null) -match 'aarch64|arm64') { 'arm64' } else { 'amd64' } } catch { 'amd64' }
     }
-    $ver  = '0.2.2'
-    $exe  = if ($os -eq 'windows') { 'checkmake.exe' } else { 'checkmake' }
-    $dest = Join-Path $BIN_DIR $exe
+    $ver = '0.2.2'
+
+    $urls = @(
+        "https://github.com/mrtazz/checkmake/releases/download/$ver/checkmake-$ver.$os.$arch"
+    )
+    try {
+        $apiResp = Invoke-RestMethod -Uri 'https://api.github.com/repos/mrtazz/checkmake/releases/latest' -UseBasicParsing -TimeoutSec 10 -ErrorAction SilentlyContinue
+        if ($apiResp.tag_name) {
+            $latestVer = $apiResp.tag_name.TrimStart('v')
+            if ($latestVer -ne $ver) {
+                $urls += "https://github.com/mrtazz/checkmake/releases/download/$latestVer/checkmake-$latestVer.$os.$arch"
+            }
+        }
+    } catch { Write-Log "Could not query latest checkmake release — using pinned v$ver" }
 
     New-Item -ItemType Directory -Force -Path $BIN_DIR | Out-Null
-    try {
-        $url = "https://github.com/mrtazz/checkmake/releases/download/$ver/checkmake-$ver.$os.$arch"
-        Write-Log "Downloading checkmake v$ver for $os/$arch…"
-        Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -ErrorAction Stop
-        if ($os -ne 'windows') { chmod +x $dest }
-        Add-BinToPath -Dir $BIN_DIR
-        Write-OK "checkmake v$ver downloaded"
-    } catch {
-        Write-Warn "checkmake download failed (404 / offline). Manual install: $dest"
+    $downloaded = $false
+    foreach ($url in $urls) {
+        try {
+            Write-Log "Downloading checkmake from $url …"
+            Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -ErrorAction Stop
+            if (Test-ValidExecutable -Path $dest) {
+                if ($os -ne 'windows') { & chmod +x $dest 2>$null }
+                Add-BinToPath -Dir $BIN_DIR
+                Write-OK "checkmake downloaded"
+                $downloaded = $true
+                break
+            }
+            Write-Warn "Downloaded file is not a valid executable — trying next URL"
+            Remove-Item $dest -Force -ErrorAction SilentlyContinue
+        } catch {
+            Write-Warn "Download failed: $($_.Exception.Message)"
+        }
+    }
+
+    if (-not $downloaded) {
+        Write-Warn "checkmake download failed. Install manually to $dest"
+        Write-Warn "  Manual download: https://github.com/mrtazz/checkmake/releases"
     }
 }
 
