@@ -13,14 +13,15 @@
 # =============================================================================
 # Run checkmake to validate Makefile (Windows-compatible)
 # =============================================================================
-if (-not (Get-Command checkmake -ErrorAction SilentlyContinue)) {
+$cmd = Get-Command checkmake -ErrorAction SilentlyContinue
+if (-not $cmd -or -not $cmd.Source -or $cmd.Source -eq '') {
     Write-Host "[checkmake] Not installed (install with: make setup)" -ForegroundColor Yellow
     exit 0
 }
 
 Write-Host "[checkmake] Validating Makefile..."
 try {
-    $output = checkmake Makefile 2>&1
+    $output = & $cmd.Source Makefile 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[checkmake] No issues found" -ForegroundColor Green
     } else {
