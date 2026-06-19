@@ -6,15 +6,14 @@ What is required to run the `src/powershell/Automation` module standalone or ins
 
 ## Table of Contents
 
-1. [CyberArk Credential Bootstrap](#cyberark-credential-bootstrap)
-2. [CI Pipeline — PowerShell Stage Requirements](#ci-powershell-stage)
-3. [SCOM 2015 — Will It Work?](#scom-2015)
-4. [HPE iLO — Will It Work?](#hpe-ilo)
-5. [Open Items](#open-items)
+1. [CyberArk Credential Bootstrap](#1-cyberark-credential-bootstrap)
+2. [CI Pipeline — PowerShell Stage Requirements](#2-ci-pipeline-powershell-stage-requirements)
+3. [SCOM 2015 — Will It Work?](#3-scom-2015-will-it-work)
+4. [HPE iLO — Will It Work?](#4-hpe-ilo-will-it-work)
+5. [Open Items](#5-open-items)
 
 ---
 
-<a name="cyberark-credential-bootstrap"></a>
 ## 1. CyberArk Credential Bootstrap
 
 CyberArk is the **single source of truth for all credentials** used by this pipeline. A dedicated **`CyberArk - Bootstrap Secrets`** stage runs as the first step after workspace setup and retrieves every secret, injecting them as environment variables for all subsequent jobs.
@@ -47,11 +46,10 @@ HPE-Download      hpe-download-user        → HPE_DOWNLOAD_USER
 HPE-Download      hpe-download-pass        → HPE_DOWNLOAD_PASS
 ```
 
-For a Jenkins pipeline excerpt showing the bootstrap implementation, see [`gitlab_ci.md`](gitlab_ci.md#pipeline-excerpt).
+For a Jenkins pipeline excerpt showing the bootstrap implementation, see [Jenkins CI Example](#jenkins-ci-example).
 
 ---
 
-<a name="ci-powershell-stage"></a>
 ## 2. CI Pipeline — PowerShell Stage Requirements
 
 ### Minimal Prerequisites
@@ -123,7 +121,6 @@ See [`testing.md`](testing.md) for the full Pester guide (commands, tags, mockin
 
 ---
 
-<a name="scom-2015"></a>
 ## 3. SCOM 2015 — Will It Work?
 
 **Yes — this is the strongest part of the module.**
@@ -161,7 +158,6 @@ foreach ($inst in $instances) {
 
 ---
 
-<a name="hpe-ilo"></a>
 ## 4. HPE iLO — Will It Work?
 
 ### `ILOManager` inside `Set-MaintenanceMode` — iLO REST maintenance window ✅
@@ -191,7 +187,6 @@ Until that `<http_iso_url>` is available the step is intentionally a no-op.
 
 ---
 
-<a name="open-items"></a>
 ## 5. Open Items
 
 | Priority | Item | Status | Detail |

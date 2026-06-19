@@ -2,65 +2,65 @@
 
 ## TOC
 
-- [Automation Code Map](markdown-header-automation-code-map)
-  - [TOC](markdown-header-toc)
-  - [1. Module Loading & Bootstrap](markdown-header-1-module-loading-bootstrap)
-    - [1.1 — Root Module Loader](markdown-header-11-root-module-loader)
-    - [1.2 — Private Script Load Order](markdown-header-12-private-script-load-order)
-    - [1.3 — Public Function Load Order](markdown-header-13-public-function-load-order)
-  - [2. Request Routing & Control Surfaces](markdown-header-2-request-routing-control-surfaces)
-    - [2.1 — Request Router](markdown-header-21-request-router)
-    - [2.2 — Unified Orchestrator Entry Point](markdown-header-22-unified-orchestrator-entry-point)
-    - [2.3 — Request Validation](markdown-header-23-request-validation)
-    - [2.4 — CI Pipeline Surface](markdown-header-24-ci-pipeline-surface)
-    - [2.5 — iRequest/ISAPI Surface](markdown-header-25-irequestisapi-surface)
-    - [2.6 — Scheduled Task Surface](markdown-header-26-scheduled-task-surface)
-    - [2.7 — GitLab CI/CD Surface](markdown-header-27-gitlab-cicd-surface)
-  - [3. ISO Build Pipeline](markdown-header-3-iso-build-pipeline)
-    - [3.1 — ISO Build Orchestrator](markdown-header-31-iso-build-orchestrator)
-    - [3.2 — UUID Generation](markdown-header-32-uuid-generation)
-  - [4. Firmware ISO Builder](markdown-header-4-firmware-iso-builder)
-    - [4.1 — Firmware Update Function](markdown-header-41-firmware-update-function)
-    - [4.2 — FirmwareUpdater Class](markdown-header-42-firmwareupdater-class)
-  - [5. Windows Security Patching](markdown-header-5-windows-security-patching)
-    - [5.1 — Invoke-WindowsSecurityUpdate](markdown-header-51-invoke-windowssecurityupdate)
-    - [5.2 — WindowsPatcher Class](markdown-header-52-windowspatcher-class)
-  - [6. ISO Deployment](markdown-header-6-iso-deployment)
-    - [6.1 — Invoke-IsoDeploy](markdown-header-61-invoke-isodeploy)
-    - [6.2 — ISODeployer Class](markdown-header-62-isodeployer-class)
-  - [7. Installation Monitoring](markdown-header-7-installation-monitoring)
-    - [7.1 — Start-InstallMonitor](markdown-header-71-start-installmonitor)
-    - [7.2 — InstallationMonitor Class](markdown-header-72-installationmonitor-class)
-  - [8. PowerShell Execution Utilities](markdown-header-8-powershell-execution-utilities)
-    - [8.1 — Local PowerShell Execution](markdown-header-81-local-powershell-execution)
-    - [8.2 — Remote PowerShell via WinRM](markdown-header-82-remote-powershell-via-winrm)
-  - [9. OpsRamp Integration](markdown-header-9-opsramp-integration)
-    - [9.1 — OpsRamp_Client Class](markdown-header-91-opsrampclient-class)
-    - [9.2 — OpsRamp Entry Points](markdown-header-92-opsramp-entry-points)
-  - [10. Credential Resolution](markdown-header-10-credential-resolution)
-  - [11. Inventory & Configuration](markdown-header-11-inventory-configuration)
-    - [11.1 — Inventory Functions](markdown-header-111-inventory-functions)
-    - [11.2 — Configuration Functions](markdown-header-112-configuration-functions)
-    - [11.3 — Validator Functions](markdown-header-113-validator-functions)
-  - [12. Process Execution & Retry](markdown-header-12-process-execution-retry)
-  - [13. File I/O & Path Resolution](markdown-header-13-file-io-path-resolution)
-    - [13.1 — File I/O Functions](markdown-header-131-file-io-functions)
-    - [13.2 — Path Resolution](markdown-header-132-path-resolution)
-  - [14. Logging & Audit](markdown-header-14-logging-audit)
-    - [14.1 — Logging Functions](markdown-header-141-logging-functions)
-    - [14.2 — Audit Logger](markdown-header-142-audit-logger)
-    - [14.3 — Timestamp Helpers](markdown-header-143-timestamp-helpers)
-  - [15. Script Helpers](markdown-header-15-script-helpers)
-    - [15.1 — PowerShell Profile Setup](markdown-header-151-powershell-profile-setup)
-    - [15.2 — CI/Security & Lint Scripts](markdown-header-152-cisecurity-lint-scripts)
-    - [15.3 — Setup & Bootstrap Scripts](markdown-header-153-setup-bootstrap-scripts)
-    - [15.4 — Documentation & Coverage Scripts](markdown-header-154-documentation-coverage-scripts)
-  - [16. Configuration Files](markdown-header-16-configuration-files)
-  - [17. Testing](markdown-header-17-testing)
-    - [17.1 — Pester Unit Tests](markdown-header-171-pester-unit-tests)
-    - [17.2 — Test Execution Scripts](markdown-header-172-test-execution-scripts)
-    - [17.3 — Coverage & Lint](markdown-header-173-coverage-lint)
-  - [18. Quick Navigation](markdown-header-18-quick-navigation)
+- [Automation Code Map](#markdown-header-automation-code-map)
+  - [TOC](#markdown-header-toc)
+  - [1. Module Loading & Bootstrap](#markdown-header-1-module-loading-bootstrap)
+    - [1.1 — Root Module Loader](#markdown-header-11-root-module-loader)
+    - [1.2 — Private Script Load Order](#markdown-header-12-private-script-load-order)
+    - [1.3 — Public Function Load Order](#markdown-header-13-public-function-load-order)
+  - [2. Request Routing & Control Surfaces](#markdown-header-2-request-routing-control-surfaces)
+    - [2.1 — Request Router](#markdown-header-21-request-router)
+    - [2.2 — Unified Orchestrator Entry Point](#markdown-header-22-unified-orchestrator-entry-point)
+    - [2.3 — Request Validation](#markdown-header-23-request-validation)
+    - [2.4 — CI Pipeline Surface](#markdown-header-24-ci-pipeline-surface)
+    - [2.5 — iRequest/ISAPI Surface](#markdown-header-25-irequestisapi-surface)
+    - [2.6 — Scheduled Task Surface](#markdown-header-26-scheduled-task-surface)
+    - [2.7 — GitLab CI/CD Surface](#markdown-header-27-gitlab-cicd-surface)
+  - [3. ISO Build Pipeline](#markdown-header-3-iso-build-pipeline)
+    - [3.1 — ISO Build Orchestrator](#markdown-header-31-iso-build-orchestrator)
+    - [3.2 — UUID Generation](#markdown-header-32-uuid-generation)
+  - [4. Firmware ISO Builder](#markdown-header-4-firmware-iso-builder)
+    - [4.1 — Firmware Update Function](#markdown-header-41-firmware-update-function)
+    - [4.2 — FirmwareUpdater Class](#markdown-header-42-firmwareupdater-class)
+  - [5. Windows Security Patching](#markdown-header-5-windows-security-patching)
+    - [5.1 — Invoke-WindowsSecurityUpdate](#markdown-header-51-invoke-windowssecurityupdate)
+    - [5.2 — WindowsPatcher Class](#markdown-header-52-windowspatcher-class)
+  - [6. ISO Deployment](#markdown-header-6-iso-deployment)
+    - [6.1 — Invoke-IsoDeploy](#markdown-header-61-invoke-isodeploy)
+    - [6.2 — ISODeployer Class](#markdown-header-62-isodeployer-class)
+  - [7. Installation Monitoring](#markdown-header-7-installation-monitoring)
+    - [7.1 — Start-InstallMonitor](#markdown-header-71-start-installmonitor)
+    - [7.2 — InstallationMonitor Class](#markdown-header-72-installationmonitor-class)
+  - [8. PowerShell Execution Utilities](#markdown-header-8-powershell-execution-utilities)
+    - [8.1 — Local PowerShell Execution](#markdown-header-81-local-powershell-execution)
+    - [8.2 — Remote PowerShell via WinRM](#markdown-header-82-remote-powershell-via-winrm)
+  - [9. OpsRamp Integration](#markdown-header-9-opsramp-integration)
+    - [9.1 — OpsRamp_Client Class](#markdown-header-91-opsrampclient-class)
+    - [9.2 — OpsRamp Entry Points](#markdown-header-92-opsramp-entry-points)
+  - [10. Credential Resolution](#markdown-header-10-credential-resolution)
+  - [11. Inventory & Configuration](#markdown-header-11-inventory-configuration)
+    - [11.1 — Inventory Functions](#markdown-header-111-inventory-functions)
+    - [11.2 — Configuration Functions](#markdown-header-112-configuration-functions)
+    - [11.3 — Validator Functions](#markdown-header-113-validator-functions)
+  - [12. Process Execution & Retry](#markdown-header-12-process-execution-retry)
+  - [13. File I/O & Path Resolution](#markdown-header-13-file-io-path-resolution)
+    - [13.1 — File I/O Functions](#markdown-header-131-file-io-functions)
+    - [13.2 — Path Resolution](#markdown-header-132-path-resolution)
+  - [14. Logging & Audit](#markdown-header-14-logging-audit)
+    - [14.1 — Logging Functions](#markdown-header-141-logging-functions)
+    - [14.2 — Audit Logger](#markdown-header-142-audit-logger)
+    - [14.3 — Timestamp Helpers](#markdown-header-143-timestamp-helpers)
+  - [15. Script Helpers](#markdown-header-15-script-helpers)
+    - [15.1 — PowerShell Profile Setup](#markdown-header-151-powershell-profile-setup)
+    - [15.2 — CI/Security & Lint Scripts](#markdown-header-152-cisecurity-lint-scripts)
+    - [15.3 — Setup & Bootstrap Scripts](#markdown-header-153-setup-bootstrap-scripts)
+    - [15.4 — Documentation & Coverage Scripts](#markdown-header-154-documentation-coverage-scripts)
+  - [16. Configuration Files](#markdown-header-16-configuration-files)
+  - [17. Testing](#markdown-header-17-testing)
+    - [17.1 — Pester Unit Tests](#markdown-header-171-pester-unit-tests)
+    - [17.2 — Test Execution Scripts](#markdown-header-172-test-execution-scripts)
+    - [17.3 — Coverage & Lint](#markdown-header-173-coverage-lint)
+  - [18. Quick Navigation](#markdown-header-18-quick-navigation)
 
 
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](Code_Map_Maitenance_Mode.md)). It is organized in the **chronological order a user or caller encounters each feature** — from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
@@ -209,22 +209,22 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 - Routes to `gitlab_maintenance` request type
 
 **[`Invoke-GitLabMaintenanceTrigger.ps1`](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L7)** — [`Invoke-GitLabMaintenanceTrigger()`](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L7)
-- Dot-sources [`Send-GitLabMaintenanceRequest.ps1`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L84–94](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L84-L94)
-- Calls [`Send-GitLabMaintenanceRequest()`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L97–100](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L97-L100)
+- Dot-sources [`Send-GitLabMaintenanceRequest.ps1`](../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L84–94](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L84-L94)
+- Calls [`Send-GitLabMaintenanceRequest()`](../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L97–100](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L97-L100)
 - Returns pipeline ID and web URL on success at [L102–110](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L102-L110)
 
-**[`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1)**
+**[`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`](../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1)**
 - Triggers GitLab pipeline via trigger API
 - Monitors pipeline completion with timeout
 - Sends web callback with results on completion
 
-**[`scripts/gitlab/Invoke-GitLabMaintenance.ps1`](../../scripts/gitlab/Invoke-GitLabMaintenance.ps1)**
+**[`scripts/gitlab/Invoke-GitLabMaintenance.ps1`](../scripts/gitlab/Invoke-GitLabMaintenance.ps1)**
 - GitLab CI entry point — executed by pipeline runner
 - Wraps `Set-MaintenanceMode` with GitLab-specific logging and callback support
 
-**[`scripts/gitlab/Send-WebCallback.ps1`](../../scripts/gitlab/Send-WebCallback.ps1)** — [`Send-WebCallback()`](../../scripts/gitlab/Send-WebCallback.ps1)
+**[`scripts/gitlab/Send-WebCallback.ps1`](../scripts/gitlab/Send-WebCallback.ps1)** — [`Send-WebCallback()`](../scripts/gitlab/Send-WebCallback.ps1)
 - POST JSON to HTTPS callback URL with optional API key
-- Validates HTTPS-only at [L28–31](../../scripts/gitlab/Send-WebCallback.ps1#L28-L31)
+- Validates HTTPS-only at [L28–31](../scripts/gitlab/Send-WebCallback.ps1#L28-L31)
 
 ---
 
@@ -452,7 +452,7 @@ dism /Image:{mounted_iso} /Add-Package /PackagePath:{kb.msu} /LimitAccess /NoRes
 
 ### 9.1 — OpsRamp_Client Class
 
-Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#L136), fully documented in [§2 of this document](#12-opsramp-rest-api-client).
+Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#L136), fully documented in [§9.2 of this document](#markdown-header-92-opsramp-entry-points).
 
 | Member | Line | Purpose |
 |--------|------|---------|
@@ -589,7 +589,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#L136
 **[`Audit.ps1`](../src/powershell/Automation/Private/Audit.ps1#L5)** — [`New-AuditLogger()`](../src/powershell/Automation/Private/Audit.ps1#L5)
 - Factory for `AuditLogger` class instances
 
-Also defined as class in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#L38) (documented in [§1.1](#11--root-module-loader)):
+Also defined as class in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#L38) (documented in [§1.1](#markdown-header-11-root-module-loader)):
 - [`AuditLogger.Log()`](../src/powershell/Automation/Automation.psm1#L66) — adds entry with action, status, server, details
 - [`AuditLogger.Save()`](../src/powershell/Automation/Automation.psm1#L82) — writes JSON file
 - [`AuditLogger.AppendToMaster()`](../src/powershell/Automation/Automation.psm1#L99) — appends to master log
@@ -616,7 +616,7 @@ Also defined as class in [`Automation.psm1`](../src/powershell/Automation/Automa
 
 ### 15.1 — PowerShell Profile Setup
 
-**[`scripts/Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1)** — 294 lines
+**[`scripts/Setup-Profile.ps1`](../scripts/Setup-Profile.ps1)** — 294 lines
 
 Configures PowerShell profiles to auto-import the Automation module:
 - Copies WIP profile templates to live profile locations (Terminal, VS Code)
@@ -628,29 +628,29 @@ Configures PowerShell profiles to auto-import the Automation module:
 
 | Script | File | Purpose |
 |--------|------|---------|
-| [`ci-security-check.ps1`](../../scripts/ci-security-check.ps1) | 143 lines | PSScriptAnalyzer security scan + secrets detection + JSON validation |
-| [`lint.ps1`](../../scripts/lint.ps1) | 246 lines | Two-phase lint: syntax validation → PSScriptAnalyzer code quality |
-| [`lint-make.ps1`](../../scripts/lint-make.ps1) | 70 lines | Checkmake Makefile validation (Windows-compatible) |
-| [`run-checkmake.ps1`](../../scripts/run-checkmake.ps1) | 57 lines | Standalone checkmake runner |
-| [`prune-logs.ps1`](../../scripts/prune-logs.ps1) | 152 lines | Prunes excess log files, keeps max per type |
+| [`ci-security-check.ps1`](../scripts/ci-security-check.ps1) | 143 lines | PSScriptAnalyzer security scan + secrets detection + JSON validation |
+| [`lint.ps1`](../scripts/lint.ps1) | 246 lines | Two-phase lint: syntax validation → PSScriptAnalyzer code quality |
+| [`lint-make.ps1`](../scripts/lint-make.ps1) | 70 lines | Checkmake Makefile validation (Windows-compatible) |
+| [`run-checkmake.ps1`](../scripts/run-checkmake.ps1) | 57 lines | Standalone checkmake runner |
+| [`prune-logs.ps1`](../scripts/prune-logs.ps1) | 152 lines | Prunes excess log files, keeps max per type |
 
 ### 15.3 — Setup & Bootstrap Scripts
 
 | Script | File | Purpose |
 |--------|------|---------|
-| [`setup-runner.ps1`](../../scripts/setup-runner.ps1) | 436 lines | Full offline-capable runner setup: modules (Pester, PSScriptAnalyzer, PlatyPS) + binaries (Oh My Posh, make, checkmake) |
-| [`setup-scom.ps1`](../../scripts/setup-scom.ps1) | 70 lines | Validates SCOM setup: module, credentials, config file |
-| [`setup-oneview.ps1`](../../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
-| [`cyberark-bootstrap.ps1`](../../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for GitLab CI |
+| [`setup-runner.ps1`](../scripts/setup-runner.ps1) | 436 lines | Full offline-capable runner setup: modules (Pester, PSScriptAnalyzer, PlatyPS) + binaries (Oh My Posh, make, checkmake) |
+| [`setup-scom.ps1`](../scripts/setup-scom.ps1) | 70 lines | Validates SCOM setup: module, credentials, config file |
+| [`setup-oneview.ps1`](../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
+| [`cyberark-bootstrap.ps1`](../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for GitLab CI |
 
 ### 15.4 — Documentation & Coverage Scripts
 
 | Script | File | Purpose |
 |--------|------|---------|
-| [`Generate-PSDocs.ps1`](../../scripts/Generate-PSDocs.ps1) | 269 lines | Auto-generates Markdown API reference from comment-based help blocks |
-| [`coverage-report.ps1`](../../scripts/coverage-report.ps1) | 327 lines | Runs Pester with code coverage, generates Cobertura XML + Markdown report |
-| [`CoverageSummary.ps1`](../../scripts/CoverageSummary.ps1) | 121 lines | Converts Cobertura XML to human-readable table |
-| [`Show-Help.ps1`](../../scripts/Show-Help.ps1) | 35 lines | Displays Makefile documented targets |
+| [`Generate-PSDocs.ps1`](../scripts/Generate-PSDocs.ps1) | 269 lines | Auto-generates Markdown API reference from comment-based help blocks |
+| [`coverage-report.ps1`](../scripts/coverage-report.ps1) | 327 lines | Runs Pester with code coverage, generates Cobertura XML + Markdown report |
+| [`CoverageSummary.ps1`](../scripts/CoverageSummary.ps1) | 121 lines | Converts Cobertura XML to human-readable table |
+| [`Show-Help.ps1`](../scripts/Show-Help.ps1) | 35 lines | Displays Makefile documented targets |
 
 ---
 
@@ -693,20 +693,20 @@ All configs loaded from `configs/` directory:
 
 | Script | Purpose |
 |--------|---------|
-| [`run-tests.ps1`](../../scripts/run-tests.ps1) | Main test runner: auto-repairs Pester, runs all Pester tests with summary |
-| [`run-maint-mode-tests.ps1`](../../scripts/run-maint-mode-tests.ps1) | High-priority maintenance mode tests only |
-| [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1) | Full maintenance test suite with environment/DateTime/connection filters |
-| [`test-maintenance-connection.ps1`](../../scripts/test-maintenance-connection.ps1) | Connectivity test for SCOM/OneView |
-| [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
+| [`run-tests.ps1`](../scripts/run-tests.ps1) | Main test runner: auto-repairs Pester, runs all Pester tests with summary |
+| [`run-maint-mode-tests.ps1`](../scripts/run-maint-mode-tests.ps1) | High-priority maintenance mode tests only |
+| [`run-maintenance-tests.ps1`](../scripts/run-maintenance-tests.ps1) | Full maintenance test suite with environment/DateTime/connection filters |
+| [`test-maintenance-connection.ps1`](../scripts/test-maintenance-connection.ps1) | Connectivity test for SCOM/OneView |
+| [`validate-maintenance-config.ps1`](../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
 
 ### 17.3 — Coverage & Lint
 
 | Script | Purpose |
 |--------|---------|
-| [`coverage-report.ps1`](../../scripts/coverage-report.ps1) | Cobertura XML coverage + Markdown report |
-| [`CoverageSummary.ps1`](../../scripts/CoverageSummary.ps1) | Human-readable coverage table |
-| [`lint.ps1`](../../scripts/lint.ps1) | Syntax validation + PSScriptAnalyzer |
-| [`ci-security-check.ps1`](../../scripts/ci-security-check.ps1) | Security scan: PSScriptAnalyzer + secrets detection + JSON validation |
+| [`coverage-report.ps1`](../scripts/coverage-report.ps1) | Cobertura XML coverage + Markdown report |
+| [`CoverageSummary.ps1`](../scripts/CoverageSummary.ps1) | Human-readable coverage table |
+| [`lint.ps1`](../scripts/lint.ps1) | Syntax validation + PSScriptAnalyzer |
+| [`ci-security-check.ps1`](../scripts/ci-security-check.ps1) | Security scan: PSScriptAnalyzer + secrets detection + JSON validation |
 
 ---
 
