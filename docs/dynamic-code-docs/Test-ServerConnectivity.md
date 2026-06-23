@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-06-23 12:10 UTC
+generated: 2026-06-23 13:21 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,12 +15,13 @@ Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (
 | Parameter | Description |
 |-----------|-------------|
 | `-Mode` | 'scom' or 'oneview'. |
-| `-Environment` | 'Test' or 'Prod'.  Resolves host from connection_hosts.json. |
-| `-ManagementHost` | Direct override for the management server/appliance hostname. |
+| `-Environment` | 'Test' or 'Prod'. Only used with -JsonConfig. Resolves host from connection_hosts.json. Without -JsonConfig, this parameter is ignored (host is prompted or provided directly). |
+| `-ManagementHost` | Direct override for the management server/appliance hostname. Highest priority. |
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000). |
 | `-Json` | If set, outputs the result as a JSON string instead of formatted text. |
-| `-DryRun` | Simulate connectivity without actual network calls. Returns mock data to verify configuration without requiring network access or credentials. |
+| `-JsonConfig` | When specified, reads management host from configs/connection_hosts.json using the selected -Environment (default: Prod). Without -JsonConfig and without -ManagementHost, the command will prompt for host details interactively. |
+| `-DryRun` | Simulate connectivity without actual network calls. Returns mock data to verify configuration resolution. Does not require network access or credentials. |
 
 ## Original Comment-Based Help
 ```powershell
@@ -48,10 +49,11 @@ Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (
         'scom' or 'oneview'.
 
     .PARAMETER Environment
-        'Test' or 'Prod'.  Resolves host from connection_hosts.json.
+        'Test' or 'Prod'. Only used with -JsonConfig. Resolves host from connection_hosts.json.
+        Without -JsonConfig, this parameter is ignored (host is prompted or provided directly).
 
     .PARAMETER ManagementHost
-        Direct override for the management server/appliance hostname.
+        Direct override for the management server/appliance hostname. Highest priority.
 
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs').
@@ -61,6 +63,11 @@ Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (
 
     .PARAMETER Json
         If set, outputs the result as a JSON string instead of formatted text.
+
+    .PARAMETER JsonConfig
+        When specified, reads management host from configs/connection_hosts.json using
+        the selected -Environment (default: Prod). Without -JsonConfig and without
+        -ManagementHost, the command will prompt for host details interactively.
 
     .PARAMETER DryRun
         Simulate connectivity without actual network calls. Returns mock data to verify
