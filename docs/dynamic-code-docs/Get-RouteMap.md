@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-RouteMap.ps1
-generated: 2026-06-23 08:33 UTC
+generated: 2026-06-23 12:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/run-maint-mode-tests.ps1
-generated: 2026-06-23 08:33 UTC
+generated: 2026-06-23 12:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,7 +8,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Executes high-priority Pester tests specifically for Set-MaintenanceMode.ps1: - Set-MaintenanceMode.Validation.Tests.ps1 - Set-MaintenanceMode.Enable.Tests.ps1 - Set-MaintenanceMode.Disable.Tests.ps1 Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/{environment}/maint_mode_tests_*.log Exits with code 1 if any tests fail.
+Executes high-priority Pester tests for maintenance mode operations: - Test-ServerConnectivity.Tests.ps1 (connectivity validation - runs first) - Set-MaintenanceMode.Validation.Tests.ps1 - Set-MaintenanceMode.Enable.Tests.ps1 - Set-MaintenanceMode.Disable.Tests.ps1 Tests are ordered logically: connectivity checks first, then maintenance operations. Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/{environment}/maint_mode_tests_*.log Exits with code 1 if any tests fail.
 
 ## Examples
 
@@ -20,13 +20,16 @@ pwsh -File scripts/run-maint-mode-tests.ps1
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-    Run maintenance mode validation tests.
+    Run maintenance mode validation and connectivity tests.
 
 .DESCRIPTION
-    Executes high-priority Pester tests specifically for Set-MaintenanceMode.ps1:
+    Executes high-priority Pester tests for maintenance mode operations:
+    - Test-ServerConnectivity.Tests.ps1 (connectivity validation - runs first)
     - Set-MaintenanceMode.Validation.Tests.ps1
     - Set-MaintenanceMode.Enable.Tests.ps1
     - Set-MaintenanceMode.Disable.Tests.ps1
+    
+    Tests are ordered logically: connectivity checks first, then maintenance operations.
     
     Displays detailed test summary with pass/fail/skip counts and duration.
     Logs detailed output to generated/logs/{environment}/maint_mode_tests_*.log
