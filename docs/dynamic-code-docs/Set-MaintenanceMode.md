@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-06-17 16:30 UTC
+generated: 2026-06-23 08:33 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -167,7 +167,9 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
     .RETURNS
         [hashtable] with Success (bool), Message, StartTimeUtc, EndTimeUtc,
         TargetId, ClusterName, ServerCount, DryRun, AuditFile,
-        ScomObjects, ScomSummary, OneViewObjects, OneViewSummary, FailedObjects.
+        FailedObjects, and mode-specific fields:
+        - scom mode only: ScomObjects, ScomSummary
+        - oneview mode only: OneViewObjects, OneViewSummary
 
     .EXAMPLE
         # Validate configuration without making changes
