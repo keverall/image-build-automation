@@ -11,6 +11,7 @@ param(
     [string] $ConfigDir = 'configs',
     [int] $PingTimeoutMs = 3000,
     [switch] $Json,
+    [switch] $JsonConfig,
     [switch] $DryRun,
     [Alias('h', 'help', '?')][switch] $ShowHelp
 )
@@ -26,7 +27,7 @@ if ($ShowHelp) {
     Write-Output "SYNTAX"
     Write-Output "    Test-ServerConnectivity -Mode <scom|oneview>"
     Write-Output "        [-Environment <Test|Prod>] [-ManagementHost <string>]"
-    Write-Output "        [-PingTimeoutMs <int>] [-Json]"
+    Write-Output "        [-PingTimeoutMs <int>] [-Json] [-JsonConfig]"
     Write-Output ""
     Write-Output "DESCRIPTION"
     Write-Output "    Performs read-only connectivity checks against SCOM or OneView management"
@@ -39,6 +40,12 @@ if ($ShowHelp) {
     Write-Output "    All operations are read-only.  No maintenance windows are created, no"
     Write-Output "    objects are modified.  Safe to run during a change freeze."
     Write-Output ""
+    Write-Output "    HOST RESOLUTION ORDER:"
+    Write-Output "      1. -ManagementHost parameter (explicit override)"
+    Write-Output "      2. `$env:MAINTENANCE_HOST environment variable"
+    Write-Output "      3. connection_hosts.json (only when -JsonConfig is used)"
+    Write-Output "      4. Interactive prompt (if running interactively and no -JsonConfig)"
+    Write-Output ""
     Write-Output "PARAMETERS"
     Write-Output ""
     Write-Output "  -Mode <scom|oneview> [REQUIRED]"
@@ -46,10 +53,18 @@ if ($ShowHelp) {
     Write-Output ""
     Write-Output "  -Environment <Test|Prod>"
     Write-Output "    Select environment for host resolution from connection_hosts.json."
-    Write-Output "    Default: $env:ENVIRONMENT, then Prod."
+    Write-Output "    Only used when -JsonConfig is specified. Default: Prod."
+    Write-Output "    Valid values: Test, Prod"
     Write-Output ""
     Write-Output "  -ManagementHost <string>"
-    Write-Output "    Override management server/appliance (takes precedence over config)."
+    Write-Output "    Override management server/appliance (takes precedence over all)"
+    Write-Output "    Highest priority - always used when provided."
+    Write-Output ""
+    Write-Output "  -JsonConfig"
+    Write-Output "    Use configs/connection_hosts.json to resolve management host."
+    Write-Output "    Without this switch, the command will default to prompting for"
+    Write-Output "    host details interactively."
+    Write-Output "    See CONFIGURATION section below for config file locations."
     Write-Output ""
     Write-Output "  -PingTimeoutMs <int>"
     Write-Output "    TCP connect timeout in milliseconds (default: 3000)."
@@ -61,16 +76,72 @@ if ($ShowHelp) {
     Write-Output "    Simulate connectivity without actual network calls. Returns mock data"
     Write-Output "    to verify configuration resolution."
     Write-Output ""
+    Write-Output "CONFIGURATION"
+    Write-Output "  Management Host and Environment - configs/connection_hosts.json:"
+    Write-Output "    Location: configs/connection_hosts.json"
+    Write-Output "    Used when -JsonConfig is specified."
+    Write-Output ""
+    Write-Output "    Structure:"
+    Write-Output "    {"
+    Write-Output '      "environments": {'
+    Write-Output '        "Prod": {'
+    Write-Output '          "scom": {'
+    Write-Output '            "management_server": "VR-OPM19P1-7382.ad.example.com",'
+    Write-Output '            "group_id": "PROD-SERVERS-GROUP",'
+    Write-Output '            "environment": "production"'
+    Write-Output '          },'
+    Write-Output '          "oneview": {'
+    Write-Output '            "appliance": "oneview.ad.example.com",'
+    Write-Output '            "scope_name": "Production_Cluster_01"'
+    Write-Output '          }'
+    Write-Output '        },'
+    Write-Output '        "Test": {'
+    Write-Output '          "scom": {'
+    Write-Output '            "management_server": "VR-OPM19T1-7382.ad.example.com",'
+    Write-Output '            "group_id": "TEST-SERVERS-GROUP",'
+    Write-Output '            "environment": "test"'
+    Write-Output '          },'
+    Write-Output '          "oneview": {'
+    Write-Output '            "appliance": "oneview.ad.example.com",'
+    Write-Output '            "scope_name": "Test_Cluster_01"'
+    Write-Output '          }'
+    Write-Output '        }'
+    Write-Output "      }"
+    Write-Output "    }"
+    Write-Output ""
+    Write-Output "    To set hosts:"
+    Write-Output "      - Edit configs/connection_hosts.json"
+    Write-Output "      - Update 'management_server' for SCOM"
+    Write-Output "      - Update 'appliance' for OneView"
+    Write-Output ""
+    Write-Output "  Cluster IDs, Server Names, Serial Numbers:"
+    Write-Output "    Location: configs/clusters_catalogue.json"
+    Write-Output "      - SCOM cluster definitions with CLU-xxx IDs"
+    Write-Output "      - Server lists and group mappings"
+    Write-Output ""
+    Write-Output "    Location: configs/servers_catalogue.oneview.json"
+    Write-Output "      - OneView server definitions"
+    Write-Output "      - Serial numbers and OneView names"
+    Write-Output ""
+    Write-Output "  SCOM Configuration: configs/scom_config.json"
+    Write-Output "  OneView Configuration: configs/oneview_config.json"
+    Write-Output ""
     Write-Output "EXAMPLES"
     Write-Output ""
-    Write-Output "    # Test SCOM Test environment"
-    Write-Output "    Test-ServerConnectivity -Mode scom -Environment Test"
-    Write-Output ""
-    Write-Output "    # Test OneView Prod with JSON output"
-    Write-Output "    Test-ServerConnectivity -Mode oneview -Environment Prod -Json"
-    Write-Output ""
-    Write-Output "    # Override management host"
+    Write-Output "    # Test with explicit host (no config lookup)"
     Write-Output "    Test-ServerConnectivity -Mode scom -ManagementHost 'scom-test.local'"
+    Write-Output ""
+    Write-Output "    # Test using connection_hosts.json config"
+    Write-Output "    Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig"
+    Write-Output ""
+    Write-Output "    # Test OneView Prod using config, with JSON output"
+    Write-Output "    Test-ServerConnectivity -Mode oneview -Environment Prod -JsonConfig -Json"
+    Write-Output ""
+    Write-Output "    # Test with interactive prompt (no -JsonConfig, no -ManagementHost)"
+    Write-Output "    Test-ServerConnectivity -Mode scom"
+    Write-Output ""
+    Write-Output "    # Dry run to verify configuration"
+    Write-Output "    Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig -DryRun"
     Write-Output ""
     exit 0
 }
@@ -109,10 +180,11 @@ function Test-ServerConnectivity {
         'scom' or 'oneview'.
 
     .PARAMETER Environment
-        'Test' or 'Prod'.  Resolves host from connection_hosts.json.
+        'Test' or 'Prod'. Only used with -JsonConfig. Resolves host from connection_hosts.json.
+        Without -JsonConfig, this parameter is ignored (host is prompted or provided directly).
 
     .PARAMETER ManagementHost
-        Direct override for the management server/appliance hostname.
+        Direct override for the management server/appliance hostname. Highest priority.
 
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs').
@@ -122,6 +194,11 @@ function Test-ServerConnectivity {
 
     .PARAMETER Json
         If set, outputs the result as a JSON string instead of formatted text.
+
+    .PARAMETER JsonConfig
+        When specified, reads management host from configs/connection_hosts.json using
+        the selected -Environment (default: Prod). Without -JsonConfig and without
+        -ManagementHost, the command will prompt for host details interactively.
 
     .PARAMETER DryRun
         Simulate connectivity without actual network calls. Returns mock data to verify
@@ -146,6 +223,7 @@ function Test-ServerConnectivity {
         [string] $ConfigDir = 'configs',
         [int] $PingTimeoutMs = 3000,
         [switch] $Json,
+        [switch] $JsonConfig,
         [switch] $DryRun
     )
 
@@ -180,33 +258,80 @@ function Test-ServerConnectivity {
     }
 
     # ── Resolve management host ───────────────────────────────────────────────
-    $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
-    $hostsCfg = if (Test-Path $hostsCfgPath) {
-        Import-JsonConfig -Path $hostsCfgPath -Required:$false
-    } else { @{} }
+    # Resolution order:
+    #   1. -ManagementHost parameter (explicit override)
+    #   2. $env:MAINTENANCE_HOST environment variable
+    #   3. connection_hosts.json (only when -JsonConfig is specified)
+    #   4. Interactive prompt (if not in automated mode)
+    
+    $resolvedHost = $null
+    
+    # 1. Explicit -ManagementHost parameter
+    if ($PSBoundParameters.ContainsKey('ManagementHost') -and $ManagementHost) {
+        $resolvedHost = $ManagementHost
+    }
+    
+    # 2. Environment variable override
+    if (-not $resolvedHost -and [System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')) {
+        $resolvedHost = [System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')
+    }
+    
+    # 3. Config file lookup (only with -JsonConfig switch)
+    if (-not $resolvedHost -and $JsonConfig) {
+        $hostsCfgPath = Join-Path $EffectiveConfigDir 'connection_hosts.json'
+        $hostsCfg = if (Test-Path $hostsCfgPath) {
+            Import-JsonConfig -Path $hostsCfgPath -Required:$false
+        } else { @{} }
 
-    $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
-    $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
-
-    $resolvedHost = if ($PSBoundParameters.ContainsKey('ManagementHost')) {
-        $ManagementHost
-    } elseif ([System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')) {
-        [System.Environment]::GetEnvironmentVariable('MAINTENANCE_HOST')
-    } else {
+        $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
+        $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
+        
         if ($Mode -eq 'scom') {
-            ($selectedEnv.Get_Item('scom') ?? @{}).Get_Item('management_server')
+            $resolvedHost = ($selectedEnv.Get_Item('scom') ?? @{}).Get_Item('management_server')
         } else {
-            ($selectedEnv.Get_Item('oneview') ?? @{}).Get_Item('appliance')
+            $resolvedHost = ($selectedEnv.Get_Item('oneview') ?? @{}).Get_Item('appliance')
+        }
+        
+        if (-not $resolvedHost) {
+            $errorMsg = "Management host not configured in connection_hosts.json for environment '$effectiveEnv' and mode '$Mode'."
+            $result = @{
+                Available      = $false
+                Mode           = $Mode
+                ManagementHost = $null
+                Environment    = $effectiveEnv
+                NetworkPing    = @{ DnsResolved = $false; Error = $errorMsg }
+                AuthConnect    = @{ Connected = $false; Error = "Skipped — no management host" }
+                Timestamp      = Get-UtcTimestamp
+            }
+            if (-not $Json) {
+                _Format-ConnectivityResult -Result $result
+            }
+            return $result
         }
     }
-
+    
+    # 4. Interactive prompt (when not in automated mode and no host resolved)
     if (-not $resolvedHost) {
+        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+        if (-not $isAutomated) {
+            $platformName = if ($Mode -eq 'scom') { 'SCOM' } else { 'OneView' }
+            Write-Host "Enter $platformName management host (or press Enter to cancel): " -ForegroundColor Yellow -NoNewline
+            $promptedHost = Read-Host
+            if ($promptedHost) {
+                $resolvedHost = $promptedHost
+            }
+        }
+    }
+    
+    if (-not $resolvedHost) {
+        $platformName = if ($Mode -eq 'scom') { 'SCOM' } else { 'OneView' }
+        $errorMsg = "No $platformName management host provided. Use -ManagementHost, -JsonConfig, or set `$env:MAINTENANCE_HOST."
         $result = @{
             Available      = $false
             Mode           = $Mode
             ManagementHost = $null
             Environment    = $effectiveEnv
-            NetworkPing    = @{ DnsResolved = $false; Error = "Management host not configured for environment '$effectiveEnv'" }
+            NetworkPing    = @{ DnsResolved = $false; Error = $errorMsg }
             AuthConnect    = @{ Connected = $false; Error = "Skipped — no management host" }
             Timestamp      = Get-UtcTimestamp
         }
@@ -553,6 +678,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         if ($PSBoundParameters.ContainsKey('Environment'))    { $connParams['Environment'] = $Environment }
         if ($PSBoundParameters.ContainsKey('ManagementHost')) { $connParams['ManagementHost'] = $ManagementHost }
         if ($PSBoundParameters.ContainsKey('ConfigDir'))      { $connParams['ConfigDir'] = $ConfigDir }
+        if ($JsonConfig)                                      { $connParams['JsonConfig'] = $true }
 
         if ($DryRun) { $connParams['DryRun'] = $true }
         if ($Json)   { $connParams['Json'] = $true }
