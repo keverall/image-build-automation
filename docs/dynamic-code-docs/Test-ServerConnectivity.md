@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-06-23T12:41:05+01:00
+generated: 2026-06-23 12:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,93 +8,69 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Combined network ping + authentication connectivity test for SCOM or OneView. Read-only — safe during a change freeze.
+Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (WinRM 5985/5986 for SCOM, HTTPS 443 for OneView) - Measures latency in milliseconds Phase 2: Authentication Connect - Resolves credentials from environment variables / CyberArk - Loads the relevant PowerShell module - Performs a full authentication (New-SCOMManagementGroupConnection or Connect-OVMgmt) - Immediately disconnects - No objects are modified Returns a structured hashtable with per-phase results and an overall Available boolean.
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Mode` | **'scom'** or **'oneview'** — required. |
-| `-Environment` | **'Test'** or **'Prod'**. Resolves host from `connection_hosts.json`. |
+| `-Mode` | 'scom' or 'oneview'. |
+| `-Environment` | 'Test' or 'Prod'.  Resolves host from connection_hosts.json. |
 | `-ManagementHost` | Direct override for the management server/appliance hostname. |
-| `-ConfigDir` | Directory containing configuration files (default: `configs`). |
+| `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000). |
 | `-Json` | If set, outputs the result as a JSON string instead of formatted text. |
 
-## Return Value
-
+## Original Comment-Based Help
 ```powershell
-[hashtable] with keys:
-  Available        [bool]   — overall pass/fail
-  Mode             [string]
-  ManagementHost   [string]
-  Environment      [string]
-  NetworkPing      [hashtable] — DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
-  AuthConnect      [hashtable] — Connected, Disconnected, ModuleLoaded, Error
-  Timestamp        [string]   — UTC ISO 8601
+.SYNOPSIS
+        Combined network ping + authentication connectivity test for SCOM or OneView.
+        Read-only — safe during a change freeze.
+
+    .DESCRIPTION
+        Phase 1: Network Ping
+          - DNS resolution of the management host
+          - TCP port probe (WinRM 5985/5986 for SCOM, HTTPS 443 for OneView)
+          - Measures latency in milliseconds
+
+        Phase 2: Authentication Connect
+          - Resolves credentials from environment variables / CyberArk
+          - Loads the relevant PowerShell module
+          - Performs a full authentication (New-SCOMManagementGroupConnection or Connect-OVMgmt)
+          - Immediately disconnects
+          - No objects are modified
+
+        Returns a structured hashtable with per-phase results and an overall
+        Available boolean.
+
+    .PARAMETER Mode
+        'scom' or 'oneview'.
+
+    .PARAMETER Environment
+        'Test' or 'Prod'.  Resolves host from connection_hosts.json.
+
+    .PARAMETER ManagementHost
+        Direct override for the management server/appliance hostname.
+
+    .PARAMETER ConfigDir
+        Directory containing configuration files (default: 'configs').
+
+    .PARAMETER PingTimeoutMs
+        TCP connect timeout in milliseconds (default: 3000).
+
+    .PARAMETER Json
+        If set, outputs the result as a JSON string instead of formatted text.
+
+    .RETURNS
+        [hashtable] with keys:
+          Available        [bool]   — overall pass/fail
+          Mode             [string]
+          ManagementHost   [string]
+          Environment      [string]
+          NetworkPing      [hashtable] — DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
+          AuthConnect      [hashtable] — Connected, Disconnected, ModuleLoaded, Error
+          Timestamp        [string]   — UTC ISO 8601
 ```
-
-## Description
-
-Performs read-only connectivity checks against SCOM or OneView management infrastructure. Two phases are executed:
-
-- **Phase 1: Network Ping** — DNS resolution + TCP port probe (no credentials needed)
-- **Phase 2: Auth Connect** — Full authentication using the configured module (`New-SCOMManagementGroupConnection` or `Connect-OVMgmt`), followed by immediate disconnect
-
-No objects are modified. Exit code 0 when available, 1 when unavailable.
-
-## Examples
-
-### Example 1: Test SCOM Test environment
-```powershell
-Test-ServerConnectivity -Mode scom -Environment Test
-```
-
-### Example 2: Test OneView Prod with JSON output
-```powershell
-Test-ServerConnectivity -Mode oneview -Environment Prod -Json
-```
-
-### Example 3: Override management host
-```powershell
-Test-ServerConnectivity -Mode scom -ManagementHost 'scom-test.local'
-```
-
-### Example 4: CLI wrapper (auto-loads .env and module)
-```powershell
-pwsh -File scripts/test-connectivity.ps1 -Environment Prod -Mode oneview
-```
-
-## Output Format
-
-```
-==============================================
-  Server Connectivity Test
-==============================================
-
-  Status:     AVAILABLE
-  Mode:       scom
-  Host:       VR-OPM19T1-7382.ad.aib.pri
-  Environment:Test
-  Timestamp:  2026-06-23T12:41:05
-
-  --- Phase 1: Network Ping ---
-    DNS:       Resolved
-    IP:        10.1.2.3
-    TCP:       Open (port 5985, 12ms)
-
-  --- Phase 2: Auth Connect ---
-    Module:    Loaded
-    Connected: Yes
-    Clean up:  Disconnected
-
-==============================================
-```
-
-## Related
-
-- [docs/maintenance_mode.md](../maintenance_mode.md) — Architecture
-- [docs/MAINTENANCE_MODE_SHORTCUTS.md](../MAINTENANCE_MODE_SHORTCUTS.md) — Commands
 
 ---
 *Auto-generated by `scripts/Generate-PSDocs.ps1` — do not edit manually.*
