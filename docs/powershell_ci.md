@@ -6,11 +6,11 @@ What is required to run the `src/powershell/Automation` module standalone or ins
 
 ## Table of Contents
 
-1. [CyberArk Credential Bootstrap](#1-cyberark-credential-bootstrap)
-2. [CI Pipeline — PowerShell Stage Requirements](#2-ci-pipeline-powershell-stage-requirements)
-3. [SCOM 2015 — Will It Work?](#3-scom-2015-will-it-work)
-4. [HPE iLO — Will It Work?](#4-hpe-ilo-will-it-work)
-5. [Open Items](#5-open-items)
+1. [CyberArk Credential Bootstrap](#markdown-header-1-cyberark-credential-bootstrap)
+2. [CI Pipeline — PowerShell Stage Requirements](#markdown-header-2-ci-pipeline-powershell-stage-requirements)
+3. [SCOM 2015 — Will It Work?](#markdown-header-3-scom-2015-will-it-work)
+4. [HPE iLO — Will It Work?](#markdown-header-4-hpe-ilo-will-it-work)
+5. [Open Items](#markdown-header-5-open-items)
 
 ---
 

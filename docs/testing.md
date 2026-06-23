@@ -235,7 +235,7 @@ Describe 'Invoke-PowerShellScript' {
 
 ## CI Integration
 
-The CI pipeline requires a Windows agent with PowerShell 7+. See [powershell_ci.md](powershell_ci.md#2-ci-pipeline-powershell-stage-requirements) for full pipeline configuration.
+The CI pipeline requires a Windows agent with PowerShell 7+. See [powershell_ci.md](powershell_ci.md#markdown-header-2-ci-pipeline-powershell-stage-requirements) for full pipeline configuration.
 
 ```groovy
 stage('PowerShell Tests') {
