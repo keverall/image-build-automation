@@ -69,42 +69,12 @@ $connParams = @{
 }
 
 if ($ManagementHost) { $connParams['ManagementHost'] = $ManagementHost }
+if ($Json)           { $connParams['Json'] = $true }
 
 $result = Test-ServerConnectivity @connParams
 
 if ($Json) {
     $result | ConvertTo-Json -Depth 10
-} else {
-    Write-Host ""
-    $statusColor = if ($result.Available) { 'Green' } else { 'Red' }
-    $header = if ($result.Available) { "AVAILABLE" } else { "UNAVAILABLE" }
-    Write-Host "  $($result.Mode.ToUpper()) [$($result.Environment)] -> $($result.ManagementHost)" -ForegroundColor Cyan
-    Write-Host "  Status: $header" -ForegroundColor $statusColor
-
-    $np = $result.NetworkPing
-    if ($np.DnsResolved) {
-        Write-Host "  DNS: Resolved" -ForegroundColor Green
-        if ($np.IpAddress) { Write-Host "  IP:  $($np.IpAddress)" }
-    } else {
-        Write-Host "  DNS: FAILED" -ForegroundColor Red
-    }
-
-    if ($np.TcpPortOpen) {
-        Write-Host "  TCP: Open (port $($np.Port), $($np.LatencyMs)ms)" -ForegroundColor Green
-    } else {
-        Write-Host "  TCP: FAILED" -ForegroundColor Red
-    }
-
-    $ac = $result.AuthConnect
-    if ($ac.Error -match 'Skipped') {
-        Write-Host "  Auth: $($ac.Error)" -ForegroundColor Yellow
-    } elseif ($ac.Connected) {
-        Write-Host "  Auth: Connected and disconnected" -ForegroundColor Green
-    } else {
-        Write-Host "  Auth: FAILED" -ForegroundColor Red
-        if ($ac.Error) { Write-Host "  Error: $($ac.Error)" -ForegroundColor Red }
-    }
-    Write-Host ""
 }
 
 if (-not $result.Available) { exit 1 }

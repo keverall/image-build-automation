@@ -210,6 +210,9 @@ function Test-ServerConnectivity {
             AuthConnect    = @{ Connected = $false; Error = "Skipped — no management host" }
             Timestamp      = Get-UtcTimestamp
         }
+        if (-not $Json) {
+            _Format-ConnectivityResult -Result $result
+        }
         return $result
     }
 
@@ -305,6 +308,10 @@ function Test-ServerConnectivity {
                 CredentialPassEnv  = $(if ($passEnv) { $passEnv } else { 'not configured' })
                 Note               = "Mock data - no actual connectivity test performed"
             }
+        }
+
+        if (-not $Json) {
+            _Format-ConnectivityResult -Result $mockResult
         }
 
         return $mockResult
@@ -463,6 +470,10 @@ Write-Output "DISCONNECTED"
         Timestamp      = Get-UtcTimestamp
     }
 
+    if (-not $Json) {
+        _Format-ConnectivityResult -Result $result
+    }
+
     return $result
 }
 
@@ -544,13 +555,12 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         if ($PSBoundParameters.ContainsKey('ConfigDir'))      { $connParams['ConfigDir'] = $ConfigDir }
 
         if ($DryRun) { $connParams['DryRun'] = $true }
+        if ($Json)   { $connParams['Json'] = $true }
 
         $result = Test-ServerConnectivity @connParams
 
         if ($Json) {
             $result | ConvertTo-Json -Depth 10
-        } else {
-            _Format-ConnectivityResult -Result $result
         }
 
         if (-not $result.Available) { exit 1 }
