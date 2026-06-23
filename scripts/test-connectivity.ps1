@@ -7,13 +7,17 @@
     Combined ping + connect test for SCOM or OneView (safe during change freeze).
 
 .PARAMETER Environment
-    Environment to test: Test or Prod (default: 'Test')
+    Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
 .PARAMETER Mode
     Maintenance mode type: scom or oneview (default: 'scom')
 
 .PARAMETER ManagementHost
-    Override management server/appliance hostname
+    Override management server/appliance hostname (highest priority)
+
+.PARAMETER JsonConfig
+    Use configs/connection_hosts.json to resolve management host.
+    Without this switch, the command prompts for host details interactively.
 
 .PARAMETER Json
     Output as JSON
@@ -25,17 +29,25 @@
     TCP connect timeout in milliseconds (default: 3000)
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -Environment Test -Mode scom
+    pwsh -File scripts/test-connectivity.ps1 -Mode scom -JsonConfig -Environment Test
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -Environment Prod -Mode oneview -Json
+    pwsh -File scripts/test-connectivity.ps1 -Mode oneview -JsonConfig -Environment Prod -Json
+
+.EXAMPLE
+    pwsh -File scripts/test-connectivity.ps1 -Mode scom -ManagementHost 'scom-test.local'
+
+.EXAMPLE
+    pwsh -File scripts/test-connectivity.ps1 -Mode scom
+    (Will prompt for host interactively)
 #>
 
 [CmdletBinding()]
 param(
-    [ValidateSet('Test', 'Prod')][string]$Environment = 'Test',
+    [ValidateSet('Test', 'Prod')][string]$Environment = 'Prod',
     [ValidateSet('scom', 'oneview')][string]$Mode = 'scom',
     [string]$ManagementHost,
+    [switch]$JsonConfig,
     [switch]$Json,
     [switch]$DryRun,
     [int]$PingTimeoutMs = 3000
@@ -63,13 +75,14 @@ Import-Module $modulePath -Force -WarningAction SilentlyContinue
 
 $connParams = @{
     Mode = $Mode
-    Environment = $Environment
     PingTimeoutMs = $PingTimeoutMs
     DryRun = $DryRun
 }
 
-if ($ManagementHost) { $connParams['ManagementHost'] = $ManagementHost }
-if ($Json)           { $connParams['Json'] = $true }
+if ($ManagementHost)  { $connParams['ManagementHost'] = $ManagementHost }
+if ($JsonConfig)      { $connParams['JsonConfig'] = $true }
+if ($JsonConfig)      { $connParams['Environment'] = $Environment }
+if ($Json)            { $connParams['Json'] = $true }
 
 $result = Test-ServerConnectivity @connParams
 
