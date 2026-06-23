@@ -15,7 +15,7 @@ Describe 'Test-ServerConnectivity - Parameter Validation' {
     }
 
     It 'Should reject invalid Environment values' {
-        { Test-ServerConnectivity -Mode scom -Environment 'Invalid' } | Should -Throw
+        { Test-ServerConnectivity -Mode scom -Environment 'Invalid' -JsonConfig } | Should -Throw
     }
 
     It 'Should accept scom mode without throwing parameter errors' {
@@ -31,15 +31,15 @@ Describe 'Test-ServerConnectivity - Parameter Validation' {
 
 Describe 'Test-ServerConnectivity - Host Resolution' {
 
-    It 'Should resolve host from connection_hosts.json for scom Test environment' {
-        $result = Test-ServerConnectivity -Mode scom -Environment Test -PingTimeoutMs 1
+    It 'Should resolve host from connection_hosts.json for scom Test environment with -JsonConfig' {
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig -PingTimeoutMs 1
         $result.Mode | Should -Be 'scom'
         $result.Environment | Should -Be 'Test'
         $result.ManagementHost | Should -Not -BeNullOrEmpty
     }
 
-    It 'Should resolve host from connection_hosts.json for oneview Prod environment' {
-        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -PingTimeoutMs 1
+    It 'Should resolve host from connection_hosts.json for oneview Prod environment with -JsonConfig' {
+        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -JsonConfig -PingTimeoutMs 1
         $result.Mode | Should -Be 'oneview'
         $result.Environment | Should -Be 'Prod'
         $result.ManagementHost | Should -Not -BeNullOrEmpty
@@ -50,25 +50,37 @@ Describe 'Test-ServerConnectivity - Host Resolution' {
         $result.ManagementHost | Should -Be 'override-server.local'
     }
 
-    It 'Should use ENVIRONMENT env var when parameter not specified' {
+    It 'Should use ENVIRONMENT env var when -JsonConfig and parameter specified' {
         $original = $env:ENVIRONMENT
         try {
             $env:ENVIRONMENT = 'Test'
-            $result = Test-ServerConnectivity -Mode scom -PingTimeoutMs 1
+            $result = Test-ServerConnectivity -Mode scom -JsonConfig -PingTimeoutMs 1
             $result.Environment | Should -Be 'Test'
         } finally {
             $env:ENVIRONMENT = $original
         }
     }
 
-    It 'Should default to Prod when no environment is specified' {
+    It 'Should default to Prod when no environment is specified with -JsonConfig' {
         $original = $env:ENVIRONMENT
         try {
             $env:ENVIRONMENT = $null
-            $result = Test-ServerConnectivity -Mode scom -PingTimeoutMs 1
+            $result = Test-ServerConnectivity -Mode scom -JsonConfig -PingTimeoutMs 1
             $result.Environment | Should -Be 'Prod'
         } finally {
             $env:ENVIRONMENT = $original
+        }
+    }
+
+    It 'Should fail without host when no -JsonConfig and no -ManagementHost in automated mode' {
+        $original = $env:AUTOMATED_MODE
+        try {
+            $env:AUTOMATED_MODE = 'true'
+            $result = Test-ServerConnectivity -Mode scom -PingTimeoutMs 1
+            $result.Available | Should -Be $false
+            $result.ManagementHost | Should -Be $null
+        } finally {
+            $env:AUTOMATED_MODE = $original
         }
     }
 }
@@ -173,16 +185,16 @@ Describe 'Test-ServerConnectivity - Missing Config' {
 
 Describe 'Test-ServerConnectivity - DryRun' {
 
-    It 'Should return mock data for SCOM DryRun' {
-        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+    It 'Should return mock data for SCOM DryRun with -JsonConfig' {
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig -DryRun
         $result.DryRun | Should -Be $true
         $result.Available | Should -Be $true
         $result.Mode | Should -Be 'scom'
         $result.ManagementHost | Should -Be 'VR-OPM19T1-7382.ad.aib.pri'
     }
 
-    It 'Should return mock data for OneView DryRun' {
-        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -DryRun
+    It 'Should return mock data for OneView DryRun with -JsonConfig' {
+        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -JsonConfig -DryRun
         $result.DryRun | Should -Be $true
         $result.Available | Should -Be $true
         $result.Mode | Should -Be 'oneview'
@@ -190,7 +202,7 @@ Describe 'Test-ServerConnectivity - DryRun' {
     }
 
     It 'Should include MockData with DryRun configuration' {
-        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig -DryRun
         $result.MockData | Should -Not -BeNullOrEmpty
         $result.MockData.PowerShellModule | Should -Be 'OperationsManager'
         $result.MockData.WinRM | Should -Be $true
@@ -199,19 +211,19 @@ Describe 'Test-ServerConnectivity - DryRun' {
     }
 
     It 'Should include OneView module in MockData' {
-        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -DryRun
+        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -JsonConfig -DryRun
         $result.MockData.PowerShellModule | Should -Be 'HPEOneView.860'
         $result.MockData.TargetPorts | Should -Contain 443
     }
 
     It 'Should include credential env vars in MockData' {
-        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig -DryRun
         $result.MockData.CredentialUserEnv | Should -Be 'SCOM_ADMIN_USER'
         $result.MockData.CredentialPassEnv | Should -Be 'SCOM_ADMIN_PASSWORD'
     }
 
-    It 'Should resolve host from config in DryRun mode' {
-        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+    It 'Should resolve host from config in DryRun mode with -JsonConfig' {
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig -DryRun
         $result.ManagementHost | Should -Not -BeNullOrEmpty
         $result.Environment | Should -Be 'Test'
     }
