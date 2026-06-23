@@ -64,6 +64,68 @@ This document maps every code location executed by `Set-MaintenanceMode` and `Te
 2. Then run maintenance operations (`Set-MaintenanceMode`)
 
 > **Source file**: [`Set-MaintenanceMode.ps1`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) — 3,803 lines total.
+> **Source file**: [`Test-ServerConnectivity.ps1`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) — ~560 lines total.
+
+---
+
+## 0. Test-ServerConnectivity — Start Here
+
+This phase performs read-only connectivity checks against SCOM or OneView management infrastructure before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `-Mode` | **Required** | `scom` or `oneview` — selects the integration path |
+| `-Environment` | Optional | `Test` or `Prod` (default: `Prod`) |
+| `-ManagementHost` | Optional | Override management server/appliance hostname |
+| `-ConfigDir` | Optional | Config file directory (default: `configs`) |
+| `-PingTimeoutMs` | Optional | TCP timeout in ms (default: 3000) |
+| `-Json` | Switch | Output as JSON for automation |
+| `-DryRun` | Switch | Test configuration without network calls |
+
+**Full `param()` block**: [`Lines 7-14`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L7-L14)
+**Function `param()` block**: [`Lines 131-140`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L131-L140)
+
+### DryRun Mode
+
+When `-DryRun` is specified, the function returns mock connectivity data without making actual network calls. This allows you to verify configuration resolution.
+
+**DryRun logic**: [`Lines 252-294`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L252-L294)
+**Output formatter with DryRun**: [`Lines 408-536`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L408-L536)
+
+```powershell
+# Mock successful connectivity check
+Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+```
+
+**DryRun returns:**
+- Mock `NetworkPing` result (DNS resolved, TCP port open, 1ms latency)
+- Mock `AuthConnect` result (module loaded, connected, disconnected)
+- MockData with resolved configuration (target ports, PowerShell module, WinRM status, credential env vars)
+- `DryRun = $true` flag in result
+
+### Phase 1 — Network Ping
+
+**Code Location**: [`Lines 252-304`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L252-L304)
+
+1. **DNS Resolution**: Resolves the management host hostname using `System.Net.Dns::GetHostEntry()`
+2. **TCP Port Probe**: Attempts connection to relevant ports with configurable timeout
+   - SCOM (WinRM): 5985, 5986
+   - SCOM (non-WinRM): 5985, 135
+   - OneView: 443
+
+### Phase 2 — Auth Connect
+
+**Code Location**: [`Lines 306-390`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L306-L390)
+
+1. **SCOM**: Creates management group connection with credentials, immediately disconnects
+2. **OneView**: Calls `Connect-OVMgmt` with credentials, immediately calls `Disconnect-OVMgmt`
+3. Validates module loaded (operationsManager or HPEOneView.*), connected, and disconnected successfully
+
+### Result Structure
+
+**Result assembly**: [`Lines 392-406`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L392-L406)
 
 ---
 
