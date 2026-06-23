@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/test-connectivity.ps1
-generated: 2026-06-23 12:10 UTC
+generated: 2026-06-23 13:21 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,22 +14,34 @@ Combined ping + connect test for SCOM or OneView (safe during change freeze).
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Environment` | Environment to test: Test or Prod (default: 'Test') |
+| `-Environment` | Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig. |
 | `-Mode` | Maintenance mode type: scom or oneview (default: 'scom') |
-| `-ManagementHost` | Override management server/appliance hostname |
+| `-ManagementHost` | Override management server/appliance hostname (highest priority) |
+| `-JsonConfig` | Use configs/connection_hosts.json to resolve management host. Without this switch, the command prompts for host details interactively. |
 | `-Json` | Output as JSON |
+| `-DryRun` | Simulate connectivity without actual network calls |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000) |
 
 ## Examples
 
 ### Example 1
 ```powershell
-pwsh -File scripts/test-connectivity.ps1 -Environment Test -Mode scom
+pwsh -File scripts/test-connectivity.ps1 -Mode scom -JsonConfig -Environment Test
 ```
 
 ### Example 2
 ```powershell
-pwsh -File scripts/test-connectivity.ps1 -Environment Prod -Mode oneview -Json
+pwsh -File scripts/test-connectivity.ps1 -Mode oneview -JsonConfig -Environment Prod -Json
+```
+
+### Example 3
+```powershell
+pwsh -File scripts/test-connectivity.ps1 -Mode scom -ManagementHost 'scom-test.local'
+```
+
+### Example 4
+```powershell
+pwsh -File scripts/test-connectivity.ps1 -Mode scom (Will prompt for host interactively)
 ```
 
 ## Original Comment-Based Help
@@ -38,25 +50,39 @@ pwsh -File scripts/test-connectivity.ps1 -Environment Prod -Mode oneview -Json
     Combined ping + connect test for SCOM or OneView (safe during change freeze).
 
 .PARAMETER Environment
-    Environment to test: Test or Prod (default: 'Test')
+    Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
 .PARAMETER Mode
     Maintenance mode type: scom or oneview (default: 'scom')
 
 .PARAMETER ManagementHost
-    Override management server/appliance hostname
+    Override management server/appliance hostname (highest priority)
+
+.PARAMETER JsonConfig
+    Use configs/connection_hosts.json to resolve management host.
+    Without this switch, the command prompts for host details interactively.
 
 .PARAMETER Json
     Output as JSON
+
+.PARAMETER DryRun
+    Simulate connectivity without actual network calls
 
 .PARAMETER PingTimeoutMs
     TCP connect timeout in milliseconds (default: 3000)
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -Environment Test -Mode scom
+    pwsh -File scripts/test-connectivity.ps1 -Mode scom -JsonConfig -Environment Test
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -Environment Prod -Mode oneview -Json
+    pwsh -File scripts/test-connectivity.ps1 -Mode oneview -JsonConfig -Environment Prod -Json
+
+.EXAMPLE
+    pwsh -File scripts/test-connectivity.ps1 -Mode scom -ManagementHost 'scom-test.local'
+
+.EXAMPLE
+    pwsh -File scripts/test-connectivity.ps1 -Mode scom
+    (Will prompt for host interactively)
 ```
 
 ---
