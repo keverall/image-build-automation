@@ -20,6 +20,7 @@ Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000). |
 | `-Json` | If set, outputs the result as a JSON string instead of formatted text. |
+| `-DryRun` | Simulate connectivity without actual network calls. Returns mock data to verify configuration without requiring network access or credentials. |
 
 ## Original Comment-Based Help
 ```powershell
@@ -60,6 +61,10 @@ Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (
 
     .PARAMETER Json
         If set, outputs the result as a JSON string instead of formatted text.
+
+    .PARAMETER DryRun
+        Simulate connectivity without actual network calls. Returns mock data to verify
+        configuration resolution. Does not require network access or credentials.
 
     .RETURNS
         [hashtable] with keys:

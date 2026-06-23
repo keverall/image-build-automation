@@ -18,6 +18,9 @@
 .PARAMETER Json
     Output as JSON
 
+.PARAMETER DryRun
+    Simulate connectivity without actual network calls
+
 .PARAMETER PingTimeoutMs
     TCP connect timeout in milliseconds (default: 3000)
 
@@ -34,6 +37,7 @@ param(
     [ValidateSet('scom', 'oneview')][string]$Mode = 'scom',
     [string]$ManagementHost,
     [switch]$Json,
+    [switch]$DryRun,
     [int]$PingTimeoutMs = 3000
 )
 
@@ -58,9 +62,10 @@ $modulePath = Join-Path $PSScriptRoot '..\src\powershell\Automation\Automation.p
 Import-Module $modulePath -Force -WarningAction SilentlyContinue
 
 $connParams = @{
-    Mode          = $Mode
-    Environment   = $Environment
+    Mode = $Mode
+    Environment = $Environment
     PingTimeoutMs = $PingTimeoutMs
+    DryRun = $DryRun
 }
 
 if ($ManagementHost) { $connParams['ManagementHost'] = $ManagementHost }

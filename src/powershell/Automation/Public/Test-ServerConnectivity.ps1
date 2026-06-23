@@ -11,6 +11,7 @@ param(
     [string] $ConfigDir = 'configs',
     [int] $PingTimeoutMs = 3000,
     [switch] $Json,
+    [switch] $DryRun,
     [Alias('h', 'help', '?')][switch] $ShowHelp
 )
 
@@ -57,8 +58,8 @@ if ($ShowHelp) {
     Write-Output "    Output as JSON for API integration."
     Write-Output ""
     Write-Output "  -DryRun"
-    Write-Output "    Simulate without making changes. Returns mock connectivity data"
-    Write-Output "    to verify configuration resolves correctly."
+    Write-Output "    Simulate connectivity without actual network calls. Returns mock data"
+    Write-Output "    to verify configuration resolution."
     Write-Output ""
     Write-Output "EXAMPLES"
     Write-Output ""
@@ -122,6 +123,10 @@ function Test-ServerConnectivity {
     .PARAMETER Json
         If set, outputs the result as a JSON string instead of formatted text.
 
+    .PARAMETER DryRun
+        Simulate connectivity without actual network calls. Returns mock data to verify
+        configuration resolution. Does not require network access or credentials.
+
     .RETURNS
         [hashtable] with keys:
           Available        [bool]   — overall pass/fail
@@ -140,7 +145,8 @@ function Test-ServerConnectivity {
         [string] $ManagementHost,
         [string] $ConfigDir = 'configs',
         [int] $PingTimeoutMs = 3000,
-        [switch] $Json
+        [switch] $Json,
+        [switch] $DryRun
     )
 
     $ErrorActionPreference = 'Continue'
@@ -251,6 +257,57 @@ function Test-ServerConnectivity {
         }
     } else {
         $tcpPorts = @(443)
+    }
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # DRYRUN MODE: Return mock data without real network calls
+    # ══════════════════════════════════════════════════════════════════════════
+    if ($DryRun) {
+        Write-Verbose "DryRun mode enabled - returning mock connectivity data"
+
+        $portList = ($tcpPorts -join ', ')
+        $moduleName = if ($Mode -eq 'scom') {
+            $modeCfg.Get_Item('powershell_module') ?? 'OperationsManager'
+        } else {
+            $modeCfg.Get_Item('module_name') ?? 'HPEOneView.860'
+        }
+
+        $mockPingResult = @{
+            DnsResolved = $true
+            IpAddress   = '10.254.254.254'
+            TcpPortOpen = $true
+            Port        = $tcpPorts[0]
+            LatencyMs   = 1
+            Error       = $null
+        }
+
+        $mockAuthResult = @{
+            Connected    = $true
+            Disconnected = $true
+            ModuleLoaded = $true
+            Error        = $null
+        }
+
+        $mockResult = @{
+            Available      = $true
+            Mode           = $Mode
+            ManagementHost = $resolvedHost
+            Environment    = $effectiveEnv
+            NetworkPing    = $mockPingResult
+            AuthConnect    = $mockAuthResult
+            Timestamp      = Get-UtcTimestamp
+            DryRun         = $true
+            MockData       = @{
+                TargetPorts        = $tcpPorts
+                PowerShellModule   = $moduleName
+                WinRM              = $useWinRM
+                CredentialUserEnv  = $(if ($userEnv) { $userEnv } else { 'not configured' })
+                CredentialPassEnv  = $(if ($passEnv) { $passEnv } else { 'not configured' })
+                Note               = "Mock data - no actual connectivity test performed"
+            }
+        }
+
+        return $mockResult
     }
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -427,7 +484,8 @@ function _Format-ConnectivityResult {
     Write-Host ""
 
     $statusColor = if ($available) { 'Green' } else { 'Red' }
-    Write-Host "  Status:     $header" -ForegroundColor $statusColor
+    $dryRunTag = if ($Result.DryRun) { ' [DRY-RUN]' } else { '' }
+    Write-Host "  Status:     ${header}${dryRunTag}" -ForegroundColor $statusColor
     Write-Host "  Mode:       $($Result.Mode)"
     Write-Host "  Host:       $($Result.ManagementHost)"
     Write-Host "  Environment:$($Result.Environment)"
@@ -459,18 +517,33 @@ function _Format-ConnectivityResult {
     if ($ac.Error) {
         Write-Host "    Error:     $($ac.Error)" -ForegroundColor Red
     }
+
+    if ($Result.DryRun -and $Result.MockData) {
+        Write-Host ""
+        Write-Host "  --- Dry-Run Configuration Summary ---" -ForegroundColor Yellow
+        $mock = $Result.MockData
+        Write-Host "    Module:       $($mock.PowerShellModule)"
+        Write-Host "    Target ports: $($mock.TargetPorts -join ', ')"
+        Write-Host "    WinRM:        $($mock.WinRM)"
+        Write-Host "    Cred user:    $($mock.CredentialUserEnv)"
+        Write-Host "    Cred pass:    $($mock.CredentialPassEnv)"
+        Write-Host "    Note:         $($mock.Note)" -ForegroundColor Yellow
+    }
+
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
 }
 
 # ── Script-mode entry point ───────────────────────────────────────────────────
-if ($MyInvocation.InvocationName -ne '.' -and $PSCommandPath -eq $MyInvocation.ScriptName) {
+if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     if ($Mode) {
         $connParams = @{ Mode = $Mode; PingTimeoutMs = $PingTimeoutMs }
         if ($PSBoundParameters.ContainsKey('Environment'))    { $connParams['Environment'] = $Environment }
         if ($PSBoundParameters.ContainsKey('ManagementHost')) { $connParams['ManagementHost'] = $ManagementHost }
         if ($PSBoundParameters.ContainsKey('ConfigDir'))      { $connParams['ConfigDir'] = $ConfigDir }
+
+        if ($DryRun) { $connParams['DryRun'] = $true }
 
         $result = Test-ServerConnectivity @connParams
 
