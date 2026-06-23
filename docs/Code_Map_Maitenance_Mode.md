@@ -4,6 +4,9 @@
 
 - [Maintenance Mode (mm) Command — Complete Code Map](#markdown-header-maintenance-mode-mm-command-complete-code-map)
   - [TOC](#markdown-header-toc)
+  - [0. Test-ServerConnectivity — Start Here](#0-test-serverconnectivity-start-here)
+    - [Phase 1 — Network Ping](#phase-1-network-ping)
+    - [Phase 2 — Auth Connect](#phase-2-auth-connect)
   - [1. Signon & Connect](#markdown-header-1-signon-connect)
     - [1.1 — Parameter Binding & Input Validation](#markdown-header-11-parameter-binding-input-validation)
     - [1.2 — SCOM Connect (by -TargetId)](#markdown-header-12-scom-connect-by-targetid)
@@ -54,7 +57,11 @@
   - [15. Documentation References](#markdown-header-15-documentation-references)
 
 
-This document maps every code location executed by the `Set-MaintenanceMode` command, organized in the **chronological order that code actually runs** — from initial signon through connection, enable, disable, notification, and audit.
+**Always start with Test-ServerConnectivity** — it verifies connectivity before running maintenance operations.
+
+This document maps every code location executed by `Set-MaintenanceMode` and `Test-ServerConnectivity`, organized in the **workflow order** you should follow:
+1. Test connectivity first (`Test-ServerConnectivity`)
+2. Then run maintenance operations (`Set-MaintenanceMode`)
 
 > **Source file**: [`Set-MaintenanceMode.ps1`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) — 3,803 lines total.
 
@@ -636,9 +643,10 @@ All configurations loaded from `configs/` directory, in load order:
 - **SCOM authentication**: [`scom-auth.md`](scom-auth.md)
 - **OneView module versions**: [`oneview-module-versions.md`](oneview-module-versions.md)
 - **Audit process**: [`audit_process.md`](audit_process.md)
+- **Test-ServerConnectivity API**: [`Test-ServerConnectivity.md`](dynamic-code-docs/Test-ServerConnectivity.md)
 
 ---
 
-*Document updated: 2026-06-19*
-*Source file total: 3,803 lines*
+*Document updated: 2026-06-23*
+*Source file total: 3,803 lines (Set-MaintenanceMode.ps1) + 481 lines (Test-ServerConnectivity.ps1)*
 *For questions about specific code locations, refer to the line numbers provided in the links above.*
