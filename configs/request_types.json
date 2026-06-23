@@ -52,6 +52,11 @@
       "ci_stage": null,
       "description": "Generate deterministic server UUID"
     },
+    "connectivity_check": {
+      "powershell_handler": "Test-ServerConnectivity",
+      "ci_stage": null,
+      "description": "Read-only network + auth connectivity test for SCOM or OneView (safe during change freeze)"
+    },
     "gitlab_maintenance": {
       "powershell_handler": "Invoke-GitLabMaintenanceTrigger",
       "ci_stage": null,

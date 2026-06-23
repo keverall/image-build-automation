@@ -462,6 +462,7 @@ Export-ModuleMember -Function @(
     # Validators
     'Test-BuildParams'
     'Test-ClusterId'
+    'Test-ServerConnectivity'
     'Test-ServerList'
     # Config / credential helpers
     'Import-JsonConfig'
