@@ -1,121 +1,197 @@
-# Set-MaintenanceMode Command Reference
+# Maintenance Mode Command Reference
 
-> Complete guide for using `Set-MaintenanceMode` from the project root.
+> Complete guide for maintenance mode commands. **Always test connectivity first** before running maintenance operations.
+
+## Table of Contents
+
+1. [Test-ServerConnectivity - Test Connectivity First](#1-test-serverconnectivity---test-connectivity-first)
+2. [Set-MaintenanceMode - Maintenance Operations](#2-set-maintenancemode---maintenance-operations)
+
+---
+
+# 1. Test-ServerConnectivity - Test Connectivity First
+
+> **ALWAYS test connectivity before running maintenance commands.** This read-only command verifies SCOM/OneView availability and is safe during change freezes.
+
+## Why Test First?
+
+Before enabling/disabling maintenance mode, verify:
+- ✅ Network connectivity to management servers
+- ✅ DNS resolution working
+- ✅ Authentication credentials valid
+- ✅ PowerShell modules installed
+
+**Safe during change freezes** - no objects are modified, read-only operations only.
 
 ## Quick Start
 
-### Setup (One-Time)
 ```powershell
-# From project root
-make setup
+# Test SCOM connectivity (Test environment)
+Test-ServerConnectivity -Mode scom -Environment Test
 
-# Or run the profile setup script
-pwsh -File scripts/Setup-Profile.ps1
+# Test OneView connectivity (Prod environment)
+Test-ServerConnectivity -Mode oneview -Environment Prod
 
-# Reload your profile
-. $PROFILE
+# Test both platforms
+Test-ServerConnectivity -Mode scom -Environment Prod
+Test-ServerConnectivity -Mode oneview -Environment Prod
 ```
 
-### Getting Help
-```powershell
-# Quick syntax help
-Set-MaintenanceMode -?
+## Two-Phase Test
 
-# Full parameter documentation
-Get-Help Set-MaintenanceMode -Full
+### Phase 1: Network Ping
 
-# Specific parameter help
-Get-Help Set-MaintenanceMode -Parameter Environment
-Get-Help Set-MaintenanceMode -Parameter Start
-```
+- **DNS Resolution**: Verifies hostname resolves correctly
+- **TCP Port Probe**: Checks connectivity to required ports
+  - SCOM: 5985/5986 (WinRM) or 5985/135
+  - OneView: 443 (HTTPS)
 
----
+### Phase 2: Authentication Connect
 
-## Command Syntax
-```powershell
-Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mode <scom|oneview> [-Environment <Test|Prod>] [options]
-```
-
-- **Action**: `enable`, `disable`, or `validate`
-- **TargetId**: Cluster ID or server name
-- **Mode**: `scom` or `oneview`
-- **Environment**: `Test` or `Prod` (optional, defaults to `Prod`)
-
----
+- **Module Check**: Verifies PowerShell module is installed
+- **Authentication Test**: Full login with credentials
+- **Immediate Disconnect**: Cleans up session after test
 
 ## Parameters
 
-### Required
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `-Mode` | **Required** | `scom` or `oneview` |
+| `-Environment` | Optional | `Test` or `Prod` (default: `Prod`) |
+| `-ManagementHost` | Optional | Override server/appliance hostname |
+| `-ConfigDir` | Optional | Config file directory (default: `configs`) |
+| `-PingTimeoutMs` | Optional | TCP timeout in ms (default: 3000) |
+| `-Json` | Switch | Output as JSON for automation |
 
-| Parameter | Description |
-|-----------|-------------|
-| `-Action` | `enable`, `disable`, or `validate` |
-| `-TargetId` | Cluster ID (e.g., `CLU-CLUSTER-01`) or server name |
-| `-Mode` | `scom` or `oneview` |
+## Examples
 
-### Optional
+### Basic Connectivity Tests
 
-| Parameter | Description |
-|-----------|-------------|
-| `-Environment` | `Test` or `Prod` (default: `Prod`) |
-| `-ManagementHost` | Override management server/appliance hostname |
-| `-Start` | Maintenance window start time |
-| `-End` | Maintenance window end time |
-| `-PostDisableWaitSeconds` | Wait after SCOM disable (default: 120, 0 to skip) |
-| `-DryRun` | Simulate without making changes |
-| `-SerialNumber` | OneView mode: look up server by serial number |
-| `-Username` | Direct username (testing only) |
-| `-Json` | Output as JSON for API integration |
+```powershell
+# Test SCOM Test environment
+Test-ServerConnectivity -Mode scom -Environment Test
+
+# Test OneView Prod
+Test-ServerConnectivity -Mode oneview -Environment Prod
+
+# JSON output for automation
+Test-ServerConnectivity -Mode scom -Environment Prod -Json | ConvertFrom-Json
+```
+
+### Override Management Host
+
+```powershell
+# Test specific server (bypasses config files)
+Test-ServerConnectivity -Mode scom -ManagementHost 'scom-test.ad.aib.pri'
+```
+
+### CLI Wrapper
+
+```powershell
+# Auto-loads .env and module (convenient for manual testing)
+pwsh scripts/test-connectivity.ps1 -Environment Test -Mode scom
+```
+
+## Expected Output
+
+### Successful Test
+
+```
+==============================================
+  Server Connectivity Test
+==============================================
+
+  Status:     AVAILABLE
+  Mode:       scom
+  Host:       VR-OPM19T1-7382.ad.aib.pri
+  Environment:Test
+  Timestamp:  2026-06-23T12:41:05
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.1.2.3
+    TCP:       Open (port 5985, 12ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: Yes
+    Clean up:  Disconnected
+
+==============================================
+```
+
+### Failed Test
+
+```
+==============================================
+  Server Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       oneview-test.ad.aib.pri
+  Environment:Test
+  Timestamp:  2026-06-23T12:42:15
+
+  --- Phase 1: Network Ping ---
+    DNS:       FAILED
+    Error:     DNS resolution failed for 'oneview-test.ad.aib.pri': 
+               The name does not exist
+
+  --- Phase 2: Auth Connect ---
+    Error:     Skipped — network ping failed
+
+==============================================
+```
+
+## Exit Codes
+
+- `0` - Available (DNS resolved + TCP open + Auth succeeded)
+- `1` - Unavailable (any phase failed)
+
+## Change Freeze Safety
+
+| Aspect | Status |
+|--------|--------|
+| Objects Modified | None |
+| Maintenance Windows Created | None |
+| Credentials Used | Read-only authentication only |
+| Exit Code | 0 = Available, 1 = Unavailable |
+| Duration | Immediate disconnect after auth |
+
+**Verdict**: ✅ Safe to run during change freezes.
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| DNS resolution failed | Invalid hostname or DNS issue | Check hostname spelling, verify DNS records |
+| TCP connection failed | Firewall blocking or server down | Verify firewall rules (5985/5986/443), check server status |
+| Credentials not configured | Missing environment variables | Set `$env:SCOM_ADMIN_USER`/`$env:SCOM_ADMIN_PASSWORD` or `$env:ONEVIEW_USER`/`$env:ONEVIEW_PASSWORD` |
+| Module not found | PowerShell module not installed | Install OperationsManager or HPEOneView version module |
+| Module: Not loaded | Module import failed | Check module installation, verify version compatibility |
+
+## Configuration Files
+
+```
+configs/
+├── connection_hosts.json    # Environment host mappings
+├── scom_config.json         # SCOM server configuration
+└── oneview_config.json      # OneView appliance configuration
+```
+
+## Related
+
+- [Set-MaintenanceMode](#2-set-maintenancemode---maintenance-operations) - Run maintenance after connectivity is verified
+- [Code Map](Code_Map_Maitenance_Mode.md#15-test-serverconnectivity--read-only-connectivity-check) - Full implementation reference
 
 ---
 
-## Time Formats
+# 2. Set-MaintenanceMode - Maintenance Operations
 
-**All times are UTC only.** No local timezone conversion.
+> Only run AFTER verifying connectivity with Test-ServerConnectivity.
 
-| Format | Example | Description |
-|--------|---------|-------------|
-| `now` | `-Start now` | Current UTC time |
-| `+Xhours` | `-End +2hours` | Relative hours/minutes/days/seconds |
-| `+Xminutes` | `-End +30minutes` | Relative from now |
-| `+Xdays` | `-End +1day` | Relative from now |
-| `YYYY-MM-DD HH:MM` | `-End '2026-06-12 02:00'` | Absolute UTC |
-| `YYYY-MM-DDTHH:MM:SS` | `-End '2026-06-12T02:00:00'` | ISO 8601 UTC |
-
----
-
-## Credential Setup
-
-### Method 1: Environment Variables (Recommended)
-
-```powershell
-$env:ENVIRONMENT = "Prod"
-$env:SCOM_ADMIN_USER = "svc_maintenance_admin"
-$env:SCOM_ADMIN_PASSWORD = "password"
-
-# Or for OneView
-$env:ONEVIEW_USER = "maintenance_admin"
-$env:ONEVIEW_PASSWORD = "password"
-```
-
-### Method 2: PowerShell Profile
-
-Add to your `$PROFILE`:
-```powershell
-$env:SCOM_ADMIN_USER = "svc_maintenance_admin"
-$env:SCOM_ADMIN_PASSWORD = "password"
-```
-
-### Method 3: Interactive Prompt
-
-```powershell
-# Just run the command - you'll be prompted for credentials
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
-```
-
----
-
-## Basic Examples
+## Quick Start
 
 ```powershell
 # Enable maintenance mode
@@ -126,148 +202,224 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 
 # Validate maintenance mode status
 Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom
-
-# Dry run (test without making changes)
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 ```
 
----
+## Commands
 
-## Full Command Examples
+### Enable Maintenance Mode
 
-### Example 1: Basic Enable with Defaults
 ```powershell
+# Basic (default Prod environment)
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Start now -End +2hours
+
+# Specify environment
 Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours
+
+# Dry run (test without applying)
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Start now -End +1hour -DryRun
 ```
 
-### Example 2: Dry Run (Test First!)
-```powershell
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +1hour -DryRun
-```
+### Disable Maintenance Mode
 
-### Example 3: Custom Time Window
 ```powershell
-# Absolute times
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
+# Disable with default stabilization wait (120 seconds)
+Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 
-# Mixed: relative start, absolute end
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start 'now' -End '2026-06-12 02:00'
-```
-
-### Example 4: Disable with Custom Wait
-```powershell
-# Disable maintenance and wait 60 seconds for stabilization
+# Custom stabilization wait
 Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 ```
 
-### Example 5: OneView Server Maintenance
-```powershell
-# By server name
-Set-MaintenanceMode -Action enable -TargetId server01.ad.aib.pri -Mode oneview -Environment Prod -Start now -End +1hour
+### Validate Maintenance Status
 
-# By serial number
-Set-MaintenanceMode -Action enable -Mode oneview -Environment Test -SerialNumber ABC123XYZ -Start now -End +1hour
+```powershell
+# Check current maintenance mode status
+Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
 ```
 
-### Example 6: Host Override
+## Actions
+
+| Action | Description |
+|--------|-------------|
+| `enable` | Place object into maintenance mode |
+| `disable` | Remove object from maintenance mode |
+| `validate` | Check current maintenance mode status |
+
+## Target Identification
+
+### By ID (SCOM/OneView)
+
 ```powershell
-# Emergency: use backup SCOM server
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -ManagementHost backup-scom.local -Start now -End +4hours
+# SCOM server or cluster ID
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom ...
+
+# OneView server ID
+Set-MaintenanceMode -Action enable -TargetId server01 -Mode oneview ...
 ```
 
-### Example 7: JSON Output
+### By Serial Number (OneView Only)
+
 ```powershell
-# Get structured JSON output for automation/API integration
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -Json
+# Look up OneView server by serial number
+Set-MaintenanceMode -Action enable -SerialNumber MXQ1234567 -Mode oneview ...
 ```
 
----
+## Environment Configuration
 
-## Host Resolution Priority
+The environment determines which servers to use (from `configs/connection_hosts.json`):
 
-Both SCOM and OneView use the same resolution order:
+```powershell
+# Test environment (test servers)
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test ...
 
-1. `-ManagementHost` parameter (highest priority)
-2. `$env:MAINTENANCE_HOST` environment variable
-3. `configs/connection_hosts.json` → Environment config
-4. Error if not found
+# Prod environment (production servers)
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod ...
+```
 
----
+## Time Formats
 
-## Output Format
+```powershell
+# Absolute time
+-Start '2026-06-23T14:30:00'
+
+# Relative time
+-Start 'now' -End '+2hours'
+-Start '+1hour' -End '+4hours'
+```
+
+**Note**: All times are in UTC.
+
+## Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `-Action` | **Required** | `enable`, `disable`, or `validate` |
+| `-TargetId` | Optional** | Server or cluster ID |
+| `-SerialNumber` | Optional** | Hardware serial (OneView only) |
+| `-Mode` | **Required** | `scom` or `oneview` |
+| `-Environment` | Optional | `Test` or `Prod` (default: `Prod`) |
+| `-Start` | Optional | Maintenance start time |
+| `-End` | Optional | Maintenance end time |
+| `-DryRun` | Switch | Test without applying changes |
+| `-ManagementHost` | Optional | Override server hostname |
+| `-PostDisableWaitSeconds` | Optional | Wait after disable (default: 120) |
+| `-Json` | Switch | Output as JSON |
+
+**Either `-TargetId` or `-SerialNumber` is required.
+
+## Exit Codes
+
+- `0` - Success
+- `1` - Failure
+
+## Output Formats
+
+### Human-Readable (Default)
 
 ```
 === Maintenance Mode Command Audit ===
-Timestamp (UTC): 2026-06-12T13:11:05.5793468Z
+Timestamp (UTC): 2026-06-23T13:11:05.5793468Z
 Action: enable
 Target ID: CLU-CLUSTER-01
 Mode: scom
 Environment: Prod
-Start Time (UTC): 2026-06-12T13:11:05.4885780Z
-End Time (UTC): 2026-06-12T15:11:05.4886846Z
+Start Time (UTC): 2026-06-23T13:11:05.4885780Z
+End Time (UTC): 2026-06-23T15:11:05.4886846Z
 
 === Command Result ===
 Success: True
 Server Count: 3
-SCOM: 4/4 success
-======================
+SCOM: 3/3 success
+Maintenance:
+  server01: InMaintenanceMode=True
+  server02: InMaintenanceMode=True
+  server03: InMaintenanceMode=True
+========================================
 ```
 
----
+### JSON Output
 
-## Config Files
+```powershell
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Json
+```
 
-| File | Purpose |
-|------|---------|
-| `configs/connection_hosts.json` | Environment-specific hosts (Test/Prod) |
-| `configs/clusters_catalogue.json` | Cluster definitions and mappings |
-| `configs/scom_config.json` | SCOM server configuration |
-| `configs/oneview_config.json` | OneView appliance configuration |
-| `.env` | Credential template (gitignored) |
+Returns structured JSON for automation:
 
----
+```json
+{
+  "success": true,
+  "action": "enable",
+  "target_id": "CLU-CLUSTER-01",
+  "mode": "scom",
+  "environment": "Prod",
+  "server_count": 3,
+  "servers": [...]
+}
+```
+
+## Host Resolution Priority
+
+Determines which management server to use:
+
+1. `-ManagementHost` parameter (explicit override)
+2. `$env:MAINTENANCE_HOST` environment variable
+3. `connection_hosts.json` (environment-based)
+
+```powershell
+# Override specific server
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -ManagementHost 'scom-backup.ad.aib.pri' ...
+```
+
+## Credential Configuration
+
+```powershell
+# Option 1: Environment variables (recommended)
+$env:SCOM_ADMIN_USER = 'svc_maintenance_admin'
+$env:SCOM_ADMIN_PASSWORD = '...'
+
+$env:ONEVIEW_USER = 'maintenance_admin'
+$env:ONEVIEW_PASSWORD = '...'
+
+# Option 2: CyberArk
+# Automatically resolves credentials for SCOM_ADMIN and ONEVIEW accounts
+
+# Option 3: Interactive prompt
+# If no credentials found, prompts for username/password
+```
+
+## Dry Run Mode
+
+Test configuration without applying changes:
+
+```powershell
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -Start now -End +2hours -DryRun
+```
+
+**Use `-DryRun` to**:
+- Verify connectivity to all servers
+- Test credential resolution
+- Check environment-specific host resolution
 
 ## Troubleshooting
 
-| Error | Solution |
-|-------|----------|
-| "Management host not configured" | Set `$env:MAINTENANCE_HOST` or update `connection_hosts.json` |
-| "Missing credentials: username" | Set env vars or run interactively |
-| "Failed to connect to SCOM" | Check network, firewall, credentials |
-| "Environment 'X' not found" | Use `Test` or `Prod` only |
-| `Set-MaintenanceMode` command not found | Import module: `Import-Module ./src/powershell/Automation/Automation.psd1` or run `make setup` |
-| Profile errors | Check `$PROFILE` syntax, re-run `Setup-Profile.ps1` |
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Credentials not configured | Missing env vars | Set `$env:SCOM_ADMIN_USER`/PASSWORD or `$env:ONEVIEW_USER`/PASSWORD |
+| Host not configured | No host in config | Set `$env:MAINTENANCE_HOST` or update `connection_hosts.json` |
+| Connection failed | Network/auth issue | Run `Test-ServerConnectivity` first |
+| Cluster not found | Invalid TargetId | Check cluster ID in `clusters_catalogue.json` |
+| Server not found | Invalid TargetId | Check server ID in `servers_catalogue.json` |
 
----
+## Best Practices
 
-## Security Notes
+1. **Always test connectivity first**: Use `Test-ServerConnectivity` before running maintenance
+2. **Start with DryRun**: Verify configuration with `-DryRun` before applying
+3. **Use appropriate environment**: `Test` for development, `Prod` for production
+4. **Set reasonable time windows**: Don't leave maintenance mode indefinitely
+5. **Validate before and after**: Ensure objects are actually in maintenance mode
+6. **Document your actions**: Maintain audit logs of all maintenance operations
 
-❌ **DON'T** hardcode passwords in scripts  
-❌ **DON'T** commit `.env` files with real credentials  
-✅ **DO** use CyberArk or environment variables  
-✅ **DO** use `-DryRun` to test before applying changes
+## Related
 
----
-
-
-## Quick Commands
-
-```powershell
-# List available environments
-(Import-JsonConfig configs/connection_hosts.json).environments.Keys
-
-# Test connection before running maintenance
-pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRun
-
-# Load module if needed
-Import-Module ./src/powershell/Automation/Automation.psm1
-```
-
----
-## Related Documentation
-
-- **Architecture & Flow**: [docs/maintenance_mode.md](maintenance_mode.md)
-- **Setup Guide**: [docs/SETUP-GUIDE.md](SETUP-GUIDE.md)
-- **Testing Guide**: [docs/testing.md](testing.md)
-- **Environment Config**: [docs/maintenance-mode-environment-config.md](maintenance-mode-environment-config.md)
-- **PowerShell Function Reference**: [docs/dynamic-code-docs/INDEX.md](dynamic-code-docs/INDEX.md) - Complete coverage of ALL PowerShell functions and cmdlets.
+- [Test-ServerConnectivity](#1-test-serverconnectivity---test-connectivity-first) - Test connectivity before maintenance
+- [Code Map](Code_Map_Maitenance_Mode.md) - Full implementation details
+- [Architecture](maintenance_mode.md) - System design and workflows

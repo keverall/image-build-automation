@@ -54,6 +54,7 @@ Generated: 2026-06-23 08:33 UTC
 - [Test-BuildParams](Test-BuildParams.md)
 - [Test-ClusterId](Test-ClusterId.md)
 - [test-maintenance-connection](test-maintenance-connection.md)
+- [Test-ServerConnectivity](Test-ServerConnectivity.md)
 - [Test-ServerList](Test-ServerList.md)
 - [that](that.md)
 - [Update-Firmware](Update-Firmware.md)

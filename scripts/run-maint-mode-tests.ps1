@@ -6,13 +6,16 @@
 
 <#
 .SYNOPSIS
-    Run maintenance mode validation tests.
+    Run maintenance mode validation and connectivity tests.
 
 .DESCRIPTION
-    Executes high-priority Pester tests specifically for Set-MaintenanceMode.ps1:
+    Executes high-priority Pester tests for maintenance mode operations:
+    - Test-ServerConnectivity.Tests.ps1 (connectivity validation - runs first)
     - Set-MaintenanceMode.Validation.Tests.ps1
     - Set-MaintenanceMode.Enable.Tests.ps1
     - Set-MaintenanceMode.Disable.Tests.ps1
+    
+    Tests are ordered logically: connectivity checks first, then maintenance operations.
     
     Displays detailed test summary with pass/fail/skip counts and duration.
     Logs detailed output to generated/logs/{environment}/maint_mode_tests_*.log
@@ -43,6 +46,7 @@ Write-Host "Detailed log: $pesterLogPath" -ForegroundColor Cyan
 
 $config = New-PesterConfiguration
 $config.Run.Path = @(
+    (Join-Path $testPath 'Test-ServerConnectivity.Tests.ps1'),
     (Join-Path $testPath 'Set-MaintenanceMode.Validation.Tests.ps1'),
     (Join-Path $testPath 'Set-MaintenanceMode.Enable.Tests.ps1'),
     (Join-Path $testPath 'Set-MaintenanceMode.Disable.Tests.ps1')
