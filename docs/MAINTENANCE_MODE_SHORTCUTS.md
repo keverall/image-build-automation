@@ -62,6 +62,7 @@ Test-ServerConnectivity -Mode oneview -Environment Prod
 | `-ConfigDir` | Optional | Config file directory (default: `configs`) |
 | `-PingTimeoutMs` | Optional | TCP timeout in ms (default: 3000) |
 | `-Json` | Switch | Output as JSON for automation |
+| `-DryRun` | Switch | Test configuration without network calls |
 
 ## Examples
 
@@ -90,6 +91,52 @@ Test-ServerConnectivity -Mode scom -ManagementHost 'scom-test.ad.example.com'
 ```powershell
 # Auto-loads .env and module (convenient for manual testing)
 pwsh scripts/test-connectivity.ps1 -Environment Test -Mode scom
+```
+
+### DryRun Mode
+
+```powershell
+# Test configuration without making network calls
+Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+
+# DryRun with JSON output for automation
+Test-ServerConnectivity -Mode oneview -Environment Prod -DryRun -Json
+
+# CLI wrapper with DryRun
+pwsh scripts/test-connectivity.ps1 -Environment Test -Mode scom -DryRun
+```
+
+**DryRun Output Example:**
+```
+==============================================
+  Server Connectivity Test
+==============================================
+
+  Status:     AVAILABLE [DRY-RUN]
+  Mode:       scom
+  Host:       VR-OPM19T1-7382.ad.example.com
+  Environment:Test
+  Timestamp:  2026-06-23T12:21:10.9471327Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.254.254.254
+    TCP:       Open (port 5985, 1ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: Yes
+    Clean up:  Disconnected
+
+  --- Dry-Run Configuration Summary ---
+    Module:       OperationsManager
+    Target ports: 5985, 5986
+    WinRM:        True
+    Cred user:    SCOM_ADMIN_USER
+    Cred pass:    SCOM_ADMIN_PASSWORD
+    Note:         Mock data - no actual connectivity test performed
+
+==============================================
 ```
 
 ## Expected Output
