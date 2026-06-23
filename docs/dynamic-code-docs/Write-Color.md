@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/Setup-Profile.ps1
-generated: 2026-06-17 16:30 UTC
+generated: 2026-06-23 08:33 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,12 +8,15 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Adds maintenance mode convenience functions to PowerShell profiles. Can be run from anywhere - uses the script's repo root as the base path. Updates or installs the Automation module import block into all discovered PowerShell profile locations.
+Copies the correct WIP profile template to the live profile location (platform-aware: windowspsprofile.ps1 on Windows, psprofile.ps1 on Linux/macOS, vscodeprofile.ps1 for the VS Code profile), then injects the Automation module import block (with the machine-specific absolute path) into the live profile(s). Can be run from anywhere - uses the script's repo root as the base path.
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
+| `-SkipTemplateCopy` | Skip copying the WIP template over the live profile. Only inject/refresh the Automation module import block. Useful if the live profile has been manually customised and should not be overwritten. |
+| `-Merge` | When a profile exists, preserve user customizations (functions, aliases) by merging them with the template instead of overwriting. User-added functions/aliases that don't exist in the template are preserved. |
+| `-ForceOverwrite` | Force overwrite the profile even when -Merge would be used (useful to reset to a clean template state). |
 | `-Uninstall` | Remove the Automation module block from profiles instead of installing. |
 | `-DryRun` | Simulate changes without actually modifying profile files. |
 
@@ -21,7 +24,7 @@ Adds maintenance mode convenience functions to PowerShell profiles. Can be run f
 
 ### Example 1
 ```powershell
-pwsh -File scripts/Setup-Profile.ps1 pwsh -File scripts/Setup-Profile.ps1 -Uninstall
+pwsh -File scripts/Setup-Profile.ps1 pwsh -File scripts/Setup-Profile.ps1 -SkipTemplateCopy pwsh -File scripts/Setup-Profile.ps1 -Uninstall pwsh -File scripts/Setup-Profile.ps1 -Merge
 ```
 
 ## Original Comment-Based Help
@@ -30,10 +33,26 @@ pwsh -File scripts/Setup-Profile.ps1 pwsh -File scripts/Setup-Profile.ps1 -Unins
     Setup-Profile.ps1 — Configure PowerShell profiles with Automation module.
 
 .DESCRIPTION
-    Adds maintenance mode convenience functions to PowerShell profiles.
+    Copies the correct WIP profile template to the live profile location
+    (platform-aware: windowspsprofile.ps1 on Windows, psprofile.ps1 on
+    Linux/macOS, vscodeprofile.ps1 for the VS Code profile), then injects
+    the Automation module import block (with the machine-specific absolute
+    path) into the live profile(s).
     Can be run from anywhere - uses the script's repo root as the base path.
-    Updates or installs the Automation module import block into all discovered
-    PowerShell profile locations.
+
+.PARAMETER SkipTemplateCopy
+    Skip copying the WIP template over the live profile. Only inject/refresh
+    the Automation module import block. Useful if the live profile has been
+    manually customised and should not be overwritten.
+
+.PARAMETER Merge
+    When a profile exists, preserve user customizations (functions, aliases)
+    by merging them with the template instead of overwriting. User-added
+    functions/aliases that don't exist in the template are preserved.
+
+.PARAMETER ForceOverwrite
+    Force overwrite the profile even when -Merge would be used (useful to
+    reset to a clean template state).
 
 .PARAMETER Uninstall
     Remove the Automation module block from profiles instead of installing.
@@ -43,7 +62,9 @@ pwsh -File scripts/Setup-Profile.ps1 pwsh -File scripts/Setup-Profile.ps1 -Unins
 
 .EXAMPLE
     pwsh -File scripts/Setup-Profile.ps1
+    pwsh -File scripts/Setup-Profile.ps1 -SkipTemplateCopy
     pwsh -File scripts/Setup-Profile.ps1 -Uninstall
+    pwsh -File scripts/Setup-Profile.ps1 -Merge
 ```
 
 ---
