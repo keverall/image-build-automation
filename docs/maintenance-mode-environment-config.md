@@ -69,7 +69,55 @@ This file defines environment-specific connection settings:
 
 **To add new environments:** Copy an existing environment block and modify the hostnames/group IDs.
 
-### 2. .env File
+### 2. clusters_catalogue.json
+
+Located at: `configs/clusters_catalogue.json`
+
+Defines cluster IDs, server lists, and group mappings for maintenance operations:
+
+```json
+{
+  "clusters": {
+    "CLU-CLUSTER-01": {
+      "display_name": "Production Cluster 01",
+      "servers": ["server01.ad.example.com", "server02.ad.example.com"],
+      "scom_group": "SCOM-CLUSTER-01-GROUP",
+      "environment": "production"
+    }
+  }
+}
+```
+
+**To add/modify clusters:**
+- Edit `configs/clusters_catalogue.json`
+- Cluster IDs use `CLU-` prefix format
+- List all servers belonging to the cluster
+- Specify the SCOM group name for SCOM mode
+
+### 3. servers_catalogue.oneview.json
+
+Located at: `configs/servers_catalogue.oneview.json`
+
+Defines OneView server definitions with serial numbers:
+
+```json
+{
+  "servers": {
+    "server01": {
+      "display_name": "Server 01",
+      "oneview_name": "server01.ad.example.com",
+      "serial_number": "ABC123XYZ"
+    }
+  }
+}
+```
+
+**To add/modify servers:**
+- Edit `configs/servers_catalogue.oneview.json`
+- Include serial numbers for OneView lookups
+- Map server keys to OneView display names
+
+### 4. .env File
 
 Located at: `.env` (project root)
 
@@ -109,16 +157,28 @@ For passwords:
 
 ## Host Resolution Order
 
-For SCOM:
+### Set-MaintenanceMode
+
+For SCOM and OneView in `Set-MaintenanceMode`:
 1. `-ManagementHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. `connection_hosts.json` based on `-Environment` parameter
 4. Error if not configured
 
-For OneView:
+### Test-ServerConnectivity
+
+For SCOM and OneView in `Test-ServerConnectivity`:
+
+**With `-JsonConfig` switch:**
 1. `-ManagementHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. `connection_hosts.json` based on `-Environment` parameter
+4. Error if not configured
+
+**Without `-JsonConfig` switch (default):**
+1. `-ManagementHost` parameter
+2. `$env:MAINTENANCE_HOST`
+3. Interactive prompt for host (if `AUTOMATED_MODE` is not `true`)
 4. Error if not configured
 
 ## Connection Validation
@@ -224,6 +284,50 @@ For EU GDPR/EMIR regulated environments, consider:
 ## Testing
 
 ### Run Connection Test
+
+```powershell
+# Test SCOM connection in Test environment using config file
+pwsh scripts/test-connectivity.ps1 -Mode scom -JsonConfig -Environment Test
+
+# Test OneView connection in Prod environment using config file
+pwsh scripts/test-connectivity.ps1 -Mode oneview -JsonConfig -Environment Prod
+
+# Test with explicit host (no config lookup)
+pwsh scripts/test-connectivity.ps1 -Mode scom -ManagementHost 'scom-test.local'
+
+# Test with interactive prompt (no -JsonConfig, no -ManagementHost)
+pwsh scripts/test-connectivity.ps1 -Mode scom
+# Script will prompt: "Enter SCOM management host (or press Enter to cancel):"
+```
+
+### Test-ServerConnectivity - JsonConfig Parameter
+
+The `Test-ServerConnectivity` function now supports `-JsonConfig` to explicitly use `connection_hosts.json`:
+
+```powershell
+# Use connection_hosts.json to resolve host
+Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig
+
+# Without -JsonConfig, prompts for host interactively
+Test-ServerConnectivity -Mode scom
+
+# Dry run to verify configuration
+Test-ServerConnectivity -Mode scom -JsonConfig -DryRun
+```
+
+**Host Resolution Order for Test-ServerConnectivity:**
+
+With `-JsonConfig:
+1. `-ManagementHost` parameter
+2. `$env:MAINTENANCE_HOST`
+3. `connection_hosts.json` based on `-Environment`
+
+Without `-JsonConfig`:
+1. `-ManagementHost` parameter
+2. `$env:MAINTENANCE_HOST`
+3. Interactive prompt (if not in automated mode)
+
+### Run Connection Test (Legacy Script)
 
 ```powershell
 # Test SCOM connection in Test environment
