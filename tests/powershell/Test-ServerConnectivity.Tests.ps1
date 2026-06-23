@@ -170,3 +170,63 @@ Describe 'Test-ServerConnectivity - Missing Config' {
         $result.ManagementHost | Should -Be '192.0.2.1'
     }
 }
+
+Describe 'Test-ServerConnectivity - DryRun' {
+
+    It 'Should return mock data for SCOM DryRun' {
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+        $result.DryRun | Should -Be $true
+        $result.Available | Should -Be $true
+        $result.Mode | Should -Be 'scom'
+        $result.ManagementHost | Should -Be 'VR-OPM19T1-7382.ad.example.com'
+    }
+
+    It 'Should return mock data for OneView DryRun' {
+        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -DryRun
+        $result.DryRun | Should -Be $true
+        $result.Available | Should -Be $true
+        $result.Mode | Should -Be 'oneview'
+        $result.ManagementHost | Should -Be 'oneview.ad.example.com'
+    }
+
+    It 'Should include MockData with DryRun configuration' {
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+        $result.MockData | Should -Not -BeNullOrEmpty
+        $result.MockData.PowerShellModule | Should -Be 'OperationsManager'
+        $result.MockData.WinRM | Should -Be $true
+        $result.MockData.TargetPorts | Should -Contain 5985
+        $result.MockData.Note | Should -Match 'Mock data'
+    }
+
+    It 'Should include OneView module in MockData' {
+        $result = Test-ServerConnectivity -Mode oneview -Environment Prod -DryRun
+        $result.MockData.PowerShellModule | Should -Be 'HPEOneView.860'
+        $result.MockData.TargetPorts | Should -Contain 443
+    }
+
+    It 'Should include credential env vars in MockData' {
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+        $result.MockData.CredentialUserEnv | Should -Be 'SCOM_ADMIN_USER'
+        $result.MockData.CredentialPassEnv | Should -Be 'SCOM_ADMIN_PASSWORD'
+    }
+
+    It 'Should resolve host from config in DryRun mode' {
+        $result = Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+        $result.ManagementHost | Should -Not -BeNullOrEmpty
+        $result.Environment | Should -Be 'Test'
+    }
+
+    It 'Should respect ManagementHost override in DryRun mode' {
+        $result = Test-ServerConnectivity -Mode scom -ManagementHost 'override-server.local' -DryRun
+        $result.ManagementHost | Should -Be 'override-server.local'
+        $result.DryRun | Should -Be $true
+    }
+
+    It 'Should not require network access in DryRun mode' {
+        $result = Test-ServerConnectivity -Mode scom -ManagementHost 'nonexistent.invalid.test' -DryRun
+        $result.DryRun | Should -Be $true
+        $result.Available | Should -Be $true
+        $result.NetworkPing.DnsResolved | Should -Be $true
+        $result.NetworkPing.TcpPortOpen | Should -Be $true
+    }
+}
