@@ -1,0 +1,2528 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <SelectionSets>
+    <SelectionSet>
+      <Name>AvailableDrivesFromDriveEnclosures</Name>
+      <Types>
+        <TypeName>HPEOneView.Storage.AvailableDiskDrive</TypeName>
+      </Types>
+    </SelectionSet>
+  </SelectionSets>
+  <Controls>
+    <!--AvailableDrivesFromDriveEnclosures-GroupingFormat-->
+    <Control>
+      <Name>AvailableDrivesFromDriveEnclosures-GroupingFormat</Name>
+      <CustomControl>
+        <CustomEntries>
+          <CustomEntry>
+            <CustomItem>
+              <Frame>
+                <LeftIndent>4</LeftIndent>
+                <CustomItem>
+                  <Text>SASLogicalInterconnectName: </Text>
+                  <ExpressionBinding>
+                    <PropertyName>SASLogicalInterconnectName</PropertyName>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+            </CustomItem>
+          </CustomEntry>
+        </CustomEntries>
+      </CustomControl>
+    </Control>
+  </Controls>
+  <ViewDefinitions>
+    <!--ManagedSan.Zone FT-->
+    <View>
+      <Name>ManagedSanZone</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.ManagedSan.Zone</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Appliance</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SAN</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Members</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <ScriptBlock>$_.ApplianceConnection.Name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ManagedSan</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>State</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.Members.Name</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--ManagedSan.Zone FL-->
+    <View>
+      <Name>ManagedSanZone</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.ManagedSan.Zone</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Appliance</Label>
+                <ScriptBlock>$_.ApplianceConnection.Name</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>SAN</Label>
+                <PropertyName>ManagedSAN</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>Name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>State</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>Status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>WWN</Label>
+                <PropertyName>wwn</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Members</Label>
+                <PropertyName>Members</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Created</Label>
+                <PropertyName>Created</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Modified</Label>
+                <PropertyName>Modified</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--ManagedSan.Zone.Alias FT-->
+    <View>
+      <Name>ManagedSanZoneAlias</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.ManagedSan.Zone.Alias</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>WWN</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>WWN</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--ManagedSan.Zone.Alias FL-->
+    <View>
+      <Name>ManagedSanZoneAlias</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.ManagedSan.Zone.Alias</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>Name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>WWN</Label>
+                <PropertyName>WWN</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.San.Endpoint FT-->
+    <View>
+      <Name>Endpoint</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.San.Endpoint</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Appliance</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>WWN</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Port Type</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Online</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SAN Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Zone Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <ScriptBlock>$_.ApplianceConnection.Name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>wwn</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>portType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>isOnline</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>sanName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>zoneName</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Profile.SanVolume FT-->
+    <View>
+      <Name>sanvolumes</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Profile.SanVolume</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Volume ID</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Volume Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>LUN</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Pool</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Size</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Provisioning</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Sharing</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>id</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0}" -f $profileCache[$_.volumeUri].name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>lunType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0}" -f $profileCache[$_.volumeStoragePoolUri].name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0} GB" -f ($profileCache[$_.volumeUri].provisionedCapacity / 1gb)</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0}" -f $profileCache[$_.volumeUri].provisionType</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>if ($profileCache[$_.volumeUri].shareable) { "{0}" -f "Shared" } else { "{0}" -f "Private" }</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.Volume FT-->
+    <View>
+      <Name>StorageVolume</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.Volume</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ProvisioningType</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Provisioned</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Sharing</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>StorageSystem</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>StoragePool</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SnapshotPool</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Used By</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>provisioningType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>'{0:N2} GB' -f ($_.provisionedCapacity / 1GB)</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  if ($_.isShareable) { "Shared"}
+                  else              { "Private" }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>(Send-OVRequest -Uri (Send-OVRequest $_.storagePoolUri -Hostname $_.ApplianceConnection.Name).storageSystemUri -Hostname $_.ApplianceConnection.Name).name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>(Send-OVRequest $_.storagePoolUri -Hostname $_.ApplianceConnection.Name).name</ScriptBlock>
+              </TableColumnItem>
+               <TableColumnItem>
+                <ScriptBlock>
+                if (-not([String]::IsNullOrEmpty($_.deviceSpecificAttributes.snapshotPoolUri)))
+                {
+                  (Send-OVRequest $_.deviceSpecificAttributes.snapshotPoolUri -Hostname $_.ApplianceConnection.Name).name
+                }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  $associationProfileToVol = (Send-OVRequest ("/rest/index/associations?childUri=$($_.uri)&amp;name=server_profiles_to_storage_volumes") -Hostname $_.ApplianceConnection.Name).members
+                  if ($associationProfileToVol) {
+                  $profileNames = $associationProfileToVol | % { (Send-OVRequest $_.parentUri -Hostname $_.ApplianceConnection.Name).name }
+                  [Array]::Sort([array]$profileNames)
+                  $profileNames
+                  }
+
+                  else { "No server profiles" }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.Volume FL-->
+    <View>
+      <Name>StorageVolume</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.Volume</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <ScriptBlock>"{0} ({1})" -f $_.state, $_.stateReason</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Description</Label>
+                <PropertyName>description</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>LunWwn</Label>
+                <PropertyName>lunWwn</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>ProvisioningType</Label>
+                <PropertyName>provisioningType</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>ProvisionedCapacity</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.provisionedCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>AllocatedCapacity</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.allocatedCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Sharing</Label>
+                <ScriptBlock>
+                  if ($_.isShareable) { "Shared"}
+                  else              { "Private" }
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>StorageSystem</Label>
+                <ScriptBlock>(Send-OVRequest -Uri (Send-OVRequest $_.storagePoolUri -Hostname $_.ApplianceConnection.Name).storageSystemUri -Hostname $_.ApplianceConnection.Name).name</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>StoragePool</Label>
+                <ScriptBlock>
+                  (Send-OVRequest $_.storagePoolUri -Hostname $_.ApplianceConnection.Name).name
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>SnapshotPool</Label>
+                <ScriptBlock>
+                  if (-not([String]::IsNullOrEmpty($_.deviceSpecificAttributes.snapshotPoolUri)))
+                  {
+                    (Send-OVRequest $_.deviceSpecificAttributes.snapshotPoolUri -Hostname $_.ApplianceConnection.Name).name
+                  }
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>RAID</Label>
+                <ScriptBlock>'{0}' -f (Send-OVRequest $_.deviceSpecificAttributes.snapshotPoolUri -Hostname $_.ApplianceConnection.Name).deviceSpecificAttributes.supportedRAIDLevel</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>StorageSystemVolumeName</Label>
+                <PropertyName>deviceVolumeName</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Used By</Label>
+                <ScriptBlock>
+                  $associationProfileToVol = (Send-OVRequest ("/rest/index/associations?childUri=$($_.uri)&amp;name=server_profiles_to_storage_volumes") -Hostname $_.ApplianceConnection.Name).members
+                  if ($associationProfileToVol) {
+                  $profileNames = $associationProfileToVol | % { (Send-OVRequest $_.parentUri -Hostname $_.ApplianceConnection.Name).name }
+                  [Array]::Sort([array]$profileNames)
+                  $profileNames
+                  }
+
+                  else { "No server profiles" }
+                </ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.VolumeTemplate FT-->
+    <View>
+      <Name>VolumeTemplate</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.VolumeTemplate</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Capacity</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ProvisionedType</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Sharing</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>StorageSystem</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>StoragePool</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SnapshotPool</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>'{0:N2} GB' -f ($_.properties.size.default / 1GB)</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>'{0}' -f $_.properties.provisioningType.default</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  if ($_.properties.isShareable.default) { "Shared"}
+                  else              { "Private" }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0}" -f (Send-OVRequest $_.compatibleStorageSystemsUri -Hostname $_.ApplianceConnection.Name).members.displayName</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0}" -f (Send-OVRequest $_.storagePoolUri -Hostname $_.ApplianceConnection.Name).name</ScriptBlock>
+              </TableColumnItem>
+               <TableColumnItem>
+                <ScriptBlock>
+                if (-not([String]::IsNullOrEmpty($_.properties.snapshotPool.default)))
+                {
+                  (Send-OVRequest $_.properties.snapshotPool.default -Hostname $_.ApplianceConnection.Name).name
+                }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.VolumeTemplate FL-->
+    <View>
+      <Name>VolumeTemplate</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.VolumeTemplate</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Description</Label>
+                <PropertyName>description</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>ProvisioningType</Label>
+                <ScriptBlock>'{0}' -f $_.properties.provisioningType.default</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>ProvisionedCapacity</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.properties.size.default / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Sharing</Label>
+                <ScriptBlock>
+                  if ($_.properties.isShareable.default) { "Shared"}
+                  else              { "Private" }
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>StorageSystem</Label>
+                <ScriptBlock>"{0}" -f (Send-OVRequest $_.compatibleStorageSystemsUri -Hostname $_.ApplianceConnection.Name).members.displayName</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>StoragePool</Label>
+                <ScriptBlock>"{0}" -f (Send-OVRequest $_.storagePoolUri -Hostname $_.ApplianceConnection.Name).name</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>SnapshotPool</Label>
+                <ScriptBlock>
+                  if (-not([String]::IsNullOrEmpty($_.properties.snapshotPool.default)))
+                  {
+                    (Send-OVRequest $_.properties.snapshotPool.default -Hostname $_.ApplianceConnection.Name).name
+                  }
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>StorageSystemVolumeName</Label>
+                <PropertyName>deviceVolumeName</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.VolumeSnapshot FT-->
+    <View>
+      <Name>StorageVolumeSnapshot</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.VolumeSnapshot</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Appliance</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ParentVolume</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Capacity</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <ScriptBlock>"{0}" -f $_.ApplianceConnection.Name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>(Send-OVRequest $_.storageVolumeUri -Hostname $_.ApplianceConnection.Name).name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0} ({1})" -f $_.state, $_.stateReason</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>'{0:N2} GB' -f ($_.capacity / 1GB)</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.VolumeSnapshot FL-->
+    <View>
+      <Name>StorageVolumeSnapshot</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.VolumeSnapshot</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Appliance</Label>
+                <ScriptBlock>"{0}" -f $_.ApplianceConnection.Name</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Parent Volume</Label>
+                <ScriptBlock>(Send-OVRequest $_.storageVolumeUri -Hostname $_.ApplianceConnection.Name).name</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <ScriptBlock>"{0} ({1})" -f $_.state, $_.stateReason</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Capacity</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.capacity / 1GB)</ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.System.DiscoveredPool FT-->
+    <View>
+      <Name>StorageSystemDiscoveredPool</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.System.DiscoveredPool</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Domain</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveType</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>RAID</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Total</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Allocated</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Free</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>domain</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>deviceType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>raidLevel</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  <ScriptBlock>'{0:N2} GB' -f ($_.totalCapacity / 1GB)</ScriptBlock>
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  <ScriptBlock>'{0:N2} GB' -f ($_.allocatedCapacity.totalAllocatedCapacity / 1GB)</ScriptBlock>
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  <ScriptBlock>'{0:N2} GB' -f ($_.freeCapacity / 1GB)</ScriptBlock>
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.System.DiscoveredPool FL-->
+    <View>
+      <Name>StorageSystemDiscoveredPool</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.System.DiscoveredPool</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>Status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>StorageSystem</Label>
+                <ScriptBlock>if ($_.storageSystemUri) { (Send-OVRequest $_.storageSystemUri -Hostname $_.ApplianceConnection.Name).name }</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>DriveType</Label>
+                <ScriptBlock>$_.deviceSpecificAttributes.deviceType</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>RAID</Label>
+                <ScriptBlock>$_.deviceSpecificAttributes.supportedRAIDLevel</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Total</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.totalCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Allocated</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.allocatedCapacity.totalAllocatedCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Free</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.freeCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Volumes</Label>
+                <ScriptBlock>(Send-OVRequest "/rest/index/resources?category=storage-volumes&amp;query=storage_volume_storagepool_uri:'$($_.uri)'" -Hostname $_.ApplianceConnection.Name).count</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>VolumeTemplates</Label>
+                <ScriptBlock>(Send-OVRequest "/rest/index/resources?sort=name:asc&amp;category=storage-volume-templates&amp;query=storagePoolUri:'$($_.uri)'" -Hostname $_.ApplianceConnection.Name).count</ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.StoragePool FT-->
+    <View>
+      <Name>StorageSystemPool</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.StoragePool</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>StorageSystem</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveType</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>RAID</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Total</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Allocated</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Free</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <wrap/>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>state</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>if ($_.storageSystemUri) { (Send-OVRequest $_.storageSystemUri -Hostname $_.ApplianceConnection.Name).name }</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.deviceSpecificAttributes.deviceType</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.deviceSpecificAttributes.supportedRAIDLevel</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  <ScriptBlock>'{0:N2} GB' -f ($_.totalCapacity / 1GB)</ScriptBlock>
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  <ScriptBlock>'{0:N2} GB' -f ($_.allocatedCapacity.totalAllocatedCapacity / 1GB)</ScriptBlock>
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  <ScriptBlock>'{0:N2} GB' -f ($_.freeCapacity / 1GB)</ScriptBlock>
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.StoragePool FL-->
+    <View>
+      <Name>StorageSystemPool</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.StoragePool</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>Status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>StorageSystem</Label>
+                <ScriptBlock>if ($_.storageSystemUri) { (Send-OVRequest $_.storageSystemUri -Hostname $_.ApplianceConnection.Name).name }</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>DriveType</Label>
+                <ScriptBlock>$_.deviceSpecificAttributes.deviceType</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>RAID</Label>
+                <ScriptBlock>$_.deviceSpecificAttributes.supportedRAIDLevel</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Total</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.totalCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Allocated</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.allocatedCapacity.totalAllocatedCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Free</Label>
+                <ScriptBlock>'{0:N2} GB' -f ($_.freeCapacity / 1GB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Volumes</Label>
+                <ScriptBlock>(Send-OVRequest "/rest/index/resources?category=storage-volumes&amp;query=storage_volume_storagepool_uri:'$($_.uri)'" -Hostname $_.ApplianceConnection.Name).count</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>VolumeTemplates</Label>
+                <ScriptBlock>(Send-OVRequest "/rest/index/resources?sort=name:asc&amp;category=storage-volume-templates&amp;query=storagePoolUri:'$($_.uri)'" -Hostname $_.ApplianceConnection.Name).count</ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.SanManager FT-->
+    <View>
+      <Name>SanManager</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.SanManager</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Type</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Version</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Managed SANs</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>state</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>providerDisplayName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>deviceManagerVersion</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  $managedSans = New-Object System.Collections.ArrayList
+                  if ($_.managedSansUri)
+                  {
+
+                    $resp = Send-OVRequest $_.managedSansUri -Hostname $_.ApplianceConnection.Name
+                    foreach ($member in $resp.members) { [void]$managedSans.Add($member.name) }
+
+                    $managedSans
+
+                  }
+
+                  else { "None" }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.SanManager FL-->
+    <View>
+      <Name>SanManager</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.SanManager</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Type</Label>
+                <PropertyName>providerDisplayName</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Version</Label>
+                <PropertyName>deviceManagerVersion</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Managed SANs</Label>
+                <ScriptBlock>
+                  $managedSans = New-Object System.Collections.ArrayList
+                  if ($_.managedSansUri)
+                  {
+
+                  $resp = Send-OVRequest $_.managedSansUri -Hostname $_.ApplianceConnection.Name
+                  foreach ($member in $resp.members) { [void]$managedSans.Add($member.name) }
+
+                  $managedSans
+
+                  }
+
+                  else { "None" }
+                </ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.ManagedSan FT-->
+    <View>
+      <Name>ManagedSan</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.ManagedSan</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>PrincipleSwitch</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Networks</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Zoned</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>AutomateZoning</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ZoningPolicy</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>UseAliases</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>state</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>principalSwitch</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.associatedNetworks.name -join ', '</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>zoningState</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  if ($_.sanPolicy.zoningPolicy -eq "NoZoning") { "No" }
+                  else { "Yes" }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.sanPolicy.zoningPolicy</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.sanPolicy.enableAliasing</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.ManagedSan FL-->
+    <View>
+      <Name>ManagedSan</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.ManagedSan</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>PrincipalSwitch</Label>
+                <PropertyName>principalSwitch</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Networks</Label>
+                <ScriptBlock>$_.associatedNetworks.name -join ', '</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Zoned</Label>
+                <PropertyName>zoningState</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>AutomateZoning</Label>
+                <ScriptBlock>
+                  if ($_.sanPolicy.zoningPolicy -eq "NoZoning") { "No" }
+                  else { "Yes" }
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>ZoningPolicy</Label>
+                <ScriptBlock>$_.sanPolicy.zoningPolicy</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Use Aliases</Label>
+                <ScriptBlock>$_.sanPolicy.enableAliasing</ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.System FT-->
+    <View>
+      <Name>StorageSystem</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.System</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Family</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SerialNumber</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Model</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ManagedDomain</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>WWN</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Firmware</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+         </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>family</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>state</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.deviceSpecificAttributes.serialNumber</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.deviceSpecificAttributes.model</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.deviceSpecificAttributes.managedDomain</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.deviceSpecificAttributes.wwn</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.deviceSpecificAttributes.firmware</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.System FL-->
+    <View>
+      <Name>StorageSystem</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.System</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>SerialNumber</Label>
+                <PropertyName>serialNumber</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Model</Label>
+                <PropertyName>model</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>ManagedDomain</Label>
+                <PropertyName>managedDomain</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>WWN</Label>
+                <PropertyName>wwn</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Firmware</Label>
+                <PropertyName>firmware</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>TotalCapacity</Label>
+                <ScriptBlock>'{0:N2} TB' -f ($_.totalCapacity / 1TB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>AllocatedCapacity</Label>
+                <ScriptBlock>'{0:N2} TB' -f ($_.allocatedCapacity / 1TB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>FreeCapacity</Label>
+                <ScriptBlock>'{0:N2} TB' -f ($_.freeCapacity / 1TB)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>UseAliases</Label>
+                <ScriptBlock>$_.sanPolicy.enableAliasing</ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.System.Port FT-->
+    <View>
+      <Name>StorageSystemPort</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.System.Port</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Mode</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ConnectionState</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Type</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Address</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ExpectedSAN</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ActualSAN</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>PortGroup</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$StorageSystemPortModeEnum[$_.mode]</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>connectionState</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>protocolType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>address</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>expectedSanName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>actualSanName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>groupName</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.System.Port FL-->
+    <View>
+      <Name>StorageSystemPort</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.System.Port</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>portName</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Type</Label>
+                <PropertyName>protocolType</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Address</Label>
+                <PropertyName>address</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>ExpectedNetwork</Label>
+                <PropertyName>expectedNetworkName</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>ActualNetwork</Label>
+                <ScriptBlock>
+                  if ($_.actualNetworkUri -and (-not($_.actualNetworkUri -eq "unknown")))
+                  {
+                  $net = Send-OVRequest $_.actualNetworkUri -Hostname $_.ApplianceConnection.Name
+                  if ($net.fabricType -eq "FabricAttach") {"$($net.name) [FA]"}
+                  else {" $($net.name) [DA]"}
+                  }
+                  else { $_.actualNetworkUri }
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>PortGroup</Label>
+                <PropertyName>groupName</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.DriveEnclosure FT-->
+    <View>
+      <Name>DriveEnclosure</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Appliance</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SerialNumber</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveBays</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>I/OAdapters</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <ScriptBlock>$_.ApplianceConnection.Name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>powerState</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>state</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>serialNumber</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  '{0}/{1}' -f ($_.driveBays | ? drive).count, $_.driveBayCount
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ioAdapterCount</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.DriveEnclosure FL-->
+    <View>
+      <Name>DriveEnclosure</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Appliance</Label>
+                <ScriptBlock>$_.ApplianceConnection.Name</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>powerState</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Model</Label>
+                <PropertyName>model</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>SerialNumber</Label>
+                <PropertyName>serialNumber</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>DriveBays</Label>
+                <ScriptBlock>
+                  '{0}/{1}' -f ($_.driveBays | ? drive).count, $_.driveBayCount
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>I/OAdapters</Label>
+                <PropertyName>ioAdapterCount</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+
+    <!--Storage.DriveEnclosure.IoAdapter FT-->
+    <View>
+      <Name>DriveEnclosureIoAdapter</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure.IoAdapter</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Appliance</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SerialNumber</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveBays</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>I/OAdapters</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <ScriptBlock>$_.ApplianceConnection.Name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>powerState</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>serialNumber</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  '{0}/{1}' -f ($_.driveBays | ? drive).count, $_.driveBayCount
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ioAdapterCount</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.DriveEnclosure.IoAdapter FL-->
+    <View>
+      <Name>DriveEnclosureIoAdapter</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure.IoAdapter</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Appliance</Label>
+                <ScriptBlock>$_.ApplianceConnection.Name</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>powerState</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Model</Label>
+                <PropertyName>model</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>SerialNumber</Label>
+                <PropertyName>serialNumber</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>DriveBays</Label>
+                <ScriptBlock>
+                  '{0}/{1}' -f ($_.driveBays | ? drive).count, $_.driveBayCount
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>I/OAdapters</Label>
+                <PropertyName>ioAdapterCount</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.DriveEnclosure.DriveBay FT-->
+    <View>
+      <Name>DriveBay</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure.DriveBay</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Model</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Drive</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>state</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>model</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+
+                  [int64]$_value = [int64]$_.drive.capacity * 1024 * 1024 * 1024
+
+                  If ($_value -ge 1TB) { [string]::Format("{0:0.#}TB", [math]::Round($_value / 1TB,1)) }
+                  ElseIf ($_value -ge 1GB) { [string]::Format("{0:0}GB", $_value / 1GB) }
+                  ElseIf ($_value -ge 1MB) { [string]::Format("{0:0}MB", $_value / 1MB) }
+                  ElseIf ($_value -ge 1KB) { [string]::Format("{0:0}KB", $_value / 1KB) }
+                  ElseIf ($_value -gt 0) { [string]::Format("{0:0.00}B", $_value) }
+                  Else {""}
+
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.DriveEnclosure.DriveBay FL-->
+    <View>
+      <Name>DriveBay</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure.DriveBay</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Model</Label>
+                <PropertyName>model</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Drive</Label>
+                <ScriptBlock>
+
+                  [int64]$_value = [int64]$_.drive.capacity * 1024 * 1024 * 1024
+
+                  If ($_value -ge 1TB) { [string]::Format("{0:0.#}TB", [math]::Round($_value / 1TB,1)) }
+                  ElseIf ($_value -ge 1GB) { [string]::Format("{0:0}GB", $_value / 1GB) }
+                  ElseIf ($_value -ge 1MB) { [string]::Format("{0:0}MB", $_value / 1MB) }
+                  ElseIf ($_value -ge 1KB) { [string]::Format("{0:0}KB", $_value / 1KB) }
+                  ElseIf ($_value -gt 0) { [string]::Format("{0:0.00}B", $_value) }
+                  Else {""}
+
+                </ScriptBlock>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.DriveEnclosure.DriveBay.Drive FT-->
+    <View>
+      <Name>DriveBayDiskDrive</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure.DriveBay.Drive</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Model</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Capacity</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Firmware</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SerialNumber</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>state</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>model</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+
+                  [int64]$_value = [int64]$_.capacity * 1024 * 1024 * 1024
+
+                  If ($_value -ge 1TB) { [string]::Format("{0:0.#}TB", [math]::Round($_value / 1TB,1)) }
+                  ElseIf ($_value -ge 1GB) { [string]::Format("{0:0}GB", $_value / 1GB) }
+                  ElseIf ($_value -ge 1MB) { [string]::Format("{0:0}MB", $_value / 1MB) }
+                  ElseIf ($_value -ge 1KB) { [string]::Format("{0:0}KB", $_value / 1KB) }
+                  ElseIf ($_value -gt 0) { [string]::Format("{0:0.00}B", $_value) }
+                  Else {""}
+
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>firmwareVersion</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>serialNumber</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!--Storage.DriveEnclosure.DriveBay.Drive FL-->
+    <View>
+      <Name>DriveBayDiskDrive</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.DriveEnclosure.DriveBay.Drive</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <Label>Name</Label>
+                <PropertyName>name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Status</Label>
+                <PropertyName>status</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>State</Label>
+                <PropertyName>state</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Model</Label>
+                <PropertyName>model</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Interface</Label>
+                <PropertyName>deviceInterface</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Type</Label>
+                <PropertyName>driveMedia</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>Connectivity</Label>
+                <ScriptBlock>'{0}Gbps' -f $_.linkRateInGbs</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>rotationalRpms</Label>
+                <ScriptBlock>'{0:00}K' -f ($_.rotationalRpms / 1000)</ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Drive</Label>
+                <ScriptBlock>
+
+                  [int64]$_value = [int64]$_.capacity * 1024 * 1024 * 1024
+
+                  If ($_value -ge 1TB) { [string]::Format("{0:0.#}TB", [math]::Round($_value / 1TB,1)) }
+                  ElseIf ($_value -ge 1GB) { [string]::Format("{0:0}GB", $_value / 1GB) }
+                  ElseIf ($_value -ge 1MB) { [string]::Format("{0:0}MB", $_value / 1MB) }
+                  ElseIf ($_value -ge 1KB) { [string]::Format("{0:0}KB", $_value / 1KB) }
+                  ElseIf ($_value -gt 0) { [string]::Format("{0:0.00}B", $_value) }
+                  Else {""}
+
+                </ScriptBlock>
+              </ListItem>
+              <ListItem>
+                <Label>Firmware</Label>
+                <PropertyName>firmwareVersion</PropertyName>
+              </ListItem>
+              <ListItem>
+                <Label>SerialNumber</Label>
+                <PropertyName>serialNumber</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <!--Storage.AvailableDiskDrive FT-->
+    <View>
+      <Name>AvailableDiskDrive</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.AvailableDiskDrive</TypeName>
+      </ViewSelectedBy>
+      <GroupBy>
+        <PropertyName>type</PropertyName>
+        <CustomControlName>AvailableDrivesFromDriveEnclosures-GroupingFormat</CustomControlName>
+      </GroupBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Type</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Capacity</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NumberAvailable</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveEnclosureName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Type</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Capacity</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NumberAvailable</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>DriveEnclosureName</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!-- HPEOneView.Storage.LogicalJBOD FT-->
+    <View>
+      <Name>LogicalJBOD</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.LogicalJBOD</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveTechnology</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MinSize</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MaxSize</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>UsedBy</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Drives</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>State</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0} {1}" -f $_.Interface, $_.Media</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>[HPEOneView.Utilities.Library]::IntToStorageString(([int]$_.MinSize * 1GB))</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>[HPEOneView.Utilities.Library]::IntToStorageString(([int]$_.MaxSize * 1GB))</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>UsedBy</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Drives</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!-- HPEOneView.Storage.Drive FT-->
+    <View>
+      <Name>Drive</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.Drive</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>State</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveEnclosureName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Model</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SerialNumber</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Capacity</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>LogicalJbodName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>State</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>DriveEnclosureName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Model</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>SerialNumber</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>[HPEOneView.Utilities.Library]::IntToStorageString(([int]$_.Capacity * 1GB))</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>LogicalJbodName</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <!-- HPEOneView.Storage.AvailableDriveType FT-->
+    <View>
+      <Name>AvailableDriveType</Name>
+      <ViewSelectedBy>
+        <TypeName>HPEOneView.Storage.AvailableDriveType</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize/>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>SASLogicalInterconnectName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DriveEnclosureName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Type</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Capacity</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NumberAvailable</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>SASLogicalInterconnectName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>DriveEnclosureName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Type</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>[HPEOneView.Utilities.Library]::IntToStorageString(([int]$_.Capacity * 1GB))</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NumberAvailable</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
+
+
+  </ViewDefinitions>
+</Configuration>
+<!-- SIG # Begin signature block -->
+<!-- MIIsFgYJKoZIhvcNAQcCoIIsBzCCLAMCAQExDzANBglghkgBZQMEAgEFADB5Bgor -->
+<!-- BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG -->
+<!-- KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDWDHJDrNXsMLvH -->
+<!-- hTBPc2vSz/2xxiqeMnt+5NWfXVn2Y6CCEXYwggVvMIIEV6ADAgECAhBI/JO0YFWU -->
+<!-- jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI -->
+<!-- DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM -->
+<!-- EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy -->
+<!-- dmljZXMwHhcNMjEwNTI1MDAwMDAwWhcNMjgxMjMxMjM1OTU5WjBWMQswCQYDVQQG -->
+<!-- EwJHQjEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMS0wKwYDVQQDEyRTZWN0aWdv -->
+<!-- IFB1YmxpYyBDb2RlIFNpZ25pbmcgUm9vdCBSNDYwggIiMA0GCSqGSIb3DQEBAQUA -->
+<!-- A4ICDwAwggIKAoICAQCN55QSIgQkdC7/FiMCkoq2rjaFrEfUI5ErPtx94jGgUW+s -->
+<!-- hJHjUoq14pbe0IdjJImK/+8Skzt9u7aKvb0Ffyeba2XTpQxpsbxJOZrxbW6q5KCD -->
+<!-- J9qaDStQ6Utbs7hkNqR+Sj2pcaths3OzPAsM79szV+W+NDfjlxtd/R8SPYIDdub7 -->
+<!-- P2bSlDFp+m2zNKzBenjcklDyZMeqLQSrw2rq4C+np9xu1+j/2iGrQL+57g2extme -->
+<!-- me/G3h+pDHazJyCh1rr9gOcB0u/rgimVcI3/uxXP/tEPNqIuTzKQdEZrRzUTdwUz -->
+<!-- T2MuuC3hv2WnBGsY2HH6zAjybYmZELGt2z4s5KoYsMYHAXVn3m3pY2MeNn9pib6q -->
+<!-- RT5uWl+PoVvLnTCGMOgDs0DGDQ84zWeoU4j6uDBl+m/H5x2xg3RpPqzEaDux5mcz -->
+<!-- mrYI4IAFSEDu9oJkRqj1c7AGlfJsZZ+/VVscnFcax3hGfHCqlBuCF6yH6bbJDoEc -->
+<!-- QNYWFyn8XJwYK+pF9e+91WdPKF4F7pBMeufG9ND8+s0+MkYTIDaKBOq3qgdGnA2T -->
+<!-- OglmmVhcKaO5DKYwODzQRjY1fJy67sPV+Qp2+n4FG0DKkjXp1XrRtX8ArqmQqsV/ -->
+<!-- AZwQsRb8zG4Y3G9i/qZQp7h7uJ0VP/4gDHXIIloTlRmQAOka1cKG8eOO7F/05QID -->
+<!-- AQABo4IBEjCCAQ4wHwYDVR0jBBgwFoAUoBEKIz6W8Qfs4q8p74Klf9AwpLQwHQYD -->
+<!-- VR0OBBYEFDLrkpr/NZZILyhAQnAgNpFcF4XmMA4GA1UdDwEB/wQEAwIBhjAPBgNV -->
+<!-- HRMBAf8EBTADAQH/MBMGA1UdJQQMMAoGCCsGAQUFBwMDMBsGA1UdIAQUMBIwBgYE -->
+<!-- VR0gADAIBgZngQwBBAEwQwYDVR0fBDwwOjA4oDagNIYyaHR0cDovL2NybC5jb21v -->
+<!-- ZG9jYS5jb20vQUFBQ2VydGlmaWNhdGVTZXJ2aWNlcy5jcmwwNAYIKwYBBQUHAQEE -->
+<!-- KDAmMCQGCCsGAQUFBzABhhhodHRwOi8vb2NzcC5jb21vZG9jYS5jb20wDQYJKoZI -->
+<!-- hvcNAQEMBQADggEBABK/oe+LdJqYRLhpRrWrJAoMpIpnuDqBv0WKfVIHqI0fTiGF -->
+<!-- OaNrXi0ghr8QuK55O1PNtPvYRL4G2VxjZ9RAFodEhnIq1jIV9RKDwvnhXRFAZ/ZC -->
+<!-- J3LFI+ICOBpMIOLbAffNRk8monxmwFE2tokCVMf8WPtsAO7+mKYulaEMUykfb9gZ -->
+<!-- pk+e96wJ6l2CxouvgKe9gUhShDHaMuwV5KZMPWw5c9QLhTkg4IUaaOGnSDip0TYl -->
+<!-- d8GNGRbFiExmfS9jzpjoad+sPKhdnckcW67Y8y90z7h+9teDnRGWYpquRRPaf9xH -->
+<!-- +9/DUp/mBlXpnYzyOmJRvOwkDynUWICE5EV7WtgwggXhMIIESaADAgECAhEA83w3 -->
+<!-- gf2o8H0GHWXSUybisjANBgkqhkiG9w0BAQwFADBUMQswCQYDVQQGEwJHQjEYMBYG -->
+<!-- A1UEChMPU2VjdGlnbyBMaW1pdGVkMSswKQYDVQQDEyJTZWN0aWdvIFB1YmxpYyBD -->
+<!-- b2RlIFNpZ25pbmcgQ0EgUjM2MB4XDTIyMDYwNzAwMDAwMFoXDTI1MDYwNjIzNTk1 -->
+<!-- OVowdzELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVRleGFzMSswKQYDVQQKDCJIZXds -->
+<!-- ZXR0IFBhY2thcmQgRW50ZXJwcmlzZSBDb21wYW55MSswKQYDVQQDDCJIZXdsZXR0 -->
+<!-- IFBhY2thcmQgRW50ZXJwcmlzZSBDb21wYW55MIIBojANBgkqhkiG9w0BAQEFAAOC -->
+<!-- AY8AMIIBigKCAYEA3nXTSeo4pVdKrf7RlSd2tDEbwbNsAuOo9sKzn6H1kVFshc5b -->
+<!-- ALe9NHmnAsdDFhmcriSrlCPsKekOpmBzUY+hjMTv7eF99bR1rA5tvQQvEdkGkzyN -->
+<!-- 2ZpFc2h7WiImjuGapcXXu8YpSm9seDgSbKnLtS/WAer5K/x30t4BBXm4j7nScY6E -->
+<!-- 0V3ZwkueiVNq0uiUjmGXxqzDgPQmP4H9Gt5mfrQdmpFMccfv9KC4TbbT0m0WHZte -->
+<!-- ebUIBJCWyJQHNJZES9oytn10QoSeBxclInXGzG7q6PIkyXSds7RsBm25gmBRvrm8 -->
+<!-- Uf33JnfBEyyd6AH0nfSUVylOYlrLexniH5Kdrq96spk9Wj+7pq5fSXcjULZSunMN -->
+<!-- 6gIrQG+d7NvxuaUkjwDx+3k/A0daJc4hiHcOJa4kjK2SmQ3e27Z4FsiTUWk88C+t -->
+<!-- 1yya6Q/KmT8DcTfHOBpyF0mDEPJYsU5X/jquFRNrG6fzDuKkse3MEbc641HDap/n -->
+<!-- Ldwm7gztHt/IFc4JAgMBAAGjggGJMIIBhTAfBgNVHSMEGDAWgBQPKssghyi47G9I -->
+<!-- ritUpimqF6TNDDAdBgNVHQ4EFgQU9ol95gfMeTfyaXeTTny+MR/YG/UwDgYDVR0P -->
+<!-- AQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwEwYDVR0lBAwwCgYIKwYBBQUHAwMwSgYD -->
+<!-- VR0gBEMwQTA1BgwrBgEEAbIxAQIBAwIwJTAjBggrBgEFBQcCARYXaHR0cHM6Ly9z -->
+<!-- ZWN0aWdvLmNvbS9DUFMwCAYGZ4EMAQQBMEkGA1UdHwRCMEAwPqA8oDqGOGh0dHA6 -->
+<!-- Ly9jcmwuc2VjdGlnby5jb20vU2VjdGlnb1B1YmxpY0NvZGVTaWduaW5nQ0FSMzYu -->
+<!-- Y3JsMHkGCCsGAQUFBwEBBG0wazBEBggrBgEFBQcwAoY4aHR0cDovL2NydC5zZWN0 -->
+<!-- aWdvLmNvbS9TZWN0aWdvUHVibGljQ29kZVNpZ25pbmdDQVIzNi5jcnQwIwYIKwYB -->
+<!-- BQUHMAGGF2h0dHA6Ly9vY3NwLnNlY3RpZ28uY29tMA0GCSqGSIb3DQEBDAUAA4IB -->
+<!-- gQAdJNlWSujYBAZ1mdIy0Q66db+4YWP+FbaUiQWNqbfi30s7Ctg70/2t0n1QDDkg -->
+<!-- hWHFM2kcdy1PGh4fOMeRSfIhsTre54YcsNe5wELSJQbvN8lfPYXMThb3n4/BXxoD -->
+<!-- 1zx5rmcwGPXVF5oIZJub5FzMNVpECjy8C42skTFXv4eB/yEHKI/BWsjvnkldkNEG -->
+<!-- 3v8Y/23gGHruFy2qVW50xyH8zsjd+gIStVojyhPJ0jgtZvXgxwVJYwBGJwgYOO+q -->
+<!-- pRnuUp4Bse+KlA8Ttm+Q4Nx8qOJYBE44Qi8BUXwoEDs26pFIyNuszBFuzeyL4Wkx -->
+<!-- y7srdCWYCIyLbD5b7WFbhd2ieK2Mg+WtZJNB3t8ZpdLLkH4vPmZGIo4FkeAST1I1 -->
+<!-- XtKp5PqLhzPEZbsY9JL8i6XvedCL8cHe1zVX3eM9EPL/jxw9kLcFrFN+DQ1wIHCc -->
+<!-- gEH7/RYXc9abuGcC2XpP4YbzSMWbff8X/Pgw8HA8aSRhctF+bz7dI+/REmlDJtdP -->
+<!-- T6wwggYaMIIEAqADAgECAhBiHW0MUgGeO5B5FSCJIRwKMA0GCSqGSIb3DQEBDAUA -->
+<!-- MFYxCzAJBgNVBAYTAkdCMRgwFgYDVQQKEw9TZWN0aWdvIExpbWl0ZWQxLTArBgNV -->
+<!-- BAMTJFNlY3RpZ28gUHVibGljIENvZGUgU2lnbmluZyBSb290IFI0NjAeFw0yMTAz -->
+<!-- MjIwMDAwMDBaFw0zNjAzMjEyMzU5NTlaMFQxCzAJBgNVBAYTAkdCMRgwFgYDVQQK -->
+<!-- Ew9TZWN0aWdvIExpbWl0ZWQxKzApBgNVBAMTIlNlY3RpZ28gUHVibGljIENvZGUg -->
+<!-- U2lnbmluZyBDQSBSMzYwggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQCb -->
+<!-- K51T+jU/jmAGQ2rAz/V/9shTUxjIztNsfvxYB5UXeWUzCxEeAEZGbEN4QMgCsJLZ -->
+<!-- UKhWThj/yPqy0iSZhXkZ6Pg2A2NVDgFigOMYzB2OKhdqfWGVoYW3haT29PSTahYk -->
+<!-- wmMv0b/83nbeECbiMXhSOtbam+/36F09fy1tsB8je/RV0mIk8XL/tfCK6cPuYHE2 -->
+<!-- 15wzrK0h1SWHTxPbPuYkRdkP05ZwmRmTnAO5/arnY83jeNzhP06ShdnRqtZlV59+ -->
+<!-- 8yv+KIhE5ILMqgOZYAENHNX9SJDm+qxp4VqpB3MV/h53yl41aHU5pledi9lCBbH9 -->
+<!-- JeIkNFICiVHNkRmq4TpxtwfvjsUedyz8rNyfQJy/aOs5b4s+ac7IH60B+Ja7TVM+ -->
+<!-- EKv1WuTGwcLmoU3FpOFMbmPj8pz44MPZ1f9+YEQIQty/NQd/2yGgW+ufflcZ/ZE9 -->
+<!-- o1M7a5Jnqf2i2/uMSWymR8r2oQBMdlyh2n5HirY4jKnFH/9gRvd+QOfdRrJZb1sC -->
+<!-- AwEAAaOCAWQwggFgMB8GA1UdIwQYMBaAFDLrkpr/NZZILyhAQnAgNpFcF4XmMB0G -->
+<!-- A1UdDgQWBBQPKssghyi47G9IritUpimqF6TNDDAOBgNVHQ8BAf8EBAMCAYYwEgYD -->
+<!-- VR0TAQH/BAgwBgEB/wIBADATBgNVHSUEDDAKBggrBgEFBQcDAzAbBgNVHSAEFDAS -->
+<!-- MAYGBFUdIAAwCAYGZ4EMAQQBMEsGA1UdHwREMEIwQKA+oDyGOmh0dHA6Ly9jcmwu -->
+<!-- c2VjdGlnby5jb20vU2VjdGlnb1B1YmxpY0NvZGVTaWduaW5nUm9vdFI0Ni5jcmww -->
+<!-- ewYIKwYBBQUHAQEEbzBtMEYGCCsGAQUFBzAChjpodHRwOi8vY3J0LnNlY3RpZ28u -->
+<!-- Y29tL1NlY3RpZ29QdWJsaWNDb2RlU2lnbmluZ1Jvb3RSNDYucDdjMCMGCCsGAQUF -->
+<!-- BzABhhdodHRwOi8vb2NzcC5zZWN0aWdvLmNvbTANBgkqhkiG9w0BAQwFAAOCAgEA -->
+<!-- Bv+C4XdjNm57oRUgmxP/BP6YdURhw1aVcdGRP4Wh60BAscjW4HL9hcpkOTz5jUug -->
+<!-- 2oeunbYAowbFC2AKK+cMcXIBD0ZdOaWTsyNyBBsMLHqafvIhrCymlaS98+QpoBCy -->
+<!-- KppP0OcxYEdU0hpsaqBBIZOtBajjcw5+w/KeFvPYfLF/ldYpmlG+vd0xqlqd099i -->
+<!-- ChnyIMvY5HexjO2AmtsbpVn0OhNcWbWDRF/3sBp6fWXhz7DcML4iTAWS+MVXeNLj -->
+<!-- 1lJziVKEoroGs9Mlizg0bUMbOalOhOfCipnx8CaLZeVme5yELg09Jlo8BMe80jO3 -->
+<!-- 7PU8ejfkP9/uPak7VLwELKxAMcJszkyeiaerlphwoKx1uHRzNyE6bxuSKcutisqm -->
+<!-- KL5OTunAvtONEoteSiabkPVSZ2z76mKnzAfZxCl/3dq3dUNw4rg3sTCggkHSRqTq -->
+<!-- lLMS7gjrhTqBmzu1L90Y1KWN/Y5JKdGvspbOrTfOXyXvmPL6E52z1NZJ6ctuMFBQ -->
+<!-- ZH3pwWvqURR8AgQdULUvrxjUYbHHj95Ejza63zdrEcxWLDX6xWls/GDnVNueKjWU -->
+<!-- H3fTv1Y8Wdho698YADR7TNx8X8z2Bev6SivBBOHY+uqiirZtg0y9ShQoPzmCcn63 -->
+<!-- Syatatvx157YK9hlcPmVoa1oDE5/L9Uo2bC5a4CH2Rwxghn2MIIZ8gIBATBpMFQx -->
+<!-- CzAJBgNVBAYTAkdCMRgwFgYDVQQKEw9TZWN0aWdvIExpbWl0ZWQxKzApBgNVBAMT -->
+<!-- IlNlY3RpZ28gUHVibGljIENvZGUgU2lnbmluZyBDQSBSMzYCEQDzfDeB/ajwfQYd -->
+<!-- ZdJTJuKyMA0GCWCGSAFlAwQCAQUAoHwwEAYKKwYBBAGCNwIBDDECMAAwGQYJKoZI -->
+<!-- hvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcC -->
+<!-- ARUwLwYJKoZIhvcNAQkEMSIEIMKZ3qn+4Bh/GW/4CDEnIgzMItqlxqC6+nxEBhwD -->
+<!-- KkSJMA0GCSqGSIb3DQEBAQUABIIBgCbQw3CB/Y9XQbOCj5oq6IX41zQ0+yJkoKWg -->
+<!-- cxvl+TuKp38qn/DkyM2OSvCtENkZkGJwc/TRPGd4Ud/u3J8/9CSH6/jtt3QdDvAb -->
+<!-- nCwMsQNZETjXgXBO6l4v8ol9rVX2qZ50YOsm3xxY13/Z7BX8EuLiOuT/houoDAy5 -->
+<!-- CU7J5Wx4yOxplCOJvHjH7nVgrc4AcPK3g6QB9M2OHl9CT6DTdjMqRxcN83EHINCg -->
+<!-- NZfG13EuaNI75uMsy1avZW2Cn1Lu+buztnfcKDPImZkA9FuznfYOP4Ve2K0dOrpz -->
+<!-- GOjP+DSz/5BcoxPzmsGYWcIZtvSgbtaZO5WV1aO7r2ybOi7tp9/QrMQ1ASE/6/GQ -->
+<!-- DgqoNhOza2B6Q6ZC8eLo8n2jRlCvffKU+hpe6IQSA6QoMkliTkTrSnrjTbSuynkX -->
+<!-- uwk4RnYT6VWWSen1NLyblp3d1FVQsHYgDcD2KTN0n4cuJkUP7Rcqz2iR6aNXTvEp -->
+<!-- P4nUV9q3nzfm4w9IEF65Dyi9aJzNp6GCF2AwghdcBgorBgEEAYI3AwMBMYIXTDCC -->
+<!-- F0gGCSqGSIb3DQEHAqCCFzkwghc1AgEDMQ8wDQYJYIZIAWUDBAICBQAwgYcGCyqG -->
+<!-- SIb3DQEJEAEEoHgEdjB0AgEBBglghkgBhv1sBwEwQTANBglghkgBZQMEAgIFAAQw -->
+<!-- NXH/ZcwX3KanbCvKaUV1wPqGtZYUx+Zo5f4Mo/ld/DYQMgUc0iwc5wZPV2tsWFqX -->
+<!-- AhB6WnqjmgYtMWiLaxGR8tdZGA8yMDI0MDkxMTAxNTc0M1qgghMJMIIGwjCCBKqg -->
+<!-- AwIBAgIQBUSv85SdCDmmv9s/X+VhFjANBgkqhkiG9w0BAQsFADBjMQswCQYDVQQG -->
+<!-- EwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xOzA5BgNVBAMTMkRpZ2lDZXJ0 -->
+<!-- IFRydXN0ZWQgRzQgUlNBNDA5NiBTSEEyNTYgVGltZVN0YW1waW5nIENBMB4XDTIz -->
+<!-- MDcxNDAwMDAwMFoXDTM0MTAxMzIzNTk1OVowSDELMAkGA1UEBhMCVVMxFzAVBgNV -->
+<!-- BAoTDkRpZ2lDZXJ0LCBJbmMuMSAwHgYDVQQDExdEaWdpQ2VydCBUaW1lc3RhbXAg -->
+<!-- MjAyMzCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAKNTRYcdg45brD5U -->
+<!-- syPgz5/X5dLnXaEOCdwvSKOXejsqnGfcYhVYwamTEafNqrJq3RApih5iY2nTWJw1 -->
+<!-- cb86l+uUUI8cIOrHmjsvlmbjaedp/lvD1isgHMGXlLSlUIHyz8sHpjBoyoNC2vx/ -->
+<!-- CSSUpIIa2mq62DvKXd4ZGIX7ReoNYWyd/nFexAaaPPDFLnkPG2ZS48jWPl/aQ9OE -->
+<!-- 9dDH9kgtXkV1lnX+3RChG4PBuOZSlbVH13gpOWvgeFmX40QrStWVzu8IF+qCZE3/ -->
+<!-- I+PKhu60pCFkcOvV5aDaY7Mu6QXuqvYk9R28mxyyt1/f8O52fTGZZUdVnUokL6wr -->
+<!-- l76f5P17cz4y7lI0+9S769SgLDSb495uZBkHNwGRDxy1Uc2qTGaDiGhiu7xBG3gZ -->
+<!-- beTZD+BYQfvYsSzhUa+0rRUGFOpiCBPTaR58ZE2dD9/O0V6MqqtQFcmzyrzXxDto -->
+<!-- RKOlO0L9c33u3Qr/eTQQfqZcClhMAD6FaXXHg2TWdc2PEnZWpST618RrIbroHzSY -->
+<!-- LzrqawGw9/sqhux7UjipmAmhcbJsca8+uG+W1eEQE/5hRwqM/vC2x9XH3mwk8L9C -->
+<!-- gsqgcT2ckpMEtGlwJw1Pt7U20clfCKRwo+wK8REuZODLIivK8SgTIUlRfgZm0zu+ -->
+<!-- +uuRONhRB8qUt+JQofM604qDy0B7AgMBAAGjggGLMIIBhzAOBgNVHQ8BAf8EBAMC -->
+<!-- B4AwDAYDVR0TAQH/BAIwADAWBgNVHSUBAf8EDDAKBggrBgEFBQcDCDAgBgNVHSAE -->
+<!-- GTAXMAgGBmeBDAEEAjALBglghkgBhv1sBwEwHwYDVR0jBBgwFoAUuhbZbU2FL3Mp -->
+<!-- dpovdYxqII+eyG8wHQYDVR0OBBYEFKW27xPn783QZKHVVqllMaPe1eNJMFoGA1Ud -->
+<!-- HwRTMFEwT6BNoEuGSWh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRy -->
+<!-- dXN0ZWRHNFJTQTQwOTZTSEEyNTZUaW1lU3RhbXBpbmdDQS5jcmwwgZAGCCsGAQUF -->
+<!-- BwEBBIGDMIGAMCQGCCsGAQUFBzABhhhodHRwOi8vb2NzcC5kaWdpY2VydC5jb20w -->
+<!-- WAYIKwYBBQUHMAKGTGh0dHA6Ly9jYWNlcnRzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2Vy -->
+<!-- dFRydXN0ZWRHNFJTQTQwOTZTSEEyNTZUaW1lU3RhbXBpbmdDQS5jcnQwDQYJKoZI -->
+<!-- hvcNAQELBQADggIBAIEa1t6gqbWYF7xwjU+KPGic2CX/yyzkzepdIpLsjCICqbjP -->
+<!-- gKjZ5+PF7SaCinEvGN1Ott5s1+FgnCvt7T1IjrhrunxdvcJhN2hJd6PrkKoS1yeF -->
+<!-- 844ektrCQDifXcigLiV4JZ0qBXqEKZi2V3mP2yZWK7Dzp703DNiYdk9WuVLCtp04 -->
+<!-- qYHnbUFcjGnRuSvExnvPnPp44pMadqJpddNQ5EQSviANnqlE0PjlSXcIWiHFtM+Y -->
+<!-- lRpUurm8wWkZus8W8oM3NG6wQSbd3lqXTzON1I13fXVFoaVYJmoDRd7ZULVQjK9W -->
+<!-- vUzF4UbFKNOt50MAcN7MmJ4ZiQPq1JE3701S88lgIcRWR+3aEUuMMsOI5ljitts+ -->
+<!-- +V+wQtaP4xeR0arAVeOGv6wnLEHQmjNKqDbUuXKWfpd5OEhfysLcPTLfddY2Z1qJ -->
+<!-- +Panx+VPNTwAvb6cKmx5AdzaROY63jg7B145WPR8czFVoIARyxQMfq68/qTreWWq -->
+<!-- aNYiyjvrmoI1VygWy2nyMpqy0tg6uLFGhmu6F/3Ed2wVbK6rr3M66ElGt9V/zLY4 -->
+<!-- wNjsHPW2obhDLN9OTH0eaHDAdwrUAuBcYLso/zjlUlrWrBciI0707NMX+1Br/wd3 -->
+<!-- H3GXREHJuEbTbDJ8WC9nR2XlG3O2mflrLAZG70Ee8PBf4NvZrZCARK+AEEGKMIIG -->
+<!-- rjCCBJagAwIBAgIQBzY3tyRUfNhHrP0oZipeWzANBgkqhkiG9w0BAQsFADBiMQsw -->
+<!-- CQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cu -->
+<!-- ZGlnaWNlcnQuY29tMSEwHwYDVQQDExhEaWdpQ2VydCBUcnVzdGVkIFJvb3QgRzQw -->
+<!-- HhcNMjIwMzIzMDAwMDAwWhcNMzcwMzIyMjM1OTU5WjBjMQswCQYDVQQGEwJVUzEX -->
+<!-- MBUGA1UEChMORGlnaUNlcnQsIEluYy4xOzA5BgNVBAMTMkRpZ2lDZXJ0IFRydXN0 -->
+<!-- ZWQgRzQgUlNBNDA5NiBTSEEyNTYgVGltZVN0YW1waW5nIENBMIICIjANBgkqhkiG -->
+<!-- 9w0BAQEFAAOCAg8AMIICCgKCAgEAxoY1BkmzwT1ySVFVxyUDxPKRN6mXUaHW0oPR -->
+<!-- nkyibaCwzIP5WvYRoUQVQl+kiPNo+n3znIkLf50fng8zH1ATCyZzlm34V6gCff1D -->
+<!-- tITaEfFzsbPuK4CEiiIY3+vaPcQXf6sZKz5C3GeO6lE98NZW1OcoLevTsbV15x8G -->
+<!-- ZY2UKdPZ7Gnf2ZCHRgB720RBidx8ald68Dd5n12sy+iEZLRS8nZH92GDGd1ftFQL -->
+<!-- IWhuNyG7QKxfst5Kfc71ORJn7w6lY2zkpsUdzTYNXNXmG6jBZHRAp8ByxbpOH7G1 -->
+<!-- WE15/tePc5OsLDnipUjW8LAxE6lXKZYnLvWHpo9OdhVVJnCYJn+gGkcgQ+NDY4B7 -->
+<!-- dW4nJZCYOjgRs/b2nuY7W+yB3iIU2YIqx5K/oN7jPqJz+ucfWmyU8lKVEStYdEAo -->
+<!-- q3NDzt9KoRxrOMUp88qqlnNCaJ+2RrOdOqPVA+C/8KI8ykLcGEh/FDTP0kyr75s9 -->
+<!-- /g64ZCr6dSgkQe1CvwWcZklSUPRR8zZJTYsg0ixXNXkrqPNFYLwjjVj33GHek/45 -->
+<!-- wPmyMKVM1+mYSlg+0wOI/rOP015LdhJRk8mMDDtbiiKowSYI+RQQEgN9XyO7ZONj -->
+<!-- 4KbhPvbCdLI/Hgl27KtdRnXiYKNYCQEoAA6EVO7O6V3IXjASvUaetdN2udIOa5kM -->
+<!-- 0jO0zbECAwEAAaOCAV0wggFZMBIGA1UdEwEB/wQIMAYBAf8CAQAwHQYDVR0OBBYE -->
+<!-- FLoW2W1NhS9zKXaaL3WMaiCPnshvMB8GA1UdIwQYMBaAFOzX44LScV1kTN8uZz/n -->
+<!-- upiuHA9PMA4GA1UdDwEB/wQEAwIBhjATBgNVHSUEDDAKBggrBgEFBQcDCDB3Bggr -->
+<!-- BgEFBQcBAQRrMGkwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNv -->
+<!-- bTBBBggrBgEFBQcwAoY1aHR0cDovL2NhY2VydHMuZGlnaWNlcnQuY29tL0RpZ2lD -->
+<!-- ZXJ0VHJ1c3RlZFJvb3RHNC5jcnQwQwYDVR0fBDwwOjA4oDagNIYyaHR0cDovL2Ny -->
+<!-- bDMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0VHJ1c3RlZFJvb3RHNC5jcmwwIAYDVR0g -->
+<!-- BBkwFzAIBgZngQwBBAIwCwYJYIZIAYb9bAcBMA0GCSqGSIb3DQEBCwUAA4ICAQB9 -->
+<!-- WY7Ak7ZvmKlEIgF+ZtbYIULhsBguEE0TzzBTzr8Y+8dQXeJLKftwig2qKWn8acHP -->
+<!-- HQfpPmDI2AvlXFvXbYf6hCAlNDFnzbYSlm/EUExiHQwIgqgWvalWzxVzjQEiJc6V -->
+<!-- aT9Hd/tydBTX/6tPiix6q4XNQ1/tYLaqT5Fmniye4Iqs5f2MvGQmh2ySvZ180HAK -->
+<!-- fO+ovHVPulr3qRCyXen/KFSJ8NWKcXZl2szwcqMj+sAngkSumScbqyQeJsG33irr -->
+<!-- 9p6xeZmBo1aGqwpFyd/EjaDnmPv7pp1yr8THwcFqcdnGE4AJxLafzYeHJLtPo0m5 -->
+<!-- d2aR8XKc6UsCUqc3fpNTrDsdCEkPlM05et3/JWOZJyw9P2un8WbDQc1PtkCbISFA -->
+<!-- 0LcTJM3cHXg65J6t5TRxktcma+Q4c6umAU+9Pzt4rUyt+8SVe+0KXzM5h0F4ejjp -->
+<!-- nOHdI/0dKNPH+ejxmF/7K9h+8kaddSweJywm228Vex4Ziza4k9Tm8heZWcpw8De/ -->
+<!-- mADfIBZPJ/tgZxahZrrdVcA6KYawmKAr7ZVBtzrVFZgxtGIJDwq9gdkT/r+k0fNX -->
+<!-- 2bwE+oLeMt8EifAAzV3C+dAjfwAL5HYCJtnwZXZCpimHCUcr5n8apIUP/JiW9lVU -->
+<!-- Kx+A+sDyDivl1vupL0QVSucTDh3bNzgaoSv27dZ8/DCCBY0wggR1oAMCAQICEA6b -->
+<!-- GI750C3n79tQ4ghAGFowDQYJKoZIhvcNAQEMBQAwZTELMAkGA1UEBhMCVVMxFTAT -->
+<!-- BgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3LmRpZ2ljZXJ0LmNvbTEk -->
+<!-- MCIGA1UEAxMbRGlnaUNlcnQgQXNzdXJlZCBJRCBSb290IENBMB4XDTIyMDgwMTAw -->
+<!-- MDAwMFoXDTMxMTEwOTIzNTk1OVowYjELMAkGA1UEBhMCVVMxFTATBgNVBAoTDERp -->
+<!-- Z2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3LmRpZ2ljZXJ0LmNvbTEhMB8GA1UEAxMY -->
+<!-- RGlnaUNlcnQgVHJ1c3RlZCBSb290IEc0MIICIjANBgkqhkiG9w0BAQEFAAOCAg8A -->
+<!-- MIICCgKCAgEAv+aQc2jeu+RdSjwwIjBpM+zCpyUuySE98orYWcLhKac9WKt2ms2u -->
+<!-- exuEDcQwH/MbpDgW61bGl20dq7J58soR0uRf1gU8Ug9SH8aeFaV+vp+pVxZZVXKv -->
+<!-- aJNwwrK6dZlqczKU0RBEEC7fgvMHhOZ0O21x4i0MG+4g1ckgHWMpLc7sXk7Ik/gh -->
+<!-- YZs06wXGXuxbGrzryc/NrDRAX7F6Zu53yEioZldXn1RYjgwrt0+nMNlW7sp7XeOt -->
+<!-- yU9e5TXnMcvak17cjo+A2raRmECQecN4x7axxLVqGDgDEI3Y1DekLgV9iPWCPhCR -->
+<!-- cKtVgkEy19sEcypukQF8IUzUvK4bA3VdeGbZOjFEmjNAvwjXWkmkwuapoGfdpCe8 -->
+<!-- oU85tRFYF/ckXEaPZPfBaYh2mHY9WV1CdoeJl2l6SPDgohIbZpp0yt5LHucOY67m -->
+<!-- 1O+SkjqePdwA5EUlibaaRBkrfsCUtNJhbesz2cXfSwQAzH0clcOP9yGyshG3u3/y -->
+<!-- 1YxwLEFgqrFjGESVGnZifvaAsPvoZKYz0YkH4b235kOkGLimdwHhD5QMIR2yVCkl -->
+<!-- iWzlDlJRR3S+Jqy2QXXeeqxfjT/JvNNBERJb5RBQ6zHFynIWIgnffEx1P2PsIV/E -->
+<!-- IFFrb7GrhotPwtZFX50g/KEexcCPorF+CiaZ9eRpL5gdLfXZqbId5RsCAwEAAaOC -->
+<!-- ATowggE2MA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFOzX44LScV1kTN8uZz/n -->
+<!-- upiuHA9PMB8GA1UdIwQYMBaAFEXroq/0ksuCMS1Ri6enIZ3zbcgPMA4GA1UdDwEB -->
+<!-- /wQEAwIBhjB5BggrBgEFBQcBAQRtMGswJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3Nw -->
+<!-- LmRpZ2ljZXJ0LmNvbTBDBggrBgEFBQcwAoY3aHR0cDovL2NhY2VydHMuZGlnaWNl -->
+<!-- cnQuY29tL0RpZ2lDZXJ0QXNzdXJlZElEUm9vdENBLmNydDBFBgNVHR8EPjA8MDqg -->
+<!-- OKA2hjRodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRBc3N1cmVkSURS -->
+<!-- b290Q0EuY3JsMBEGA1UdIAQKMAgwBgYEVR0gADANBgkqhkiG9w0BAQwFAAOCAQEA -->
+<!-- cKC/Q1xV5zhfoKN0Gz22Ftf3v1cHvZqsoYcs7IVeqRq7IviHGmlUIu2kiHdtvRoU -->
+<!-- 9BNKei8ttzjv9P+Aufih9/Jy3iS8UgPITtAq3votVs/59PesMHqai7Je1M/RQ0Sb -->
+<!-- QyHrlnKhSLSZy51PpwYDE3cnRNTnf+hZqPC/Lwum6fI0POz3A8eHqNJMQBk1Rmpp -->
+<!-- VLC4oVaO7KTVPeix3P0c2PR3WlxUjG/voVA9/HYJaISfb8rbII01YBwCA8sgsKxY -->
+<!-- oA5AY8WYIsGyWfVVa88nq2x2zm8jLfR+cWojayL/ErhULSd+2DrZ8LaHlv1b0Vys -->
+<!-- GMNNn3O3AamfV6peKOK5lDGCA4YwggOCAgEBMHcwYzELMAkGA1UEBhMCVVMxFzAV -->
+<!-- BgNVBAoTDkRpZ2lDZXJ0LCBJbmMuMTswOQYDVQQDEzJEaWdpQ2VydCBUcnVzdGVk -->
+<!-- IEc0IFJTQTQwOTYgU0hBMjU2IFRpbWVTdGFtcGluZyBDQQIQBUSv85SdCDmmv9s/ -->
+<!-- X+VhFjANBglghkgBZQMEAgIFAKCB4TAaBgkqhkiG9w0BCQMxDQYLKoZIhvcNAQkQ -->
+<!-- AQQwHAYJKoZIhvcNAQkFMQ8XDTI0MDkxMTAxNTc0M1owKwYLKoZIhvcNAQkQAgwx -->
+<!-- HDAaMBgwFgQUZvArMsLCyQ+CXc6qisnGTxmcz0AwNwYLKoZIhvcNAQkQAi8xKDAm -->
+<!-- MCQwIgQg0vbkbe10IszR1EBXaEE2b4KK2lWarjMWr00amtQMeCgwPwYJKoZIhvcN -->
+<!-- AQkEMTIEMHG2Past4kjZJEZ350+D0+8J3/LDSkeWlnZNh9wZ+hkgHbq6qkyZFjFy -->
+<!-- MwlxoScNyzANBgkqhkiG9w0BAQEFAASCAgB/7krJjMFqhL24NBUw1bxUDpVM9kc4 -->
+<!-- 7OFbkmSg/0x59DlmG/5TSY/5VaDmnEvDkwvISeuei+bsNSlTcLS6agIKfZ0u2Nce -->
+<!-- 68HP7XQvp7gsXVj7HLIzF2Ui1/NJVsGOODAZfHzm+reTy7uFva6q0/CAB0P4C25E -->
+<!-- PXGPn8FOi3Fn6viSzy7jT6ob/ty4ckqI8k8lT/nC8ChpCQVQiJt960IdalHo/3Qy -->
+<!-- 5syyVJ/eJts1ff6zzFOiUr5QYrkT6ABW9W8j/+LiIZmrggFPrh7Yw3CAiEaIYkgt -->
+<!-- kuFVssPHlEsqotDPdGLOZbJEVdznM2/I18WEJYNaaoy7gcz6qGz2ttwb97YjwRKk -->
+<!-- tBAPP3y8BfM/bfuMc3T4IYnlK3L1yyq0TfoVOhGj35la5usmfLTIitz/jndwFryS -->
+<!-- jmP6qJrBehSz1rwGOEVYTE+PdsiYbno2HOpcFFDQpstNlkl4ECHcG7L4ihfCGVsJ -->
+<!-- ZxFvElgI8A88iSmyNp1hAUoOWmmtEiPK8CXsDNT4OPEoiy5LwbGJNoEQNGSe2RnR -->
+<!-- LMilknSwwvQ//NvhTJLVZu89Ubj42Zv+sydGUSfQeCOD0euzMT4qJNxM6YWRSFln -->
+<!-- sCGPGxsW+LbSolZyFzSK9YO9AT0alqIDaVP0zogrhCg8M33Yglomw6Hxvrumu24P -->
+<!-- R0CzlRhBjsnsgw== -->
+<!-- SIG # End signature block -->
