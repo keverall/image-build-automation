@@ -248,15 +248,16 @@ Describe 'Set-MaintenanceMode - Date/Time Format Tests' {
         }
         
         It 'Should accept mixed relative start and absolute end' {
+            $endTime   = (Get-Date).AddHours(2).ToString('yyyy-MM-dd HH:mm')
             $result = Set-MaintenanceMode `
                 -Action enable `
                 -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
                 -Start 'now' `
-                -End '2026-06-12 02:00' `
+                -End $endTime `
                 -DryRun
-            
+
             $result | Should -Not -BeNullOrEmpty
             $result.Success | Should -BeTrue
         }
