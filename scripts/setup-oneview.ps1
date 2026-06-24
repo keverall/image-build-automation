@@ -49,7 +49,7 @@ if ($ovModules) {
     Write-Host "  See docs/oneview-module-versions.md for compatibility table."
     if ($ovModules.Count -gt 1) {
         Write-Warning "[WARNING] Multiple modules detected. Only ONE HPE OneView module should be installed."
-        Write-Warning "  Remove old versions: Uninstall-Module HPEOneView.840 -Force"
+        Write-Warning "  Remove old versions: Uninstall-Module HPEOneView.OLD_VERSION -Force"
         Write-Warning "  Or use: Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force"
     }
 } else {
