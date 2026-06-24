@@ -21,11 +21,11 @@ function New-OneViewMaintenanceScript {
 
     .PARAMETER ModuleName
         PowerShell module name for HPE OneView (required).
-        Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.840 for OneView 8.40).
+        Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.860 for OneView 8.60).
         See https://github.com/HewlettPackard/POSH-HPEOneView
 
     .EXAMPLE
-        $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.840'
+        $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.860'
     #>
     [CmdletBinding()]
     [OutputType([string])]
@@ -56,7 +56,7 @@ function New-OneViewMaintenanceScript {
                 Write-Verbose "Detected legacy OneView module: $defaultModule"
             }
         }
-        $ModuleName = $defaultModule ?? 'HPEOneView.840'
+        $ModuleName = $defaultModule ?? 'HPEOneView.860'
     }
     
     $asyncParam = if ($Async) { '-Async' } else { '' }

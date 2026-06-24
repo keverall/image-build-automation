@@ -1872,7 +1872,7 @@ function Test-OneViewConnection {
         [string]$Appliance,
         [string]$Username,
         [string]$Password,
-        [string]$ModuleName = 'HPEOneView.840'
+        [string]$ModuleName = 'HPEOneView.860'
     )
     
     try {
