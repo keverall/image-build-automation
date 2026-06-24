@@ -11,9 +11,5 @@
       "password_env": "ONEVIEW_PASSWORD"
     }
   },
-  "iso_repository": {
-    "base_url": "https://artifacts.internal.example.com/isos/",
-    "method": "https_copy"
-  },
-  "notes": "HPE OneView configuration. Module name format is HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.860 for OneView 8.60). See https://github.com/HewlettPackard/POSH-HPEOneView. iso_repository.base_url is an EXAMPLE value used for tests; in production supply -RepoBaseUrl to Start-PhysicalServerBuild at runtime."
+  "notes": "HPE OneView configuration. Module name format is HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.860 for OneView 8.60). See https://github.com/HewlettPackard/POSH-HPEOneView. Appliance/credentials are EXAMPLE values used for tests; in production supply -OneViewHost / -OneViewUser / -OneViewPassword (or env vars ONEVIEW_USER / ONEVIEW_PASSWORD) at runtime."
 }

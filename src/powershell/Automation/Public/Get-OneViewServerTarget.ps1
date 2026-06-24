@@ -96,7 +96,7 @@ function Get-OneViewServerTarget {
     $apiBase = "$baseUrl/rest"
 
     $typesToTry = if ($IdentifierType -eq 'Auto') {
-        @('Name','OneViewName','Serial','IloIp','EnclosureBay')
+        @('Serial','IloIp','EnclosureBay','Name')
     } else { @($IdentifierType) }
 
     try {
@@ -110,11 +110,11 @@ function Get-OneViewServerTarget {
 
         foreach ($t in $typesToTry) {
             $filter = switch ($t) {
-                'Name'         { "name matches '$ServerIdentifier'" }
-                'OneViewName'  { "name matches '$ServerIdentifier'" }
-                'Serial'       { "serialNumber matches '$ServerIdentifier'" }
-                'IloIp'        { "mpIpAddresses matches '$ServerIdentifier'" }
-                'EnclosureBay' { "position matches '$ServerIdentifier'" }
+                'Name'         { "name='$ServerIdentifier'" }
+                'OneViewName'  { "name='$ServerIdentifier'" }
+                'Serial'       { "serialNumber='$ServerIdentifier'" }
+                'IloIp'        { "mpIpAddresses='$ServerIdentifier'" }
+                'EnclosureBay' { "position='$ServerIdentifier'" }
             }
             $url = "$apiBase/server-hardware?filter=`"$filter`""
             $resp = Invoke-RestMethod -Uri $url -Method Get `
@@ -124,6 +124,9 @@ function Get-OneViewServerTarget {
                 -SkipCertificateCheck:$SkipCertificateCheck `
                 -TimeoutSec $TimeoutSec -ErrorAction Stop
             if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
+                if ($resp.members.Count -gt 1) {
+                    Write-Warning "Multiple servers match '$ServerIdentifier' via $t ($($resp.members.Count) matches). Using first; supply a more specific identifier to disambiguate."
+                }
                 $srv = $resp.members[0]
                 $details = @{
                     name              = $srv.name
