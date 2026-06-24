@@ -1,0 +1,13 @@
+{
+  "_comment": "EXAMPLE / MOCK data only. Real builds pass all of these as runtime parameters to Start-PhysicalServerBuild / New-IsoBuild (see -SiteCode, -ManagementPoint, -DistributionPoint, -SiteServer, -BootImageName, -TaskSequenceName, -RepoBaseUrl).",
+  "configmgr": {
+    "site_code": "P01",
+    "management_point": "mp01.ad.aib.pri",
+    "distribution_points": ["dp01.ad.aib.pri"],
+    "site_server": "cm01.ad.aib.pri",
+    "boot_image_name": "WinPE x64 - HPE",
+    "task_sequence_name_prefix": "TS - WinSrv2025 - HPE",
+    "media_password_env": "CM_MEDIA_PASSWORD",
+    "output_path": "\\\\fileserver\\osdmedia\\"
+  }
+}

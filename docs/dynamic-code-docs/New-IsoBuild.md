@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-IsoBuild.ps1
-generated: 2026-06-23 13:21 UTC
+generated: 2026-06-24 16:59 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,60 +8,108 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Coordinates firmware/driver ISO creation (via HPE SUT) and Windows security patching (via DISM) to produce ready-to-deploy customized ISOs for every server listed in configs/server_list.txt.  The resulting artifacts are placed under output/combined and can be consumed by Invoke-IsoDeploy.
+Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting to the site server) and invokes New-CMBootableMedia to produce a WinPE bootable ISO that can be mounted via iLO Redfish and used to run a task sequence against a freshly-racked HPE ProLiant server.
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-BaseIsoPath` | Path to the base Windows Server ISO. |
-| `-ConfigDir` | Configuration directory (default: configs). |
-| `-OutputDir` | Output directory (default: output). |
-| `-Server` | Build for a specific server only. |
-| `-DryRun` | Simulate without executing. |
-| `-SkipAudit` | Skip writing the master audit log. |
+| `-OutputPath` | Full path (including filename) for the output ISO.  When omitted a versioned filename is generated under the local output directory. |
+| `-VersionMajor` | Major version number embedded in the filename (default 1). |
+| `-VersionMinor` | Minor version number embedded in the filename (default 0). |
+| `-SiteCode` | ConfigMgr site code (e.g. P01). Required. |
+| `-ManagementPoint` | FQDN of the Management Point (e.g. mp01.ad.aib.pri). Required. |
+| `-DistributionPoint` | FQDN of the Distribution Point (e.g. dp01.ad.aib.pri). Required. |
+| `-BootImageName` | Name of the boot image to embed (e.g. 'WinPE x64 - HPE'). |
+| `-TaskSequenceName` | Optional task sequence name (informational; TS selection happens at boot). |
+| `-SiteServer` | FQDN of the ConfigMgr site server for PSRemoting fallback (e.g. cm01.ad.aib.pri). |
+| `-SiteServerUser` | Site server admin username for PSRemoting. Defaults to $env:CM_SITE_USER. |
+| `-SiteServerPassword` | Site server admin password. Defaults to $env:CM_SITE_PASSWORD. |
+| `-MediaPassword` | Optional boot media password (env: CM_MEDIA_PASSWORD). |
+| `-AllowUnknownMachine` | Pass -AllowUnknownMachine to New-CMBootableMedia (default true). |
+| `-AllowUnattended` | Pass -AllowUnattended to New-CMBootableMedia (default true). |
+| `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
+| `-MockIso` | Create a 0-byte placeholder ISO without calling ConfigMgr (used by tests). |
+| `-DryRun` | Validate inputs and print plan without creating the ISO. |
 
 ## Examples
 
 ### Example 1
 ```powershell
-New-IsoBuild -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01.corp.local'
+New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.aib.pri' ` -DistributionPoint 'dp01.ad.aib.pri' -BootImageName 'WinPE x64 - HPE' ` -SiteServer 'cm01.ad.aib.pri'
 ```
 
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-Orchestrates the full ISO build pipeline, callable from the module Router.
+        Build a ConfigMgr bootable media ISO (WinPE) for physical server deployment.
+        Callable from the module Router.
 
     .DESCRIPTION
-        Coordinates firmware/driver ISO creation (via HPE SUT) and Windows security
-        patching (via DISM) to produce ready-to-deploy customized ISOs for every
-        server listed in configs/server_list.txt.  The resulting artifacts are
-        placed under output/combined and can be consumed by Invoke-IsoDeploy.
+        Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting
+        to the site server) and invokes New-CMBootableMedia to produce a WinPE
+        bootable ISO that can be mounted via iLO Redfish and used to run a task
+        sequence against a freshly-racked HPE ProLiant server.
 
-    .PARAMETER BaseIsoPath
-        Path to the base Windows Server ISO.
+    .PARAMETER OutputPath
+        Full path (including filename) for the output ISO.  When omitted a
+        versioned filename is generated under the local output directory.
 
-    .PARAMETER ConfigDir
-        Configuration directory (default: configs).
+    .PARAMETER VersionMajor
+        Major version number embedded in the filename (default 1).
 
-    .PARAMETER OutputDir
-        Output directory (default: output).
+    .PARAMETER VersionMinor
+        Minor version number embedded in the filename (default 0).
 
-    .PARAMETER Server
-        Build for a specific server only.
+    .PARAMETER SiteCode
+        ConfigMgr site code (e.g. P01). Required.
+
+    .PARAMETER ManagementPoint
+        FQDN of the Management Point (e.g. mp01.ad.aib.pri). Required.
+
+    .PARAMETER DistributionPoint
+        FQDN of the Distribution Point (e.g. dp01.ad.aib.pri). Required.
+
+    .PARAMETER BootImageName
+        Name of the boot image to embed (e.g. 'WinPE x64 - HPE').
+
+    .PARAMETER TaskSequenceName
+        Optional task sequence name (informational; TS selection happens at boot).
+
+    .PARAMETER SiteServer
+        FQDN of the ConfigMgr site server for PSRemoting fallback (e.g. cm01.ad.aib.pri).
+
+    .PARAMETER SiteServerUser
+        Site server admin username for PSRemoting. Defaults to $env:CM_SITE_USER.
+
+    .PARAMETER SiteServerPassword
+        Site server admin password. Defaults to $env:CM_SITE_PASSWORD.
+
+    .PARAMETER MediaPassword
+        Optional boot media password (env: CM_MEDIA_PASSWORD).
+
+    .PARAMETER AllowUnknownMachine
+        Pass -AllowUnknownMachine to New-CMBootableMedia (default true).
+
+    .PARAMETER AllowUnattended
+        Pass -AllowUnattended to New-CMBootableMedia (default true).
+
+    .PARAMETER SkipCertificateCheck
+        Skip SSL cert verification (default true).
+
+    .PARAMETER MockIso
+        Create a 0-byte placeholder ISO without calling ConfigMgr (used by tests).
 
     .PARAMETER DryRun
-        Simulate without executing.
-
-    .PARAMETER SkipAudit
-        Skip writing the master audit log.
+        Validate inputs and print plan without creating the ISO.
 
     .RETURNS
-        [hashtable] build summary.
+        [hashtable] with Success, IsoPath, IsoUrl (if -RepoBaseUrl given), Metadata.
 
     .EXAMPLE
-        New-IsoBuild -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01.corp.local'
+        New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.aib.pri' `
+            -DistributionPoint 'dp01.ad.aib.pri' -BootImageName 'WinPE x64 - HPE' `
+            -SiteServer 'cm01.ad.aib.pri'
 ```
 
 ---
