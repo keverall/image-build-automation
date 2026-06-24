@@ -1,154 +1,278 @@
 #
-# Public/New-IsoBuild.ps1 — ISO build orchestrator (wrapper function + script mode)
+# Public/New-IsoBuild.ps1 — ConfigMgr bootable media ISO builder
+#
+# Replaces the old DSC/DISM-based firmware+patching pipeline with the runbook's
+# ConfigMgr bootable-media workflow.  Uses New-CMBootableMedia from the
+# ConfigurationManager PowerShell module (auto-detected locally or via PSRemoting).
+#
+# Output naming per runbook:  WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso
+#
+# All ConfigMgr connection details are runtime parameters — no JSON config required.
 #
 
 function New-IsoBuild {
     <#
     .SYNOPSIS
-Orchestrates the full ISO build pipeline, callable from the module Router.
+        Build a ConfigMgr bootable media ISO (WinPE) for physical server deployment.
+        Callable from the module Router.
 
     .DESCRIPTION
-        Coordinates firmware/driver ISO creation (via HPE SUT) and Windows security
-        patching (via DISM) to produce ready-to-deploy customized ISOs for every
-        server listed in configs/server_list.txt.  The resulting artifacts are
-        placed under output/combined and can be consumed by Invoke-IsoDeploy.
+        Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting
+        to the site server) and invokes New-CMBootableMedia to produce a WinPE
+        bootable ISO that can be mounted via iLO Redfish and used to run a task
+        sequence against a freshly-racked HPE ProLiant server.
 
-    .PARAMETER BaseIsoPath
-        Path to the base Windows Server ISO.
+    .PARAMETER OutputPath
+        Full path (including filename) for the output ISO.  When omitted a
+        versioned filename is generated under the local output directory.
 
-    .PARAMETER ConfigDir
-        Configuration directory (default: configs).
+    .PARAMETER VersionMajor
+        Major version number embedded in the filename (default 1).
 
-    .PARAMETER OutputDir
-        Output directory (default: output).
+    .PARAMETER VersionMinor
+        Minor version number embedded in the filename (default 0).
 
-    .PARAMETER Server
-        Build for a specific server only.
+    .PARAMETER SiteCode
+        ConfigMgr site code (e.g. P01). Required.
+
+    .PARAMETER ManagementPoint
+        FQDN of the Management Point (e.g. mp01.ad.example.com). Required.
+
+    .PARAMETER DistributionPoint
+        FQDN of the Distribution Point (e.g. dp01.ad.example.com). Required.
+
+    .PARAMETER BootImageName
+        Name of the boot image to embed (e.g. 'WinPE x64 - HPE').
+
+    .PARAMETER TaskSequenceName
+        Optional task sequence name (informational; TS selection happens at boot).
+
+    .PARAMETER SiteServer
+        FQDN of the ConfigMgr site server for PSRemoting fallback (e.g. cm01.ad.example.com).
+
+    .PARAMETER SiteServerUser
+        Site server admin username for PSRemoting. Defaults to $env:CM_SITE_USER.
+
+    .PARAMETER SiteServerPassword
+        Site server admin password. Defaults to $env:CM_SITE_PASSWORD.
+
+    .PARAMETER MediaPassword
+        Optional boot media password (env: CM_MEDIA_PASSWORD).
+
+    .PARAMETER AllowUnknownMachine
+        Pass -AllowUnknownMachine to New-CMBootableMedia (default true).
+
+    .PARAMETER AllowUnattended
+        Pass -AllowUnattended to New-CMBootableMedia (default true).
+
+    .PARAMETER SkipCertificateCheck
+        Skip SSL cert verification (default true).
+
+    .PARAMETER MockIso
+        Create a 0-byte placeholder ISO without calling ConfigMgr (used by tests).
 
     .PARAMETER DryRun
-        Simulate without executing.
-
-    .PARAMETER SkipAudit
-        Skip writing the master audit log.
+        Validate inputs and print plan without creating the ISO.
 
     .RETURNS
-        [hashtable] build summary.
+        [hashtable] with Success, IsoPath, IsoUrl (if -RepoBaseUrl given), Metadata.
 
     .EXAMPLE
-        New-IsoBuild -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01.corp.local'
+        New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' `
+            -DistributionPoint 'dp01.ad.example.com' -BootImageName 'WinPE x64 - HPE' `
+            -SiteServer 'cm01.ad.example.com'
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory = $false)][string] $BaseIsoPath = $null,
-        [Parameter(Mandatory = $false)][string] $ConfigDir = 'configs',
-        [Parameter(Mandatory = $false)][string] $OutputDir = 'output',
-        [Parameter(Mandatory = $false)][string] $Server = $null,
-        [Parameter(Mandatory = $false)][switch]  $DryRun,
-        [Parameter(Mandatory = $false)][switch]  $SkipAudit
+        [string] $OutputPath,
+        [int]    $VersionMajor = 1,
+        [int]    $VersionMinor = 0,
+        [Parameter(Mandatory)][string] $SiteCode,
+        [Parameter(Mandatory)][string] $ManagementPoint,
+        [Parameter(Mandatory)][string] $DistributionPoint,
+        [string] $BootImageName,
+        [string] $TaskSequenceName,
+        [string] $SiteServer,
+        [string] $SiteServerUser,
+        [string] $SiteServerPassword,
+        [string] $MediaPassword,
+        [bool]   $AllowUnknownMachine = $true,
+        [bool]   $AllowUnattended = $true,
+        [bool]   $SkipCertificateCheck = $true,
+        [string] $MockIsoPath = $null,
+        [switch] $DryRun
     )
 
-    $Script:ConfigDir = $ConfigDir
-    $Script:OutputDir = $OutputDir
-    $Script:FwConfig = Join-Path $ConfigDir 'hpe_firmware_drivers_nov2025.json'
-    $Script:PatchConfig = Join-Path $ConfigDir 'windows_patches.json'
-    $Script:_ServerList = Join-Path $ConfigDir 'server_list.txt'
+    Initialize-Logging -LogFile 'iso_build.log'
 
-    foreach ($f in @($Script:FwConfig, $Script:PatchConfig, $Script:_ServerList)) {
-        if (-not (Test-Path $f -PathType Leaf)) {
-            Write-Error "Required config not found: $f"
-            return @{ success = $false; error = "Required config not found: $f" }
-        }
+    if (-not $OutputPath) {
+        $projectRoot = Get-ProjectRoot
+        $outDir = if ($projectRoot) { Join-Path $projectRoot 'output/bootable_media' } else { 'output/bootable_media' }
+        Ensure-DirectoryExists -Path $outDir
+        $OutputPath = Join-Path $outDir "WinSrv2025_HPE_BootableMedia_v${VersionMajor}.${VersionMinor}.iso"
     }
-
-    try {
-        $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $Script:_ServerList }
-        $results = foreach ($s in $servers) { Build-ForServer $s }
-
-        $successCount = ($results | Where-Object { $_.success }).Count
-        $summary = @{
-            timestamp     = Get-UtcTimestamp
-            total_servers = $servers.Count
-            successful    = $successCount
-            failed        = ($servers.Count - $successCount)
-            results       = $results
-        }
-        Save-JsonResult -Data $summary -BaseName 'build_summary' -Category 'build_reports'
-        return @{ Success = $true; Summary = $summary }
-    }
-    catch {
-        return @{ Success = $false; Error = $_.Exception.Message }
-    }
-}
-
-function Build-ForServer([string]$ServerName) {
-    # Preserved as a named function so it can be referenced by New-IsoBuild above.
-    # Parameters $BaseIsoPath, $OutputDir, $FwConfig, $PatchConfig are captured
-    # from the calling function's local scope via CallerInfoArgs / closure scope.
-
-    Write-Host "`n$('='*70)"
-    Write-Host "Processing: $ServerName"
-    Write-Host "$('='*70)"
 
     $result = @{
-        server            = $ServerName
-        uuid              = $null
-        firmware_iso      = $null
-        generated         = $null
-        generated_patched_iso = $null
-        combined_iso      = $null
-        success           = $false
-        timestamp         = Get-UtcTimestamp
-        steps             = @()
+        Success   = $false
+        IsoPath   = $OutputPath
+        Timestamp = Get-UtcTimestamp
+        Metadata  = @{
+            site_code        = $SiteCode
+            management_point = $ManagementPoint
+            distribution_point = $DistributionPoint
+            boot_image       = $BootImageName
+            task_sequence    = $TaskSequenceName
+            version          = "${VersionMajor}.${VersionMinor}"
+        }
+    }
+
+    if ($MockIsoPath) {
+        Ensure-DirectoryExists -Path (Split-Path $OutputPath -Parent)
+        if (-not (Test-Path $MockIsoPath)) { Set-Content -Path $MockIsoPath -Value 'MOCK' -Encoding UTF8 }
+        Copy-Item -Path $MockIsoPath -Destination $OutputPath -Force
+        $result.Success  = $true
+        $result.Mocked   = $true
+        $result.Metadata.bootable_iso = Split-Path $OutputPath -Leaf
+        Save-Json -Data $result.Metadata -Path (Join-Path (Split-Path $OutputPath -Parent) 'deployment_metadata.json')
+        return $result
+    }
+
+    if ($DryRun) {
+        Write-Host "[DRY RUN] New-IsoBuild → $OutputPath"
+        $result.DryRun = $true
+        $result.Success = $true
+        return $result
     }
 
     try {
-        if ($DryRun) { $generatedUuid = '00000000-0000-0000-0000-000000000000' }
-        else { $generatedUuid = New-Uuid -ServerName $ServerName -ErrorAction Stop }
-        $result.uuid = $generatedUuid
-        $result.steps += @{ Step = 'generate_uuid'; Uuid = $generatedUuid }
+        $context = Resolve-ConfigMgrContext -SiteCode $SiteCode `
+            -SiteServer $SiteServer `
+            -SiteServerUser $SiteServerUser `
+            -SiteServerPassword $SiteServerPassword `
+            -SkipCertificateCheck $SkipCertificateCheck
 
-        $fwOutput = Join-Path $OutputDir "firmware\$ServerName"
-        $fwUpdater = [FirmwareUpdater]::new($FwConfig, $fwOutput)
-        $fwResult = $fwUpdater.Build($ServerName, $DryRun)
-        if ($fwResult.Success -and $fwResult.FirmwareIso) {
-            $result.firmware_iso = $fwResult.FirmwareIso
-            $result.steps += @{ Step = 'firmware_iso'; Status = 'ok'; Iso = $fwResult.FirmwareIso }
+        if (-not $context.Available) {
+            $result.Error = $context.Error
+            return $result
         }
-        else { $result.steps += @{ Step = 'firmware_iso'; Status = 'failed' } }
 
-        if ($BaseIsoPath) {
-            $patchOutput = Join-Path $OutputDir "patched\$ServerName"
-            $patcher = [WindowsPatcher]::new($PatchConfig, $patchOutput)
-            $patchResult = $patcher.Build($BaseIsoPath, $ServerName, 'dism', $DryRun)
-            if ($patchResult.Success -and $patchResult.PatchedIso) {
-                $result.generated_patched_iso = $patchResult.PatchedIso
-                $result.steps += @{ Step = 'generated_patched_iso'; Status = 'ok'; Iso = $patchResult.PatchedIso }
+        if ($context.Mode -eq 'Remote') {
+            $script = {
+                param($mp, $dp, $mp_pwd, $bi, $out, $aum, $au)
+                $ErrorActionPreference = 'Stop'
+                Import-Module ConfigurationManager
+                if ((Get-PSDrive -Name $mp.Substring(0,2) -ErrorAction SilentlyContinue) -eq $null) {
+                    New-PSDrive -Name $mp.Substring(0,2) -PSProvider 'AdminUI.PS.Provider\CMSite' -Root $mp -ErrorAction Stop | Out-Null
+                }
+                Push-Location (Get-PSDrive -Name $mp.Substring(0,2))
+                try {
+                    $bootImg = Get-CMBootImage -Name $bi -ErrorAction SilentlyContinue
+                    if (-not $bootImg) { throw "Boot image '$bi' not found in site" }
+                    New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd `
+                        -Path $out `
+                        -AllowUnknownMachine:$aum `
+                        -AllowUnattended:$au `
+                        -BootImage $bootImg `
+                        -DistributionPoint $dp `
+                        -ManagementPoint $mp
+                } finally { Pop-Location }
             }
-            else { $result.steps += @{ Step = 'generated_patched_iso'; Status = 'failed' } }
+            $invokeArgs = @{
+                ScriptBlock = $script
+                ArgumentList = @($ManagementPoint, $DistributionPoint, $MediaPassword,
+                                 $BootImageName, $OutputPath, $AllowUnknownMachine, $AllowUnattended)
+                ErrorAction = 'Stop'
+            }
+            if ($context.PSSession) { $invokeArgs['Session'] = $context.PSSession }
+            else {
+                if ($context.Credential) { $invokeArgs['Credential'] = $context.Credential }
+            }
+            Invoke-Command @invokeArgs | Out-Null
         }
-        else { Write-Warning "No base ISO path given; skipping Windows patching for $ServerName" }
+        else {
+            Import-Module ConfigurationManager -ErrorAction Stop
+            $siteDrive = $SiteCode + ':'
+            if ((Get-PSDrive -Name $SiteCode -ErrorAction SilentlyContinue) -eq $null) {
+                New-PSDrive -Name $SiteCode -PSProvider 'AdminUI.PS.Provider\CMSite' `
+                    -Root $ManagementPoint -ErrorAction Stop | Out-Null
+            }
+            Push-Location $siteDrive
+            try {
+                $bootImg = Get-CMBootImage -Name $BootImageName -ErrorAction Stop
+                $cmArgs = @{
+                    MediaMode = 'Dynamic'
+                    MediaType = 'CdDvd'
+                    Path      = $OutputPath
+                    BootImage = $bootImg
+                    DistributionPoint = $DistributionPoint
+                    ManagementPoint   = $ManagementPoint
+                }
+                if ($AllowUnknownMachine) { $cmArgs['AllowUnknownMachine'] = $true }
+                if ($AllowUnattended)     { $cmArgs['AllowUnattended']     = $true }
+                if ($MediaPassword)       { $cmArgs['MediaPassword']       = $MediaPassword }
+                New-CMBootableMedia @cmArgs -ErrorAction Stop
+            } finally { Pop-Location }
+        }
 
-        $combinedDir = Join-Path $OutputDir "combined\$ServerName"
-        Ensure-DirectoryExists -Path $combinedDir
-        if ($result.firmware_iso -and (Test-Path $result.firmware_iso)) {
-            Copy-Item $result.firmware_iso (Join-Path $combinedDir (Split-Path $result.firmware_iso -Leaf)) -Force 
+        if (-not (Test-Path $OutputPath -PathType Leaf)) {
+            $result.Error = "New-CMBootableMedia reported success but ISO not found at $OutputPath"
+            return $result
         }
-        if ($result.generated_patched_iso -and (Test-Path $result.generated_patched_iso)) {
-            Copy-Item $result.generated_patched_iso (Join-Path $combinedDir (Split-Path $result.generated_patched_iso -Leaf)) -Force }
-        $metadata = @{ server_name = $ServerName; uuid = $generatedUuid; build_timestamp = Get-UtcTimestamp;
-            firmware_iso = (if ($result.firmware_iso) { Split-Path $result.firmware_iso -Leaf }else { $null });
-            generated_patched_iso = (if($result.generated_patched_iso) { Split-Path $result.generated_patched_iso -Leaf }else { $null });
-            config_version = 'nov2025' 
-        }
-        Save-Json -Data $metadata -Path (Join-Path $combinedDir 'deployment_metadata.json')
-        $result.combined_iso = $combinedDir
-        $result.success = $true
+
+        $result.Success  = $true
+        $result.Metadata.bootable_iso = Split-Path $OutputPath -Leaf
+        $result.Metadata.iso_size    = (Get-Item $OutputPath).Length
+
+        $metaDir = Split-Path $OutputPath -Parent
+        Save-Json -Data $result.Metadata -Path (Join-Path $metaDir 'deployment_metadata.json')
+
+        return $result
     }
     catch {
-        Write-Error "Build failed for $ServerName : $($_.Exception.Message)"
-        $result.error = $_.Exception.Message
+        $result.Error = $_.Exception.Message
+        return $result
     }
-    Save-JsonResult -Data $result -BaseName 'build_result' -Category 'build_reports'
-    return $result
 }
+
+function Resolve-ConfigMgrContext {
+    param(
+        [Parameter(Mandatory)][string] $SiteCode,
+        [string] $SiteServer,
+        [string] $SiteServerUser,
+        [string] $SiteServerPassword,
+        [bool]   $SkipCertificateCheck = $true
+    )
+    $r = [ordered]@{ Available = $false; Mode = $null; PSSession = $null; Credential = $null; Error = $null }
+    if (Get-Module -ListAvailable -Name ConfigurationManager -ErrorAction SilentlyContinue) {
+        $r.Available = $true
+        $r.Mode = 'Local'
+        return $r
+    }
+    if (-not $SiteServer) {
+        $r.Error = "ConfigurationManager module not available locally and -SiteServer not provided"
+        return $r
+    }
+    if (-not $SiteServerUser)     { $SiteServerUser     = [System.Environment]::GetEnvironmentVariable('CM_SITE_USER') }
+    if (-not $SiteServerPassword) { $SiteServerPassword = [System.Environment]::GetEnvironmentVariable('CM_SITE_PASSWORD') }
+    $cred = $null
+    if ($SiteServerUser -and $SiteServerPassword) {
+        $cred = New-Object System.Management.Automation.PSCredential(
+            $SiteServerUser, (ConvertTo-SecureString $SiteServerPassword -AsPlainText -Force))
+    }
+    try {
+        $opts = New-PSSessionOption -SkipCACheck -SkipCNCheck:$SkipCertificateCheck -OpenTimeout 30000
+        $sess = New-PSSession -ComputerName $SiteServer -Credential $cred -Authentication Negotiate `
+            -SessionOption $opts -ErrorAction Stop
+        $r.Available  = $true
+        $r.Mode       = 'Remote'
+        $r.PSSession  = $sess
+        $r.Credential = $cred
+        return $r
+    } catch {
+        $r.Error = "PSRemoting to $SiteServer failed: $($_.Exception.Message)"
+        return $r
+    }
+}
+
+# vim: ts=4 sw=4 et

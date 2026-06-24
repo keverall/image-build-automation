@@ -88,6 +88,12 @@
         'New-IsoBuild'
         'Set-MaintenanceMode'
         'Start-InstallMonitor'
+        'Start-PhysicalServerBuild'
+        'Get-OneViewServerTarget'
+        'Invoke-IloRedfish'
+        'Publish-BootIso'
+        'Test-PreBuildValidation'
+        'Test-PostBuildValidation'
         'New-Uuid'
         'Update-Firmware'
         # OpsRamp API client
