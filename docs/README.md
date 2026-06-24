@@ -23,7 +23,7 @@ hpe-windows-iso-automation/
 
 ## Quick Start
 
-- **PowerShell** module import and first command: see [powershell_api_reference.md](powershell_api_reference.md#markdown-header-quick-start)
+- **PowerShell** module import and first command: see [powershell_api_reference.md](powershell_api_reference.md#quick-start)
 - **Configuration files reference:** see [configs/README.md](../configs/README.md)
 - **Running tests:** see [testing.md](testing.md)
 - **CI integration:** see [powershell_ci.md](powershell_ci.md)
@@ -37,11 +37,21 @@ hpe-windows-iso-automation/
 | Document | Description |
 |---|---|
 | [PowerShell API Reference](powershell_api_reference.md) | Module overview, requirements, quick-start, cmdlet usage, orchestrator API |
+| [Automation Command Reference](automation_commands.md) | Concise functional reference with every parameter for all automation commands |
 | [📘 Auto-Generated Function Reference](dynamic-code-docs/INDEX.md) | **Comprehensive coverage of ALL PowerShell functions and cmdlets** - complete parameter documentation, examples, and usage for every function in the codebase. Auto-generated from source code. |
 | [Testing Guide](testing.md) | Comprehensive Pester v5 guide, runner commands, mocking, CI integration, maintenance mode testing |
 | [CI Run Requirements](powershell_ci.md) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
 | [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, CI pipeline integration |
 | [GitLab CI/CD Integration](gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
+
+### Physical Server Build & Runbooks
+
+| Document | Description |
+|---|---|
+| [Runbook Requirements](runbook-requirements.md) | Operational runbook for automating physical HPE server builds with ConfigMgr + OneView + iLO Redfish |
+| [Runbook Changes](runbook-changes.md) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
+| [Automation Command Reference](automation_commands.md) | Command-level reference for the physical server build functions |
+| [PowerShell API Reference](powershell_api_reference.md) | Orchestrator and workflow overview for the physical server build |
 
 ### Maintenance Mode & Scheduling
 
