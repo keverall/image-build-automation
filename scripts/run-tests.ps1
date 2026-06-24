@@ -96,18 +96,17 @@ $pesterLogPath = Join-Path $logDir "testing_coverage_detail_$(Get-Date -Format '
 Write-Host "Running Pester tests from: $testPath" -ForegroundColor Cyan
 Write-Host "Detailed log: $pesterLogPath" -ForegroundColor Cyan
 
+# Dynamically discover all *.Tests.ps1 files in the test directory so newly
+# added test files are picked up automatically without editing this script.
+$discoveredTests = Get-ChildItem -Path $testPath -Filter '*.Tests.ps1' -File |
+    Sort-Object Name |
+    Where-Object { $_.Name -ne 'Pester.Integration.ps1' } |
+    ForEach-Object { $_.FullName }
+
+Write-Host "Discovered $($discoveredTests.Count) test files" -ForegroundColor Cyan
+
 $config = New-PesterConfiguration
-$config.Run.Path = @(
-    (Join-Path $testPath 'Audit.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Config.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Credentials.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Executor.Unit.Tests.ps1'),
-    (Join-Path $testPath 'FileIO.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Inventory.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Router.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Set-MaintenanceMode.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Validators.Unit.Tests.ps1')
-)
+$config.Run.Path = $discoveredTests
 $config.Run.PassThru = $true
 $config.Output.Verbosity = 'Detailed'
 $config.Output.RenderMode = 'Auto'

@@ -41,7 +41,12 @@ function Invoke-IsoDeploy {
         Directory containing bootable ISO packages.
 
     .PARAMETER IsoUrl
-        Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json).
+        Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json
+        joined with -RepoBaseUrl).
+
+    .PARAMETER RepoBaseUrl
+        HTTPS base URL of the ISO repository. Combined with the bootable_iso filename
+        from deployment_metadata.json to construct the full URL when -IsoUrl is not given.
 
     .PARAMETER DryRun
         Simulate — no actual deployment.
@@ -60,10 +65,11 @@ function Invoke-IsoDeploy {
         [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
         [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
         [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
+        [Parameter(Mandatory = $false)][string] $RepoBaseUrl = $null,
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
     try {
-        $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl)
+        $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $RepoBaseUrl)
         if ($Server) {
             $si = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
             if (-not $si) { return @{ Success = $false; Error = "Server not found: $Server" } }
@@ -84,13 +90,15 @@ class ISODeployer {
     [string]           $ServerListPath
     [string]           $IsoDir
     [string]           $DefaultIsoUrl
+    [string]           $RepoBaseUrl
     [ServerInfo[]]     $ServerDetails
     [System.Collections.ArrayList] $DeployLog
 
-    ISODeployer([string]$ServerList, [string]$IsoDir, [string]$DefaultIsoUrl) {
+    ISODeployer([string]$ServerList, [string]$IsoDir, [string]$DefaultIsoUrl, [string]$RepoBaseUrl) {
         $this.ServerListPath = $ServerList
         $this.IsoDir         = $IsoDir
         $this.DefaultIsoUrl  = $DefaultIsoUrl
+        $this.RepoBaseUrl    = $RepoBaseUrl
         $this.ServerDetails  = Load-ServerList -Path $ServerList -IncludeDetails
         $this.DeployLog      = [System.Collections.ArrayList]::new()
     }
@@ -131,7 +139,13 @@ class ISODeployer {
         if (Test-Path $localIso) {
             Write-Host "Resolved ISO locally: $localIso"
         }
-        return $name
+        if ($this.RepoBaseUrl) {
+            $base = $this.RepoBaseUrl.TrimEnd('/')
+            return "$base/$name"
+        }
+        if ($name.StartsWith('http')) { return $name }
+        Write-Warning "Metadata contains filename '$name' but no -RepoBaseUrl supplied; pass -RepoBaseUrl to construct the URL."
+        return $null
     }
 
     [void] _Log([string]$Action, [string]$ServerName, [string]$Status, [string]$Details = '') {
@@ -142,7 +156,7 @@ class ISODeployer {
         Write-Host "[$Status] $Action | $ServerName | $Details"
     }
 
-    [hashtable] _DeployViaRedfish([ServerInfo]$Server, [string]$PackageDir, [bool]$DryRun) {
+    [hashtable] _DeployViaRedfish([ServerInfo]$Server, [string]$PackageDir, [bool]$DryRun, [bool]$Force = $false) {
         $hn    = $Server.Hostname
         $iloIp = $Server.ILO_IP
         $this._Log('deploy_redfish', $hn, 'START', "iLO: $(if($iloIp) { $iloIp } else { 'N/A' })")
@@ -157,20 +171,15 @@ class ISODeployer {
             $this._Log('deploy_redfish', $hn, 'FAILED', 'No ISO URL resolvable')
             return @{ Success = $false; Msg = 'No ISO URL' }
         }
-        if (-not $isoUrl.StartsWith('http')) {
-            $this._Log('deploy_redfish', $hn, 'FAILED',
-                "bootable_iso metadata does not contain a full URL — supply -IsoUrl at invocation")
-            return @{ Success = $false; Msg = 'bootable_iso not a URL' }
-        }
 
         $r = Invoke-IloRedfish -Action MountAndBoot -IloIp $iloIp `
-            -IsoUrl $isoUrl -DryRun:$DryRun
+            -IsoUrl $isoUrl -DryRun:$DryRun -Force:($Force -or $DryRun)
 
         $this._Log('deploy_redfish', $hn, $(if ($r.Success) {'SUCCESS'} else {'FAILED'}), $r.Details)
         return $r
     }
 
-    [bool] Deploy([ServerInfo]$Server, [string]$Method, [bool]$DryRun) {
+    [bool] Deploy([ServerInfo]$Server, [string]$Method, [bool]$DryRun, [bool]$Force = $false) {
         $hn  = $Server.Hostname
         $pkg = $this._FindServerPackage($hn)
         if (-not $pkg) {
@@ -178,7 +187,7 @@ class ISODeployer {
             return $false
         }
         $result = switch ($Method.ToLowerInvariant()) {
-            'redfish' { $this._DeployViaRedfish($Server, $pkg, $DryRun) }
+            'redfish' { $this._DeployViaRedfish($Server, $pkg, $DryRun, $Force) }
             default   { Write-Error "Unknown method $Method"; $null }
         }
         $ok = if ($result) { $result.Success } else { $false }
@@ -187,13 +196,13 @@ class ISODeployer {
         return $ok
     }
 
-    [hashtable] DeployAll([string]$Method, [bool]$DryRun) {
+    [hashtable] DeployAll([string]$Method, [bool]$DryRun, [bool]$Force = $false) {
         Write-Host "`nDeploying to $($this.ServerDetails.Count) servers via $Method"
         Write-Host $('=' * 60)
         $results = @()
         foreach ($s in $this.ServerDetails) {
             Write-Host "`nDeploying to: $($s.Hostname)"
-            $ok = $this.Deploy($s, $Method, $DryRun)
+            $ok = $this.Deploy($s, $Method, $DryRun, $Force)
             $results += @{ server = $s.Hostname; success = $ok; method = $Method }
             Write-Host "$(if($ok){'✓'}else{'✗'}) $($s.Hostname)"
         }
