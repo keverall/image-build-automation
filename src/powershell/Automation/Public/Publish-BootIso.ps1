@@ -30,6 +30,10 @@ function Publish-BootIso {
         Local filesystem path mirrored to RepoBaseUrl (for https_copy mode).
         Defaults to $env:ISO_REPO_LOCAL_PATH.
 
+    .PARAMETER ForceOverwrite
+        Allow overwriting an existing ISO with the same filename in the repository.
+        Default refuses to overwrite without this switch.
+
     .PARAMETER SkipVerify
         Skip HTTPS HEAD reachability check.
 
@@ -49,6 +53,7 @@ function Publish-BootIso {
         [Parameter(Mandatory)][string] $IsoPath,
         [string] $RepoBaseUrl  = $null,
         [string] $RepoLocalPath = $null,
+        [switch] $ForceOverwrite,
         [switch] $SkipVerify,
         [switch] $DryRun
     )
@@ -89,6 +94,16 @@ function Publish-BootIso {
         if ($RepoLocalPath) {
             Ensure-DirectoryExists -Path $RepoLocalPath
             $destPath = Join-Path $RepoLocalPath $isoName
+            if (Test-Path $destPath -PathType Leaf -and -not $ForceOverwrite -and -not $DryRun) {
+                return @{
+                    Success = $false
+                    Error   = "Destination already exists: $destPath — pass -ForceOverwrite to replace."
+                    RepoPath = $destPath
+                    Verified = $false
+                    PublicUrl = $publicUrl
+                    Timestamp = Get-UtcTimestamp
+                }
+            }
             Copy-Item -Path $IsoPath -Destination $destPath -Force
             $result.RepoPath = $destPath
             Write-Host "Copied $IsoPath → $destPath"

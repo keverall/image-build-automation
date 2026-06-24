@@ -55,6 +55,10 @@ function Test-PreBuildValidation {
     .PARAMETER SkipDpMp
         Skip the Distribution Point / Management Point reachability check.
 
+    .PARAMETER SkipIsoUrl
+        Skip the ISO URL reachability check (use when the orchestrator will populate
+        IsoUrl later, or when running offline).
+
     .PARAMETER DryRun
         Validate inputs but skip network probes.
 
@@ -81,6 +85,7 @@ function Test-PreBuildValidation {
         [switch] $SkipOneView,
         [switch] $SkipIlo,
         [switch] $SkipDpMp,
+        [switch] $SkipIsoUrl,
         [switch] $DryRun
     )
 
@@ -105,7 +110,9 @@ function Test-PreBuildValidation {
         _Set 'oneview_target' $true 'skipped'
     }
 
-    if ($IsoUrl) {
+    if ($SkipIsoUrl) {
+        _Set 'iso_url_check_skipped' $true 'Skipped by parameter'
+    } elseif ($IsoUrl) {
         try {
             if ($DryRun) {
                 _Set 'iso_url_format' ($IsoUrl -match '^https://') "DryRun — $IsoUrl"
@@ -114,7 +121,7 @@ function Test-PreBuildValidation {
                 _Set 'iso_url_reachable' ($head.StatusCode -ge 200 -and $head.StatusCode -lt 400) "HTTP $($head.StatusCode)"
             }
         } catch { _Set 'iso_url_reachable' $false $_.Exception.Message }
-    } else { _Set 'iso_url_provided' $false 'No IsoUrl provided' }
+    } else { _Set 'iso_url_check_skipped' $true 'IsoUrl not provided — orchestrator will supply' }
 
     if (-not $SkipIlo -and $IloIp) {
         if ($DryRun) {
