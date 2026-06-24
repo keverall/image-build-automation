@@ -24,13 +24,13 @@ This runbook defines the standard process for automating the build of physical H
 
 ## References
 
-- Microsoft Learn – Create bootable media (Configuration Manager).
-- Microsoft Learn – Create task sequence media (Configuration Manager).
-- Microsoft Learn – Introduction to operating system deployment in Configuration Manager.
-- Microsoft Learn – Prestart commands for task sequence media in Configuration Manager.
-- Microsoft Learn – New-CMBootableMedia and New-CMPrestageMedia PowerShell cmdlets.
-- HPE OneView REST API Reference.
-- HPE Redfish examples – mount virtual media ISO, change boot order, and reboot server.
+- [Microsoft Learn – Create bootable media Configuration Manager.](https://learn.microsoft.com/en-us/intune/configmgr/osd/deploy-use/create-bootable-media)
+- [Microsoft Learn – Create task sequence media Configuration Manager.](https://learn.microsoft.com/en-us/intune/configmgr/osd/deploy-use/create-task-sequence-media)
+- [Microsoft Learn – Introduction to operating system deployment in Configuration Manager.](https://learn.microsoft.com/en-us/intune/configmgr/osd/understand/introduction-to-operating-system-deployment)
+- [Microsoft Learn – Prestart commands for task sequence media in Configuration Manager](https://learn.microsoft.com/en-us/intune/configmgr/osd/understand/prestart-commands-for-task-sequence-media)
+- [Microsoft Learn – New-CMBootableMedia and New-CMPrestageMedia PowerShell cmdlets.](https://learn.microsoft.com/en-us/powershell/module/configurationmanager/new-cmbootablemedia?view=sccm-ps)
+- [HPE OneView REST API Reference](https://support.hpe.com/docs/display/public/dp00006616en_us/index.html)
+- [HPE Redfish examples – mount virtual media ISO, change boot order, and reboot server.](https://servermanagementportal.ext.hpe.com/docs/redfishclients/python-redfish-library/examples)
 
 ## Roles and Responsibilities
 
