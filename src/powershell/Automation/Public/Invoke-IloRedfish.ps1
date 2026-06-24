@@ -49,6 +49,10 @@ function Invoke-IloRedfish {
     .PARAMETER CdDeviceId
         VirtualMedia device id (default 1). Enumerate via /redfish/v1/Managers/1/VirtualMedia.
 
+    .PARAMETER Force
+        Required for destructive actions (MountAndBoot, Boot, Reset) to confirm intent.
+        Read-only actions (Status, Eject without -Force) do not require this switch.
+
     .PARAMETER SkipCertificateCheck
         Skip SSL cert verification (default true — iLO uses self-signed certs).
 
@@ -76,8 +80,17 @@ function Invoke-IloRedfish {
         [int]    $CdDeviceId = 1,
         [bool]   $SkipCertificateCheck = $true,
         [int]    $TimeoutSec = 30,
+        [switch] $Force,
         [switch] $DryRun
     )
+
+    $destructiveActions = @('MountAndBoot','Boot','Reset')
+    if ($Action -in $destructiveActions -and -not $Force -and -not $DryRun) {
+        return @{
+            Success = $false; Action = $Action; IloIp = $IloIp
+            Error   = "Action '$Action' is destructive and requires -Force (or -DryRun). Use -Force to confirm intent."
+        }
+    }
 
     try {
         if ($DryRun) {

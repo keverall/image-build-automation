@@ -43,7 +43,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-test test test-unit test-integration coverage docs clean prune-logs help all ci
+.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests coverage docs clean prune-logs help all ci
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: prune-logs ## Setup PowerShell environment (install modules, configure profiles)
@@ -86,6 +86,9 @@ test-integration: prune-logs ## Run Pester integration tests only
 
 maint-mode-tests: prune-logs ## Run high-priority Set-MaintenanceMode tests
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-maint-mode-tests.ps1
+
+automation-mode-tests: prune-logs ## Run automation workflow tests (ISO build, OneView, iLO Redfish, orchestrator)
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-automation-mode-tests.ps1
 
 # ─── Code Coverage ────────────────────────────────────────────────────────────
 coverage: prune-logs ## Run Pester tests with code coverage and generate report

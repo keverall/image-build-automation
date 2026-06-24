@@ -82,9 +82,22 @@ function Start-PhysicalServerBuild {
 
     .PARAMETER Mock
         Run with mocked calls — no network calls are made; useful for CI smoke tests.
+        When -Mock is set, all downstream steps run as if -DryRun was also set.
 
     .PARAMETER DryRun
         Validate inputs and print plan without performing any destructive action.
+
+    .PARAMETER Force
+        Required for the destructive Reset action (ForceRestart) issued by Invoke-IloRedfish.
+        Refuses to proceed without this switch when the server's iLO reports power state On.
+
+    .PARAMETER InMaintenanceWindow
+        Acknowledge that the target server is in an approved maintenance window. Required
+        when -Force is not supplied and the server is currently On.
+
+    .PARAMETER AllowUnknownIsoUrl
+        Skip the head-verify check on the ISO URL during pre-build validation (use only
+        when the build pipeline runs offline).
 
     .RETURNS
         [hashtable] with Success, Steps (ordered list of step results), AuditFile.
@@ -125,8 +138,16 @@ function Start-PhysicalServerBuild {
         [switch] $SkipMonitor,
         [switch] $SkipPostBuild,
         [switch] $Mock,
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Force,
+        [switch] $InMaintenanceWindow,
+        [switch] $AllowUnknownIsoUrl
     )
+
+    if ($Mock -and -not $DryRun) {
+        Write-Verbose "-Mock supplied — forcing DryRun behaviour for all downstream steps"
+        $DryRun = $true
+    }
 
     if (-not $ExpectedHostname) { $ExpectedHostname = $ServerIdentifier }
 
@@ -143,42 +164,44 @@ function Start-PhysicalServerBuild {
     }
 
     $overall['success'] = $true
+    $isoMounted = $false
 
     try {
-        if (-not $SkipPreBuild) {
-            $r = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
-                -OneViewHost $OneViewHost -IloIp $IloIp `
-                -IsoUrl $null `
-                -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
-                -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
-                -DryRun:($DryRun -or $Mock)
-            _Step 'pre_build_validation' $r
-            if (-not $r.Success -and -not $DryRun -and -not $Mock) { return $overall }
-        }
-
         $isoPath = $null
         $isoUrl  = $null
         if (-not $SkipIsoBuild) {
             $r = New-IsoBuild -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
                 -DistributionPoint $DistributionPoint -BootImageName $BootImageName `
                 -TaskSequenceName $TaskSequenceName -SiteServer $SiteServer `
-                -DryRun:($DryRun -and -not $Mock)
+                -DryRun:$DryRun
             _Step 'iso_build' $r
             $isoPath = $r.IsoPath
-            if (-not $r.Success -and -not $Mock) { return $overall }
+            if (-not $r.Success -and -not $DryRun) { return $overall }
         }
 
         if (-not $SkipPublish -and $isoPath -and $RepoBaseUrl) {
             $r = Publish-BootIso -IsoPath $isoPath -RepoBaseUrl $RepoBaseUrl `
-                -RepoLocalPath $RepoLocalPath -DryRun:($DryRun -and -not $Mock)
+                -RepoLocalPath $RepoLocalPath -DryRun:$DryRun
             _Step 'publish_iso' $r
             if ($r.Success) { $isoUrl = $r.PublicUrl }
+        }
+
+        if (-not $SkipPreBuild) {
+            $r = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
+                -OneViewHost $OneViewHost -IloIp $IloIp `
+                -IsoUrl $isoUrl `
+                -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
+                -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
+                -SkipIsoUrl:([string]::IsNullOrEmpty($isoUrl) -or $AllowUnknownIsoUrl) `
+                -DryRun:$DryRun
+            _Step 'pre_build_validation' $r
+            if (-not $r.Success -and -not $DryRun) { return $overall }
         }
 
         $oneview = $null
         if (-not $SkipOneView -and $OneViewHost) {
             $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
-                -ServerIdentifier $ServerIdentifier -DryRun:($DryRun -and -not $Mock)
+                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun
             _Step 'oneview_target' $r
             $oneview = $r
             if ($r.Details -and $r.Details.ilo_ip -and -not $IloIp) {
@@ -187,10 +210,29 @@ function Start-PhysicalServerBuild {
         }
 
         if (-not $SkipMount -and $IloIp -and $isoUrl) {
+            if (-not $DryRun) {
+                $status = Invoke-IloRedfish -Action Status -IloIp $IloIp -DryRun:$DryRun
+                $powerState = $status.Details.system.PowerState
+                if ($powerState -eq 'On' -and -not $Force -and -not $InMaintenanceWindow) {
+                    _Step 'ilo_maintenance_guard' @{
+                        Success = $false
+                        Error   = "Server power state is On — refusing to ForceRestart without -Force or -InMaintenanceWindow"
+                        PowerState = $powerState
+                    }
+                    $overall['success'] = $false
+                    return $overall
+                }
+                _Step 'ilo_maintenance_guard' @{
+                    Success = $true; PowerState = $powerState
+                    Acknowledged = ($Force -or $InMaintenanceWindow)
+                }
+            }
+
             $r = Invoke-IloRedfish -Action MountAndBoot -IloIp $IloIp -IsoUrl $isoUrl `
-                -DryRun:($DryRun -and -not $Mock)
+                -DryRun:$DryRun -Force:($Force -or $DryRun)
             _Step 'ilo_mount_and_boot' $r
-            if (-not $r.Success -and -not $Mock) { return $overall }
+            if ($r.Success -and -not $DryRun) { $isoMounted = $true }
+            if (-not $r.Success -and -not $DryRun) { return $overall }
         }
 
         if (-not $SkipMonitor) {
@@ -203,7 +245,7 @@ function Start-PhysicalServerBuild {
 
         if (-not $SkipPostBuild) {
             $r = Test-PostBuildValidation -Hostname $ExpectedHostname -Domain $Domain `
-                -DryRun:($DryRun -and -not $Mock)
+                -DryRun:$DryRun
             _Step 'post_build_validation' $r
         }
 
@@ -211,6 +253,15 @@ function Start-PhysicalServerBuild {
     }
     finally {
         $overall['end_time'] = Get-UtcTimestamp
+        if ($isoMounted -and $IloIp -and -not $DryRun) {
+            try {
+                $eject = Invoke-IloRedfish -Action Eject -IloIp $IloIp
+                $overall['iso_ejected'] = $eject.Success
+            } catch {
+                $overall['iso_ejected'] = $false
+                $overall['iso_eject_error'] = $_.Exception.Message
+            }
+        }
         try {
             $auditDir = Join-Path (Get-ProjectRoot) 'generated/logs/audit'
             Ensure-DirectoryExists -Path $auditDir

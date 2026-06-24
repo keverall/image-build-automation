@@ -110,7 +110,21 @@ function New-IsoBuild {
         $projectRoot = Get-ProjectRoot
         $outDir = if ($projectRoot) { Join-Path $projectRoot 'output/bootable_media' } else { 'output/bootable_media' }
         Ensure-DirectoryExists -Path $outDir
+        if ($VersionMajor -eq 1 -and $VersionMinor -eq 0) {
+            $existing = Get-ChildItem $outDir -Filter 'WinSrv2025_HPE_BootableMedia_v*.iso' -ErrorAction SilentlyContinue |
+                ForEach-Object { if ($_.BaseName -match '_v(\d+)\.(\d+)$') { [int]$Matches[1] * 1000 + [int]$Matches[2] } } |
+                Sort-Object -Descending | Select-Object -First 1
+            if ($existing) {
+                $VersionMajor = [int][Math]::Floor($existing / 1000)
+                $VersionMinor = [int]($existing % 1000) + 1
+                Write-Host "Auto-incremented version to ${VersionMajor}.${VersionMinor}"
+            }
+        }
         $OutputPath = Join-Path $outDir "WinSrv2025_HPE_BootableMedia_v${VersionMajor}.${VersionMinor}.iso"
+    }
+
+    if (Test-Path $OutputPath -PathType Leaf) {
+        Write-Warning "ISO already exists at $OutputPath — will be overwritten by New-CMBootableMedia."
     }
 
     $result = @{
@@ -185,9 +199,6 @@ function New-IsoBuild {
                 ErrorAction = 'Stop'
             }
             if ($context.PSSession) { $invokeArgs['Session'] = $context.PSSession }
-            else {
-                if ($context.Credential) { $invokeArgs['Credential'] = $context.Credential }
-            }
             Invoke-Command @invokeArgs | Out-Null
         }
         else {
@@ -267,11 +278,13 @@ function Resolve-ConfigMgrContext {
         $r.Available  = $true
         $r.Mode       = 'Remote'
         $r.PSSession  = $sess
-        $r.Credential = $cred
         return $r
     } catch {
         $r.Error = "PSRemoting to $SiteServer failed: $($_.Exception.Message)"
         return $r
+    }
+    finally {
+        if ($cred) { $cred = $null }
     }
 }
 
