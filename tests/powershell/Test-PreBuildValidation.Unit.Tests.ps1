@@ -15,7 +15,7 @@ Describe 'Test-PreBuildValidation — basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Test-PreBuildValidation
-        foreach ($p in @('ServerIdentifier','OneViewHost','IloIp','IsoUrl','DryRun','SkipOneView','SkipIlo','SkipDpMp')) {
+        foreach ($p in @('ServerIdentifier','OneViewHost','IloIp','IsoUrl','DryRun','SkipOneView','SkipIlo','SkipDpMp','SkipIsoUrl')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
@@ -27,9 +27,15 @@ Describe 'Test-PreBuildValidation — basic invocation' {
         $r.Checks.Keys.Count | Should -BeGreaterThan 0
     }
 
-    It 'Fails iso_url_provided when IsoUrl empty' {
+    It 'Skips iso_url_check when IsoUrl empty' {
         $r = Test-PreBuildValidation -ServerIdentifier 'TEST' -DryRun -SkipOneView -SkipIlo -SkipDpMp
-        ($r.Checks['iso_url_provided'].status) | Should -Be 'FAIL'
+        ($r.Checks['iso_url_check_skipped'].status) | Should -Be 'PASS'
+        $r.Checks.Keys -notcontains 'iso_url_provided' | Should -Be $true
+    }
+
+    It 'SkipIsoUrl suppresses the ISO URL check' {
+        $r = Test-PreBuildValidation -ServerIdentifier 'TEST' -IsoUrl 'https://example.com/iso.iso' -DryRun -SkipOneView -SkipIlo -SkipDpMp -SkipIsoUrl
+        ($r.Checks['iso_url_check_skipped'].status) | Should -Be 'PASS'
     }
 
     It 'Returns Checks dictionary even when nothing configured' {

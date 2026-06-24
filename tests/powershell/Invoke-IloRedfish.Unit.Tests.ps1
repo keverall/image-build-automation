@@ -15,7 +15,7 @@ Describe 'Invoke-IloRedfish — basic invocation and parameter validation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Invoke-IloRedfish
-        foreach ($p in @('Action','IloIp','IsoUrl','CdDeviceId','SkipCertificateCheck','DryRun')) {
+        foreach ($p in @('Action','IloIp','IsoUrl','CdDeviceId','SkipCertificateCheck','DryRun','Force')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
@@ -28,6 +28,17 @@ Describe 'Invoke-IloRedfish — basic invocation and parameter validation' {
     It 'Rejects unknown parameters' {
         { & Invoke-IloRedfish -Action Status -IloIp '127.0.0.1' -NonExistentParam 2>&1 } |
             Should -Not -Be $null
+    }
+
+    It 'Destructive actions require -Force when not in DryRun' {
+        $r = Invoke-IloRedfish -Action MountAndBoot -IloIp '127.0.0.1' -IsoUrl 'https://example.com/iso.iso'
+        $r.Success | Should -Be $false
+        $r.Error | Should -Match 'requires -Force'
+    }
+
+    It 'Destructive actions succeed in DryRun without -Force' {
+        $r = Invoke-IloRedfish -Action MountAndBoot -IloIp '127.0.0.1' -IsoUrl 'https://example.com/iso.iso' -DryRun
+        $r.Success | Should -Be $true
     }
 }
 
