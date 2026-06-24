@@ -9,6 +9,12 @@
 # so transient SUT failures are automatically retried.  The reference's single
 # run_command() call does NOT do this — so the PS version is in fact stronger.
 #
+# NOTE: This function is NOT part of the new ConfigMgr end-to-end build workflow
+# (Start-PhysicalServerBuild).  It remains available for standalone firmware ISO
+# generation and is registered in request_types.json under update_firmware and
+# patch_windows for that purpose.  Firmware is delivered separately by HPE SUT;
+# the ConfigMgr bootable media is OS-image only.
+#
 
 function Update-Firmware {
     <#

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1
-generated: 2026-06-23 13:21 UTC
+generated: 2026-06-24 16:59 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,13 +18,13 @@ Build a PowerShell script for HPE OneView maintenance mode operations.
 | `-ScopeName` | OneView scope name containing server hardware resources. |
 | `-Operation` | 'enable' or 'disable' maintenance mode. |
 | `-Async` | Use -Async parameter for bulk operations (default: true). |
-| `-ModuleName` | PowerShell module name for HPE OneView (required). Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.840 for OneView 8.40). See https://github.com/HewlettPackard/POSH-HPEOneView |
+| `-ModuleName` | PowerShell module name for HPE OneView (required). Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.860 for OneView 8.60). See https://github.com/HewlettPackard/POSH-HPEOneView |
 
 ## Examples
 
 ### Example 1
 ```powershell
-$ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.840'
+$ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.860'
 ```
 
 ## Original Comment-Based Help
@@ -46,11 +46,11 @@ $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName '
 
     .PARAMETER ModuleName
         PowerShell module name for HPE OneView (required).
-        Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.840 for OneView 8.40).
+        Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.860 for OneView 8.60).
         See https://github.com/HewlettPackard/POSH-HPEOneView
 
     .EXAMPLE
-        $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.840'
+        $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.860'
 ```
 
 ---

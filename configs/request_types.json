@@ -61,6 +61,36 @@
       "powershell_handler": "Invoke-GitLabMaintenanceTrigger",
       "ci_stage": null,
       "description": "Trigger GitLab CI/CD pipeline for maintenance operations"
+    },
+    "physical_server_build": {
+      "powershell_handler": "Start-PhysicalServerBuild",
+      "ci_stage": "all",
+      "description": "End-to-end physical server build via ConfigMgr + OneView + iLO Redfish"
+    },
+    "query_oneview_server": {
+      "powershell_handler": "Get-OneViewServerTarget",
+      "ci_stage": null,
+      "description": "Query HPE OneView for server identity and health"
+    },
+    "prebuild_validation": {
+      "powershell_handler": "Test-PreBuildValidation",
+      "ci_stage": null,
+      "description": "Run pre-build validation checks"
+    },
+    "postbuild_validation": {
+      "powershell_handler": "Test-PostBuildValidation",
+      "ci_stage": null,
+      "description": "Run post-build validation checks"
+    },
+    "publish_iso": {
+      "powershell_handler": "Publish-BootIso",
+      "ci_stage": "deploy",
+      "description": "Publish bootable ISO to HTTPS repository"
+    },
+    "ilo_redfish_mount": {
+      "powershell_handler": "Invoke-IloRedfish",
+      "ci_stage": "deploy",
+      "description": "Mount ISO via iLO Redfish and force boot"
     }
   },
   "ci_stage_map": {

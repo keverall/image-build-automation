@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-06-23 13:21 UTC
+generated: 2026-06-24 16:59 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -8,39 +8,39 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Deploys customized ISO packages to HPE ProLiant servers using iLO virtual media or Redfish API. Supports both single-server and bulk deployment modes. The function reads deployment packages from the specified IsoDir and uses iLO credentials from the server list configuration.
+Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.txt, resolves the bootable ISO under -IsoDir, and delegates the actual virtual-media mount + boot to Invoke-IloRedfish.
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Method` | Deployment method: 'ilo' (default) or 'redfish'. |
+| `-Method` | Deployment method (only 'redfish' supported). |
 | `-Server` | Deploy to a single named server only. |
 | `-ServerList` | Path to server_list.txt. |
-| `-IsoDir` | Directory containing deployment packages. |
+| `-IsoDir` | Directory containing bootable ISO packages. |
+| `-IsoUrl` | Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json). |
 | `-DryRun` | Simulate — no actual deployment. |
 
 ## Examples
 
 ### Example 1
 ```powershell
-Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
+Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
 ```
 
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Deploy generated deployment packages to HPE ProLiant servers via iLO or Redfish.
+        Deploy a bootable ISO to HPE ProLiant servers via iLO Redfish.
         Callable from the module Router.
 
     .DESCRIPTION
-        Deploys customized ISO packages to HPE ProLiant servers using iLO virtual
-        media or Redfish API. Supports both single-server and bulk deployment
-        modes. The function reads deployment packages from the specified IsoDir
-        and uses iLO credentials from the server list configuration.
+        Bulk deployment orchestrator.  Looks up each server's iLO IP from
+        server_list.txt, resolves the bootable ISO under -IsoDir, and delegates
+        the actual virtual-media mount + boot to Invoke-IloRedfish.
 
     .PARAMETER Method
-        Deployment method: 'ilo' (default) or 'redfish'.
+        Deployment method (only 'redfish' supported).
 
     .PARAMETER Server
         Deploy to a single named server only.
@@ -49,16 +49,19 @@ Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
         Path to server_list.txt.
 
     .PARAMETER IsoDir
-        Directory containing deployment packages.
+        Directory containing bootable ISO packages.
+
+    .PARAMETER IsoUrl
+        Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json).
 
     .PARAMETER DryRun
         Simulate — no actual deployment.
 
     .RETURNS
-        [hashtable] with Success (bool) and details.
+        [hashtable] with Success, Server, Summary.
 
     .EXAMPLE
-        Invoke-IsoDeploy -Method ilo -Server 'srv01.corp.local' -DryRun
+        Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
 ```
 
 ---
