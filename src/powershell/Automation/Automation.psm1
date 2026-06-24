@@ -335,6 +335,142 @@ class OpsRamp_Client {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# iLO Redfish session helper  (used by Invoke-IloRedfish)
+# ──────────────────────────────────────────────────────────────────────────────
+class IloRedfishSession {
+    [string] $BaseUrl
+    [string] $User
+    [string] $Password
+    [bool]   $SkipCert
+    [int]    $TimeoutSec
+    [string] $AuthToken
+    [string] $SessionUri
+
+    IloRedfishSession([string]$BaseUrl, [string]$User, [string]$Password,
+                      [bool]$SkipCert, [int]$TimeoutSec) {
+        $this.BaseUrl       = $BaseUrl.TrimEnd('/')
+        $this.User          = $User
+        $this.Password      = $Password
+        $this.SkipCert      = $SkipCert
+        $this.TimeoutSec    = $TimeoutSec
+        $this.AuthToken     = $null
+        $this.SessionUri    = $null
+        $this._Login()
+    }
+
+    [void] _Login() {
+        $url  = "$($this.BaseUrl)/SessionService/Sessions"
+        $body = @{ UserName = $this.User; Password = $this.Password } | ConvertTo-Json
+        $resp = Invoke-RestMethod -Uri $url -Method Post -Body $body `
+            -ContentType 'application/json;charset=utf-8' `
+            -SkipCertificateCheck:$this.SkipCert `
+            -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+        $this.AuthToken  = $resp.token
+        $this.SessionUri = $resp.'@odata.id'
+    }
+
+    [hashtable] _Headers() {
+        return @{ 'X-Auth-Token' = $this.AuthToken; 'Accept' = 'application/json' }
+    }
+
+    [void] _Patch([string]$Uri, [object]$Body) {
+        $json = $Body | ConvertTo-Json -Depth 10
+        Invoke-RestMethod -Uri $Uri -Method Patch -Body $json `
+            -Headers $this._Headers() `
+            -ContentType 'application/json;charset=utf-8' `
+            -SkipCertificateCheck:$this.SkipCert `
+            -TimeoutSec $this.TimeoutSec -ErrorAction Stop | Out-Null
+    }
+
+    [void] _Post([string]$Uri, [object]$Body) {
+        $json = $Body | ConvertTo-Json -Depth 10
+        Invoke-RestMethod -Uri $Uri -Method Post -Body $json `
+            -Headers $this._Headers() `
+            -ContentType 'application/json;charset=utf-8' `
+            -SkipCertificateCheck:$this.SkipCert `
+            -TimeoutSec $this.TimeoutSec -ErrorAction Stop | Out-Null
+    }
+
+    [object] _Get([string]$Uri) {
+        return Invoke-RestMethod -Uri $Uri -Method Get `
+            -Headers $this._Headers() `
+            -SkipCertificateCheck:$this.SkipCert `
+            -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+    }
+
+    [hashtable] GetSystem() {
+        $s = $this._Get("$($this.BaseUrl)/Systems/1")
+        return @{
+            power_state             = $s.PowerState
+            boot_source_override    = $s.Boot.BootSourceOverrideTarget
+            boot_override_enabled   = $s.Boot.BootSourceOverrideEnabled
+            manufacturer            = $s.Manufacturer
+            model                   = $s.Model
+            serial                  = $s.SerialNumber
+        }
+    }
+
+    [hashtable] ListVirtualMedia() {
+        $coll = $this._Get("$($this.BaseUrl)/Managers/1/VirtualMedia")
+        $members = @()
+        foreach ($m in $coll.Members) {
+            try {
+                $d = $this._Get($m.'@odata.id')
+                $members += @{
+                    id       = Split-Path $d.'@odata.id' -Leaf
+                    name     = $d.Name
+                    media_types = $d.MediaTypes
+                    inserted = $d.Inserted
+                    image    = $d.Image
+                }
+            } catch {
+                $members += @{ id = Split-Path $m.'@odata.id' -Leaf; error = $_.Exception.Message }
+            }
+        }
+        return $members
+    }
+
+    [string] InsertMedia([int]$DeviceId, [string]$IsoUrl) {
+        $uri = "$($this.BaseUrl)/Managers/1/VirtualMedia/$DeviceId/Actions/VirtualMedia.InsertMedia"
+        $this._Post($uri, @{ Image = $IsoUrl; Inserted = $true })
+        return "Inserted $IsoUrl into VirtualMedia/$DeviceId"
+    }
+
+    [string] EjectMedia([int]$DeviceId) {
+        $uri = "$($this.BaseUrl)/Managers/1/VirtualMedia/$DeviceId/Actions/VirtualMedia.EjectMedia"
+        $this._Post($uri, @{})
+        return "Ejected VirtualMedia/$DeviceId"
+    }
+
+    [void] SetOneTimeBootCd() {
+        $uri = "$($this.BaseUrl)/Systems/1"
+        $this._Patch($uri, @{
+            Boot = @{
+                BootSourceOverrideTarget  = 'Cd'
+                BootSourceOverrideEnabled = 'Once'
+            }
+        })
+    }
+
+    [void] ResetSystem([string]$ResetType) {
+        $uri = "$($this.BaseUrl)/Systems/1/Actions/ComputerSystem.Reset"
+        $this._Post($uri, @{ ResetType = $ResetType })
+    }
+
+    [void] Logout() {
+        if (-not $this.SessionUri) { return }
+        try {
+            Invoke-RestMethod -Uri $this.SessionUri -Method Delete `
+                -Headers $this._Headers() `
+                -SkipCertificateCheck:$this.SkipCert `
+                -TimeoutSec $this.TimeoutSec -ErrorAction Stop | Out-Null
+        } catch {
+            Write-Debug "Redfish session logout failed: $($_.Exception.Message)"
+        }
+    }
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Base class: AutomationBase  (moved from Private/Base.psm1)
 # ──────────────────────────────────────────────────────────────────────────────
 class AutomationBase {
@@ -433,6 +569,7 @@ if (Test-Path $_publicRoot) {
 Export-ModuleMember -Function @(
     # Orchestrator
     'Start-AutomationOrchestrator'
+    'Start-PhysicalServerBuild'
     # Control
     'New-CIPipelineCtrl'
     'New-IRequestCtrl'
@@ -448,6 +585,11 @@ Export-ModuleMember -Function @(
     'New-IsoBuild'
     'Set-MaintenanceMode'
     'Start-InstallMonitor'
+    'Get-OneViewServerTarget'
+    'Invoke-IloRedfish'
+    'Publish-BootIso'
+    'Test-PreBuildValidation'
+    'Test-PostBuildValidation'
     'New-Uuid'
     'Update-Firmware'
     # OpsRamp
