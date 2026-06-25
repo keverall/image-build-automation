@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-06-24 16:59 UTC
+generated: 2026-06-25 11:22 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,7 +18,8 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | `-Server` | Deploy to a single named server only. |
 | `-ServerList` | Path to server_list.txt. |
 | `-IsoDir` | Directory containing bootable ISO packages. |
-| `-IsoUrl` | Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json). |
+| `-IsoUrl` | Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json joined with -RepoBaseUrl). |
+| `-RepoBaseUrl` | HTTPS base URL of the ISO repository. Combined with the bootable_iso filename from deployment_metadata.json to construct the full URL when -IsoUrl is not given. |
 | `-DryRun` | Simulate — no actual deployment. |
 
 ## Examples
@@ -52,7 +53,12 @@ Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinS
         Directory containing bootable ISO packages.
 
     .PARAMETER IsoUrl
-        Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json).
+        Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json
+        joined with -RepoBaseUrl).
+
+    .PARAMETER RepoBaseUrl
+        HTTPS base URL of the ISO repository. Combined with the bootable_iso filename
+        from deployment_metadata.json to construct the full URL when -IsoUrl is not given.
 
     .PARAMETER DryRun
         Simulate — no actual deployment.
