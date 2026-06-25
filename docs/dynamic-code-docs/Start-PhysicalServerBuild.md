@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-generated: 2026-06-24 16:59 UTC
+generated: 2026-06-25 11:22 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,8 +29,11 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 | `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl. |
 | `-MonitorTimeoutSeconds` | Install monitor timeout (default 7200). |
 | `-MonitorPollSeconds` | Install monitor poll interval (default 30). |
-| `-Mock` | Run with mocked calls — no network calls are made; useful for CI smoke tests. |
+| `-Mock` | Run with mocked calls — no network calls are made; useful for CI smoke tests. When -Mock is set, all downstream steps run as if -DryRun was also set. |
 | `-DryRun` | Validate inputs and print plan without performing any destructive action. |
+| `-Force` | Required for the destructive Reset action (ForceRestart) issued by Invoke-IloRedfish. Refuses to proceed without this switch when the server's iLO reports power state On. |
+| `-InMaintenanceWindow` | Acknowledge that the target server is in an approved maintenance window. Required when -Force is not supplied and the server is currently On. |
+| `-AllowUnknownIsoUrl` | Skip the head-verify check on the ISO URL during pre-build validation (use only when the build pipeline runs offline). |
 
 ## Examples
 
@@ -106,9 +109,22 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
 
     .PARAMETER Mock
         Run with mocked calls — no network calls are made; useful for CI smoke tests.
+        When -Mock is set, all downstream steps run as if -DryRun was also set.
 
     .PARAMETER DryRun
         Validate inputs and print plan without performing any destructive action.
+
+    .PARAMETER Force
+        Required for the destructive Reset action (ForceRestart) issued by Invoke-IloRedfish.
+        Refuses to proceed without this switch when the server's iLO reports power state On.
+
+    .PARAMETER InMaintenanceWindow
+        Acknowledge that the target server is in an approved maintenance window. Required
+        when -Force is not supplied and the server is currently On.
+
+    .PARAMETER AllowUnknownIsoUrl
+        Skip the head-verify check on the ISO URL during pre-build validation (use only
+        when the build pipeline runs offline).
 
     .RETURNS
         [hashtable] with Success, Steps (ordered list of step results), AuditFile.

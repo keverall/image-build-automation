@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PreBuildValidation.ps1
-generated: 2026-06-24 16:59 UTC
+generated: 2026-06-25 11:22 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -25,6 +25,7 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 | `-SkipOneView` | Skip the OneView target check. |
 | `-SkipIlo` | Skip the iLO credential / Redfish session check. |
 | `-SkipDpMp` | Skip the Distribution Point / Management Point reachability check. |
+| `-SkipIsoUrl` | Skip the ISO URL reachability check (use when the orchestrator will populate IsoUrl later, or when running offline). |
 | `-DryRun` | Validate inputs but skip network probes. |
 
 ## Examples
@@ -76,6 +77,10 @@ Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'onevi
 
     .PARAMETER SkipDpMp
         Skip the Distribution Point / Management Point reachability check.
+
+    .PARAMETER SkipIsoUrl
+        Skip the ISO URL reachability check (use when the orchestrator will populate
+        IsoUrl later, or when running offline).
 
     .PARAMETER DryRun
         Validate inputs but skip network probes.
