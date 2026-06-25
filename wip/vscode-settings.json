@@ -1,10 +1,33 @@
 {
-  // ─── Terminal: Default Shell per Platform ────────────────────────────────
+
   "terminal.integrated.defaultProfile.windows": "PowerShell 7",
   "terminal.integrated.defaultProfile.linux": "pwsh",
   "terminal.integrated.defaultProfile.osx": "pwsh (Homebrew)",
+  
+  "editor.fontFamily": "'Hack Nerd Font'",
 
-  // ─── Terminal Profiles: Windows ──────────────────────────────────────────
+    "editor.codeLensFontFamily": "'Hack Nerd Font'",
+    "editor.inlayHints.fontFamily": "'Hack Nerd Font'",
+    "chat.editor.fontFamily": "'Hack Nerd Font'",
+    "editor.inlineSuggest.fontFamily": "'Hack Nerd Font'",
+    "chat.fontFamily": "'Hack Nerd Font'",
+    "debug.console.fontFamily": "'Hack Nerd Font'",
+    "scm.inputFontFamily": "'Hack Nerd Font'",
+    "terminal.integrated.fontFamily": "'Hack Nerd Font Mono'",
+    "notebook.markup.fontFamily": "'Hack Nerd Font'",
+    "notebook.output.fontFamily": "'Hack Nerd Font'",
+    "gitlens.currentLine.fontFamily": "'Hack Nerd Font'",
+    "gitlens.blame.fontFamily": "'Hack Nerd Font'",
+    "markdown.preview.fontFamily": "-apple-system, 'Hack Nerd Font', BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif",
+    "terminal.integrated.fontLigatures.enabled": true,
+    "editor.fontSize": 15,
+    "chat.editor.fontSize": 15,
+    "chat.fontSize": 15,
+    "debug.console.fontSize": 15,
+    "scm.inputFontSize": 14,
+    "terminal.integrated.fontSize": 15,
+    "kilo-code.new.fontSize": 15,
+  
   "terminal.integrated.profiles.windows": {
     "PowerShell 7": {
       "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
@@ -23,7 +46,7 @@
     }
   },
 
-  // ─── Terminal Profiles: Linux ────────────────────────────────────────────
+
   "terminal.integrated.profiles.linux": {
     "pwsh": {
       "path": "/usr/bin/pwsh",
@@ -46,7 +69,7 @@
     }
   },
 
-  // ─── Terminal Profiles: macOS ────────────────────────────────────────────
+
   "terminal.integrated.profiles.osx": {
     "pwsh (Homebrew)": {
       "path": "/opt/homebrew/bin/pwsh",
@@ -68,7 +91,7 @@
     }
   },
 
-  // ─── Terminal: Core Behavior ─────────────────────────────────────────────
+
   "terminal.integrated.inheritEnv": true,
   "terminal.integrated.windowsEnableConpty": true,
   "terminal.integrated.shellIntegration.enabled": true,
@@ -77,7 +100,7 @@
     "PSExecutionPolicyPreference": "Bypass"
   },
 
-  // ─── PowerShell Extension: Formatting ────────────────────────────────────
+
   "powershell.codeFormatting.preset": "OTBS",
   "powershell.codeFormatting.newLineAfterCloseBrace": true,
   "powershell.codeFormatting.newLineAfterOpenBrace": true,
@@ -87,18 +110,18 @@
   "powershell.codeFormatting.ignoreOneLineBlock": false,
   "powershell.codeFormatting.pipelineIndentationStyle": "IncreaseIndentationForEveryPipeline",
 
-  // ─── PowerShell Extension: Editor ────────────────────────────────────────
+
   "powershell.integratedConsole.focusConsoleOnExecute": false,
   "powershell.integratedConsole.showOnStartup": false,
   "powershell.integratedConsole.usePsReadLine": true,
   "powershell.codeFolding.enable": true,
   "powershell.codeFolding.showLastLine": true,
 
-  // ─── PowerShell Extension: Analysis & Testing ────────────────────────────
+
   "powershell.scriptAnalysis.enable": true,
   "powershell.pester.codeLens.enabled": true,
 
-  // ─── Editor: File Associations ──────────────────────────────────────────
+
   "files.associations": {
     "*.ps1": "powershell",
     "*.psm1": "powershell",
