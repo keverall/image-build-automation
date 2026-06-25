@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IloRedfish.ps1
-generated: 2026-06-24 16:59 UTC
+generated: 2026-06-25 11:22 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -20,6 +20,7 @@ Implements the iLO Redfish virtual-media workflow: * Session login (basic auth �
 | `-IloPassword` | iLO password. Defaults to $env:ILO_PASSWORD. Use [SecureString] in production. |
 | `-IsoUrl` | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
 | `-CdDeviceId` | VirtualMedia device id (default 1). Enumerate via /redfish/v1/Managers/1/VirtualMedia. |
+| `-Force` | Required for destructive actions (MountAndBoot, Boot, Reset) to confirm intent. Read-only actions (Status, Eject without -Force) do not require this switch. |
 | `-SkipCertificateCheck` | Skip SSL cert verification (default true — iLO uses self-signed certs). |
 | `-TimeoutSec` | Per-call timeout (default 30 s). |
 | `-DryRun` | Print actions without performing them. |
@@ -63,6 +64,10 @@ Invoke-IloRedfish -Action MountAndBoot -IloIp 192.168.1.101 ` -IsoUrl 'https://a
 
     .PARAMETER CdDeviceId
         VirtualMedia device id (default 1). Enumerate via /redfish/v1/Managers/1/VirtualMedia.
+
+    .PARAMETER Force
+        Required for destructive actions (MountAndBoot, Boot, Reset) to confirm intent.
+        Read-only actions (Status, Eject without -Force) do not require this switch.
 
     .PARAMETER SkipCertificateCheck
         Skip SSL cert verification (default true — iLO uses self-signed certs).

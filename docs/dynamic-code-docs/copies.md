@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Publish-BootIso.ps1
-generated: 2026-06-24 16:59 UTC
+generated: 2026-06-25 11:22 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,6 +17,7 @@ Validates the local ISO, copies it to the configured HTTPS repository root, and 
 | `-IsoPath` | Local path to the bootable ISO file (output of New-IsoBuild). |
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository. Defaults to $env:ISO_REPO_BASE_URL. |
 | `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl (for https_copy mode). Defaults to $env:ISO_REPO_LOCAL_PATH. |
+| `-ForceOverwrite` | Allow overwriting an existing ISO with the same filename in the repository. Default refuses to overwrite without this switch. |
 | `-SkipVerify` | Skip HTTPS HEAD reachability check. |
 | `-DryRun` | Simulate without copying or verifying. |
 
@@ -47,6 +48,10 @@ Publish-BootIso -IsoPath 'C:\osdmedia\WinSrv2025_BootableMedia_v1.0.iso' ` -Repo
     .PARAMETER RepoLocalPath
         Local filesystem path mirrored to RepoBaseUrl (for https_copy mode).
         Defaults to $env:ISO_REPO_LOCAL_PATH.
+
+    .PARAMETER ForceOverwrite
+        Allow overwriting an existing ISO with the same filename in the repository.
+        Default refuses to overwrite without this switch.
 
     .PARAMETER SkipVerify
         Skip HTTPS HEAD reachability check.
