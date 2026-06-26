@@ -87,11 +87,11 @@ Preferred approach: use Configuration Manager bootable media (ISO) mounted over 
 
 ### Prepare or update the Windows Server build in Configuration Manager
 
-9.Import or update the Windows Server source image within Configuration Manager.
-10. Create or update the OSD task sequence for the target operating system build.
-11. Add or update HPE driver packages and ensure the required WinPE boot image contains the correct NIC and storage drivers.
-12. Distribute all associated content to at least one distribution point.
-13. Validate task sequence deployment scope (known / unknown computer support as required).
+9.Import or update the Windows Server source image within Configuration Manager.  
+10. Create or update the OSD task sequence for the target operating system build.  
+11. Add or update HPE driver packages and ensure the required WinPE boot image contains the correct NIC and storage drivers.  
+12. Distribute all associated content to at least one distribution point.  
+13. Validate task sequence deployment scope (known / unknown computer support as required).  
 
 ```PWSH
 # Example ConfigMgr media creation command:
