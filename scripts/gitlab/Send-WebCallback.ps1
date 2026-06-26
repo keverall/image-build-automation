@@ -1,5 +1,5 @@
 #
-# Send-WebCallback.ps1 — Shared HTTP callback utility
+# Send-WebCallback.ps1 - Shared HTTP callback utility
 # Used by Invoke-GitLabMaintenance.ps1 and Send-GitLabMaintenanceRequest.ps1
 #
 

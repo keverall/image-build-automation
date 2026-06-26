@@ -1,5 +1,5 @@
 #
-# Public/Test-PreBuildValidation.ps1 — Pre-build validation checklist
+# Public/Test-PreBuildValidation.ps1 - Pre-build validation checklist
 #
 # Implements the pre-build checks from the runbook:
 #   1. OneView target identified and confirmed
@@ -9,7 +9,7 @@
 #   5. Management Point / Distribution Point network reachability
 #   6. Audit entry recorded
 #
-# All endpoints are runtime parameters — no JSON config required.
+# All endpoints are runtime parameters - no JSON config required.
 #
 
 function Test-PreBuildValidation {
@@ -115,17 +115,17 @@ function Test-PreBuildValidation {
     } elseif ($IsoUrl) {
         try {
             if ($DryRun) {
-                _Set 'iso_url_format' ($IsoUrl -match '^https://') "DryRun — $IsoUrl"
+                _Set 'iso_url_format' ($IsoUrl -match '^https://') "DryRun - $IsoUrl"
             } else {
                 $head = Invoke-WebRequest -Uri $IsoUrl -Method Head -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
                 _Set 'iso_url_reachable' ($head.StatusCode -ge 200 -and $head.StatusCode -lt 400) "HTTP $($head.StatusCode)"
             }
         } catch { _Set 'iso_url_reachable' $false $_.Exception.Message }
-    } else { _Set 'iso_url_check_skipped' $true 'IsoUrl not provided — orchestrator will supply' }
+    } else { _Set 'iso_url_check_skipped' $true 'IsoUrl not provided - orchestrator will supply' }
 
     if (-not $SkipIlo -and $IloIp) {
         if ($DryRun) {
-            _Set 'ilo_credentials' $true 'DryRun — credentials assumed valid'
+            _Set 'ilo_credentials' $true 'DryRun - credentials assumed valid'
         } else {
             try {
                 $cred = Get-IloCredentials
@@ -144,7 +144,7 @@ function Test-PreBuildValidation {
                                 @{ name = 'distribution_point'; value = $DistributionPoint })) {
             if ($endpoint.value) {
                 if ($DryRun) {
-                    _Set $endpoint.name $true "DryRun — $($endpoint.value)"
+                    _Set $endpoint.name $true "DryRun - $($endpoint.value)"
                 } else {
                     try {
                         $r = Test-Connection -ComputerName $endpoint.value -Count 1 -Quiet -ErrorAction Stop

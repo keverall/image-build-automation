@@ -1,5 +1,5 @@
 #
-# Public/Test-ClusterId.ps1 — Validate that a cluster ID exists in the cluster catalogue.
+# Public/Test-ClusterId.ps1 - Validate that a cluster ID exists in the cluster catalogue.
 #
 
 function Test-ClusterId {
@@ -16,12 +16,12 @@ function Test-ClusterId {
         This function is intended for SCOM mode requests only. It validates that
         the supplied TargetId is a cluster ID (not a server name) and that the
         cluster definition has the correct structure in the catalogue. OneView mode
-        requests should NOT call this function — they use OneViewClient.ResolveTarget()
+        requests should NOT call this function - they use OneViewClient.ResolveTarget()
         instead to validate server names or scopes against the OneView appliance.
 
     .PARAMETER TargetId
         Cluster identifier string. Must be a cluster ID as defined in
-        clusters_catalogue.json. Server names are not accepted — use
+        clusters_catalogue.json. Server names are not accepted - use
         OneViewClient.ResolveTarget() for OneView server validation.
 
     .PARAMETER CataloguePath

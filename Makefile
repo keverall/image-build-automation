@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — Makefile
+# HPE ProLiant Windows Server ISO Automation - Makefile
 # =============================================================================
 # Common tasks for PowerShell development and CI/CD.
 #

@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Invoke-IloRedfish — basic invocation and parameter validation' {
+Describe 'Invoke-IloRedfish - basic invocation and parameter validation' {
     It 'Function is exported' {
         $cmd = Get-Command Invoke-IloRedfish -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null
@@ -42,7 +42,7 @@ Describe 'Invoke-IloRedfish — basic invocation and parameter validation' {
     }
 }
 
-Describe 'Invoke-IloRedfish — IloRedfishSession class' {
+Describe 'Invoke-IloRedfish - IloRedfishSession class' {
     # The IloRedfishSession class is module-scoped (declared in Automation.psm1) so
     # it cannot be referenced as a type accelerator from outside the module.  Its
     # presence is verified indirectly by the MountAndBoot / Status / Mount tests.
@@ -52,7 +52,7 @@ Describe 'Invoke-IloRedfish — IloRedfishSession class' {
     }
 }
 
-Describe 'Invoke-IloRedfish — Action validation' {
+Describe 'Invoke-IloRedfish - Action validation' {
     It 'Rejects invalid action' {
         { & Invoke-IloRedfish -Action 'Bogus' -IloIp '127.0.0.1' -ErrorAction SilentlyContinue } |
             Should -Throw

@@ -108,7 +108,7 @@ Set-StrictMode -Version Latest
 
 ### PSScriptAnalyzer `Error` Findings
 
-These are blocking — fix before merging:
+These are blocking - fix before merging:
 
 - **`AvoidUsingConvertToSecureStringWithPlainText`**: Replace literal passwords with `Get-Credential`, `Get-Secret`, or environment variables.
 - **`AvoidUsingInvokeExpression`**: Refactor; pass a `[ScriptBlock]` parameter instead of raw string.

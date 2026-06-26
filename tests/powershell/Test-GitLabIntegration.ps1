@@ -1,5 +1,5 @@
 #
-# Test-GitLabIntegration.ps1 — Unit tests for GitLab maintenance callback mechanism
+# Test-GitLabIntegration.ps1 - Unit tests for GitLab maintenance callback mechanism
 #
 [CmdletBinding()]
 param()

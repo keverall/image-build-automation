@@ -1,5 +1,5 @@
 #
-# Public/Invoke-IloRedfish.ps1 — iLO Redfish API integration
+# Public/Invoke-IloRedfish.ps1 - iLO Redfish API integration
 #
 # Provides full Redfish implementation for virtual media mount + one-time boot
 # + system reset, replacing the iLO REST scaffold that lived in Invoke-IsoDeploy.
@@ -29,7 +29,7 @@ function Invoke-IloRedfish {
             * One-time boot override to CD
             * System reset (ForceRestart)
         Operates against a single iLO IP. Connection details are runtime
-        parameters — no JSON config required.
+        parameters - no JSON config required.
 
     .PARAMETER Action
         Operation to perform. One of: Mount, MountAndBoot, Boot, Reset, Eject, Status.
@@ -54,7 +54,7 @@ function Invoke-IloRedfish {
         Read-only actions (Status, Eject without -Force) do not require this switch.
 
     .PARAMETER SkipCertificateCheck
-        Skip SSL cert verification (default true — iLO uses self-signed certs).
+        Skip SSL cert verification (default true - iLO uses self-signed certs).
 
     .PARAMETER TimeoutSec
         Per-call timeout (default 30 s).

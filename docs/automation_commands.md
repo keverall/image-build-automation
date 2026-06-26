@@ -31,7 +31,7 @@ Then restart PowerShell or reload your profile:
 . $PROFILE
 ```
 
-After this, every command below is available from any directory — no paths required.
+After this, every command below is available from any directory - no paths required.
 
 Verify all commands are loaded:
 
@@ -85,33 +85,33 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -Mock
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-ServerIdentifier` | Yes | Server name, serial, OneView name, iLO IP, or bay | — |
-| `-OneViewHost` | No | OneView appliance hostname or IP | — |
-| `-IloIp` | No | Target iLO address or hostname | — |
+| `-ServerIdentifier` | Yes | Server name, serial, OneView name, iLO IP, or bay | - |
+| `-OneViewHost` | No | OneView appliance hostname or IP | - |
+| `-IloIp` | No | Target iLO address or hostname | - |
 | `-ExpectedHostname` | No | Post-build hostname | `$ServerIdentifier` |
-| `-Domain` | No | AD domain for post-build check | — |
-| `-SiteCode` | No | ConfigMgr site code (e.g. `P01`) | — |
-| `-ManagementPoint` | No | ConfigMgr Management Point FQDN | — |
-| `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN | — |
-| `-SiteServer` | No | ConfigMgr site server FQDN (PSRemoting fallback) | — |
-| `-BootImageName` | No | Boot image name to embed | — |
-| `-TaskSequenceName` | No | Task sequence name (informational) | — |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | — |
-| `-RepoLocalPath` | No | Local path mirrored to `-RepoBaseUrl` | — |
+| `-Domain` | No | AD domain for post-build check | - |
+| `-SiteCode` | No | ConfigMgr site code (e.g. `P01`) | - |
+| `-ManagementPoint` | No | ConfigMgr Management Point FQDN | - |
+| `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN | - |
+| `-SiteServer` | No | ConfigMgr site server FQDN (PSRemoting fallback) | - |
+| `-BootImageName` | No | Boot image name to embed | - |
+| `-TaskSequenceName` | No | Task sequence name (informational) | - |
+| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | - |
+| `-RepoLocalPath` | No | Local path mirrored to `-RepoBaseUrl` | - |
 | `-MonitorTimeoutSeconds` | No | Max monitoring duration | `7200` |
 | `-MonitorPollSeconds` | No | Poll interval | `30` |
-| `-SkipPreBuild` | No | Skip pre-build validation | — |
-| `-SkipIsoBuild` | No | Skip ISO creation | — |
-| `-SkipPublish` | No | Skip ISO publishing | — |
-| `-SkipOneView` | No | Skip OneView resolution | — |
-| `-SkipMount` | No | Skip iLO mount and boot | — |
-| `-SkipMonitor` | No | Skip installation monitoring | — |
-| `-SkipPostBuild` | No | Skip post-build validation | — |
-| `-Mock` | No | Mock all calls (implies `-DryRun`) | — |
-| `-DryRun` | No | Validate and print plan only | — |
-| `-Force` | No | Allow destructive `ForceRestart` | — |
-| `-InMaintenanceWindow` | No | Acknowledge approved maintenance window | — |
-| `-AllowUnknownIsoUrl` | No | Skip ISO URL reachability check | — |
+| `-SkipPreBuild` | No | Skip pre-build validation | - |
+| `-SkipIsoBuild` | No | Skip ISO creation | - |
+| `-SkipPublish` | No | Skip ISO publishing | - |
+| `-SkipOneView` | No | Skip OneView resolution | - |
+| `-SkipMount` | No | Skip iLO mount and boot | - |
+| `-SkipMonitor` | No | Skip installation monitoring | - |
+| `-SkipPostBuild` | No | Skip post-build validation | - |
+| `-Mock` | No | Mock all calls (implies `-DryRun`) | - |
+| `-DryRun` | No | Validate and print plan only | - |
+| `-Force` | No | Allow destructive `ForceRestart` | - |
+| `-InMaintenanceWindow` | No | Acknowledge approved maintenance window | - |
+| `-AllowUnknownIsoUrl` | No | Skip ISO URL reachability check | - |
 
 **Returns:** `[hashtable]` with `Success`, `Steps`, and `AuditFile`.
 
@@ -119,7 +119,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -Mock
 
 ## ISO Build, Patching, Deployment, and Monitoring
 
-Individual commands for the ISO pipeline — build, publish, deploy, monitor, and patch.
+Individual commands for the ISO pipeline - build, publish, deploy, monitor, and patch.
 
 ### Build a bootable ISO
 
@@ -143,16 +143,16 @@ New-IsoBuild -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint d
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-SiteCode` | Yes | ConfigMgr site code | — |
-| `-ManagementPoint` | Yes | ConfigMgr Management Point FQDN | — |
-| `-DistributionPoint` | Yes | ConfigMgr Distribution Point FQDN | — |
+| `-SiteCode` | Yes | ConfigMgr site code | - |
+| `-ManagementPoint` | Yes | ConfigMgr Management Point FQDN | - |
+| `-DistributionPoint` | Yes | ConfigMgr Distribution Point FQDN | - |
 | `-OutputPath` | No | Full output path for the ISO | Auto-generated |
 | `-VersionMajor` | No | Major version in filename | `1` |
 | `-VersionMinor` | No | Minor version in filename | `0` |
-| `-BootImageName` | No | Boot image name to embed | — |
-| `-TaskSequenceName` | No | Task sequence name | — |
-| `-SiteServer` | No | Site server FQDN (PSRemoting fallback) | — |
-| `-DryRun` | No | Validate inputs only | — |
+| `-BootImageName` | No | Boot image name to embed | - |
+| `-TaskSequenceName` | No | Task sequence name | - |
+| `-SiteServer` | No | Site server FQDN (PSRemoting fallback) | - |
+| `-DryRun` | No | Validate inputs only | - |
 
 **Returns:** `[hashtable]` with `Success`, `IsoPath`, and `Metadata`.
 
@@ -180,12 +180,12 @@ Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-IsoPath` | Yes | Local path to the ISO file | — |
+| `-IsoPath` | Yes | Local path to the ISO file | - |
 | `-RepoBaseUrl` | No | HTTPS base URL of the repository | `$env:ISO_REPO_BASE_URL` |
 | `-RepoLocalPath` | No | Local path mirrored to the repository | `$env:ISO_REPO_LOCAL_PATH` |
-| `-ForceOverwrite` | No | Overwrite existing ISO | — |
-| `-SkipVerify` | No | Skip HTTPS HEAD check | — |
-| `-DryRun` | No | Simulate only | — |
+| `-ForceOverwrite` | No | Overwrite existing ISO | - |
+| `-SkipVerify` | No | Skip HTTPS HEAD check | - |
+| `-DryRun` | No | Simulate only | - |
 
 **Returns:** `[hashtable]` with `Success`, `PublicUrl`, `RepoPath`, and `Verified`.
 
@@ -203,7 +203,7 @@ Invoke-IsoDeploy -Server srv01 -IsoUrl 'https://artifacts/isos/WinSrv2025_v1.0.i
 Invoke-IsoDeploy
 ```
 
-#### Dry run — see what would deploy
+#### Dry run - see what would deploy
 
 ```powershell
 Invoke-IsoDeploy -DryRun
@@ -214,12 +214,12 @@ Invoke-IsoDeploy -DryRun
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
 | `-Method` | No | Deployment method (`redfish`) | `redfish` |
-| `-Server` | No | Single server hostname | — |
+| `-Server` | No | Single server hostname | - |
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-IsoDir` | No | Directory containing ISO packages | auto-resolved |
-| `-IsoUrl` | No | Override the ISO URL | — |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | — |
-| `-DryRun` | No | Simulate only | — |
+| `-IsoUrl` | No | Override the ISO URL | - |
+| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | - |
+| `-DryRun` | No | Simulate only | - |
 
 **Returns:** `[hashtable]` with `Success`, `Server`, and `Summary`.
 
@@ -247,7 +247,7 @@ Start-InstallMonitor
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Server` | No | Single server hostname | — |
+| `-Server` | No | Single server hostname | - |
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-TimeoutSeconds` | No | Max monitoring duration | `7200` |
 | `-PollIntervalSeconds` | No | Seconds between polls | `30` |
@@ -280,11 +280,11 @@ Update-Firmware -DryRun
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
 | `-Config` | No | Firmware manifest path | auto-resolved |
-| `-Server` | No | Single server hostname | — |
+| `-Server` | No | Single server hostname | - |
 | `-ServerList` | No | Path to server list | auto-resolved |
-| `-OutputDir` | No | Output directory | — |
-| `-SkipDownload` | No | Skip component download | — |
-| `-DryRun` | No | Simulate only | — |
+| `-OutputDir` | No | Output directory | - |
+| `-SkipDownload` | No | Skip component download | - |
+| `-DryRun` | No | Simulate only | - |
 
 **Returns:** `[hashtable]` with `Success` and details.
 
@@ -312,12 +312,12 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -DryRun
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-BaseIsoPath` | No | Path to the base Windows Server ISO | — |
-| `-Server` | No | Server hostname for output naming | — |
+| `-BaseIsoPath` | No | Path to the base Windows Server ISO | - |
+| `-Server` | No | Server hostname for output naming | - |
 | `-PatchesConfig` | No | Path to patch manifest | auto-resolved |
 | `-OutputDir` | No | Output directory | auto-resolved |
 | `-Method` | No | Patching method: `dism` or `powershell` | `dism` |
-| `-DryRun` | No | Simulate only | — |
+| `-DryRun` | No | Simulate only | - |
 
 **Returns:** `[hashtable]` with `Success`, `PatchedIso`, and details.
 
@@ -345,13 +345,13 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-OneViewHost` | No | OneView appliance hostname or IP | — |
-| `-ServerIdentifier` | Yes | Server name, serial, iLO IP, or bay | — |
+| `-OneViewHost` | No | OneView appliance hostname or IP | - |
+| `-ServerIdentifier` | Yes | Server name, serial, iLO IP, or bay | - |
 | `-IdentifierType` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
 | `-OneViewUser` | No | OneView username | `$env:ONEVIEW_USER` |
 | `-OneViewPassword` | No | OneView password | `$env:ONEVIEW_PASSWORD` |
 | `-Port` | No | OneView HTTPS port | `443` |
-| `-DryRun` | No | Print query without performing it | — |
+| `-DryRun` | No | Print query without performing it | - |
 
 **Returns:** `[hashtable]` with `Success`, `Server`, `ResolvedBy`, `Details`, and `Error`.
 
@@ -391,14 +391,14 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Action` | Yes | `Mount`, `MountAndBoot`, `Boot`, `Reset`, `Eject`, `Status` | — |
-| `-IloIp` | Yes | iLO IPv4 address or hostname | — |
+| `-Action` | Yes | `Mount`, `MountAndBoot`, `Boot`, `Reset`, `Eject`, `Status` | - |
+| `-IloIp` | Yes | iLO IPv4 address or hostname | - |
 | `-IloUser` | No | iLO username | `$env:ILO_USER` |
 | `-IloPassword` | No | iLO password | `$env:ILO_PASSWORD` |
-| `-IsoUrl` | No | HTTPS URL of the ISO (for `Mount`/`MountAndBoot`) | — |
+| `-IsoUrl` | No | HTTPS URL of the ISO (for `Mount`/`MountAndBoot`) | - |
 | `-CdDeviceId` | No | Virtual media device ID | `1` |
-| `-Force` | No | Confirm destructive actions | — |
-| `-DryRun` | No | Print actions without performing them | — |
+| `-Force` | No | Confirm destructive actions | - |
+| `-DryRun` | No | Print actions without performing them | - |
 
 **Returns:** `[hashtable]` with `Success`, `Action`, `IloIp`, `Details`, and `Error`.
 
@@ -426,19 +426,19 @@ Test-PreBuildValidation -ServerIdentifier srv01 -DryRun
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-ServerIdentifier` | Yes | Target server identifier | — |
-| `-OneViewHost` | No | OneView appliance hostname or IP | — |
-| `-IloIp` | No | Target iLO address | — |
-| `-IsoUrl` | No | HTTPS URL of the bootable ISO | — |
-| `-ManagementPoint` | No | ConfigMgr Management Point FQDN | — |
-| `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN | — |
-| `-BootImageName` | No | Boot image name to verify | — |
-| `-TaskSequenceName` | No | Task sequence name to verify | — |
-| `-SkipOneView` | No | Skip OneView target check | — |
-| `-SkipIlo` | No | Skip iLO credential check | — |
-| `-SkipDpMp` | No | Skip MP/DP reachability checks | — |
-| `-SkipIsoUrl` | No | Skip ISO URL reachability check | — |
-| `-DryRun` | No | Validate inputs, skip network probes | — |
+| `-ServerIdentifier` | Yes | Target server identifier | - |
+| `-OneViewHost` | No | OneView appliance hostname or IP | - |
+| `-IloIp` | No | Target iLO address | - |
+| `-IsoUrl` | No | HTTPS URL of the bootable ISO | - |
+| `-ManagementPoint` | No | ConfigMgr Management Point FQDN | - |
+| `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN | - |
+| `-BootImageName` | No | Boot image name to verify | - |
+| `-TaskSequenceName` | No | Task sequence name to verify | - |
+| `-SkipOneView` | No | Skip OneView target check | - |
+| `-SkipIlo` | No | Skip iLO credential check | - |
+| `-SkipDpMp` | No | Skip MP/DP reachability checks | - |
+| `-SkipIsoUrl` | No | Skip ISO URL reachability check | - |
+| `-DryRun` | No | Validate inputs, skip network probes | - |
 
 **Returns:** `[hashtable]` with `Success`, `Server`, `Timestamp`, and `Checks`.
 
@@ -466,14 +466,14 @@ Test-PostBuildValidation -Hostname srv01 -SkipRemote
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Hostname` | Yes | Target server hostname | — |
+| `-Hostname` | Yes | Target server hostname | - |
 | `-ExpectedHostname` | No | Expected hostname for cross-check | `$Hostname` |
-| `-Domain` | No | AD domain expected after build | — |
-| `-ExpectedOsVersion` | No | Expected OS version string | — |
-| `-SkipCmClient` | No | Skip ConfigMgr client checks | — |
-| `-SkipDrivers` | No | Skip HPE driver presence check | — |
-| `-SkipRemote` | No | Skip all WinRM-dependent checks | — |
-| `-DryRun` | No | Assume checks pass | — |
+| `-Domain` | No | AD domain expected after build | - |
+| `-ExpectedOsVersion` | No | Expected OS version string | - |
+| `-SkipCmClient` | No | Skip ConfigMgr client checks | - |
+| `-SkipDrivers` | No | Skip HPE driver presence check | - |
+| `-SkipRemote` | No | Skip all WinRM-dependent checks | - |
+| `-DryRun` | No | Assume checks pass | - |
 
 **Returns:** `[hashtable]` with `Success`, `Hostname`, `Timestamp`, `Checks`, and `AuditFile`.
 
@@ -515,14 +515,14 @@ Test-ServerConnectivity -ManagementHost myhost.corp.local
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Mode` | No | `scom` or `oneview` | — |
-| `-Environment` | No | `Test` or `Prod` | — |
-| `-ManagementHost` | No | Direct host override | — |
+| `-Mode` | No | `scom` or `oneview` | - |
+| `-Environment` | No | `Test` or `Prod` | - |
+| `-ManagementHost` | No | Direct host override | - |
 | `-ConfigDir` | No | Configuration directory | auto-resolved |
 | `-PingTimeoutMs` | No | TCP connect timeout | `3000` |
-| `-Json` | No | Output as JSON | — |
-| `-JsonConfig` | No | Resolve host from `connection_hosts.json` | — |
-| `-DryRun` | No | Return mock data | — |
+| `-Json` | No | Output as JSON | - |
+| `-JsonConfig` | No | Resolve host from `connection_hosts.json` | - |
+| `-DryRun` | No | Return mock data | - |
 
 **Returns:** `[hashtable]` with `Available`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
 
@@ -554,7 +554,7 @@ Test-ClusterId -TargetId CLU-CLUSTER-01
 Test-BuildParams -BaseIsoPath 'C:\isos\WinSrv2025.iso'
 ```
 
-**Returns:** `[string[]]` — empty if valid, error messages otherwise.
+**Returns:** `[string[]]` - empty if valid, error messages otherwise.
 
 ---
 

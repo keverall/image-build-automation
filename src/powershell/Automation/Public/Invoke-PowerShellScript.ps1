@@ -1,5 +1,5 @@
 #
-# Public/Invoke-PowerShellScript.ps1 — Execute a PowerShell script block / string locally.
+# Public/Invoke-PowerShellScript.ps1 - Execute a PowerShell script block / string locally.
 #
 
 function Invoke-PowerShellScript {

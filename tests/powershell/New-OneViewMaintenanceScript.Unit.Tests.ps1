@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'New-OneViewMaintenanceScript — basic invocation and parameter validation' {
+Describe 'New-OneViewMaintenanceScript - basic invocation and parameter validation' {
     It 'Function is exported' {
         $cmd = Get-Command New-OneViewMaintenanceScript -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

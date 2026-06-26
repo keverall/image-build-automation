@@ -1,5 +1,5 @@
 ﻿#
-# Start-InstallMonitor.ps1 — Windows installation progress monitor
+# Start-InstallMonitor.ps1 - Windows installation progress monitor
 #
 # Contains: Start-InstallMonitor wrapper function, InstallationMonitor class,
 #           and a script-mode guard for direct pwsh invocation.

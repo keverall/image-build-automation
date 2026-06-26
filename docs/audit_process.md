@@ -275,7 +275,7 @@ Steps:
 
 ### Scenario: Maintenance Window Did Not Auto-Disable
 Steps:
-1. Check `generated/logs/audit/maintenance_audit.log` for the enable action — look for `"scheduled_task"` field
+1. Check `generated/logs/audit/maintenance_audit.log` for the enable action - look for `"scheduled_task"` field
 2. Verify Windows Scheduled Task exists: `schtasks /Query /TN "MaintenanceDisable-<cluster>"`
 3. Check task history: Event Viewer → Windows Logs → Task Scheduler
 4. Review script exit code in task history; any errors logged to `generated/logs/audit/maintenance_audit.log`
@@ -283,7 +283,7 @@ Steps:
 
 ## Best Practices
 
-1. **Never edit JSON logs directly** — use scripts for modifications
+1. **Never edit JSON logs directly** - use scripts for modifications
 2. **Include context**: always log server name and UUID in multi-server operations
 3. **Log at appropriate level**: DEBUG for verbose, INFO for normal, WARNING/ERROR for issues
 4. **Preserve original logs**: archive, don't delete (for compliance)

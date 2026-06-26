@@ -1,5 +1,5 @@
 #
-# Test-GitLabCallback.ps1 — Test callback mechanism for GitLab maintenance integration
+# Test-GitLabCallback.ps1 - Test callback mechanism for GitLab maintenance integration
 # Spins up a mock HTTP listener to receive callbacks from GitLab CI
 #
 [CmdletBinding()]

@@ -1,10 +1,10 @@
 ﻿#
-# Invoke-IsoDeploy.ps1 — Bulk ISO deployment orchestrator (consumes Invoke-IloRedfish)
+# Invoke-IsoDeploy.ps1 - Bulk ISO deployment orchestrator (consumes Invoke-IloRedfish)
 #
 # Equivalent of reference implementation cli/deploy_to_server.py
 #
 # Bulk-deploys bootable ISOs to multiple HPE ProLiant servers via iLO Redfish.
-# Delegates the actual virtual-media + boot logic to Invoke-IloRedfish — this
+# Delegates the actual virtual-media + boot logic to Invoke-IloRedfish - this
 # file owns the orchestration loop only.
 #
 
@@ -49,7 +49,7 @@ function Invoke-IsoDeploy {
         from deployment_metadata.json to construct the full URL when -IsoUrl is not given.
 
     .PARAMETER DryRun
-        Simulate — no actual deployment.
+        Simulate - no actual deployment.
 
     .RETURNS
         [hashtable] with Success, Server, Summary.
@@ -126,7 +126,7 @@ class ISODeployer {
         if ($this.DefaultIsoUrl) { return $this.DefaultIsoUrl }
         $metaFile = Join-Path $PackageDir 'deployment_metadata.json'
         if (-not (Test-Path $metaFile)) {
-            Write-Warning "Metadata not found: $metaFile — caller should supply -IsoUrl"
+            Write-Warning "Metadata not found: $metaFile - caller should supply -IsoUrl"
             return $null
         }
         $meta = Import-JsonConfig -Path $metaFile

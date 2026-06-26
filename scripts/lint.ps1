@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — PowerShell Lint Script
+# HPE ProLiant Windows Server ISO Automation - PowerShell Lint Script
 # =============================================================================
 # Phase 1: Syntax validation (catches parse errors)
 # Phase 2: PSScriptAnalyzer (code quality, style, best practices)

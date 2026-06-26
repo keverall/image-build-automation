@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Test-PreBuildValidation — basic invocation' {
+Describe 'Test-PreBuildValidation - basic invocation' {
     It 'Function is exported' {
         $cmd = Get-Command Test-PreBuildValidation -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

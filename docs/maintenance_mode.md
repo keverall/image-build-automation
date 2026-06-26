@@ -2,9 +2,9 @@
 
 Maintenance mode manages scheduled maintenance windows for clusters across two monitoring systems:
 
-- **SCOM 2015** (System Center Operations Manager) — maintenance mode on groups
-- **HPE iLO** (Integrated Lights-Out) — Redfish / REST maintenance windows
-- **HPE OneView** — REST API or optional legacy CLI
+- **SCOM 2015** (System Center Operations Manager) - maintenance mode on groups
+- **HPE iLO** (Integrated Lights-Out) - Redfish / REST maintenance windows
+- **HPE OneView** - REST API or optional legacy CLI
 
 Features include audit logging, OpsRamp telemetry, email notifications, and automatic disable via OS task scheduling.
 
@@ -52,10 +52,10 @@ iRequest or manual call
 
 ## High-Level Flow
 
-1. **Enable** — validate cluster ID, optionally compute end time from the cluster schedule, then enable maintenance on each configured subsystem (SCOM, iLO, OneView). Optionally schedule a one-shot task to run disable at end time.
-2. **Disable** — reverse the enable actions and clear the maintenance windows.
-3. **Validate** — confirm the cluster definition and environment are ready without altering any subsystem state.
-4. **Dry run** — walk the enable/disable path with real-time logs and audit records but skip all subsystem mutations.
+1. **Enable** - validate cluster ID, optionally compute end time from the cluster schedule, then enable maintenance on each configured subsystem (SCOM, iLO, OneView). Optionally schedule a one-shot task to run disable at end time.
+2. **Disable** - reverse the enable actions and clear the maintenance windows.
+3. **Validate** - confirm the cluster definition and environment are ready without altering any subsystem state.
+4. **Dry run** - walk the enable/disable path with real-time logs and audit records but skip all subsystem mutations.
 
 ---
 
@@ -119,7 +119,7 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 ## Security Considerations
 
 - Credentials flow through environment variables exclusively; no plaintext configs.
-- Scheduler tasks run as SYSTEM by default — restrict to a dedicated service account under least-privilege policy.
+- Scheduler tasks run as SYSTEM by default - restrict to a dedicated service account under least-privilege policy.
 - iLO credentials must hold only maintenance-window-level privileges.
 - Audit records are local by default; forward to SIEM for retention and access control.
 
@@ -154,9 +154,9 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 
 A dedicated test runner (`make maint-mode-tests`) runs high-priority Pester tests for the three primary actions:
 
-- **Enable** (`Set-MaintenanceMode.Enable.Tests.ps1`) — validates SCOM, iLO, and OneView enable paths
-- **Disable** (`Set-MaintenanceMode.Disable.Tests.ps1`) — validates reverse operations and post-disable waits
-- **Validate** (`Set-MaintenanceMode.Validation.Tests.ps1`) — validates cluster configuration without altering state
+- **Enable** (`Set-MaintenanceMode.Enable.Tests.ps1`) - validates SCOM, iLO, and OneView enable paths
+- **Disable** (`Set-MaintenanceMode.Disable.Tests.ps1`) - validates reverse operations and post-disable waits
+- **Validate** (`Set-MaintenanceMode.Validation.Tests.ps1`) - validates cluster configuration without altering state
 
 ```bash
 # Run maintenance mode tests only

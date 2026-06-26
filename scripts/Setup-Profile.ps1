@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Setup-Profile.ps1 — Configure PowerShell profiles with Automation module.
+    Setup-Profile.ps1 - Configure PowerShell profiles with Automation module.
 
 .DESCRIPTION
     Copies the correct WIP profile template to the live profile location
@@ -39,7 +39,7 @@
 #>
 
 # =============================================================================
-# Setup-Profile.ps1 — Configure PowerShell profiles with Automation module
+# Setup-Profile.ps1 - Configure PowerShell profiles with Automation module
 # =============================================================================
 # 1. Copies the platform-appropriate WIP profile template to the live
 #    profile location (Windows Terminal/PowerShell + VS Code).
@@ -148,7 +148,7 @@ function Set-ContentProfilePair {
     
     # Check if live profile already has the Automation block - just update if so
     if ($liveContent -match '# Image Build Automation module') {
-        Write-Color $Yellow "[setup] Profile already has Automation module — updating path..."
+        Write-Color $Yellow "[setup] Profile already has Automation module - updating path..."
         $NewContent = $liveContent -replace '(?s)# Image Build Automation module.*?(?=\n\n#|\n$|$)', $ProfileBlock.Trim()
         $NewContent | Set-Content $LivePath -Encoding UTF8
         Write-Color $Green "[setup] ✓ Updated Automation module path"
@@ -212,7 +212,7 @@ if (-not $Uninstall -and -not $SkipTemplateCopy) {
         }
     }
 
-    # VS Code profile (only if VS Code profile dir exists — avoid creating it
+    # VS Code profile (only if VS Code profile dir exists - avoid creating it
     # on machines where VS Code isn't installed)
     $vsCodeDir = Split-Path $LiveProfiles['VsCode'] -Parent
     if ((Test-Path $VsCodeTemplate) -and (Test-Path $vsCodeDir)) {
@@ -223,7 +223,7 @@ if (-not $Uninstall -and -not $SkipTemplateCopy) {
             # Check for existing Automation block in VS Code profile too
             $vscContent = if (Test-Path $dest) { Get-Content $dest -Raw } else { $null }
             if ($vscContent -match '# Image Build Automation module') {
-                Write-Color $Yellow "[setup] VS Code profile already has Automation module — updating path..."
+                Write-Color $Yellow "[setup] VS Code profile already has Automation module - updating path..."
                 $NewContent = $vscContent -replace '(?s)# Image Build Automation module.*?(?=\n\n#|\n$|$)', $ProfileBlock.Trim()
                 $NewContent | Set-Content $dest -Encoding UTF8
                 Write-Color $Green "[setup] ✓ Updated VS Code profile"
@@ -232,13 +232,13 @@ if (-not $Uninstall -and -not $SkipTemplateCopy) {
             }
         }
     } elseif (-not (Test-Path $vsCodeDir)) {
-        Write-Color $Cyan "[setup] VS Code profile dir not found — skipping VS Code profile"
+        Write-Color $Cyan "[setup] VS Code profile dir not found - skipping VS Code profile"
     }
 } elseif ($SkipTemplateCopy -and -not $Uninstall) {
     Write-Color $Cyan "[setup] -SkipTemplateCopy: leaving existing profiles, only refreshing module import"
 }
 
-# Find all profile paths to update (live profiles only — not WIP templates).
+# Find all profile paths to update (live profiles only - not WIP templates).
 $ProfilePaths = @()
 
 # Add the live profiles we identified above (if they exist or were just copied)

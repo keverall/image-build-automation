@@ -34,7 +34,7 @@ AfterAll {
     Remove-Item $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-Describe 'Set-MaintenanceMode — Target ID validation' {
+Describe 'Set-MaintenanceMode - Target ID validation' {
     It 'Should return success for valid target ID' {
         $result = Set-MaintenanceMode -Action validate -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir -DryRun
         $result.Success | Should -Be $true
@@ -51,7 +51,7 @@ Describe 'Set-MaintenanceMode — Target ID validation' {
     }
 }
 
-Describe 'Set-MaintenanceMode — Pre-check for mode change validation' {
+Describe 'Set-MaintenanceMode - Pre-check for mode change validation' {
     Context 'DryRun mode (simulation)' {
         It 'Should allow enable action in DryRun mode regardless of current state' {
             $params = @{

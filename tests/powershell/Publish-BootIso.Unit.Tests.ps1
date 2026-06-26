@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Publish-BootIso — basic invocation' {
+Describe 'Publish-BootIso - basic invocation' {
     It 'Function is exported' {
         $cmd = Get-Command Publish-BootIso -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

@@ -1,5 +1,5 @@
 #
-# Public/New-ScomMaintenanceScript.ps1 — Build a PowerShell script for SCOM maintenance mode start/stop.
+# Public/New-ScomMaintenanceScript.ps1 - Build a PowerShell script for SCOM maintenance mode start/stop.
 # Supports both individual-instance (group-level) and cluster-level (cluster-class) operations.
 #
 
@@ -33,12 +33,12 @@ function New-ScomMaintenanceScript {
         and applies maintenance mode recursively to all cluster nodes.
 
     .EXAMPLE
-        # Group mode — set maintenance on all instances in a group
+        # Group mode - set maintenance on all instances in a group
         $ps = New-ScomMaintenanceScript -GroupDisplayName 'CLU-CLUSTER-01' `
             -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest'
 
     .EXAMPLE
-        # Cluster mode — set maintenance at cluster level + all nodes
+        # Cluster mode - set maintenance at cluster level + all nodes
         $ps = New-ScomMaintenanceScript -ServerHostnames @('srv01.corp.local','srv02.corp.local') `
             -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest' -UseClusterMode
     #>
@@ -89,7 +89,7 @@ foreach (`$serverName in `$serverList) {
         `$agent = Get-SCOMAgent -Name `$serverName -ErrorAction Stop
         `$instance = `$agent.HostComputer
         if (`$agent.GetRemotelyManagedComputers()) {
-            # Server is cluster-managed — find and schedule maintenance at cluster level
+            # Server is cluster-managed - find and schedule maintenance at cluster level
             `$clusters = `$agent.GetRemotelyManagedComputers()
             foreach (`$cluster in `$clusters) {
                 `$cName   = `$cluster.ComputerName
@@ -121,7 +121,7 @@ foreach (`$serverName in `$serverList) {
                 }
             }
         } else {
-            # Standalone server — individual maintenance mode
+            # Standalone server - individual maintenance mode
             try {
                 `$instance.ScheduleMaintenanceMode(`$endTime, `$reason, `$comment)
                 Write-Host "Maintenance started: `$serverName"

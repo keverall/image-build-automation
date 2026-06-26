@@ -46,8 +46,8 @@ LONG DESCRIPTION
     HPE OneView two-factor authentication
     -------------------------------------
 
-    Enabling two-factor authentication allows you to use smart cards — for example,
-    Common Access Cards (CAC), or Personal Identity Verification (PIV) cards — to
+    Enabling two-factor authentication allows you to use smart cards - for example,
+    Common Access Cards (CAC), or Personal Identity Verification (PIV) cards - to
     authenticate within HPE OneView. The client certificate embedded in the smart
     card is presented to HPE OneView by the library. The client certificate must be
     signed by a root or intermediate Certificate Authority (CA) that has been

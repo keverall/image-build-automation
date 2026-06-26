@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Get-OneViewServerTarget — basic invocation' {
+Describe 'Get-OneViewServerTarget - basic invocation' {
     It 'Function is exported' {
         $cmd = Get-Command Get-OneViewServerTarget -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

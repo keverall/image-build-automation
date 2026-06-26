@@ -1,5 +1,5 @@
 ﻿#
-# Public/Update-WindowsSecurity.ps1 — Windows security patcher / ISO builder
+# Public/Update-WindowsSecurity.ps1 - Windows security patcher / ISO builder
 # Equivalent of reference implementation cli/patch_windows_security.py
 #
 # Contains: Invoke-WindowsSecurityUpdate wrapper, WindowsPatcher class, script mode.
@@ -203,7 +203,7 @@ class WindowsPatcher {
             }
 
             $outputIso = Join-Path $this.OutputDir "$ServerName`_patched.iso"
-            New-Item -Path $outputIso -Force -ItemType File | Out-Null   # placeholder — replaced by real DISM export in full impl
+            New-Item -Path $outputIso -Force -ItemType File | Out-Null   # placeholder - replaced by real DISM export in full impl
             $this._Log('create_iso', 'SUCCESS', "Created: $outputIso")
             $result.generated_patched_iso = $outputIso; $result.success = $true
         }

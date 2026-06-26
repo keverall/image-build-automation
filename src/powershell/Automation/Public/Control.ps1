@@ -1,5 +1,5 @@
 #
-# Control.ps1 — Central Control Module.
+# Control.ps1 - Central Control Module.
 #
 # Single entry point for all automation request surfaces:
 #
@@ -22,7 +22,7 @@
 $ErrorActionPreference = 'Stop'
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build CI_PARAMS map
+# Helper - build CI_PARAMS map
 # ─────────────────────────────────────────────────────────────────────────────
 function _Build-CIParams {
     [CmdletBinding()]
@@ -59,7 +59,7 @@ function _Build-CIParams {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build IREQUEST_PARAMS map
+# Helper - build IREQUEST_PARAMS map
 # ─────────────────────────────────────────────────────────────────────────────
 function _Build-IRequestParams {
     [CmdletBinding()]
@@ -87,7 +87,7 @@ function _Build-IRequestParams {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build SCHEDULER_PARAMS map
+# Helper - build SCHEDULER_PARAMS map
 # ─────────────────────────────────────────────────────────────────────────────
 function _Build-SchedulerParams {
     [CmdletBinding()]
@@ -119,7 +119,7 @@ function _Build-SchedulerParams {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# New-CIPipelineCtrl  — factory; mirrors Control.from_ci()
+# New-CIPipelineCtrl  - factory; mirrors Control.from_ci()
 # Used externally before .Run() if you need the object
 # ─────────────────────────────────────────────────────────────────────────────
 function New-CIPipelineCtrl {
@@ -133,7 +133,7 @@ function New-CIPipelineCtrl {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# New-IRequestCtrl  — factory; mirrors Control.from_irequest()
+# New-IRequestCtrl  - factory; mirrors Control.from_irequest()
 # ─────────────────────────────────────────────────────────────────────────────
 function New-IRequestCtrl {
     [CmdletBinding()]
@@ -146,7 +146,7 @@ function New-IRequestCtrl {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# New-SchedulerCtrl  — factory; mirrors Control.from_scheduler()
+# New-SchedulerCtrl  - factory; mirrors Control.from_scheduler()
 # ─────────────────────────────────────────────────────────────────────────────
 function New-SchedulerCtrl {
     [CmdletBinding()]
@@ -159,7 +159,7 @@ function New-SchedulerCtrl {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# _Execute  — internal helper: route to orchestrator, add metadata
+# _Execute  - internal helper: route to orchestrator, add metadata
 # ─────────────────────────────────────────────────────────────────────────────
 function _Execute {
     [CmdletBinding()]
@@ -187,7 +187,7 @@ function _Execute {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Run-CIPipeline  — convenience; mirrors run_ci()
+# Run-CIPipeline  - convenience; mirrors run_ci()
 # Entry-point used by the CI pipeline phase "Orchestration"
 # ─────────────────────────────────────────────────────────────────────────────
 function Run-CIPipeline {
@@ -201,7 +201,7 @@ function Run-CIPipeline {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Run-IRequest  — convenience; mirrors run_irequest()
+# Run-IRequest  - convenience; mirrors run_irequest()
 # Entry-point used by the iRequest ISAPI closure
 # ─────────────────────────────────────────────────────────────────────────────
 function Run-IRequest {
@@ -226,7 +226,7 @@ function Run-IRequest {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Run-Scheduler  — convenience; mirrors run_scheduler()
+# Run-Scheduler  - convenience; mirrors run_scheduler()
 # Entry-point used by cron and Windows Scheduled Tasks
 # ─────────────────────────────────────────────────────────────────────────────
 function Run-Scheduler {
@@ -251,7 +251,7 @@ function Run-Scheduler {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper — build GITLAB_PARAMS map for GitLab CI/CD maintenance trigger
+# Helper - build GITLAB_PARAMS map for GitLab CI/CD maintenance trigger
 # ─────────────────────────────────────────────────────────────────────────────
 function _Build-GitLabParams {
     [CmdletBinding()]
@@ -269,7 +269,7 @@ function _Build-GitLabParams {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# New-GitLabCtrl  — factory; mirrors Control.from_gitlab()
+# New-GitLabCtrl  - factory; mirrors Control.from_gitlab()
 # Used for GitLab CI/CD triggered maintenance operations
 # ─────────────────────────────────────────────────────────────────────────────
 function New-GitLabCtrl {
@@ -283,7 +283,7 @@ function New-GitLabCtrl {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Run-GitLab  — convenience; triggers GitLab CI pipeline for maintenance
+# Run-GitLab  - convenience; triggers GitLab CI pipeline for maintenance
 # Entry-point used by iRequest to trigger GitLab CI/CD instead of direct execution
 # ─────────────────────────────────────────────────────────────────────────────
 function Run-GitLab {

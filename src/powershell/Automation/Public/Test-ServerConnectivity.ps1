@@ -1,5 +1,5 @@
 #
-# Test-ServerConnectivity.ps1 — Combined network ping + authentication connectivity test
+# Test-ServerConnectivity.ps1 - Combined network ping + authentication connectivity test
 # for SCOM and OneView management servers.  Safe to run during a change freeze (read-only).
 #
 
@@ -33,8 +33,8 @@ if ($ShowHelp) {
     Write-Output "    Performs read-only connectivity checks against SCOM or OneView management"
     Write-Output "    infrastructure.  Two phases are executed:"
     Write-Output ""
-    Write-Output "      1. Network Ping  — DNS resolution + TCP port probe (no credentials needed)"
-    Write-Output "      2. Auth Connect  — full authentication using the configured module,"
+    Write-Output "      1. Network Ping  - DNS resolution + TCP port probe (no credentials needed)"
+    Write-Output "      2. Auth Connect  - full authentication using the configured module,"
     Write-Output "                         followed by immediate disconnect"
     Write-Output ""
     Write-Output "    All operations are read-only.  No maintenance windows are created, no"
@@ -158,7 +158,7 @@ function Test-ServerConnectivity {
     <#
     .SYNOPSIS
         Combined network ping + authentication connectivity test for SCOM or OneView.
-        Read-only — safe during a change freeze.
+        Read-only - safe during a change freeze.
 
     .DESCRIPTION
         Phase 1: Network Ping
@@ -206,13 +206,13 @@ function Test-ServerConnectivity {
 
     .RETURNS
         [hashtable] with keys:
-          Available        [bool]   — overall pass/fail
+          Available        [bool]   - overall pass/fail
           Mode             [string]
           ManagementHost   [string]
           Environment      [string]
-          NetworkPing      [hashtable] — DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
-          AuthConnect      [hashtable] — Connected, Disconnected, ModuleLoaded, Error
-          Timestamp        [string]   — UTC ISO 8601
+          NetworkPing      [hashtable] - DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
+          AuthConnect      [hashtable] - Connected, Disconnected, ModuleLoaded, Error
+          Timestamp        [string]   - UTC ISO 8601
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -300,7 +300,7 @@ function Test-ServerConnectivity {
                 ManagementHost = $null
                 Environment    = $effectiveEnv
                 NetworkPing    = @{ DnsResolved = $false; Error = $errorMsg }
-                AuthConnect    = @{ Connected = $false; Error = "Skipped — no management host" }
+                AuthConnect    = @{ Connected = $false; Error = "Skipped - no management host" }
                 Timestamp      = Get-UtcTimestamp
             }
             if (-not $Json) {
@@ -332,7 +332,7 @@ function Test-ServerConnectivity {
             ManagementHost = $null
             Environment    = $effectiveEnv
             NetworkPing    = @{ DnsResolved = $false; Error = $errorMsg }
-            AuthConnect    = @{ Connected = $false; Error = "Skipped — no management host" }
+            AuthConnect    = @{ Connected = $false; Error = "Skipped - no management host" }
             Timestamp      = Get-UtcTimestamp
         }
         if (-not $Json) {
@@ -492,7 +492,7 @@ function Test-ServerConnectivity {
         }
         if (-not $pingResult.TcpPortOpen) {
             $portList = ($tcpPorts -join ', ')
-            $pingResult.Error = "TCP connection failed — no open port found ($portList) on '$resolvedHost' within ${PingTimeoutMs}ms"
+            $pingResult.Error = "TCP connection failed - no open port found ($portList) on '$resolvedHost' within ${PingTimeoutMs}ms"
         }
     }
 
@@ -507,9 +507,9 @@ function Test-ServerConnectivity {
     }
 
     if (-not $pingResult.TcpPortOpen) {
-        $authResult.Error = "Skipped — network ping failed"
+        $authResult.Error = "Skipped - network ping failed"
     } elseif (-not $resolvedUser -or -not $resolvedPass) {
-        $authResult.Error = "Skipped — credentials not configured (set $userEnv / $passEnv)"
+        $authResult.Error = "Skipped - credentials not configured (set $userEnv / $passEnv)"
     } else {
         if ($Mode -eq 'scom') {
             $moduleName = $modeCfg.Get_Item('powershell_module') ?? 'OperationsManager'

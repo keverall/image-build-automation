@@ -1,5 +1,5 @@
 #
-# Private/Inventory.ps1 — Server inventory and cluster catalogue helpers.
+# Private/Inventory.ps1 - Server inventory and cluster catalogue helpers.
 #
 
 function Load-ServerList {

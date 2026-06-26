@@ -1,5 +1,5 @@
 #
-# Private/Config.ps1 — JSON/YAML configuration loading with ${VAR} env substitution.
+# Private/Config.ps1 - JSON/YAML configuration loading with ${VAR} env substitution.
 #
 
 function Import-JsonConfig {
@@ -70,7 +70,7 @@ function _PS_ConvertTo-Hashtable {
             foreach ($k in $InputObject.Keys) { $ht[$k] = _PS_ConvertTo-Hashtable $InputObject[$k] }
             return $ht
         }
-        # PS7 ConvertFrom-Json returns PSCustomObject, not IDictionary — handle explicitly
+        # PS7 ConvertFrom-Json returns PSCustomObject, not IDictionary - handle explicitly
         if ($InputObject -is [System.Management.Automation.PSCustomObject]) {
             $ht = @{}
             foreach ($prop in $InputObject.PSObject.Properties) {

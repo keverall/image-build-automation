@@ -34,7 +34,7 @@ AfterAll {
     Remove-Item $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-Describe 'Set-MaintenanceMode — Enable action: Time variants' {
+Describe 'Set-MaintenanceMode - Enable action: Time variants' {
     It 'Should default start time to now when Start=null' {
         $endTime = (Get-Date).AddHours(2).ToString('yyyy-MM-dd HH:mm:ss')
         $result = Set-MaintenanceMode -Action enable -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir -DryRun -Start $null -End $endTime
@@ -60,7 +60,7 @@ Describe 'Set-MaintenanceMode — Enable action: Time variants' {
     }
 }
 
-Describe 'Set-MaintenanceMode — Enable action: Flags' {
+Describe 'Set-MaintenanceMode - Enable action: Flags' {
     It 'Should simulate maintenance without making changes [-DryRun]' {
         $result = Set-MaintenanceMode -Action enable -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+1hour'
         $result.Success | Should -Be $true
@@ -72,7 +72,7 @@ Describe 'Set-MaintenanceMode — Enable action: Flags' {
     }
 }
 
-Describe 'Set-MaintenanceMode — OneView SerialNumber mode' {
+Describe 'Set-MaintenanceMode - OneView SerialNumber mode' {
     It 'Should accept SerialNumber without TargetId for OneView mode' {
         $result = Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+1hour'
         $result.Success | Should -Be $true

@@ -1,5 +1,5 @@
 #
-# Invoke-GitLabMaintenanceTrigger.ps1 — Router handler for GitLab CI/CD maintenance trigger
+# Invoke-GitLabMaintenanceTrigger.ps1 - Router handler for GitLab CI/CD maintenance trigger
 # Called via Invoke-RoutedRequest -RequestType 'gitlab_maintenance'
 #
 # This is a router handler function that wraps Send-GitLabMaintenanceRequest.
