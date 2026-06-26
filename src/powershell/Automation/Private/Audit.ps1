@@ -1,5 +1,5 @@
 #
-# Private/Audit.ps1 — Audit helper helpers
+# Private/Audit.ps1 - Audit helper helpers
 #
 
 function New-AuditLogger {

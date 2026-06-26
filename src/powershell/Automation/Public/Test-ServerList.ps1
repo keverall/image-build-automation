@@ -1,5 +1,5 @@
 #
-# Public/Test-ServerList.ps1 — Validate and load the server list text file.
+# Public/Test-ServerList.ps1 - Validate and load the server list text file.
 #
 
 function Test-ServerList {

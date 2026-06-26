@@ -1,4 +1,4 @@
-# HPE ProLiant Windows Server ISO Automation — Documentation Index
+# HPE ProLiant Windows Server ISO Automation - Documentation Index
 
 Complete documentation for the PowerShell automation module (`src/powershell/Automation/`).
 
@@ -41,7 +41,7 @@ hpe-windows-iso-automation/
 | [📘 Auto-Generated Function Reference](dynamic-code-docs/INDEX.md) | **Comprehensive coverage of ALL PowerShell functions and cmdlets** - complete parameter documentation, examples, and usage for every function in the codebase. Auto-generated from source code. |
 | [Testing Guide](testing.md) | Comprehensive Pester v5 guide, runner commands, mocking, CI integration, maintenance mode testing |
 | [CI Run Requirements](powershell_ci.md) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
-| [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks — configuration, usage, CI pipeline integration |
+| [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks - configuration, usage, CI pipeline integration |
 | [GitLab CI/CD Integration](gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
 
 ### Physical Server Build & Runbooks

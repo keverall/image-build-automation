@@ -1,5 +1,22 @@
 # Maintenance Mode - Quick Start Guide
 
+- [Maintenance Mode - Quick Start Guide](#maintenance-mode---quick-start-guide)
+  - [Setup (One-Time)](#setup-one-time)
+  - [Usage](#usage)
+    - [Full Control](#full-control)
+    - [Time Formats](#time-formats)
+  - [Output](#output)
+  - [Parameters](#parameters)
+  - [Examples](#examples)
+    - [Test Before Running](#test-before-running)
+    - [Production with Custom Window](#production-with-custom-window)
+    - [OneView Server by Serial](#oneview-server-by-serial)
+    - [Disable Maintenance](#disable-maintenance)
+  - [Troubleshooting](#troubleshooting)
+    - [Command Not Found](#command-not-found)
+    - [Check Available Commands](#check-available-commands)
+
+
 ## Setup (One-Time)
 
 Run this script once to configure your PowerShell profile with the Automation module:

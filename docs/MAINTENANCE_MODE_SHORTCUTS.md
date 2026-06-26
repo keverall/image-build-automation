@@ -186,7 +186,7 @@ pwsh scripts/test-connectivity.ps1 -Environment Test -Mode scom -DryRun
                The name does not exist
 
   --- Phase 2: Auth Connect ---
-    Error:     Skipped — network ping failed
+    Error:     Skipped - network ping failed
 
 ==============================================
 ```

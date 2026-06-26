@@ -1,5 +1,5 @@
 #
-# Private/PathResolver.ps1 — Shared path resolution utilities.
+# Private/PathResolver.ps1 - Shared path resolution utilities.
 #
 
 function Get-ProjectRoot {

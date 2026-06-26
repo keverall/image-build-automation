@@ -1,5 +1,5 @@
 #
-# Public/Test-PostBuildValidation.ps1 — Post-build validation checklist
+# Public/Test-PostBuildValidation.ps1 - Post-build validation checklist
 #
 # Implements the post-build checks from the runbook:
 #   1. Expected hostname assigned (WinRM)
@@ -45,7 +45,7 @@ function Test-PostBuildValidation {
         Skip all WinRM-dependent checks (only do local / metadata validation).
 
     .PARAMETER DryRun
-        Skip WinRM probes — assume checks pass.
+        Skip WinRM probes - assume checks pass.
 
     .RETURNS
         [hashtable] with Success (bool), Checks, AuditFile.

@@ -1,5 +1,5 @@
 ﻿#
-# Public/Update-Firmware.ps1 — HPE firmware/driver ISO builder via HPE Smart Update Tool (SUT)
+# Public/Update-Firmware.ps1 - HPE firmware/driver ISO builder via HPE Smart Update Tool (SUT)
 # Mirrors reference implementation cli/update_firmware_drivers.py
 # Usage:  pwsh -File Update-Firmware.ps1 -Server 'srv01.corp.local'
 #         pwsh -File Update-Firmware.ps1 -Config 'configs\hpe_firmware_drivers_nov2025.json'
@@ -7,7 +7,7 @@
 # Differences from reference: PS uses the same single-shot SUT call as the reference,
 # but also calls through Invoke-NativeCommandWithRetry (exponential back-off)
 # so transient SUT failures are automatically retried.  The reference's single
-# run_command() call does NOT do this — so the PS version is in fact stronger.
+# run_command() call does NOT do this - so the PS version is in fact stronger.
 #
 # NOTE: This function is NOT part of the new ConfigMgr end-to-end build workflow
 # (Start-PhysicalServerBuild).  It remains available for standalone firmware ISO

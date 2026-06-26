@@ -1,5 +1,5 @@
 #
-# Automation.psm1 — Root module for HPE ProLiant Windows Server ISO Automation
+# Automation.psm1 - Root module for HPE ProLiant Windows Server ISO Automation
 #
 # All class definitions live here so they are resolved before any dot-sourced
 # script in Private/ or Public/ is parsed. PowerShell resolves [TypeName]
@@ -53,12 +53,12 @@ class AuditLogger {
         $this.Entries       = [System.Collections.ArrayList]::new()
     }
 
-    # 4-arg convenience overload — Extra defaults to $null
+    # 4-arg convenience overload - Extra defaults to $null
     [hashtable] Log([string]$Action, [string]$Status, [string]$Server, [string]$Details) {
         return $this.Log($Action, $Status, $Server, $Details, $null)
     }
 
-    # 2-arg convenience overload — Server and Details default to empty
+    # 2-arg convenience overload - Server and Details default to empty
     [hashtable] Log([string]$Action, [string]$Status) {
         return $this.Log($Action, $Status, '', '', $null)
     }
@@ -534,7 +534,7 @@ $_moduleBase  = $PSScriptRoot
 $_privateRoot = Join-Path $_moduleBase 'Private'
 $_publicRoot  = Join-Path $_moduleBase 'Public'
 
-# Private — dependency-ordered load
+# Private - dependency-ordered load
 $_privateOrder = @(
     'Audit.ps1',        # New-AuditLogger
     'Config.ps1',       # Import-JsonConfig, Import-YamlConfig, _PS_* helpers
@@ -556,7 +556,7 @@ foreach ($_f in $_privateOrder) {
     }
 }
 
-# Public — alphabetical, self-contained
+# Public - alphabetical, self-contained
 if (Test-Path $_publicRoot) {
     Get-ChildItem $_publicRoot -Filter '*.ps1' | Sort-Object Name | ForEach-Object {
         try   { . $_.FullName }

@@ -1,5 +1,5 @@
 #
-# Test-ServerConnectivity.Tests.ps1 — Pester tests for the connectivity check function
+# Test-ServerConnectivity.Tests.ps1 - Pester tests for the connectivity check function
 #
 
 BeforeAll {

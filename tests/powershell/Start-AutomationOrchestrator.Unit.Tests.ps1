@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Start-AutomationOrchestrator — basic invocation and parameter validation' {
+Describe 'Start-AutomationOrchestrator - basic invocation and parameter validation' {
     It 'Function is exported' {
         $cmd = Get-Command Start-AutomationOrchestrator -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

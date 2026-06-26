@@ -19,7 +19,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 
 Write-Host ''
 Write-Host '╔══════════════════════════════════════════════════════════╗' -ForegroundColor Cyan
-Write-Host '║  HPE ProLiant ISO Automation — Available Commands         ║' -ForegroundColor Cyan
+Write-Host '║  HPE ProLiant ISO Automation - Available Commands         ║' -ForegroundColor Cyan
 Write-Host '╚══════════════════════════════════════════════════════════╝' -ForegroundColor Cyan
 Write-Host ''
 

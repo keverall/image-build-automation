@@ -1,5 +1,5 @@
 #
-# Private/Logging.ps1 — Centralized logging setup.
+# Private/Logging.ps1 - Centralized logging setup.
 # Standard logging pattern implementation.
 #
 
