@@ -1,5 +1,5 @@
 #
-# Public/_Validate-Request.ps1 — Private request validator (underscore-prefixed, not exported).
+# Public/_Validate-Request.ps1 - Private request validator (underscore-prefixed, not exported).
 #
 
 function _Validate-Request {

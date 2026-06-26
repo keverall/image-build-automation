@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Setup-Runner.ps1 — PowerShell runner environment setup.
+    Setup-Runner.ps1 - PowerShell runner environment setup.
 
 .DESCRIPTION
     Fully offline-capable setup script that installs required PowerShell modules
@@ -13,7 +13,7 @@
 #>
 
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — PowerShell Runner Setup
+# HPE ProLiant Windows Server ISO Automation - PowerShell Runner Setup
 # =============================================================================
 # Fully offline-capable.  Bundled copies live in scripts/modules/; if absent we
 # attempt a PSGallery download via Save-Module (no admin rights needed).
@@ -29,7 +29,7 @@ $VENDOR_MODULES_DIR = Join-Path $PSScriptRoot 'modules'
 $TEMP_MODULES_DIR   = Join-Path $PROJECT_ROOT 'temp-modules'
 $BIN_DIR            = Join-Path $PROJECT_ROOT 'bin'
 
-# Bundled module manifest — name + minimum version (version is the *requested*
+# Bundled module manifest - name + minimum version (version is the *requested*
 # floor; the actual installed version may be higher for modules like
 # OperationsManager that ship with SCOM in arbitrary versions).
 $REQUIRED_MODULES = @(
@@ -40,7 +40,7 @@ $REQUIRED_MODULES = @(
     @{ Name = 'OperationsManager';Version = '1.0' }   # floor only; real SCOM versions are 10.x
 )
 
-# Colours (ANSI — works in all hosts that support colour)
+# Colours (ANSI - works in all hosts that support colour)
 $C_RESET  = "`e[0m"
 $C_CYAN   = "`e[36m"
 $C_GREEN  = "`e[32m"
@@ -119,7 +119,7 @@ function Get-BundledModulePath {
     }
 
     # Layout B (legacy nesting): Save-Module into <Name>/ subfolder creates
-    #   scripts/modules/<Name>/<Name>/<version>/  — handle for backwards compat.
+    #   scripts/modules/<Name>/<Name>/<version>/  - handle for backwards compat.
     $inner = Get-ChildItem -Path $parent.FullName -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -ieq $Name } | Select-Object -First 1
     if ($inner) {
@@ -192,7 +192,7 @@ function Install-RequiredModule {
             Write-OK "$Name $($existing.Version) already verified"
             return
         } catch {
-            Write-Warn "$Name $($existing.Version) corrupt — removing and reinstalling"
+            Write-Warn "$Name $($existing.Version) corrupt - removing and reinstalling"
             # Safely calculate the module directory (2 levels up from .psd1)
             $versionDir = Split-Path $existing.Path -Parent
             $moduleDir = Split-Path $versionDir -Parent
@@ -248,7 +248,7 @@ function Install-RequiredModules {
 # Guards against Windows App Execution Aliases (real exes must have a Source path).
 function Find-LocalBinary {
     param([string]$BinaryName)            # e.g. 'checkmake.exe'
-    # 1. Project bin/ (most reliable — avoids Windows app-picker stubs)
+    # 1. Project bin/ (most reliable - avoids Windows app-picker stubs)
     $binPath = Join-Path $BIN_DIR $BinaryName
     if (Test-Path $binPath) {
         $fileSize = (Get-Item $binPath).Length
@@ -257,7 +257,7 @@ function Find-LocalBinary {
             return $true
         }
     }
-    # 2. System PATH — but only if it resolves to a real executable
+    # 2. System PATH - but only if it resolves to a real executable
     $cmd = Get-Command $BinaryName -ErrorAction SilentlyContinue
     if ($cmd -and $cmd.Source -and $cmd.Source -ne '') { return $true }
     return $false
@@ -285,7 +285,7 @@ function Install-OhMyPosh {
 function Install-Make {
     $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
              $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
-    if (-not $isWin) { Write-Log "Non-Windows platform — skipping make detection"; return }
+    if (-not $isWin) { Write-Log "Non-Windows platform - skipping make detection"; return }
 
     if (Find-LocalBinary -BinaryName 'make.exe') {
         Write-OK "make: $((make --version 2>$null | Select-Object -First 1))"
@@ -338,7 +338,7 @@ function Install-Checkmake {
             Write-OK "checkmake found"
             return
         }
-        Write-Warn "checkmake at $dest appears corrupt — re-downloading"
+        Write-Warn "checkmake at $dest appears corrupt - re-downloading"
         Remove-Item $dest -Force -ErrorAction SilentlyContinue
     }
 
@@ -364,7 +364,7 @@ function Install-Checkmake {
                 $urls += "https://github.com/mrtazz/checkmake/releases/download/$latestVer/checkmake-$latestVer.$os.$arch"
             }
         }
-    } catch { Write-Log "Could not query latest checkmake release — using pinned v$ver" }
+    } catch { Write-Log "Could not query latest checkmake release - using pinned v$ver" }
 
     New-Item -ItemType Directory -Force -Path $BIN_DIR | Out-Null
     $downloaded = $false
@@ -379,7 +379,7 @@ function Install-Checkmake {
                 $downloaded = $true
                 break
             }
-            Write-Warn "Downloaded file is not a valid executable — trying next URL"
+            Write-Warn "Downloaded file is not a valid executable - trying next URL"
             Remove-Item $dest -Force -ErrorAction SilentlyContinue
         } catch {
             Write-Warn "Download failed: $($_.Exception.Message)"
@@ -404,7 +404,7 @@ function Show-Summary {
     })
     Write-Host ""
     Write-Host "${C_GREEN}╔══════════════════════════════════════════════════════╗${C_RESET}"
-    Write-Host "${C_GREEN}║  ${C_CYAN}HPE ProLiant ISO Automation — Setup Complete${C_GREEN}         ║${C_RESET}"
+    Write-Host "${C_GREEN}║  ${C_CYAN}HPE ProLiant ISO Automation - Setup Complete${C_GREEN}         ║${C_RESET}"
     Write-Host "${C_GREEN}╚══════════════════════════════════════════════════════╝${C_RESET}"
     Write-Host ""
     foreach ($item in $ok) {
@@ -416,14 +416,14 @@ function Show-Summary {
     Write-Host "  Tests    : make test"
     Write-Host "  Lint     : make lint"
     if (-not (Get-Command make -ErrorAction SilentlyContinue)) {
-        Write-Host "  ${C_YELLOW}make not installed — run scripts directly:${C_RESET} pwsh -File scripts/run-tests.ps1"
+        Write-Host "  ${C_YELLOW}make not installed - run scripts directly:${C_RESET} pwsh -File scripts/run-tests.ps1"
     }
 }
 
 function Main {
     Write-Host ""
     Write-Host "${C_CYAN}╔══════════════════════════════════════════════════════╗${C_RESET}"
-    Write-Host "${C_CYAN}║  HPE ProLiant ISO Automation — PowerShell Setup     ║${C_RESET}"
+    Write-Host "${C_CYAN}║  HPE ProLiant ISO Automation - PowerShell Setup     ║${C_RESET}"
     Write-Host "${C_CYAN}╚══════════════════════════════════════════════════════╝${C_RESET}"
     Write-Host ""
     Test-PowerShellVersion

@@ -1,4 +1,4 @@
-# Credentials.Unit.Tests.ps1 — Full credential resolver test suite
+# Credentials.Unit.Tests.ps1 - Full credential resolver test suite
 #
 # Enhanced test output features:
 # - Test descriptions include command args and parameters
@@ -54,7 +54,7 @@ AfterAll {
 }
 
 # =============================================================================
-# _Resolve-Credential — Private function tests (InModuleScope required)
+# _Resolve-Credential - Private function tests (InModuleScope required)
 # =============================================================================
 
 Describe '_Resolve-Credential – Step 1: Environment variable fast path' {
@@ -176,7 +176,7 @@ Describe '_Resolve-Credential – Step 4: Default / Required fallback' {
 }
 
 # =============================================================================
-# Get-EnvCredential — generic getter
+# Get-EnvCredential - generic getter
 # =============================================================================
 
 Describe 'Get-EnvCredential' {
@@ -215,7 +215,7 @@ Describe 'Get-EnvCredential' {
 }
 
 # =============================================================================
-# Get-IloCredentials — iLO credential getter
+# Get-IloCredentials - iLO credential getter
 # =============================================================================
 
 Describe 'Get-IloCredentials' {
@@ -258,7 +258,7 @@ Describe 'Get-IloCredentials' {
 }
 
 # =============================================================================
-# Get-ScomCredentials — SCOM credential getter
+# Get-ScomCredentials - SCOM credential getter
 # =============================================================================
 
 Describe 'Get-ScomCredentials' {
@@ -301,7 +301,7 @@ Describe 'Get-ScomCredentials' {
 }
 
 # =============================================================================
-# Get-OpenViewCredentials — OpenView credential getter
+# Get-OpenViewCredentials - OpenView credential getter
 # =============================================================================
 
 Describe 'Get-OpenViewCredentials' {
@@ -346,7 +346,7 @@ Describe 'Get-OpenViewCredentials' {
 }
 
 # =============================================================================
-# Get-SmtpCredentials — SMTP credential getter
+# Get-SmtpCredentials - SMTP credential getter
 # =============================================================================
 
 Describe 'Get-SmtpCredentials' {

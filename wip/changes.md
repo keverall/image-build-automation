@@ -36,13 +36,13 @@ Or with SSH:
 
 git remote set-url origin ssh://git@gitstash.bmc.com:7999/~keverall/image-build-automation.git
 
-Sourcetree (Atlassian's official client) — free, Bitbucket-native:
+Sourcetree (Atlassian's official client) - free, Bitbucket-native:
 
 Download: https://www.sourcetreeapp.com/
-GitKraken — polished, Bitbucket supported:
+GitKraken - polished, Bitbucket supported:
 
 https://www.gitkraken.com/
-TortoiseGit — Windows shell integration, works with any remote:
+TortoiseGit - Windows shell integration, works with any remote:
 
 https://tortoisegit.org/
 
@@ -55,15 +55,15 @@ Give it scopes: REPO_READ, REPO_WRITE, PROJECT_READ
 
 2. Use it in git (Windows):
 
-Option A — Credential Manager (recommended):
+Option A - Credential Manager (recommended):
 
 git config --global credential.helper manager-core
 git fetch origin
 # Prompted for username + paste PAT as password
-Option B — Embed in remote URL (no prompts):
+Option B - Embed in remote URL (no prompts):
 
 git remote set-url origin https://<your-username>:<PAT>@gitstash.bmc.com/scm/~keverall/image-build-automation.git
-Option C — Git credential store (plain text, cached):
+Option C - Git credential store (plain text, cached):
 
 git config --global credential.helper store
 git fetch origin

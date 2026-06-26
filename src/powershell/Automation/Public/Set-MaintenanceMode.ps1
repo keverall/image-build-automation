@@ -1,5 +1,5 @@
 #
-# Set-MaintenanceMode.ps1 — SCOM / OpenView maintenance-mode orchestrator
+# Set-MaintenanceMode.ps1 - SCOM / OpenView maintenance-mode orchestrator
 #
 # Contains: Set-MaintenanceMode wrapper function, helper functions, manager classes,
 #           and a script-mode guard for direct pwsh invocation.
@@ -575,7 +575,7 @@ function Set-MaintenanceMode {
             }
             $servers = @($SerialNumber)
         } elseif ($Mode -eq 'oneview') {
-            # OneView mode without SerialNumber — check clusters first, then servers catalogue, then raw TargetId
+            # OneView mode without SerialNumber - check clusters first, then servers catalogue, then raw TargetId
             $isDirectServerMode = $true
             if ($clustersMap -and $clustersMap.ContainsKey($TargetId)) {
                 $clusterDef = $clustersMap[$TargetId]
@@ -1283,7 +1283,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             }
         }
         
-        # SCOM — use group mode to put ALL objects in the SCOM group into maintenance mode
+        # SCOM - use group mode to put ALL objects in the SCOM group into maintenance mode
         # (servers, network devices, nodes, cluster objects, everything under the group)
         # Only for 'scom' mode
         $scomOk = $true; $scomInfo = ''; $scomObjects = @(); $scomSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
@@ -1360,7 +1360,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             }
         }
 
-        # OneView — for 'oneview' mode
+        # OneView - for 'oneview' mode
         $oneviewOk = $true; $oneviewMsg = ''; $oneviewObjects = @(); $oneviewSummary = @{ Total = 0; Success = 0; AlreadyInMaintenance = 0; Failed = 0 }
         if ($Mode -eq 'oneview') {
             if ($DryRun) {
@@ -1537,7 +1537,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             }
         }
         
-        # SCOM — exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
+        # SCOM - exit maintenance mode for ALL objects in the group (group mode, not cluster mode)
         # Only for 'scom' mode
         $scomExitOk = $true; $scomExitObjects = @(); $scomExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
         if ($scomMgr -and $Mode -eq 'scom') {
@@ -1572,7 +1572,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             }
         }
 
-        # OneView disable — for 'oneview' mode
+        # OneView disable - for 'oneview' mode
         $oneviewExitOk = $true; $oneviewExitMsg = ''; $oneviewExitObjects = @(); $oneviewExitSummary = @{ Total = 0; Success = 0; NotInMaintenance = 0; Failed = 0 }
         if ($Mode -eq 'oneview' -and $oneviewMgr) {
             $targetName = if ($resolveResult) {
@@ -2442,7 +2442,7 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
     }
 
     # ════════════════════════════════════════════════════════════════════════
-    # PRIVATE — SCOM REST API helpers (2019 UR1+ and 2025 only)
+    # PRIVATE - SCOM REST API helpers (2019 UR1+ and 2025 only)
     # ════════════════════════════════════════════════════════════════════════
 
     [hashtable] _EnterMaintenanceRest([string]$EndTimeStr, [string]$Comment,

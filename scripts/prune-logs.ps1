@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — Log Pruning
+# HPE ProLiant Windows Server ISO Automation - Log Pruning
 # =============================================================================
 # Prunes log files in the generated/logs directory that are older than a
 # specified standard age.

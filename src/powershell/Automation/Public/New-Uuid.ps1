@@ -1,5 +1,5 @@
 ﻿#
-# New-Uuid.ps1 — Deterministic UUID generator
+# New-Uuid.ps1 - Deterministic UUID generator
 #
 # Usage:  pwsh -File New-Uuid.ps1 -ServerName 'srv01.corp.local'
 #         pwsh -File New-Uuid.ps1 -ServerName 'srv01' -OutputPath 'output\srv01.uuid'

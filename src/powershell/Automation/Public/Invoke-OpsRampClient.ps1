@@ -1,5 +1,5 @@
 #
-# Public/Invoke-OpsRampClient.ps1 — OpsRamp client factory + CLI test helper.
+# Public/Invoke-OpsRampClient.ps1 - OpsRamp client factory + CLI test helper.
 #
 
 function Invoke-OpsRampClient {

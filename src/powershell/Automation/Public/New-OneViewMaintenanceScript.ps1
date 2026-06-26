@@ -1,5 +1,5 @@
 #
-# Public/New-OneViewMaintenanceScript.ps1 — Build a PowerShell script for HPE OneView maintenance mode enable/disable.
+# Public/New-OneViewMaintenanceScript.ps1 - Build a PowerShell script for HPE OneView maintenance mode enable/disable.
 # 
 
 function New-OneViewMaintenanceScript {

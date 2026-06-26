@@ -29,7 +29,7 @@ The CI system requires a trigger token for authentication instead of your raw co
    1. In your CI dashboard, navigate to the project → **Settings > CI/CD > Pipeline triggers**
    2. Click **Add trigger**
    3. Give it a description (e.g., `iRequest-Link`)
-   4. Click **Save** and **copy the token** — it is displayed **once only**
+   4. Click **Save** and **copy the token** - it is displayed **once only**
 
 ------------------------------
 

@@ -1,11 +1,11 @@
-# Validators.Tests.ps1 — Tests for Invoke-Validator.psm1
+# Validators.Tests.ps1 - Tests for Invoke-Validator.psm1
 
 BeforeAll {
     # Initialise shared test-scoped variables (Pester V5: each file needs its own state)
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
     $Script:TestRoot = $PSScriptRoot
 
-    # TempDir — guard against $env:TEMP / $pwd being null in Pester discovery context
+    # TempDir - guard against $env:TEMP / $pwd being null in Pester discovery context
     if (-not $env:TEMP) { $env:TEMP = '/tmp' }
     if (-not $env:TMP) { $env:TMP = '/tmp' }
     $Script:TempDir = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\', '/')

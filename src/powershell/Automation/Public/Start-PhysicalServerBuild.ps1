@@ -1,5 +1,5 @@
 #
-# Public/Start-PhysicalServerBuild.ps1 — End-to-end physical server build orchestrator
+# Public/Start-PhysicalServerBuild.ps1 - End-to-end physical server build orchestrator
 #
 # Orchestrates the full runbook workflow:
 #   1. Pre-build validation  (Test-PreBuildValidation)
@@ -11,8 +11,8 @@
 #   7. Post-build validation  (Test-PostBuildValidation)
 #   8. Audit log entry
 #
-# All parameters are runtime — server identifier, OneView host, ConfigMgr
-# endpoints, etc. — supplied by the operator at invocation.
+# All parameters are runtime - server identifier, OneView host, ConfigMgr
+# endpoints, etc. - supplied by the operator at invocation.
 #
 
 function Start-PhysicalServerBuild {
@@ -81,7 +81,7 @@ function Start-PhysicalServerBuild {
     .PARAMETER SkipPostBuild
 
     .PARAMETER Mock
-        Run with mocked calls — no network calls are made; useful for CI smoke tests.
+        Run with mocked calls - no network calls are made; useful for CI smoke tests.
         When -Mock is set, all downstream steps run as if -DryRun was also set.
 
     .PARAMETER DryRun
@@ -145,7 +145,7 @@ function Start-PhysicalServerBuild {
     )
 
     if ($Mock -and -not $DryRun) {
-        Write-Verbose "-Mock supplied — forcing DryRun behaviour for all downstream steps"
+        Write-Verbose "-Mock supplied - forcing DryRun behaviour for all downstream steps"
         $DryRun = $true
     }
 
@@ -216,7 +216,7 @@ function Start-PhysicalServerBuild {
                 if ($powerState -eq 'On' -and -not $Force -and -not $InMaintenanceWindow) {
                     _Step 'ilo_maintenance_guard' @{
                         Success = $false
-                        Error   = "Server power state is On — refusing to ForceRestart without -Force or -InMaintenanceWindow"
+                        Error   = "Server power state is On - refusing to ForceRestart without -Force or -InMaintenanceWindow"
                         PowerState = $powerState
                     }
                     $overall['success'] = $false

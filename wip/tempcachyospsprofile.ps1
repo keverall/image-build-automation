@@ -1,5 +1,5 @@
 # =============================================================================
-# PowerShell Profile — Windows Terminal (Windows Server)
+# PowerShell Profile - Windows Terminal (Windows Server)
 # =============================================================================
 # Optimized for fast load, coding productivity, and stability.
 # Loaded automatically when PowerShell starts in Windows Terminal.
@@ -34,7 +34,7 @@ if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $IsWindow
     }
 }
 
-# ─── Module Imports (safe — won't break profile if missing) ──────────────────
+# ─── Module Imports (safe - won't break profile if missing) ──────────────────
 
 function Import-ModuleSafe {
     param([string]$Name)
@@ -284,7 +284,7 @@ function Refresh-Profile {
 }
 Set-Alias reload Refresh-Profile
 
-# Quick profile edit — opens this file
+# Quick profile edit - opens this file
 function Edit-Profile {
     if ($env:EDITOR) {
         & $env:EDITOR.Split(' ')[0] $PROFILE
@@ -308,7 +308,7 @@ Set-Alias rpath Refresh-Path
 
 # ─── PSReadLine Advanced Key Handlers ────────────────────────────────────────
 
-# F7 — History browser via Out-GridView
+# F7 - History browser via Out-GridView
 Set-PSReadLineKeyHandler -Key F7 `
     -BriefDescription History `
     -LongDescription 'Show command history' `
@@ -348,7 +348,7 @@ Set-PSReadLineKeyHandler -Key F7 `
     }
 }
 
-# Smart insert/delete — quotes, braces, backspace
+# Smart insert/delete - quotes, braces, backspace
 Set-PSReadLineKeyHandler -Key '"', "'" `
     -BriefDescription SmartInsertQuote `
     -LongDescription "Insert paired quotes if not already on a quote" `
@@ -451,7 +451,7 @@ Set-PSReadLineKeyHandler -Key Backspace `
     }
 }
 
-# Alt+w — Save line in history without executing
+# Alt+w - Save line in history without executing
 Set-PSReadLineKeyHandler -Key Alt+w `
     -BriefDescription SaveInHistory `
     -LongDescription "Save current line in history but do not execute" `
@@ -463,7 +463,7 @@ Set-PSReadLineKeyHandler -Key Alt+w `
     [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
 }
 
-# RightArrow — Accept next suggestion word when at end of line
+# RightArrow - Accept next suggestion word when at end of line
 Set-PSReadLineKeyHandler -Key RightArrow `
     -BriefDescription ForwardCharAndAcceptNextSuggestionWord `
     -LongDescription "Accept next word in suggestion when at end of line" `
@@ -478,7 +478,7 @@ Set-PSReadLineKeyHandler -Key RightArrow `
     }
 }
 
-# Alt+a — Select command arguments on current line
+# Alt+a - Select command arguments on current line
 Set-PSReadLineKeyHandler -Key Alt+a `
     -BriefDescription SelectCommandArguments `
     -LongDescription "Select next command argument on the command line" `

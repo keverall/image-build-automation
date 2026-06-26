@@ -1,5 +1,5 @@
 ﻿#
-# Public/Test-BuildParams.ps1 — Validate build parameters.
+# Public/Test-BuildParams.ps1 - Validate build parameters.
 #
 
 function Test-BuildParams {
