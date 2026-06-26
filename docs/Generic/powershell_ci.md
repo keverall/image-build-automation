@@ -13,8 +13,8 @@ What is required to run the `src/powershell/Automation` module standalone or ins
       1. [Minimal Prerequisites](#markdown-header-minimal-prerequisites)
       2. [GitLab CI Example](#markdown-header-gitlab-ci-example)
       3. [Jenkins CI Example](#markdown-header-jenkins-ci-example)
-  4. [SCOM 2015](#markdown-header-SCOM2015)
-4. [SCOM 2015](#markdown-header--SCOM2015)
+  4. [SCOM 2015](#markdown-heading-scom2015)
+4. [SCOM 2015](#markdown-header--scom2015)
 
    4. [SCOM 2015](#markdown-header-scom2015)
    4. [SCOM 2015](#markdown-header---scom2015)
@@ -134,7 +134,7 @@ stage('PowerShell - Pester Unit Tests') {
 
 See [`testing.md`](testing.md) for the full Pester guide (commands, tags, mocking, CI integration).
 
-## SCOM2015
+## scom2015
 
 **Yes  - this is the strongest part of the module.**
 
