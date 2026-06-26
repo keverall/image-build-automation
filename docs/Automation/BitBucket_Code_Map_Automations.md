@@ -9,7 +9,7 @@
     - [1.2 — Private Script Load Order](#markdown-header-12-private-script-load-order)
     - [1.3 — Public Function Load Order](#markdown-header-13-public-function-load-order)
   - [2. Request Routing \& Control Surfaces](#markdown-header-2-request-routing-control-surfaces)
-    - [2.1 — Request Router](#markdown-header-21-request-router)
+    - [2.1 — Request Router](#markdown-header-21--request-router)
     - [2.2 — Unified Orchestrator Entry Point](#markdown-header-22-unified-orchestrator-entry-point)
     - [2.3 — Request Validation](#markdown-header-23-request-validation)
     - [2.4 — CI Pipeline Surface](#markdown-header-24-ci-pipeline-surface)
