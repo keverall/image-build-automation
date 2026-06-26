@@ -12,7 +12,7 @@ $m = Get-Module 'Automation'
 # List the first 10 exported functions if any
 $m.ExportedFunctions.Keys | Sort-Object | Select-Object -First 10 | ForEach-Object { "  Exported: $_" }
 
-# Check if dot-sourcing runs at all — write a sentinel file
+# Check if dot-sourcing runs at all - write a sentinel file
 $sentinel = '/tmp/ps_sentinel.txt'
 Remove-Item $sentinel -ErrorAction SilentlyContinue
 $psm1Content = Get-Content $m.ModuleBase + '\Automation.psm1'

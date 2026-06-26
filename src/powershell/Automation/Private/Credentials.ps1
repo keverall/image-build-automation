@@ -1,5 +1,5 @@
 ﻿#
-# Private/Credentials.ps1 — Env-var credential helpers with CyberArk CCP fallback.
+# Private/Credentials.ps1 - Env-var credential helpers with CyberArk CCP fallback.
 # Credential resolution implementation.
 #
 # Resolution order (every credential function follows this):
@@ -9,9 +9,9 @@
 #   4. Safe default                       (empty string or low-privilege default so secrets don't leak)
 #
 # CyberArk safe / object naming convention:
-#   Safe    — logical grouping, e.g. "HPE-iLO", "SCOM-2015", "OpenView", "SMTP-Mail"
-#   Object  — same as the env-var name, e.g. "ILO_USER", "SCOM_ADMIN_PASSWORD"
-#   AppID   — "ci"  (or set via $env:CYBERARK_APP_ID)
+#   Safe    - logical grouping, e.g. "HPE-iLO", "SCOM-2015", "OpenView", "SMTP-Mail"
+#   Object  - same as the env-var name, e.g. "ILO_USER", "SCOM_ADMIN_PASSWORD"
+#   AppID   - "ci"  (or set via $env:CYBERARK_APP_ID)
 #
 
 function _Resolve-Credential {

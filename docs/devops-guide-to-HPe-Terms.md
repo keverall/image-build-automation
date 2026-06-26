@@ -1,6 +1,17 @@
 
 # DevOps Guide to HPE Terms: Maintenance Mode vs. Disable vs. iLO vs. OneView
 
+- [DevOps Guide to HPE Terms: Maintenance Mode vs. Disable vs. iLO vs. OneView](#devops-guide-to-hpe-terms-maintenance-mode-vs-disable-vs-ilo-vs-oneview)
+  - [1. Monitoring Software vs. The Actual Hardware](#1-monitoring-software-vs-the-actual-hardware)
+  - [2. HPE iLO vs. HPE OneView (Note: "OpenView" is now OneView)](#2-hpe-ilo-vs-hpe-oneview-note-openview-is-now-oneview)
+  - [3. Where does SCOM fit into this?](#3-where-does-scom-fit-into-this)
+    - [SCOM Maintenance Mode](#scom-maintenance-mode)
+  - [Summary of the Flow](#summary-of-the-flow)
+  - [The Sneaky Exception: iLO's Own Maintenance Mode](#the-sneaky-exception-ilos-own-maintenance-mode)
+    - [1. You cannot manually put iLO into Maintenance Mode](#1-you-cannot-manually-put-ilo-into-maintenance-mode)
+    - [2. If iLO is in Maintenance Mode, it means it is broken](#2-if-ilo-is-in-maintenance-mode-it-means-it-is-broken)
+
+
 HPE and Microsoft love to reuse words like "maintenance mode," but they mean entirely different things depending on whether you are looking at the **physical hardware** or the **monitoring software**.
 
 putting a server into maintenance mode in your monitoring software (like HPE OneView or SCOM) does not impact the actual physical server’s operation. It is purely a way to stop the alarms from screaming while you do work.

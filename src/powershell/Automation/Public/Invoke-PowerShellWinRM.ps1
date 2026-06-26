@@ -1,5 +1,5 @@
 ﻿#
-# Public/Invoke-PowerShellWinRM.ps1 — Execute a PowerShell script on a remote server via WinRM.
+# Public/Invoke-PowerShellWinRM.ps1 - Execute a PowerShell script on a remote server via WinRM.
 #
 
 function Invoke-PowerShellWinRM {

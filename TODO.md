@@ -5,7 +5,7 @@ Instead, you use the CI pipeline as your API Gateway.
 ## The Architecture: How They Interact
 Instead of iRequest trying to execute code on a filesystem, iRequest makes a standard HTTPS webhook call to the CI pipeline, which executes your local script.
 
-iRequest —   HTTPS POST   → CI Pipeline —   Native Execution   → PowerShell Codebase —  HPE iLO / SCOM
+iRequest -   HTTPS POST   → CI Pipeline -   Native Execution   → PowerShell Codebase -  HPE iLO / SCOM
 
 ------------------------------
 ## The 3 Ways to Connect iRequest to Your PowerShell Code
@@ -88,7 +88,7 @@ Do you know if your iRequest platform prefers calling REST Webhooks (HTTP POST),
 
 
 
-   [WARN] OperationsManager 1.0 corrupt — removing and reinstalling
+   [WARN] OperationsManager 1.0 corrupt - removing and reinstalling
 [INFO] Removing corrupt module directory: C:\Users\98253\Documents\PowerShell\Modules\OperationsManager
 [INFO] Installing OperationsManager 1.0 from bundle
 Copy-Item: C:\Users\98253\repos\image-build-automation\scripts\setup-runner.ps1:174:9

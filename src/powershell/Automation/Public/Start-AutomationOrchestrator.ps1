@@ -1,5 +1,5 @@
 #
-# Public/Start-AutomationOrchestrator.ps1 — Unified orchestrator entry point.
+# Public/Start-AutomationOrchestrator.ps1 - Unified orchestrator entry point.
 #
 
 function Start-AutomationOrchestrator {

@@ -1,8 +1,8 @@
-# HPE ProLiant Windows Server ISO Automation — PowerShell Module
+# HPE ProLiant Windows Server ISO Automation - PowerShell Module
 
 ## Overview
 
-**PowerShell** provides the end-to-end automation — physical server builds using Configuration Manager bootable media, HPE OneView targeting, and iLO Redfish virtual-media boot; firmware/driver ISO builds; Windows security patching; ISO deployment to iLO; installation monitoring; SCOM maintenance-mode orchestration; and OpsRamp telemetry — implemented as a native PowerShell module.
+**PowerShell** provides the end-to-end automation - physical server builds using Configuration Manager bootable media, HPE OneView targeting, and iLO Redfish virtual-media boot; firmware/driver ISO builds; Windows security patching; ISO deployment to iLO; installation monitoring; SCOM maintenance-mode orchestration; and OpsRamp telemetry - implemented as a native PowerShell module.
 
 ---
 
@@ -16,9 +16,9 @@
 | .NET | .NET Framework 4.7.2 (PS 5.1 hosts) or .NET 6+ (PS 7) |
 
 Optional modules:
-- `powershell-yaml` (`Install-Module powershell-yaml`) — for YAML config support
-- `Pester` (v5.7.1, bundled) — for testing
-- Posh-SSH — for SSH-based integrations (not yet implemented)
+- `powershell-yaml` (`Install-Module powershell-yaml`) - for YAML config support
+- `Pester` (v5.7.1, bundled) - for testing
+- Posh-SSH - for SSH-based integrations (not yet implemented)
 
 ---
 
@@ -48,8 +48,8 @@ Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ### Auto-Generated Documentation
 
 A complete reference for all PowerShell cmdlets is auto-generated and available at:
-- **[Auto-Generated Cmdlet Reference](dynamic-code-docs/INDEX.md)** — Full parameter tables, examples, and source locations
-- **[Automation Command Reference](automation_commands.md)** — Concise functional command reference with every parameter for all automation commands
+- **[Auto-Generated Cmdlet Reference](dynamic-code-docs/INDEX.md)** - Full parameter tables, examples, and source locations
+- **[Automation Command Reference](automation_commands.md)** - Concise functional command reference with every parameter for all automation commands
 
 ---
 
@@ -98,7 +98,7 @@ Set-MaintenanceMode -Action enable `
 # Disable immediately
 Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom
 
-# Dry-run — no SCOM/iLO/OneView changes
+# Dry-run - no SCOM/iLO/OneView changes
 Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' `
     -Mode scom `
     -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
@@ -141,15 +141,15 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 | RequestType | Handler | Required Params |
 |-------------|---------|-----------------|
 | `build_iso` | `New-IsoBuild` | `SiteCode`, `ManagementPoint`, `DistributionPoint` |
-| `update_firmware` | `Update-Firmware` | — |
+| `update_firmware` | `Update-Firmware` | - |
 | `patch_windows` | `Update-WindowsSecurity` | `BaseIsoPath` |
-| `deploy` | `Invoke-IsoDeploy` | — |
-| `monitor` | `Start-InstallMonitor` | — |
+| `deploy` | `Invoke-IsoDeploy` | - |
+| `monitor` | `Start-InstallMonitor` | - |
 | `maintenance_enable` | `Set-MaintenanceMode` | `TargetId` |
 | `maintenance_disable` | `Set-MaintenanceMode` | `TargetId` |
 | `maintenance_validate` | `Set-MaintenanceMode` | `TargetId` |
-| `opsramp_report` | `Invoke-OpsRampClient` | — |
-| `generate_uuid` | `New-Uuid` | — |
+| `opsramp_report` | `Invoke-OpsRampClient` | - |
+| `generate_uuid` | `New-Uuid` | - |
 | `connectivity_check` | `Test-ServerConnectivity` | `Mode` |
 | `gitlab_maintenance` | `Invoke-GitLabMaintenanceTrigger` | `TargetId`, `Action` |
 | `physical_server_build` | `Start-PhysicalServerBuild` | `ServerIdentifier` |
@@ -235,9 +235,9 @@ See [testing.md](testing.md) for the full Pester guide.
 
 ## See Also
 
-- [Automation Command Reference](automation_commands.md) — full parameter reference for all automation commands
-- [Runbook Requirements](runbook-requirements.md) — operational runbook for physical HPE server builds
-- [Runbook Changes](runbook-changes.md) — implementation plan for the ConfigMgr bootable-media workflow
+- [Automation Command Reference](automation_commands.md) - full parameter reference for all automation commands
+- [Runbook Requirements](runbook-requirements.md) - operational runbook for physical HPE server builds
+- [Runbook Changes](runbook-changes.md) - implementation plan for the ConfigMgr bootable-media workflow
 - [CI Run Requirements](powershell_ci.md)
 - [Maintenance Mode](maintenance_mode.md)
 - [Code Quality & Security](code_quality.md)

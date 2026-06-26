@@ -1,11 +1,11 @@
-# Config.Tests.ps1 — Tests for Config.psm1
+# Config.Tests.ps1 - Tests for Config.psm1
 
 BeforeAll {
     # Initialise shared test-scoped variables (Pester V5: each file needs its own state)
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
     $Script:TestRoot        = $PSScriptRoot
 
-    # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
+    # TempDir - guard against $env:TEMP being null on non-Windows / Pester workers
     if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
     if (-not $env:TMP)   { $env:TMP   = '/tmp' }
     $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')

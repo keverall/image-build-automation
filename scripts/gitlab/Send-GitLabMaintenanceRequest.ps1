@@ -1,5 +1,5 @@
 #
-# Send-GitLabMaintenanceRequest.ps1 — Trigger GitLab pipeline for maintenance
+# Send-GitLabMaintenanceRequest.ps1 - Trigger GitLab pipeline for maintenance
 # Called from iRequest to initiate maintenance via GitLab CI/CD
 #
 # Usage:

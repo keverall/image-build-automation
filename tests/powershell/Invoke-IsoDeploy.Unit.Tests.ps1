@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Invoke-IsoDeploy — basic invocation and parameter validation' {
+Describe 'Invoke-IsoDeploy - basic invocation and parameter validation' {
     It 'Function is exported and has expected parameters' {
         $cmd = Get-Command Invoke-IsoDeploy -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

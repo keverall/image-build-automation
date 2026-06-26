@@ -1,5 +1,5 @@
 #
-# Public/Get-OneViewServerTarget.ps1 — Identify / validate a target server via HPE OneView
+# Public/Get-OneViewServerTarget.ps1 - Identify / validate a target server via HPE OneView
 #
 # Resolves a target server from one of several identifier forms:
 #   * Server hostname
@@ -8,7 +8,7 @@
 #   * OneView resource name
 #   * Bay/Enclosure position
 #
-# All connection details are runtime parameters — no JSON config required.
+# All connection details are runtime parameters - no JSON config required.
 #
 
 function Get-OneViewServerTarget {
@@ -144,7 +144,7 @@ function Get-OneViewServerTarget {
                     return @{
                         Success = $false
                         Server  = $ServerIdentifier
-                        Error   = "Server health is $($details.health_status) — refusing to proceed"
+                        Error   = "Server health is $($details.health_status) - refusing to proceed"
                         Details = $details
                     }
                 }

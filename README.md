@@ -43,7 +43,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview |
 | [🚀 Setup Guide](docs/SETUP-GUIDE.md) | **START HERE** - Profile setup, module installation, quick start |
 | [📡 PowerShell API Reference](docs/powershell_api_reference.md) | Module overview, cmdlet usage, orchestrator API |
-| [📗 Automation Command Reference](docs/automation_commands.md) | **All automation commands with full parameter tables** — functional reference linking to source |
+| [📗 Automation Command Reference](docs/automation_commands.md) | **All automation commands with full parameter tables** - functional reference linking to source |
 | [📘 PowerShell Function Reference](docs/dynamic-code-docs/INDEX.md) | **Complete coverage of ALL PowerShell functions and cmdlets** - comprehensive parameter documentation, examples, and usage for every function in src/powershell/Automation/. Auto-generated from source code. |
 | [🔌 CI Run Requirements](docs/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
 | [🧪 PowerShell Testing (Pester)](docs/testing.md) | Pester v5 BDD testing guide, test commands, mocking |
@@ -281,7 +281,7 @@ All changes should include:
 
 ## License
 
-MIT License — see `LICENSE` file for details.
+MIT License - see `LICENSE` file for details.
 
 ## HPe Doc
 

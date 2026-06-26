@@ -1,5 +1,5 @@
 #
-# Public/New-IsoBuild.ps1 — ConfigMgr bootable media ISO builder
+# Public/New-IsoBuild.ps1 - ConfigMgr bootable media ISO builder
 #
 # Replaces the old DSC/DISM-based firmware+patching pipeline with the runbook's
 # ConfigMgr bootable-media workflow.  Uses New-CMBootableMedia from the
@@ -7,7 +7,7 @@
 #
 # Output naming per runbook:  WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso
 #
-# All ConfigMgr connection details are runtime parameters — no JSON config required.
+# All ConfigMgr connection details are runtime parameters - no JSON config required.
 #
 
 function New-IsoBuild {
@@ -124,7 +124,7 @@ function New-IsoBuild {
     }
 
     if (Test-Path $OutputPath -PathType Leaf) {
-        Write-Warning "ISO already exists at $OutputPath — will be overwritten by New-CMBootableMedia."
+        Write-Warning "ISO already exists at $OutputPath - will be overwritten by New-CMBootableMedia."
     }
 
     $result = @{

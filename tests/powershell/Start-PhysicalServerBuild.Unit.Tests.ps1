@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Start-PhysicalServerBuild — basic invocation' {
+Describe 'Start-PhysicalServerBuild - basic invocation' {
     It 'Function is exported' {
         $cmd = Get-Command Start-PhysicalServerBuild -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

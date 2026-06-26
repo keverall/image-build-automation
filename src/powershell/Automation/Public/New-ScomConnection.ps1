@@ -1,5 +1,5 @@
 #
-# Public/New-ScomConnection.ps1 — Returns PowerShell command strings for SCOM management-group connections,
+# Public/New-ScomConnection.ps1 - Returns PowerShell command strings for SCOM management-group connections,
 # including SCOM version detection.
 #
 # After PSRemoting in (via Invoke-PowerShellWinRM), the caller string:

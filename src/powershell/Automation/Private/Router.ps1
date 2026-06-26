@@ -1,5 +1,5 @@
 #
-# Private/Router.ps1 — Request routing implementation
+# Private/Router.ps1 - Request routing implementation
 #
 # Routing table is loaded from configs/request_types.json (single source of truth).
 
