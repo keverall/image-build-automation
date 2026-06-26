@@ -23,7 +23,7 @@
     - [4.4 — OneView: Set Maintenance](#44-oneview-set-maintenance)
   - [5. Enable — Post-Operation Actions](#5-enable-post-operation-actions)
     - [5.1 — SCOM: Schedule Auto-Disable Task](#51-scom-schedule-auto-disable-task)
-    - [5.2 — Email Notification (Enable)](#52-email-notification-enable)
+    - [5.2 — Email Notification (Enable)](#email-notification-enable)
     - [5.3 — OpsRamp Metrics & Alerts (Enable)](#53-opsramp-metrics-alerts-enable)
   - [6. Disable Maintenance Mode](#6-disable-maintenance-mode)
     - [6.1 — Pre-Check: Already Disabled?](#61-pre-check-already-disabled)
