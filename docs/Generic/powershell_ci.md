@@ -3,8 +3,6 @@
 
 What is required to run the `src/powershell/Automation` module standalone or inside a CI pipeline stage. Does **not** duplicate Pester testing guidance (see [`testing.md`](testing.md)).
 
----
-
 ## Table of Contents
 1. [PowerShell Module - CI Run Requirements](#markdown-header-powershell-module-ci-run-requirements)
    1. [Table of Contents](#markdown-header-table-of-contents)
@@ -16,6 +14,10 @@ What is required to run the `src/powershell/Automation` module standalone or ins
       2. [GitLab CI Example](#markdown-header-gitlab-ci-example)
       3. [Jenkins CI Example](#markdown-header-jenkins-ci-example)
    4. [SCOM 2015](#markdown-header-scom-2015)
+   4. [SCOM 2015](#markdown-header-scom-2015)
+   4. [SCOM 2015](#markdown-header---scom-2015)
+
+
       1. [What Must Be True](#markdown-header-what-must-be-true)
       2. [What Will NOT Work Without More Work](#markdown-header-what-will-not-work-without-more-work)
    5. [HPE iLO - Will It Work](#markdown-header-hpe-ilo-will-it-work)
@@ -24,8 +26,6 @@ What is required to run the `src/powershell/Automation` module standalone or ins
       3. [`Start-InstallMonitor` - iLO Redfish polling ✅](#markdown-header-start-installmonitor-ilo-redfish-polling-)
    6. [Open Items](#markdown-header-open-items)
    7. [See Also](#markdown-header-see-also)
-
----
 
 ## CyberArk Credential Bootstrap
 
@@ -61,8 +61,6 @@ HPE-Download      hpe-download-pass        → HPE_DOWNLOAD_PASS
 ```
 
 For a Jenkins pipeline excerpt showing the bootstrap implementation, see [Jenkins CI Example](#jenkins-ci-example).
-
----
 
 ## CI Pipeline - PowerShell Stage Requirements
 
@@ -133,8 +131,6 @@ stage('PowerShell - Pester Unit Tests') {
 ```
 
 See [`testing.md`](testing.md) for the full Pester guide (commands, tags, mocking, CI integration).
-
----
 
 ## SCOM 2015
 
