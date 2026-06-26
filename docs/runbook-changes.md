@@ -63,7 +63,7 @@ Replace the current iLO REST scaffold with full Redfish implementation:
 5. **Eject media** (for rollback/recovery):
    - `POST …/VirtualMedia/<id>/Actions/VirtualMedia.EjectMedia`
 
-6. **Skip certificate check** (iLO ships with self-signed certs — same as existing code)
+6. **Skip certificate check** (iLO ships with self-signed certs - same as existing code)
 
 All Redfish calls reuse the existing `Get-IloCredentials` function and the existing `Invoke-RestMethod -SkipCertificateCheck` pattern.
 
@@ -104,7 +104,7 @@ Query HPE OneView REST API to identify and validate the target server:
 2. `GET /rest/server-hardware?filter="name='<identifier>'"` or serial filter
 3. Return server object with: name, serial, power state, health state, iLO IP, model, enclosure info
 4. Validate health state is "OK" before proceeding
-5. Validate power state (off or on — both acceptable if force restart is used)
+5. Validate power state (off or on - both acceptable if force restart is used)
 6. Error if server not found or health is critical
 
 Uses the bundled `HPEOneView.860` module or direct REST API (with the existing `Get-OneViewCredentials`).
@@ -191,7 +191,7 @@ Move the firmware ISO creation logic (currently embedded in `New-IsoBuild` via `
 
 The function should be callable independently but is NOT part of the new end-to-end ConfigMgr build workflow.
 
-Remove `Build-ForServer` private function from `New-IsoBuild` — relocate its firmware portion here.
+Remove `Build-ForServer` private function from `New-IsoBuild` - relocate its firmware portion here.
 
 ---
 
@@ -205,11 +205,11 @@ Wrapper function matching the runbook's `Start-PhysicalServerBuild.ps1`:
 2. **Pre-build validation** (Task 4)
 3. **Create ConfigMgr bootable media ISO** (Task 6 → `New-IsoBuild`)
 4. **Publish ISO** to HTTPS repository (Task 2)
-5. **OneView server targeting** — resolve iLO address (Task 3)
+5. **OneView server targeting** - resolve iLO address (Task 3)
 6. **Mount ISO via iLO Redfish** + force boot (Task 1)
 7. **Monitor** installation progress (existing `Start-InstallMonitor`)
 8. **Post-build validation** (Task 5)
-9. **Audit complete** — log all steps with timestamps
+9. **Audit complete** - log all steps with timestamps
 
 Every step logs to the existing audit infrastructure (`AuditLogger`).
 
@@ -297,12 +297,12 @@ Add to `FunctionsToExport`:
 **File:** `tests/powershell/` (new and updated files)
 
 Create Pester unit tests for all new functions:
-- `Invoke-IloRedfish.Unit.Tests.ps1` — mock Redfish responses
-- `Get-OneViewServerTarget.Unit.Tests.ps1` — mock OneView API
-- `Publish-BootIso.Unit.Tests.ps1` — mock file operations
+- `Invoke-IloRedfish.Unit.Tests.ps1` - mock Redfish responses
+- `Get-OneViewServerTarget.Unit.Tests.ps1` - mock OneView API
+- `Publish-BootIso.Unit.Tests.ps1` - mock file operations
 - `Test-PreBuildValidation.Unit.Tests.ps1`
 - `Test-PostBuildValidation.Unit.Tests.ps1`
-- `Start-PhysicalServerBuild.Unit.Tests.ps1` — integration mock
+- `Start-PhysicalServerBuild.Unit.Tests.ps1` - integration mock
 - Update `New-IsoBuild.Unit.Tests.ps1` for ConfigMgr rewrite
 
 ---
@@ -325,7 +325,7 @@ Create Pester unit tests for all new functions:
 
 - In `request_types.json`: Rename `patch_windows` handler to keep working but remove from the primary flow
 - In `New-IsoBuild`: Remove all "patch", "patched_iso", "WindowsPatcher" references
-- In `Invoke-IsoDeploy`: Remove `generated_patched_iso` references from metadata lookups — use `bootable_iso` instead
+- In `Invoke-IsoDeploy`: Remove `generated_patched_iso` references from metadata lookups - use `bootable_iso` instead
 - Update generated metadata keys from `generated_patched_iso` to `bootable_iso`
 
 ---

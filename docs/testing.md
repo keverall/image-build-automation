@@ -54,7 +54,7 @@ Get-Module Pester -ListAvailable
 # Run all Pester tests under tests/powershell/
 Invoke-Pester -Path 'tests/powershell' -PassThru
 
-# Verbose output — shows every passing and failing test
+# Verbose output - shows every passing and failing test
 Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
 ```
 

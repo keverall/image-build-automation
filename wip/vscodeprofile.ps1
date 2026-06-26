@@ -1,5 +1,5 @@
 # =============================================================================
-# PowerShell Profile — VS Code (Windows Server)
+# PowerShell Profile - VS Code (Windows Server)
 # =============================================================================
 # Optimized for fast load, coding productivity, and stability.
 # Loaded automatically when PowerShell starts inside VS Code.
@@ -39,7 +39,7 @@ if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $IsWindow
     }
 }
 
-# ─── Module Imports (safe — won't break profile if missing) ──────────────────
+# ─── Module Imports (safe - won't break profile if missing) ──────────────────
 
 function Import-ModuleSafe
 {
@@ -325,7 +325,7 @@ function Refresh-Profile
 }
 Set-Alias reload Refresh-Profile
 
-# Quick profile edit — opens this file
+# Quick profile edit - opens this file
 function Edit-Profile
 {
     if ($env:EDITOR)

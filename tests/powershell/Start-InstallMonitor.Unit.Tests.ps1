@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'Start-InstallMonitor — basic invocation and parameter validation' {
+Describe 'Start-InstallMonitor - basic invocation and parameter validation' {
     It 'Function is exported' {
         $cmd = Get-Command Start-InstallMonitor -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null

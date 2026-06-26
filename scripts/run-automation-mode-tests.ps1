@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — Automation Mode Test Runner
+# HPE ProLiant Windows Server ISO Automation - Automation Mode Test Runner
 # =============================================================================
 # Runs Pester tests covering the automation module's core build/deploy/runbook
 # functionality (ConfigMgr bootable media, OneView resolution, iLO Redfish,

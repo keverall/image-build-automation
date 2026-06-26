@@ -1,5 +1,5 @@
 #
-# Public/Get-RouteMap.ps1 — Returns the current request routing table.
+# Public/Get-RouteMap.ps1 - Returns the current request routing table.
 #
 
 function Get-RouteMap {

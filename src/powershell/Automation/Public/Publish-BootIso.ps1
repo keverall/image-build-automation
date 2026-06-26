@@ -1,12 +1,12 @@
 #
-# Public/Publish-BootIso.ps1 — Publish ConfigMgr bootable ISO to HTTPS repository
+# Public/Publish-BootIso.ps1 - Publish ConfigMgr bootable ISO to HTTPS repository
 #
 # The iLO Redfish virtual-media endpoint requires an HTTP-accessible ISO URL.
 # This function copies (or symlinks) the locally-generated bootable ISO to an
 # HTTPS-reachable location so that iLO can fetch it during mount.
 #
 # Connection details (repository base URL, credentials) are runtime parameters
-# — no JSON config required.  Defaults read from $env:ISO_REPO_BASE_URL.
+# - no JSON config required.  Defaults read from $env:ISO_REPO_BASE_URL.
 #
 
 function Publish-BootIso {
@@ -97,7 +97,7 @@ function Publish-BootIso {
             if (Test-Path $destPath -PathType Leaf -and -not $ForceOverwrite -and -not $DryRun) {
                 return @{
                     Success = $false
-                    Error   = "Destination already exists: $destPath — pass -ForceOverwrite to replace."
+                    Error   = "Destination already exists: $destPath - pass -ForceOverwrite to replace."
                     RepoPath = $destPath
                     Verified = $false
                     PublicUrl = $publicUrl
@@ -117,7 +117,7 @@ function Publish-BootIso {
                     $result.Verified = $true
                 }
             } catch {
-                Write-Warning "HTTPS HEAD verify failed for $publicUrl — $($_.Exception.Message)"
+                Write-Warning "HTTPS HEAD verify failed for $publicUrl - $($_.Exception.Message)"
                 $result.Verified = $false
             }
         }

@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — Maintenance Mode Test Runner
+# HPE ProLiant Windows Server ISO Automation - Maintenance Mode Test Runner
 # =============================================================================
 # Runs high-priority Pester tests for Set-MaintenanceMode.ps1 with a 
 # Jest/Pytest-style summary block.

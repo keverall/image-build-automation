@@ -3,7 +3,7 @@
 pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 
 ╔══════════════════════════════════════════════════════════╗
-║  HPE ProLiant ISO Automation — PowerShell Setup       ║
+║  HPE ProLiant ISO Automation - PowerShell Setup       ║
 ╚══════════════════════════════════════════════════════════╝
 
 [INFO] PowerShell version: 7.6.2

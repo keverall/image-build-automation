@@ -1,5 +1,5 @@
 #
-# Invoke-GitLabMaintenance.ps1 — GitLab CI/CD entry point for Set-MaintenanceMode
+# Invoke-GitLabMaintenance.ps1 - GitLab CI/CD entry point for Set-MaintenanceMode
 # Called via GitLab pipeline trigger API from iRequest
 #
 # NOTE: This is a standalone script for GitLab CI execution, not a module function.

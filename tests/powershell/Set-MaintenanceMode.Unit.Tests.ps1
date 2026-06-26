@@ -146,7 +146,7 @@ function Get-TestParamsString {
 # Cluster ID validation
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — Target ID validation' {
+Describe 'Set-MaintenanceMode - Target ID validation' {
     Context 'When validating target existence' {
         It 'Should return success for valid target ID [Action=validate, TargetId=UNIT-TEST-CLUSTER]' {
             $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
@@ -205,7 +205,7 @@ It 'Should reject unknown target ID [Action=validate, TargetId=NONEXISTENT-CLUST
 # --action enable: Start time variants
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — enable action: Start time variants' {
+Describe 'Set-MaintenanceMode - enable action: Start time variants' {
     Context 'When specifying start time' {
         It 'Should default start time to now when Start=null [Action=enable, Start=$null]' {
             $endTime = (Get-Date).AddHours(2).ToString('yyyy-MM-dd HH:mm:ss')
@@ -264,7 +264,7 @@ Describe 'Set-MaintenanceMode — enable action: Start time variants' {
 # --action enable: Relative time parsing
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — enable action: Relative time parsing' {
+Describe 'Set-MaintenanceMode - enable action: Relative time parsing' {
     Context 'When using relative time offsets' {
         It 'Should parse +1hour relative offset [End=+1hour]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -362,7 +362,7 @@ Describe 'Set-MaintenanceMode — enable action: Relative time parsing' {
 # --action enable: End time validation
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — enable action: End time validation' {
+Describe 'Set-MaintenanceMode - enable action: End time validation' {
     Context 'When end time is before start time' {
         It 'Should reject when end time is before start time [End < Start]' {
             $later = (Get-Date).AddHours(3).ToString('yyyy-MM-dd HH:mm:ss')
@@ -422,7 +422,7 @@ Describe 'Set-MaintenanceMode — enable action: End time validation' {
 # --action enable: Schedule and missing end
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — enable action: Schedule handling' {
+Describe 'Set-MaintenanceMode - enable action: Schedule handling' {
     Context 'When no end time is provided' {
         It 'Should compute end time when no --end provided (uses schedule or defaults to 7am UTC Monday) [TargetId=OTHER-CLUSTER]' {
             $params = @{ Action = 'enable'; TargetId = $Script:OtherTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; Start = 'now'; DryRun = $true }
@@ -452,7 +452,7 @@ Describe 'Set-MaintenanceMode — enable action: Schedule handling' {
 # --action enable: DryRun and NoSchedule flags
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — enable action: Flags' {
+Describe 'Set-MaintenanceMode - enable action: Flags' {
     Context 'When DryRun flag is set' {
         It 'Should simulate maintenance without making changes [-DryRun]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -482,7 +482,7 @@ Describe 'Set-MaintenanceMode — enable action: Flags' {
 # --action disable
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — disable action' {
+Describe 'Set-MaintenanceMode - disable action' {
     Context 'When disabling maintenance' {
         It 'Should reject with invalid cluster ID [Action=disable, TargetId=UNKNOWN-CLUSTER]' {
             $params = @{ Action = 'disable'; TargetId = 'UNKNOWN-CLUSTER'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
@@ -522,7 +522,7 @@ Describe 'Set-MaintenanceMode — disable action' {
 # --action validate
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — validate action' {
+Describe 'Set-MaintenanceMode - validate action' {
     Context 'When validating cluster configuration' {
         It 'Should exit successfully for a valid cluster [Action=validate, TargetId=UNIT-TEST-CLUSTER]' {
             $params = @{ Action = 'validate'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
@@ -562,7 +562,7 @@ Describe 'Set-MaintenanceMode — validate action' {
 # Error handling and negative paths
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — error handling' {
+Describe 'Set-MaintenanceMode - error handling' {
     Context 'When cluster ID is invalid' {
         It 'Should return error on enable for non-existent cluster [Action=enable, TargetId=DOES-NOT-EXIST]' {
             $params = @{ Action = 'enable'; TargetId = 'DOES-NOT-EXIST'; Mode = 'scom'; ConfigDir = $Script:ConfigDir }
@@ -615,7 +615,7 @@ It 'Should return error on disable for non-existent cluster [Action=disable, Tar
 # Input field variants and edge cases
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — input field variants' {
+Describe 'Set-MaintenanceMode - input field variants' {
     Context 'When Action parameter varies' {
         It 'Should accept "enable" action (default) [Action=enable, -DryRun]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -699,7 +699,7 @@ Describe 'Set-MaintenanceMode — input field variants' {
 # Boundary tests
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — boundary tests' {
+Describe 'Set-MaintenanceMode - boundary tests' {
     Context 'When crossing day boundaries' {
         It 'Should handle maintenance window crossing midnight [23:00 -> 02:00 next day]' {
             $start = (Get-Date '2025-01-15 23:00:00').ToString('yyyy-MM-dd HH:mm:ss')
@@ -745,7 +745,7 @@ Describe 'Set-MaintenanceMode — boundary tests' {
 # --mode parameter: Mode variants
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — mode parameter: SCOM only mode' {
+Describe 'Set-MaintenanceMode - mode parameter: SCOM only mode' {
     Context 'When Mode is set to scom' {
         It 'Should enable SCOM-only maintenance mode [Mode=scom, Action=enable, -DryRun]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -826,7 +826,7 @@ Describe 'Set-MaintenanceMode — mode parameter: SCOM only mode' {
 # --mode parameter: All mode (SCOM + OpenView)
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — mode parameter: SCOM mode' {
+Describe 'Set-MaintenanceMode - mode parameter: SCOM mode' {
     Context 'When Mode is set to scom' {
         It 'Should enable SCOM maintenance mode [Mode=scom, -DryRun]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -917,7 +917,7 @@ Describe 'Set-MaintenanceMode — mode parameter: SCOM mode' {
 # --mode parameter: Mode comparison tests
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — mode parameter: Comparison between scom and oneview' {
+Describe 'Set-MaintenanceMode - mode parameter: Comparison between scom and oneview' {
     Context 'When comparing mode behaviors' {
         It 'Should succeed with scom mode in dry-run [Mode=scom]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -951,7 +951,7 @@ Describe 'Set-MaintenanceMode — mode parameter: Comparison between scom and on
 # --mode parameter: Negative tests
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — mode parameter: Negative and edge cases' {
+Describe 'Set-MaintenanceMode - mode parameter: Negative and edge cases' {
     Context 'When invalid mode values are provided' {
         It 'Should reject invalid mode value "ilo" [Mode=ilo - invalid]' {
             { Set-MaintenanceMode -Action enable -TargetId $Script:TestTargetId -ConfigDir $Script:ConfigDir -Mode 'ilo' -Start 'now' -End '+1hour' } | Should -Throw
@@ -1027,7 +1027,7 @@ Describe 'Set-MaintenanceMode — mode parameter: Negative and edge cases' {
 # PostDisableWaitSeconds parameter tests
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — PostDisableWaitSeconds parameter' {
+Describe 'Set-MaintenanceMode - PostDisableWaitSeconds parameter' {
     Context 'When disabling maintenance with PostDisableWaitSeconds' {
         It 'Should accept default PostDisableWaitSeconds (120s) on disable [Action=disable, -DryRun]' {
             $params = @{ Action = 'disable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true }
@@ -1137,7 +1137,7 @@ Describe 'Set-MaintenanceMode — PostDisableWaitSeconds parameter' {
 # Per-Object Status Reporting tests
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — per-object status reporting' {
+Describe 'Set-MaintenanceMode - per-object status reporting' {
     Context 'When enable action is executed (DryRun)' {
         It 'Should return ScomObjects field as array in response [Action=enable, -DryRun]' {
             $params = @{ Action = 'enable'; TargetId = $Script:TestTargetId; Mode = 'scom'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -1265,7 +1265,7 @@ Describe 'Set-MaintenanceMode — per-object status reporting' {
 # Serial Number resolution: ServerName must not show the serial number
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — serial number to server name resolution' {
+Describe 'Set-MaintenanceMode - serial number to server name resolution' {
     Context 'When -SerialNumber is passed with a known serial (in catalogue)' {
         It 'Should set SerialNumber field and resolve ServerName from catalogue, not serial [Mode=oneview, -DryRun, -SerialNumber known]' {
             $params = @{ Action = 'enable'; Mode = 'oneview'; SerialNumber = 'PROD-SN-001'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }
@@ -1307,10 +1307,10 @@ Describe 'Set-MaintenanceMode — serial number to server name resolution' {
 }
 
 # =============================================================================
-# TargetId resolution for OneView mode — resolve server details via API/catalogue
+# TargetId resolution for OneView mode - resolve server details via API/catalogue
 # =============================================================================
 
-Describe 'Set-MaintenanceMode — TargetId resolution for OneView server mode' {
+Describe 'Set-MaintenanceMode - TargetId resolution for OneView server mode' {
     Context 'When -TargetId is passed with OneView mode for a server (not scope/cluster)' {
         It 'Should set ServerName from the resolved server, not the raw TargetId [Mode=oneview, -TargetId known-server, -DryRun]' {
             $params = @{ Action = 'enable'; TargetId = 'TEST-SERVER-01'; Mode = 'oneview'; ConfigDir = $Script:ConfigDir; DryRun = $true; Start = 'now'; End = '+1hour' }

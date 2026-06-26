@@ -1,5 +1,5 @@
 #
-# Private/Base.ps1 — AutomationBase class helper functions.
+# Private/Base.ps1 - AutomationBase class helper functions.
 #
 
 function Get-UtcTimestamp {

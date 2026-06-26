@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — PowerShell Coverage Report
+# HPE ProLiant Windows Server ISO Automation - PowerShell Coverage Report
 # =============================================================================
 # Generates Cobertura XML code coverage reports using Pester.
 

@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
-Describe 'New-ScomMaintenanceScript — parameter validation' {
+Describe 'New-ScomMaintenanceScript - parameter validation' {
     It 'Function is exported' {
         $cmd = Get-Command New-ScomMaintenanceScript -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null
@@ -53,7 +53,7 @@ Describe 'New-ScomMaintenanceScript — parameter validation' {
     }
 }
 
-Describe 'New-ScomMaintenanceScript — Group mode script output' {
+Describe 'New-ScomMaintenanceScript - Group mode script output' {
     It 'Generates a start script with the correct end time and comment for Group mode' {
         $ps = New-ScomMaintenanceScript -GroupDisplayName 'TEST_GROUP' `
             -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'test maintenance'
@@ -88,7 +88,7 @@ Describe 'New-ScomMaintenanceScript — Group mode script output' {
     }
 }
 
-Describe 'New-ScomMaintenanceScript — Cluster mode script output' {
+Describe 'New-ScomMaintenanceScript - Cluster mode script output' {
     It 'Generates a cluster start script with agent/cluster detection blocking' {
         $ps = New-ScomMaintenanceScript -EndTimeStr '2026-05-22T06:00:00' `
             -Reason 'PlannedOther' -Comment 'cluster test' `

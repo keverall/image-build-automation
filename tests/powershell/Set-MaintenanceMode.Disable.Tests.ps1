@@ -34,7 +34,7 @@ AfterAll {
     Remove-Item $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-Describe 'Set-MaintenanceMode — Disable action' {
+Describe 'Set-MaintenanceMode - Disable action' {
     It 'Should reject with invalid cluster ID' {
         $result = Set-MaintenanceMode -Action disable -TargetId 'UNKNOWN-CLUSTER' -Mode scom -ConfigDir $Script:ConfigDir -DryRun
         $result.Success | Should -Be $false
@@ -47,7 +47,7 @@ Describe 'Set-MaintenanceMode — Disable action' {
     }
 }
 
-Describe 'Set-MaintenanceMode — PostDisableWaitSeconds parameter' {
+Describe 'Set-MaintenanceMode - PostDisableWaitSeconds parameter' {
     It 'Should accept default PostDisableWaitSeconds (120s) on disable' {
         $result = Set-MaintenanceMode -Action disable -TargetId $Script:TestTargetId -Mode scom -ConfigDir $Script:ConfigDir -DryRun
         $result.Success | Should -Be $true

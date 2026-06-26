@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — GitLab CI Pipeline
+# HPE ProLiant Windows Server ISO Automation - GitLab CI Pipeline
 # Note: Pipeline disabled pending migration to Bank's GitLab instance
 # TODO: Remove the 'workflow' block (lines 10-15) before deploying to Bank's GitLab
 # =============================================================================

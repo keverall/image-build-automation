@@ -1,5 +1,5 @@
 #
-# Private/Executor.ps1 — Process execution utilities with retry support.
+# Private/Executor.ps1 - Process execution utilities with retry support.
 #
 
 function Invoke-NativeCommand {

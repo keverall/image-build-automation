@@ -1,4 +1,4 @@
-# GitLab CI/CD Pipeline Trigger API — REST reference and integration guide
+# GitLab CI/CD Pipeline Trigger API - REST reference and integration guide
 
 ---
 
@@ -6,7 +6,7 @@
 
 GitLab CI/CD pipeline triggers bridge web-based ticketing systems (iRequest,
 ServiceNow, Jira) with automated backend PowerShell scripts. The GitLab
-self-hosted instance is the automation gateway — a REST architecture
+self-hosted instance is the automation gateway - a REST architecture
 that bridges web-based ticketing systems with automated backend PowerShell scripts.
 
 ```
@@ -27,7 +27,7 @@ iRequest / ServiceNow / Jira
 
 ---
 
-## Step 1 — Pipeline configuration (`.gitlab-ci.yml`)
+## Step 1 - Pipeline configuration (`.gitlab-ci.yml`)
 
 Pipeline jobs are defined as code in `.gitlab-ci.yml` and committed to the
 same repository as the automation scripts.
@@ -110,14 +110,14 @@ generated/logs/audit/maintenance_<CI_JOB_ID>_error.json    # on unhandled except
 
 ---
 
-## Step 2 — Generate a Pipeline Trigger Token
+## Step 2 - Generate a Pipeline Trigger Token
 
 The Pipeline Trigger Token authenticates pipeline launches from external systems.
 
 1. In GitLab, navigate to the project → **Settings > CI/CD > Pipeline triggers**
 2. Click **Add trigger**
 3. Give it a description (e.g., `iRequest-Link`)
-4. Click **Save** and **copy the token** — it is displayed **once only**
+4. Click **Save** and **copy the token** - it is displayed **once only**
 
 > A **Project Access Token** (`api` scope) can be used interchangeably. Pipeline
 > Trigger Tokens are simpler for bare POST-body webhooks; Project Access Tokens
@@ -128,7 +128,7 @@ required in both `Send-GitLabMaintenanceRequest.ps1` and any manual curl test.
 
 ---
 
-## Step 3 — Triggering from iRequest
+## Step 3 - Triggering from iRequest
 
 ### REST endpoint
 
@@ -190,7 +190,7 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
 
 ---
 
-### PowerShell helper — `Send-GitLabMaintenanceRequest`
+### PowerShell helper - `Send-GitLabMaintenanceRequest`
 
 Instead of crafting the POST call directly, iRequest can call the pre-built
 function in **`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`**.
@@ -365,7 +365,7 @@ in PowerShell, `--insecure` in curl).
 
 ---
 
-## Error reference — callers
+## Error reference - callers
 
 | Symptom | Cause | Action |
 |---|---|---|

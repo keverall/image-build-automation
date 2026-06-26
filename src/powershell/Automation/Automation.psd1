@@ -68,7 +68,7 @@
     #       All Private/*.psm1 and Public/*.psm1 files are dot-sourced by Automation.psm1.
     NestedModules = @()
 
-    # Functions to export from this module — explicit public API surface.
+    # Functions to export from this module - explicit public API surface.
     # '_'-prefixed names are private helpers dot-sourced by other scripts.
     FunctionsToExport = @(
         # ── Orchestrator ────────────────────────────────────────────────────────

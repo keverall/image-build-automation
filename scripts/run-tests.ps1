@@ -1,5 +1,5 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation — PowerShell Test Runner
+# HPE ProLiant Windows Server ISO Automation - PowerShell Test Runner
 # =============================================================================
 # Runs all Pester tests for the automation module.
 
@@ -39,11 +39,11 @@ if ($pesterModule) {
     $moduleBase = Split-Path $pesterModule.Path -Parent
     $dllPath = Join-Path $moduleBase 'bin\netstandard2.0\Pester.dll'
     if (-not (Test-Path $dllPath)) {
-        Write-Host "[repair] Pester.dll missing — reinstalling Pester 5.7.1..." -ForegroundColor Yellow
+        Write-Host "[repair] Pester.dll missing - reinstalling Pester 5.7.1..." -ForegroundColor Yellow
         $pesterOk = $false
     }
 } else {
-    Write-Host "[repair] Pester not found — installing Pester 5.7.1..." -ForegroundColor Yellow
+    Write-Host "[repair] Pester not found - installing Pester 5.7.1..." -ForegroundColor Yellow
     $pesterOk = $false
 }
 

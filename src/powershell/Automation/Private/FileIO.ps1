@@ -1,5 +1,5 @@
 ﻿#
-# Private/FileIO.ps1 — File I/O utilities: directory creation, JSON persistence, timestamped results.
+# Private/FileIO.ps1 - File I/O utilities: directory creation, JSON persistence, timestamped results.
 #
 
 function Ensure-DirectoryExists {
@@ -100,7 +100,7 @@ function _FileIO_DeepHashtable {
             foreach ($k in $Obj.Keys) { $ht[$k] = _FileIO_DeepHashtable $Obj[$k] }
             return $ht
         }
-        # PS7 ConvertFrom-Json returns PSCustomObject, not IDictionary — handle explicitly
+        # PS7 ConvertFrom-Json returns PSCustomObject, not IDictionary - handle explicitly
         if ($Obj -is [System.Management.Automation.PSCustomObject]) {
             $ht = @{}
             foreach ($prop in $Obj.PSObject.Properties) {

@@ -1,11 +1,11 @@
-# New-Uuid.Tests.ps1 — Tests for New-Uuid.ps1 (deterministic UUID generator + Xorshift32)
+# New-Uuid.Tests.ps1 - Tests for New-Uuid.ps1 (deterministic UUID generator + Xorshift32)
 
 BeforeAll {
     # Initialise shared test-scoped variables (Pester V5: each file needs its own state)
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../src/powershell')).Path
     $Script:TestRoot        = $PSScriptRoot
 
-    # TempDir — guard against $env:TEMP being null on non-Windows / Pester workers
+    # TempDir - guard against $env:TEMP being null on non-Windows / Pester workers
     if (-not $env:TEMP)  { $env:TEMP  = '/tmp' }
     if (-not $env:TMP)   { $env:TMP   = '/tmp' }
     $Script:TempDir         = (Join-Path $env:TEMP "AutomationTests_$([guid]::NewGuid().ToString('N'))").TrimEnd('\','/')
@@ -52,7 +52,7 @@ srv03
 # Skip all tests if module failed to load
 if (-not $ModuleLoaded) { return }
 
-Describe 'New-Uuid — Deterministic UUID generation' {
+Describe 'New-Uuid - Deterministic UUID generation' {
     It 'Generates a valid GUID for any server name' {
         $g = New-Uuid -ServerName 'srv01'
         [Guid]$g | Should -Not -BeNullOrEmpty
@@ -83,7 +83,7 @@ Describe 'New-Uuid — Deterministic UUID generation' {
     }
 }
 
-Describe 'New-Uuid — Output to file' {
+Describe 'New-Uuid - Output to file' {
     It 'Writes UUID to file when OutputPath is set' {
         $ts  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds().ToString()
         $g   = New-Uuid -ServerName 'file_test' -Timestamp $ts
