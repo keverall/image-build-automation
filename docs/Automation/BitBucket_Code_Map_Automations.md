@@ -70,6 +70,7 @@
 
 
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`BitBucket_Code_Map_Maitenance_Mode.md`](BitBucket_Code_Map_Maitenance_Mode.md)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, physical server builds, firmware/Windows patching, deployment, monitoring, validation, and OpsRamp reporting.
+This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`BitBucket_Code_Map_Maitenance_Mode.md`](BitBucket_Code_Map_Maitenance_Mode.md)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, physical server builds, firmware/Windows patching, deployment, monitoring, validation, and OpsRamp reporting.
 
 > **Source root**: [`src/powershell/Automation/`](../src/powershell/Automation/)
 > **Module manifest**: [`Automation.psd1`](../src/powershell/Automation/Automation.psd1)
@@ -85,6 +86,7 @@ Before any function can be called, the `Automation` module must be loaded. This 
 <a name="11---root-module-loader"></a>
 ### 1.1 - Root Module Loader
 
+**[`Automation.psm1`](../src/powershell/Automation/Automation.psm1)** - 652 lines
 **[`Automation.psm1`](../src/powershell/Automation/Automation.psm1)** - 652 lines
 
 | Section | Lines | Content |
@@ -114,6 +116,7 @@ Dot-sourced in dependency order by [`Automation.psm1`](../src/powershell/Automat
 | 7 | [`Inventory.ps1`](../src/powershell/Automation/Private/Inventory.ps1) | `Load-ServerList`, `Load-ClusterCatalogue`, `Test-ClusterDefinition`, `New-ServerInfo` (99 lines) |
 | 8 | [`Logging.ps1`](../src/powershell/Automation/Private/Logging.ps1) | `Initialize-Logging`, `Get-Logger` (97 lines) |
 | 9 | [`Router.ps1`](../src/powershell/Automation/Private/Router.ps1) | `Invoke-RoutedRequest` - dispatches by `request_types.json` (66 lines) |
+| 9 | [`Router.ps1`](../src/powershell/Automation/Private/Router.ps1) | `Invoke-RoutedRequest` - dispatches by `request_types.json` (66 lines) |
 | 10 | [`Base.ps1`](../src/powershell/Automation/Private/Base.ps1) | `New-AutomationBase`, timestamp helpers (91 lines) |
 
 <a name="13---public-function-load-order"></a>
@@ -121,6 +124,34 @@ Dot-sourced in dependency order by [`Automation.psm1`](../src/powershell/Automat
 
 Loaded alphabetically by [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#559-565). Order:
 
+1. [`_Validate-Request.ps1`](../src/powershell/Automation/Public/_Validate-Request.ps1) - request validation (underscore-prefixed, not exported)
+2. [`Control.ps1`](../src/powershell/Automation/Public/Control.ps1) - central control surface
+3. [`Get-OneViewServerTarget.ps1`](../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) - OneView server identity query
+4. [`Get-RouteMap.ps1`](../src/powershell/Automation/Public/Get-RouteMap.ps1) - routing introspection
+5. [`Invoke-GitLabMaintenanceTrigger.ps1`](../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1) - GitLab CI/CD trigger
+6. [`Invoke-IloRedfish.ps1`](../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) - iLO Redfish virtual media / boot
+7. [`Invoke-IsoDeploy.ps1`](../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) - ISO deployer orchestrator
+8. [`Invoke-OpsRampClient.ps1`](../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1) - OpsRamp client
+9. [`Invoke-PowerShellScript.ps1`](../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1) - local PS execution
+10. [`Invoke-PowerShellWinRM.ps1`](../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) - remote WinRM execution
+11. [`New-IsoBuild.ps1`](../src/powershell/Automation/Public/New-IsoBuild.ps1) - ConfigMgr bootable ISO builder
+12. [`New-OneViewMaintenanceScript.ps1`](../src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1) - generate OneView maintenance scripts
+13. [`New-ScomConnection.ps1`](../src/powershell/Automation/Public/New-ScomConnection.ps1) - SCOM connection scripts
+14. [`New-ScomMaintenanceScript.ps1`](../src/powershell/Automation/Public/New-ScomMaintenanceScript.ps1) - generate SCOM maintenance scripts
+15. [`New-Uuid.ps1`](../src/powershell/Automation/Public/New-Uuid.ps1) - deterministic UUID generator
+16. [`Publish-BootIso.ps1`](../src/powershell/Automation/Public/Publish-BootIso.ps1) - publish ISO to HTTPS repository
+17. [`Set-MaintenanceMode.ps1`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - *see BitBucket_Code_Map_Maitenance_Mode.md*
+18. [`Start-AutomationOrchestrator.ps1`](../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1) - unified entry point
+19. [`Start-InstallMonitor.ps1`](../src/powershell/Automation/Public/Start-InstallMonitor.ps1) - installation progress monitor
+20. [`Start-PhysicalServerBuild.ps1`](../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) - end-to-end physical server build
+21. [`Test-BuildParams.ps1`](../src/powershell/Automation/Public/Test-BuildParams.ps1) - build parameter validation
+22. [`Test-ClusterId.ps1`](../src/powershell/Automation/Public/Test-ClusterId.ps1) - cluster ID validation
+23. [`Test-PostBuildValidation.ps1`](../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) - post-build validation
+24. [`Test-PreBuildValidation.ps1`](../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) - pre-build validation
+25. [`Test-ServerConnectivity.ps1`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - SCOM/OneView connectivity check
+26. [`Test-ServerList.ps1`](../src/powershell/Automation/Public/Test-ServerList.ps1) - server list validation
+27. [`Update-Firmware.ps1`](../src/powershell/Automation/Public/Update-Firmware.ps1) - standalone firmware ISO builder
+28. [`Update-WindowsSecurity.ps1`](../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) - Windows security patcher
 1. [`_Validate-Request.ps1`](../src/powershell/Automation/Public/_Validate-Request.ps1) - request validation (underscore-prefixed, not exported)
 2. [`Control.ps1`](../src/powershell/Automation/Public/Control.ps1) - central control surface
 3. [`Get-OneViewServerTarget.ps1`](../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) - OneView server identity query
@@ -160,6 +191,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 <a name="21---request-router"></a>
 ### 2.1 - Request Router
 
+**[`configs/request_types.json`](../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
 **[`configs/request_types.json`](../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
 
 | Request Type | Handler Function | CI Stage |
@@ -254,8 +286,10 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 
 **[`scripts/gitlab/Invoke-GitLabMaintenance.ps1`](../scripts/gitlab/Invoke-GitLabMaintenance.ps1)**
 - GitLab CI/CD pipeline entry point - executed by pipeline runner
+- GitLab CI/CD pipeline entry point - executed by pipeline runner
 - Wraps `Set-MaintenanceMode` with GitLab-specific logging and callback support
 
+**[`scripts/gitlab/Send-WebCallback.ps1`](../scripts/gitlab/Send-WebCallback.ps1)** - [`Send-WebCallback()`](../scripts/gitlab/Send-WebCallback.ps1)
 **[`scripts/gitlab/Send-WebCallback.ps1`](../scripts/gitlab/Send-WebCallback.ps1)** - [`Send-WebCallback()`](../scripts/gitlab/Send-WebCallback.ps1)
 - POST JSON to HTTPS callback URL with optional API key
 - Validates HTTPS-only at [L28–31](../scripts/gitlab/Send-WebCallback.ps1#28-31)
@@ -454,6 +488,8 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 - `POST /redfish/v1/Managers/1/VirtualMedia/1/Actions/VirtualMedia.InsertMedia`
 - `PATCH /redfish/v1/Systems/1` - BootSourceOverrideTarget=Cd, Enabled=Once
 - `POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset` - ResetType=ForceRestart
+- `PATCH /redfish/v1/Systems/1` - BootSourceOverrideTarget=Cd, Enabled=Once
+- `POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset` - ResetType=ForceRestart
 
 <a name="72---iloredfishsession-class"></a>
 ### 7.2 - IloRedfishSession Class
@@ -646,6 +682,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#136)
 ## 12. Credential Resolution
 
 **[`Credentials.ps1`](../src/powershell/Automation/Private/Credentials.ps1)** - 201 lines
+**[`Credentials.ps1`](../src/powershell/Automation/Private/Credentials.ps1)** - 201 lines
 
 **Resolution order** (documented at [L5–14](../src/powershell/Automation/Private/Credentials.ps1#5-14)):
 1. Environment variable (CI pre-fetches from CyberArk)
@@ -672,6 +709,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#136)
 ### 13.1 - Inventory Functions
 
 **[`Inventory.ps1`](../src/powershell/Automation/Private/Inventory.ps1)** - 99 lines
+**[`Inventory.ps1`](../src/powershell/Automation/Private/Inventory.ps1)** - 99 lines
 
 | Function | Line | Purpose |
 |----------|------|---------|
@@ -683,6 +721,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#136)
 <a name="132---configuration-functions"></a>
 ### 13.2 - Configuration Functions
 
+**[`Config.ps1`](../src/powershell/Automation/Private/Config.ps1)** - 126 lines
 **[`Config.ps1`](../src/powershell/Automation/Private/Config.ps1)** - 126 lines
 
 | Function | Line | Purpose |
@@ -708,6 +747,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#136)
 ## 14. Process Execution & Retry
 
 **[`Executor.ps1`](../src/powershell/Automation/Private/Executor.ps1)** - 108 lines
+**[`Executor.ps1`](../src/powershell/Automation/Private/Executor.ps1)** - 108 lines
 
 | Function | Line | Purpose |
 |----------|------|---------|
@@ -726,6 +766,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#136)
 ### 15.1 - File I/O Functions
 
 **[`FileIO.ps1`](../src/powershell/Automation/Private/FileIO.ps1)** - 116 lines
+**[`FileIO.ps1`](../src/powershell/Automation/Private/FileIO.ps1)** - 116 lines
 
 | Function | Line | Purpose |
 |----------|------|---------|
@@ -739,6 +780,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#136)
 <a name="152---path-resolution"></a>
 ### 15.2 - Path Resolution
 
+**[`PathResolver.ps1`](../src/powershell/Automation/Private/PathResolver.ps1)** - 53 lines
 **[`PathResolver.ps1`](../src/powershell/Automation/Private/PathResolver.ps1)** - 53 lines
 
 | Function | Line | Purpose |
@@ -754,6 +796,7 @@ Defined in [`Automation.psm1`](../src/powershell/Automation/Automation.psm1#136)
 <a name="161---logging-functions"></a>
 ### 16.1 - Logging Functions
 
+**[`Logging.ps1`](../src/powershell/Automation/Private/Logging.ps1)** - 97 lines
 **[`Logging.ps1`](../src/powershell/Automation/Private/Logging.ps1)** - 97 lines
 
 | Function | Line | Purpose |
@@ -776,6 +819,7 @@ Also defined as class in [`Automation.psm1`](../src/powershell/Automation/Automa
 ### 16.3 - Timestamp Helpers
 
 **[`Base.ps1`](../src/powershell/Automation/Private/Base.ps1)** - 91 lines
+**[`Base.ps1`](../src/powershell/Automation/Private/Base.ps1)** - 91 lines
 
 | Function | Line | Purpose |
 |----------|------|---------|
@@ -797,6 +841,7 @@ Also defined as class in [`Automation.psm1`](../src/powershell/Automation/Automa
 <a name="171---powershell-profile-setup"></a>
 ### 17.1 - PowerShell Profile Setup
 
+**[`scripts/Setup-Profile.ps1`](../scripts/Setup-Profile.ps1)** - 294 lines
 **[`scripts/Setup-Profile.ps1`](../scripts/Setup-Profile.ps1)** - 294 lines
 
 Configures PowerShell profiles to auto-import the Automation module:
@@ -859,6 +904,7 @@ All configs loaded from `configs/` directory:
 | **`servers_catalogue.oneview.json`** | OneView server definitions | OneView queries |
 | **`configmgr_config.json`** | ConfigMgr site connection details | Build pipeline |
 | **`email_distribution_lists.json`** | Maintenance notification recipients | Notifications |
+| ~~maintenance-only configs~~ | *See [BitBucket_Code_Map_Maitenance_Mode.md §11](BitBucket_Code_Map_Maitenance_Mode.md)* | - |
 | ~~maintenance-only configs~~ | *See [BitBucket_Code_Map_Maitenance_Mode.md §11](BitBucket_Code_Map_Maitenance_Mode.md)* | - |
 
 ---
