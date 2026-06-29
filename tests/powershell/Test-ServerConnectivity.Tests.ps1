@@ -212,7 +212,7 @@ Describe 'Test-ServerConnectivity - DryRun' {
 
     It 'Should include OneView module in MockData' {
         $result = Test-ServerConnectivity -Mode oneview -Environment Prod -JsonConfig -DryRun
-        $result.MockData.PowerShellModule | Should -Be 'HPEOneView.860'
+        $result.MockData.PowerShellModule | Should -Be 'HPEOneView.1000'
         $result.MockData.TargetPorts | Should -Contain 443
     }
 
