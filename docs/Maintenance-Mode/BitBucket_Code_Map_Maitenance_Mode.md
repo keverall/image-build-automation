@@ -4,6 +4,7 @@
 
 
 - [Test Server Connectivity](#test-server-connectivity)
+- [Phase 2 Auth Connect](#phase-2-auth-connect)
 
 
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
