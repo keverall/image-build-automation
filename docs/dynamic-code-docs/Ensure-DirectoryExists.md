@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/FileIO.ps1
-generated: 2026-06-25 11:22 UTC
+generated: 2026-06-29 11:47 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
