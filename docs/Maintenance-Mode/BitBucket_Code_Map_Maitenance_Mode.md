@@ -4,6 +4,7 @@
 
 
 - [Test Server Connectivity](#test-server-connectivity)
+- [Phase 1 Network Ping](https://gitstash.example.com/projects/CPSD/repos/image-build-automation/browse/docs/BitBucket_Code_Map_Maitenance_Mode.md?until=b53cc05d95359c02a4e57afdd6fd2e87a69435d5&untilPath=docs%2FBitBucket_Code_Map_Maitenance_Mode.md#:~:text=Phase%201%20Network%20Ping)
 - [Phase 2 Auth Connect](https://gitstash.example.com/projects/CPSD/repos/image-build-automation/browse/docs/BitBucket_Code_Map_Maitenance_Mode.md?until=b53cc05d95359c02a4e57afdd6fd2e87a69435d5&untilPath=docs%2FBitBucket_Code_Map_Maitenance_Mode.md#:~:text=OneView%3A%20443-,Phase%202%20Auth%20Connect,-Code%20Location%3A)
 
 
