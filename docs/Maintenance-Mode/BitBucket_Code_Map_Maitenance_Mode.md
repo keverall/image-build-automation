@@ -3,7 +3,7 @@
 [TOC]
 
 
-- [Test ServerConnectivity](#test-serverconnectivity)
+- [Test Server Connectivity](#test-server-connectivity)
 
 
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
@@ -20,7 +20,7 @@ This document maps every code location executed by `Set-MaintenanceMode` and `Te
 
 ---
 
-## Test-ServerConnectivity
+## Test-Server Connectivity
 
 This phase performs read-only connectivity checks against SCOM or OneView management infrastructure before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects.
 
