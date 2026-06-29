@@ -22,9 +22,9 @@ Describe 'New-OneViewMaintenanceScript - basic invocation and parameter validati
     }
 
     It 'Returns a string script block for enable operation with configurable module name' {
-        $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'enable' -ModuleName 'HPEOneView.860'
+        $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'enable' -ModuleName 'HPEOneView.1000'
         $result | Should -BeOfType [string]
-        $result | Should -Match 'Import-Module HPEOneView.860'
+        $result | Should -Match 'Import-Module HPEOneView.1000'
         $result | Should -Match 'Connect-OVMgmt'
         $result | Should -Match 'Get-OVScope'
         $result | Should -Match 'Enable-OVMaintenanceMode'
@@ -36,14 +36,14 @@ Describe 'New-OneViewMaintenanceScript - basic invocation and parameter validati
     }
 
     It 'Returns a string script block for disable operation with configurable module name' {
-        $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'disable' -ModuleName 'HPEOneView.860'
+        $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'disable' -ModuleName 'HPEOneView.1000'
         $result | Should -BeOfType [string]
-        $result | Should -Match 'Import-Module HPEOneView.860'
+        $result | Should -Match 'Import-Module HPEOneView.1000'
         $result | Should -Match 'Disable-OVMaintenanceMode'
     }
 
     It 'Includes Async parameter when Async is true' {
-        $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'enable' -Async $true -ModuleName 'HPEOneView.860'
+        $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'enable' -Async $true -ModuleName 'HPEOneView.1000'
         $result | Should -Match '\-Async'
     }
 
