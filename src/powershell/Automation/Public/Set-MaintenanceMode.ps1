@@ -1872,7 +1872,7 @@ function Test-OneViewConnection {
         [string]$Appliance,
         [string]$Username,
         [string]$Password,
-        [string]$ModuleName = 'HPEOneView.860'
+        [string]$ModuleName = 'HPEOneView.1000'
     )
     
     try {
@@ -2836,7 +2836,7 @@ class OneViewClient {
             return $recommended
         }
         
-        return 'HPEOneView.860'
+        return 'HPEOneView.1000'
     }
 
     [void] _ValidateModuleCompat([string]$ModuleName, [string]$Appliance) {

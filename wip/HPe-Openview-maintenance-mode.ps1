@@ -1,9 +1,9 @@
-# The official HPEOneView.Xxx library (e.g., HPEOneView.860) natively relies on immediate execution cmdlets (Enable-OVMaintenanceMode and Disable-OVMaintenanceMode). Because the HPE OneView appliance itself does not have a native internal scheduler to delay or automatically stop hardware-level maintenance mode, scheduling must be handled at the PowerShell wrapper level. [1] 
+# The official HPEOneView.Xxx library (e.g., HPEOneView.1000) natively relies on immediate execution cmdlets (Enable-OVMaintenanceMode and Disable-OVMaintenanceMode). Because the HPE OneView appliance itself does not have a native internal scheduler to delay or automatically stop hardware-level maintenance mode, scheduling must be handled at the PowerShell wrapper level. [1] 
 # The production-ready script below uses an HPE OneView Scope (highly recommended for clusters to avoid hardcoded naming structures) or a naming pattern to capture your server nodes, and utilizes an in-memory timer or background job to manage start, end, or duration windows. [1, 2] 
 # ## Pre-Requisites
 # Ensure your administration environment has the module loaded and a valid session established: [3] 
 
-# Import-Module HPEOneView.860
+# Import-Module HPEOneView.1000
 # Connect-OVMgmt -Hostname "oneview.yourdomain.local" -Credential (Get-Credential)
 
 # ------------------------------

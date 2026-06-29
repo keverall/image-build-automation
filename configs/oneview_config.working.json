@@ -1,7 +1,7 @@
 {
   "oneview": {
     "appliance": "oneview.ad.example.com",
-    "module_name": "HPEOneView.860",
+    "module_name": "HPEOneView.1000",
     "use_winrm": false,
     "winrm": {
       "server": "oneview.ad.example.com"

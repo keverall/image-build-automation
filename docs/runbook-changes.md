@@ -107,7 +107,7 @@ Query HPE OneView REST API to identify and validate the target server:
 5. Validate power state (off or on - both acceptable if force restart is used)
 6. Error if server not found or health is critical
 
-Uses the bundled `HPEOneView.860` module or direct REST API (with the existing `Get-OneViewCredentials`).
+Uses the bundled `HPEOneView.1000` module or direct REST API (with the existing `Get-OneViewCredentials`).
 
 **Config reference:** `configs/connection_hosts.json` (OneView appliance URL) and `configs/oneview_config.json` (credentials)
 
