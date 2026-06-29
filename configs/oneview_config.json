@@ -1,7 +1,7 @@
 {
   "oneview": {
     "appliance": "oneview.example.com",
-    "module_name": "HPEOneView.860",
+    "module_name": "HPEOneView.1000",
     "use_winrm": false,
     "winrm": {
       "server": "oneview.example.com"
@@ -11,5 +11,5 @@
       "password_env": "ONEVIEW_PASSWORD"
     }
   },
-  "notes": "HPE OneView configuration. Module name format is HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.860 for OneView 8.60). See https://github.com/HewlettPackard/POSH-HPEOneView. Appliance/credentials are EXAMPLE values used for tests; in production supply -OneViewHost / -OneViewUser / -OneViewPassword (or env vars ONEVIEW_USER / ONEVIEW_PASSWORD) at runtime."
+  "notes": "HPE OneView configuration. Module name format is HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.1000 for OneView 10.00). See https://github.com/HewlettPackard/POSH-HPEOneView. Appliance/credentials are EXAMPLE values used for tests; in production supply -OneViewHost / -OneViewUser / -OneViewPassword (or env vars ONEVIEW_USER / ONEVIEW_PASSWORD) at runtime."
 }

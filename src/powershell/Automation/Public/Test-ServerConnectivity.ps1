@@ -397,7 +397,7 @@ function Test-ServerConnectivity {
         $moduleName = if ($Mode -eq 'scom') {
             $modeCfg.Get_Item('powershell_module') ?? 'OperationsManager'
         } else {
-            $modeCfg.Get_Item('module_name') ?? 'HPEOneView.860'
+            $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
         }
 
         $mockPingResult = @{
@@ -544,7 +544,7 @@ Write-Output "DISCONNECTED"
                 $authResult.Error = "Auth error: $($_.Exception.Message)"
             }
         } else {
-            $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.860'
+            $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
             $ovAppliance = $resolvedHost
 
             $winrmServer = if ($useWinRM) {

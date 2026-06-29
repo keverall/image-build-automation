@@ -23,7 +23,7 @@
     pwsh -File scripts/setup-oneview.ps1 -ConfigDir './configs'
 
 .NOTES
-    Module name format: HPEOneView.<major><minor> (e.g., HPEOneView.860 for OneView 8.60)
+    Module name format: HPEOneView.<major><minor> (e.g., HPEOneView.1000 for OneView 10.00)
     Only ONE HPE OneView module version can be installed at a time.
     To switch versions: Uninstall-Module HPEOneView.OLD_VERSION -Force
     See docs/oneview-module-versions.md for compatibility table.
@@ -45,17 +45,17 @@ if (-not $ovModules) {
 }
 if ($ovModules) {
     Write-Host "[OK] OneView module(s) found: ($($ovModules -join ', '))" -ForegroundColor Green
-    Write-Host "  Recommended module format: HPEOneView.860 (for OneView 8.60+)"
+    Write-Host "  Recommended module format: HPEOneView.1000 (for OneView 10.00+)"
     Write-Host "  See docs/oneview-module-versions.md for compatibility table."
     if ($ovModules.Count -gt 1) {
         Write-Warning "[WARNING] Multiple modules detected. Only ONE HPE OneView module should be installed."
         Write-Warning "  Remove old versions: Uninstall-Module HPEOneView.OLD_VERSION -Force"
-        Write-Warning "  Or use: Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force"
+        Write-Warning "  Or use: Install-Module HPEOneView.1000 -Scope CurrentUser -AllowClobber -Force"
     }
 } else {
     Write-Warning "[MISSING] No HPEOneView.* module found."
     Write-Warning "Install from PowerShell Gallery:"
-    Write-Warning "  Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force"
+    Write-Warning "  Install-Module HPEOneView.1000 -Scope CurrentUser -AllowClobber -Force"
     Write-Warning "  See: https://github.com/HewlettPackard/POSH-HPEOneView"
 }
 

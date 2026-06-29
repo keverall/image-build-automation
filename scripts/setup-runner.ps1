@@ -36,7 +36,7 @@ $REQUIRED_MODULES = @(
     @{ Name = 'Pester';           Version = '5.7.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
-    @{ Name = 'HPEOneView.860';   Version = '8.60' },
+    @{ Name = 'HPEOneView.1000';   Version = '10.00' },
     @{ Name = 'OperationsManager';Version = '1.0' }   # floor only; real SCOM versions are 10.x
 )
 

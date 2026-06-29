@@ -51,7 +51,7 @@ pwsh -File scripts/setup-oneview.ps1 -ConfigDir './configs'
     pwsh -File scripts/setup-oneview.ps1 -ConfigDir './configs'
 
 .NOTES
-    Module name format: HPEOneView.<major><minor> (e.g., HPEOneView.860 for OneView 8.60)
+    Module name format: HPEOneView.<major><minor> (e.g., HPEOneView.1000 for OneView 10.00)
     Only ONE HPE OneView module version can be installed at a time.
     To switch versions: Uninstall-Module HPEOneView.OLD_VERSION -Force
     See docs/oneview-module-versions.md for compatibility table.
