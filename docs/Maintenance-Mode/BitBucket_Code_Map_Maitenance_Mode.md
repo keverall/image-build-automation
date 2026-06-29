@@ -2,6 +2,8 @@
 
 [TOC]
 
+#test-serverconnectivity
+
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 
