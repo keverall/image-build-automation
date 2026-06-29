@@ -15,13 +15,13 @@ This table helps you select the correct PowerShell module for your OneView appli
 | `HPEOneView.710` | 5.1, 7.0+ | 2.0 | 7.10 | Last supporting PS 5.1 |
 | `HPEOneView.700` | 5.1, 7.0+ | 2.0 | 7.00 | Last supporting PS 5.1 |
 
-**Important:** `HPOneView.Managed` is NOT a standard HPE OneView module name. Use `HPEOneView.860`, `HPEOneView.900`, etc.
+**Important:** `HPOneView.Managed` is NOT a standard HPE OneView module name. Use `HPEOneView.1000`, `HPEOneView.900`, etc.
 
 ## Quick Selection Guide
 
 ### For OneView 8.x+ appliances (recommended)
 ```powershell
-Install-Module HPEOneView.860 -Scope AllUsers
+Install-Module HPEOneView.1000 -Scope AllUsers
 ```
 
 ### For OneView 7.x appliances (PowerShell 5.1 compatibility)
@@ -33,30 +33,30 @@ Install-Module HPEOneView.720 -Scope AllUsers
 
 ```powershell
 # Install for current user
-Install-Module HPEOneView.860 -Scope CurrentUser
+Install-Module HPEOneView.1000 -Scope CurrentUser
 
 # Install for all users (requires elevation)
-Install-Module HPEOneView.860 -Scope AllUsers
+Install-Module HPEOneView.1000 -Scope AllUsers
 
 # Offline install: save module to share
-Save-Module HPEOneView.860 -Path C:\temp\oneview-modules
+Save-Module HPEOneView.1000 -Path C:\temp\oneview-modules
 
 # Import the module
-Import-Module HPEOneView.860
+Import-Module HPEOneView.1000
 ```
 
 **Important:** Only ONE HPE OneView module version can be installed at a time. To switch versions:
 
 ```powershell
 # Remove existing module(s)
-Uninstall-Module HPEOneView.860 -Force -ErrorAction SilentlyContinue
+Uninstall-Module HPEOneView.1000 -Force -ErrorAction SilentlyContinue
 Uninstall-Module HPEOneView.900 -Force -ErrorAction SilentlyContinue
 
 # Install new version (may need -AllowClobber if conflicts exist)
-Install-Module HPEOneView.860 -Scope CurrentUser -AllowClobber -Force
+Install-Module HPEOneView.1000 -Scope CurrentUser -AllowClobber -Force
 
 # Or use Save-Module for offline deployment
-Save-Module HPEOneView.860 -Path C:\temp\modules -Force
+Save-Module HPEOneView.1000 -Path C:\temp\modules -Force
 ```
 
 Common errors if multiple versions exist:
@@ -79,7 +79,7 @@ Connect-OVMgmt -Appliance oneview.example.com -Credential $cred
 
 1. **Explicit config**: `oneview_config.json` → `module_name` setting
 2. **Auto-detect**: Scans installed modules, picks highest version
-3. **Fallback**: Defaults to `HPEOneView.860` if none found
+3. **Fallback**: Defaults to `HPEOneView.1000` if none found
 
 ## Module Validation
 
