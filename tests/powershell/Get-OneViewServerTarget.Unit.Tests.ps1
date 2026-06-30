@@ -29,9 +29,15 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
     }
 
     It 'Fails when OneViewHost missing and no MockResult' {
-        $r = Get-OneViewServerTarget -ServerIdentifier 'TEST'
-        $r.Success | Should -Be $false
-        $r.Error   | Should -Match 'OneViewHost'
+        $prevAuto = $env:AUTOMATED_MODE
+        try {
+            $env:AUTOMATED_MODE = 'true'
+            $r = Get-OneViewServerTarget -ServerIdentifier 'TEST'
+            $r.Success | Should -Be $false
+            $r.Error   | Should -Match 'OneViewHost'
+        } finally {
+            if ($prevAuto) { $env:AUTOMATED_MODE = $prevAuto } else { $env:AUTOMATED_MODE = $null }
+        }
     }
 
     It 'DryRun succeeds' {
