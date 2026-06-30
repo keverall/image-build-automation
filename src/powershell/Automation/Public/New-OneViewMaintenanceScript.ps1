@@ -21,11 +21,11 @@ function New-OneViewMaintenanceScript {
 
     .PARAMETER ModuleName
         PowerShell module name for HPE OneView (required).
-        Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.10000 for OneView 10.00).
+        Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.1000 for OneView 10.00).
         See https://github.com/HewlettPackard/POSH-HPEOneView
 
     .EXAMPLE
-        $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.10000'
+        $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.1000'
     #>
     [CmdletBinding()]
     [OutputType([string])]
