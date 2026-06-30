@@ -198,7 +198,7 @@ if (-not $Uninstall -and -not $SkipTemplateCopy) {
         Write-Color $Yellow "[setup] WIP template not found: $TerminalTemplate"
     }
 
-    # Windows PowerShell 5.1 profile (only if that profile dir already exists —
+    # Windows PowerShell 5.1 profile (only if that profile dir already exists -
     # avoid creating Documents\WindowsPowerShell\ on PS 7-only machines)
     if ($isWin -and (Test-Path $TerminalTemplate)) {
         $ps51Path = $LiveProfiles['Terminal51']
