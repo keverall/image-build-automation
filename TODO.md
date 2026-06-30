@@ -36,7 +36,7 @@ If iRequest doesn't support active, outbound network connections:
 ------------------------------
 ## What This Means for Your API Documentation
 Since the CI pipeline acts as your actual HTTP entry gateway, the documentation format we discussed earlier fits perfectly.
-When you write your single-page OpenAPI/Swagger document, you aren't documenting raw PowerShell paths—you are documenting the CI API Endpoints that wrap them.
+When you write your single-page OpenAPI/Swagger document, you aren't documenting raw PowerShell paths-you are documenting the CI API Endpoints that wrap them.
 Your Swagger JSON file parameters map directly to your CI pipeline trigger variables:
 
 {
