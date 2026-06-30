@@ -400,7 +400,7 @@ function Show-Summary {
     $ok = ($REQUIRED_MODULES | ForEach-Object {
         $m = Get-Module $_.Name -ListAvailable -ErrorAction SilentlyContinue |
              Sort-Object Version -Descending | Select-Object -First 1
-        [pscustomobject]@{ Name = $_.Name; Version = if ($m) { $m.Version } else { '— MISSING' } }
+        [pscustomobject]@{ Name = $_.Name; Version = if ($m) { $m.Version } else { '- MISSING' } }
     })
     Write-Host ""
     Write-Host "${C_GREEN}╔══════════════════════════════════════════════════════╗${C_RESET}"
@@ -408,7 +408,7 @@ function Show-Summary {
     Write-Host "${C_GREEN}╚══════════════════════════════════════════════════════╝${C_RESET}"
     Write-Host ""
     foreach ($item in $ok) {
-        $icon = if ($item.Version -eq '— MISSING') { "${C_RED}✗${C_RESET}" } else { "${C_GREEN}✓${C_RESET}" }
+        $icon = if ($item.Version -eq '- MISSING') { "${C_RED}✗${C_RESET}" } else { "${C_GREEN}✓${C_RESET}" }
         Write-Host "  $icon $($item.Name) $($item.Version)"
     }
     Write-Host ""
