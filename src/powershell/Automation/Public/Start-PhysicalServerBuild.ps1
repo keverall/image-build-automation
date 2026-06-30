@@ -149,6 +149,14 @@ function Start-PhysicalServerBuild {
         $DryRun = $true
     }
 
+    if (-not $OneViewHost -and -not $SkipOneView) {
+        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+        if (-not $isAutomated) {
+            Write-Host "Enter OneView appliance hostname/IP (or press Enter to skip OneView step):" -ForegroundColor Yellow
+            $OneViewHost = Read-Host
+        }
+    }
+
     if (-not $ExpectedHostname) { $ExpectedHostname = $ServerIdentifier }
 
     $overall = [ordered]@{}
