@@ -83,7 +83,14 @@ function Get-OneViewServerTarget {
     }
 
     if (-not $OneViewHost) {
-        return @{ Success = $false; Error = "OneViewHost parameter is required" }
+        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+        if (-not $isAutomated) {
+            Write-Host "Enter OneView appliance hostname/IP:" -ForegroundColor Yellow
+            $OneViewHost = Read-Host
+        }
+        if (-not $OneViewHost) {
+            return @{ Success = $false; Error = "OneViewHost parameter is required" }
+        }
     }
 
     if (-not $OneViewUser -or -not $OneViewPassword) {
