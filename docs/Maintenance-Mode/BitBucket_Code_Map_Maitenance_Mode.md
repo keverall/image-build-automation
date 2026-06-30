@@ -1,6 +1,6 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
-<<<<<<< HEAD
+
 - [Test-ServerConnectivity](#test-serverconnectivity)
   - [Parameters](#parameters)
   - [DryRun Mode](#dryrun-mode)
@@ -55,9 +55,7 @@
   - [Test Scripts](#test-scripts)
 - [14 Quick Navigation](#14-quick-navigation)
 - [15 Documentation References](#15-documentation-references)
-=======
-[TOC]
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
+
 
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
@@ -73,10 +71,8 @@ This document maps every code location executed by `Set-MaintenanceMode` and `Te
 
 ---
 
-<<<<<<< HEAD
+
 <a name="test-serverconnectivity"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## Test-ServerConnectivity
 
 This phase performs read-only connectivity checks against SCOM or OneView management infrastructure before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects.
@@ -117,10 +113,7 @@ Test-ServerConnectivity -Mode scom -Environment Test -DryRun
 - MockData with resolved configuration (target ports, PowerShell module, WinRM status, credential env vars)
 - `DryRun = $true` flag in result
 
-<<<<<<< HEAD
 <a name="phase-1-network-ping"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### Phase 1 Network Ping
 
 **Code Location**: [`Lines 252-304`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L252-L304)
@@ -131,10 +124,7 @@ Test-ServerConnectivity -Mode scom -Environment Test -DryRun
    - SCOM (non-WinRM): 5985, 135
    - OneView: 443
 
-<<<<<<< HEAD
 <a name="phase-2-auth-connect"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### Phase 2 Auth Connect
 
 **Code Location**: [`Lines 306-390`](../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L306-L390)
@@ -150,10 +140,7 @@ Test-ServerConnectivity -Mode scom -Environment Test -DryRun
 
 ---
 
-<<<<<<< HEAD
 <a name="1-signon-and-connect"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 1 Signon and Connect
 
 This phase covers everything from the moment the command is invoked until a verified connection is established with the target management system. **Precision at this stage is critical for production environments and change freezes.**
@@ -162,12 +149,9 @@ This phase covers everything from the moment the command is invoked until a veri
 > - Place the **wrong infrastructure object** into maintenance mode (suppressing alerting for unintended targets), or
 > - Return an error and fail to protect the approved change window.
 >
-> Always verify the target identifier against `clusters_catalogue.json` (for cluster-level operations) or `servers_catalogue.oneview.json` (for serial-number lookups) **before** execution.
+> Always verify the target identifier against `clusters_catalogue.json` (for cluster-level operations) or `servers_catalogue.oneview.json` (for serial-number lookups) 
 
-<<<<<<< HEAD
 <a name="11-parameter-binding-and-input-validation"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 1.1 Parameter Binding and Input Validation
 
 The command accepts two mutually-exclusive targeting parameters depending on the integration mode:
@@ -186,10 +170,7 @@ The command accepts two mutually-exclusive targeting parameters depending on the
 - [Lines 333–341](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L333-L341): Validate `-TargetId` - required for SCOM mode; for OneView mode, `-SerialNumber` alone is accepted (line 335)
 - [Lines 333–341](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L333-L341): Validate `-TargetId` - required for SCOM mode; for OneView mode, `-SerialNumber` alone is accepted (line 335)
 
-<<<<<<< HEAD
 <a name="12-scom-connect-by-targetid"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 1.2 SCOM Connect by TargetId
 
 Used for SCOM-managed Windows clusters and servers. The target is a cluster ID from `clusters_catalogue.json`.
@@ -227,10 +208,7 @@ Set-MaintenanceMode -Action enable `
    - [`Lines 1846–1868`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1846-L1868): Imports `OperationsManager` module, creates `New-SCOMManagementGroupConnection`, verifies `"CONNECTED"`
    - If the connection fails → returns `Success = $false` with an error message (lines 1170–1174)
 
-<<<<<<< HEAD
 <a name="13-oneview-connect-by-targetid-cluster-scope"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 1.3 OneView Connect by TargetId cluster scope
 
 Used for OneView-managed server scopes (clusters). The target is a scope name or server name from `clusters_catalogue.json`.
@@ -268,10 +246,7 @@ Set-MaintenanceMode -Action enable `
    - [`Lines 1870–1894`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1870-L1894): Imports `HPEOneView.xxx` module, connects via `Connect-OVMgmt`, verifies `"CONNECTED"`
    - If the connection fails → returns error with `-TargetId` and `-SerialNumber` context (lines 1190–1195)
 
-<<<<<<< HEAD
 <a name="14-oneview-connect-by-serialnumber"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 1.4 OneView Connect by SerialNumber
 
 OneView supports direct hardware serial number targeting - **only the single server with that serial number is placed into maintenance mode**. This is the safest mode for change freezes because it cannot accidentally affect other servers in a scope.
@@ -305,10 +280,7 @@ Set-MaintenanceMode -Action enable `
 
 ---
 
-<<<<<<< HEAD
 <a name="2-target-resolution-shared"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 2 Target Resolution Shared
 
 After signon, the command identifies exactly which infrastructure objects will be affected. This determines the scope of maintenance mode operations.
@@ -330,10 +302,7 @@ After signon, the command identifies exactly which infrastructure objects will b
 
 ---
 
-<<<<<<< HEAD
 <a name="3-connection-validation"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 3 Connection Validation
 
 **Pre-flight check before any state-changing operation**: [`Lines 1164–1199`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1164-L1199)
@@ -359,15 +328,18 @@ This step is skipped in DryRun mode - no credentials are needed when simulating.
 
 ---
 
-<<<<<<< HEAD
+
+=======
 <a name="4-enable-maintenance-mode"></a>
 ## 4 Enable Maintenance Mode
 
 <a name="41-pre-check-already-enabled"></a>
+
 =======
 ## 4 Enable Maintenance Mode
 
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
+
+=======
 ### 4.1 Pre-Check: Already Enabled?
 
 Before issuing enable commands, the function checks whether the target is **already** in maintenance mode. If enabled, the operation is aborted to avoid duplicate entries.
@@ -377,20 +349,14 @@ Before issuing enable commands, the function checks whether the target is **alre
   - [Lines 1250–1264](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1250-L1264): OneView pre-check via [`OneViewClient.GetMaintenanceStatus()`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3178)
 - **On duplicate**: Returns error `"Server is already in maintenance mode."` (lines 1267–1284)
 
-<<<<<<< HEAD
 <a name="42-startend-time-resolution"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 4.2 Start/End Time Resolution
 
 - **[`Lines 1055–1090`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1055-L1090)**: Applies catalogue-based default end time and schedule adjustments
 - **[`Lines 1896–1954`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1896-L1954)**: `_Parse-Datetime` - parses `now`, `+Xhours`, `+Xminutes`, `+Xdays`, `YYYY-MM-DD HH:MM`
 - **[`Lines 1896–1954`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1896-L1954)**: `_Parse-Datetime` - parses `now`, `+Xhours`, `+Xminutes`, `+Xdays`, `YYYY-MM-DD HH:MM`
 
-<<<<<<< HEAD
 <a name="43-scom-enter-maintenance"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 4.3 SCOM: Enter Maintenance
 
 - **Call site**: [`Lines 1289–1361`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1289-L1361)
@@ -426,10 +392,7 @@ EnterMaintenance($scom_group, $duration, $comment, $DryRun, $servers, $useCluste
   "message": "...", "nack_reason": "...", "resolution": "..." }
 ```
 
-<<<<<<< HEAD
 <a name="44-oneview-set-maintenance"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 4.4 OneView: Set Maintenance
 
 - **Call site**: [`Lines 1363–1443`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1363-L1443)
@@ -464,15 +427,19 @@ SetMaintenance($targetName, $targetType, $startDt, $endDt, $DryRun)
 
 ---
 
-<<<<<<< HEAD
+
+=======
 <a name="5-enable-post-operation-actions"></a>
 ## 5. Enable Post-Operation Actions
 
-<a name="51-scom-schedule-auto-disable-task"></a>
+
+
 =======
 ## 5. Enable Post-Operation Actions
 
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
+
+=======
+<a name="51-scom-schedule-auto-disable-task"></a>
 ### 5.1 SCOM: Schedule Auto-Disable Task
 
 After SCOM maintenance is enabled, a Windows Scheduled Task is created to automatically run the `disable` action at the scheduled end time.
@@ -482,10 +449,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
   - Command: `pwsh.exe Set-MaintenanceMode.ps1 -Action disable -TargetId $TargetId -NoSchedule`
   - Scheduled for `$endDt` (the maintenance window end)
 
-<<<<<<< HEAD
 <a name="52-email-notification-enable"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 5.2 Email Notification (Enable)
 
 - **Call site**: [`Line 1446`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1446)
@@ -498,10 +462,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 2. [`Lines 3500–3528`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3500-L3528): Template variable substitution (`{cluster_name}`, `{environment}`, `{servers}`, etc.)
 3. [`Lines 3538–3565`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3538-L3565): `System.Net.Mail.SmtpClient` send to all recipients
 
-<<<<<<< HEAD
 <a name="53-opsramp-metrics-alerts-enable"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 5.3 OpsRamp Metrics & Alerts (Enable)
 
 - **[`Lines 1452–1478`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1452-L1478)**:
@@ -511,15 +472,18 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 
 ---
 
-<<<<<<< HEAD
+
+=======
 <a name="6-disable-maintenance-mode"></a>
 ## 6 Disable Maintenance Mode
 
 <a name="61-pre-check-already-disabled"></a>
+
 =======
 ## 6 Disable Maintenance Mode
 
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
+
+=======
 ### 6.1 Pre-Check: Already Disabled?
 
 - **Call site**: [`Lines 1496–1538`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1496-L1538)
@@ -528,10 +492,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
   - [Lines 1504–1518](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1504-L1518): OneView pre-check via `GetMaintenanceStatus()`
 - **On duplicate**: Returns error `"Server is already out of maintenance mode."` (lines 1521–1538)
 
-<<<<<<< HEAD
 <a name="62-scom-exit-maintenance"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 6.2 SCOM: Exit Maintenance
 
 - **Call site**: [`Lines 1540–1573`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1540-L1573)
@@ -558,10 +519,7 @@ ExitMaintenance($scom_group, $DryRun, $servers, $useClusterMode)
         └─ Parse OBJECT_STATUS: and SUMMARY: JSON lines (lines 2381–2438)
 ```
 
-<<<<<<< HEAD
 <a name="63-scom-post-disable-stabilization-wait"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 6.3 SCOM: Post-Disable Stabilization Wait
 
 After disabling SCOM maintenance, a **stabilization sleep** prevents false alerts while servers reboot and restart services.
@@ -571,10 +529,7 @@ After disabling SCOM maintenance, a **stabilization sleep** prevents false alert
   - Controlled by `-PostDisableWaitSeconds` parameter ([line 315](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L315))
   - Skip if DryRun or `PostDisableWaitSeconds = 0`
 
-<<<<<<< HEAD
 <a name="64-oneview-disable-maintenance"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 6.4 OneView: Disable Maintenance
 
 - **Call site**: [`Lines 1575–1596`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1575-L1596)
@@ -602,19 +557,14 @@ DisableMaintenance($targetName, $targetType, $DryRun)
             └─ Accumulate per-server success/failure counts
 ```
 
-<<<<<<< HEAD
 <a name="65-email-notification-disable"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 6.5 Email Notification (Disable)
 
 - **Call site**: [`Line 1600`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1600)
 - Uses same [`EmailNotifier.SendMaintenanceNotification()`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3473) with action `'disabled'`
 
-<<<<<<< HEAD
+
 <a name="66-opsramp-metrics-alerts-disable"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 6.6 OpsRamp Metrics & Alerts (Disable)
 
 - **[`Lines 1607–1639`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1607-L1639)**:
@@ -624,10 +574,8 @@ DisableMaintenance($targetName, $targetType, $DryRun)
 
 ---
 
-<<<<<<< HEAD
+
 <a name="7-validate-action-read-only"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 7 Validate Action (Read-Only)
 
 The validate action queries current maintenance status **without making any changes**. It runs after signon, connection, and target resolution but before any enable/disable logic.
@@ -669,23 +617,21 @@ The validate action queries current maintenance status **without making any chan
 
 ---
 
-<<<<<<< HEAD
 <a name="8-audit-record-output"></a>
 ## 8 Audit Record & Output
 
 <a name="81-audit-initialization"></a>
+
 =======
 ## 8 Audit Record & Output
 
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
+
+=======
 ### 8.1 Audit Initialization
 
 - **[`Lines 1222–1239`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1222-L1239)**: Creates `$audit` hashtable with action, mode, environment, target_id, serial_number, timestamps, steps, success flag
 
-<<<<<<< HEAD
 <a name="82-audit-finalization-save"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 8.2 Audit Finalization & Save
 
 - **[`Lines 1641–1712`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1641-L1712)**: Finalizes audit record with success status, timestamps, message
@@ -694,10 +640,7 @@ The validate action queries current maintenance status **without making any chan
   - Appends to master log file `maintenance_audit_*.log`
   - Includes Bitbucket Pipelines context enrichment if available (line 2019)
 
-<<<<<<< HEAD
 <a name="83-response-construction"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 8.3 Response Construction
 
 - **[`Lines 1720–1800`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1720-L1800)**: Builds response hashtable
@@ -706,10 +649,7 @@ The validate action queries current maintenance status **without making any chan
   - [`Lines 1734–1769`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1734-L1769): Core fields - Success, Message, Action, Mode, StartTimeUtc, EndTimeUtc, TargetId, SerialNumber, ServerCount, DryRun, AuditFile, FailedObjects
   - [`Lines 1772–1790`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1772-L1790): Mode-specific fields - ScomObjects/ScomSummary or OneViewObjects/OneViewSummary
 
-<<<<<<< HEAD
 <a name="84-cli-output-script-mode-only"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ### 8.4 CLI Output (Script-Mode Only)
 
 - **[`Lines 3569–3803`](../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3569-L3803)**:
@@ -718,10 +658,7 @@ The validate action queries current maintenance status **without making any chan
 
 ---
 
-<<<<<<< HEAD
 <a name="9-helper-functions-shared"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 9 Helper Functions (Shared)
 
 Functions called at various points throughout the execution flow:
@@ -741,10 +678,7 @@ Functions called at various points throughout the execution flow:
 
 ---
 
-<<<<<<< HEAD
 <a name="10-class-reference"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 10 Class Reference
 
 <a name="scommanager"></a>
@@ -804,10 +738,7 @@ Functions called at various points throughout the execution flow:
 
 ---
 
-<<<<<<< HEAD
 <a name="11-configuration-files"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 11 Configuration Files
 
 All configurations loaded from `configs/` directory, in load order:
@@ -827,10 +758,7 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<<<<<<< HEAD
 <a name="12-module-loading"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 12 Module Loading
 
 - **Root module**: [`Automation.psm1`](../src/powershell/Automation/Automation.psm1) (509 lines)
@@ -845,10 +773,7 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<<<<<<< HEAD
 <a name="13-testing"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 13 Testing
 
 <a name="pester-test-files"></a>
@@ -874,10 +799,7 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<<<<<<< HEAD
 <a name="14-quick-navigation"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 14 Quick Navigation
 
 | Functionality | SCOM Code | OneView Code |
@@ -903,10 +825,7 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<<<<<<< HEAD
 <a name="15-documentation-references"></a>
-=======
->>>>>>> 7c9c205 (Refactor test descriptions in PowerShell unit tests for consistency)
 ## 15 Documentation References
 
 - **Architecture overview**: [`maintenance_mode.md`](maintenance_mode.md)
