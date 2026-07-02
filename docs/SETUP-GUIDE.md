@@ -1,7 +1,33 @@
 # Setup Guide - PowerShell Profile & Maintenance Mode
 
+## Table of Contents
+
+- [Quick Setup (5 Minutes)](#quick-setup-5-minutes)
+  - [Step 1: Install PowerShell Module](#step-1-install-powershell-module)
+  - [Step 2: Load the Profile](#step-2-load-the-profile)
+  - [Step 3: Verify Installation](#step-3-verify-installation)
+- [What Gets Installed](#what-gets-installed)
+  - [Profile Features](#profile-features)
+  - [Available Commands](#available-commands)
+- [Manual Setup (If make setup Fails)](#manual-setup-if-make-setup-fails)
+  - [1. Import the Module](#1-import-the-module)
+  - [2. Import the Module](#2-import-the-module)
+  - [3. Find Your Profile Path](#3-find-your-profile-path)
+  - [4. Edit Your Profile](#4-edit-your-profile)
+- [Manual Installation](#manual-installation)
+- [Uninstall](#uninstall)
+- [Troubleshooting](#troubleshooting)
+  - [Profile Not Loading](#profile-not-loading)
+  - [Module Not Found](#module-not-found)
+  - [Set-MaintenanceMode Command Not Available](#set-maintenancemode-command-not-available)
+  - [Wrong Terminal Type](#wrong-terminal-type)
+- [Next Steps](#next-steps)
+
+
+<a name="quick-setup-5-minutes"></a>
 ## Quick Setup (5 Minutes)
 
+<a name="step-1-install-powershell-module"></a>
 ### Step 1: Install PowerShell Module
 
 ```powershell
@@ -11,6 +37,7 @@ make setup
 
 This installs required PowerShell modules and configures your profile.
 
+<a name="step-2-load-the-profile"></a>
 ### Step 2: Load the Profile
 
 #### Option A: VS Code Users (Recommended)
@@ -42,6 +69,7 @@ This installs required PowerShell modules and configures your profile.
    . $PROFILE
    ```
 
+<a name="step-3-verify-installation"></a>
 ### Step 3: Verify Installation
 
 ```powershell
@@ -54,8 +82,10 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 
 ---
 
+<a name="what-gets-installed"></a>
 ## What Gets Installed
 
+<a name="profile-features"></a>
 ### Profile Features
 - ✅ **oh-my-posh theme** (cross-platform: Windows/Linux/macOS)
 - ✅ **Automation module** auto-import
@@ -63,6 +93,7 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 - ✅ **Git integration** (posh-git)
 - ✅ **Terminal icons** and enhanced UX
 
+<a name="available-commands"></a>
 ### Available Commands
 
 | Command | Description | Example |
@@ -71,8 +102,10 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 
 ---
 
+<a name="manual-setup-if-make-setup-fails"></a>
 ## Manual Setup (If make setup Fails)
 
+<a name="1-import-the-module"></a>
 ### 1. Import the Module
 
 Add this to your PowerShell profile (`$PROFILE`):
@@ -84,6 +117,7 @@ if (Test-Path $AutomationModulePath) {
 }
 ```
 
+<a name="2-import-the-module"></a>
 ### 2. Import the Module
 
 Add this to your PowerShell profile (`$PROFILE`):
@@ -95,6 +129,7 @@ if (Test-Path $AutomationModulePath) {
 }
 ```
 
+<a name="3-find-your-profile-path"></a>
 ### 3. Find Your Profile Path
 
 ```powershell
@@ -102,6 +137,7 @@ if (Test-Path $AutomationModulePath) {
 echo $PROFILE
 ```
 
+<a name="4-edit-your-profile"></a>
 ### 4. Edit Your Profile
 
 ```powershell
@@ -113,8 +149,7 @@ nano $PROFILE        # Linux/Mac terminal editor
 
 
 
-## Manual Installation
-
+<a name="manual-installation"></a>
 ## Manual Installation
 
 If you prefer to add the functions manually:
@@ -129,6 +164,7 @@ if (Test-Path $automationModulePath) {
 
 ---
 
+<a name="uninstall"></a>
 ## Uninstall
 
 To remove the functions from your profiles:
@@ -137,8 +173,10 @@ To remove the functions from your profiles:
 pwsh -File scripts/Setup-Profile.ps1 -Uninstall
 ```---
 
+<a name="troubleshooting"></a>
 ## Troubleshooting
 
+<a name="profile-not-loading"></a>
 ### Profile Not Loading
 
 ```powershell
@@ -152,6 +190,7 @@ New-Item -ItemType File -Path $PROFILE -Force
 Get-Content $PROFILE
 ```
 
+<a name="module-not-found"></a>
 ### Module Not Found
 
 ```powershell
@@ -162,6 +201,7 @@ Test-Path /home/keverall/repos/image-build-automation/src/powershell/Automation/
 Import-Module /home/keverall/repos/image-build-automation/src/powershell/Automation/Automation.psd1 -Force
 ```
 
+<a name="set-maintenancemode-command-not-available"></a>
 ### Set-MaintenanceMode Command Not Available
 
 ```powershell
@@ -172,6 +212,7 @@ Import-Module /home/keverall/repos/image-build-automation/src/powershell/Automat
 Get-Command Set-MaintenanceMode -ErrorAction SilentlyContinue
 ```
 
+<a name="wrong-terminal-type"></a>
 ### Wrong Terminal Type
 
 Make sure you're using **PowerShell**, not bash/fish:
@@ -186,6 +227,7 @@ pwsh
 
 ---
 
+<a name="next-steps"></a>
 ## Next Steps
 
 - Read [MAINTENANCE_MODE_SHORTCUTS.md](MAINTENANCE_MODE_SHORTCUTS.md) for usage examples

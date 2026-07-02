@@ -1,13 +1,17 @@
-
-$file = "docs\BitBucket_Code_Map_Automations.md"
-$output = "$file.with-toc.md"
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$file = Join-Path $scriptDir "..\docs\SETUP-GUIDE.md"
 
 if (-not (Test-Path $file)) {
     Write-Error "Input file not found: $file"
     exit
 }
 
-$lines = Get-Content $file
+
+$file = Resolve-Path $file
+$output = "$($file.Path).with-toc.md"
+
+$lines = Get-Content $file 
+
 
 $toc = @()
 $updatedContent = @()
@@ -15,7 +19,14 @@ $anchorsSeen = @{}
 
 function Get-Anchor($title, [ref]$anchorsSeen) {
     $anchor = $title.ToLower()
-    $anchor = $anchor -replace '[^a-z0-9\s\-]', ''
+
+    # ✅ normalize ampersand
+    $anchor = $anchor -replace '&', 'and'
+
+    # ✅ remove unwanted chars (but keep _ and -)
+    $anchor = $anchor -replace '[^a-z0-9\s\-_]', ''
+
+    # ✅ spaces → hyphens
     $anchor = $anchor -replace '\s+', '-'
 
     if ($anchorsSeen.Value.ContainsKey($anchor)) {
@@ -27,6 +38,7 @@ function Get-Anchor($title, [ref]$anchorsSeen) {
 
     return $anchor
 }
+
 
 foreach ($line in $lines) {
     if ($line -match '^(#{1,3})\s+(.+)$') {
@@ -83,4 +95,4 @@ if (-not $inserted) {
 # ✅ Write file
 $finalContent | Set-Content $output -Encoding utf8
 
-Write-Host "✅ Output written to: $output"
+Write-Output "✅ Output written to: $output"
