@@ -1,5 +1,26 @@
 # Maintenance Mode Orchestration
 
+## Table of Contents
+
+- [Flow](#flow)
+- [Architecture](#architecture)
+- [High-Level Flow](#high-level-flow)
+- [Functionality](#functionality)
+  - [Scheduled Automatic Disable](#scheduled-automatic-disable)
+  - [Audit Logging](#audit-logging)
+  - [OpsRamp Integration](#opsramp-integration)
+  - [Environment Variables](#environment-variables)
+  - [Configuration Files](#configuration-files)
+  - [Error Handling](#error-handling)
+  - [Timezone and Scheduling](#timezone-and-scheduling)
+- [Security Considerations](#security-considerations)
+- [Troubleshooting](#troubleshooting)
+- [Future Enhancements](#future-enhancements)
+- [Testing](#testing)
+  - [Maintenance Mode Test Runner](#maintenance-mode-test-runner)
+- [Change History](#change-history)
+
+
 Maintenance mode manages scheduled maintenance windows for clusters across two monitoring systems:
 
 - **SCOM 2015** (System Center Operations Manager) - maintenance mode on groups
@@ -10,6 +31,7 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 
 ---
 
+<a name="flow"></a>
 ## Flow
 
 - SCOM: Maintenance mode needs to operate the SCOM using the [schedule maintenance functionality](https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance)
@@ -25,6 +47,7 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 
 ---
 
+<a name="architecture"></a>
 ## Architecture
 
 ```
@@ -50,6 +73,7 @@ iRequest or manual call
 
 ---
 
+<a name="high-level-flow"></a>
 ## High-Level Flow
 
 1. **Enable** - validate cluster ID, optionally compute end time from the cluster schedule, then enable maintenance on each configured subsystem (SCOM, iLO, OneView). Optionally schedule a one-shot task to run disable at end time.
@@ -59,25 +83,34 @@ iRequest or manual call
 
 ---
 
-## Scheduled Automatic Disable
+<a name="functionality"></a>
+## Functionality
+
+---
+
+<a name="scheduled-automatic-disable"></a>
+### Scheduled Automatic Disable
 
 When enable is called without `--no-schedule` / `-NoSchedule`, a one-shot OS task is created to run disable at the computed end time. This task sends the disabled notification, resets OpsRamp metrics, and writes an audit entry. The task should not be skipped unless disable is managed another way.
 
 ---
 
-## Audit Logging
+<a name="audit-logging"></a>
+### Audit Logging
 
 Every run writes a timestamped JSON file and appends one JSON line to a master log. Records include cluster ID, action, dry-run flag, per-system success flags (SCOM, iLO, OneView, email, OpsRamp), start/end timestamps, and any errors.
 
 ---
 
-## OpsRamp Integration
+<a name="opsramp-integration"></a>
+### OpsRamp Integration
 
 On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1 / 0), fire `maintenance.enabled` or `maintenance.disabled` alerts, and emit an event. Failure to publish is recorded in the audit record but does not block the overall operation.
 
 ---
 
-## Environment Variables
+<a name="environment-variables"></a>
+### Environment Variables
 
 | Variable | Purpose |
 |----------|---------|
@@ -89,7 +122,8 @@ On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1
 
 ---
 
-## Configuration Files
+<a name="configuration-files"></a>
+### Configuration Files
 
 Dozens of options live in clustered JSON files and optional plain-text lists under the `configs/` directory. The conventions are the same across all implementations.
 
@@ -104,18 +138,21 @@ Dozens of options live in clustered JSON files and optional plain-text lists und
 
 ---
 
-## Error Handling
+<a name="error-handling"></a>
+### Error Handling
 
 No automatic rollback is performed on partial failure (e.g., SCOM succeeded but iLO failed). The operator receives a structured audit record with per-system success flags, an email notification if the mail subsystem is healthy, and OpsRamp alerts. Manual recovery is via the SCOM console, iLO interface, or by re-running the script with `--disable` / `-Action disable`.
 
 ---
 
-## Timezone and Scheduling
+<a name="timezone-and-scheduling"></a>
+### Timezone and Scheduling
 
 The server's OS timezone should match the `timezone` field in the cluster schedule. The scheduler assumes local time equals the configured timezone when calculating end times. When crossing timezones, supply explicit ISO 8601 datetimes for `--start` / `-Start` and `--end` / `-End`.
 
 ---
 
+<a name="security-considerations"></a>
 ## Security Considerations
 
 - Credentials flow through environment variables exclusively; no plaintext configs.
@@ -125,6 +162,7 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 
 ---
 
+<a name="troubleshooting"></a>
 ## Troubleshooting
 
 | Symptom | Check |
@@ -138,6 +176,7 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 
 ---
 
+<a name="future-enhancements"></a>
 ## Future Enhancements
 
 - Automatic rollback of successful subsystems on partial failure
@@ -148,8 +187,10 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 
 ---
 
+<a name="testing"></a>
 ## Testing
 
+<a name="maintenance-mode-test-runner"></a>
 ### Maintenance Mode Test Runner
 
 A dedicated test runner (`make maint-mode-tests`) runs high-priority Pester tests for the three primary actions:
@@ -170,6 +211,7 @@ Each test file contains BDD-style Pester `Describe`/`Context`/`It` blocks coveri
 
 ---
 
+<a name="change-history"></a>
 ## Change History
 
 - 2026-06-09: Added `make maint-mode-tests` target and dedicated test runner for high-priority enable/disable/validate scenarios
