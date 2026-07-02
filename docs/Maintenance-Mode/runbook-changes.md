@@ -1,9 +1,36 @@
 # Plan: ConfigMgr Bootable Media Automation (per runbook-requirements.md)
 
+## Table of Contents
+
+- [Goal](#goal)
+- [Key Design Decisions](#key-design-decisions)
+- [Scope Boundary](#scope-boundary)
+- [Implementation Tasks (Ordered)](#implementation-tasks-ordered)
+  - [Task 1: Add Redfish iLO integration module](#task-1-add-redfish-ilo-integration-module)
+  - [Task 2: ISO HTTPS publishing mechanism](#task-2-iso-https-publishing-mechanism)
+  - [Task 3: OneView server targeting](#task-3-oneview-server-targeting)
+  - [Task 4: Pre-build validation](#task-4-pre-build-validation)
+  - [Task 5: Post-build validation](#task-5-post-build-validation)
+  - [Task 6: Rewrite `New-IsoBuild` for ConfigMgr bootable media](#task-6-rewrite-new-isobuild-for-configmgr-bootable-media)
+  - [Task 7: Relocate firmware/patch code](#task-7-relocate-firmwarepatch-code)
+  - [Task 8: End-to-end orchestrator](#task-8-end-to-end-orchestrator)
+  - [Task 9: Add new request types to routing](#task-9-add-new-request-types-to-routing)
+  - [Task 10: Update ConfigMgr configuration](#task-10-update-configmgr-configuration)
+  - [Task 11: Update module manifest and exports](#task-11-update-module-manifest-and-exports)
+  - [Task 12: Unit tests](#task-12-unit-tests)
+  - [Task 13: Update existing `Invoke-IsoDeploy` for Redfish](#task-13-update-existing-invoke-isodeploy-for-redfish)
+  - [Task 14: Rename/remove patching terminology](#task-14-renameremove-patching-terminology)
+- [File Change Summary](#file-change-summary)
+- [Validation](#validation)
+- [Risks](#risks)
+
+
+<a name="goal"></a>
 ## Goal
 
 Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bootable media workflow matching `wip/runbook-requirements.md`. The automation will create a ConfigMgr WinPE boot ISO, query HPE OneView for target server identity, mount the ISO via iLO Redfish virtual media, force one-time boot, and monitor the OS deployment.
 
+<a name="key-design-decisions"></a>
 ## Key Design Decisions
 
 | Decision | Choice | Rationale |
@@ -15,6 +42,7 @@ Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bo
 | Terminology | No "patching", no "firmware in ISO". Use "OSD", "bootable media", "task sequence", "image deployment" | Bladelogic handles patching; this code is for new server builds only |
 | SCOM | Not involved | Not mentioned in the runbook; out of scope |
 
+<a name="scope-boundary"></a>
 ## Scope Boundary
 
 **IN SCOPE:**
@@ -36,8 +64,10 @@ Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bo
 - OneView server inventory maintenance (OneView Admin)
 - SCOM monitoring/maintenance mode (separate workflows)
 
+<a name="implementation-tasks-ordered"></a>
 ## Implementation Tasks (Ordered)
 
+<a name="task-1-add-redfish-ilo-integration-module"></a>
 ### Task 1: Add Redfish iLO integration module
 
 **File:** `src/powershell/Automation/Public/Invoke-IloRedfish.ps1` (new)
@@ -71,6 +101,7 @@ All Redfish calls reuse the existing `Get-IloCredentials` function and the exist
 
 ---
 
+<a name="task-2-iso-https-publishing-mechanism"></a>
 ### Task 2: ISO HTTPS publishing mechanism
 
 **File:** `src/powershell/Automation/Public/Publish-BootIso.ps1` (new)
@@ -94,6 +125,7 @@ Publish the ConfigMgr bootable ISO to an HTTPS endpoint that iLO can reach:
 
 ---
 
+<a name="task-3-oneview-server-targeting"></a>
 ### Task 3: OneView server targeting
 
 **File:** `src/powershell/Automation/Public/Get-OneViewServerTarget.ps1` (new)
@@ -113,6 +145,7 @@ Uses the bundled `HPEOneView.1000` module or direct REST API (with the existing 
 
 ---
 
+<a name="task-4-pre-build-validation"></a>
 ### Task 4: Pre-build validation
 
 **File:** `src/powershell/Automation/Public/Test-PreBuildValidation.ps1` (new)
@@ -130,6 +163,7 @@ Returns a hashtable of checks with pass/fail status.
 
 ---
 
+<a name="task-5-post-build-validation"></a>
 ### Task 5: Post-build validation
 
 **File:** `src/powershell/Automation/Public/Test-PostBuildValidation.ps1` (new)
@@ -146,6 +180,7 @@ Implementation of the runbook's post-build validation checklist:
 
 ---
 
+<a name="task-6-rewrite-new-isobuild-for-configmgr-bootable-media"></a>
 ### Task 6: Rewrite `New-IsoBuild` for ConfigMgr bootable media
 
 **File:** `src/powershell/Automation/Public/New-IsoBuild.ps1` (major rewrite)
@@ -183,6 +218,7 @@ Replace the current firmware-DISM logic with ConfigMgr `New-CMBootableMedia`:
 
 ---
 
+<a name="task-7-relocate-firmwarepatch-code"></a>
 ### Task 7: Relocate firmware/patch code
 
 **File:** `src/powershell/Automation/Public/Update-Firmware.ps1` (existing, needs refactor)
@@ -195,6 +231,7 @@ Remove `Build-ForServer` private function from `New-IsoBuild` - relocate its fir
 
 ---
 
+<a name="task-8-end-to-end-orchestrator"></a>
 ### Task 8: End-to-end orchestrator
 
 **File:** `src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1` (new)
@@ -215,6 +252,7 @@ Every step logs to the existing audit infrastructure (`AuditLogger`).
 
 ---
 
+<a name="task-9-add-new-request-types-to-routing"></a>
 ### Task 9: Add new request types to routing
 
 **File:** `configs/request_types.json` (update)
@@ -255,6 +293,7 @@ Add new request types:
 
 ---
 
+<a name="task-10-update-configmgr-configuration"></a>
 ### Task 10: Update ConfigMgr configuration
 
 **File:** `configs/configmgr_config.json` (new)
@@ -278,6 +317,7 @@ Configuration for ConfigMgr connectivity:
 
 ---
 
+<a name="task-11-update-module-manifest-and-exports"></a>
 ### Task 11: Update module manifest and exports
 
 **File:** `src/powershell/Automation/Automation.psd1`
@@ -292,6 +332,7 @@ Add to `FunctionsToExport`:
 
 ---
 
+<a name="task-12-unit-tests"></a>
 ### Task 12: Unit tests
 
 **File:** `tests/powershell/` (new and updated files)
@@ -307,6 +348,7 @@ Create Pester unit tests for all new functions:
 
 ---
 
+<a name="task-13-update-existing-invoke-isodeploy-for-redfish"></a>
 ### Task 13: Update existing `Invoke-IsoDeploy` for Redfish
 
 **File:** `src/powershell/Automation/Public/Invoke-IsoDeploy.ps1` (refactor)
@@ -319,6 +361,7 @@ Create Pester unit tests for all new functions:
 
 ---
 
+<a name="task-14-renameremove-patching-terminology"></a>
 ### Task 14: Rename/remove patching terminology
 
 **Files:** Multiple
@@ -330,6 +373,7 @@ Create Pester unit tests for all new functions:
 
 ---
 
+<a name="file-change-summary"></a>
 ## File Change Summary
 
 | File | Action | Lines ~ |
@@ -351,6 +395,7 @@ Create Pester unit tests for all new functions:
 
 **Total: ~1,700 lines across 14 files**
 
+<a name="validation"></a>
 ## Validation
 
 1. Run Pester unit tests: `Invoke-Pester tests/powershell/`
@@ -361,6 +406,7 @@ Create Pester unit tests for all new functions:
    - `Start-PhysicalServerBuild -ServerIdentifier 'PROD-SERVER-01' -DryRun` → validates full flow without side effects
    - Single real server build with monitoring
 
+<a name="risks"></a>
 ## Risks
 
 1. **ConfigMgr PowerShell module availability**: `New-CMBootableMedia` requires the Configuration Manager console or the CM PowerShell module. If neither is available, PSRemoting must be configured and tested.

@@ -1,9 +1,23 @@
 # HPE ProLiant Windows Server ISO Automation - Documentation Index
 
+## Table of Contents
+
+- [Repository Structure](#repository-structure)
+- [Quick Start](#quick-start)
+- [Document Index](#document-index)
+  - [Core Documentation](#core-documentation)
+  - [Physical Server Build & Runbooks](#physical-server-build-and-runbooks)
+  - [Maintenance Mode & Scheduling](#maintenance-mode-and-scheduling)
+  - [Integration & Authentication](#integration-and-authentication)
+  - [Developer Resources](#developer-resources)
+- [Contributing](#contributing)
+
+
 Complete documentation for the PowerShell automation module (`src/powershell/Automation/`).
 
 ---
 
+<a name="repository-structure"></a>
 ## Repository Structure
 
 ```
@@ -21,6 +35,7 @@ hpe-windows-iso-automation/
 
 ---
 
+<a name="quick-start"></a>
 ## Quick Start
 
 - **PowerShell** module import and first command: see [powershell_api_reference.md](powershell_api_reference.md#quick-start)
@@ -30,8 +45,10 @@ hpe-windows-iso-automation/
 
 ---
 
+<a name="document-index"></a>
 ## Document Index
 
+<a name="core-documentation"></a>
 ### Core Documentation
 
 | Document | Description |
@@ -44,6 +61,7 @@ hpe-windows-iso-automation/
 | [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks - configuration, usage, CI pipeline integration |
 | [GitLab CI/CD Integration](gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
 
+<a name="physical-server-build-and-runbooks"></a>
 ### Physical Server Build & Runbooks
 
 | Document | Description |
@@ -53,6 +71,7 @@ hpe-windows-iso-automation/
 | [Automation Command Reference](automation_commands.md) | Command-level reference for the physical server build functions |
 | [PowerShell API Reference](powershell_api_reference.md) | Orchestrator and workflow overview for the physical server build |
 
+<a name="maintenance-mode-and-scheduling"></a>
 ### Maintenance Mode & Scheduling
 
 | Document | Description |
@@ -61,6 +80,7 @@ hpe-windows-iso-automation/
 | [Maintenance Mode Environment Config](maintenance-mode-environment-config.md) | Environment variable configuration for maintenance mode |
 | [Maintenance Mode Code Map](Code_Map_Maitenance_Mode.md) | Complete code map with links to all mm command functionality |
 
+<a name="integration-and-authentication"></a>
 ### Integration & Authentication
 
 | Document | Description |
@@ -72,6 +92,7 @@ hpe-windows-iso-automation/
 | [Audit Process](audit_process.md) | Audit trail and compliance process |
 | [GDPR Compliance](gdpr_compliance.md) | GDPR compliance documentation |
 
+<a name="developer-resources"></a>
 ### Developer Resources
 
 | Document | Description |
@@ -81,6 +102,7 @@ hpe-windows-iso-automation/
 
 ---
 
+<a name="contributing"></a>
 ## Contributing
 
 1. Add or update unit tests mirroring the module structure in `tests/powershell/`
