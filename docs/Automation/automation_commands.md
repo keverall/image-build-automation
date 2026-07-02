@@ -1,22 +1,57 @@
 # Automation Command Reference
 
-Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
-
----
-
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
 - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
+  - [Full build (most common)](#full-build-most-common)
+  - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
+  - [Re-run after ISO already built (skip build phases)](#re-run-after-iso-already-built-skip-build-phases)
+  - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
+  - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
+  - [Mock build (testing)](#mock-build-testing)
 - [ISO Build, Patching, Deployment, and Monitoring](#iso-build-patching-deployment-and-monitoring)
+  - [Build a bootable ISO](#build-a-bootable-iso)
+  - [Publish a bootable ISO](#publish-a-bootable-iso)
+  - [Deploy ISOs to servers](#deploy-isos-to-servers)
+  - [Monitor installation progress](#monitor-installation-progress)
+  - [Build firmware ISO](#build-firmware-iso)
+  - [Patch Windows ISO with security updates](#patch-windows-iso-with-security-updates)
+  - [Resolve server target via OneView](#resolve-server-target-via-oneview)
+  - [iLO Redfish operations](#ilo-redfish-operations)
+  - [Pre-build validation](#pre-build-validation)
+  - [Post-build validation](#post-build-validation)
 - [Maintenance Mode](#maintenance-mode)
+  - [Examples](#examples)
 - [Connectivity and Validation](#connectivity-and-validation)
+  - [Test server connectivity](#test-server-connectivity)
+  - [Validate server list](#validate-server-list)
+  - [Validate cluster ID](#validate-cluster-id)
+  - [Validate build parameters](#validate-build-parameters)
 - [PowerShell Execution and Utility](#powershell-execution-and-utility)
+  - [Run a local PowerShell script](#run-a-local-powershell-script)
+  - [Run a remote PowerShell script via WinRM](#run-a-remote-powershell-script-via-winrm)
+  - [Generate a deterministic UUID](#generate-a-deterministic-uuid)
+  - [OpsRamp API client](#opsramp-api-client)
+  - [SCOM connection string](#scom-connection-string)
 - [Routing and Control Surfaces](#routing-and-control-surfaces)
+  - [Orchestrator (unified entry point)](#orchestrator-unified-entry-point)
+  - [View the route map](#view-the-route-map)
+  - [Control surface factories and runners](#control-surface-factories-and-runners)
+  - [GitLab maintenance trigger](#gitlab-maintenance-trigger)
 - [Troubleshooting](#troubleshooting)
+  - [Command not found](#command-not-found)
+  - [Run setup again](#run-setup-again)
+  - [Check module is loaded](#check-module-is-loaded)
+  - [Force reimport](#force-reimport)
+  - [Source links](#source-links)
+
+
+Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
 ---
 
+<a name="setup-one-time"></a>
 ## Setup (One-Time)
 
 Run make setup from the project root to register the Automation module in your PowerShell profile:
@@ -41,40 +76,47 @@ Get-Command -Module Automation
 
 ---
 
+<a name="physical-server-build-end-to-end"></a>
 ## Physical Server Build (End-to-End)
 
 The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, publish to HTTPS, OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, and audit logging.
 
+<a name="full-build-most-common"></a>
 ### Full build (most common)
 
 ```powershell
 Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
 ```
 
+<a name="dry-run-validate-without-changing-anything"></a>
 ### Dry run (validate without changing anything)
 
 ```powershell
 Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -DryRun
 ```
 
+<a name="re-run-after-iso-already-built-skip-build-phases"></a>
 ### Re-run after ISO already built (skip build phases)
 
 ```powershell
 Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -SkipPreBuild -SkipIsoBuild -SkipPublish -InMaintenanceWindow
 ```
 
+<a name="re-run-monitoring-after-deployment"></a>
 ### Re-run monitoring after deployment
 
 ```powershell
 Start-PhysicalServerBuild -ServerIdentifier srv01 -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -InMaintenanceWindow
 ```
 
+<a name="build-with-custom-domain-and-post-build-checks"></a>
 ### Build with custom domain and post-build checks
 
 ```powershell
 Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -ExpectedHostname srv01.corp.local -Domain corp.local -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
 ```
 
+<a name="mock-build-testing"></a>
 ### Mock build (testing)
 
 ```powershell
@@ -117,10 +159,12 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -Mock
 
 ---
 
+<a name="iso-build-patching-deployment-and-monitoring"></a>
 ## ISO Build, Patching, Deployment, and Monitoring
 
 Individual commands for the ISO pipeline - build, publish, deploy, monitor, and patch.
 
+<a name="build-a-bootable-iso"></a>
 ### Build a bootable ISO
 
 ```powershell
@@ -158,6 +202,7 @@ New-IsoBuild -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint d
 
 ---
 
+<a name="publish-a-bootable-iso"></a>
 ### Publish a bootable ISO
 
 ```powershell
@@ -191,6 +236,7 @@ Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
 
 ---
 
+<a name="deploy-isos-to-servers"></a>
 ### Deploy ISOs to servers
 
 ```powershell
@@ -225,6 +271,7 @@ Invoke-IsoDeploy -DryRun
 
 ---
 
+<a name="monitor-installation-progress"></a>
 ### Monitor installation progress
 
 ```powershell
@@ -257,6 +304,7 @@ Start-InstallMonitor
 
 ---
 
+<a name="build-firmware-iso"></a>
 ### Build firmware ISO
 
 ```powershell
@@ -290,6 +338,7 @@ Update-Firmware -DryRun
 
 ---
 
+<a name="patch-windows-iso-with-security-updates"></a>
 ### Patch Windows ISO with security updates
 
 ```powershell
@@ -323,6 +372,7 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -DryRun
 
 ---
 
+<a name="resolve-server-target-via-oneview"></a>
 ### Resolve server target via OneView
 
 ```powershell
@@ -357,6 +407,7 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 ---
 
+<a name="ilo-redfish-operations"></a>
 ### iLO Redfish operations
 
 ```powershell
@@ -404,6 +455,7 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 
 ---
 
+<a name="pre-build-validation"></a>
 ### Pre-build validation
 
 ```powershell
@@ -444,6 +496,7 @@ Test-PreBuildValidation -ServerIdentifier srv01 -DryRun
 
 ---
 
+<a name="post-build-validation"></a>
 ### Post-build validation
 
 ```powershell
@@ -479,10 +532,12 @@ Test-PostBuildValidation -Hostname srv01 -SkipRemote
 
 ---
 
+<a name="maintenance-mode"></a>
 ## Maintenance Mode
 
 See [`CLIENT-QUICK-START.md`](CLIENT-QUICK-START.md) for the full guide.
 
+<a name="examples"></a>
 ### Examples
 
 ```powershell
@@ -493,10 +548,12 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 
 ---
 
+<a name="connectivity-and-validation"></a>
 ## Connectivity and Validation
 
 Pre-flight read-only checks. Safe to run during a change freeze.
 
+<a name="test-server-connectivity"></a>
 ### Test server connectivity
 
 ```powershell
@@ -528,6 +585,7 @@ Test-ServerConnectivity -ManagementHost myhost.corp.local
 
 ---
 
+<a name="validate-server-list"></a>
 ### Validate server list
 
 ```powershell
@@ -538,6 +596,7 @@ Test-ServerList
 
 ---
 
+<a name="validate-cluster-id"></a>
 ### Validate cluster ID
 
 ```powershell
@@ -548,6 +607,7 @@ Test-ClusterId -TargetId CLU-CLUSTER-01
 
 ---
 
+<a name="validate-build-parameters"></a>
 ### Validate build parameters
 
 ```powershell
@@ -558,34 +618,40 @@ Test-BuildParams -BaseIsoPath 'C:\isos\WinSrv2025.iso'
 
 ---
 
+<a name="powershell-execution-and-utility"></a>
 ## PowerShell Execution and Utility
 
 Low-level helpers used by other commands.
 
+<a name="run-a-local-powershell-script"></a>
 ### Run a local PowerShell script
 
 ```powershell
 Invoke-PowerShellScript -Script 'Get-Process | Select-Object -First 5' -TimeoutSeconds 30
 ```
 
+<a name="run-a-remote-powershell-script-via-winrm"></a>
 ### Run a remote PowerShell script via WinRM
 
 ```powershell
 Invoke-PowerShellWinRM -Script 'Get-Service wuauserv' -Server srv01
 ```
 
+<a name="generate-a-deterministic-uuid"></a>
 ### Generate a deterministic UUID
 
 ```powershell
 New-Uuid -ServerName srv01
 ```
 
+<a name="opsramp-api-client"></a>
 ### OpsRamp API client
 
 ```powershell
 Invoke-OpsRampClient
 ```
 
+<a name="scom-connection-string"></a>
 ### SCOM connection string
 
 ```powershell
@@ -594,22 +660,26 @@ New-ScomConnection -ManagementServer scom01.corp.local
 
 ---
 
+<a name="routing-and-control-surfaces"></a>
 ## Routing and Control Surfaces
 
 Dispatch requests to the appropriate handler.
 
+<a name="orchestrator-unified-entry-point"></a>
 ### Orchestrator (unified entry point)
 
 ```powershell
 Start-AutomationOrchestrator -RequestType build_iso -Params @{ SiteCode = 'P01'; ManagementPoint = 'mp01.corp.local' }
 ```
 
+<a name="view-the-route-map"></a>
 ### View the route map
 
 ```powershell
 Get-RouteMap
 ```
 
+<a name="control-surface-factories-and-runners"></a>
 ### Control surface factories and runners
 
 ```powershell
@@ -619,6 +689,7 @@ Run-Scheduler -TaskParams @{ Server = 'srv01'; Timeout = 3600 }
 Run-GitLab -Params @{ TargetId = 'CLU-01'; Action = 'enable' }
 ```
 
+<a name="gitlab-maintenance-trigger"></a>
 ### GitLab maintenance trigger
 
 ```powershell
@@ -627,8 +698,10 @@ Invoke-GitLabMaintenanceTrigger -TargetId CLU-CLUSTER-01 -Action enable -Start n
 
 ---
 
+<a name="troubleshooting"></a>
 ## Troubleshooting
 
+<a name="command-not-found"></a>
 ### Command not found
 
 ```powershell
@@ -636,24 +709,28 @@ Invoke-GitLabMaintenanceTrigger -TargetId CLU-CLUSTER-01 -Action enable -Start n
 Get-Command -Module Automation
 ```
 
+<a name="run-setup-again"></a>
 ### Run setup again
 
 ```powershell
 ./scripts/Setup-Profile.ps1
 ```
 
+<a name="check-module-is-loaded"></a>
 ### Check module is loaded
 
 ```powershell
 Get-Module Automation
 ```
 
+<a name="force-reimport"></a>
 ### Force reimport
 
 ```powershell
 Import-Module (Get-ChildItem -Recurse -Filter 'Automation.psd1' -Path (Split-Path (Get-Command Setup-Profile).Source | Split-Path) | Select -First 1).FullName -Force
 ```
 
+<a name="source-links"></a>
 ### Source links
 
 [Generated API reference](dynamic-code-docs/INDEX.md) with per-command detail pages.
