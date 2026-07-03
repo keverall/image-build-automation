@@ -1,17 +1,36 @@
 # HPE ProLiant Windows Server ISO Automation (Root Readme)
 
+## Table of Contents
+
+- [🚀 Quick Start - Setup & Installation](#-quick-start---setup-and-installation)
+  - [TL;DR - One-Line Setup](#tldr---one-line-setup)
+- [Table of Contents](#table-of-contents)
+  - [Internal docs index](#internal-docs-index)
+  - [In this document](#in-this-document)
+- [Project Architecture](#project-architecture)
+- [Generated Audit Logs (JSON)](#generated-audit-logs-json)
+- [Quick Links for Common Tasks](#quick-links-for-common-tasks)
+- [GitLab Pipeline Files](#gitlab-pipeline-files)
+  - [Pipeline Activation](#pipeline-activation)
+- [Contributing](#contributing)
+- [Support](#support)
+- [License](#license)
+- [HPe Doc](#hpe-doc)
+
+
 Automated build pipelines for creating customized Windows Server installation ISOs and for orchestrating physical HPE ProLiant server deployments using Microsoft Configuration Manager bootable media, HPE OneView, and HPE iLO Redfish. Integrates firmware/driver updates, security patching, vulnerability scanning, complete audit trails, with OpsRamp monitoring and reporting.
 
 ---
 
+<a name="-quick-start---setup-and-installation"></a>
 ## 🚀 Quick Start - Setup & Installation
 
 **New to this project?** Start here:
 
 1. **[📖 Setup Guide](docs/SETUP-GUIDE.md)** - Complete setup instructions for PowerShell profile and maintenance mode
-2. **[🔧 Quick Client Setup](docs/MAINTENANCE_MODE_SHORTCUTS.md)** - 5-minute setup for using maintenance mode commands
-3. **[⚡ Shortcut Reference](docs/MAINTENANCE_MODE_SHORTCUTS.md)** - All `mm` command options and examples
+2. **[🔧 Quick Client Setup](docs\Maintenance-Mode\MAINTENANCE_MODE_SHORTCUTS.md)** - 5-minute setup for using maintenance mode commands
 
+<a name="tldr---one-line-setup"></a>
 ### TL;DR - One-Line Setup
 
 ```powershell
@@ -33,8 +52,10 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 
 ---
 
+<a name="table-of-contents"></a>
 ## Table of Contents
 
+<a name="internal-docs-index"></a>
 ### Internal docs index
 
 #### Core Documentation
@@ -43,7 +64,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 | [📚 Documentation Index](docs/README.md) | Complete documentation overview |
 | [🚀 Setup Guide](docs/SETUP-GUIDE.md) | **START HERE** - Profile setup, module installation, quick start |
 | [📡 PowerShell API Reference](docs/powershell_api_reference.md) | Module overview, cmdlet usage, orchestrator API |
-| [📗 Automation Command Reference](docs/automation_commands.md) | **All automation commands with full parameter tables** - functional reference linking to source |
+| [📗 Automation Command Reference](docs/Automation\automation_commands.md) | **All automation commands with full parameter tables** - functional reference linking to source |
 | [📘 PowerShell Function Reference](docs/dynamic-code-docs/INDEX.md) | **Complete coverage of ALL PowerShell functions and cmdlets** - comprehensive parameter documentation, examples, and usage for every function in src/powershell/Automation/. Auto-generated from source code. |
 | [🔌 CI Run Requirements](docs/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
 | [🧪 PowerShell Testing (Pester)](docs/testing.md) | Pester v5 BDD testing guide, test commands, mocking |
@@ -55,7 +76,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 |---|---|
 | [📋 Runbook Requirements](docs/runbook-requirements.md) | Operational runbook for physical HPE server builds via ConfigMgr + OneView + iLO Redfish |
 | [📋 Runbook Changes](docs/runbook-changes.md) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
-| [📗 Automation Command Reference](docs/automation_commands.md) | Command-level reference for the physical server build functions |
+| [📗 Automation Command Reference](docs/Automation\automation_commands.md) | Command-level reference for the physical server build functions |
 
 #### Maintenance Mode & Scheduling
 | Document | Description |
@@ -69,7 +90,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 #### Integration & Authentication
 | Document | Description |
 |---|---|
-| [🔐 SCOM Authentication](docs/scom-auth.md) | SCOM authentication setup and configuration |
+| [🔐 SCOM Authentication](docs\Generic\scom-auth.md) | SCOM authentication setup and configuration |
 | [🔐 OneView Authentication](docs/oneview-auth.md) | HPE OneView authentication details |
 | [🔐 Authentication Overview](docs/auth-doc.md) | General authentication documentation |
 | [📊 Audit Process](docs/audit_process.md) | Audit trail and compliance process |
@@ -80,6 +101,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 |---|---|
 | [📖 DevOps Guide to HPE Terms](docs/devops-guide-to-HPe-Terms.md) | HPE terminology guide |
 
+<a name="in-this-document"></a>
 ### In this document
 - [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)
   - [🚀 Quick Start - Setup \& Installation](#-quick-start---setup--installation)
@@ -104,6 +126,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 
 ---
 
+<a name="project-architecture"></a>
 ## Project Architecture
 
 ```
@@ -217,6 +240,7 @@ hpe-windows-iso-automation/
     └── test-connectivity.ps1
 ```
 
+<a name="generated-audit-logs-json"></a>
 ## Generated Audit Logs (JSON)
 
 During both normal operations and unit testing (e.g. `make test`), you will notice a significant number of structured `.json` log files generated in the `generated/logs/` subdirectories (such as `generated/logs/testing/enable_UNIT-TEST-CLUSTER_...json`). 
@@ -227,6 +251,7 @@ These files are the definitive, machine-readable execution records generated by 
 
 ---
 
+<a name="quick-links-for-common-tasks"></a>
 ## Quick Links for Common Tasks
 
 | Task | Manual Command | Pipeline Stage |
@@ -241,10 +266,12 @@ These files are the definitive, machine-readable execution records generated by 
 
 ---
 
+<a name="gitlab-pipeline-files"></a>
 ## GitLab Pipeline Files
 
 The GitLab CI pipeline lives in `.gitlab-ci.yml` at the repository root using PowerShell 7.4 containers.
 
+<a name="pipeline-activation"></a>
 ### Pipeline Activation
 
 The pipeline is currently **disabled** via a workflow rule to prevent execution on the development GitLab instance. Before deploying to the Bank's GitLab:
@@ -263,6 +290,7 @@ The pipeline is currently **disabled** via a workflow rule to prevent execution 
 
 ---
 
+<a name="contributing"></a>
 ## Contributing
 
 All changes should include:
@@ -271,6 +299,7 @@ All changes should include:
 
 ---
 
+<a name="support"></a>
 ## Support
 
 - Create an issue or pull request in the repository
@@ -279,10 +308,12 @@ All changes should include:
 
 ---
 
+<a name="license"></a>
 ## License
 
 MIT License - see `LICENSE` file for details.
 
+<a name="hpe-doc"></a>
 ## HPe Doc
 
 [oneview-powershell-samples](https://github.com/HewlettPackard/oneview-powershell-samples/tree/master/Server%20Hardware/Creator-iLO)
