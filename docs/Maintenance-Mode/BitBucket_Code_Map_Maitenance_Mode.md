@@ -735,8 +735,8 @@ All configurations loaded from `configs/` directory, in load order:
   - **[Lines 433–505](../../src/powershell/Automation/Automation.psm1#L433-L505):** `Export-ModuleMember` - [`Set-MaintenanceMode` at line 449](../../src/powershell/Automation/Automation.psm1#L449)
 - **Request Router**: [`Invoke-RoutedRequest`](../../src/powershell/Automation/Private/Router.ps1#L20) - Routes from `request_types.json`
 - **PowerShell Profile**: [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) - Adds module import
-  - **[Lines 433–505](../src/powershell/Automation/Automation.psm1#L433-L505):** `Export-ModuleMember` - [`Set-MaintenanceMode` at line 449](../src/powershell/Automation/Automation.psm1#L449)
-- **Request Router**: [`Invoke-RoutedRequest`](../src/powershell/Automation/Private/Router.ps1#L20) - Routes from `request_types.json`
+  - **[Lines 433–505](../../src/powershell/Automation/Automation.psm1#L433-L505):** `Export-ModuleMember` - [`Set-MaintenanceMode` at line 449](../../src/powershell/Automation/Automation.psm1#L449)
+- **Request Router**: [`Invoke-RoutedRequest`](../../src/powershell/Automation/Private/Router.ps1#L20) - Routes from `request_types.json`
 - **PowerShell Profile**: [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) - Adds module import
 
 ---
@@ -749,11 +749,11 @@ All configurations loaded from `configs/` directory, in load order:
 
 | Test File | Coverage |
 |-----------|----------|
-| [`Set-MaintenanceMode.Unit.Tests.ps1`](../tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1) | Core function unit tests |
-| [`Set-MaintenanceMode.Enable.Tests.ps1`](../tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1) | Enable action tests |
-| [`Set-MaintenanceMode.Disable.Tests.ps1`](../tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1) | Disable action tests |
-| [`Set-MaintenanceMode.Validation.Tests.ps1`](../tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1) | Validate action tests |
-| [`Set-MaintenanceMode.Environment.Tests.ps1`](../tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1) | Environment resolution tests |
+| [`Set-MaintenanceMode.Unit.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1) | Core function unit tests |
+| [`Set-MaintenanceMode.Enable.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1) | Enable action tests |
+| [`Set-MaintenanceMode.Disable.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1) | Disable action tests |
+| [`Set-MaintenanceMode.Validation.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1) | Validate action tests |
+| [`Set-MaintenanceMode.Environment.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1) | Environment resolution tests |
 
 <a name="test-scripts"></a>
 ### Test Scripts
@@ -812,4 +812,5 @@ All configurations loaded from `configs/` directory, in load order:
 *Document updated: 2026-06-23*
 *Source file total: 3,803 lines (Set-MaintenanceMode.ps1) + 481 lines (Test-ServerConnectivity.ps1)*
 *For questions about specific code locations, refer to the line numbers provided in the links above.*
+
 
