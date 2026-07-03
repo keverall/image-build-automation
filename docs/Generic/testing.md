@@ -1,9 +1,43 @@
 # PowerShell Module Testing Guide (Pester)
 
+## Table of Contents
+
+- [Overview](#overview)
+  - [BDD Keywords](#bdd-keywords)
+- [Prerequisites](#prerequisites)
+- [Running Tests](#running-tests)
+  - [Run the Complete Test Suite](#run-the-complete-test-suite)
+  - [Run via Makefile](#run-via-makefile)
+  - [Run via Wrapper Script](#run-via-wrapper-script)
+  - [Run a Single Test File](#run-a-single-test-file)
+  - [Run by Tag](#run-by-tag)
+  - [CI / XML Output & Coverage Reports](#ci-xml-output-and-coverage-reports)
+  - [Code Coverage](#code-coverage)
+- [Test File Structure](#test-file-structure)
+- [Writing a New Test](#writing-a-new-test)
+  - [Common Assertions](#common-assertions)
+- [Mocking](#mocking)
+- [CI Integration](#ci-integration)
+- [Troubleshooting](#troubleshooting)
+- [See Also](#see-also)
+- [Maintenance Mode Testing](#maintenance-mode-testing)
+  - [Test Files](#test-files)
+  - [Test Scripts](#test-scripts)
+  - [Running Maintenance Mode Tests](#running-maintenance-mode-tests)
+  - [Test Coverage Areas](#test-coverage-areas)
+  - [Interpreting Test Results](#interpreting-test-results)
+  - [Manual Testing Checklist](#manual-testing-checklist)
+  - [Maintenance Mode Behavior](#maintenance-mode-behavior)
+  - [Maintenance Mode Testing Examples](#maintenance-mode-testing-examples)
+  - [Per-Object Status Reporting](#per-object-status-reporting)
+  - [Safety Warnings](#safety-warnings)
+
+
 Complete guide to running and maintaining the Pester test suite for the `src/powershell/Automation` module.
 
 ---
 
+<a name="overview"></a>
 ## Overview
 
 The PowerShell module uses **Pester v5+** as its BDD-style testing framework. Tests are colocated with the source under `tests/powershell/`.
@@ -13,6 +47,7 @@ The PowerShell module uses **Pester v5+** as its BDD-style testing framework. Te
 **Test discovery:** `*.Unit.Tests.ps1`, `*.Tests.ps1` files in `tests/powershell/`  
 **Offline support:** All dependencies are bundled under `vendor/modules/`
 
+<a name="bdd-keywords"></a>
 ### BDD Keywords
 
 | Pester concept | PowerShell equivalent |
@@ -26,6 +61,7 @@ The PowerShell module uses **Pester v5+** as its BDD-style testing framework. Te
 
 ---
 
+<a name="prerequisites"></a>
 ## Prerequisites
 
 ```powershell
@@ -46,8 +82,10 @@ Get-Module Pester -ListAvailable
 
 ---
 
+<a name="running-tests"></a>
 ## Running Tests
 
+<a name="run-the-complete-test-suite"></a>
 ### Run the Complete Test Suite
 
 ```powershell
@@ -58,6 +96,7 @@ Invoke-Pester -Path 'tests/powershell' -PassThru
 Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
 ```
 
+<a name="run-via-makefile"></a>
 ### Run via Makefile
 
 ```bash
@@ -77,6 +116,7 @@ make maint-mode-tests
 make lint-test
 ```
 
+<a name="run-via-wrapper-script"></a>
 ### Run via Wrapper Script
 
 ```powershell
@@ -87,12 +127,14 @@ pwsh -File scripts/run-tests.ps1
 pwsh -File scripts/run-maint-mode-tests.ps1
 ```
 
+<a name="run-a-single-test-file"></a>
 ### Run a Single Test File
 
 ```powershell
 Invoke-Pester -Path 'tests/powershell\Config.Unit.Tests.ps1'
 ```
 
+<a name="run-by-tag"></a>
 ### Run by Tag
 
 ```powershell
@@ -103,6 +145,7 @@ Invoke-Pester -Path 'tests/powershell' -Tag @('Config','FileIO') -PassThru
 Invoke-Pester -Path 'tests/powershell' -ExcludeTag @('Integration') -PassThru
 ```
 
+<a name="ci-xml-output-and-coverage-reports"></a>
 ### CI / XML Output & Coverage Reports
 
 ```powershell
@@ -115,6 +158,7 @@ Write-Host "Passed: $($result.PassedCount)  Failed: $($result.FailedCount)"
 exit $result.FailedCount
 ```
 
+<a name="code-coverage"></a>
 ### Code Coverage
 
 Pester generates code coverage data for the PowerShell source modules. By default, CI jobs produce `coverage-results.xml` (in Cobertura format) for GitLab integration.
@@ -135,6 +179,7 @@ pwsh -File scripts/coverage-report.ps1
 
 ---
 
+<a name="test-file-structure"></a>
 ## Test File Structure
 
 ```
@@ -178,6 +223,7 @@ tests/powershell/
 
 ---
 
+<a name="writing-a-new-test"></a>
 ## Writing a New Test
 
 ```powershell
@@ -201,6 +247,7 @@ Describe 'My-Cmdlet' {
 }
 ```
 
+<a name="common-assertions"></a>
 ### Common Assertions
 
 | Assertion | Syntax |
@@ -214,6 +261,7 @@ Describe 'My-Cmdlet' {
 
 ---
 
+<a name="mocking"></a>
 ## Mocking
 
 Pester's `Mock` keyword intercepts calls to a given command name inside the **currently executing scope**.
@@ -233,6 +281,7 @@ Describe 'Invoke-PowerShellScript' {
 
 ---
 
+<a name="ci-integration"></a>
 ## CI Integration
 
 The CI pipeline requires a Windows agent with PowerShell 7+. See [powershell_ci.md](powershell_ci.md#markdown-header-2-ci-pipeline-powershell-stage-requirements) for full pipeline configuration.
@@ -258,6 +307,7 @@ stage('PowerShell Tests') {
 
 ---
 
+<a name="troubleshooting"></a>
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
@@ -268,6 +318,7 @@ stage('PowerShell Tests') {
 
 ---
 
+<a name="see-also"></a>
 ## See Also
 
 - **CI integration:** [powershell_ci.md](powershell_ci.md)
@@ -276,10 +327,12 @@ stage('PowerShell Tests') {
 
 ---
 
+<a name="maintenance-mode-testing"></a>
 ## Maintenance Mode Testing
 
 Comprehensive testing for maintenance mode operations across SCOM and OneView systems.
 
+<a name="test-files"></a>
 ### Test Files
 
 | File | Purpose | Description |
@@ -289,6 +342,7 @@ Comprehensive testing for maintenance mode operations across SCOM and OneView sy
 | `tests/powershell/BackwardCompat.Tests.ps1` | Backward compatibility tests | Tests for existing behavior preservation |
 | `tests/powershell/Connection.Tests.ps1` | Connection validation tests | Tests for connectivity validation |
 
+<a name="test-scripts"></a>
 ### Test Scripts
 
 | Script | Purpose | Usage |
@@ -297,6 +351,7 @@ Comprehensive testing for maintenance mode operations across SCOM and OneView sy
 | `scripts/run-maintenance-tests.ps1` | Run test suite | `pwsh scripts/run-maintenance-tests.ps1 -TestSuite All -PassThru` |
 | `scripts/test-maintenance-connection.ps1` | Interactive connection test | `pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom` |
 
+<a name="running-maintenance-mode-tests"></a>
 ### Running Maintenance Mode Tests
 
 ```powershell
@@ -316,6 +371,7 @@ Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -Output Detailed
 pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test -DryRun
 ```
 
+<a name="test-coverage-areas"></a>
 ### Test Coverage Areas
 
 | Area | Description | Test File |
@@ -330,6 +386,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -
 | Configuration files | connection_hosts.json structure | Environment.Tests.ps1 |
 | Backward compatibility | Existing behavior preservation | BackwardCompat.Tests.ps1 |
 
+<a name="interpreting-test-results"></a>
 ### Interpreting Test Results
 
 **Test Status Indicators:**
@@ -387,6 +444,7 @@ Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -TestName "*Environme
 Invoke-Pester -Path tests/powershell/ -OutputFile test-results.xml -OutputFormat NUnitXml
 ```
 
+<a name="manual-testing-checklist"></a>
 ### Manual Testing Checklist
 
 Before deploying maintenance mode changes:
@@ -415,6 +473,7 @@ Before deploying maintenance mode changes:
 - [ ] Maintenance window creation works
 - [ ] Per-object status reporting works
 
+<a name="maintenance-mode-behavior"></a>
 ### Maintenance Mode Behavior
 
 | Mode | Description | Target Resolution |
@@ -450,6 +509,7 @@ Before deploying maintenance mode changes:
 1. `$env:SCOM_ADMIN_PASSWORD` (SCOM) or `$env:ONEVIEW_PASSWORD` (OneView)
 2. Interactive prompt
 
+<a name="maintenance-mode-testing-examples"></a>
 ### Maintenance Mode Testing Examples
 
 **Example 1: Basic Validation (No Changes)**
@@ -512,6 +572,7 @@ if ($result.Success) {
 }
 ```
 
+<a name="per-object-status-reporting"></a>
 ### Per-Object Status Reporting
 
 When maintenance mode is enabled or disabled, the response includes detailed status for each object:
@@ -584,6 +645,7 @@ $failures = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Failed' }).
 Write-Host "Successes: $successes, Failures: $failures"
 ```
 
+<a name="safety-warnings"></a>
 ### Safety Warnings
 
 ⚠️ **Always test with `-DryRun` first**

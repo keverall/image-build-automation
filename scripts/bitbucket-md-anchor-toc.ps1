@@ -1,5 +1,5 @@
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$file = Join-Path $scriptDir "..\CONSOLIDATION_SUMMARY.md"
+$file = Join-Path $scriptDir "..\docs\Generic\testing.md"
 
 if (-not (Test-Path $file)) {
     Write-Error "Input file not found: $file"

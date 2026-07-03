@@ -1,7 +1,21 @@
 # OneView Maintenance Mode - Authentication & Configuration
 
+## Table of Contents
+
+- [Required Secrets (CyberArk Safe: `HPE-OneView`)](#required-secrets-cyberark-safe-hpe-oneview)
+- [Configuration Files](#configuration-files)
+  - [`configs/oneview_config.json`](#configsoneview_configjson)
+  - [`configs/oneview_servers_catalogue.json`](#configsoneview_servers_cataloguejson)
+- [GitLab CI Integration](#gitlab-ci-integration)
+  - [Required GitLab CI/CD Variables (Masked)](#required-gitlab-cicd-variables-masked)
+  - [How it works](#how-it-works)
+  - [Manual Testing](#manual-testing)
+- [Setup Script](#setup-script)
+
+
 Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](devops-guide-to-HPe-Terms.md) for the distinction between OneView maintenance mode and iLO maintenance mode.
 
+<a name="required-secrets-cyberark-safe-hpe-oneview"></a>
 ## Required Secrets (CyberArk Safe: `HPE-OneView`)
 
 | Environment Variable | Purpose |
@@ -9,8 +23,10 @@ Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance m
 | `ONEVIEW_USER` | OneView appliance admin username |
 | `ONEVIEW_PASSWORD` | OneView appliance admin password |
 
+<a name="configuration-files"></a>
 ## Configuration Files
 
+<a name="configsoneview_configjson"></a>
 ### `configs/oneview_config.json`
 
 ```json
@@ -30,6 +46,7 @@ Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance m
 }
 ```
 
+<a name="configsoneview_servers_cataloguejson"></a>
 ### `configs/oneview_servers_catalogue.json`
 
 ```json
@@ -53,10 +70,12 @@ Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance m
 }
 ```
 
+<a name="gitlab-ci-integration"></a>
 ## GitLab CI Integration
 
 In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job before any maintenance operations. 
 
+<a name="required-gitlab-cicd-variables-masked"></a>
 ### Required GitLab CI/CD Variables (Masked)
 
 | Variable | Description | Example |
@@ -64,6 +83,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 | `CYBERARK_CCP_URL` | CyberArk AIM Web Service URL | `https://cyberark-ccp:443/AIMWebService/API/Accounts` |
 | `CYBERARK_APP_ID` | Application ID registered in CyberArk | `ci` |
 
+<a name="how-it-works"></a>
 ### How it works
 
 1. The `cyberark-bootstrap` job runs `scripts/cyberark-bootstrap.ps1`
@@ -72,6 +92,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 4. Subsequent maintenance jobs source `secrets.env` to set environment variables
 5. `Set-MaintenanceMode.ps1` reads these variables via `Get-OneViewCredentials`
 
+<a name="manual-testing"></a>
 ### Manual Testing
 
 ```powershell
@@ -83,6 +104,7 @@ $env:ONEVIEW_PASSWORD = 'SecurePassword123!'
 pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "https://cyberark-ccp:443/AIMWebService/API/Accounts" -AppId "ci"
 ```
 
+<a name="setup-script"></a>
 ## Setup Script
 
 ```powershell
