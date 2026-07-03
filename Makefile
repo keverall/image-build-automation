@@ -8,6 +8,7 @@
 #   make test    # Run all Pester tests
 #   make lint    # Lint PowerShell with PSScriptAnalyzer
 #   make coverage # Run tests with code coverage
+#   make fix-docs # Fix broken markdown links (use -WhatIf to preview)
 # =============================================================================
 
 # ─── Configuration ───────────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests coverage docs clean prune-logs help all ci
+.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests coverage docs clean prune-logs help all ci fix-docs
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: prune-logs ## Setup PowerShell environment (install modules, configure profiles)
@@ -100,6 +101,16 @@ docs: prune-logs ## Generate PowerShell Markdown docs via PlatyPS
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 -OutputDir docs/dynamic-code-docs || \
 		(echo "$(YELLOW)[docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
 	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
+
+# ─── Documentation Link Validation ───────────────────────────────────────────
+fix-docs: prune-logs ## Fix broken markdown links in configs/, docs/, and root
+	@echo "$(CYAN)[fix-docs]$(NC) Validating and fixing markdown links..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
+
+fix-docs-dryrun: WHATIF=-WhatIf
+fix-docs-dryrun: prune-logs ## Preview broken markdown link fixes (dry-run)
+	@echo "$(CYAN)[fix-docs-dryrun]$(NC) Previewing link fixes (no changes)..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: prune-logs ## Show this help message

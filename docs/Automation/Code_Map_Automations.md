@@ -219,8 +219,8 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 <a name="21---request-router-1"></a>
 ### 2.1 - Request Router
 
-**[`configs/request_types.json`](../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
-**[`configs/request_types.json`](../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
+**[`configs/request_types.json`](../../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
+**[`configs/request_types.json`](../../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
 
 | Request Type | Handler Function | CI Stage |
 |--------------|-----------------|----------|
@@ -912,18 +912,18 @@ All configs loaded from `configs/` directory:
 
 | Test File | Tests |
 |-----------|-------|
-| [`Audit.Unit.Tests.ps1`](../tests/powershell/Audit.Unit.Tests.ps1) | AuditLogger class |
-| [`Config.Unit.Tests.ps1`](../tests/powershell/Config.Unit.Tests.ps1) | Import-JsonConfig, Import-YamlConfig, ConvertTo-Hashtable, env-var substitution |
-| [`Credentials.Unit.Tests.ps1`](../tests/powershell/Credentials.Unit.Tests.ps1) | Credential resolution, CyberArk fallback |
-| [`Executor.Unit.Tests.ps1`](../tests/powershell/Executor.Unit.Tests.ps1) | Invoke-NativeCommand, Invoke-NativeCommandWithRetry, New-CommandResult |
-| [`FileIO.Unit.Tests.ps1`](../tests/powershell/FileIO.Unit.Tests.ps1) | Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult |
-| [`Inventory.Unit.Tests.ps1`](../tests/powershell/Inventory.Unit.Tests.ps1) | Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo |
-| [`New-ScomConnection.Unit.Tests.ps1`](../tests/powershell/New-ScomConnection.Unit.Tests.ps1) | New-ScomConnection, REST connection |
-| [`New-ScomMaintenanceScript.Unit.Tests.ps1`](../tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1) | SCOM maintenance script generation |
-| [`New-Uuid.Unit.Tests.ps1`](../tests/powershell/New-Uuid.Unit.Tests.ps1) | Deterministic UUID generation |
-| [`Router.Unit.Tests.ps1`](../tests/powershell/Router.Unit.Tests.ps1) | Invoke-RoutedRequest, Get-RouteMap, request type dispatch |
-| [`Set-MaintenanceMode.Unit.Tests.ps1`](../tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1) | *See maintenance mode code map* |
-| [`Validators.Unit.Tests.ps1`](../tests/powershell/Validators.Unit.Tests.ps1) | Test-BuildParams, Test-ClusterId, Test-ServerList |
+| [`Audit.Unit.Tests.ps1`](../../tests/powershell/Audit.Unit.Tests.ps1) | AuditLogger class |
+| [`Config.Unit.Tests.ps1`](../../tests/powershell/Config.Unit.Tests.ps1) | Import-JsonConfig, Import-YamlConfig, ConvertTo-Hashtable, env-var substitution |
+| [`Credentials.Unit.Tests.ps1`](../../tests/powershell/Credentials.Unit.Tests.ps1) | Credential resolution, CyberArk fallback |
+| [`Executor.Unit.Tests.ps1`](../../tests/powershell/Executor.Unit.Tests.ps1) | Invoke-NativeCommand, Invoke-NativeCommandWithRetry, New-CommandResult |
+| [`FileIO.Unit.Tests.ps1`](../../tests/powershell/FileIO.Unit.Tests.ps1) | Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult |
+| [`Inventory.Unit.Tests.ps1`](../../tests/powershell/Inventory.Unit.Tests.ps1) | Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo |
+| [`New-ScomConnection.Unit.Tests.ps1`](../../tests/powershell/New-ScomConnection.Unit.Tests.ps1) | New-ScomConnection, REST connection |
+| [`New-ScomMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1) | SCOM maintenance script generation |
+| [`New-Uuid.Unit.Tests.ps1`](../../tests/powershell/New-Uuid.Unit.Tests.ps1) | Deterministic UUID generation |
+| [`Router.Unit.Tests.ps1`](../../tests/powershell/Router.Unit.Tests.ps1) | Invoke-RoutedRequest, Get-RouteMap, request type dispatch |
+| [`Set-MaintenanceMode.Unit.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1) | *See maintenance mode code map* |
+| [`Validators.Unit.Tests.ps1`](../../tests/powershell/Validators.Unit.Tests.ps1) | Test-BuildParams, Test-ClusterId, Test-ServerList |
 
 <a name="172---test-execution-scripts"></a>
 ### 17.2 - Test Execution Scripts
@@ -979,3 +979,4 @@ All configs loaded from `configs/` directory:
 *Document updated: 2026-06-19*
 *Maintenance mode excluded - see [`Code_Map_Maitenance_Mode.md`](Code_Map_Maitenance_Mode.md)*
 *Maintenance mode excluded - see [`Code_Map_Maitenance_Mode.md`](Code_Map_Maitenance_Mode.md)*
+

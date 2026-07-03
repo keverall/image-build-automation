@@ -160,7 +160,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 <a name="21---request-router"></a>
 ### 2.1 - Request Router
 
-**[`configs/request_types.json`](../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
+**[`configs/request_types.json`](../../configs/request_types.json)** - Single source of truth for all request types and their handler mappings.
 
 | Request Type | Handler Function | CI Stage |
 |--------------|-----------------|----------|
@@ -871,33 +871,33 @@ All configs loaded from `configs/` directory:
 
 | Test File | Tests |
 |-----------|-------|
-| [`Audit.Unit.Tests.ps1`](../tests/powershell/Audit.Unit.Tests.ps1) | AuditLogger class |
-| [`Config.Unit.Tests.ps1`](../tests/powershell/Config.Unit.Tests.ps1) | Import-JsonConfig, Import-YamlConfig, ConvertTo-Hashtable, env-var substitution |
-| [`Credentials.Unit.Tests.ps1`](../tests/powershell/Credentials.Unit.Tests.ps1) | Credential resolution, CyberArk fallback |
-| [`Executor.Unit.Tests.ps1`](../tests/powershell/Executor.Unit.Tests.ps1) | Invoke-NativeCommand, Invoke-NativeCommandWithRetry, New-CommandResult |
-| [`FileIO.Unit.Tests.ps1`](../tests/powershell/FileIO.Unit.Tests.ps1) | Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult |
-| [`Get-OneViewServerTarget.Unit.Tests.ps1`](../tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1) | OneView server query, identifier resolution |
-| [`Inventory.Unit.Tests.ps1`](../tests/powershell/Inventory.Unit.Tests.ps1) | Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo |
-| [`Invoke-IloRedfish.Unit.Tests.ps1`](../tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1) | iLO Redfish actions (Mount, MountAndBoot, Eject, Status) |
-| [`Invoke-IsoDeploy.Unit.Tests.ps1`](../tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1) | ISO deployment orchestrator |
-| [`Invoke-OpsRampClient.Unit.Tests.ps1`](../tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1) | OpsRamp client, token management |
-| [`New-IsoBuild.Unit.Tests.ps1`](../tests/powershell/New-IsoBuild.Unit.Tests.ps1) | ConfigMgr bootable ISO builder |
-| [`New-OneViewMaintenanceScript.Unit.Tests.ps1`](../tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1) | OneView maintenance script generation |
-| [`New-ScomConnection.Unit.Tests.ps1`](../tests/powershell/New-ScomConnection.Unit.Tests.ps1) | SCOM connection, REST connection |
-| [`New-ScomMaintenanceScript.Unit.Tests.ps1`](../tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1) | SCOM maintenance script generation |
-| [`New-Uuid.Unit.Tests.ps1`](../tests/powershell/New-Uuid.Unit.Tests.ps1) | Deterministic UUID generation |
-| [`Publish-BootIso.Unit.Tests.ps1`](../tests/powershell/Publish-BootIso.Unit.Tests.ps1) | ISO publish to HTTPS repo |
-| [`Router.Unit.Tests.ps1`](../tests/powershell/Router.Unit.Tests.ps1) | Invoke-RoutedRequest, Get-RouteMap, request type dispatch |
-| [`Set-MaintenanceMode.Unit.Tests.ps1`](../tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1) | *See GitHub maintenance mode code map* |
-| [`Start-AutomationOrchestrator.Unit.Tests.ps1`](../tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1) | Orchestrator entry point |
-| [`Start-InstallMonitor.Unit.Tests.ps1`](../tests/powershell/Start-InstallMonitor.Unit.Tests.ps1) | Installation monitoring |
-| [`Start-PhysicalServerBuild.Unit.Tests.ps1`](../tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1) | End-to-end build orchestrator |
-| [`Test-PostBuildValidation.Unit.Tests.ps1`](../tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1) | Post-build validation checks |
-| [`Test-PreBuildValidation.Unit.Tests.ps1`](../tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1) | Pre-build validation checks |
-| [`Test-ServerConnectivity.Tests.ps1`](../tests/powershell/Test-ServerConnectivity.Tests.ps1) | SCOM/OneView connectivity |
-| [`Update-Firmware.Unit.Tests.ps1`](../tests/powershell/Update-Firmware.Unit.Tests.ps1) | Firmware ISO builder |
-| [`Update-WindowsSecurity.Unit.Tests.ps1`](../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
-| [`Validators.Unit.Tests.ps1`](../tests/powershell/Validators.Unit.Tests.ps1) | Test-BuildParams, Test-ClusterId, Test-ServerList |
+| [`Audit.Unit.Tests.ps1`](../../tests/powershell/Audit.Unit.Tests.ps1) | AuditLogger class |
+| [`Config.Unit.Tests.ps1`](../../tests/powershell/Config.Unit.Tests.ps1) | Import-JsonConfig, Import-YamlConfig, ConvertTo-Hashtable, env-var substitution |
+| [`Credentials.Unit.Tests.ps1`](../../tests/powershell/Credentials.Unit.Tests.ps1) | Credential resolution, CyberArk fallback |
+| [`Executor.Unit.Tests.ps1`](../../tests/powershell/Executor.Unit.Tests.ps1) | Invoke-NativeCommand, Invoke-NativeCommandWithRetry, New-CommandResult |
+| [`FileIO.Unit.Tests.ps1`](../../tests/powershell/FileIO.Unit.Tests.ps1) | Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult |
+| [`Get-OneViewServerTarget.Unit.Tests.ps1`](../../tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1) | OneView server query, identifier resolution |
+| [`Inventory.Unit.Tests.ps1`](../../tests/powershell/Inventory.Unit.Tests.ps1) | Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo |
+| [`Invoke-IloRedfish.Unit.Tests.ps1`](../../tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1) | iLO Redfish actions (Mount, MountAndBoot, Eject, Status) |
+| [`Invoke-IsoDeploy.Unit.Tests.ps1`](../../tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1) | ISO deployment orchestrator |
+| [`Invoke-OpsRampClient.Unit.Tests.ps1`](../../tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1) | OpsRamp client, token management |
+| [`New-IsoBuild.Unit.Tests.ps1`](../../tests/powershell/New-IsoBuild.Unit.Tests.ps1) | ConfigMgr bootable ISO builder |
+| [`New-OneViewMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1) | OneView maintenance script generation |
+| [`New-ScomConnection.Unit.Tests.ps1`](../../tests/powershell/New-ScomConnection.Unit.Tests.ps1) | SCOM connection, REST connection |
+| [`New-ScomMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1) | SCOM maintenance script generation |
+| [`New-Uuid.Unit.Tests.ps1`](../../tests/powershell/New-Uuid.Unit.Tests.ps1) | Deterministic UUID generation |
+| [`Publish-BootIso.Unit.Tests.ps1`](../../tests/powershell/Publish-BootIso.Unit.Tests.ps1) | ISO publish to HTTPS repo |
+| [`Router.Unit.Tests.ps1`](../../tests/powershell/Router.Unit.Tests.ps1) | Invoke-RoutedRequest, Get-RouteMap, request type dispatch |
+| [`Set-MaintenanceMode.Unit.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1) | *See GitHub maintenance mode code map* |
+| [`Start-AutomationOrchestrator.Unit.Tests.ps1`](../../tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1) | Orchestrator entry point |
+| [`Start-InstallMonitor.Unit.Tests.ps1`](../../tests/powershell/Start-InstallMonitor.Unit.Tests.ps1) | Installation monitoring |
+| [`Start-PhysicalServerBuild.Unit.Tests.ps1`](../../tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1) | End-to-end build orchestrator |
+| [`Test-PostBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1) | Post-build validation checks |
+| [`Test-PreBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1) | Pre-build validation checks |
+| [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | SCOM/OneView connectivity |
+| [`Update-Firmware.Unit.Tests.ps1`](../../tests/powershell/Update-Firmware.Unit.Tests.ps1) | Firmware ISO builder |
+| [`Update-WindowsSecurity.Unit.Tests.ps1`](../../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
+| [`Validators.Unit.Tests.ps1`](../../tests/powershell/Validators.Unit.Tests.ps1) | Test-BuildParams, Test-ClusterId, Test-ServerList |
 
 <a name="192---test-execution-scripts"></a>
 ### 19.2 - Test Execution Scripts
@@ -944,3 +944,4 @@ All configs loaded from `configs/` directory:
 | **Remote WinRM** | `Invoke-PowerShellWinRM` | `New-PSSession` | [`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) | L5–60 |
 | **Generate UUID** | `New-Uuid` | SHA-256 hash | [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) | L8–64 |
 | **OneView query** | `Get-OneViewServerTarget` | REST /rest/server-hardware | [`Get-OneViewServerTarget.ps1`](../../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) | L14–172 |
+
