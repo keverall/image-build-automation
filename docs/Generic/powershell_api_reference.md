@@ -1,11 +1,36 @@
 # HPE ProLiant Windows Server ISO Automation - PowerShell Module
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Directory Layout](#directory-layout)
+- [Quick Start](#quick-start)
+  - [Import the Module](#import-the-module)
+  - [Auto-Generated Documentation](#auto-generated-documentation)
+  - [Generate a Deterministic UUID](#generate-a-deterministic-uuid)
+  - [Build ConfigMgr Bootable Media ISO](#build-configmgr-bootable-media-iso)
+  - [Deploy ISOs via iLO Redfish](#deploy-isos-via-ilo-redfish)
+  - [Physical Server Build](#physical-server-build)
+  - [Maintenance Mode](#maintenance-mode)
+- [Physical Server Build Workflow](#physical-server-build-workflow)
+- [Orchestrator API Reference](#orchestrator-api-reference)
+  - [Request Types](#request-types)
+  - [Orchestrator Signature](#orchestrator-signature)
+  - [Common Return Schema](#common-return-schema)
+  - [Request Flow](#request-flow)
+- [Running Tests](#running-tests)
+- [See Also](#see-also)
+
+
+<a name="overview"></a>
 ## Overview
 
 **PowerShell** provides the end-to-end automation - physical server builds using Configuration Manager bootable media, HPE OneView targeting, and iLO Redfish virtual-media boot; firmware/driver ISO builds; Windows security patching; ISO deployment to iLO; installation monitoring; SCOM maintenance-mode orchestration; and OpsRamp telemetry - implemented as a native PowerShell module.
 
 ---
 
+<a name="requirements"></a>
 ## Requirements
 
 | Requirement | Version |
@@ -22,6 +47,7 @@ Optional modules:
 
 ---
 
+<a name="directory-layout"></a>
 ## Directory Layout
 
 ```
@@ -37,14 +63,17 @@ hpe-windows-iso-automation/
 
 ---
 
+<a name="quick-start"></a>
 ## Quick Start
 
+<a name="import-the-module"></a>
 ### Import the Module
 
 ```powershell
 Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ```
 
+<a name="auto-generated-documentation"></a>
 ### Auto-Generated Documentation
 
 A complete reference for all PowerShell cmdlets is auto-generated and available at:
@@ -53,12 +82,14 @@ A complete reference for all PowerShell cmdlets is auto-generated and available 
 
 ---
 
+<a name="generate-a-deterministic-uuid"></a>
 ### Generate a Deterministic UUID
 
 ```powershell
 New-Uuid -ServerName 'srv01.corp.local'
 ```
 
+<a name="build-configmgr-bootable-media-iso"></a>
 ### Build ConfigMgr Bootable Media ISO
 
 ```powershell
@@ -66,12 +97,14 @@ New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' `
     -DistributionPoint 'dp01.ad.example.com' -BootImageName 'WinPE x64 - HPE'
 ```
 
+<a name="deploy-isos-via-ilo-redfish"></a>
 ### Deploy ISOs via iLO Redfish
 
 ```powershell
 Invoke-IsoDeploy -Method redfish -Server 'srv01.corp.local' -DryRun
 ```
 
+<a name="physical-server-build"></a>
 ### Physical Server Build
 
 ```powershell
@@ -82,6 +115,7 @@ Start-PhysicalServerBuild -ServerIdentifier 'PROD-SERVER-01' `
     -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com' -DryRun
 ```
 
+<a name="maintenance-mode"></a>
 ### Maintenance Mode
 
 ```powershell
@@ -106,6 +140,7 @@ Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' `
 
 For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [maintenance_mode.md](maintenance_mode.md).
 
+<a name="physical-server-build-workflow"></a>
 ## Physical Server Build Workflow
 
 The runbook workflow (`runbook-requirements.md` / `runbook-changes.md`) is implemented by the commands below. Each step can be run standalone or together through the orchestrator.
@@ -125,6 +160,7 @@ See [Automation Command Reference](automation_commands.md) for full parameter de
 
 ---
 
+<a name="orchestrator-api-reference"></a>
 ## Orchestrator API Reference
 
 The orchestrator/routing layer is the **primary programmatic entry point** for all automation integrations.
@@ -136,6 +172,7 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 | Route table | `$script:RouteMap` |
 | Request validator | `_Validate-Request` |
 
+<a name="request-types"></a>
 ### Request Types
 
 | RequestType | Handler | Required Params |
@@ -159,12 +196,14 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 | `publish_iso` | `Publish-BootIso` | `IsoPath` |
 | `ilo_redfish_mount` | `Invoke-IloRedfish` | `Action`, `IloIp` |
 
+<a name="orchestrator-signature"></a>
 ### Orchestrator Signature
 
 ```powershell
 $result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
 ```
 
+<a name="common-return-schema"></a>
 ### Common Return Schema
 
 ```powershell
@@ -185,6 +224,7 @@ $result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
 }
 ```
 
+<a name="request-flow"></a>
 ### Request Flow
 
 ```text
@@ -211,6 +251,7 @@ Result envelope  ──► Orchestrator stamps RequestType + Timestamp  ──�
 
 ---
 
+<a name="running-tests"></a>
 ## Running Tests
 
 ```powershell
@@ -233,6 +274,7 @@ See [testing.md](testing.md) for the full Pester guide.
 
 ---
 
+<a name="see-also"></a>
 ## See Also
 
 - [Automation Command Reference](automation_commands.md) - full parameter reference for all automation commands

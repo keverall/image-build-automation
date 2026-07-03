@@ -1,5 +1,17 @@
 # HPE OneView PowerShell Module Version Compatibility
 
+## Table of Contents
+
+- [Quick Selection Guide](#quick-selection-guide)
+  - [For OneView 8.x+ appliances (recommended)](#for-oneview-8x-appliances-recommended)
+  - [For OneView 7.x appliances (PowerShell 5.1 compatibility)](#for-oneview-7x-appliances-powershell-51-compatibility)
+- [Installation Commands](#installation-commands)
+- [Connection Command](#connection-command)
+- [How the Automation Selects Modules](#how-the-automation-selects-modules)
+- [Module Validation](#module-validation)
+- [Related Documentation](#related-documentation)
+
+
 This table helps you select the correct PowerShell module for your OneView appliance version.
 
 | Module Name | PowerShell | .NET Standard | OneView Appliance Min | Notes |
@@ -17,18 +29,22 @@ This table helps you select the correct PowerShell module for your OneView appli
 
 **Important:** `HPOneView.Managed` is NOT a standard HPE OneView module name. Use `HPEOneView.1000`, `HPEOneView.900`, etc.
 
+<a name="quick-selection-guide"></a>
 ## Quick Selection Guide
 
+<a name="for-oneview-8x-appliances-recommended"></a>
 ### For OneView 8.x+ appliances (recommended)
 ```powershell
 Install-Module HPEOneView.1000 -Scope AllUsers
 ```
 
+<a name="for-oneview-7x-appliances-powershell-51-compatibility"></a>
 ### For OneView 7.x appliances (PowerShell 5.1 compatibility)
 ```powershell
 Install-Module HPEOneView.720 -Scope AllUsers
 ```
 
+<a name="installation-commands"></a>
 ## Installation Commands
 
 ```powershell
@@ -63,6 +79,7 @@ Common errors if multiple versions exist:
 - `Connect-OVMgmt: The term 'Connect-OVMgmt' is not recognized`
 - Cmdlet name conflicts between module versions
 
+<a name="connection-command"></a>
 ## Connection Command
 
 All module versions use the same connection pattern:
@@ -75,12 +92,14 @@ Connect-OVMgmt -Hostname oneview.example.com -Credential $cred
 Connect-OVMgmt -Appliance oneview.example.com -Credential $cred
 ```
 
+<a name="how-the-automation-selects-modules"></a>
 ## How the Automation Selects Modules
 
 1. **Explicit config**: `oneview_config.json` → `module_name` setting
 2. **Auto-detect**: Scans installed modules, picks highest version
 3. **Fallback**: Defaults to `HPEOneView.1000` if none found
 
+<a name="module-validation"></a>
 ## Module Validation
 
 When `Set-MaintenanceMode` runs (non-dry-run), it validates:
@@ -88,6 +107,7 @@ When `Set-MaintenanceMode` runs (non-dry-run), it validates:
 - PowerShell version compatibility (warns if PS 7+ required but running PS 5.1)
 - Logs the selected module name
 
+<a name="related-documentation"></a>
 ## Related Documentation
 
 - [HPE OneView POSH Library](https://github.com/HewlettPackard/POSH-HPEOneView)
