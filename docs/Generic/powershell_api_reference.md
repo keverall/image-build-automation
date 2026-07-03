@@ -77,9 +77,9 @@ Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ### Auto-Generated Documentation
 
 A complete reference for all PowerShell cmdlets is auto-generated and available at:
-- **[Auto-Generated Cmdlet Reference](dynamic-code-docs/INDEX.md)** - Full parameter tables, examples, and source locations
-- **[Automation Command Reference](automation_commands.md)** - Concise functional command reference with every parameter for all automation commands
-
+- **[Auto-Generated Cmdlet Reference](,,dynamic-code-docs\INDEX.md)** - Full parameter tables, examples, and source locations
+- **[Automation Command Reference](..\Automation\automation_commands.md)** - Concise functional command reference with every parameter for all automation commands
+docs\dynamic-code-docs\INDEX.md
 ---
 
 <a name="generate-a-deterministic-uuid"></a>
@@ -138,7 +138,7 @@ Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' `
     -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
 ```
 
-For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [maintenance_mode.md](maintenance_mode.md).
+For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [Maintenance Mode](..\Maintenance-Mode\maintenance_mode.md).
 
 <a name="physical-server-build-workflow"></a>
 ## Physical Server Build Workflow
@@ -156,7 +156,7 @@ The runbook workflow (`runbook-requirements.md` / `runbook-changes.md`) is imple
 | 7. Post-build validation | `Test-PostBuildValidation` | Verify hostname, domain, OS, drivers, ConfigMgr client. |
 | 8. Orchestrate | `Start-PhysicalServerBuild` | Run steps 1–7 in a single call with audit logging. |
 
-See [Automation Command Reference](automation_commands.md) for full parameter details.
+See [Automation Command Reference](..\Automation\automation_commands.md) for full parameter details.
 
 ---
 
@@ -277,9 +277,9 @@ See [testing.md](testing.md) for the full Pester guide.
 <a name="see-also"></a>
 ## See Also
 
-- [Automation Command Reference](automation_commands.md) - full parameter reference for all automation commands
-- [Runbook Requirements](runbook-requirements.md) - operational runbook for physical HPE server builds
-- [Runbook Changes](runbook-changes.md) - implementation plan for the ConfigMgr bootable-media workflow
-- [CI Run Requirements](powershell_ci.md)
-- [Maintenance Mode](maintenance_mode.md)
-- [Code Quality & Security](code_quality.md)
+- [Automation Command Reference](..\Automation\automation_commands.md) - full parameter reference for all automation commands
+- [Runbook Requirements](..\Automation\runbook-requirements.md) - operational runbook for physical HPE server builds
+- [Runbook Changes](..\Automation\runbook-changes.md) - implementation plan for the ConfigMgr bootable-media workflow
+- [CI Run Requirements](..\Generic\powershell_ci.md)
+- [Maintenance Mode](..\Maintenance-Mode\maintenance_mode.md)
+- [Code Quality & Security](..\Generic\code_quality.md)
