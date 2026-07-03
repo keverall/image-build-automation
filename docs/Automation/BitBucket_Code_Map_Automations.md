@@ -243,22 +243,22 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 - Factory: [`New-GitLabCtrl()`](../../src/powershell/Automation/Public/Control.ps1#275)
 
 **[`Invoke-GitLabMaintenanceTrigger.ps1`](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#7)** - [`Invoke-GitLabMaintenanceTrigger()`](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#7)
-- Dot-sources [`Send-GitLabMaintenanceRequest.ps1`](../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L84–94](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#84-94)
-- Calls [`Send-GitLabMaintenanceRequest()`](../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L97–100](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#97-100)
+- Dot-sources [`Send-GitLabMaintenanceRequest.ps1`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L84–94](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#84-94)
+- Calls [`Send-GitLabMaintenanceRequest()`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L97–100](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#97-100)
 - Returns pipeline ID and URL on success at [L102–110](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#102-110)
 
-**[`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`](../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1)**
+**[`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1)**
 - Triggers GitLab pipeline via trigger API (`POST /api/v4/projects/{id}/trigger/pipeline`)
 - Monitors pipeline completion via GitLab API with timeout
 - Sends web callback with results on completion
 
-**[`scripts/gitlab/Invoke-GitLabMaintenance.ps1`](../scripts/gitlab/Invoke-GitLabMaintenance.ps1)**
+**[`scripts/gitlab/Invoke-GitLabMaintenance.ps1`](../../scripts/gitlab/Invoke-GitLabMaintenance.ps1)**
 - GitLab CI/CD pipeline entry point - executed by pipeline runner
 - Wraps `Set-MaintenanceMode` with GitLab-specific logging and callback support
 
-**[`scripts/gitlab/Send-WebCallback.ps1`](../scripts/gitlab/Send-WebCallback.ps1)** - [`Send-WebCallback()`](../scripts/gitlab/Send-WebCallback.ps1)
+**[`scripts/gitlab/Send-WebCallback.ps1`](../../scripts/gitlab/Send-WebCallback.ps1)** - [`Send-WebCallback()`](../../scripts/gitlab/Send-WebCallback.ps1)
 - POST JSON to HTTPS callback URL with optional API key
-- Validates HTTPS-only at [L28–31](../scripts/gitlab/Send-WebCallback.ps1#28-31)
+- Validates HTTPS-only at [L28–31](../../scripts/gitlab/Send-WebCallback.ps1#28-31)
 
 ---
 
@@ -797,7 +797,7 @@ Also defined as class in [`Automation.psm1`](../../src/powershell/Automation/Aut
 <a name="171---powershell-profile-setup"></a>
 ### 17.1 - PowerShell Profile Setup
 
-**[`scripts/Setup-Profile.ps1`](../scripts/Setup-Profile.ps1)** - 294 lines
+**[`scripts/Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1)** - 294 lines
 
 Configures PowerShell profiles to auto-import the Automation module:
 - Copies WIP profile templates to live profile locations (Terminal, VS Code)
@@ -810,31 +810,31 @@ Configures PowerShell profiles to auto-import the Automation module:
 
 | Script | File | Purpose |
 |--------|------|---------|
-| [`ci-security-check.ps1`](../scripts/ci-security-check.ps1) | 143 lines | PSScriptAnalyzer security scan + secrets detection + JSON validation |
-| [`lint.ps1`](../scripts/lint.ps1) | 246 lines | Two-phase lint: syntax validation → PSScriptAnalyzer code quality |
-| [`lint-make.ps1`](../scripts/lint-make.ps1) | 70 lines | Checkmake Makefile validation (Windows-compatible) |
-| [`run-checkmake.ps1`](../scripts/run-checkmake.ps1) | 57 lines | Standalone checkmake runner |
-| [`prune-logs.ps1`](../scripts/prune-logs.ps1) | 152 lines | Prunes excess log files, keeps max per type |
+| [`ci-security-check.ps1`](../../scripts/ci-security-check.ps1) | 143 lines | PSScriptAnalyzer security scan + secrets detection + JSON validation |
+| [`lint.ps1`](../../scripts/lint.ps1) | 246 lines | Two-phase lint: syntax validation → PSScriptAnalyzer code quality |
+| [`lint-make.ps1`](../../scripts/lint-make.ps1) | 70 lines | Checkmake Makefile validation (Windows-compatible) |
+| [`run-checkmake.ps1`](../../scripts/run-checkmake.ps1) | 57 lines | Standalone checkmake runner |
+| [`prune-logs.ps1`](../../scripts/prune-logs.ps1) | 152 lines | Prunes excess log files, keeps max per type |
 
 <a name="173---setup-bootstrap-scripts"></a>
 ### 17.3 - Setup & Bootstrap Scripts
 
 | Script | File | Purpose |
 |--------|------|---------|
-| [`setup-runner.ps1`](../scripts/setup-runner.ps1) | 436 lines | Full offline-capable runner setup: modules (Pester, PSScriptAnalyzer, PlatyPS) + binaries (Oh My Posh, make, checkmake) |
-| [`setup-scom.ps1`](../scripts/setup-scom.ps1) | 70 lines | Validates SCOM setup: module, credentials, config file |
-| [`setup-oneview.ps1`](../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
-| [`cyberark-bootstrap.ps1`](../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for CI |
+| [`setup-runner.ps1`](../../scripts/setup-runner.ps1) | 436 lines | Full offline-capable runner setup: modules (Pester, PSScriptAnalyzer, PlatyPS) + binaries (Oh My Posh, make, checkmake) |
+| [`setup-scom.ps1`](../../scripts/setup-scom.ps1) | 70 lines | Validates SCOM setup: module, credentials, config file |
+| [`setup-oneview.ps1`](../../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
+| [`cyberark-bootstrap.ps1`](../../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for CI |
 
 <a name="174---documentation-coverage-scripts"></a>
 ### 17.4 - Documentation & Coverage Scripts
 
 | Script | File | Purpose |
 |--------|------|---------|
-| [`Generate-PSDocs.ps1`](../scripts/Generate-PSDocs.ps1) | 269 lines | Auto-generates Markdown API reference from comment-based help blocks |
-| [`coverage-report.ps1`](../scripts/coverage-report.ps1) | 327 lines | Runs Pester with code coverage, generates Cobertura XML + Markdown report |
-| [`CoverageSummary.ps1`](../scripts/CoverageSummary.ps1) | 121 lines | Converts Cobertura XML to human-readable table |
-| [`Show-Help.ps1`](../scripts/Show-Help.ps1) | 35 lines | Displays Makefile documented targets |
+| [`Generate-PSDocs.ps1`](../../scripts/Generate-PSDocs.ps1) | 269 lines | Auto-generates Markdown API reference from comment-based help blocks |
+| [`coverage-report.ps1`](../../scripts/coverage-report.ps1) | 327 lines | Runs Pester with code coverage, generates Cobertura XML + Markdown report |
+| [`CoverageSummary.ps1`](../../scripts/CoverageSummary.ps1) | 121 lines | Converts Cobertura XML to human-readable table |
+| [`Show-Help.ps1`](../../scripts/Show-Help.ps1) | 35 lines | Displays Makefile documented targets |
 
 ---
 
@@ -904,22 +904,22 @@ All configs loaded from `configs/` directory:
 
 | Script | Purpose |
 |--------|---------|
-| [`run-tests.ps1`](../scripts/run-tests.ps1) | Main test runner: auto-repairs Pester, runs all Pester tests with summary |
-| [`run-automation-mode-tests.ps1`](../scripts/run-automation-mode-tests.ps1) | Automation mode tests |
-| [`run-maint-mode-tests.ps1`](../scripts/run-maint-mode-tests.ps1) | High-priority maintenance mode tests only |
-| [`run-maintenance-tests.ps1`](../scripts/run-maintenance-tests.ps1) | Full maintenance test suite with environment/DateTime/connection filters |
-| [`test-maintenance-connection.ps1`](../scripts/test-maintenance-connection.ps1) | Connectivity test for SCOM/OneView |
-| [`validate-maintenance-config.ps1`](../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
+| [`run-tests.ps1`](../../scripts/run-tests.ps1) | Main test runner: auto-repairs Pester, runs all Pester tests with summary |
+| [`run-automation-mode-tests.ps1`](../../scripts/run-automation-mode-tests.ps1) | Automation mode tests |
+| [`run-maint-mode-tests.ps1`](../../scripts/run-maint-mode-tests.ps1) | High-priority maintenance mode tests only |
+| [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1) | Full maintenance test suite with environment/DateTime/connection filters |
+| [`test-maintenance-connection.ps1`](../../scripts/test-maintenance-connection.ps1) | Connectivity test for SCOM/OneView |
+| [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
 
 <a name="193---coverage-lint"></a>
 ### 19.3 - Coverage & Lint
 
 | Script | Purpose |
 |--------|---------|
-| [`coverage-report.ps1`](../scripts/coverage-report.ps1) | Cobertura XML coverage + Markdown report |
-| [`CoverageSummary.ps1`](../scripts/CoverageSummary.ps1) | Human-readable coverage table |
-| [`lint.ps1`](../scripts/lint.ps1) | Syntax validation + PSScriptAnalyzer |
-| [`ci-security-check.ps1`](../scripts/ci-security-check.ps1) | Security scan: PSScriptAnalyzer + secrets detection + JSON validation |
+| [`coverage-report.ps1`](../../scripts/coverage-report.ps1) | Cobertura XML coverage + Markdown report |
+| [`CoverageSummary.ps1`](../../scripts/CoverageSummary.ps1) | Human-readable coverage table |
+| [`lint.ps1`](../../scripts/lint.ps1) | Syntax validation + PSScriptAnalyzer |
+| [`ci-security-check.ps1`](../../scripts/ci-security-check.ps1) | Security scan: PSScriptAnalyzer + secrets detection + JSON validation |
 
 ---
 

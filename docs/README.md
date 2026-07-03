@@ -38,10 +38,10 @@ hpe-windows-iso-automation/
 <a name="quick-start"></a>
 ## Quick Start
 
-- **PowerShell** module import and first command: see [powershell_api_reference.md](powershell_api_reference.md#quick-start)
+- **PowerShell** module import and first command: see [powershell_api_reference.md](Generic\powershell_api_reference.md#quick-start)
 - **Configuration files reference:** see [configs/README.md](../configs/README.md)
-- **Running tests:** see [testing.md](testing.md)
-- **CI integration:** see [powershell_ci.md](powershell_ci.md)
+- **Running tests:** see [testing.md](Generic\testing.md)
+- **CI integration:** see [powershell_ci.md](Generic\powershell_ci.md)
 
 ---
 
@@ -53,13 +53,13 @@ hpe-windows-iso-automation/
 
 | Document | Description |
 |---|---|
-| [PowerShell API Reference](powershell_api_reference.md) | Module overview, requirements, quick-start, cmdlet usage, orchestrator API |
-| [Automation Command Reference](automation_commands.md) | Concise functional reference with every parameter for all automation commands |
+| [PowerShell API Reference](Generic\powershell_api_reference.md) | Module overview, requirements, quick-start, cmdlet usage, orchestrator API |
+| [Automation Command Reference](Automation\automation_commands.md) | Concise functional reference with every parameter for all automation commands |
 | [📘 Auto-Generated Function Reference](dynamic-code-docs/INDEX.md) | **Comprehensive coverage of ALL PowerShell functions and cmdlets** - complete parameter documentation, examples, and usage for every function in the codebase. Auto-generated from source code. |
-| [Testing Guide](testing.md) | Comprehensive Pester v5 guide, runner commands, mocking, CI integration, maintenance mode testing |
-| [CI Run Requirements](powershell_ci.md) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
-| [Code Quality & Security](code_quality.md) | PSScriptAnalyzer, gitleaks - configuration, usage, CI pipeline integration |
-| [GitLab CI/CD Integration](gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
+| [Testing Guide](Generic\testing.md) | Comprehensive Pester v5 guide, runner commands, mocking, CI integration, maintenance mode testing |
+| [CI Run Requirements](Generic\powershell_ci.md) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
+| [Code Quality & Security](Generic\code_quality.md) | PSScriptAnalyzer, gitleaks - configuration, usage, CI pipeline integration |
+| [GitLab CI/CD Integration](Generic\gitlab.md) | REST API pipeline triggers, webhook configuration, polling |
 
 <a name="physical-server-build-and-runbooks"></a>
 ### Physical Server Build & Runbooks
@@ -68,29 +68,29 @@ hpe-windows-iso-automation/
 |---|---|
 | [Runbook Requirements](runbook-requirements.md) | Operational runbook for automating physical HPE server builds with ConfigMgr + OneView + iLO Redfish |
 | [Runbook Changes](runbook-changes.md) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
-| [Automation Command Reference](automation_commands.md) | Command-level reference for the physical server build functions |
-| [PowerShell API Reference](powershell_api_reference.md) | Orchestrator and workflow overview for the physical server build |
+| [Automation Command Reference](Automation\automation_commands.md) | Command-level reference for the physical server build functions |
+| [PowerShell API Reference](Generic\powershell_api_reference.md) | Orchestrator and workflow overview for the physical server build |
 
 <a name="maintenance-mode-and-scheduling"></a>
 ### Maintenance Mode & Scheduling
 
 | Document | Description |
 |---|---|
-| [Maintenance Mode Architecture](maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
-| [Maintenance Mode Environment Config](maintenance-mode-environment-config.md) | Environment variable configuration for maintenance mode |
-| [Maintenance Mode Code Map](Code_Map_Maitenance_Mode.md) | Complete code map with links to all mm command functionality |
+| [Maintenance Mode Architecture](Maintenance-Mode\maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp, environment variables |
+| [Maintenance Mode Environment Config](Maintenance-Mode\maintenance-mode-environment-config.md) | Environment variable configuration for maintenance mode |
+| [Maintenance Mode Code Map](Maintenance-Mode\Code_Map_Maitenance_Mode.md) | Complete code map with links to all mm command functionality |
 
 <a name="integration-and-authentication"></a>
 ### Integration & Authentication
 
 | Document | Description |
 |---|---|
-| [SCOM Authentication](scom-auth.md) | SCOM authentication setup and configuration |
-| [OneView Authentication](oneview-auth.md) | HPE OneView authentication details |
-| [OneView Module Versions](oneview-module-versions.md) | HPE OneView PowerShell module version compatibility table |
-| [Authentication Overview](auth-doc.md) | General authentication documentation |
-| [Audit Process](audit_process.md) | Audit trail and compliance process |
-| [GDPR Compliance](gdpr_compliance.md) | GDPR compliance documentation |
+| [SCOM Authentication](Generic\scom-auth.md) | SCOM authentication setup and configuration |
+| [OneView Authentication](Generic\oneview-auth.md) | HPE OneView authentication details |
+| [OneView Module Versions](Generic\oneview-module-versions.md) | HPE OneView PowerShell module version compatibility table |
+| [Authentication Overview](Generic\auth-doc.md) | General authentication documentation |
+| [Audit Process](Generic\audit_process.md) | Audit trail and compliance process |
+| [GDPR Compliance](Generic\gdpr_compliance.md) | GDPR compliance documentation |
 
 <a name="developer-resources"></a>
 ### Developer Resources
@@ -98,7 +98,7 @@ hpe-windows-iso-automation/
 | Document | Description |
 |---|---|
 | [DevOps Guide to HPE Terms](devops-guide-to-HPe-Terms.md) | HPE terminology guide for DevOps engineers |
-| [Checkmake Integration](CHECKMAKE_INTEGRATION.md) | Makefile validation with checkmake |
+| [Checkmake Integration](Generic\CHECKMAKE_INTEGRATION.md) | Makefile validation with checkmake |
 
 ---
 

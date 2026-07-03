@@ -734,10 +734,10 @@ All configurations loaded from `configs/` directory, in load order:
   - **[Lines 424–429](../../src/powershell/Automation/Automation.psm1#L424-L429):** Public script loading (alphabetical)
   - **[Lines 433–505](../../src/powershell/Automation/Automation.psm1#L433-L505):** `Export-ModuleMember` - [`Set-MaintenanceMode` at line 449](../../src/powershell/Automation/Automation.psm1#L449)
 - **Request Router**: [`Invoke-RoutedRequest`](../../src/powershell/Automation/Private/Router.ps1#L20) - Routes from `request_types.json`
-- **PowerShell Profile**: [`Setup-Profile.ps1`](../scripts/Setup-Profile.ps1) - Adds module import
+- **PowerShell Profile**: [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) - Adds module import
   - **[Lines 433–505](../src/powershell/Automation/Automation.psm1#L433-L505):** `Export-ModuleMember` - [`Set-MaintenanceMode` at line 449](../src/powershell/Automation/Automation.psm1#L449)
 - **Request Router**: [`Invoke-RoutedRequest`](../src/powershell/Automation/Private/Router.ps1#L20) - Routes from `request_types.json`
-- **PowerShell Profile**: [`Setup-Profile.ps1`](../scripts/Setup-Profile.ps1) - Adds module import
+- **PowerShell Profile**: [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) - Adds module import
 
 ---
 
@@ -760,10 +760,10 @@ All configurations loaded from `configs/` directory, in load order:
 
 | Script | Purpose |
 |--------|---------|
-| [`test-maintenance-connection.ps1`](../scripts/test-maintenance-connection.ps1) | Connection testing |
-| [`validate-maintenance-config.ps1`](../scripts/validate-maintenance-config.ps1) | Configuration validation |
-| [`run-maintenance-tests.ps1`](../scripts/run-maintenance-tests.ps1) | Full maintenance test suite |
-| [`run-maint-mode-tests.ps1`](../scripts/run-maint-mode-tests.ps1) | Alternative maintenance mode test runner |
+| [`test-maintenance-connection.ps1`](../../scripts/test-maintenance-connection.ps1) | Connection testing |
+| [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1) | Configuration validation |
+| [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1) | Full maintenance test suite |
+| [`run-maint-mode-tests.ps1`](../../scripts/run-maint-mode-tests.ps1) | Alternative maintenance mode test runner |
 
 ---
 
@@ -802,7 +802,7 @@ All configurations loaded from `configs/` directory, in load order:
 - **Setup guide**: [`SETUP-GUIDE.md`](SETUP-GUIDE.md)
 - **PowerShell API reference**: [`powershell_api_reference.md`](powershell_api_reference.md)
 - **OneView authentication**: [`oneview-auth.md`](oneview-auth.md)
-- **SCOM authentication**: [`scom-auth.md`](scom-auth.md)
+- **SCOM authentication**: [`Generic\scom-auth.md`](Generic\scom-auth.md)
 - **OneView module versions**: [`oneview-module-versions.md`](oneview-module-versions.md)
 - **Audit process**: [`audit_process.md`](audit_process.md)
 - **Test-ServerConnectivity API**: [`Test-ServerConnectivity.md`](dynamic-code-docs/Test-ServerConnectivity.md)

@@ -13,7 +13,7 @@ Configuration and secrets for `Set-MaintenanceMode.ps1`. All secrets stored in C
 
 ## Documentation
 
-- [SCOM Configuration](scom-auth.md) - Cluster-level maintenance mode
+- [SCOM Configuration](Generic\scom-auth.md) - Cluster-level maintenance mode
 - [OneView Configuration](oneview-auth.md) - Hardware-level maintenance mode (via iLO)
 
 ## Working Config Files
