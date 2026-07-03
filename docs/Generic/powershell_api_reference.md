@@ -77,7 +77,7 @@ Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ### Auto-Generated Documentation
 
 A complete reference for all PowerShell cmdlets is auto-generated and available at:
-- **[Auto-Generated Cmdlet Reference](,,dynamic-code-docs\INDEX.md)** - Full parameter tables, examples, and source locations
+- **[Auto-Generated Cmdlet Reference](..\dynamic-code-docs\INDEX.md)** - Full parameter tables, examples, and source locations
 - **[Automation Command Reference](..\Automation\automation_commands.md)** - Concise functional command reference with every parameter for all automation commands
 docs\dynamic-code-docs\INDEX.md
 ---
