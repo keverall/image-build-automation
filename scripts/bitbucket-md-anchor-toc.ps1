@@ -1,3 +1,34 @@
+# scripts/bitbucket-md-anchor-toc.ps1
+# Add Bitbucket/GitStash compatible anchors to markdown headings and generate a Table of Contents (TOC).
+
+
+<#
+.SYNOPSIS
+    Adds Bitbucket/GitStash compatible anchors to markdown headings and generates a Table of Contents (TOC).
+
+.DESCRIPTION
+    This script processes a markdown file, adding anchors to headings and generating a Table of Contents (TOC) that links to those anchors. It is designed to be compatible with Bitbucket and GitStash.
+
+.EXAMPLE
+    .\bitbucket-md-anchor-toc.ps1
+
+    This command will process the default markdown file located at "..\docs\Generic\testing.md", add anchors to its headings, generate a TOC, and save the output to a new file with ".with-toc.md" appended to the original filename.
+
+.FUNCTIONALITY
+    - Reads a markdown file.
+    - Adds anchors to headings (H2 and H3).
+    - Generates a Table of Contents (TOC) with links to the anchors.
+    - Saves the modified content to a new file.
+
+.NOTES
+    - Ensure that the input markdown file exists at the specified path.
+    - set the $file variable to the path of the markdown file you want to process.
+    - Then test that the TOC works and links to the correct anchors in Bitbucket/GitStash.
+#>
+
+# =============================================================================
+# Main Script
+# =============================================================================
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $file = Join-Path $scriptDir "..\docs\Generic\testing.md"
 
