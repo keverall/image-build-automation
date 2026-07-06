@@ -1,7 +1,28 @@
 # Configuration Files Reference
 
+## Table of Contents
+
+- [Summary Table](#summary-table)
+- [server_list.txt](#server_listtxt)
+- [clusters_catalogue.json](#clusters_cataloguejson)
+  - [Fields](#fields)
+- [hpe_firmware_drivers_nov2025.json](#hpe_firmware_drivers_nov2025json)
+  - [Environment Substitution](#environment-substitution)
+  - [Component Selection](#component-selection)
+- [windows_patches.json](#windows_patchesjson)
+- [scom_config.json](#scom_configjson)
+  - [Fields](#fields-1)
+- [oneview_config.json](#oneview_configjson)
+  - [Modes](#modes)
+- [email_distribution_lists.json](#email_distribution_listsjson)
+  - [Override File](#override-file)
+- [opsramp_config.json](#opsramp_configjson)
+- [Environment Variable Cheat Sheet](#environment-variable-cheat-sheet)
+
+
 This directory contains all configuration for the HPE ProLiant Windows Server ISO Automation pipeline.
 
+<a name="summary-table"></a>
 ## Summary Table
 
 | File | Purpose | Required | Secret? |
@@ -20,6 +41,7 @@ This directory contains all configuration for the HPE ProLiant Windows Server IS
 
 ---
 
+<a name="server_listtxt"></a>
 ## server_list.txt
 
 Plain-text list of target servers, one per line. Optional columns for management IPs.
@@ -39,6 +61,7 @@ server3.example.com,,,,  # (blank fields allowed but not recommended)
 
 ---
 
+<a name="clusters_cataloguejson"></a>
 ## clusters_catalogue.json
 
 Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneView node IDs, and maintenance schedules.
@@ -72,6 +95,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneV
 }
 ```
 
+<a name="fields"></a>
 ### Fields
 
 | Field | Type | Description |
@@ -95,6 +119,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneV
 
 ---
 
+<a name="hpe_firmware_drivers_nov2025json"></a>
 ## hpe_firmware_drivers_nov2025.json
 
 HPE Smart Update Tool (SUT) repository and component version manifest.
@@ -135,6 +160,7 @@ HPE Smart Update Tool (SUT) repository and component version manifest.
 }
 ```
 
+<a name="environment-substitution"></a>
 ### Environment Substitution
 
 Credentials use `${VAR}` placeholders replaced at runtime from environment:
@@ -144,6 +170,7 @@ export HPE_DOWNLOAD_USER="my_username"
 export HPE_DOWNLOAD_PASS="my_password"
 ```
 
+<a name="component-selection"></a>
 ### Component Selection
 
 The update_firmware_drivers script reads this manifest and instructs HPE SUT to:
@@ -154,6 +181,7 @@ The update_firmware_drivers script reads this manifest and instructs HPE SUT to:
 
 ---
 
+<a name="windows_patchesjson"></a>
 ## windows_patches.json
 
 Security update specifications for DISM offline patching.
@@ -181,6 +209,7 @@ Security update specifications for DISM offline patching.
 
 ---
 
+<a name="scom_configjson"></a>
 ## scom_config.json
 
 System Center Operations Manager connection details.
@@ -201,6 +230,7 @@ System Center Operations Manager connection details.
 }
 ```
 
+<a name="fields-1"></a>
 ### Fields
 
 | Field | Description |
@@ -222,6 +252,7 @@ export SCOM_ADMIN_PASSWORD="secret_password"
 
 ---
 
+<a name="oneview_configjson"></a>
 ## oneview_config.json
 
 HPE OneView integration settings.
@@ -243,6 +274,7 @@ HPE OneView integration settings.
 }
 ```
 
+<a name="modes"></a>
 ### Modes
 
 - **REST API** (`use_cli: false`): Script sends HTTP requests to `api_url` with Basic auth.
@@ -257,6 +289,7 @@ export ONEVIEW_PASSWORD="ov_password"
 
 ---
 
+<a name="email_distribution_listsjson"></a>
 ## email_distribution_lists.json
 
 SMTP configuration and recipient lists for notification emails.
@@ -282,6 +315,7 @@ SMTP configuration and recipient lists for notification emails.
 }
 ```
 
+<a name="override-file"></a>
 ### Override File
 
 If `maintenance_distribution_list.txt` exists in repository root, its contents (one email per line) override the `maintenance_enable` and `maintenance_disable` lists. This allows quick updates without editing JSON.
@@ -290,6 +324,7 @@ If `maintenance_distribution_list.txt` exists in repository root, its contents (
 
 ---
 
+<a name="opsramp_configjson"></a>
 ## opsramp_config.json
 
 Existing OpsRamp integration configuration (not modified by this refactor).
@@ -323,6 +358,7 @@ export OPSRAMP_TENANT_ID="your_tenant_id"
 
 ---
 
+<a name="environment-variable-cheat-sheet"></a>
 ## Environment Variable Cheat Sheet
 
 ```bash
