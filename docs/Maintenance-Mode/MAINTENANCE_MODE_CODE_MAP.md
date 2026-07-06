@@ -201,10 +201,10 @@ All configurations loaded from `configs/` directory:
 <a name="11-documentation-references"></a>
 ## 11. Documentation References
 
-- **Architecture overview**: [`maintenance_mode.md`](maintenance_mode.md)
-- **Quick start guide**: [`MAINTENANCE_MODE_SHORTCUTS.md`](MAINTENANCE_MODE_SHORTCUTS.md)
-- **Environment configuration**: [`maintenance-mode-environment-config.md`](maintenance-mode-environment-config.md)
-- **Command shortcuts**: [`MAINTENANCE_MODE_SHORTCUTS.md`](MAINTENANCE_MODE_SHORTCUTS.md)
+- **Architecture overview**: [`maintenance_mode.md`](Maintenance-Mode/maintenance_mode.md)
+- **Quick start guide**: [`MAINTENANCE_MODE_SHORTCUTS.md`](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md)
+- **Environment configuration**: [`maintenance-mode-environment-config.md`](Maintenance-Mode/maintenance-mode-environment-config.md)
+- **Command shortcuts**: [`MAINTENANCE_MODE_SHORTCUTS.md`](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md)
 - **Setup guide**: [`SETUP-GUIDE.md`](SETUP-GUIDE.md)
 - **PowerShell API reference**: [`powershell_api_reference.md`](../docs/Generic/powershell_api_reference.md)
 
@@ -257,4 +257,5 @@ Set-MaintenanceMode (Public/Set-MaintenanceMode.ps1:174)
 
 *Document generated: 2026-06-12*
 *For questions about specific code locations, refer to the line numbers provided in the links above.*
+
 

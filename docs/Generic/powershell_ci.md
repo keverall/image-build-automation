@@ -235,6 +235,7 @@ Until that `<http_iso_url>` is available the step is intentionally a no-op.
 <a name="see-also"></a>
 ## See Also
 
-- [Maintenance Mode Orchestration](maintenance_mode.md)
+- [Maintenance Mode Orchestration](../Maintenance-Mode/maintenance_mode.md)
 - [PowerShell Testing Guide](testing.md)
 - [Code Quality & Security](code_quality.md)
+
