@@ -1,5 +1,6 @@
 # Maintenance Mode Command Reference
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
@@ -556,5 +557,6 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environm
 ## Related
 
 - [Test-ServerConnectivity](#1-test-serverconnectivity---test-connectivity-first) - Test connectivity before maintenance
-- [Code Map](Code_Map_Maitenance_Mode.md) - Full implementation details
-- [Architecture](maintenance_mode.md) - System design and workflows
+- [Code Map](Code_Map_Maitenance_Mode.md#top) - Full implementation details
+- [Architecture](maintenance_mode.md#top) - System design and workflows
+

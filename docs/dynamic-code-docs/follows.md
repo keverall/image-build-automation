@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # follows
 
+<a id="top"></a>
 ## Description
 
 Return SCOM admin username + password. Env var: SCOM_ADMIN_USER / SCOM_ADMIN_PASSWORD → CyberArk safe SCOM-2015 → required-error.

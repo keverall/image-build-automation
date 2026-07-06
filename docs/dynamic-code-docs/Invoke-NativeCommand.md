@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Invoke-NativeCommand
 
+<a id="top"></a>
 ## Description
 
 Factory for CommandResult (useful in tests / dry-run stubs).

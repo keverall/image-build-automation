@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # setup-scom
 
+<a id="top"></a>
 ## Description
 
 Validates SCOM setup by checking: - OperationsManager PowerShell module availability - SCOM_ADMIN_USER and SCOM_ADMIN_PASSWORD environment variables - SCOM configuration file (scom_config.json) existence Displays warnings if components are missing but doesn't fail execution.

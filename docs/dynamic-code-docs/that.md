@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # that
 
+<a id="top"></a>
 ## Description
 
 Router handler that initiates GitLab CI/CD pipeline for maintenance operations. Wraps Send-GitLabMaintenanceRequest to enable, disable, or validate maintenance mode via GitLab pipelines instead of direct execution.

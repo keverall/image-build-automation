@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Get-UtcTimestamp
 
+<a id="top"></a>
 ## Description
 
 Factory for AutomationBase (useful for classes that cannot inherit in PS without extra steps).

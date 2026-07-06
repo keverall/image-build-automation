@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # run-maintenance-tests
 
+<a id="top"></a>
 ## Description
 
 Executes Pester tests for maintenance mode functionality with support for: - Environment-based host selection tests - DateTime handling tests - Backward compatibility tests - Connection validation tests Test suites can be filtered by TestSuite parameter.

@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # New-ScomMaintenanceScript
 
+<a id="top"></a>
 ## Description
 
 Build a PowerShell script for SCOM maintenance mode start/stop. Supports two modes: Group (individual class instances) and Cluster (Microsoft.Windows.Cluster class).

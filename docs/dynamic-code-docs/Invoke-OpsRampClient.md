@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Invoke-OpsRampClient
 
+<a id="top"></a>
 ## Description
 
 Convenience function to test OpsRamp API connectivity by obtaining an authentication token. Useful for verifying credentials and network access before running full integrations.

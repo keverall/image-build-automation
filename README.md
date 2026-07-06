@@ -1,5 +1,6 @@
 # HPE ProLiant Windows Server ISO Automation (Root Readme)
 
+<a id="top"></a>
 ## Table of Contents
 
 - [🚀 Quick Start - Setup & Installation](#-quick-start---setup-and-installation)
@@ -27,8 +28,8 @@ Automated build pipelines for creating customized Windows Server installation IS
 
 **New to this project?** Start here:
 
-1. **[📖 Setup Guide](docs/SETUP-GUIDE.md)** - Complete setup instructions for PowerShell profile and maintenance mode
-2. **[🔧 Quick Client Setup](docs/Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md)** - 5-minute setup for using maintenance mode commands
+1. **[📖 Setup Guide](docs/SETUP-GUIDE.md#top)** - Complete setup instructions for PowerShell profile and maintenance mode
+2. **[🔧 Quick Client Setup](docs/Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top)** - 5-minute setup for using maintenance mode commands
 
 <a name="tldr---one-line-setup"></a>
 ### TL;DR - One-Line Setup
@@ -61,45 +62,45 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 #### Core Documentation
 | Document | Description |
 |---|---|
-| [📚 Documentation Index](docs/README.md) | Complete documentation overview |
-| [🚀 Setup Guide](docs/SETUP-GUIDE.md) | **START HERE** - Profile setup, module installation, quick start |
-| [📡 PowerShell API Reference](docs/Generic/powershell_api_reference.md) | Module overview, cmdlet usage, orchestrator API |
-| [📗 Automation Command Reference](docs/Automation/automation_commands.md) | **All automation commands with full parameter tables** - functional reference linking to source |
-| [📘 PowerShell Function Reference](docs/dynamic-code-docs/INDEX.md) | **Complete coverage of ALL PowerShell functions and cmdlets** - comprehensive parameter documentation, examples, and usage for every function in src/powershell/Automation/. Auto-generated from source code. |
-| [🔌 CI Run Requirements](docs/Generic/powershell_ci.md) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
-| [🧪 PowerShell Testing (Pester)](docs/Generic/testing.md) | Pester v5 BDD testing guide, test commands, mocking |
-| [⚙️ Code Quality & Security](docs/Generic/code_quality.md) | PSScriptAnalyzer, gitleaks configuration |
-| [🔗 GitLab CI/CD Integration](docs/Generic/gitlab.md) | REST API pipeline triggers, webhook configuration |
+| [📚 Documentation Index](docs/README.md#top) | Complete documentation overview |
+| [🚀 Setup Guide](docs/SETUP-GUIDE.md#top) | **START HERE** - Profile setup, module installation, quick start |
+| [📡 PowerShell API Reference](docs/Generic/powershell_api_reference.md#top) | Module overview, cmdlet usage, orchestrator API |
+| [📗 Automation Command Reference](docs/Automation/automation_commands.md#top) | **All automation commands with full parameter tables** - functional reference linking to source |
+| [📘 PowerShell Function Reference](docs/dynamic-code-docs/INDEX.md#top) | **Complete coverage of ALL PowerShell functions and cmdlets** - comprehensive parameter documentation, examples, and usage for every function in src/powershell/Automation/. Auto-generated from source code. |
+| [🔌 CI Run Requirements](docs/Generic/powershell_ci.md#top) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
+| [🧪 PowerShell Testing (Pester)](docs/Generic/testing.md#top) | Pester v5 BDD testing guide, test commands, mocking |
+| [⚙️ Code Quality & Security](docs/Generic/code_quality.md#top) | PSScriptAnalyzer, gitleaks configuration |
+| [🔗 GitLab CI/CD Integration](docs/Generic/gitlab.md#top) | REST API pipeline triggers, webhook configuration |
 
 #### Physical Server Build & Runbooks
 | Document | Description |
 |---|---|
-| [📋 Runbook Requirements](docs/Automation/runbook-requirements.md) | Operational runbook for physical HPE server builds via ConfigMgr + OneView + iLO Redfish |
-| [📋 Runbook Changes](docs/Automation/runbook-changes.md) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
-| [📗 Automation Command Reference](docs/Automation/automation_commands.md) | Command-level reference for the physical server build functions |
+| [📋 Runbook Requirements](docs/Automation/runbook-requirements.md#top) | Operational runbook for physical HPE server builds via ConfigMgr + OneView + iLO Redfish |
+| [📋 Runbook Changes](docs/Automation/runbook-changes.md#top) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
+| [📗 Automation Command Reference](docs/Automation/automation_commands.md#top) | Command-level reference for the physical server build functions |
 
 #### Maintenance Mode & Scheduling
 | Document | Description |
 |---|---|
-| [🔧 Quick Start Guide](docs/SETUP-GUIDE.md) | **NEW USERS** - Complete setup and first steps |
-| [⚡ Maintenance Mode Shortcuts](docs/Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md) | `mm` command reference and examples |
-| [🔧 Maintenance Mode Architecture](docs/Maintenance-Mode/maintenance_mode.md) | Architecture, scheduling, audit, OpsRamp integration |
-| [🔧 Maintenance Mode Environment Config](docs/Maintenance-Mode/maintenance-mode-environment-config.md) | Environment variable configuration |
-| [🔧 Maintenance Mode Code Map](docs/Maintenance-Mode/Code_Map_Maitenance_Mode.md) | Complete code map with links to all mm command functionality |
+| [🔧 Quick Start Guide](docs/SETUP-GUIDE.md#top) | **NEW USERS** - Complete setup and first steps |
+| [⚡ Maintenance Mode Shortcuts](docs/Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top) | `mm` command reference and examples |
+| [🔧 Maintenance Mode Architecture](docs/Maintenance-Mode/maintenance_mode.md#top) | Architecture, scheduling, audit, OpsRamp integration |
+| [🔧 Maintenance Mode Environment Config](docs/Maintenance-Mode/maintenance-mode-environment-config.md#top) | Environment variable configuration |
+| [🔧 Maintenance Mode Code Map](docs/Maintenance-Mode/Code_Map_Maitenance_Mode.md#top) | Complete code map with links to all mm command functionality |
 
 #### Integration & Authentication
 | Document | Description |
 |---|---|
-| [🔐 SCOM Authentication](docs/Generic/scom-auth.md) | SCOM authentication setup and configuration |
-| [🔐 OneView Authentication](docs/Generic/oneview-auth.md) | HPE OneView authentication details |
-| [🔐 Authentication Overview](docs/Generic/auth-doc.md) | General authentication documentation |
-| [📊 Audit Process](docs/Generic/audit_process.md) | Audit trail and compliance process |
-| [📊 GDPR Compliance](docs/Generic/gdpr_compliance.md) | GDPR compliance documentation |
+| [🔐 SCOM Authentication](docs/Generic/scom-auth.md#top) | SCOM authentication setup and configuration |
+| [🔐 OneView Authentication](docs/Generic/oneview-auth.md#top) | HPE OneView authentication details |
+| [🔐 Authentication Overview](docs/Generic/auth-doc.md#top) | General authentication documentation |
+| [📊 Audit Process](docs/Generic/audit_process.md#top) | Audit trail and compliance process |
+| [📊 GDPR Compliance](docs/Generic/gdpr_compliance.md#top) | GDPR compliance documentation |
 
 #### Developer Resources
 | Document | Description |
 |---|---|
-| [📖 DevOps Guide to HPE Terms](docs/devops-guide-to-HPe-Terms.md) | HPE terminology guide |
+| [📖 DevOps Guide to HPE Terms](docs/devops-guide-to-HPe-Terms.md#top) | HPE terminology guide |
 
 <a name="in-this-document"></a>
 ### In this document
@@ -327,4 +328,5 @@ MIT License - see `LICENSE` file for details.
 [HPE OneView Powershell Library Guide and Versions](https://hpe-docs.gitbook.io/posh-hpeoneview)
 
 [HPE OneView PS releases](https://github.com/HewlettPackard/POSH-HPEOneView/releases)
+
 

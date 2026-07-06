@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # _Build-CIParams
 
+<a id="top"></a>
 ## Description
 
 Initiates GitLab CI/CD pipeline for cluster maintenance instead of direct execution. Used by iRequest to delegate maintenance to GitLab pipelines.

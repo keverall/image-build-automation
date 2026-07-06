@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Get-Anchor
 
+<a id="top"></a>
 ## Description
 
 This script processes a markdown file, adding anchors to headings and generating a Table of Contents (TOC) that links to those anchors. It is designed to be compatible with Bitbucket and GitStash.

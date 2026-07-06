@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Import-JsonConfig
 
+<a id="top"></a>
 ## Description
 
 Load a YAML config file. Requires the 'powershell-yaml' module.

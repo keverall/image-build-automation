@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # availability
 
+<a id="top"></a>
 ## Description
 
 Comprehensive validation of maintenance mode setup including: - Configuration file existence (connection_hosts.json, scom_config, oneview_config, etc.) - connection_hosts.json structure and environment definitions - Required environment variables (SCOM/OneView credentials) - PowerShell module import and function availability - New parameter support (Environment, Host, Username) - Dry-run validation test Displays detailed pass/fail status for each check.

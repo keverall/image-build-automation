@@ -1,5 +1,6 @@
 # Checkmake Integration
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)

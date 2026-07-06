@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # is
 
+<a id="top"></a>
 ## Description
 
 Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the reference implementation automation.cli.update_firmware_drivers module.

@@ -1,5 +1,6 @@
 # GitLab CI/CD Pipeline Trigger API - REST reference and integration guide
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)

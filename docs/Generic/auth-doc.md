@@ -1,5 +1,6 @@
 # Authentication & Configuration Index
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Quick Reference](#quick-reference)
@@ -9,7 +10,7 @@
 - [Usage](#usage)
 
 
-Configuration and secrets for `Set-MaintenanceMode.ps1`. All secrets stored in CyberArk vault `pas.example.com`. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md) for the distinction between SCOM, OneView, and iLO.
+Configuration and secrets for `Set-MaintenanceMode.ps1`. All secrets stored in CyberArk vault `pas.example.com`. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between SCOM, OneView, and iLO.
 
 <a name="quick-reference"></a>
 ## Quick Reference
@@ -24,8 +25,8 @@ Configuration and secrets for `Set-MaintenanceMode.ps1`. All secrets stored in C
 <a name="documentation"></a>
 ## Documentation
 
-- [SCOM Configuration](scom-auth.md) - Cluster-level maintenance mode
-- [OneView Configuration](oneview-auth.md) - Hardware-level maintenance mode (via iLO)
+- [SCOM Configuration](scom-auth.md#top) - Cluster-level maintenance mode
+- [OneView Configuration](oneview-auth.md#top) - Hardware-level maintenance mode (via iLO)
 
 <a name="working-config-files"></a>
 ## Working Config Files
@@ -55,4 +56,5 @@ Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom
 # OneView - individual server maintenance
 Set-MaintenanceMode -Action enable -TargetId 'PROD-SERVER-01' -Mode oneview
 ```
+
 

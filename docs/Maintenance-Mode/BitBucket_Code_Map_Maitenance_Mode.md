@@ -1,5 +1,6 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Test-ServerConnectivity](#test-serverconnectivity)
@@ -796,22 +797,23 @@ All configurations loaded from `configs/` directory, in load order:
 <a name="15-documentation-references"></a>
 ## 15 Documentation References
 
-- **Architecture overview**: [`maintenance_mode.md`](maintenance_mode.md)
-- **Quick start guide**: [`MAINTENANCE_MODE_SHORTCUTS.md`](MAINTENANCE_MODE_SHORTCUTS.md)
-- **Environment configuration**: [`maintenance-mode-environment-config.md`](maintenance-mode-environment-config.md)
-- **Setup guide**: [`SETUP-GUIDE.md`](../SETUP-GUIDE.md)
-- **PowerShell API reference**: [`powershell_api_reference.md`](../Generic/powershell_api_reference.md)
-- **OneView authentication**: [`oneview-auth.md`](../Generic/oneview-auth.md)
-- **SCOM authentication**: [`Generic\scom-auth.md`](../Generic/scom-auth.md)
-- **OneView module versions**: [`oneview-module-versions.md`](../Generic/oneview-module-versions.md)
-- **Audit process**: [`audit_process.md`](../Generic/audit_process.md)
-- **Test-ServerConnectivity API**: [`Test-ServerConnectivity.md`](../dynamic-code-docs/Test-ServerConnectivity.md)
+- **Architecture overview**: [`maintenance_mode.md`](maintenance_mode.md#top)
+- **Quick start guide**: [`MAINTENANCE_MODE_SHORTCUTS.md`](MAINTENANCE_MODE_SHORTCUTS.md#top)
+- **Environment configuration**: [`maintenance-mode-environment-config.md`](maintenance-mode-environment-config.md#top)
+- **Setup guide**: [`SETUP-GUIDE.md`](../SETUP-GUIDE.md#top)
+- **PowerShell API reference**: [`powershell_api_reference.md`](../Generic/powershell_api_reference.md#top)
+- **OneView authentication**: [`oneview-auth.md`](../Generic/oneview-auth.md#top)
+- **SCOM authentication**: [`Generic\scom-auth.md`](../Generic/scom-auth.md#top)
+- **OneView module versions**: [`oneview-module-versions.md`](../Generic/oneview-module-versions.md#top)
+- **Audit process**: [`audit_process.md`](../Generic/audit_process.md#top)
+- **Test-ServerConnectivity API**: [`Test-ServerConnectivity.md`](../dynamic-code-docs/Test-ServerConnectivity.md#top)
 
 ---
 
 *Document updated: 2026-06-23*
 *Source file total: 3,803 lines (Set-MaintenanceMode.ps1) + 481 lines (Test-ServerConnectivity.ps1)*
 *For questions about specific code locations, refer to the line numbers provided in the links above.*
+
 
 
 

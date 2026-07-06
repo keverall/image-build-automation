@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Get-ProjectRoot
 
+<a id="top"></a>
 ## Description
 
 Get the appropriate log directory based on context (testing vs production).

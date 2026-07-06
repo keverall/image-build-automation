@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Invoke-WindowsSecurityUpdate
 
+<a id="top"></a>
 ## Description
 
 Applies Windows security patches to a base ISO using DISM or PowerShell DISM equivalent, creating a patched ISO ready for deployment. Reads patch manifest from windows_patches.json and downloads/applies MSU packages to the mounted ISO image.
