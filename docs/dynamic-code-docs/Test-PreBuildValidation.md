@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Test-PreBuildValidation
 
+<a id="top"></a>
 ## Description
 
 Returns a hashtable of named checks with pass/fail status.  Any failure marks the overall result as failed.

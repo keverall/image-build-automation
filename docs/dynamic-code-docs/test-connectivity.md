@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # test-connectivity
 
+<a id="top"></a>
 ## Description
 
 Combined ping + connect test for SCOM or OneView (safe during change freeze).

@@ -1,5 +1,6 @@
 # Automation Code Map
 
+<a id="top"></a>
 ## Table of Contents
 
 - [1. Module Loading & Bootstrap](#1-module-loading-bootstrap)
@@ -99,8 +100,8 @@
   - [17.3 - Coverage & Lint](#173---coverage-lint-1)
 - [18. Quick Navigation](#18-quick-navigation)
 
-This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
-This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
+This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
+This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
 
 > **Source root**: [`src/powershell/Automation/`](../../src/powershell/Automation/)
 > **Module manifest**: [`Automation.psd1`](../../src/powershell/Automation/Automation.psd1)
@@ -897,8 +898,8 @@ All configs loaded from `configs/` directory:
 | **`hpe_firmware_drivers_nov2025.json`** | HPE SUT firmware/driver component manifest | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#L91) |
 | **`windows_patches.json`** | Windows security patch KB list (MSU packages) | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L100) |
 | **`opsramp_config.json`** | OpsRamp API credentials + base URL | [`OpsRamp_Client`](../../src/powershell/Automation/Automation.psm1#L161) |
-| ~~maintenance-only configs~~ | *See [Code_Map_Maitenance_Mode.md §11](../Maintenance-Mode/Code_Map_Maitenance_Mode.md)* | - |
-| ~~maintenance-only configs~~ | *See [Code_Map_Maitenance_Mode.md §11](../Maintenance-Mode/Code_Map_Maitenance_Mode.md)* | - |
+| ~~maintenance-only configs~~ | *See [Code_Map_Maitenance_Mode.md §11](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)* | - |
+| ~~maintenance-only configs~~ | *See [Code_Map_Maitenance_Mode.md §11](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)* | - |
 
 ---
 
@@ -977,7 +978,8 @@ All configs loaded from `configs/` directory:
 ---
 
 *Document updated: 2026-06-19*
-*Maintenance mode excluded - see [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md)*
-*Maintenance mode excluded - see [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md)*
+*Maintenance mode excluded - see [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)*
+*Maintenance mode excluded - see [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)*
+
 
 

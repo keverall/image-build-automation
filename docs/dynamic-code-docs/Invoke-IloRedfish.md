@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Invoke-IloRedfish
 
+<a id="top"></a>
 ## Description
 
 Implements the iLO Redfish virtual-media workflow: * Session login (basic auth → X-Auth-Token) * Insert / Eject virtual media (CD/DVD) * One-time boot override to CD * System reset (ForceRestart) Operates against a single iLO IP. Connection details are runtime parameters - no JSON config required.

@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Start-PhysicalServerBuild
 
+<a id="top"></a>
 ## Description
 
 One-call orchestrator for new HPE ProLiant server deployments.  Each step's parameters are exposed individually with sensible defaults; skip switches allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy against an already-built ISO).

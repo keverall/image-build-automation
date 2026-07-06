@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # coverage-report
 
+<a id="top"></a>
 ## Description
 
 Runs Pester tests with code coverage enabled and generates: - Cobertura XML coverage file (coverage-results.xml) - Markdown coverage report (coverage-report.md) - Text coverage report (coverage-report.txt) Reports are written to generated/output/coverage directory. Displays formatted coverage summary in console output.

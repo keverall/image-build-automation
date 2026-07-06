@@ -1,5 +1,6 @@
 # Setup Guide - PowerShell Profile & Maintenance Mode
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Quick Setup (5 Minutes)](#quick-setup-5-minutes)
@@ -230,7 +231,8 @@ pwsh
 <a name="next-steps"></a>
 ## Next Steps
 
-- Read [MAINTENANCE_MODE_SHORTCUTS.md](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md) for usage examples
-- See [MAINTENANCE_MODE_SHORTCUTS.md](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md) for all options
-- Check [README.md](../README.md) for project overview
+- Read [MAINTENANCE_MODE_SHORTCUTS.md](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top) for usage examples
+- See [MAINTENANCE_MODE_SHORTCUTS.md](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top) for all options
+- Check [README.md](../README.md#top) for project overview
+
 

@@ -1,5 +1,6 @@
 # HPE ProLiant Windows Server ISO Automation - PowerShell Module
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -77,8 +78,8 @@ Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ### Auto-Generated Documentation
 
 A complete reference for all PowerShell cmdlets is auto-generated and available at:
-- **[Auto-Generated Cmdlet Reference](../dynamic-code-docs/INDEX.md)** - Full parameter tables, examples, and source locations
-- **[Automation Command Reference](../Automation/automation_commands.md)** - Concise functional command reference with every parameter for all automation commands
+- **[Auto-Generated Cmdlet Reference](../dynamic-code-docs/INDEX.md#top)** - Full parameter tables, examples, and source locations
+- **[Automation Command Reference](../Automation/automation_commands.md#top)** - Concise functional command reference with every parameter for all automation commands
 docs\dynamic-code-docs\INDEX.md
 ---
 
@@ -138,7 +139,7 @@ Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' `
     -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
 ```
 
-For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md).
+For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md#top).
 
 <a name="physical-server-build-workflow"></a>
 ## Physical Server Build Workflow
@@ -156,7 +157,7 @@ The runbook workflow (`runbook-requirements.md` / `runbook-changes.md`) is imple
 | 7. Post-build validation | `Test-PostBuildValidation` | Verify hostname, domain, OS, drivers, ConfigMgr client. |
 | 8. Orchestrate | `Start-PhysicalServerBuild` | Run steps 1–7 in a single call with audit logging. |
 
-See [Automation Command Reference](../Automation/automation_commands.md) for full parameter details.
+See [Automation Command Reference](../Automation/automation_commands.md#top) for full parameter details.
 
 ---
 
@@ -270,17 +271,18 @@ pwsh -File scripts/run-maint-mode-tests.ps1
 Invoke-Pester -Path 'tests/powershell/New-Uuid.Unit.Tests.ps1'
 ```
 
-See [testing.md](testing.md) for the full Pester guide.
+See [testing.md](testing.md#top) for the full Pester guide.
 
 ---
 
 <a name="see-also"></a>
 ## See Also
 
-- [Automation Command Reference](../Automation/automation_commands.md) - full parameter reference for all automation commands
-- [Runbook Requirements](../Automation/runbook-requirements.md) - operational runbook for physical HPE server builds
-- [Runbook Changes](../Automation/runbook-changes.md) - implementation plan for the ConfigMgr bootable-media workflow
-- [CI Run Requirements](../Generic/powershell_ci.md)
-- [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md)
-- [Code Quality & Security](../Generic/code_quality.md)
+- [Automation Command Reference](../Automation/automation_commands.md#top) - full parameter reference for all automation commands
+- [Runbook Requirements](../Automation/runbook-requirements.md#top) - operational runbook for physical HPE server builds
+- [Runbook Changes](../Automation/runbook-changes.md#top) - implementation plan for the ConfigMgr bootable-media workflow
+- [CI Run Requirements](../Generic/powershell_ci.md#top)
+- [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md#top)
+- [Code Quality & Security](../Generic/code_quality.md#top)
+
 

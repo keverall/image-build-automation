@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # New-Uuid
 
+<a id="top"></a>
 ## Description
 
 Creates a deterministic UUID (GUID) by computing SHA-256 hash of the server name combined with a timestamp. The first 16 bytes of the hash are converted to a standard UUID format. This ensures the same server and timestamp always produce the same UUID.

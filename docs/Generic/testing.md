@@ -1,5 +1,6 @@
 # PowerShell Module Testing Guide (Pester)
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -321,8 +322,8 @@ stage('PowerShell Tests') {
 <a name="see-also"></a>
 ## See Also
 
-- **CI integration:** [powershell_ci.md](powershell_ci.md)
-- **Code quality:** [code_quality.md](code_quality.md)
+- **CI integration:** [powershell_ci.md](powershell_ci.md#top)
+- **Code quality:** [code_quality.md](code_quality.md#top)
 - **Pester documentation:** https://pester.dev/docs/
 
 ---
@@ -679,3 +680,4 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 - ✅ Always review dry-run output before removing `-DryRun`
 - ✅ Use `-Environment Test` for initial testing
 - ✅ Verify credentials before applying to production
+

@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Invoke-RoutedRequest
 
+<a id="top"></a>
 ## Description
 
 Routes a request to the appropriate handler function based on request type.

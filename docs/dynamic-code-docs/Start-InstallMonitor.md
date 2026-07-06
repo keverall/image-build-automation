@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Start-InstallMonitor
 
+<a id="top"></a>
 ## Description
 
 Polls iLO Redfish and WinRM to track installation phases (Generalize, Specialize, Running Windows, etc.).  Sends progress metrics and alerts to OpsRamp.  The PowerShell equivalent of automation.cli.monitor_install.

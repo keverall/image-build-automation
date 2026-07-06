@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Write-Status
 
+<a id="top"></a>
 ## Description
 
 Scans all .md files for markdown links pointing to source files and validates that they exist. Fixes broken links by searching for the target file and correcting the path. Reports errors for links that cannot be resolved.

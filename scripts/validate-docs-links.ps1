@@ -78,6 +78,51 @@ function Get-RelativeLink {
     return $relativePath
 }
 
+function Ensure-TopAnchor {
+    # Ensures every markdown file has an <a id="top"></a> anchor placed
+    # below its first H1 (# Heading) so #top fragment links scroll to the
+    # top without violating MD041 (first-line-heading) or MD033 in the title.
+    param([System.IO.FileInfo]$File)
+    $content = Get-Content $File.FullName -Raw -ErrorAction SilentlyContinue
+    if (-not $content) { return }
+
+    # Remove any stale anchors we previously inserted anywhere
+    $cleaned = $content -replace '(?m)^[\s]*<a\s+id="top"\s*>\s*</a>\r?\n*', '' `
+                       -replace '(?m)^[\s]*## Top\s*\r?\n', ''
+
+    # Re-read raw content after cleanup to get a fresh pass over the structure
+    $cleaned = $cleaned.TrimStart("`n", "`r")
+
+    # Locate the first H1 heading
+    $h1Match = [regex]::Match($cleaned, '(?m)^#\s+.*$')
+    if (-not $h1Match.Success) { return }
+
+    # If the file already has an id="top" somewhere, skip
+    if ($cleaned -match 'id="top"') { return }
+
+    # Insert anchor directly below the H1 line
+    $insertPos = $h1Match.Index + $h1Match.Length
+    $before = $cleaned.Substring(0, $insertPos)
+    $after  = $cleaned.Substring($insertPos)
+    # Ensure a blank line below the H1, then anchor, then blank, then rest
+    $after = $after -replace '^\r?\n*', "`n`n<a id=`"top`"></a>`n"
+
+    Set-Content -Path $File.FullName -Value ($before + $after) -NoNewline -Encoding UTF8
+}
+
+function Remove-TopAnchorArtifacts {
+    # Backwards-compat wrapper: delegates to Ensure-TopAnchor
+    param([System.IO.FileInfo]$File)
+    Ensure-TopAnchor -File $File
+}
+
+function Get-Anchor {
+    param([string]$LinkPath)
+    if ($LinkPath -match '#(.+)$') { return '#' + $Matches[1] }
+    if ($LinkPath -match '\.md$') { return '#top' }
+    return ''
+}
+
 function Get-MarkdownFiles {
     $files = @()
     $files += Get-ChildItem -Path $RepoRoot -Filter *.md -File -ErrorAction SilentlyContinue
@@ -105,6 +150,9 @@ $results = @{
 }
 
 foreach ($mdFile in $mdFiles) {
+    # Ensure every markdown file has a top anchor below its H1
+    Ensure-TopAnchor -File $mdFile
+
     $content = Get-Content $mdFile.FullName -Raw
     $matches = [regex]::Matches($content, '\[([^\]]+)\]\(([^)]+)\)')
     $fileModified = $false
@@ -113,29 +161,28 @@ foreach ($mdFile in $mdFiles) {
         $fullMatch = $match.Value
         $linkText = $match.Groups[1].Value
         $linkPath = $match.Groups[2].Value
+        $originalPath = $linkPath
         
         if ($linkPath -match '^https?://') { continue }
-        if ($linkPath -match '^#') { continue }
         if ($linkPath -match '^mailto:') { continue }
+        
+        # Same-file anchor links need no file path changes
+        if ($linkPath -match '^\#') { continue }
 
-        # Fix backslash paths in markdown links (markdown requires forward slashes)
-        if ($linkPath -match '\\') {
-            $originalFullMatch = $fullMatch
-            $fixedLinkPath = $linkPath -replace '\\', '/'
-            $replacement = "[$linkText]($fixedLinkPath)"
-            $sourceRelative = $mdFile.FullName.Replace($RepoRoot, '').TrimStart('/')
-            if ($WhatIf) {
-                Write-Status $Yellow "  NORMALIZED: '$linkPath' -> '$fixedLinkPath' in $sourceRelative"
-                $results.WouldFix++
-            } else {
-                $content = $content.Replace($originalFullMatch, $replacement)
-                $fileModified = $true
-                $results.Fixed++
-                Write-Status $Yellow "  NORMALIZED: '$linkPath' -> '$fixedLinkPath' in $sourceRelative"
-            }
-            continue
+        # Normalize backslash paths to forward slash (markdown requires /)
+        $linkPath = $linkPath -replace '\\', '/'
+        $pathChanged = ($linkPath -ne $originalPath)
+        
+        # Compute the correct anchor for this link
+        $hasOriginalAnchor = ($linkPath -match '#(.+)$')
+        if ($hasOriginalAnchor) {
+            $lineSuffix = '#' + $Matches[1]
+        } elseif ($linkPath -match '\.md') {
+            $lineSuffix = '#top'
+        } else {
+            $lineSuffix = ''
         }
-
+        
         $targetFile = $linkPath -replace '#.*$', ''
         $targetFilename = [System.IO.Path]::GetFileName($targetFile)
         
@@ -148,40 +195,51 @@ foreach ($mdFile in $mdFiles) {
         if (-not (Test-Path $resolvedPath)) {
             $results.Invalid++
             $sourceRelative = $mdFile.FullName.Replace($RepoRoot, '').TrimStart('/')
-            Write-Status $Red "BROKEN: '$linkPath' in $sourceRelative"
+            Write-Status $Red "BROKEN: '$originalPath' in $sourceRelative"
             
             $newPath = Find-TargetFile -TargetFilename $targetFilename
             
             if ($newPath) {
                 Write-Status $Yellow "  FOUND: $targetFilename at $newPath"
                 
-                $lineSuffix = ''
-                if ($linkPath -match '#(.+)$') {
-                    $lineSuffix = '#' + $Matches[1]
-                }
-                
                 $newRelative = Get-RelativeLink -SourceFile $mdFile.FullName -TargetPath $newPath
                 $replacement = "[$linkText]($newRelative$lineSuffix)"
                 
-if ($WhatIf) {
-    Write-Status $Yellow "  WOULD REPLACE: '$fullMatch' -> '$replacement'"
-    $results.WouldFix++
-} else {
-    $content = $content.Replace($fullMatch, $replacement)
-    $fileModified = $true
-    $results.Fixed++
-    Write-Status $Green "  FIXED: '$linkPath' -> '$newRelative$lineSuffix'"
-}
+ if ($WhatIf) {
+     Write-Status $Yellow "  WOULD REPLACE: '$fullMatch' -> '$replacement'"
+     $results.WouldFix++
+ } else {
+     $content = $content.Replace($fullMatch, $replacement)
+     $fileModified = $true
+     $results.Fixed++
+     Write-Status $Green "  FIXED: '$originalPath' -> '$newRelative$lineSuffix'"
+ }
             } else {
                 Write-Status $Red "  MISSING: $targetFilename not found in repository"
                 $results.Unresolved += @{
                     SourceFile = $mdFile.FullName
-                    LinkPath = $linkPath
+                    LinkPath = $originalPath
                     TargetFilename = $targetFilename
                 }
             }
         } else {
-            $results.Valid++
+            if ($pathChanged -or ($lineSuffix -and -not $hasOriginalAnchor)) {
+                $replacement = "[$linkText]($linkPath$lineSuffix)"
+                if ($WhatIf) {
+                    $label = if ($pathChanged) { 'NORMALIZED' } else { 'ANCHORED' }
+                    Write-Status $Yellow "  $label`: '$originalPath' -> '$linkPath$lineSuffix' in $($mdFile.FullName.Replace($RepoRoot, '').TrimStart('/'))"
+                    $results.WouldFix++
+                } else {
+                    $content = $content.Replace($fullMatch, $replacement)
+                    $fileModified = $true
+                    $results.Fixed++
+                    $label = if ($pathChanged) { 'NORMALIZED' } else { 'ANCHORED' }
+                    $sourceRelative = $mdFile.FullName.Replace($RepoRoot, '').TrimStart('/')
+                    Write-Status $Yellow "  $label`: '$originalPath' -> '$linkPath$lineSuffix' in $sourceRelative"
+                }
+            } else {
+                $results.Valid++
+            }
         }
     }
     
