@@ -1,5 +1,6 @@
 # PowerShell Code Quality & Security Scanning
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -154,5 +155,6 @@ These are blocking - fix before merging:
 <a name="see-also"></a>
 ## See Also
 
-- CI integration: [powershell_ci.md](powershell_ci.md)
-- Testing: [testing.md](testing.md)
+- CI integration: [powershell_ci.md](powershell_ci.md#top)
+- Testing: [testing.md](testing.md#top)
+

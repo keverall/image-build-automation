@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Ensure-DirectoryExists
 
+<a id="top"></a>
 ## Description
 
 Boolean path existence test (avoids pipeline noise).

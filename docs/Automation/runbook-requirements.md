@@ -1,5 +1,6 @@
 # Runbook for automating the build of physical HPE servers
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Purpose](#purpose)

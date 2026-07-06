@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # New-ScomConnection
 
+<a id="top"></a>
 ## Description
 
 Returns a PowerShell command string that creates an SCOM management-group connection and emits the SCOM server version for downstream routing.

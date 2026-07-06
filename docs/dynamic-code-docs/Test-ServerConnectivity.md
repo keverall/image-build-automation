@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Test-ServerConnectivity
 
+<a id="top"></a>
 ## Description
 
 Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (WinRM 5985/5986 for SCOM, HTTPS 443 for OneView) - Measures latency in milliseconds Phase 2: Authentication Connect - Resolves credentials from environment variables / CyberArk - Loads the relevant PowerShell module - Performs a full authentication (New-SCOMManagementGroupConnection or Connect-OVMgmt) - Immediately disconnects - No objects are modified Returns a structured hashtable with per-phase results and an overall Available boolean.

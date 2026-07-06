@@ -1,5 +1,6 @@
 # OneView Maintenance Mode - Authentication & Configuration
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Required Secrets (CyberArk Safe: `HPE-OneView`)](#required-secrets-cyberark-safe-hpe-oneview)
@@ -13,7 +14,7 @@
 - [Setup Script](#setup-script)
 
 
-Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md) for the distinction between OneView maintenance mode and iLO maintenance mode.
+Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between OneView maintenance mode and iLO maintenance mode.
 
 <a name="required-secrets-cyberark-safe-hpe-oneview"></a>
 ## Required Secrets (CyberArk Safe: `HPE-OneView`)
@@ -133,4 +134,5 @@ if (-not $ovUser -or -not $ovPass) {
     Write-Warning "`$env:ONEVIEW_USER`n`$env:ONEVIEW_PASSWORD"
 }
 ```
+
 

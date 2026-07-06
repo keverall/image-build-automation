@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # New-AuditLogger
 
+<a id="top"></a>
 ## Description
 
 Creates an AuditLogger instance.
