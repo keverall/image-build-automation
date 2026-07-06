@@ -43,7 +43,7 @@ Complete guide to running and maintaining the Pester test suite for the `src/pow
 
 The PowerShell module uses **Pester v5+** as its BDD-style testing framework. Tests are colocated with the source under `tests/powershell/`.
 
-**Framework:** [Pester](https://pester.dev/) v5.7.1  
+**Framework:** [Pester](https://pester.dev/docs/quick-start/) v5.7.1  
 **Test runner command:** `Invoke-Pester`  
 **Test discovery:** `*.Unit.Tests.ps1`, `*.Tests.ps1` files in `tests/powershell/`  
 **Offline support:** All dependencies are bundled under `vendor/modules/`
@@ -324,7 +324,7 @@ stage('PowerShell Tests') {
 
 - **CI integration:** [powershell_ci.md](powershell_ci.md#top)
 - **Code quality:** [code_quality.md](code_quality.md#top)
-- **Pester documentation:** https://pester.dev/docs/
+- **Pester documentation:** https://pester.dev/docs/quick-start/
 
 ---
 
