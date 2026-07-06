@@ -230,6 +230,7 @@ pwsh
 <a name="next-steps"></a>
 ## Next Steps
 
-- Read [MAINTENANCE_MODE_SHORTCUTS.md](MAINTENANCE_MODE_SHORTCUTS.md) for usage examples
-- See [MAINTENANCE_MODE_SHORTCUTS.md](MAINTENANCE_MODE_SHORTCUTS.md) for all options
+- Read [MAINTENANCE_MODE_SHORTCUTS.md](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md) for usage examples
+- See [MAINTENANCE_MODE_SHORTCUTS.md](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md) for all options
 - Check [README.md](../README.md) for project overview
+
