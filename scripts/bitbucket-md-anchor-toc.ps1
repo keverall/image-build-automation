@@ -55,7 +55,7 @@ $script:LogFile   = $null
 function Write-Status {
     param([string]$Color, [string]$Message)
     $cleanMessage = $Message -replace '\x1b\[[0-9;]*m', ''
-    Write-Host "${Color}${Message}${script:Reset}"
+    Write-Output "${Color}${Message}${script:Reset}"
     if ($script:LogFile) {
         $logEntry = "[$(Get-Date -Format 'HH:mm:ss')] $cleanMessage"
         Add-Content -Path $script:LogFile -Value $logEntry -Encoding UTF8
@@ -355,7 +355,7 @@ function Add-BitbucketMdToc {
             if ($ok) { $passCount++ } else { $failCount++ }
         }
 
-        Write-Host ""
+        Write-Output ""
         Write-Status $script:Cyan "=== Summary ==="
         Write-Status $script:Green "Files  : $($files.Count)"
         Write-Status $script:Green "Passed : $passCount"
