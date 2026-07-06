@@ -73,14 +73,9 @@ function Find-TargetFile {
 function Get-RelativeLink {
     param([string]$SourceFile, [string]$TargetPath)
     $sourceDir = Split-Path $SourceFile -Parent
-    $sourceRelative = $sourceDir.Replace($RepoRoot, '').TrimStart('/')
-    $depth = ($sourceRelative -split '/').Where({ $_ -ne '' }).Count
-    
-    $relPath = ''
-    for ($i = 0; $i -lt $depth; $i++) { $relPath += '../' }
-    $relPath += $TargetPath.TrimStart('/')
-    $relPath = $relPath -replace '/+', '/'
-    return $relPath
+    $targetFullPath = Join-Path $RepoRoot $TargetPath.TrimStart('/')
+    $relativePath = [System.IO.Path]::GetRelativePath($sourceDir, $targetFullPath) -replace '\\', '/'
+    return $relativePath
 }
 
 function Get-MarkdownFiles {
@@ -120,16 +115,40 @@ foreach ($mdFile in $mdFiles) {
         $linkPath = $match.Groups[2].Value
         
         if ($linkPath -match '^https?://') { continue }
-        if ($linkPath -notmatch '^\.\./') { continue }
-        
+        if ($linkPath -match '^#') { continue }
+        if ($linkPath -match '^mailto:') { continue }
+
+        # Fix backslash paths in markdown links (markdown requires forward slashes)
+        if ($linkPath -match '\\') {
+            $originalFullMatch = $fullMatch
+            $fixedLinkPath = $linkPath -replace '\\', '/'
+            $replacement = "[$linkText]($fixedLinkPath)"
+            $sourceRelative = $mdFile.FullName.Replace($RepoRoot, '').TrimStart('/')
+            if ($WhatIf) {
+                Write-Status $Yellow "  NORMALIZED: '$linkPath' -> '$fixedLinkPath' in $sourceRelative"
+                $results.WouldFix++
+            } else {
+                $content = $content.Replace($originalFullMatch, $replacement)
+                $fileModified = $true
+                $results.Fixed++
+                Write-Status $Yellow "  NORMALIZED: '$linkPath' -> '$fixedLinkPath' in $sourceRelative"
+            }
+            continue
+        }
+
         $targetFile = $linkPath -replace '#.*$', ''
         $targetFilename = [System.IO.Path]::GetFileName($targetFile)
         
         $sourceDir = Split-Path $mdFile.FullName -Parent
-        $resolvedPath = Join-Path $sourceDir $targetFile
+        if ($linkPath -match '^/') {
+            $resolvedPath = Join-Path $RepoRoot $targetFile.TrimStart('/')
+        } else {
+            $resolvedPath = Join-Path $sourceDir $targetFile
+        }
         if (-not (Test-Path $resolvedPath)) {
             $results.Invalid++
-            Write-Status $Red "BROKEN: '$linkPath' in $(Split-Path $mdFile.FullName -Leaf)"
+            $sourceRelative = $mdFile.FullName.Replace($RepoRoot, '').TrimStart('/')
+            Write-Status $Red "BROKEN: '$linkPath' in $sourceRelative"
             
             $newPath = Find-TargetFile -TargetFilename $targetFilename
             
@@ -151,7 +170,7 @@ if ($WhatIf) {
     $content = $content.Replace($fullMatch, $replacement)
     $fileModified = $true
     $results.Fixed++
-    Write-Status $Green "  FIXED: Link updated to $newRelative$lineSuffix"
+    Write-Status $Green "  FIXED: '$linkPath' -> '$newRelative$lineSuffix'"
 }
             } else {
                 Write-Status $Red "  MISSING: $targetFilename not found in repository"
@@ -186,8 +205,9 @@ if ($results.Unresolved.Count -gt 0) {
     Write-Host ""
     Write-Status $Red "=== Unresolved Files (could not be found) ==="
     foreach ($item in $results.Unresolved) {
+        $unresolvedSourceRelative = $item.SourceFile.Replace($RepoRoot, '').TrimStart('/')
         Write-Status $Red "  File: $($item.TargetFilename)"
-        Write-Status $Red "    Found in: $(Split-Path $item.SourceFile -Leaf)"
+        Write-Status $Red "    Found in: $unresolvedSourceRelative"
         Write-Status $Red "    Link path: $($item.LinkPath)"
     }
 }

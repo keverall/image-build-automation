@@ -69,7 +69,7 @@
 - [20. Quick Navigation](#20-quick-navigation)
 
 
-This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`BitBucket_Code_Map_Maitenance_Mode.md`](BitBucket_Code_Map_Maitenance_Mode.md)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, physical server builds, firmware/Windows patching, deployment, monitoring, validation, and OpsRamp reporting.
+This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`BitBucket_Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/BitBucket_Code_Map_Maitenance_Mode.md)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, physical server builds, firmware/Windows patching, deployment, monitoring, validation, and OpsRamp reporting.
 
 > **Source root**: [`src/powershell/Automation/`](../../src/powershell/Automation/)
 > **Module manifest**: [`Automation.psd1`](../../src/powershell/Automation/Automation.psd1)
@@ -859,7 +859,7 @@ All configs loaded from `configs/` directory:
 | **`servers_catalogue.oneview.json`** | OneView server definitions | OneView queries |
 | **`configmgr_config.json`** | ConfigMgr site connection details | Build pipeline |
 | **`email_distribution_lists.json`** | Maintenance notification recipients | Notifications |
-| ~~maintenance-only configs~~ | *See [BitBucket_Code_Map_Maitenance_Mode.md §11](BitBucket_Code_Map_Maitenance_Mode.md)* | - |
+| ~~maintenance-only configs~~ | *See [BitBucket_Code_Map_Maitenance_Mode.md §11](../Maintenance-Mode/BitBucket_Code_Map_Maitenance_Mode.md)* | - |
 
 ---
 
@@ -944,4 +944,5 @@ All configs loaded from `configs/` directory:
 | **Remote WinRM** | `Invoke-PowerShellWinRM` | `New-PSSession` | [`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) | L5–60 |
 | **Generate UUID** | `New-Uuid` | SHA-256 hash | [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) | L8–64 |
 | **OneView query** | `Get-OneViewServerTarget` | REST /rest/server-hardware | [`Get-OneViewServerTarget.ps1`](../../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) | L14–172 |
+
 

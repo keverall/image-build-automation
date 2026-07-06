@@ -757,17 +757,19 @@ All configurations loaded from `configs/` directory, in load order:
 - **Architecture overview**: [`maintenance_mode.md`](maintenance_mode.md)
 - **Quick start guide**: [`MAINTENANCE_MODE_SHORTCUTS.md`](MAINTENANCE_MODE_SHORTCUTS.md)
 - **Environment configuration**: [`maintenance-mode-environment-config.md`](maintenance-mode-environment-config.md)
-- **Setup guide**: [`SETUP-GUIDE.md`](SETUP-GUIDE.md)
-- **PowerShell API reference**: [`powershell_api_reference.md`](powershell_api_reference.md)
-- **OneView authentication**: [`oneview-auth.md`](oneview-auth.md)
-- **SCOM authentication**: [`scom-auth.md`](..\Generic\scom-auth.md)
-- **OneView module versions**: [`oneview-module-versions.md`](oneview-module-versions.md)
-- **Audit process**: [`audit_process.md`](audit_process.md)
-- **Test-ServerConnectivity API**: [`Test-ServerConnectivity.md`](dynamic-code-docs/Test-ServerConnectivity.md)
+- **Setup guide**: [`SETUP-GUIDE.md`](../SETUP-GUIDE.md)
+- **PowerShell API reference**: [`powershell_api_reference.md`](../Generic/powershell_api_reference.md)
+- **OneView authentication**: [`oneview-auth.md`](../Generic/oneview-auth.md)
+- **SCOM authentication**: [`scom-auth.md`](../Generic/scom-auth.md)
+- **OneView module versions**: [`oneview-module-versions.md`](../Generic/oneview-module-versions.md)
+- **Audit process**: [`audit_process.md`](../Generic/audit_process.md)
+- **Test-ServerConnectivity API**: [`Test-ServerConnectivity.md`](../dynamic-code-docs/Test-ServerConnectivity.md)
 
 ---
 
 *Document updated: 2026-06-23*
 *Source file total: 3,803 lines (Set-MaintenanceMode.ps1) + 481 lines (Test-ServerConnectivity.ps1)*
 *For questions about specific code locations, refer to the line numbers provided in the links above.*
+
+
 

@@ -13,7 +13,7 @@
 - [Setup Script](#setup-script)
 
 
-Configure `Set-MaintenanceMode.ps1` for SCOM cluster-level maintenance mode. SCOM manages Microsoft Windows cluster objects - all servers and resources nested under the group are put into maintenance mode. See [DevOps Guide to HPE Terms](devops-guide-to-HPe-Terms.md) for the relationship between SCOM, OneView, and iLO.
+Configure `Set-MaintenanceMode.ps1` for SCOM cluster-level maintenance mode. SCOM manages Microsoft Windows cluster objects - all servers and resources nested under the group are put into maintenance mode. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md) for the relationship between SCOM, OneView, and iLO.
 
 <a name="required-secrets-cyberark-safe-scom-2015"></a>
 ## Required Secrets (CyberArk Safe: `SCOM-2015`)
@@ -130,3 +130,4 @@ if (-not $scomUser -or -not $scomPass) {
     Write-Warning "`$env:SCOM_ADMIN_USER`n`$env:SCOM_ADMIN_PASSWORD"
 }
 ```
+
