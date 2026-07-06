@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Show-Help
 
+<a id="top"></a>
 ## Description
 
 Parses Makefile for documented targets and displays them in a formatted table. Shows all available 'make' commands with their descriptions from inline comments.

@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Test-BuildParams
 
+<a id="top"></a>
 ## Description
 
 Checks that required build prerequisites are met, such as verifying the base Windows ISO file exists at the specified path. Returns an empty array on success or an array of error messages describing validation failures.

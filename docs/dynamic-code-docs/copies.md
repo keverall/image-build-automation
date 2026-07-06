@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # copies
 
+<a id="top"></a>
 ## Description
 
 Validates the local ISO, copies it to the configured HTTPS repository root, and returns the public URL for the Redfish InsertMedia action.  Verifies reachability with an HTTP HEAD request.

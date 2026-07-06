@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Initialize-Logging
 
+<a id="top"></a>
 ## Description
 
 Configures logging with specified log file path and level. Creates timestamped log files in generated/logs/testing or generated/logs/production directories.

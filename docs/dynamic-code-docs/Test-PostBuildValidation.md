@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Test-PostBuildValidation
 
+<a id="top"></a>
 ## Description
 
 Connects over WinRM to the freshly-built server and verifies the post-build state.  Returns a hashtable of named checks.

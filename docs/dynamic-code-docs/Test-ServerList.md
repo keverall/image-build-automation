@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Test-ServerList
 
+<a id="top"></a>
 ## Description
 
 Reads the server list text file (server_list.txt) and returns a hashtable with Success and Servers properties. Skips empty lines and comments (lines starting with #). Optionally trims comma-separated metadata from each line.

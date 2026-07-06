@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Get-LastCommentBlock
 
+<a id="top"></a>
 ## Original Comment-Based Help
 ```powershell
 …

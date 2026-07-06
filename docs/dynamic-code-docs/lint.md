@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # lint
 
+<a id="top"></a>
 ## Description
 
 Two-phase linting process: 1. SYNTAX VALIDATION: Parses each file to catch syntax/parse errors - Uses PowerShell's built-in Parser - Catches missing braces, invalid syntax, etc. - FATAL: Exits immediately if syntax errors found 2. CODE QUALITY: Runs PSScriptAnalyzer for best practices - Style, performance, design patterns - Respects excluded rules (see below) Directories excluded: vendor/, generated/, .git/, bin/, scripts/modules/ Rules excluded from PSScriptAnalyzer: - PSUseBOMForUnicodeEncodedFile - PSUseToExportFieldsInManifest - PSUseShouldProcessForStateChangingFunctions - PSUseApprovedVerbs - PSUseSingularNouns - PSAvoidUsingWriteHost - PSAvoidUsingConvertToSecureStringWithPlainText - PSAvoidUsingUsernameAndPasswordParams - TypeNotFound

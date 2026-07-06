@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # lint-make
 
+<a id="top"></a>
 ## Description
 
 Validates Makefile syntax using checkmake if available, otherwise performs a basic dry-run validation. Acts as a fallback for environments without checkmake installed.

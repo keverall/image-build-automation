@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # CoverageSummary
 
+<a id="top"></a>
 ## Description
 
 Parses Cobertura XML coverage file and generates formatted table showing: - Per-file coverage statistics (rate, covered lines, missed lines) - Overall coverage summary - Output to both console and text file Default input: coverage-results.xml Default output: coverage-report.txt

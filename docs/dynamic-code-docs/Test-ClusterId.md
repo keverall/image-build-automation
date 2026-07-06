@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Test-ClusterId
 
+<a id="top"></a>
 ## Description
 
 Checks the cluster catalogue JSON file for the specified TargetId and validates that required fields (servers, scom_group, ilo_addresses) are present. Returns a hashtable with Success and Cluster properties on success, or Success=false with Error on failure. This function is intended for SCOM mode requests only. It validates that the supplied TargetId is a cluster ID (not a server name) and that the cluster definition has the correct structure in the catalogue. OneView mode requests should NOT call this function - they use OneViewClient.ResolveTarget() instead to validate server names or scopes against the OneView appliance.
