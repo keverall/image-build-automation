@@ -535,7 +535,7 @@ Test-PostBuildValidation -Hostname srv01 -SkipRemote
 <a name="maintenance-mode"></a>
 ## Maintenance Mode
 
-See [`CLIENT-QUICK-START.md`](CLIENT-QUICK-START.md) for the full guide.
+See [`CLIENT-QUICK-START.md`](../CLIENT-QUICK-START.md) for the full guide.
 
 <a name="examples"></a>
 ### Examples
@@ -733,4 +733,5 @@ Import-Module (Get-ChildItem -Recurse -Filter 'Automation.psd1' -Path (Split-Pat
 <a name="source-links"></a>
 ### Source links
 
-[Generated API reference](dynamic-code-docs/INDEX.md) with per-command detail pages.
+[Generated API reference](../dynamic-code-docs/INDEX.md) with per-command detail pages.
+
