@@ -1,5 +1,5 @@
 #
-# Test-ServerConnectivity.ps1 - OneView-only network ping + authentication
+# Test-ScomMaintenanceConnectivity.ps1 - SCOM-only network ping + authentication
 # connectivity test.  Safe to run during a change freeze (read-only).
 #
 
@@ -19,23 +19,23 @@ param(
 if ($ShowHelp) {
     Write-Host ""
     Write-Host "NAME"
-    Write-Host "    Test-ServerConnectivity"
+    Write-Host "    Test-ScomMaintenanceConnectivity"
     Write-Host ""
     Write-Host "SYNOPSIS"
-    Write-Host "    Combined network ping + authentication check for a OneView appliance."
+    Write-Host "    Combined network ping + authentication check for a SCOM management server."
     Write-Host ""
     Write-Host "SYNTAX"
-    Write-Host "    Test-ServerConnectivity"
+    Write-Host "    Test-ScomMaintenanceConnectivity"
     Write-Host "        [-Environment <Test|Prod>] [-ManagementHost <string>]"
     Write-Host "        [-Credential <PSCredential>] [-PingTimeoutMs <int>] [-Json]"
     Write-Host "        [-JsonConfig] [-DryRun]"
     Write-Host ""
     Write-Host "DESCRIPTION"
-    Write-Host "    Performs read-only connectivity checks against a OneView appliance."
+    Write-Host "    Performs read-only connectivity checks against a SCOM management server."
     Write-Host "    Two phases are executed:"
     Write-Host ""
     Write-Host "      1. Network Ping  - DNS resolution + TCP port probe (no credentials needed)"
-    Write-Host "      2. Auth Connect  - full authentication using the HPE OneView module,"
+    Write-Host "      2. Auth Connect  - full authentication using the OperationsManager module,"
     Write-Host "                         followed by immediate disconnect"
     Write-Host ""
     Write-Host "    All operations are read-only.  No maintenance windows are created, no"
@@ -47,8 +47,8 @@ if ($ShowHelp) {
     Write-Host ""
     Write-Host "    CONFIG IS ONLY FOR -DryRun:"
     Write-Host "      On a live run this command does NOT read connection_hosts.json or"
-    Write-Host "      oneview_config.json. The host you pass with -ManagementHost is used"
-    Write-Host "      exactly as typed, so only that appliance is ever contacted."
+    Write-Host "      scom_config.json. The host you pass with -ManagementHost is used"
+    Write-Host "      exactly as typed, so only that management server is ever contacted."
     Write-Host "      Credentials come from -Credential or an interactive prompt - never"
     Write-Host "      from config. -JsonConfig / connection_hosts.json are honoured ONLY"
     Write-Host "      with -DryRun."
@@ -62,7 +62,7 @@ if ($ShowHelp) {
     Write-Host "    Default: Prod. Valid values: Test, Prod"
     Write-Host ""
     Write-Host "  -ManagementHost <string>  [REQUIRED for live tests]"
-    Write-Host "    OneView appliance to connect to (server name or serial)."
+    Write-Host "    SCOM management server to connect to (server name or serial)."
     Write-Host "    Used VERBATIM - no config or environment-variable fallback. This"
     Write-Host "    guarantees only the host you specify is ever contacted."
     Write-Host ""
@@ -72,7 +72,7 @@ if ($ShowHelp) {
     Write-Host "    command prompts interactively for username and password."
     Write-Host ""
     Write-Host "  -JsonConfig"
-    Write-Host "    Use configs/connection_hosts.json to resolve the OneView appliance."
+    Write-Host "    Use configs/connection_hosts.json to resolve the SCOM management server."
     Write-Host "    ONLY honoured together with -DryRun (config is for dry-run testing"
     Write-Host "    only, never for live user runs)."
     Write-Host "    See CONFIGURATION section below for config file locations."
@@ -92,49 +92,51 @@ if ($ShowHelp) {
     Write-Host "    Location: configs/connection_hosts.json"
     Write-Host "    Used when -JsonConfig is specified together with -DryRun."
     Write-Host ""
-    Write-Host "    Structure (OneView only):"
+    Write-Host "    Structure (SCOM only):"
     Write-Host "    {"
     Write-Host '      "environments": {'
     Write-Host '        "Prod": {'
-    Write-Host '          "oneview": {'
-    Write-Host '            "appliance": "oneview.ad.example.com",'
-    Write-Host '            "scope_name": "Production_Cluster_01"'
+    Write-Host '          "scom": {'
+    Write-Host '            "management_server": "VR-OPM19P1-7382.ad.example.com",'
+    Write-Host '            "group_id": "PROD-SERVERS-GROUP",'
+    Write-Host '            "environment": "production"'
     Write-Host '          }'
     Write-Host '        },'
     Write-Host '        "Test": {'
-    Write-Host '          "oneview": {'
-    Write-Host '            "appliance": "oneview.ad.example.com",'
-    Write-Host '            "scope_name": "Test_Cluster_01"'
+    Write-Host '          "scom": {'
+    Write-Host '            "management_server": "VR-OPM19T1-7382.ad.example.com",'
+    Write-Host '            "group_id": "TEST-SERVERS-GROUP",'
+    Write-Host '            "environment": "test"'
     Write-Host '          }'
     Write-Host '        }'
     Write-Host "      }"
     Write-Host "    }"
     Write-Host ""
-    Write-Host "    To set the appliance: edit 'appliance' under the relevant environment."
+    Write-Host "    To set the server: edit 'management_server' under the relevant environment."
     Write-Host ""
-    Write-Host "  Server Names, Serial Numbers:"
-    Write-Host "    Location: configs/servers_catalogue.oneview.json"
-    Write-Host "      - OneView server definitions"
-    Write-Host "      - Serial numbers and OneView names"
+    Write-Host "  Cluster IDs, Server Names:"
+    Write-Host "    Location: configs/clusters_catalogue.json"
+    Write-Host "      - SCOM cluster definitions with CLU-xxx IDs"
+    Write-Host "      - Server lists and group mappings"
     Write-Host ""
-    Write-Host "  OneView Configuration: configs/oneview_config.json"
+    Write-Host "  SCOM Configuration: configs/scom_config.json"
     Write-Host ""
     Write-Host "EXAMPLES"
     Write-Host ""
     Write-Host "    # LIVE test - explicit host, credentials prompted interactively"
-    Write-Host "    Test-ServerConnectivity -ManagementHost 'va-oneviewt-01'"
+    Write-Host "    Test-ScomMaintenanceConnectivity -ManagementHost 'VR-OPM19T1-7382.ad.example.com'"
     Write-Host ""
     Write-Host "    # LIVE test - explicit host + supplied credential (no prompt)"
-    Write-Host "    Test-ServerConnectivity -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)"
+    Write-Host "    Test-ScomMaintenanceConnectivity -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)"
     Write-Host ""
     Write-Host "    # DRY-RUN using connection_hosts.json config (no real connection)"
-    Write-Host "    Test-ServerConnectivity -Environment Test -JsonConfig -DryRun"
+    Write-Host "    Test-ScomMaintenanceConnectivity -Environment Test -JsonConfig -DryRun"
     Write-Host ""
     Write-Host "    # DRY-RUN with explicit host (validates resolution only)"
-    Write-Host "    Test-ServerConnectivity -ManagementHost 'va-oneviewt-01' -DryRun"
+    Write-Host "    Test-ScomMaintenanceConnectivity -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -DryRun"
     Write-Host ""
     Write-Host "    # DRY-RUN with interactive host prompt"
-    Write-Host "    Test-ServerConnectivity -DryRun"
+    Write-Host "    Test-ScomMaintenanceConnectivity -DryRun"
     Write-Host ""
     exit 0
 }
@@ -147,31 +149,31 @@ if (-not (Get-Module -Name 'Automation' -ErrorAction SilentlyContinue) -and $MyI
     }
 }
 
-function Test-ServerConnectivity {
+function Test-ScomMaintenanceConnectivity {
     <#
     .SYNOPSIS
-        OneView-only network ping + authentication connectivity test.
+        SCOM-only network ping + authentication connectivity test.
         Read-only - safe during a change freeze.
 
     .DESCRIPTION
         Phase 1: Network Ping
-          - DNS resolution of the OneView appliance
-          - TCP port probe (HTTPS 443)
+          - DNS resolution of the SCOM management server
+          - TCP port probe (WinRM 5985/5986, or 5985/135 when not using WinRM)
           - Measures latency in milliseconds
 
         Phase 2: Authentication Connect
           - Prompts for username/password (or uses -Credential)
-          - Loads the HPE OneView PowerShell module
-          - Performs a full authentication (Connect-OVMgmt)
-          - Immediately disconnects (Disconnect-OVMgmt)
+          - Loads the OperationsManager PowerShell module
+          - Performs a full authentication (New-SCOMManagementGroupConnection)
+          - Immediately disconnects (Remove-SCOMManagementGroupConnection)
           - No objects are modified
 
         SAFETY / COMPLIANCE (regulated EMIR environment):
-          - On a live run, config files are NEVER read. The appliance host is
-            taken verbatim from -ManagementHost and only that appliance is
+          - On a live run, config files are NEVER read. The management server host
+            is taken verbatim from -ManagementHost and only that server is
             contacted. Credentials are never taken from config - they are supplied
             via -Credential or entered interactively.
-          - Config files (connection_hosts.json, oneview_config.json) are read
+          - Config files (connection_hosts.json, scom_config.json) are read
             ONLY with -DryRun, for dry-run validation.
 
         Returns a structured hashtable with per-phase results and an overall
@@ -182,7 +184,7 @@ function Test-ServerConnectivity {
         connection_hosts.json only happens with -JsonConfig AND -DryRun.
 
     .PARAMETER ManagementHost
-        OneView appliance to connect to (server name or serial).
+        SCOM management server to connect to (server name or serial).
         REQUIRED for a live run. Used verbatim - no config/env fallback - so only
         the host you specify is ever contacted.
 
@@ -202,7 +204,7 @@ function Test-ServerConnectivity {
         If set, outputs the result as a JSON string instead of formatted text.
 
     .PARAMETER JsonConfig
-        Reads the OneView appliance from configs/connection_hosts.json. ONLY
+        Reads the SCOM management server from configs/connection_hosts.json. ONLY
         honoured together with -DryRun (config is for dry-run testing, never
         live runs).
 
@@ -213,7 +215,7 @@ function Test-ServerConnectivity {
     .RETURNS
         [hashtable] with keys:
           Available        [bool]   - overall pass/fail
-          Mode             [string] - always 'oneview'
+          Mode             [string] - always 'scom'
           ManagementHost   [string]
           Environment      [string]
           NetworkPing      [hashtable] - DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
@@ -234,7 +236,7 @@ function Test-ServerConnectivity {
     )
 
     $ErrorActionPreference = 'Continue'
-    $Mode = 'oneview'
+    $Mode = 'scom'
 
     # ── Resolve config directory ──────────────────────────────────────────────
     $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
@@ -268,7 +270,7 @@ function Test-ServerConnectivity {
     # ── Config is ONLY used in DryRun mode ─────────────────────────────────────
     # A live (non-DryRun) connectivity test MUST be driven entirely by parameters
     # the operator supplies on the command line.  Reading host/credential config
-    # during a live run would risk silently connecting to an appliance the
+    # during a live run would risk silently connecting to a management server the
     # operator did not intend (regulated EMIR environment - no silent fallbacks,
     # no data loss).  -ManagementHost is therefore required and used VERBATIM.
     if (-not $DryRun) {
@@ -288,7 +290,7 @@ function Test-ServerConnectivity {
                 AuthConnect    = @{ Connected = $false; Error = "Skipped - no management host" }
                 Timestamp      = Get-UtcTimestamp
             }
-            if (-not $Json) { _Format-ConnectivityResult -Result $result }
+            if (-not $Json) { _Format-ScomMaintenanceConnectivityResult -Result $result }
             return $result
         }
 
@@ -296,7 +298,7 @@ function Test-ServerConnectivity {
         $resolvedHost = $ManagementHost.Trim()
 
         # Sensible defaults for the live connection (no config file is read).
-        $modeCfg = @{ module_name = 'HPEOneView.1000'; use_winrm = $false }
+        $modeCfg = @{ powershell_module = 'OperationsManager'; use_winrm = $false }
         $useWinRM = $false
         $userEnv  = $null
         $passEnv  = $null
@@ -319,10 +321,10 @@ function Test-ServerConnectivity {
             $envConfig   = $hostsCfg.Get_Item('environments') ?? @{}
             $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
 
-            $resolvedHost = ($selectedEnv.Get_Item('oneview') ?? @{}).Get_Item('appliance')
+            $resolvedHost = ($selectedEnv.Get_Item('scom') ?? @{}).Get_Item('management_server')
 
             if (-not $resolvedHost) {
-                $errorMsg = "OneView appliance not configured in connection_hosts.json for environment '$effectiveEnv'."
+                $errorMsg = "SCOM management server not configured in connection_hosts.json for environment '$effectiveEnv'."
                 $result = @{
                     Available      = $false
                     Mode           = $Mode
@@ -333,7 +335,7 @@ function Test-ServerConnectivity {
                     Timestamp      = Get-UtcTimestamp
                     DryRun         = $true
                 }
-                if (-not $Json) { _Format-ConnectivityResult -Result $result }
+                if (-not $Json) { _Format-ScomMaintenanceConnectivityResult -Result $result }
                 return $result
             }
         }
@@ -342,14 +344,14 @@ function Test-ServerConnectivity {
         if (-not $resolvedHost) {
             $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
             if (-not $isAutomated) {
-                Write-Host "Enter OneView appliance host (or press Enter to cancel): " -ForegroundColor Yellow -NoNewline
+                Write-Host "Enter SCOM management host (or press Enter to cancel): " -ForegroundColor Yellow -NoNewline
                 $promptedHost = Read-Host
                 if ($promptedHost) { $resolvedHost = $promptedHost.Trim() }
             }
         }
 
         if (-not $resolvedHost) {
-            $errorMsg = "No OneView appliance provided. Use -ManagementHost, -JsonConfig (DryRun), or set `$env:MAINTENANCE_HOST."
+            $errorMsg = "No SCOM management host provided. Use -ManagementHost, -JsonConfig (DryRun), or set `$env:MAINTENANCE_HOST."
             $result = @{
                 Available      = $false
                 Mode           = $Mode
@@ -360,16 +362,16 @@ function Test-ServerConnectivity {
                 Timestamp      = Get-UtcTimestamp
                 DryRun         = $true
             }
-            if (-not $Json) { _Format-ConnectivityResult -Result $result }
+            if (-not $Json) { _Format-ScomMaintenanceConnectivityResult -Result $result }
             return $result
         }
 
-        # Load OneView config (DryRun only).
-        $ovCfgPath = Join-Path $EffectiveConfigDir 'oneview_config.json'
-        $ovCfg = if (Test-Path $ovCfgPath) {
-            Import-JsonConfig -Path $ovCfgPath -Required:$false
+        # Load SCOM config (DryRun only).
+        $scomCfgPath = Join-Path $EffectiveConfigDir 'scom_config.json'
+        $scomCfg = if (Test-Path $scomCfgPath) {
+            Import-JsonConfig -Path $scomCfgPath -Required:$false
         } else { @{} }
-        $modeCfg = $ovCfg.Get_Item('oneview') ?? @{}
+        $modeCfg = $scomCfg.Get_Item('scom') ?? @{}
 
         $useWinRM = [bool]($modeCfg.Get_Item('use_winrm') ?? $false)
         $credCfg  = $modeCfg.Get_Item('credentials') ?? @{}
@@ -391,9 +393,9 @@ function Test-ServerConnectivity {
         } else {
             $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
             if ($isInteractive) {
-                Write-Host "Enter OneView username for '$resolvedHost': " -ForegroundColor Yellow -NoNewline
+                Write-Host "Enter SCOM username for '$resolvedHost': " -ForegroundColor Yellow -NoNewline
                 $u = Read-Host
-                $securePass = Read-Host "Enter OneView password for '$resolvedHost': " -AsSecureString
+                $securePass = Read-Host "Enter SCOM password for '$resolvedHost': " -AsSecureString
                 if (-not $u) {
                     $result = @{
                         Available      = $false
@@ -404,7 +406,7 @@ function Test-ServerConnectivity {
                         AuthConnect    = @{ Connected = $false; Error = "Skipped - no credentials" }
                         Timestamp      = Get-UtcTimestamp
                     }
-                    if (-not $Json) { _Format-ConnectivityResult -Result $result }
+                    if (-not $Json) { _Format-ScomMaintenanceConnectivityResult -Result $result }
                     return $result
                 }
                 $resolvedUser = $u
@@ -419,14 +421,14 @@ function Test-ServerConnectivity {
                     AuthConnect    = @{ Connected = $false; Error = "Skipped - no credentials" }
                     Timestamp      = Get-UtcTimestamp
                 }
-                if (-not $Json) { _Format-ConnectivityResult -Result $result }
+                if (-not $Json) { _Format-ScomMaintenanceConnectivityResult -Result $result }
                 return $result
             }
         }
     }
 
-    # ── Determine TCP ports to probe (OneView = HTTPS 443) ────────────────────
-    $tcpPorts = @(443)
+    # ── Determine TCP ports to probe (SCOM = WinRM 5985/5986, else 5985/135) ──
+    $tcpPorts = if ($useWinRM) { @(5985, 5986) } else { @(5985, 135) }
 
     # ══════════════════════════════════════════════════════════════════════════
     # DRYRUN MODE: Return mock data without real network calls
@@ -434,7 +436,7 @@ function Test-ServerConnectivity {
     if ($DryRun) {
         Write-Verbose "DryRun mode enabled - returning mock connectivity data"
 
-        $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
+        $moduleName = $modeCfg.Get_Item('powershell_module') ?? 'OperationsManager'
 
         $mockPingResult = @{
             DnsResolved = $true
@@ -472,7 +474,7 @@ function Test-ServerConnectivity {
         }
 
         if (-not $Json) {
-            _Format-ConnectivityResult -Result $mockResult
+            _Format-ScomMaintenanceConnectivityResult -Result $mockResult
         }
 
         return $mockResult
@@ -533,7 +535,7 @@ function Test-ServerConnectivity {
     }
 
     # ══════════════════════════════════════════════════════════════════════════
-    # PHASE 2: Authentication Connect (OneView)
+    # PHASE 2: Authentication Connect (SCOM)
     # ══════════════════════════════════════════════════════════════════════════
     $authResult = @{
         Connected    = $false
@@ -551,21 +553,17 @@ function Test-ServerConnectivity {
             $authResult.Error = "Skipped - credentials not supplied"
         }
     } else {
-        $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
-        $ovAppliance = $resolvedHost
-
-        $winrmServer = if ($useWinRM) {
-            ($modeCfg.Get_Item('winrm') ?? @{}).Get_Item('server') ?? $resolvedHost
-        } else { $null }
+        $moduleName = $modeCfg.Get_Item('powershell_module') ?? 'OperationsManager'
+        $winrmServer = if ($useWinRM) { $resolvedHost } else { $null }
 
         $scriptContent = @"
 Import-Module $moduleName -ErrorAction Stop
 Write-Output "MODULE_LOADED"
 `$securePass = ConvertTo-SecureString '$resolvedPass' -AsPlainText -Force
 `$cred = New-Object System.Management.Automation.PSCredential('$resolvedUser', `$securePass)
-Connect-OVMgmt -Hostname '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$conn = New-SCOMManagementGroupConnection -ComputerName '$resolvedHost' -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
-Disconnect-OVMgmt -ErrorAction SilentlyContinue
+Remove-SCOMManagementGroupConnection -ComputerName '$resolvedHost' -ErrorAction SilentlyContinue
 Write-Output "DISCONNECTED"
 "@
         try {
@@ -602,14 +600,14 @@ Write-Output "DISCONNECTED"
     }
 
     if (-not $Json) {
-        _Format-ConnectivityResult -Result $result
+        _Format-ScomMaintenanceConnectivityResult -Result $result
     }
 
     return $result
 }
 
 # ── Output formatting ─────────────────────────────────────────────────────────
-function _Format-ConnectivityResult {
+function _Format-ScomMaintenanceConnectivityResult {
     param([hashtable]$Result)
 
     $available = $Result.Available
@@ -621,7 +619,7 @@ function _Format-ConnectivityResult {
 
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
-    Write-Host "  OneView Connectivity Test" -ForegroundColor Cyan
+    Write-Host "  SCOM Connectivity Test" -ForegroundColor Cyan
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
 
@@ -689,7 +687,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     if ($DryRun) { $connParams['DryRun'] = $true }
     if ($Json)   { $connParams['Json'] = $true }
 
-    $result = Test-ServerConnectivity @connParams
+    $result = Test-ScomMaintenanceConnectivity @connParams
 
     if ($Json) {
         $result | ConvertTo-Json -Depth 10
