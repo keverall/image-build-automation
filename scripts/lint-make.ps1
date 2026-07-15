@@ -46,7 +46,7 @@ if ($checkmake) {
             Write-Host "[lint-make] checkmake: no issues found" -ForegroundColor Green
         } else {
             Write-Host "[lint-make] checkmake issues:" -ForegroundColor Yellow
-            Write-Host $output
+            Write-Output $output
         }
     } catch {
         Write-Host "[lint-make] checkmake failed: $_" -ForegroundColor Yellow

@@ -54,8 +54,8 @@ $configPath = Join-Path $PSScriptRoot $ConfigDir 'scom_config.json'
 if (Test-Path $configPath) {
     $config = Get-Content $configPath | ConvertFrom-Json
     Write-Host "[OK] SCOM config loaded" -ForegroundColor Green
-    Write-Host "  Management Server: $($config.scom.management_server)"
-    Write-Host "  Use WinRM: $($config.scom.use_winrm)"
+    Write-Output "  Management Server: $($config.scom.management_server)"
+    Write-Output "  Use WinRM: $($config.scom.use_winrm)"
 } else {
     Write-Warning "[MISSING] Config file not found: $configPath"
 }

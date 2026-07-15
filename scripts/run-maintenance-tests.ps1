@@ -43,7 +43,7 @@ $ErrorActionPreference = 'Continue'
 
 Write-Host "=== Maintenance Mode Test Suite ===" -ForegroundColor Cyan
 Write-Host "Test Suite: $TestSuite" -ForegroundColor Yellow
-Write-Host ""
+Write-Output ""
 
 # Get test directory
 $testDir = Join-Path $PSScriptRoot '../tests/powershell'
@@ -109,7 +109,7 @@ foreach ($testFile in $testFiles) {
         $failed++
     }
     
-    Write-Host ""
+    Write-Output ""
 }
 
 # Summary
@@ -121,7 +121,7 @@ if ($PassThru) {
 } else {
     Write-Host "Tests completed. Use -PassThru for detailed counts." -ForegroundColor Yellow
 }
-Write-Host ""
+Write-Output ""
 
 if ($failed -gt 0) {
     Write-Host "Some tests failed!" -ForegroundColor Red

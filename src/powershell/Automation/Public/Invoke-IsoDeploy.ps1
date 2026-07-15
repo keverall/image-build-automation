@@ -137,7 +137,7 @@ class ISODeployer {
         }
         $localIso = Join-Path $PackageDir $name
         if (Test-Path $localIso) {
-            Write-Host "Resolved ISO locally: $localIso"
+            Write-Output "Resolved ISO locally: $localIso"
         }
         if ($this.RepoBaseUrl) {
             $base = $this.RepoBaseUrl.TrimEnd('/')
@@ -153,7 +153,7 @@ class ISODeployer {
             timestamp = Get-UtcTimestamp; action = $Action; server = $ServerName
             status    = $Status; details = $Details
         })
-        Write-Host "[$Status] $Action | $ServerName | $Details"
+        Write-Output "[$Status] $Action | $ServerName | $Details"
     }
 
     [hashtable] _DeployViaRedfish([ServerInfo]$Server, [string]$PackageDir, [bool]$DryRun, [bool]$Force = $false) {
@@ -197,14 +197,14 @@ class ISODeployer {
     }
 
     [hashtable] DeployAll([string]$Method, [bool]$DryRun, [bool]$Force = $false) {
-        Write-Host "`nDeploying to $($this.ServerDetails.Count) servers via $Method"
-        Write-Host $('=' * 60)
+        Write-Output "`nDeploying to $($this.ServerDetails.Count) servers via $Method"
+        Write-Output $('=' * 60)
         $results = @()
         foreach ($s in $this.ServerDetails) {
-            Write-Host "`nDeploying to: $($s.Hostname)"
+            Write-Output "`nDeploying to: $($s.Hostname)"
             $ok = $this.Deploy($s, $Method, $DryRun, $Force)
             $results += @{ server = $s.Hostname; success = $ok; method = $Method }
-            Write-Host "$(if($ok){'✓'}else{'✗'}) $($s.Hostname)"
+            Write-Output "$(if($ok){'✓'}else{'✗'}) $($s.Hostname)"
         }
         $okCount = ($results | Where-Object { $_.success }).Count
         $summary = @{
@@ -216,8 +216,8 @@ class ISODeployer {
         Ensure-DirectoryExists -Path $logDirLog
         $logFile = Join-Path $logDirLog "deploy_log_$(Get-UtcFileTimestamp).json"
         Save-Json -Data @{ summary = $summary; log = $this.DeployLog } -Path $logFile
-        Write-Host "`nDeployment Summary: $okCount/$($results.Count) successful"
-        Write-Host "Log saved: $logFile"
+        Write-Output "`nDeployment Summary: $okCount/$($results.Count) successful"
+        Write-Output "Log saved: $logFile"
         return $summary
     }
 }

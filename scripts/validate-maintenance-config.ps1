@@ -37,7 +37,7 @@ $ErrorActionPreference = 'Continue'
 
 Write-Host "=== Maintenance Mode Configuration Validation ===" -ForegroundColor Cyan
 Write-Host "Environment: $Environment" -ForegroundColor Yellow
-Write-Host ""
+Write-Output ""
 
 # Check required files
 Write-Host "Checking configuration files..." -ForegroundColor Green
@@ -59,7 +59,7 @@ foreach ($name in $files.Keys) {
     }
 }
 
-Write-Host ""
+Write-Output ""
 
 # Load and validate connection_hosts.json
 Write-Host "Validating connection_hosts.json..." -ForegroundColor Green
@@ -106,7 +106,7 @@ if (Test-Path $configPath) {
     Write-Host "  ✗ connection_hosts.json not found" -ForegroundColor Red
 }
 
-Write-Host ""
+Write-Output ""
 
 # Check environment variables
 Write-Host "Checking environment variables..." -ForegroundColor Green
@@ -130,7 +130,7 @@ foreach ($var in $envVars) {
     }
 }
 
-Write-Host ""
+Write-Output ""
 
 # Test module import
 Write-Host "Testing module import..." -ForegroundColor Green
@@ -164,7 +164,7 @@ catch {
     Write-Host "  ✗ Failed to import module: $_" -ForegroundColor Red
 }
 
-Write-Host ""
+Write-Output ""
 
 # Quick connectivity test (dry-run only)
 Write-Host "Running dry-run validation..." -ForegroundColor Green
@@ -194,11 +194,11 @@ catch {
     Write-Host "  ✗ Validation error: $_" -ForegroundColor Red
 }
 
-Write-Host ""
+Write-Output ""
 Write-Host "=== Validation Complete ===" -ForegroundColor Cyan
-Write-Host ""
+Write-Output ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "1. Review any missing configuration files or environment variables" -ForegroundColor White
 Write-Host "2. Run: pwsh scripts/test-maintenance-connection.ps1 -Environment $Environment -Mode scom" -ForegroundColor White
 Write-Host "3. Run: pwsh scripts/run-maintenance-tests.ps1 -TestSuite Environment -PassThru" -ForegroundColor White
-Write-Host ""
+Write-Output ""

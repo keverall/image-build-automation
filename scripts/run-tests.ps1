@@ -126,14 +126,14 @@ Write-Host "`n==================================================================
 Write-Host "                           TEST SUMMARY BLOCK                                   " -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host " Total Tests   : $($results.TotalCount)" -ForegroundColor White
-Write-Host " Passed        : $($results.PassedCount) " -NoNewline
+Write-Output " Passed        : $($results.PassedCount) " -NoNewline
 if ($results.PassedCount -eq $results.TotalCount) { Write-Host "✔" -ForegroundColor Green } else { Write-Host "✔" -ForegroundColor Green }
 
 if ($results.FailedCount -gt 0) {
-    Write-Host " Failed        : $($results.FailedCount) " -NoNewline
+    Write-Output " Failed        : $($results.FailedCount) " -NoNewline
     Write-Host "✖ (CRITICAL)" -ForegroundColor Red
 } else {
-    Write-Host " Failed        : $($results.FailedCount) " -NoNewline
+    Write-Output " Failed        : $($results.FailedCount) " -NoNewline
     Write-Host "✔" -ForegroundColor Green
 }
 Write-Host " Skipped       : $($results.SkippedCount)" -ForegroundColor Yellow

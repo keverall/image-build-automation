@@ -8,6 +8,10 @@ param()
     Parses Makefile for documented targets and displays them in a formatted table.
     Shows all available 'make' commands with their descriptions from inline comments.
 
+    Uses Write-Output with ANSI escape codes (not Write-Host) so that the
+    PSScriptAnalyzer AvoidUsingWriteHost rule is not triggered, while still
+    rendering colored output in a supporting terminal.
+
 .EXAMPLE
     pwsh -File scripts/Show-Help.ps1
     
@@ -15,18 +19,21 @@ param()
     ./scripts/Show-Help.ps1
 #>
 
-$ErrorActionPreference = 'SilentlyContinue'
+# ANSI color escape codes (safe with Write-Output; avoids AvoidUsingWriteHost)
+$Cyan = "$([char]27)[36m"
+$Green = "$([char]27)[32m"
+$Reset = "$([char]27)[0m"
 
-Write-Host ''
-Write-Host '╔══════════════════════════════════════════════════════════╗' -ForegroundColor Cyan
-Write-Host '║  HPE ProLiant ISO Automation - Available Commands         ║' -ForegroundColor Cyan
-Write-Host '╚══════════════════════════════════════════════════════════╝' -ForegroundColor Cyan
-Write-Host ''
+Write-Output ''
+Write-Output "${Cyan}╔══════════════════════════════════════════════════════════╗${Reset}"
+Write-Output "${Cyan}║  HPE ProLiant ISO Automation - Available Commands         ║${Reset}"
+Write-Output "${Cyan}╚══════════════════════════════════════════════════════════╝${Reset}"
+Write-Output ''
 
 $makefile = Join-Path $PSScriptRoot '..' 'Makefile'
 Select-String -Path $makefile -Pattern '^[a-zA-Z_-]+:.*?## .*$' | ForEach-Object {
     $parts = $_.Line -split ':.*?## '
-    Write-Host ('  {0,-15} {1}' -f $parts[0].Trim(), $parts[1].Trim()) -ForegroundColor Green
+    Write-Output ("${Green}  {0,-15} {1}${Reset}" -f $parts[0].Trim(), $parts[1].Trim())
 }
 
-Write-Host ''
+Write-Output ''

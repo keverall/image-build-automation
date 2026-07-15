@@ -13,22 +13,22 @@ $code | Set-Content $tmp -Encoding UTF8
 
 try {
     Import-Module $tmp -Force -ErrorAction Stop
-    Write-Host "Module imported OK"
+    Write-Output "Module imported OK"
     $obj = New-Object MyTestClass("World")
-    Write-Host $obj.Greet()
+    Write-Output $obj.Greet()
 }
 catch {
-    Write-Host "ERROR: $($_.Exception.Message)"
+    Write-Output "ERROR: $($_.Exception.Message)"
 }
 
 # --- Audit.psm1 direct import test ---
 $auditPath = "/home/keverall/repos/image-build-automation/powershell/Automation/Private/Audit.psm1"
 try {
     Import-Module $auditPath -Force -DisableNameChecking -ErrorAction Stop
-    Write-Host "Audit.psm1 imported OK"
+    Write-Output "Audit.psm1 imported OK"
     $a = New-Object AuditLogger("UnitTest")
-    Write-Host "AuditLogger Category: $($a.Category)"
+    Write-Output "AuditLogger Category: $($a.Category)"
 }
 catch {
-    Write-Host "Audit import ERROR: $($_.Exception.Message)"
+    Write-Output "Audit import ERROR: $($_.Exception.Message)"
 }

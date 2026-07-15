@@ -106,7 +106,7 @@ $output | Write-Output
 
 $output | Out-File -FilePath $OutputFile -Encoding UTF8
 
-Write-Host "[coverage] Report written to: $OutputFile" 2>&1
+Write-Output "[coverage] Report written to: $OutputFile" 2>&1
 
 return @{
     Rate = $overallRate

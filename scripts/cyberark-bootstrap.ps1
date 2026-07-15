@@ -59,16 +59,16 @@ $FetchedSecrets = @{}
 $FailedSecrets = @()
 
 Write-Host "=== CyberArk Secret Bootstrap ===" -ForegroundColor Cyan
-Write-Host "Target URL: $CyberArkUrl"
-Write-Host "App ID: $AppId"
-Write-Host ""
+Write-Output "Target URL: $CyberArkUrl"
+Write-Output "App ID: $AppId"
+Write-Output ""
 
 foreach ($secret in $SecretsToFetch) {
     $query = "Safe=$($secret.Safe);Object=$($secret.Object)"
     $queryEnc = [System.Uri]::EscapeDataString($query)
     $fullUrl = "$CyberArkUrl?AppID=$AppId&Query=$queryEnc"
 
-    Write-Host "Fetching $($secret.EnvVar)..." -NoNewline
+    Write-Output "Fetching $($secret.EnvVar)..." -NoNewline
 
     try {
         # Disable SSL validation for internal CyberArk appliances with self-signed certs
@@ -95,7 +95,7 @@ foreach ($secret in $SecretsToFetch) {
     }
 }
 
-Write-Host ""
+Write-Output ""
 Write-Host "=== Bootstrap Summary ===" -ForegroundColor Cyan
 
 if ($FailedSecrets.Count -gt 0) {
@@ -107,7 +107,7 @@ Write-Host "Successfully fetched $($FetchedSecrets.Count) secret(s)" -Foreground
 
 # Export for GitLab CI
 if ($ExportForGitLab) {
-    Write-Host ""
+    Write-Output ""
     Write-Host "=== GitLab CI Export ===" -ForegroundColor Cyan
     foreach ($key in $FetchedSecrets.Keys) {
         # GitLab CI dotenv format: KEY=value (no quotes)

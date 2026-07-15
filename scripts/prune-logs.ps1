@@ -42,7 +42,7 @@ $searchDirs = @(
 ) | Where-Object { Test-Path $_ }
 
 if ($searchDirs.Count -eq 0) {
-    Write-Host "No generated logs or output directories found, nothing to prune."
+    Write-Output "No generated logs or output directories found, nothing to prune."
     exit 0
 }
 
@@ -61,7 +61,7 @@ if ($null -ne $legacyLogs -and $legacyLogs.Count -gt 0) {
     foreach ($log in $legacyLogs) {
         if (Test-Path $log.FullName) {
             Remove-Item -Path $log.FullName -Force
-            Write-Host "Removed legacy redundant log: $($log.FullName)"
+            Write-Output "Removed legacy redundant log: $($log.FullName)"
             $count++
         }
     }
@@ -96,7 +96,7 @@ if ($null -ne $allLogs -and $allLogs.Count -gt 0) {
             foreach ($log in $toPrune) {
                 if (Test-Path $log.FullName) {
                     Remove-Item -Path $log.FullName -Force
-                    Write-Host "Removed excess log: $($log.FullName)"
+                    Write-Output "Removed excess log: $($log.FullName)"
                     $count++
                 }
             }

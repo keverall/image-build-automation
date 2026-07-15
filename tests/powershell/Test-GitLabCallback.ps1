@@ -16,8 +16,8 @@ $prefix = "http://localhost:$Port$CallbackPath/"
 $listener.Prefixes.Add($prefix)
 $listener.Start()
 
-Write-Host "Mock iRequest callback endpoint listening on $prefix"
-Write-Host "Press Ctrl+C to stop"
+Write-Output "Mock iRequest callback endpoint listening on $prefix"
+Write-Output "Press Ctrl+C to stop"
 
 $callbackReceived = @()
 
@@ -55,8 +55,8 @@ try {
         $response.StatusDescription = "OK"
         $response.Close()
 
-        Write-Host "Callback received: $($callback.body | ConvertTo-Json -Compress)"
-        Write-Host "Total callbacks: $($callbackReceived.Count)"
+        Write-Output "Callback received: $($callback.body | ConvertTo-Json -Compress)"
+        Write-Output "Total callbacks: $($callbackReceived.Count)"
     }
 }
 finally {

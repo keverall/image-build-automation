@@ -107,7 +107,7 @@ class WindowsPatcher {
 
     [void] _Log([string]$Step, [string]$Status, [string]$Details = '') {
         $null = $this.BuildLog.Add(@{ timestamp = Get-UtcTimestamp; step = $Step; status = $Status; details = $Details })
-        Write-Host "[$Status] $Step : $Details"
+        Write-Output "[$Status] $Step : $Details"
     }
 
     [string] _SetupBaseIso([string]$IsoPath, [bool]$DryRun) {
@@ -225,7 +225,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         Ensure-DirectoryExists -Path $resultsDir
         Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
 
-        if ($result.success) { Write-Host "Patching succeeded for $Server"; exit 0 }
+        if ($result.success) { Write-Output "Patching succeeded for $Server"; exit 0 }
         else { Write-Error "Patching failed for $Server : $($result.Get_Item('error'))"; exit 1 }
     }
     catch {

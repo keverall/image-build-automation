@@ -70,7 +70,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 foreach (`$s in `$servers) {
     if (-not `$s.MaintenanceModeEnabled) {
         Enable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
-        Write-Host "Maintenance enabled: `$(`$s.Name)"
+        Write-Output "Maintenance enabled: `$(`$s.Name)"
     }
 }
 "@
@@ -84,7 +84,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 foreach (`$s in `$servers) {
     if (`$s.MaintenanceModeEnabled) {
         Disable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
-        Write-Host "Maintenance disabled: `$(`$s.Name)"
+        Write-Output "Maintenance disabled: `$(`$s.Name)"
     }
 }
 "@

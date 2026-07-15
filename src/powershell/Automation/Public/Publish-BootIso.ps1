@@ -106,7 +106,7 @@ function Publish-BootIso {
             }
             Copy-Item -Path $IsoPath -Destination $destPath -Force
             $result.RepoPath = $destPath
-            Write-Host "Copied $IsoPath → $destPath"
+            Write-Output "Copied $IsoPath → $destPath"
         }
 
         if (-not $SkipVerify) {

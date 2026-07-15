@@ -127,8 +127,8 @@ stage('PowerShell - Pester Unit Tests') {
                 -OutputFormat NUnitXml `
                 -PassThru
 
-            Write-Host "Tests Passed : $($result.PassedCount)"
-            Write-Host "Tests Failed : $($result.FailedCount)"
+            Write-Output "Tests Passed : $($result.PassedCount)"
+            Write-Output "Tests Failed : $($result.FailedCount)"
             if ($result.FailedCount -gt 0) { exit 1 }
         '''
     }
