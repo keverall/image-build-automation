@@ -17,8 +17,8 @@ clear
  
 if ($computes)
 {
-    write-host ""
-    Write-host $computes.Count "iLO5 can support REST API commands and will be configured with password complexity to enable:" 
+    Write-Output ""
+    Write-Output $computes.Count "iLO5 can support REST API commands and will be configured with password complexity to enable:" 
     $computes | Format-Table -autosize | Out-Host
  
 } else
@@ -77,7 +77,7 @@ Foreach ($compute in $computes)
     {
         $response = Invoke-WebRequest -Uri "https://$iloIP/redfish/v1/accountservice/accounts/1/" -Body $bodyiloParams -ContentType "application/json" -Headers $headerilo -Method PATCH -UseBasicParsing -ErrorAction Stop
         $msg = ($response.Content | ConvertFrom-Json).error.'@Message.ExtendedInfo'.MessageId
-        Write-Host "Administrator password has been changed in iLO $iloIP, message returned: [$($msg)]"
+        Write-Output "Administrator password has been changed in iLO $iloIP, message returned: [$($msg)]"
  
     } catch
     {
@@ -88,6 +88,6 @@ Foreach ($compute in $computes)
     }
 }
  
-write-host ""
+Write-Output ""
 Read-Host -Prompt "Operation done ! Hit return to close" 
 Disconnect-OVMgmt

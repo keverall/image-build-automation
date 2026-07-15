@@ -108,7 +108,7 @@ function Get-OneViewServerTarget {
 
     try {
         if ($DryRun) {
-            Write-Host "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
+            Write-Output "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
             return @{
                 Success = $true; Server = $ServerIdentifier; DryRun = $true
                 Details = @{ oneview_host = $OneViewHost; identifier = $ServerIdentifier; type = $IdentifierType }

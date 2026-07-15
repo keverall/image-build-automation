@@ -67,7 +67,7 @@ function Update-Firmware {
         $updater = [FirmwareUpdater]::new($Config, $OutputDir)
         $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
         $okCount = ($results | Where-Object { $_.success }).Count
-        Write-Host "Firmware build: $okCount/$($servers.Count) succeeded"
+        Write-Output "Firmware build: $okCount/$($servers.Count) succeeded"
         $resDir  = Join-Path $OutputDir 'results'
         Ensure-DirectoryExists -Path $resDir
         foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }
@@ -148,7 +148,7 @@ class FirmwareUpdater {
         $entry = @{ timestamp = Get-UtcTimestamp; step = $Step; status = $Status; details = $Details }
         $null = $this.BuildLog.Add($entry)
         $msg = if ($Details) { "[$Status] $Step : $Details" } else { "[$Status] $Step" }
-        Write-Host $msg
+        Write-Output $msg
     }
 
     [CommandResult] _RunSut([string[]]$Args) {
@@ -234,7 +234,7 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
         $updater = [FirmwareUpdater]::new($Config, $OutputDir)
         $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
         $okCount = ($results | Where-Object { $_.success }).Count
-        Write-Host "Firmware build: $okCount/$($servers.Count) succeeded"
+        Write-Output "Firmware build: $okCount/$($servers.Count) succeeded"
         $resDir  = Join-Path $OutputDir 'results'
         Ensure-DirectoryExists -Path $resDir
         foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }

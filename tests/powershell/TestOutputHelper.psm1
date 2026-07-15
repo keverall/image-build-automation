@@ -78,9 +78,9 @@ function Write-TestCommand {
     }
     
     if ($useColor) {
-        Write-Host "$($Script:Colors.Cyan)$output$($Script:Colors.Reset)"
+        Write-Output "$($Script:Colors.Cyan)$output$($Script:Colors.Reset)"
     } else {
-        Write-Host $output
+        Write-Output $output
     }
 }
 
@@ -138,9 +138,9 @@ function Write-TestResponse {
     $output = $lines -join "`n"
     
     if ($useColor) {
-        Write-Host "$color$output$($Script:Colors.Reset)"
+        Write-Output "$color$output$($Script:Colors.Reset)"
     } else {
-        Write-Host $output
+        Write-Output $output
     }
 }
 
@@ -158,17 +158,17 @@ function Write-TestSection {
     $separator = "=" * 70
     
     if ($useColor) {
-        Write-Host "$($Script:Colors.Bold)$($Script:Colors.Blue)$separator$($Script:Colors.Reset)"
-        Write-Host "$($Script:Colors.Bold)$($Script:Colors.Blue)  $Title$($Script:Colors.Reset)"
+        Write-Output "$($Script:Colors.Bold)$($Script:Colors.Blue)$separator$($Script:Colors.Reset)"
+        Write-Output "$($Script:Colors.Bold)$($Script:Colors.Blue)  $Title$($Script:Colors.Reset)"
         if ($Subtitle) {
-            Write-Host "$($Script:Colors.Dim)  $Subtitle$($Script:Colors.Reset)"
+            Write-Output "$($Script:Colors.Dim)  $Subtitle$($Script:Colors.Reset)"
         }
-        Write-Host "$($Script:Colors.Bold)$($Script:Colors.Blue)$separator$($Script:Colors.Reset)"
+        Write-Output "$($Script:Colors.Bold)$($Script:Colors.Blue)$separator$($Script:Colors.Reset)"
     } else {
-        Write-Host $separator
-        Write-Host "  $Title"
-        if ($Subtitle) { Write-Host "  $Subtitle" }
-        Write-Host $separator
+        Write-Output $separator
+        Write-Output "  $Title"
+        if ($Subtitle) { Write-Output "  $Subtitle" }
+        Write-Output $separator
     }
 }
 

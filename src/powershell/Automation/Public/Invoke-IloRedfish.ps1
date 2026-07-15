@@ -94,7 +94,7 @@ function Invoke-IloRedfish {
 
     try {
         if ($DryRun) {
-            Write-Host "[DRY RUN] Invoke-IloRedfish Action=$Action Ilo=$IloIp Iso=$IsoUrl"
+            Write-Output "[DRY RUN] Invoke-IloRedfish Action=$Action Ilo=$IloIp Iso=$IsoUrl"
             return @{
                 Success  = $true
                 Action   = $Action

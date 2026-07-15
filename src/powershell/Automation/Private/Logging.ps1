@@ -67,7 +67,7 @@ function Get-Logger {
         param([string]$msg)
         $ts  = Get-LogTimestamp
         $line = "$ts - $($this.Name) - INFO - $msg"
-        Write-Host $line
+        Write-Output $line
         if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Warning' -Value {
