@@ -95,24 +95,24 @@ try {
     }
 
     $durStr = "{0:N2}" -f $durationSec
-    Write-Host ''
-    Write-Host '**********************************************************************'
-    Write-Host '*                    COVERAGE TEST SUMMARY                           *'
-    Write-Host '**********************************************************************'
-    Write-Host '*'
-    Write-Host ('*  Duration : {0}s' -f $durStr)
-    Write-Host '*'
-    Write-Host '*  +--------------+-------+'
-    Write-Host ('*  | Passed       | {0,5} |' -f $passed)
-    Write-Host ('*  | Failed       | {0,5} |' -f $failed)
-    Write-Host ('*  | Skipped      | {0,5} |' -f $skipped)
-    Write-Host ('*  | Inconclusive | {0,5} |' -f $inconclusive)
-    Write-Host ('*  | NotRun       | {0,5} |' -f $notRun)
-    Write-Host '*  +--------------+-------+'
-    Write-Host '*'
+    Write-Output ''
+    Write-Output '**********************************************************************'
+    Write-Output '*                    COVERAGE TEST SUMMARY                           *'
+    Write-Output '**********************************************************************'
+    Write-Output '*'
+    Write-Output ('*  Duration : {0}s' -f $durStr)
+    Write-Output '*'
+    Write-Output '*  +--------------+-------+'
+    Write-Output ('*  | Passed       | {0,5} |' -f $passed)
+    Write-Output ('*  | Failed       | {0,5} |' -f $failed)
+    Write-Output ('*  | Skipped      | {0,5} |' -f $skipped)
+    Write-Output ('*  | Inconclusive | {0,5} |' -f $inconclusive)
+    Write-Output ('*  | NotRun       | {0,5} |' -f $notRun)
+    Write-Output '*  +--------------+-------+'
+    Write-Output '*'
 
     if (-not (Test-Path $outputPath)) {
-        Write-Host '*  WARNING: Coverage data not available'
+        Write-Output '*  WARNING: Coverage data not available'
     } else {
         [xml]$xml = Get-Content $outputPath
 
@@ -162,18 +162,18 @@ try {
 
         $fileCount = $files.Count
 
-        Write-Host '*  COVERAGE SUMMARY'
-        Write-Host ('*  {0} {1}{2}' -f $pctStr, $filledBar, $emptyBar)
-        Write-Host '*'
-        Write-Host '*  +-----------+----------+----------+--------+'
-        Write-Host ('*  | Files     | {0,-8} |          |        |' -f $fileCount)
-        Write-Host ('*  | Lines     | {0,-8} | covered  | of {1} |' -f $totalCovered, $totalLinesCount)
-        Write-Host ('*  | Rate      | {0,-8} |          |        |' -f $pctStr)
-        Write-Host '*  +-----------+----------+----------+--------+'
+        Write-Output '*  COVERAGE SUMMARY'
+        Write-Output ('*  {0} {1}{2}' -f $pctStr, $filledBar, $emptyBar)
+        Write-Output '*'
+        Write-Output '*  +-----------+----------+----------+--------+'
+        Write-Output ('*  | Files     | {0,-8} |          |        |' -f $fileCount)
+        Write-Output ('*  | Lines     | {0,-8} | covered  | of {1} |' -f $totalCovered, $totalLinesCount)
+        Write-Output ('*  | Rate      | {0,-8} |          |        |' -f $pctStr)
+        Write-Output '*  +-----------+----------+----------+--------+'
     }
 
-    Write-Host '*'
-    Write-Host '**********************************************************************'
+    Write-Output '*'
+    Write-Output '**********************************************************************'
 } finally {
     Stop-Transcript | Out-Null
 }
@@ -222,13 +222,13 @@ $totalCovered = ($files | Measure-Object -Property Covered -Sum).Sum
 $totalLinesCount = ($files | Measure-Object -Property Total -Sum).Sum
 $overallRate = if ($totalLinesCount -gt 0) { [math]::Round(($totalCovered / $totalLinesCount) * 100, 1) } else { 0 }
 
-Write-Host ''
-Write-Host '========================================'
-Write-Host '[coverage-report] Code Coverage Summary'
-Write-Host "  Files: $($files.Count)"
-Write-Host "  Lines: $totalCovered / $totalLinesCount ($overallRate%)"
-Write-Host '========================================'
-Write-Host ''
+Write-Output ''
+Write-Output '========================================'
+Write-Output '[coverage-report] Code Coverage Summary'
+Write-Output "  Files: $($files.Count)"
+Write-Output "  Lines: $totalCovered / $totalLinesCount ($overallRate%)"
+Write-Output '========================================'
+Write-Output ''
 
 $header = "Name".PadRight(56) + " | Rate | Covered | Missed | Total"
 $separator = "-" * 72
@@ -306,4 +306,4 @@ $txtOutput += "| $($("TOTAL".PadRight(50))) | {0:N1}% | {1} | {2} | {3} |" -f $o
 $txtOutput | Out-File -FilePath $txtOutputPath -Encoding UTF8
 
 Write-Host '[coverage-report] Reports written to: ' -ForegroundColor Green -NoNewline
-Write-Host "$outputDir"
+Write-Output "$outputDir"

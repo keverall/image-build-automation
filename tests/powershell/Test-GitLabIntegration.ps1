@@ -102,7 +102,7 @@ Test-Assert -TestName "request_types.json - gitlab_maintenance" -Message "Should
 Write-Host "`n=== Test Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $($testResults.passed)" -ForegroundColor Green
 Write-Host "Failed: $($testResults.failed)" -ForegroundColor ($testResults.failed -gt 0 ? 'Red' : 'Green')
-Write-Host "Total:  $($testResults.tests.Count)"
+Write-Output "Total:  $($testResults.tests.Count)"
 
 exit $(if ($testResults.failed -gt 0) { 1 } else { 0 })
 

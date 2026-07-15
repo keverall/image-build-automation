@@ -155,7 +155,7 @@ $result = Invoke-Pester -Path 'tests/powershell' -Tag 'Unit' `
             -OutputFormat NUnitXml `
             -PassThru
 
-Write-Host "Passed: $($result.PassedCount)  Failed: $($result.FailedCount)"
+Write-Output "Passed: $($result.PassedCount)  Failed: $($result.FailedCount)"
 exit $result.FailedCount
 ```
 
@@ -569,7 +569,7 @@ $result = pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 
 # Check success
 if ($result.Success) {
-    Write-Host "Validation passed: $($result.State)"
+    Write-Output "Validation passed: $($result.State)"
 }
 ```
 
@@ -643,7 +643,7 @@ $result.PerObjectStatus | Format-Table Name, Status, Message -AutoSize
 $successes = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Success' }).Count
 $failures = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Failed' }).Count
 
-Write-Host "Successes: $successes, Failures: $failures"
+Write-Output "Successes: $successes, Failures: $failures"
 ```
 
 <a name="safety-warnings"></a>

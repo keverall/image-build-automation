@@ -414,7 +414,7 @@ Import-JsonConfig configs/connection_hosts.json | ConvertTo-Json
 
 # Test credential resolution
 $env:ENVIRONMENT = "Test"
-pwsh -Command "& { . src/powershell/Automation/Automation.psm1; Write-Host 'Config loaded successfully' }"
+pwsh -Command "& { . src/powershell/Automation/Automation.psm1; Write-Output 'Config loaded successfully' }"
 ```
 
 <a name="troubleshooting"></a>

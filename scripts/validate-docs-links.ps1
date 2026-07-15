@@ -45,7 +45,7 @@ function Write-Status {
     # Strip ANSI codes for log file
     $cleanMessage = $Message -replace '\x1b\[[0-9;]*m', ''
     # Write to terminal with color
-    Write-Host "${Color}${Message}${Reset}"
+    Write-Output "${Color}${Message}${Reset}"
     # Write to log file without colors
     $logEntry = "[$(Get-Date -Format 'HH:mm:ss')] $cleanMessage"
     Add-Content -Path $LogFile -Value $logEntry -Encoding UTF8
@@ -248,7 +248,7 @@ foreach ($mdFile in $mdFiles) {
     }
 }
 
-Write-Host ""
+Write-Output ""
 Write-Status $Green "=== Link Validation Summary ==="
 Write-Status $Cyan "Valid links: $($results.Valid)"
 Write-Status $Yellow "Invalid links: $($results.Invalid)"
@@ -260,7 +260,7 @@ if ($WhatIf) {
 Write-Status $Cyan "Log file: $LogFile"
 
 if ($results.Unresolved.Count -gt 0) {
-    Write-Host ""
+    Write-Output ""
     Write-Status $Red "=== Unresolved Files (could not be found) ==="
     foreach ($item in $results.Unresolved) {
         $unresolvedSourceRelative = $item.SourceFile.Replace($RepoRoot, '').TrimStart('/')
