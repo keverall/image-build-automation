@@ -598,8 +598,6 @@ Export-ModuleMember -Function @(
     # PowerShell execution
     'Invoke-PowerShellScript'
     'Invoke-PowerShellWinRM'
-    'New-ScomConnection'
-    'New-ScomMaintenanceScript'
     'New-OneViewMaintenanceScript'
     # Validators
     'Test-BuildParams'
@@ -612,7 +610,6 @@ Export-ModuleMember -Function @(
     'Get-EnvCredential'
     'Get-IloCredentials'
     'Get-OpenViewCredentials'
-    'Get-ScomCredentials'
     'Get-SmtpCredentials'
     # Process execution
     'Invoke-NativeCommand'
@@ -645,6 +642,11 @@ Export-ModuleMember -Function @(
     'Get-RouteMap'
     # Base / factories
     'New-AutomationBase'
+    # SCOM
+    'New-ScomConnection'
+    'New-ScomMaintenanceScript'
+    'Test-ScomMaintenanceConnectivity'
+    'Get-ScomCredentials'
 )
 
 $global:__Automation_Loading = $false
