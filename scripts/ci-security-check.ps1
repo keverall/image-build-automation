@@ -47,8 +47,8 @@ Get-ChildItem -Path 'configs' -Recurse -Include *.json |
     ForEach-Object {
         try {
             $content = Get-Content $_.FullName -Raw
-            $content | ConvertFrom-Json | Out-Null
-            Write-Host "Valid JSON: $($_.Name)"
+            $content | ConvertFrom-Json -ErrorAction Stop | Out-Null
+            Write-Output "Valid JSON: $($_.Name)"
         } catch {
             Write-Error "Invalid JSON in $($_.Name): $($_.Exception.Message)"
             exit 1

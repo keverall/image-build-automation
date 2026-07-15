@@ -117,7 +117,7 @@ function New-IsoBuild {
             if ($existing) {
                 $VersionMajor = [int][Math]::Floor($existing / 1000)
                 $VersionMinor = [int]($existing % 1000) + 1
-                Write-Host "Auto-incremented version to ${VersionMajor}.${VersionMinor}"
+                Write-Output "Auto-incremented version to ${VersionMajor}.${VersionMinor}"
             }
         }
         $OutputPath = Join-Path $outDir "WinSrv2025_HPE_BootableMedia_v${VersionMajor}.${VersionMinor}.iso"
@@ -153,7 +153,7 @@ function New-IsoBuild {
     }
 
     if ($DryRun) {
-        Write-Host "[DRY RUN] New-IsoBuild → $OutputPath"
+        Write-Output "[DRY RUN] New-IsoBuild → $OutputPath"
         $result.DryRun = $true
         $result.Success = $true
         return $result

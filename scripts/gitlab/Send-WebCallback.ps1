@@ -35,9 +35,9 @@ function Send-WebCallback {
         $headers = @{ "Content-Type" = "application/json" }
         if ($ApiKey) { $headers["X-API-Key"] = $ApiKey }
 
-        Write-Host "Sending callback to $Url"
+        Write-Output "Sending callback to $Url"
         Invoke-RestMethod -Uri $Url -Method Post -Body $body -Headers $headers -TimeoutSec 30
-        Write-Host "Callback sent successfully"
+        Write-Output "Callback sent successfully"
     } catch {
         Write-Warning "Failed to send callback: $($_.Exception.Message)"
     }

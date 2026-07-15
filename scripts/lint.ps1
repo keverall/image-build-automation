@@ -70,9 +70,9 @@ $COLOR_CYAN  = "`e[36m"
 $COLOR_RED   = "`e[31m"
 $COLOR_RESET = "`e[0m"
 
-Write-Host "${COLOR_CYAN}═══ PHASE 1: Syntax Validation ═══${COLOR_RESET}"
-Write-Host "Scanning $($allPowerShellFiles.Count) PowerShell files for syntax errors..."
-Write-Host ""
+Write-Output "${COLOR_CYAN}═══ PHASE 1: Syntax Validation ═══${COLOR_RESET}"
+Write-Output "Scanning $($allPowerShellFiles.Count) PowerShell files for syntax errors..."
+Write-Output ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PHASE 1: SYNTAX VALIDATION
@@ -110,35 +110,35 @@ foreach ($file in $allPowerShellFiles) {
 
 # Report syntax errors and exit if any found
 if ($syntaxErrors.Count -gt 0) {
-    Write-Host "${COLOR_RED}✗ SYNTAX ERRORS FOUND${COLOR_RESET}"
-    Write-Host ""
+    Write-Output "${COLOR_RED}✗ SYNTAX ERRORS FOUND${COLOR_RESET}"
+    Write-Output ""
     $syntaxErrors | Format-Table -AutoSize
     
-    Write-Host ""
-    Write-Host "${COLOR_RED}$($syntaxErrors.Count) syntax error(s) in $($syntaxErrors.File | Select-Object -Unique | Measure-Object | Select-Object -ExpandProperty Count) file(s)${COLOR_RESET}"
-    Write-Host ""
-    Write-Host "Please fix syntax errors before running code quality checks."
-    Write-Host "Linting failed."
+    Write-Output ""
+    Write-Output "${COLOR_RED}$($syntaxErrors.Count) syntax error(s) in $($syntaxErrors.File | Select-Object -Unique | Measure-Object | Select-Object -ExpandProperty Count) file(s)${COLOR_RESET}"
+    Write-Output ""
+    Write-Output "Please fix syntax errors before running code quality checks."
+    Write-Output "Linting failed."
     exit 1
 }
 
-Write-Host "${COLOR_GREEN}✓ Syntax validation passed${COLOR_RESET}"
-Write-Host ""
+Write-Output "${COLOR_GREEN}✓ Syntax validation passed${COLOR_RESET}"
+Write-Output ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PHASE 2: CODE QUALITY (PSScriptAnalyzer)
 # ═══════════════════════════════════════════════════════════════════════════════
-Write-Host "${COLOR_CYAN}═══ PHASE 2: Code Quality Check ═══${COLOR_RESET}"
+Write-Output "${COLOR_CYAN}═══ PHASE 2: Code Quality Check ═══${COLOR_RESET}"
 
 $pssa = Get-Module PSScriptAnalyzer -ListAvailable -ErrorAction SilentlyContinue
 if (-not $pssa) {
-    Write-Host "${COLOR_RED}✗ PSScriptAnalyzer not installed${COLOR_RESET}"
-    Write-Host "Install with: Install-Module PSScriptAnalyzer"
+    Write-Output "${COLOR_RED}✗ PSScriptAnalyzer not installed${COLOR_RESET}"
+    Write-Output "Install with: Install-Module PSScriptAnalyzer"
     exit 1
 }
 
-Write-Host "Running PSScriptAnalyzer on $($allPowerShellFiles.Count) files..."
-Write-Host ""
+Write-Output "Running PSScriptAnalyzer on $($allPowerShellFiles.Count) files..."
+Write-Output ""
 
 $excludedRules = @(
     'PSUseBOMForUnicodeEncodedFile',
@@ -166,41 +166,41 @@ foreach ($file in $allPowerShellFiles) {
         }
     } catch {
         $friendlyPath = [System.IO.Path]::GetRelativePath($PROJECT_ROOT, $file)
-        Write-Host "${COLOR_RED}[pwsh-lint]${COLOR_RESET} Failed to analyze $friendlyPath : $_"
+        Write-Output "${COLOR_RED}[pwsh-lint]${COLOR_RESET} Failed to analyze $friendlyPath : $_"
     }
 }
 
 # Report code quality errors and exit if any found
 if ($allErrors.Count -gt 0) {
-    Write-Host "${COLOR_RED}✗ CODE QUALITY ISSUES FOUND${COLOR_RESET}"
-    Write-Host ""
+    Write-Output "${COLOR_RED}✗ CODE QUALITY ISSUES FOUND${COLOR_RESET}"
+    Write-Output ""
     $allErrors | Format-Table -AutoSize
     
-    Write-Host ""
-    Write-Host "${COLOR_RED}$($allErrors.Count) error(s) in $($fileErrorCounts.Count) file(s)${COLOR_RESET}"
+    Write-Output ""
+    Write-Output "${COLOR_RED}$($allErrors.Count) error(s) in $($fileErrorCounts.Count) file(s)${COLOR_RESET}"
     
     if ($fileErrorCounts.Count -gt 0) {
-        Write-Host ""
-        Write-Host "Files with most errors:"
+        Write-Output ""
+        Write-Output "Files with most errors:"
         $fileErrorCounts.GetEnumerator() | 
             Sort-Object Value -Descending | 
             Select-Object -First 5 |
             ForEach-Object {
                 $friendlyPath = [System.IO.Path]::GetRelativePath($PROJECT_ROOT, $_.Key)
-                Write-Host "  - $friendlyPath ($($_.Value) errors)"
+                Write-Output "  - $friendlyPath ($($_.Value) errors)"
             }
     }
     
-    Write-Host ""
-    Write-Host "Linting failed."
+    Write-Output ""
+    Write-Output "Linting failed."
     exit 1
 }
 
 # Success!
-Write-Host ""
-Write-Host "${COLOR_GREEN}✓ All checks passed${COLOR_RESET}"
-Write-Host "  - Syntax validation: OK"
-Write-Host "  - Code quality: OK"
-Write-Host ""
-Write-Host "${COLOR_GREEN}$($allPowerShellFiles.Count) files linted successfully${COLOR_RESET}"
+Write-Output ""
+Write-Output "${COLOR_GREEN}✓ All checks passed${COLOR_RESET}"
+Write-Output "  - Syntax validation: OK"
+Write-Output "  - Code quality: OK"
+Write-Output ""
+Write-Output "${COLOR_GREEN}$($allPowerShellFiles.Count) files linted successfully${COLOR_RESET}"
 exit 0

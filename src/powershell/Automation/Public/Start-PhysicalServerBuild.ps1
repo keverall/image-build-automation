@@ -167,7 +167,7 @@ function Start-PhysicalServerBuild {
     function _Step([string]$name, [hashtable]$r) {
         $script:overall['steps'][$name] = $r
         $ok = if ($r) { [bool]$r.Success } else { $false }
-        Write-Host "[$(if($ok){'OK'}else{'FAIL'})] $name"
+        Write-Output "[$(if($ok){'OK'}else{'FAIL'})] $name"
         if (-not $ok) { $script:overall['success'] = $false }
     }
 

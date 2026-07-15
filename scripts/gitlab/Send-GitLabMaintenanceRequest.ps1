@@ -130,8 +130,8 @@ function _Trigger-Pipeline {
 
     $uri = "$GitLabUrl/api/v4/projects/$ProjectId/trigger/pipeline"
 
-    Write-Host "Triggering GitLab pipeline for target: $TargetId, action: $Action"
-    Write-Host "GitLab URL: $GitLabUrl, Project ID: $ProjectId"
+    Write-Output "Triggering GitLab pipeline for target: $TargetId, action: $Action"
+    Write-Output "GitLab URL: $GitLabUrl, Project ID: $ProjectId"
 
     $response = Invoke-RestMethod -Uri $uri -Method Post -Body $payload -ContentType 'application/x-www-form-urlencoded'
 
@@ -161,14 +161,14 @@ function Wait-GitLabMaintenanceResult {
     $headers = @{ "JOB-TOKEN" = $JobToken }
     $timeout = (Get-Date).AddSeconds($TimeoutSeconds)
 
-    Write-Host "Waiting for GitLab pipeline $PipelineId to complete (timeout: ${TimeoutSeconds}s)..."
+    Write-Output "Waiting for GitLab pipeline $PipelineId to complete (timeout: ${TimeoutSeconds}s)..."
 
     while ((Get-Date) -lt $timeout) {
         try {
             $pipeline = Invoke-RestMethod -Uri "$GitLabUrl/api/v4/projects/$ProjectId/pipelines/$PipelineId" -Headers $headers -Method Get
 
             if ($pipeline.status -eq 'success') {
-                Write-Host "Pipeline completed successfully"
+                Write-Output "Pipeline completed successfully"
                 break
             }
             elseif ($pipeline.status -in @('failed', 'canceled', 'skipped')) {
@@ -225,8 +225,8 @@ function Send-GitLabMaintenanceRequest {
         $result = _Trigger-Pipeline -GitLabUrl $GitLabUrl -ProjectId $ProjectId -TriggerToken $TriggerToken -GitRef $GitRef `
             -Action $Action -TargetId $TargetId -ConfigDir $ConfigDir -DryRun $DryRun -Start $Start -End $End
 
-        Write-Host "Pipeline triggered successfully. Pipeline ID: $($result.pipeline_id)"
-        Write-Host "Monitor at: $($result.web_url)"
+        Write-Output "Pipeline triggered successfully. Pipeline ID: $($result.pipeline_id)"
+        Write-Output "Monitor at: $($result.web_url)"
 
         # Wait for completion and send callback if URL provided
         if ($CallbackUrl -and $JobToken) {

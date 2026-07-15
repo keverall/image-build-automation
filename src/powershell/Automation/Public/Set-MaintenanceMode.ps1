@@ -946,8 +946,8 @@ function Set-MaintenanceMode {
         }
         _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${validateAuditId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
 
-        Write-Host $message
-        Write-Host "Servers: $($servers -join ', ')"
+        Write-Output $message
+        Write-Output "Servers: $($servers -join ', ')"
 
         $validateResult = @{
             Success           = $true
@@ -1558,9 +1558,9 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             # to reboot, restart services, and stabilize before alerting resumes.
             # This prevents false alerts that support staff report frequently.
             if (-not $DryRun -and $PostDisableWaitSeconds -gt 0) {
-                Write-Host "Waiting ${PostDisableWaitSeconds}s for servers to stabilize after SCOM maintenance exit..."
+                Write-Output "Waiting ${PostDisableWaitSeconds}s for servers to stabilize after SCOM maintenance exit..."
                 Start-Sleep -Seconds $PostDisableWaitSeconds
-                Write-Host 'Stabilization wait complete. Alerting is now active.'
+                Write-Output 'Stabilization wait complete. Alerting is now active.'
                 $audit.steps['post_disable_wait'] = @{ Seconds = $PostDisableWaitSeconds }
             } else {
                 $audit.steps['post_disable_wait'] = @{ Skipped = $true; Reason = if ($DryRun) {
@@ -1712,7 +1712,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
     _Save-AuditRecord $audit $auditFile
 
     if ($overallOk) {
-        Write-Host $detailMessage 
+        Write-Output $detailMessage 
     } else {
         Write-Warning $detailMessage 
     }
@@ -2524,7 +2524,7 @@ try {
     `$result = Invoke-WebRequest -Uri "`$baseUrl/ScheduleMaintenance" `
         -Method Post -Body `$reqBody -Headers `$headers -ContentType 'application/json' `
         -WebSession `$session -ErrorAction Stop
-    Write-Host "SCOM REST maintenance scheduled. IDs: `$(`$result.Content)"
+    Write-Output "SCOM REST maintenance scheduled. IDs: `$(`$result.Content)"
     exit 0
 } catch {
     Write-Error "SCOM REST maintenance failed: `$(`$_.Exception.Message)"
@@ -2566,9 +2566,9 @@ Import-Module $($this.ModuleName) -ErrorAction Stop
 foreach (`$inst in `$instances) {
     if (`$inst.InMaintenanceMode) {
         try { `$inst.StopMaintenanceMode(); `$stopped += `$inst.Name } catch { Write-Warning "`$(`$inst.Name): `$(`$_.Exception.Message)" }
-    } else { Write-Host "`$(`$inst.Name) not in maintenance - skipping" }
+    } else { Write-Output "`$(`$inst.Name) not in maintenance - skipping" }
 }
-if (`$stopped.Count -gt 0) { Write-Host "Stopped maintenance for `$(`$stopped.Count) instances" } else { Write-Host "No instances were in maintenance" }
+if (`$stopped.Count -gt 0) { Write-Output "Stopped maintenance for `$(`$stopped.Count) instances" } else { Write-Output "No instances were in maintenance" }
 "@
         }
         $r = $this._RunPs($script)
@@ -3601,27 +3601,27 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
 
     # Check if function returned an error (e.g., SerialNumber with SCOM mode)
     if (-not $result.ContainsKey('Success') -or -not $result.Success) {
-        Write-Host "=== Maintenance Mode Command Audit ==="
-        Write-Host "Timestamp (UTC): $(Get-UtcTimestamp)"
-        Write-Host "Timestamp (Local): $(Get-LocalTimestamp)"
-        Write-Host "Action: $Action"
-        Write-Host "Target ID: $TargetId"
-        Write-Host "Mode: $Mode"
+        Write-Output "=== Maintenance Mode Command Audit ==="
+        Write-Output "Timestamp (UTC): $(Get-UtcTimestamp)"
+        Write-Output "Timestamp (Local): $(Get-LocalTimestamp)"
+        Write-Output "Action: $Action"
+        Write-Output "Target ID: $TargetId"
+        Write-Output "Mode: $Mode"
         if ($PSBoundParameters.ContainsKey('Environment')) {
-            Write-Host "Environment: $Environment"
+            Write-Output "Environment: $Environment"
         }
         if ($PSBoundParameters.ContainsKey('SerialNumber')) {
-            Write-Host "Serial Number: $SerialNumber"
+            Write-Output "Serial Number: $SerialNumber"
         }
         if ($Action -eq 'enable') {
-            Write-Host "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"
-            Write-Host "End Time (UTC): $($result['EndTimeUtc'] ?? 'N/A')"
+            Write-Output "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"
+            Write-Output "End Time (UTC): $($result['EndTimeUtc'] ?? 'N/A')"
         }
-        Write-Host ""
-        Write-Host "=== Command Result ==="
-        Write-Host "Success: False"
-        Write-Host "Error: $($result.Error)"
-        Write-Host "======================"
+        Write-Output ""
+        Write-Output "=== Command Result ==="
+        Write-Output "Success: False"
+        Write-Output "Error: $($result.Error)"
+        Write-Output "======================"
         exit 1
     }
 
@@ -3641,50 +3641,50 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
     }
 
     # Human-readable output
-    Write-Host "=== Maintenance Mode Command Audit ==="
-    Write-Host "Timestamp (UTC): $($result['timestamp'])"
-    Write-Host "Timestamp (Local): $($result['timestamp_local'])"
-    Write-Host "Action: $Action"
+    Write-Output "=== Maintenance Mode Command Audit ==="
+    Write-Output "Timestamp (UTC): $($result['timestamp'])"
+    Write-Output "Timestamp (Local): $($result['timestamp_local'])"
+    Write-Output "Action: $Action"
     if ($TargetId) {
-        Write-Host "Target ID: $TargetId"
+        Write-Output "Target ID: $TargetId"
     } elseif ($SerialNumber) {
-        Write-Host "Serial Number: $SerialNumber"
+        Write-Output "Serial Number: $SerialNumber"
     }
-    Write-Host "Target Object Name: $($result['ClusterName'] ?? $TargetId ?? $SerialNumber)"
-    Write-Host "Mode: $Mode"
+    Write-Output "Target Object Name: $($result['ClusterName'] ?? $TargetId ?? $SerialNumber)"
+    Write-Output "Mode: $Mode"
     if ($PSBoundParameters.ContainsKey('Environment')) {
-        Write-Host "Environment: $Environment"
+        Write-Output "Environment: $Environment"
     }
     if ($PSBoundParameters.ContainsKey('ManagementHost')) {
-        Write-Host "Management Host: $ManagementHost"
+        Write-Output "Management Host: $ManagementHost"
     }
     if ($PSBoundParameters.ContainsKey('Username')) {
-        Write-Host "Username: $Username"
+        Write-Output "Username: $Username"
     }
-    Write-Host "Post-Disable Wait: ${PostDisableWaitSeconds}s"
-    Write-Host "Config Dir: $ConfigDir"
+    Write-Output "Post-Disable Wait: ${PostDisableWaitSeconds}s"
+    Write-Output "Config Dir: $ConfigDir"
     if ($Action -eq 'enable') {
-        Write-Host "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"
-        Write-Host "End Time (UTC): $($result['EndTimeUtc'] ?? 'N/A')"
+        Write-Output "Start Time (UTC): $($result['StartTimeUtc'] ?? 'N/A')"
+        Write-Output "End Time (UTC): $($result['EndTimeUtc'] ?? 'N/A')"
     }
-    Write-Host "Dry Run: $DryRun"
-    Write-Host "No Schedule: $NoSchedule"
+    Write-Output "Dry Run: $DryRun"
+    Write-Output "No Schedule: $NoSchedule"
     if ($Action -eq 'validate') {
-        Write-Host "Overall Maintenance Status: $($result['OverallStatus'])"
+        Write-Output "Overall Maintenance Status: $($result['OverallStatus'])"
     }
-    Write-Host "==================================="
-    Write-Host ""
+    Write-Output "==================================="
+    Write-Output ""
 
     # Per-object SCOM status table
     $scomObjects = $result['ScomObjects']
     $scomSummary = $result['ScomSummary']
     if ($scomObjects -and $scomObjects.Count -gt 0) {
-        Write-Host "=== SCOM Per-Object Status ==="
-        Write-Host "Total Objects: $($scomSummary.Total)"
-        Write-Host "Success: $($scomSummary.Success)"
-        Write-Host "In Maintenance: $($scomSummary.InMaintenance ?? $scomSummary.AlreadyInMaintenance ?? $scomSummary.NotInMaintenance ?? 0)"
-        Write-Host "Failed: $($scomSummary.Failed)"
-        Write-Host ""
+        Write-Output "=== SCOM Per-Object Status ==="
+        Write-Output "Total Objects: $($scomSummary.Total)"
+        Write-Output "Success: $($scomSummary.Success)"
+        Write-Output "In Maintenance: $($scomSummary.InMaintenance ?? $scomSummary.AlreadyInMaintenance ?? $scomSummary.NotInMaintenance ?? 0)"
+        Write-Output "Failed: $($scomSummary.Failed)"
+        Write-Output ""
         foreach ($obj in $scomObjects) {
             $statusIcon = switch ($obj.Status) {
                 'success' {
@@ -3700,30 +3700,30 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
                     '[FAIL]' 
                 }
             }
-            Write-Host "${statusIcon} $($obj.Name) ($($obj.Type)) - $($obj.Status)"
+            Write-Output "${statusIcon} $($obj.Name) ($($obj.Type)) - $($obj.Status)"
             if ($obj.Message -and $obj.Status -ne 'success' -and $obj.Status -ne 'already_in_maintenance' -and $obj.Status -ne 'not_in_maintenance') {
-                Write-Host "  Message: $($obj.Message)"
+                Write-Output "  Message: $($obj.Message)"
             }
             if ($obj.NackReason) {
-                Write-Host "  NACK Reason: $($obj.NackReason)"
+                Write-Output "  NACK Reason: $($obj.NackReason)"
             }
             if ($obj.Resolution) {
-                Write-Host "  Resolution: $($obj.Resolution)"
+                Write-Output "  Resolution: $($obj.Resolution)"
             }
         }
-        Write-Host "==============================="
-        Write-Host ""
+        Write-Output "==============================="
+        Write-Output ""
     }
 
     $oneviewObjects = $result['OneViewObjects']
     $oneviewSummary = $result['OneViewSummary']
     if ($oneviewObjects -and $oneviewObjects.Count -gt 0) {
-        Write-Host "=== OneView Per-Object Status ==="
-        Write-Host "Total Objects: $($oneviewSummary.Total)"
-        Write-Host "Success: $($oneviewSummary.Success)"
-        Write-Host "In Maintenance: $($oneviewSummary.AlreadyInMaintenance ?? $oneviewSummary.InMaintenance ?? $oneviewSummary.NotInMaintenance ?? 0)"
-        Write-Host "Failed: $($oneviewSummary.Failed)"
-        Write-Host ""
+        Write-Output "=== OneView Per-Object Status ==="
+        Write-Output "Total Objects: $($oneviewSummary.Total)"
+        Write-Output "Success: $($oneviewSummary.Success)"
+        Write-Output "In Maintenance: $($oneviewSummary.AlreadyInMaintenance ?? $oneviewSummary.InMaintenance ?? $oneviewSummary.NotInMaintenance ?? 0)"
+        Write-Output "Failed: $($oneviewSummary.Failed)"
+        Write-Output ""
         foreach ($obj in $oneviewObjects) {
             $statusIcon = switch ($obj.Status) {
                 'success' {
@@ -3739,38 +3739,38 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
                     '[FAIL]' 
                 }
             }
-            Write-Host "${statusIcon} $($obj.Name) ($($obj.Type)) - $($obj.Status)"
+            Write-Output "${statusIcon} $($obj.Name) ($($obj.Type)) - $($obj.Status)"
             if ($obj.Message -and $obj.Status -ne 'success' -and $obj.Status -ne 'already_in_maintenance' -and $obj.Status -ne 'not_in_maintenance') {
-                Write-Host "  Message: $($obj.Message)"
+                Write-Output "  Message: $($obj.Message)"
             }
             if ($obj.NackReason) {
-                Write-Host "  NACK Reason: $($obj.NackReason)"
+                Write-Output "  NACK Reason: $($obj.NackReason)"
             }
             if ($obj.Resolution) {
-                Write-Host "  Resolution: $($obj.Resolution)"
+                Write-Output "  Resolution: $($obj.Resolution)"
             }
         }
-        Write-Host "================================="
-        Write-Host ""
+        Write-Output "================================="
+        Write-Output ""
     }
 
     # NACK summary for troubleshooting
     $failedObjects = $result['FailedObjects']
     if ($failedObjects -and $failedObjects.Count -gt 0) {
         Write-Host "=== NACK Summary (Failed Objects) ===" -ForegroundColor Red
-        Write-Host "Total Failed: $($failedObjects.Count)"
+        Write-Output "Total Failed: $($failedObjects.Count)"
         foreach ($obj in $failedObjects) {
-            Write-Host "  - $($obj.Name): $($obj.NackReason ?? $obj.Status)"
+            Write-Output "  - $($obj.Name): $($obj.NackReason ?? $obj.Status)"
             if ($obj.Resolution) {
-                Write-Host "    Fix: $($obj.Resolution)" 
+                Write-Output "    Fix: $($obj.Resolution)" 
             }
         }
-        Write-Host "==================================="
-        Write-Host ""
+        Write-Output "==================================="
+        Write-Output ""
     }
 
-    Write-Host "=== Command Result ==="
-    Write-Host "Success: $($result.Success)"
+    Write-Output "=== Command Result ==="
+    Write-Output "Success: $($result.Success)"
     if ($result.Message) {
         $message = $result.Message
         if ($result.StatusText) {
@@ -3786,12 +3786,12 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
             }
             $message = $message -replace "currently $([regex]::Escape($result.StatusText))", "currently ${bold}$($result.StatusText)${reset}"
         }
-        Write-Host "Message: $message"
+        Write-Output "Message: $message"
     }
     if ($result.Error) {
-        Write-Host "Error: $($result.Error)" 
+        Write-Output "Error: $($result.Error)" 
     }
-    Write-Host "======================"
+    Write-Output "======================"
 
     exit $(if ($result.Success) {
             0 

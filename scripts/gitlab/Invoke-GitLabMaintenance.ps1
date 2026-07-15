@@ -123,8 +123,8 @@ if (Test-Path $modulePath) {
 $logDir = Join-Path $PSScriptRoot '../../generated/logs'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 
-Write-Host "GitLab CI Maintenance Call - Pipeline: $CI_PIPELINE_ID, Job: $CI_JOB_ID"
-Write-Host "Action: $ACTION, Cluster: $CLUSTER_ID"
+Write-Output "GitLab CI Maintenance Call - Pipeline: $CI_PIPELINE_ID, Job: $CI_JOB_ID"
+Write-Output "Action: $ACTION, Cluster: $CLUSTER_ID"
 
 # Build parameters for Set-MaintenanceMode
 $params = @{
@@ -156,7 +156,7 @@ try {
     }
 
     $outputJson = $output | ConvertTo-Json -Depth 10
-    Write-Host "RESULT: $outputJson"
+    Write-Output "RESULT: $outputJson"
 
     # Write to artifact file for GitLab CI job API
     $artifactPath = Join-Path $logDir "maintenance_${CI_JOB_ID}_result.json"
@@ -196,7 +196,7 @@ try {
     }
 
     Write-Error "Maintenance operation failed: $($_.Exception.Message)"
-    $errorOutput | ConvertTo-Json | Write-Host "ERROR_RESULT:"
+    $errorOutput | ConvertTo-Json | Write-Output "ERROR_RESULT:"
 
     # Write error artifact
     $artifactPath = Join-Path $logDir "maintenance_${CI_JOB_ID}_error.json"

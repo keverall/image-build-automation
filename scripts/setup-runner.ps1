@@ -49,7 +49,7 @@ $C_RED    = "`e[31m"
 
 # ── Log helpers ──────────────────────────────────────────────────────────────
 function _WL { param($tag, $colour, $msg)
-    Write-Host "${colour}${tag}${C_RESET} $msg"
+    Write-Output "${colour}${tag}${C_RESET} $msg"
     Add-Content $LOG_FILE "${tag} $msg" }
 function Write-Log  { param($m) _WL '[INFO]'  $C_CYAN   $m }
 function Write-OK   { param($m) _WL '[OK]'    $C_GREEN  $m }
@@ -402,30 +402,30 @@ function Show-Summary {
              Sort-Object Version -Descending | Select-Object -First 1
         [pscustomobject]@{ Name = $_.Name; Version = if ($m) { $m.Version } else { '- MISSING' } }
     })
-    Write-Host ""
-    Write-Host "${C_GREEN}╔══════════════════════════════════════════════════════╗${C_RESET}"
-    Write-Host "${C_GREEN}║  ${C_CYAN}HPE ProLiant ISO Automation - Setup Complete${C_GREEN}         ║${C_RESET}"
-    Write-Host "${C_GREEN}╚══════════════════════════════════════════════════════╝${C_RESET}"
-    Write-Host ""
+    Write-Output ""
+    Write-Output "${C_GREEN}╔══════════════════════════════════════════════════════╗${C_RESET}"
+    Write-Output "${C_GREEN}║  ${C_CYAN}HPE ProLiant ISO Automation - Setup Complete${C_GREEN}         ║${C_RESET}"
+    Write-Output "${C_GREEN}╚══════════════════════════════════════════════════════╝${C_RESET}"
+    Write-Output ""
     foreach ($item in $ok) {
         $icon = if ($item.Version -eq '- MISSING') { "${C_RED}✗${C_RESET}" } else { "${C_GREEN}✓${C_RESET}" }
-        Write-Host "  $icon $($item.Name) $($item.Version)"
+        Write-Output "  $icon $($item.Name) $($item.Version)"
     }
-    Write-Host ""
-    Write-Host "  Log file : $LOG_FILE"
-    Write-Host "  Tests    : make test"
-    Write-Host "  Lint     : make lint"
+    Write-Output ""
+    Write-Output "  Log file : $LOG_FILE"
+    Write-Output "  Tests    : make test"
+    Write-Output "  Lint     : make lint"
     if (-not (Get-Command make -ErrorAction SilentlyContinue)) {
-        Write-Host "  ${C_YELLOW}make not installed - run scripts directly:${C_RESET} pwsh -File scripts/run-tests.ps1"
+        Write-Output "  ${C_YELLOW}make not installed - run scripts directly:${C_RESET} pwsh -File scripts/run-tests.ps1"
     }
 }
 
 function Main {
-    Write-Host ""
-    Write-Host "${C_CYAN}╔══════════════════════════════════════════════════════╗${C_RESET}"
-    Write-Host "${C_CYAN}║  HPE ProLiant ISO Automation - PowerShell Setup     ║${C_RESET}"
-    Write-Host "${C_CYAN}╚══════════════════════════════════════════════════════╝${C_RESET}"
-    Write-Host ""
+    Write-Output ""
+    Write-Output "${C_CYAN}╔══════════════════════════════════════════════════════╗${C_RESET}"
+    Write-Output "${C_CYAN}║  HPE ProLiant ISO Automation - PowerShell Setup     ║${C_RESET}"
+    Write-Output "${C_CYAN}╚══════════════════════════════════════════════════════╝${C_RESET}"
+    Write-Output ""
     Test-PowerShellVersion
     Repair-TempModulesDirectory
     Install-RequiredModules

@@ -120,7 +120,7 @@ class InstallationMonitor {
 
     [void] _Log([string]$Action, [string]$ServerName, [string]$Status, [string]$Details = '') {
         $null = $this.MonitorLog.Add(@{ timestamp=Get-UtcTimestamp; action=$Action; server=$ServerName; status=$Status; details=$Details })
-        Write-Host "[$Status] $Action | $ServerName | $Details"
+        Write-Output "[$Status] $Action | $ServerName | $Details"
     }
 
     [hashtable] CheckIloStatus([ServerInfo]$Server) {
@@ -203,7 +203,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
 
     [hashtable] MonitorServer([ServerInfo]$Server, [int]$Timeout = $this.InstallTimeout, [int]$PollInterval = $this.CheckInterval) {
         $hn = $Server.Hostname
-        Write-Host "Starting monitor for $hn"
+        Write-Output "Starting monitor for $hn"
         $startTime = [DateTime]::UtcNow
         $result = @{
             server           = $hn; start_time = $startTime.ToString('o'); status='monitoring'
@@ -242,7 +242,7 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
                     if ($null -ne $pct) { $result['progress_percent'] = $pct }
                 }
 
-                Write-Host "[$hn] Elapsed: $([math]::Round($elapsed))s | Power: $psState | WinRM: $(if($winrmOk){'ok'}else{'no'}) | Progress: $($result['progress_percent'])% | Phase: $($result['current_phase'])"
+                Write-Output "[$hn] Elapsed: $([math]::Round($elapsed))s | Power: $psState | WinRM: $(if($winrmOk){'ok'}else{'no'}) | Progress: $($result['progress_percent'])% | Phase: $($result['current_phase'])"
 
                 $this._SendOpsRampMetric($hn, 'install.progress.percent', $result['progress_percent'])
                 $this._SendOpsRampMetric($hn, 'install.elapsed_seconds', $elapsed)
@@ -277,14 +277,14 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
             Ensure-DirectoryExists -Path $sessDir
             $sessFile = Join-Path $sessDir "monitor_${hn}_$([int][double]::Parse(([DateTime]::UtcNow - [DateTime]'1970-01-01').TotalSeconds)).json"
             Save-Json -Data $result -Path $sessFile
-            Write-Host "Monitoring session saved: $sessFile"
+            Write-Output "Monitoring session saved: $sessFile"
         }
         return $result
     }
 
     [hashtable] MonitorAll([int]$Timeout = $this.InstallTimeout) {
-        Write-Host "`nStarting monitor for $($this.Servers.Count) servers"
-        Write-Host $('='*60)
+        Write-Output "`nStarting monitor for $($this.Servers.Count) servers"
+        Write-Output $('='*60)
         $results = @()
         foreach ($s in $this.Servers) {
             $results += $this.MonitorServer($s, $Timeout)
@@ -296,8 +296,8 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
             failed=$failed; timeout=$timedOut; details=$results }
         $summaryFile = Join-Path $Script:MonitorLogDir "monitor_summary_$(Get-FileTimestamp).json"
         Save-Json -Data $summary -Path $summaryFile
-        Write-Host "`nMonitoring Summary: Completed=$completed Failed=$failed Timeout=$timedOut Total=$($results.Count)"
-        Write-Host "Saved: $summaryFile"
+        Write-Output "`nMonitoring Summary: Completed=$completed Failed=$failed Timeout=$timedOut Total=$($results.Count)"
+        Write-Output "Saved: $summaryFile"
         return $summary
     }
 }

@@ -38,14 +38,14 @@ if (-not $checkmake) {
     exit 0
 }
 
-Write-Host "[checkmake] Validating Makefile..."
+Write-Output "[checkmake] Validating Makefile..."
 try {
     $output = & $checkmake Makefile 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[checkmake] No issues found" -ForegroundColor Green
     } else {
         Write-Host "[checkmake] Issues detected:" -ForegroundColor Yellow
-        Write-Host $output
+        Write-Output $output
     }
 } catch {
     Write-Host "[checkmake] Issues detected: $_" -ForegroundColor Yellow

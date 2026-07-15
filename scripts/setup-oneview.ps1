@@ -45,8 +45,8 @@ if (-not $ovModules) {
 }
 if ($ovModules) {
     Write-Host "[OK] OneView module(s) found: ($($ovModules -join ', '))" -ForegroundColor Green
-    Write-Host "  Recommended module format: HPEOneView.1000 (for OneView 10.00+)"
-    Write-Host "  See docs/oneview-module-versions.md for compatibility table."
+    Write-Output "  Recommended module format: HPEOneView.1000 (for OneView 10.00+)"
+    Write-Output "  See docs/oneview-module-versions.md for compatibility table."
     if ($ovModules.Count -gt 1) {
         Write-Warning "[WARNING] Multiple modules detected. Only ONE HPE OneView module should be installed."
         Write-Warning "  Remove old versions: Uninstall-Module HPEOneView.OLD_VERSION -Force"
@@ -77,8 +77,8 @@ $configPath = Join-Path $PSScriptRoot $ConfigDir 'oneview_config.json'
 if (Test-Path $configPath) {
     $config = Get-Content $configPath | ConvertFrom-Json
     Write-Host "[OK] OneView config loaded" -ForegroundColor Green
-    Write-Host "  Appliance: $($config.oneview.appliance)"
-    Write-Host "  Use WinRM: $($config.oneview.use_winrm)"
+    Write-Output "  Appliance: $($config.oneview.appliance)"
+    Write-Output "  Use WinRM: $($config.oneview.use_winrm)"
 } else {
     Write-Warning "[MISSING] Config file not found: $configPath"
 }

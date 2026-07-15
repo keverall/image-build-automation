@@ -613,62 +613,62 @@ function _Format-ConnectivityResult {
         "UNAVAILABLE"
     }
 
-    Write-Host ""
+    Write-Output ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host "  Server Connectivity Test" -ForegroundColor Cyan
     Write-Host "==============================================" -ForegroundColor Cyan
-    Write-Host ""
+    Write-Output ""
 
     $statusColor = if ($available) { 'Green' } else { 'Red' }
     $dryRunTag = if ($Result.DryRun) { ' [DRY-RUN]' } else { '' }
     Write-Host "  Status:     ${header}${dryRunTag}" -ForegroundColor $statusColor
-    Write-Host "  Mode:       $($Result.Mode)"
-    Write-Host "  Host:       $($Result.ManagementHost)"
-    Write-Host "  Environment:$($Result.Environment)"
-    Write-Host "  Timestamp:  $($Result.Timestamp)"
-    Write-Host ""
+    Write-Output "  Mode:       $($Result.Mode)"
+    Write-Output "  Host:       $($Result.ManagementHost)"
+    Write-Output "  Environment:$($Result.Environment)"
+    Write-Output "  Timestamp:  $($Result.Timestamp)"
+    Write-Output ""
 
     Write-Host "  --- Phase 1: Network Ping ---" -ForegroundColor Yellow
     $np = $Result.NetworkPing
-    Write-Host "    DNS:       $(if ($np.DnsResolved) { 'Resolved' } else { 'FAILED' })" `
+    Write-Output "    DNS:       $(if ($np.DnsResolved) { 'Resolved' } else { 'FAILED' })" `
         -ForegroundColor $(if ($np.DnsResolved) { 'Green' } else { 'Red' })
     if ($np.IpAddress) {
-        Write-Host "    IP:        $($np.IpAddress)"
+        Write-Output "    IP:        $($np.IpAddress)"
     }
-    Write-Host "    TCP:       $(if ($np.TcpPortOpen) { "Open (port $($np.Port), $($np.LatencyMs)ms)" } else { 'FAILED' })" `
+    Write-Output "    TCP:       $(if ($np.TcpPortOpen) { "Open (port $($np.Port), $($np.LatencyMs)ms)" } else { 'FAILED' })" `
         -ForegroundColor $(if ($np.TcpPortOpen) { 'Green' } else { 'Red' })
     if ($np.Error) {
         Write-Host "    Error:     $($np.Error)" -ForegroundColor Red
     }
-    Write-Host ""
+    Write-Output ""
 
     Write-Host "  --- Phase 2: Auth Connect ---" -ForegroundColor Yellow
     $ac = $Result.AuthConnect
     $authColor = if ($ac.Connected) { 'Green' } elseif ($ac.Error -match 'Skipped') { 'Yellow' } else { 'Red' }
-    Write-Host "    Module:    $(if ($ac.ModuleLoaded) { 'Loaded' } else { 'Not loaded' })" `
+    Write-Output "    Module:    $(if ($ac.ModuleLoaded) { 'Loaded' } else { 'Not loaded' })" `
         -ForegroundColor $(if ($ac.ModuleLoaded) { 'Green' } else { 'Red' })
     Write-Host "    Connected: $(if ($ac.Connected) { 'Yes' } else { 'No' })" -ForegroundColor $authColor
-    Write-Host "    Clean up:  $(if ($ac.Disconnected) { 'Disconnected' } elseif ($ac.Connected) { 'WARNING - still connected' } else { 'N/A' })" `
+    Write-Output "    Clean up:  $(if ($ac.Disconnected) { 'Disconnected' } elseif ($ac.Connected) { 'WARNING - still connected' } else { 'N/A' })" `
         -ForegroundColor $(if ($ac.Disconnected) { 'Green' } elseif ($ac.Connected) { 'Yellow' } else { 'Gray' })
     if ($ac.Error) {
         Write-Host "    Error:     $($ac.Error)" -ForegroundColor Red
     }
 
     if ($Result.DryRun -and $Result.MockData) {
-        Write-Host ""
+        Write-Output ""
         Write-Host "  --- Dry-Run Configuration Summary ---" -ForegroundColor Yellow
         $mock = $Result.MockData
-        Write-Host "    Module:       $($mock.PowerShellModule)"
-        Write-Host "    Target ports: $($mock.TargetPorts -join ', ')"
-        Write-Host "    WinRM:        $($mock.WinRM)"
-        Write-Host "    Cred user:    $($mock.CredentialUserEnv)"
-        Write-Host "    Cred pass:    $($mock.CredentialPassEnv)"
+        Write-Output "    Module:       $($mock.PowerShellModule)"
+        Write-Output "    Target ports: $($mock.TargetPorts -join ', ')"
+        Write-Output "    WinRM:        $($mock.WinRM)"
+        Write-Output "    Cred user:    $($mock.CredentialUserEnv)"
+        Write-Output "    Cred pass:    $($mock.CredentialPassEnv)"
         Write-Host "    Note:         $($mock.Note)" -ForegroundColor Yellow
     }
 
-    Write-Host ""
+    Write-Output ""
     Write-Host "==============================================" -ForegroundColor Cyan
-    Write-Host ""
+    Write-Output ""
 }
 
 # ── Script-mode entry point ───────────────────────────────────────────────────

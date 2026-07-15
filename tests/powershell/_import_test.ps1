@@ -1,12 +1,12 @@
 $ErrorActionPreference = 'Stop'
 $AbsPath = (Resolve-Path (Join-Path $PSScriptRoot '../../src/powershell/Automation/Automation.psd1')).Path
-Write-Host "Module path: $AbsPath"
+Write-Output "Module path: $AbsPath"
 
 try {
     Import-Module $AbsPath -Force -ErrorAction Stop -DisableNameChecking
-    Write-Host 'Module imported OK'
+    Write-Output 'Module imported OK'
 } catch {
-    Write-Host "FAILED to import: $($_.Exception.Message)"
+    Write-Output "FAILED to import: $($_.Exception.Message)"
     exit 1
 }
 
@@ -41,8 +41,8 @@ $tests = @(
 $ok = 0; $fail = 0
 foreach ($fn in $tests) {
     $found = Get-Command $fn -ErrorAction SilentlyContinue
-    if ($found) { Write-Host "  OK: $fn"; $ok++ }
-    else         { Write-Host "  MISSING: $fn"; $fail++ }
+    if ($found) { Write-Output "  OK: $fn"; $ok++ }
+    else         { Write-Output "  MISSING: $fn"; $fail++ }
 }
-Write-Host "`nSummary: $ok OK, $fail MISSING"
+Write-Output "`nSummary: $ok OK, $fail MISSING"
 if ($fail -gt 0) { exit 1 } else { exit 0 }

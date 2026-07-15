@@ -73,7 +73,7 @@ if($type -eq "Group") {
 
   #Check if Group is already in Maintenance Mode
     If($group.InMaintenanceMode -eq $false) {
-        Write-Host "Putting Group $Name into maintenance mode." -ForeGroundColor Blue 
+        Write-Output "Putting Group $Name into maintenance mode." -ForeGroundColor Blue 
     $group.ScheduleMaintenanceMode($startTime,$endTime,$reason,$Comment,"Recursive")
     }
 } elseif($type -eq "Agent") {
@@ -92,21 +92,21 @@ if($type -eq "Group") {
           $nodes = $ClusterInstance.GetRelatedMonitoringObjects($clusterNodeClass) 
           if($nodes) { 
             foreach($node in $nodes) { 
-              Write-Host "Putting $node into maintenance mode." -ForeGroundColor Green 
+              Write-Output "Putting $node into maintenance mode." -ForeGroundColor Green 
             } 
            } 
          }
-        Write-Host "Putting $($cluster.Computer) into maintenance mode." -ForeGroundColor Blue 
+        Write-Output "Putting $($cluster.Computer) into maintenance mode." -ForeGroundColor Blue 
         $ClusterComputer = $cluster.Computer
         $ClusterComputer.ScheduleMaintenanceMode($startTime,$endTime,$reason,$Comment,"Recursive") 
       } 
     } else { 
       #Setting maintenance mode for computer object and/or cluster components 
-      Write-Host "Putting $Instance into maintenance mode." -ForeGroundColor Blue 
+      Write-Output "Putting $Instance into maintenance mode." -ForeGroundColor Blue 
       $Instance.ScheduleMaintenanceMode($startTime,$endTime,$reason,$Comment,"Recursive")
     }
 } else {
-    Write-host "Exiting" -ForeGroundColor Red 
+    Write-Output "Exiting" -ForeGroundColor Red 
 }
 ```
 

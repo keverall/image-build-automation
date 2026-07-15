@@ -99,7 +99,7 @@ foreach (`$serverName in `$serverList) {
                     if (`$ci) {
                         try {
                             `$ci.ScheduleMaintenanceMode(`$endTime, `$reason, `$comment, 'Recursive')
-                            Write-Host "Cluster maintenance started: `$(`$ci.DisplayName)"
+                            Write-Output "Cluster maintenance started: `$(`$ci.DisplayName)"
                             `$nodes = `$ci.GetRelatedMonitoringObjects(`$clusterNodeClass)
                             if (`$nodes) {
                                 foreach (`$node in `$nodes) {
@@ -124,7 +124,7 @@ foreach (`$serverName in `$serverList) {
             # Standalone server - individual maintenance mode
             try {
                 `$instance.ScheduleMaintenanceMode(`$endTime, `$reason, `$comment)
-                Write-Host "Maintenance started: `$serverName"
+                Write-Output "Maintenance started: `$serverName"
             } catch {
                 Write-Error "Failed for `$serverName : `$(`$_.Exception.Message)"
                 `$failed += `$serverName
@@ -140,7 +140,7 @@ if (`$failed.Count -gt 0) {
     Write-Error "Failed for: `$(`$failed -join ', ')"
     exit 1
 } else {
-    Write-Host "All cluster nodes entered maintenance successfully"
+    Write-Output "All cluster nodes entered maintenance successfully"
 }
 "@
         } else {
@@ -156,11 +156,11 @@ Import-Module OperationsManager -ErrorAction Stop
 `$failed   = @()
 foreach (`$inst in `$instances) {
     if (`$inst.InMaintenanceMode) {
-        Write-Host "`$(`$inst.Name) already in maintenance - skipping"
+        Write-Output "`$(`$inst.Name) already in maintenance - skipping"
     } else {
         try {
             `$inst.ScheduleMaintenanceMode(`$endTime, `$reason, `$comment)
-            Write-Host "Maintenance started: `$(`$inst.Name)"
+            Write-Output "Maintenance started: `$(`$inst.Name)"
         } catch {
             Write-Error "Failed for `$(`$inst.Name): `$(`$_.Exception.Message)"
             `$failed += `$inst.Name
@@ -171,7 +171,7 @@ if (`$failed.Count -gt 0) {
     Write-Error "Failed for: `$(`$failed -join ', ')"
     exit 1
 } else {
-    Write-Host "All group instances entered maintenance successfully"
+    Write-Output "All group instances entered maintenance successfully"
 }
 "@
         }
@@ -200,7 +200,7 @@ foreach (`$serverName in `$serverList) {
                     if (`$ci) {
                         try {
                             `$ci.StopMaintenanceMode()
-                            Write-Host "Cluster maintenance stopped: `$(`$ci.DisplayName)"
+                            Write-Output "Cluster maintenance stopped: `$(`$ci.DisplayName)"
                             `$stopped += `$ci.DisplayName
                         } catch {
                             Write-Warning "Failed to stop cluster `$cName: `$(`$_.Exception.Message)"
@@ -210,7 +210,7 @@ foreach (`$serverName in `$serverList) {
                 `$clusterComputer = `$cluster.Computer
                 try {
                     `$clusterComputer.StopMaintenanceMode()
-                    Write-Host "Cluster computer maintenance stopped: `$cName"
+                    Write-Output "Cluster computer maintenance stopped: `$cName"
                 } catch {
                     Write-Warning "Failed to stop `$cName: `$(`$_.Exception.Message)"
                 }
@@ -219,13 +219,13 @@ foreach (`$serverName in `$serverList) {
             if (`$instance.InMaintenanceMode) {
                 try {
                     `$instance.StopMaintenanceMode()
-                    Write-Host "Maintenance stopped: `$serverName"
+                    Write-Output "Maintenance stopped: `$serverName"
                     `$stopped += `$serverName
                 } catch {
                     Write-Error "Failed to stop for `$serverName : `$(`$_.Exception.Message)"
                 }
             } else {
-                Write-Host "`$serverName not in maintenance - skipping"
+                Write-Output "`$serverName not in maintenance - skipping"
             }
         }
     } catch {
@@ -233,9 +233,9 @@ foreach (`$serverName in `$serverList) {
     }
 }
 if (`$stopped.Count -gt 0) {
-    Write-Host "Stopped maintenance for `$(`$stopped.Count) cluster nodes/servers"
+    Write-Output "Stopped maintenance for `$(`$stopped.Count) cluster nodes/servers"
 } else {
-    Write-Host "No cluster nodes/servers were in maintenance"
+    Write-Output "No cluster nodes/servers were in maintenance"
 }
 "@
         } elseif ($GroupDisplayName) {
@@ -249,19 +249,19 @@ foreach (`$inst in `$instances) {
     if (`$inst.InMaintenanceMode) {
         try {
             `$inst.StopMaintenanceMode()
-            Write-Host "Maintenance stopped: `$(`$inst.Name)"
+            Write-Output "Maintenance stopped: `$(`$inst.Name)"
             `$stopped += `$inst.Name
         } catch {
             Write-Error "Failed to stop for `$(`$inst.Name): `$(`$_.Exception.Message)"
         }
     } else {
-        Write-Host "`$(`$inst.Name) not in maintenance - skipping"
+        Write-Output "`$(`$inst.Name) not in maintenance - skipping"
     }
 }
 if (`$stopped.Count -gt 0) {
-    Write-Host "Stopped maintenance for `$(`$stopped.Count) instances"
+    Write-Output "Stopped maintenance for `$(`$stopped.Count) instances"
 } else {
-    Write-Host "No instances were in maintenance"
+    Write-Output "No instances were in maintenance"
 }
 "@
         } else {

@@ -68,7 +68,7 @@ $Reset = "`e[0m"
 
 function Write-Color {
     param([string]$Color, [string]$Message)
-    Write-Host "${Color}${Message}${Reset}"
+    Write-Output "${Color}${Message}${Reset}"
 }
 
 # Determine repo root from script location
@@ -321,11 +321,11 @@ foreach ($ProfilePath in $ProfilePaths) {
     }
 }
 
-Write-Host ""
+Write-Output ""
 if ($Uninstall) {
     Write-Color $Green "[setup] ✓ Uninstall complete"
 } else {
     Write-Color $Green "[setup] ✓ Profile configuration complete"
     Write-Color $Yellow "[setup] Restart your PowerShell session or run '. `$PROFILE' to load"
 }
-Write-Host ""
+Write-Output ""

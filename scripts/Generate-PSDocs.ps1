@@ -41,8 +41,8 @@ New-Item -ItemType Directory -Force -Path $OutputDir -ErrorAction Stop | Out-Nul
 # Clear existing files in output directory for clean generation
 Get-ChildItem -Path $OutputDir -File -ErrorAction SilentlyContinue | Remove-Item -Force
 
-Write-Host "[Generate-PSDocs] Module root : $ModuleRoot"
-Write-Host "[Generate-PSDocs] Output dir  : $OutputDir"
+Write-Output "[Generate-PSDocs] Module root : $ModuleRoot"
+Write-Output "[Generate-PSDocs] Output dir  : $OutputDir"
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Robust comment-block extractor (handles PS 5.1 / 7 syntax differences)
@@ -243,7 +243,7 @@ foreach ($f in $files) {
 
     $outFile = Join-Path $OutputDir "$cmdName.md"
     [IO.File]::WriteAllText($outFile, ($md -join "`n"), [System.Text.UTF8Encoding]::new($false))
-    Write-Host "  OK   $cmdName.md"
+    Write-Output "  OK   $cmdName.md"
     $generated += "$cmdName.md"
 }
 
@@ -266,7 +266,7 @@ foreach ($fn in ($generated | Sort-Object)) {
 }
 $idx += @('', '---', '')
 [IO.File]::WriteAllText($indexPath, ($idx -join "`n"), [System.Text.UTF8Encoding]::new($false))
-Write-Host "  OK   INDEX.md"
+Write-Output "  OK   INDEX.md"
 
-Write-Host ""
-Write-Host "[Generate-PSDocs] Done. $($generated.Count) file(s) written to $OutputDir"
+Write-Output ""
+Write-Output "[Generate-PSDocs] Done. $($generated.Count) file(s) written to $OutputDir"

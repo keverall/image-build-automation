@@ -49,7 +49,7 @@ Write-Host "=== Maintenance Mode Connection Test ===" -ForegroundColor Cyan
 Write-Host "Environment: $Environment" -ForegroundColor Yellow
 Write-Host "Mode: $Mode" -ForegroundColor Yellow
 Write-Host "Dry Run: $DryRun" -ForegroundColor Yellow
-Write-Host ""
+Write-Output ""
 
 # Check if .env file exists and load it
 $envFile = Join-Path $PSScriptRoot '..\.env'
@@ -80,10 +80,10 @@ if ($Username) { $params['Username'] = $Username }
 if ($ManagementHost) { $params['ManagementHost'] = $ManagementHost }
 
 Write-Host "Parameters:" -ForegroundColor Yellow
-$params | Format-Table -AutoSize | Out-String | Write-Host
+$params | Format-Table -AutoSize | Out-String | Write-Output
 
 Write-Host "Executing validation..." -ForegroundColor Green
-Write-Host ""
+Write-Output ""
 
 try {
     $result = & "$PSScriptRoot\..\src\powershell\Automation\Public\Set-MaintenanceMode.ps1" @params
@@ -108,5 +108,5 @@ try {
     exit 1
 }
 
-Write-Host ""
+Write-Output ""
 Write-Host "=== Test Complete ===" -ForegroundColor Cyan

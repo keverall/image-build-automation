@@ -73,7 +73,7 @@ $script:SafeCommands = @{
     'Update-TypeData'      = & $Get_Command -Name Update-TypeData      -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Where-Object'         = & $Get_Command -Name Where-Object         -Module Microsoft.PowerShell.Core       @safeCommandLookupParameters
     'Write-Error'          = & $Get_Command -Name Write-Error          -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
-    'Write-Host'           = & $Get_Command -Name Write-Host           -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
+    'Write-Output'           = & $Get_Command -Name Write-Output           -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Write-Progress'       = & $Get_Command -Name Write-Progress       -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Write-Verbose'        = & $Get_Command -Name Write-Verbose        -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Write-Warning'        = & $Get_Command -Name Write-Warning        -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
@@ -1549,7 +1549,7 @@ function Discover-Test {
         PostProcess-DiscoveredBlock -Block $f.Block -Filter $Filter -BlockContainer $f.Container -RootBlock $f.Block
         $overhead = $sw.Elapsed
         $f.Block.DiscoveryDuration += $overhead
-        # Write-Host "disc $($f.Block.DiscoveryDuration.totalmilliseconds) $($overhead.totalmilliseconds) ms" #TODO
+        # Write-Output "disc $($f.Block.DiscoveryDuration.totalmilliseconds) $($overhead.totalmilliseconds) ms" #TODO
         $f.Block
     }
 
@@ -4470,7 +4470,7 @@ function Invoke-Pester {
     parameter with a hash table value.
 
     Also, by default, Pester tests write test results to the console host, much like
-    Write-Host does, but you can use the Show parameter set to None to suppress the host
+    Write-Output does, but you can use the Show parameter set to None to suppress the host
     messages, use the PassThru parameter to generate a custom object
     (PSCustomObject) that contains the test results, use the OutputXml and
     OutputFormat parameters to write the test results to an XML file, and use the
@@ -4509,7 +4509,7 @@ function Invoke-Pester {
     a Pester test. This report does not tell whether code was tested; only whether
     the code ran during the test.
     By default, the code coverage report is written to the host program
-    (like Write-Host). When you use the PassThru parameter, the custom object
+    (like Write-Output). When you use the PassThru parameter, the custom object
     that Invoke-Pester returns has an additional CodeCoverage property that contains
     a custom object with detailed results of the code coverage test, including lines
     hit, lines missed, and helpful statistics.
@@ -9321,7 +9321,7 @@ function Get-CoverageReport {
         # adapting the data to the breakpoint like api we use for breakpoint based CC
         # so the rest of our code just works
         foreach ($i in $CommandCoverage) {
-            # Write-Host "CC: $($i.File), $($i.StartLine), $($i.StartColumn)"
+            # Write-Output "CC: $($i.File), $($i.StartLine), $($i.StartColumn)"
             $bp = @{ HitCount = 0 }
             if ($bpm.ContainsKey($i.File)) {
                 $f = $bpm[$i.File]
@@ -10010,19 +10010,19 @@ function Stop-TraceScript {
 function Get-TracerHitLocation ($command) {
 
     if (-not $env:PESTER_CC_DEBUG) {
-        function Write-Host { }
+        function Write-Output { }
     }
-    # function Write-Host { }
+    # function Write-Output { }
     function Show-ParentList ($command) {
         $c = $command
-        "`n`nCommand: $c" | Write-Host
+        "`n`nCommand: $c" | Write-Output
         $(for ($ast = $c; $null -ne $ast; $ast = $ast.Parent) {
                 $ast | Select-Object @{n = 'type'; e = { $_.GetType().Name } } , @{n = 'extent'; e = { $_.extent } }
-            } ) | Format-Table type, extent | Out-String | Write-Host
+            } ) | Format-Table type, extent | Out-String | Write-Output
     }
 
     if ($env:PESTER_CC_DEBUG -eq 1) {
-        Write-Host "Processing '$command' at $($command.Extent.StartLineNumber):$($command.Extent.StartColumnNumber) which is $($command.GetType().Name)."
+        Write-Output "Processing '$command' at $($command.Extent.StartLineNumber):$($command.Extent.StartColumnNumber) which is $($command.GetType().Name)."
     }
 
     #    Show-ParentList $command
@@ -10081,7 +10081,7 @@ function Get-TracerHitLocation ($command) {
         }
     }
     if ($env:PESTER_CC_DEBUG -eq 1) {
-        Write-Host "It became: '$last' at $($last.Extent.StartLineNumber):$($last.Extent.StartColumnNumber) which is $($last.GetType().Name)."
+        Write-Output "It became: '$last' at $($last.Extent.StartLineNumber):$($last.Extent.StartColumnNumber) which is $($last.GetType().Name)."
     }
     return $last
 }
@@ -13288,7 +13288,7 @@ function Write-PesterHostMessage {
     )
 
     begin {
-        # Custom PSHosts without UI will fail with Write-Host. Works in PS5+ due to use of InformationRecords
+        # Custom PSHosts without UI will fail with Write-Output. Works in PS5+ due to use of InformationRecords
         $HostSupportsOutput = $null -ne $host.UI.RawUI.ForegroundColor -or $PSVersionTable.PSVersion.Major -ge 5
         if (-not $HostSupportsOutput) { return }
 
@@ -13350,7 +13350,7 @@ function Write-PesterHostMessage {
             # CI auto-resets ANSI on linebreak for some reason. Need to prepend style at beginning of every line
             $message = "$($message -replace '(?m)^', "$fg$bg")$($ANSIcodes.ResetAll)"
 
-            & $SafeCommands['Write-Host'] -Object $message -NoNewLine:$NoNewLine
+            & $SafeCommands['Write-Output'] -Object $message -NoNewLine:$NoNewLine
         }
         else {
             if ($RenderMode -eq 'Plaintext') {
@@ -13366,7 +13366,7 @@ function Write-PesterHostMessage {
                 $null = $PSBoundParameters.Remove('RenderMode')
             }
 
-            & $SafeCommands['Write-Host'] @PSBoundParameters
+            & $SafeCommands['Write-Output'] @PSBoundParameters
         }
     }
 }
@@ -13537,8 +13537,8 @@ function Write-PesterReport {
     # }
 
     # if ($ReportStrings.ContextsPassed) {
-    #     & $SafeCommands['Write-Host'] ($ReportStrings.ContextsPassed -f $PesterStatePassedScenariosCount) -Foreground $Success -NoNewLine
-    #     & $SafeCommands['Write-Host'] ($ReportStrings.ContextsFailed -f $PesterStateFailedScenariosCount) -Foreground $Failure
+    #     & $SafeCommands['Write-Output'] ($ReportStrings.ContextsPassed -f $PesterStatePassedScenariosCount) -Foreground $Success -NoNewLine
+    #     & $SafeCommands['Write-Output'] ($ReportStrings.ContextsFailed -f $PesterStateFailedScenariosCount) -Foreground $Failure
     # }
     # if ($ReportStrings.TestsPassed) {
     Write-PesterHostMessage ($ReportStrings.TestsPassed -f $RunResult.PassedCount) -Foreground $Success -NoNewLine
@@ -13560,8 +13560,8 @@ function Write-PesterReport {
         Write-PesterHostMessage ('Container failed: {0}' -f $RunResult.FailedContainersCount) -Foreground $ReportTheme.Fail
         Write-PesterHostMessage ($cs -join [Environment]::NewLine) -Foreground $ReportTheme.Fail
     }
-    # & $SafeCommands['Write-Host'] ($ReportStrings.TestsPending -f $RunResult.PendingCount) -Foreground $Pending -NoNewLine
-    # & $SafeCommands['Write-Host'] ($ReportStrings.TestsInconclusive -f $RunResult.InconclusiveCount) -Foreground $Inconclusive
+    # & $SafeCommands['Write-Output'] ($ReportStrings.TestsPending -f $RunResult.PendingCount) -Foreground $Pending -NoNewLine
+    # & $SafeCommands['Write-Output'] ($ReportStrings.TestsInconclusive -f $RunResult.InconclusiveCount) -Foreground $Inconclusive
     # }
 
     $rootFrameworkData = @($RunResult.Containers.Blocks.Root.FrameworkData)
@@ -13793,7 +13793,7 @@ function Get-WriteScreenPlugin ($Verbosity) {
 
         # if ($Context.AnyFocusedTests) {
         #     $focusedTests = $Context.FocusedTests
-        #     & $SafeCommands["Write-Host"] -ForegroundColor Magenta "There are some ($($focusedTests.Count)) focused tests '$($(foreach ($p in $focusedTests) { $p -join "." }) -join ",")' running just them."
+        #     & $SafeCommands["Write-Output"] -ForegroundColor Magenta "There are some ($($focusedTests.Count)) focused tests '$($(foreach ($p in $focusedTests) { $p -join "." }) -join ",")' running just them."
         # }
 
         # . Found $count$(if(1 -eq $count) { " test" } else { " tests" })
@@ -16329,7 +16329,7 @@ function AfterAll {
         Describe "Validate important file" {
             BeforeAll {
                 $samplePath = "$([IO.Path]::GetTempPath())/$([Guid]::NewGuid()).txt"
-                Write-Host $samplePath
+                Write-Output $samplePath
                 1..100 | Set-Content -Path $samplePath
             }
 

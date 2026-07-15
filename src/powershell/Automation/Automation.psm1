@@ -75,7 +75,7 @@ class AuditLogger {
         }
         if ($Extra) { foreach ($k in $Extra.Keys) { $entry[$k] = $Extra[$k] } }
         $null = $this.Entries.Add($entry)
-        Write-Host "[$Status] $Action | $Server | $Details"
+        Write-Output "[$Status] $Action | $Server | $Details"
         return $entry
     }
 
@@ -512,7 +512,7 @@ class AutomationBase {
     }
 
     [void] LogAndAudit([string]$Action, [string]$Status, [string]$Server, [string]$Details) {
-        Write-Host "[$Status] $Action | $Server | $Details"
+        Write-Output "[$Status] $Action | $Server | $Details"
         $this.Audit.Log($Action, $Status, $Server, $Details, $null)
     }
 
