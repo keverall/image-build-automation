@@ -70,7 +70,6 @@
 - [20. Quick Navigation](#20-quick-navigation)
 
 
-
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`GitHub_Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/GitHub_Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, physical server builds, firmware/Windows patching, deployment, monitoring, validation, and OpsRamp reporting.
 
 > **Source root**: [`src/powershell/Automation/`](../../src/powershell/Automation/)
@@ -91,25 +90,26 @@ Before any function can be called, the `Automation` module must be loaded. This 
 
 | Section | Lines | Content |
 |---------|-------|---------|
-| Shared value type | [L19–33](../../src/powershell/Automation/Automation.psm1#L19-L33) | `CommandResult` class - holds `ReturnCode`, `StandardOutput`, `StandardError`, `Success` |
-| Shared reference type | [L38–106](../../src/powershell/Automation/Automation.psm1#L38-L106) | `AuditLogger` class - timestamped JSON audit log with `Log()`, `Save()`, `AppendToMaster()` |
-| OpsRamp REST client | [L136–335](../../src/powershell/Automation/Automation.psm1#L136-L335) | `OpsRamp_Client` class - OAuth2 token management, REST calls, metric/alert/event senders |
-| iLO Redfish session | [L340–471](../../src/powershell/Automation/Automation.psm1#L340-L471) | `IloRedfishSession` class - Redfish session login/logout, virtual media, boot override, system reset |
-| Base class | [L476–528](../../src/powershell/Automation/Automation.psm1#L476-L528) | `AutomationBase` class - config dir, output dir, dry-run flag, audit, `RunCommand()` |
-| Private script load | [L530–557](../../src/powershell/Automation/Automation.psm1#L530-L557) | Dot-sources `Private/*.ps1` in dependency order (see §1.2) |
-| Public script load | [L559–565](../../src/powershell/Automation/Automation.psm1#L559-L565) | Dot-sources `Public/*.ps1` alphabetically |
-| Export surface | [L569–648](../../src/powershell/Automation/Automation.psm1#L569-L648) | `Export-ModuleMember` - explicit public API |
+| Shared value type | [L19–37](../../src/powershell/Automation/Automation.psm1#19-37) | `CommandResult` class - holds `ReturnCode`, `StandardOutput`, `StandardError`, `Success` |
+| Shared reference type | [L38–110](../../src/powershell/Automation/Automation.psm1#38-110) | `AuditLogger` class - timestamped JSON audit log with `Log()`, `Save()`, `AppendToMaster()` |
+| Shared reference type | [L111–135](../../src/powershell/Automation/Automation.psm1#111-135) | `ServerInfo` class - server identity (`Hostname`, `IPMI_IP`, `ILO_IP`, `Name`, `LineNumber`) + `ShortName()` |
+| OpsRamp REST client | [L136–335](../../src/powershell/Automation/Automation.psm1#136-335) | `OpsRamp_Client` class - OAuth2 token management, REST calls, metric/alert/event senders |
+| iLO Redfish session | [L340–471](../../src/powershell/Automation/Automation.psm1#340-471) | `IloRedfishSession` class - Redfish session login/logout, virtual media, boot override, system reset |
+| Base class | [L476–528](../../src/powershell/Automation/Automation.psm1#476-528) | `AutomationBase` class - config dir, output dir, dry-run flag, audit, `RunCommand()` |
+| Private script load | [L530–557](../../src/powershell/Automation/Automation.psm1#530-557) | Dot-sources `Private/*.ps1` in dependency order (see §1.2) |
+| Public script load | [L559–565](../../src/powershell/Automation/Automation.psm1#559-565) | Dot-sources `Public/*.ps1` alphabetically |
+| Export surface | [L569–652](../../src/powershell/Automation/Automation.psm1#569-652) | `Export-ModuleMember` - explicit public API |
 
 <a name="12---private-script-load-order"></a>
 ### 1.2 - Private Script Load Order
 
-Dot-sourced in dependency order by [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L538-L549):
+Dot-sourced in dependency order by [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#538-549):
 
 | Order | File | Purpose |
 |-------|------|---------|
 | 1 | [`Audit.ps1`](../../src/powershell/Automation/Private/Audit.ps1) | `New-AuditLogger` factory (20 lines) |
 | 2 | [`Config.ps1`](../../src/powershell/Automation/Private/Config.ps1) | `Import-JsonConfig`, `Import-YamlConfig`, `_PS_ConvertTo-Hashtable`, env-var substitution (126 lines) |
-| 3 | [`Credentials.ps1`](../../src/powershell/Automation/Private/Credentials.ps1) | `Get-EnvCredential`, `Get-IloCredentials`, `Get-ScomCredentials`, `Get-OneViewCredentials`, CyberArk CCP fallback (201 lines) |
+| 3 | [`Credentials.ps1`](../../src/powershell/Automation/Private/Credentials.ps1) | `Get-EnvCredential`, `Get-IloCredentials`, `Get-OneViewCredentials`, CyberArk CCP fallback (201 lines) |
 | 4 | [`Executor.ps1`](../../src/powershell/Automation/Private/Executor.ps1) | `Invoke-NativeCommand`, `Invoke-NativeCommandWithRetry`, `New-CommandResult` (108 lines) |
 | 5 | [`FileIO.ps1`](../../src/powershell/Automation/Private/FileIO.ps1) | `Ensure-DirectoryExists`, `Save-Json`, `Load-Json`, `Save-JsonResult`, `Test-PathEx` (116 lines) |
 | 6 | [`PathResolver.ps1`](../../src/powershell/Automation/Private/PathResolver.ps1) | `Get-ProjectRoot`, `Get-LogDirectory` (53 lines) |
@@ -121,7 +121,7 @@ Dot-sourced in dependency order by [`Automation.psm1`](../../src/powershell/Auto
 <a name="13---public-function-load-order"></a>
 ### 1.3 - Public Function Load Order
 
-Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L559-L565). Order:
+Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#559-565). Order:
 
 1. [`_Validate-Request.ps1`](../../src/powershell/Automation/Public/_Validate-Request.ps1) - request validation (underscore-prefixed, not exported)
 2. [`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1) - central control surface
@@ -135,9 +135,7 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 10. [`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) - remote WinRM execution
 11. [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) - ConfigMgr bootable ISO builder
 12. [`New-OneViewMaintenanceScript.ps1`](../../src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1) - generate OneView maintenance scripts
-13. [`New-ScomConnection.ps1`](../../src/powershell/Automation/Public/New-ScomConnection.ps1) - SCOM connection scripts
-14. [`New-ScomMaintenanceScript.ps1`](../../src/powershell/Automation/Public/New-ScomMaintenanceScript.ps1) - generate SCOM maintenance scripts
-15. [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) - deterministic UUID generator
+13. [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) - deterministic UUID generator
 16. [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) - publish ISO to HTTPS repository
 17. [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - *see GitHub_Code_Map_Maitenance_Mode.md*
 18. [`Start-AutomationOrchestrator.ps1`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1) - unified entry point
@@ -147,7 +145,7 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 22. [`Test-ClusterId.ps1`](../../src/powershell/Automation/Public/Test-ClusterId.ps1) - cluster ID validation
 23. [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) - post-build validation
 24. [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) - pre-build validation
-25. [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - SCOM/OneView connectivity check
+25. [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - OneView connectivity check
 26. [`Test-ServerList.ps1`](../../src/powershell/Automation/Public/Test-ServerList.ps1) - server list validation
 27. [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) - standalone firmware ISO builder
 28. [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) - Windows security patcher
@@ -185,53 +183,53 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 | `publish_iso` | `Publish-BootIso` | `deploy` |
 | `ilo_redfish_mount` | `Invoke-IloRedfish` | `deploy` |
 
-**[`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1#L20)** - [`Invoke-RoutedRequest()`](../../src/powershell/Automation/Private/Router.ps1#L20)
-- Loads routing table from `request_types.json` at [L9–13](../../src/powershell/Automation/Private/Router.ps1#L9-L13)
-- Dispatches by calling handler with `@Params` splat at [L54](../../src/powershell/Automation/Private/Router.ps1#L54)
-- Returns `Success=false` for unknown types at [L43–49](../../src/powershell/Automation/Private/Router.ps1#L43-L49)
+**[`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1#20)** - [`Invoke-RoutedRequest()`](../../src/powershell/Automation/Private/Router.ps1#20)
+- Loads routing table from `request_types.json` at [L9–13](../../src/powershell/Automation/Private/Router.ps1#9-13)
+- Dispatches by calling handler with `@Params` splat at [L54](../../src/powershell/Automation/Private/Router.ps1#54)
+- Returns `Success=false` for unknown types at [L43–49](../../src/powershell/Automation/Private/Router.ps1#43-49)
 
 <a name="22---unified-orchestrator-entry-point"></a>
 ### 2.2 - Unified Orchestrator Entry Point
 
-**[`Start-AutomationOrchestrator.ps1`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#L5)** - [`Start-AutomationOrchestrator()`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#L5)
-- Validates request via [`_Validate-Request()`](../../src/powershell/Automation/Public/_Validate-Request.ps1#L5) at [L37](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#L37)
-- Routes via [`Invoke-RoutedRequest()`](../../src/powershell/Automation/Private/Router.ps1#L20) at [L46](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#L46)
-- Adds `Timestamp` and `RequestType` to result at [L47–48](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#L47-L48)
+**[`Start-AutomationOrchestrator.ps1`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#5)** - [`Start-AutomationOrchestrator()`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#5)
+- Validates request via [`_Validate-Request()`](../../src/powershell/Automation/Public/_Validate-Request.ps1#5) at [L37](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#37)
+- Routes via [`Invoke-RoutedRequest()`](../../src/powershell/Automation/Private/Router.ps1#20) at [L46](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#46)
+- Adds `Timestamp` and `RequestType` to result at [L47–48](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#47-48)
 
 <a name="23---request-validation"></a>
 ### 2.3 - Request Validation
 
-**[`_Validate-Request.ps1`](../../src/powershell/Automation/Public/_Validate-Request.ps1#L5)** - [`_Validate-Request()`](../../src/powershell/Automation/Public/_Validate-Request.ps1#L5)
+**[`_Validate-Request.ps1`](../../src/powershell/Automation/Public/_Validate-Request.ps1#5)** - [`_Validate-Request()`](../../src/powershell/Automation/Public/_Validate-Request.ps1#5)
 
 | Check | Lines | Logic |
 |-------|-------|-------|
-| Build params | [L31–33](../../src/powershell/Automation/Public/_Validate-Request.ps1#L31-L33) | Calls `Test-BuildParams` for `build_iso` / `patch_windows` |
-| Maintenance target | [L34–39](../../src/powershell/Automation/Public/_Validate-Request.ps1#L34-L39) | Calls `Test-ClusterId` for `maintenance_*` requests |
+| Build params | [L31–33](../../src/powershell/Automation/Public/_Validate-Request.ps1#31-33) | Calls `Test-BuildParams` for `build_iso` / `patch_windows` |
+| Maintenance target | [L34–39](../../src/powershell/Automation/Public/_Validate-Request.ps1#34-39) | Calls `Test-ClusterId` for `maintenance_*` requests |
 
 <a name="24---ci-pipeline-surface"></a>
 ### 2.4 - CI Pipeline Surface
 
-**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#L193)** - [`Run-CIPipeline()`](../../src/powershell/Automation/Public/Control.ps1#L193)
-- Builds CI params via [`_Build-CIParams()`](../../src/powershell/Automation/Public/Control.ps1#L27) mapping:
+**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#193)** - [`Run-CIPipeline()`](../../src/powershell/Automation/Public/Control.ps1#193)
+- Builds CI params via [`_Build-CIParams()`](../../src/powershell/Automation/Public/Control.ps1#27) mapping:
   - `firmware` → `update_firmware`
   - `windows` → `patch_windows`
   - `deploy` → `deploy`
   - `scan` → `opsramp_report`
   - `all` → `build_iso`
-- Executes via [`_Execute()`](../../src/powershell/Automation/Public/Control.ps1#L164)
+- Executes via [`_Execute()`](../../src/powershell/Automation/Public/Control.ps1#164)
 
 <a name="25---irequestisapi-surface"></a>
 ### 2.5 - iRequest/ISAPI Surface
 
-**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#L207)** - [`Run-IRequest()`](../../src/powershell/Automation/Public/Control.ps1#L207)
-- Builds params via [`_Build-IRequestParams()`](../../src/powershell/Automation/Public/Control.ps1#L64) mapping `cluster_id` + `action` → `maintenance_{action}`
-- Executes via [`_Execute()`](../../src/powershell/Automation/Public/Control.ps1#L164)
+**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#207)** - [`Run-IRequest()`](../../src/powershell/Automation/Public/Control.ps1#207)
+- Builds params via [`_Build-IRequestParams()`](../../src/powershell/Automation/Public/Control.ps1#64) mapping `cluster_id` + `action` → `maintenance_{action}`
+- Executes via [`_Execute()`](../../src/powershell/Automation/Public/Control.ps1#164)
 
 <a name="26---scheduled-task-surface"></a>
 ### 2.6 - Scheduled Task Surface
 
-**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#L232)** - [`Run-Scheduler()`](../../src/powershell/Automation/Public/Control.ps1#L232)
-- Builds params via [`_Build-SchedulerParams()`](../../src/powershell/Automation/Public/Control.ps1#L92) mapping:
+**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#232)** - [`Run-Scheduler()`](../../src/powershell/Automation/Public/Control.ps1#232)
+- Builds params via [`_Build-SchedulerParams()`](../../src/powershell/Automation/Public/Control.ps1#92) mapping:
   - `maintenance_disable` → `maintenance_disable`
   - `build_firmware` → `update_firmware`
   - `build_windows` → `patch_windows`
@@ -239,15 +237,15 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 <a name="27---gitlab-cicd-surface"></a>
 ### 2.7 - GitLab CI/CD Surface
 
-**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#L289)** - [`Run-GitLab()`](../../src/powershell/Automation/Public/Control.ps1#L289)
-- Builds params via [`_Build-GitLabParams()`](../../src/powershell/Automation/Public/Control.ps1#L256)
+**[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#289)** - [`Run-GitLab()`](../../src/powershell/Automation/Public/Control.ps1#289)
+- Builds params via [`_Build-GitLabParams()`](../../src/powershell/Automation/Public/Control.ps1#256)
 - Routes to `gitlab_maintenance` request type
-- Factory: [`New-GitLabCtrl()`](../../src/powershell/Automation/Public/Control.ps1#L275)
+- Factory: [`New-GitLabCtrl()`](../../src/powershell/Automation/Public/Control.ps1#275)
 
-**[`Invoke-GitLabMaintenanceTrigger.ps1`](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L7)** - [`Invoke-GitLabMaintenanceTrigger()`](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L7)
-- Dot-sources [`Send-GitLabMaintenanceRequest.ps1`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L84–94](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L84-L94)
-- Calls [`Send-GitLabMaintenanceRequest()`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L97–100](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L97-L100)
-- Returns pipeline ID and URL on success at [L102–110](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#L102-L110)
+**[`Invoke-GitLabMaintenanceTrigger.ps1`](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#7)** - [`Invoke-GitLabMaintenanceTrigger()`](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#7)
+- Dot-sources [`Send-GitLabMaintenanceRequest.ps1`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L84–94](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#84-94)
+- Calls [`Send-GitLabMaintenanceRequest()`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1) at [L97–100](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#97-100)
+- Returns pipeline ID and URL on success at [L102–110](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1#102-110)
 
 **[`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`](../../scripts/gitlab/Send-GitLabMaintenanceRequest.ps1)**
 - Triggers GitLab pipeline via trigger API (`POST /api/v4/projects/{id}/trigger/pipeline`)
@@ -260,7 +258,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 
 **[`scripts/gitlab/Send-WebCallback.ps1`](../../scripts/gitlab/Send-WebCallback.ps1)** - [`Send-WebCallback()`](../../scripts/gitlab/Send-WebCallback.ps1)
 - POST JSON to HTTPS callback URL with optional API key
-- Validates HTTPS-only at [L28–31](../../scripts/gitlab/Send-WebCallback.ps1#L28-L31)
+- Validates HTTPS-only at [L28–31](../../scripts/gitlab/Send-WebCallback.ps1#28-31)
 
 ---
 
@@ -272,42 +270,42 @@ The end-to-end physical server build pipeline orchestrates the full runbook work
 <a name="31---end-to-end-build-orchestrator"></a>
 ### 3.1 - End-to-End Build Orchestrator
 
-**[`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L18)** - [`Start-PhysicalServerBuild()`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L18)
+**[`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#18)** - [`Start-PhysicalServerBuild()`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#18)
 
 One-call orchestrator for new HPE ProLiant server deployments. Steps:
-1. **Pre-build validation** - `Test-PreBuildValidation` at [L189](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L189)
-2. **Build ConfigMgr bootable ISO** - `New-IsoBuild` at [L173](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L173)
-3. **Publish ISO to HTTPS** - `Publish-BootIso` at [L183](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L183)
-4. **Resolve iLO via OneView** - `Get-OneViewServerTarget` at [L203](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L203)
-5. **Mount ISO + force boot via iLO Redfish** - `Invoke-IloRedfish` at [L231](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L231)
-6. **Monitor installation** - `Start-InstallMonitor` at [L239](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L239)
-7. **Post-build validation** - `Test-PostBuildValidation` at [L247](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L247)
-8. **Audit log entry** at [L266](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#L266)
+1. **Pre-build validation** - `Test-PreBuildValidation` at [L198](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#198)
+2. **Build ConfigMgr bootable ISO** - `New-IsoBuild` at [L181](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#181)
+3. **Publish ISO to HTTPS** - `Publish-BootIso` at [L191](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#191)
+4. **Resolve iLO via OneView** - `Get-OneViewServerTarget` at [L211](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#211)
+5. **Mount ISO + force boot via iLO Redfish** - `Invoke-IloRedfish` at [L239](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#239)
+6. **Monitor installation** - `Start-InstallMonitor` at [L247](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#247)
+7. **Post-build validation** - `Test-PostBuildValidation` at [L255](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#255)
+8. **Audit log entry** at [L273](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#273)
 
 Skip switches: `-SkipPreBuild`, `-SkipIsoBuild`, `-SkipPublish`, `-SkipOneView`, `-SkipMount`, `-SkipMonitor`, `-SkipPostBuild`
 
 <a name="32---configmgr-bootable-iso-builder"></a>
 ### 3.2 - ConfigMgr Bootable ISO Builder
 
-**[`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1#L13)** - [`New-IsoBuild()`](../../src/powershell/Automation/Public/New-IsoBuild.ps1#L13)
+**[`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1#13)** - [`New-IsoBuild()`](../../src/powershell/Automation/Public/New-IsoBuild.ps1#13)
 
 Builds ConfigMgr bootable WinPE media (replaces old DSC/DISM firmware+patching pipeline). Uses `New-CMBootableMedia` from the ConfigurationManager module.
 
-- Auto-detects ConfigMgr context: local module or PSRemoting to site server at [L249](../../src/powershell/Automation/Public/New-IsoBuild.ps1#L249)
+- Auto-detects ConfigMgr context: local module or PSRemoting to site server at [L249](../../src/powershell/Automation/Public/New-IsoBuild.ps1#249)
 - Output naming: `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso`
-- Auto-increments version from existing ISOs at [L114](../../src/powershell/Automation/Public/New-IsoBuild.ps1#L114)
-- DryRun mode at [L155](../../src/powershell/Automation/Public/New-IsoBuild.ps1#L155)
-- Mock mode for tests at [L144](../../src/powershell/Automation/Public/New-IsoBuild.ps1#L144)
-- Writes `deployment_metadata.json` at [L239](../../src/powershell/Automation/Public/New-IsoBuild.ps1#L239)
+- Auto-increments version from existing ISOs at [L120](../../src/powershell/Automation/Public/New-IsoBuild.ps1#120)
+- DryRun mode at [L155](../../src/powershell/Automation/Public/New-IsoBuild.ps1#155)
+- Mock mode for tests at [L144](../../src/powershell/Automation/Public/New-IsoBuild.ps1#144)
+- Writes `deployment_metadata.json` at [L239](../../src/powershell/Automation/Public/New-IsoBuild.ps1#239)
 
 <a name="33---iso-publisher"></a>
 ### 3.3 - ISO Publisher
 
-**[`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1#L12)** - [`Publish-BootIso()`](../../src/powershell/Automation/Public/Publish-BootIso.ps1#L12)
+**[`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1#12)** - [`Publish-BootIso()`](../../src/powershell/Automation/Public/Publish-BootIso.ps1#12)
 - Copies bootable ISO to HTTPS repository for iLO Redfish consumption
-- Verifies reachability with HTTP HEAD at [L114](../../src/powershell/Automation/Public/Publish-BootIso.ps1#L114)
-- `RepoBaseUrl` from `$env:ISO_REPO_BASE_URL` at [L61](../../src/powershell/Automation/Public/Publish-BootIso.ps1#L61)
-- `-ForceOverwrite` to replace existing ISOs at [L97](../../src/powershell/Automation/Public/Publish-BootIso.ps1#L97)
+- Verifies reachability with HTTP HEAD at [L114](../../src/powershell/Automation/Public/Publish-BootIso.ps1#114)
+- `RepoBaseUrl` from `$env:ISO_REPO_BASE_URL` at [L61](../../src/powershell/Automation/Public/Publish-BootIso.ps1#61)
+- `-ForceOverwrite` to replace existing ISOs at [L97](../../src/powershell/Automation/Public/Publish-BootIso.ps1#97)
 
 ---
 
@@ -319,16 +317,16 @@ Standalone firmware ISO generation via HPE SUT. Not part of the ConfigMgr end-to
 <a name="41---firmware-update-function"></a>
 ### 4.1 - Firmware Update Function
 
-**[`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#L19)** - [`Update-Firmware()`](../../src/powershell/Automation/Public/Update-Firmware.ps1#L19)
+**[`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#19)** - [`Update-Firmware()`](../../src/powershell/Automation/Public/Update-Firmware.ps1#19)
 - Default config: `configs/hpe_firmware_drivers_nov2025.json`
 - Default output: `output/firmware`
-- Delegates to [`FirmwareUpdater`](../../src/powershell/Automation/Public/Update-Firmware.ps1#L82) class at [L67](../../src/powershell/Automation/Public/Update-Firmware.ps1#L67)
-- Saves per-server result JSON at [L73](../../src/powershell/Automation/Public/Update-Firmware.ps1#L73)
+- Delegates to [`FirmwareUpdater`](../../src/powershell/Automation/Public/Update-Firmware.ps1#82) class at [L67](../../src/powershell/Automation/Public/Update-Firmware.ps1#67)
+- Saves per-server result JSON at [L73](../../src/powershell/Automation/Public/Update-Firmware.ps1#73)
 
 <a name="42---firmwareupdater-class"></a>
 ### 4.2 - FirmwareUpdater Class
 
-**[`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#L82)** - class starts at [L82](../../src/powershell/Automation/Public/Update-Firmware.ps1#L82)
+**[`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#82)** - class starts at [L82](../../src/powershell/Automation/Public/Update-Firmware.ps1#82)
 
 | Property | Line | Purpose |
 |----------|------|---------|
@@ -343,15 +341,15 @@ Standalone firmware ISO generation via HPE SUT. Not part of the ConfigMgr end-to
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `FirmwareUpdater()` | [L94](../../src/powershell/Automation/Public/Update-Firmware.ps1#L94) | Constructor: loads config, finds SUT binary, reads download credentials |
-| `_FindSut()` | [L110](../../src/powershell/Automation/Public/Update-Firmware.ps1#L110) | Locates `hpe_sut` in `tools/`, Program Files, or PATH |
-| `_DetectGen()` | [L126](../../src/powershell/Automation/Public/Update-Firmware.ps1#L126) | Detects Gen10 vs Gen10+ from server name |
-| `_ComponentsForGen()` | [L132](../../src/powershell/Automation/Public/Update-Firmware.ps1#L132) | Resolves firmware/driver components for server generation |
-| `_Log()` | [L147](../../src/powershell/Automation/Public/Update-Firmware.ps1#L147) | Adds timestamped build log entry |
-| `_RunSut()` | [L154](../../src/powershell/Automation/Public/Update-Firmware.ps1#L154) | Invokes `hpe_sut create` via [`Invoke-NativeCommandWithRetry()`](../../src/powershell/Automation/Private/Executor.ps1#L68) |
-| `Build()` | [L171](../../src/powershell/Automation/Public/Update-Firmware.ps1#L171) | Full firmware ISO build: detect gen → resolve components → invoke SUT |
+| `FirmwareUpdater()` | [L94](../../src/powershell/Automation/Public/Update-Firmware.ps1#94) | Constructor: loads config, finds SUT binary, reads download credentials |
+| `_FindSut()` | [L110](../../src/powershell/Automation/Public/Update-Firmware.ps1#110) | Locates `hpe_sut` in `tools/`, Program Files, or PATH |
+| `_DetectGen()` | [L126](../../src/powershell/Automation/Public/Update-Firmware.ps1#126) | Detects Gen10 vs Gen10+ from server name |
+| `_ComponentsForGen()` | [L132](../../src/powershell/Automation/Public/Update-Firmware.ps1#132) | Resolves firmware/driver components for server generation |
+| `_Log()` | [L147](../../src/powershell/Automation/Public/Update-Firmware.ps1#147) | Adds timestamped build log entry |
+| `_RunSut()` | [L154](../../src/powershell/Automation/Public/Update-Firmware.ps1#154) | Invokes `hpe_sut create` via [`Invoke-NativeCommandWithRetry()`](../../src/powershell/Automation/Private/Executor.ps1#68) |
+| `Build()` | [L171](../../src/powershell/Automation/Public/Update-Firmware.ps1#171) | Full firmware ISO build: detect gen → resolve components → invoke SUT |
 
-**SUT command** at [L201–202](../../src/powershell/Automation/Public/Update-Firmware.ps1#L201-L202):
+**SUT command** at [L201–202](../../src/powershell/Automation/Public/Update-Firmware.ps1#201-202):
 ```
 hpe_sut create --server-generation {gen} --repository {url} --output {iso} --components {list} --include-drivers
 ```
@@ -364,17 +362,17 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="51---invoke-windowssecurityupdate"></a>
 ### 5.1 - Invoke-WindowsSecurityUpdate
 
-**[`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L8)** - [`Invoke-WindowsSecurityUpdate()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L8)
+**[`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)** - [`Invoke-WindowsSecurityUpdate()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)
 - Default patches config: `configs/windows_patches.json`
 - Default output: `output/patched`
-- Creates [`WindowsPatcher`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L88) instance at [L74](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L74) (3 params: config, baseIsoDir, outputDir)
-- Calls `Build()` at [L75](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L75)
-- Saves patch result JSON at [L78](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L78)
+- Creates [`WindowsPatcher`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#88) instance at [L74](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#74) (2 args: `$PatchesConfig`, `$OutputDir`)
+- Calls `Build()` at [L75](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#75)
+- Saves patch result JSON at [L78](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#78)
 
 <a name="52---windowspatcher-class"></a>
 ### 5.2 - WindowsPatcher Class
 
-**[`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L88)** - class starts at [L88](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L88)
+**[`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#88)** - class starts at [L88](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#88)
 
 | Property | Line | Purpose |
 |----------|------|---------|
@@ -387,13 +385,13 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `WindowsPatcher()` | [L96](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L96) | Constructor: loads patch config, creates patch directory |
-| `_LoadConfig()` | [L106](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L106) | Returns parsed patches config |
-| `_Log()` | [L108](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L108) | Adds timestamped build log entry |
-| `_SetupBaseIso()` | [L113](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L113) | Mounts Windows ISO via `Mount-DiskImage` (Windows) or extracts directory |
-| `_ApplyPatchesDism()` | [L138](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L138) | Applies MSU patches via `dism /Add-Package` |
-| `_ApplyPatchesPowerShell()` | [L156](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L156) | Applies patches via `Add-WindowsPackage` cmdlet |
-| `Build()` | [L175](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L175) | Full patch pipeline: mount ISO → apply patches → export patched ISO |
+| `WindowsPatcher()` | [L96](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#96) | Constructor: loads patch config, creates patch directory |
+| `_LoadConfig()` | [L106](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#106) | Returns parsed patches config |
+| `_Log()` | [L108](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#108) | Adds timestamped build log entry |
+| `_SetupBaseIso()` | [L113](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#113) | Mounts Windows ISO via `Mount-DiskImage` (Windows) or extracts directory |
+| `_ApplyPatchesDism()` | [L138](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#138) | Applies MSU patches via `dism /Add-Package` |
+| `_ApplyPatchesPowerShell()` | [L156](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#156) | Applies patches via `Add-WindowsPackage` cmdlet |
+| `Build()` | [L175](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#175) | Full patch pipeline: mount ISO → apply patches → export patched ISO |
 
 ---
 
@@ -403,18 +401,18 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="61---invoke-isodeploy"></a>
 ### 6.1 - Invoke-IsoDeploy
 
-**[`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L20)** - [`Invoke-IsoDeploy()`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L20)
+**[`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#20)** - [`Invoke-IsoDeploy()`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#20)
 - Default ISO directory: `output/bootable_media`
 - Only supports `Method`: `redfish`
-- Creates [`ISODeployer`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L89) at [L72](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L72)
-- Single-server mode via `Deploy()` at [L182](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L182)
-- Bulk mode via `DeployAll()` at [L199](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L199)
-- Delegates actual mount+boot to `Invoke-IloRedfish` at [L175](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L175)
+- Creates [`ISODeployer`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#89) at [L72](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#72)
+- Single-server mode via `Deploy()` at [L182](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#182)
+- Bulk mode via `DeployAll()` at [L199](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#199)
+- Delegates actual mount+boot to `Invoke-IloRedfish` at [L175](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#175)
 
 <a name="62---isodeployer-class"></a>
 ### 6.2 - ISODeployer Class
 
-**[`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L89)** - class starts at [L89](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L89)
+**[`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#89)** - class starts at [L89](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#89)
 
 | Property | Line | Purpose |
 |----------|------|---------|
@@ -427,13 +425,13 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `ISODeployer()` | [L97](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L97) | Constructor: loads server list via `Load-ServerList()` |
-| `_FindServerPackage()` | [L106](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L106) | Resolves server name to `output/bootable_media/` subdirectory |
-| `_ResolveIsoUrl()` | [L125](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L125) | Resolves ISO URL from metadata + RepoBaseUrl |
-| `_Log()` | [L151](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L151) | Adds timestamped deploy log entry |
-| `_DeployViaRedfish()` | [L159](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L159) | Delegates to `Invoke-IloRedfish -Action MountAndBoot` |
-| `Deploy()` | [L182](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L182) | Dispatches to Redfish method |
-| `DeployAll()` | [L199](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#L199) | Iterates all servers, saves deployment summary JSON |
+| `ISODeployer()` | [L97](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#97) | Constructor: loads server list via `Load-ServerList()` |
+| `_FindServerPackage()` | [L106](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#106) | Resolves server name to `output/bootable_media/` subdirectory |
+| `_ResolveIsoUrl()` | [L125](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#125) | Resolves ISO URL from metadata + RepoBaseUrl |
+| `_Log()` | [L151](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#151) | Adds timestamped deploy log entry |
+| `_DeployViaRedfish()` | [L159](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#159) | Delegates to `Invoke-IloRedfish -Action MountAndBoot` |
+| `Deploy()` | [L182](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#182) | Dispatches to Redfish method |
+| `DeployAll()` | [L199](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#199) | Iterates all servers, saves deployment summary JSON |
 
 ---
 
@@ -443,15 +441,15 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="71---invoke-iloredfish"></a>
 ### 7.1 - Invoke-IloRedfish
 
-**[`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#L19)** - [`Invoke-IloRedfish()`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#L19)
+**[`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#19)** - [`Invoke-IloRedfish()`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#19)
 - Actions: `Mount`, `MountAndBoot`, `Boot`, `Reset`, `Eject`, `Status`
 - Uses `IloRedfishSession` class for Redfish API calls
-- `-Force` required for destructive actions (`MountAndBoot`, `Boot`, `Reset`) at [L87–93](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#L87-L93)
-- Credentials from `Get-IloCredentials` at [L107](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#L107)
-- Redfish session at [L113](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#L113)
-- Session logout in `finally` block at [L155](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#L155)
+- `-Force` required for destructive actions (`MountAndBoot`, `Boot`, `Reset`) at [L87–93](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#87-93)
+- Credentials from `Get-IloCredentials` at [L107](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#107)
+- Redfish session at [L113](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#113)
+- Session logout in `finally` block at [L155](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#155)
 
-**Redfish API endpoints** (documented at [L11–16](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#L11-L16)):
+**Redfish API endpoints** (documented at [L11–16](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1#11-16)):
 - `POST /redfish/v1/SessionService/Sessions` - login → `X-Auth-Token`
 - `POST /redfish/v1/Managers/1/VirtualMedia/1/Actions/VirtualMedia.InsertMedia`
 - `PATCH /redfish/v1/Systems/1` - BootSourceOverrideTarget=Cd, Enabled=Once
@@ -460,7 +458,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="72---iloredfishsession-class"></a>
 ### 7.2 - IloRedfishSession Class
 
-**[`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L340)** - class starts at [L340](../../src/powershell/Automation/Automation.psm1#L340)
+**[`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#340)** - class starts at [L340](../../src/powershell/Automation/Automation.psm1#340)
 
 | Property | Line | Purpose |
 |----------|------|---------|
@@ -474,19 +472,19 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `IloRedfishSession()` | [L349](../../src/powershell/Automation/Automation.psm1#L349) | Constructor: stores params, calls `_Login()` |
-| `_Login()` | [L361](../../src/powershell/Automation/Automation.psm1#L361) | POST session login → extracts token |
-| `_Headers()` | [L372](../../src/powershell/Automation/Automation.psm1#L372) | Returns `X-Auth-Token` header dict |
-| `_Post()` | [L385](../../src/powershell/Automation/Automation.psm1#L385) | POST JSON with auth |
-| `_Patch()` | [L376](../../src/powershell/Automation/Automation.psm1#L376) | PATCH JSON with auth |
-| `_Get()` | [L394](../../src/powershell/Automation/Automation.psm1#L394) | GET with auth |
-| `GetSystem()` | [L401](../../src/powershell/Automation/Automation.psm1#L401) | Returns power state, boot source, model, serial |
-| `ListVirtualMedia()` | [L413](../../src/powershell/Automation/Automation.psm1#L413) | Enumerates virtual media devices |
-| `InsertMedia()` | [L433](../../src/powershell/Automation/Automation.psm1#L433) | Mounts ISO URL into virtual media device |
-| `EjectMedia()` | [L439](../../src/powershell/Automation/Automation.psm1#L439) | Ejects virtual media |
-| `SetOneTimeBootCd()` | [L445](../../src/powershell/Automation/Automation.psm1#L445) | One-time boot override to CD |
-| `ResetSystem()` | [L455](../../src/powershell/Automation/Automation.psm1#L455) | System reset (ForceRestart) |
-| `Logout()` | [L460](../../src/powershell/Automation/Automation.psm1#L460) | DELETE session |
+| `IloRedfishSession()` | [L349](../../src/powershell/Automation/Automation.psm1#349) | Constructor: stores params, calls `_Login()` |
+| `_Login()` | [L361](../../src/powershell/Automation/Automation.psm1#361) | POST session login → extracts token |
+| `_Headers()` | [L372](../../src/powershell/Automation/Automation.psm1#372) | Returns `X-Auth-Token` header dict |
+| `_Post()` | [L385](../../src/powershell/Automation/Automation.psm1#385) | POST JSON with auth |
+| `_Patch()` | [L376](../../src/powershell/Automation/Automation.psm1#376) | PATCH JSON with auth |
+| `_Get()` | [L394](../../src/powershell/Automation/Automation.psm1#394) | GET with auth |
+| `GetSystem()` | [L401](../../src/powershell/Automation/Automation.psm1#401) | Returns power state, boot source, model, serial |
+| `ListVirtualMedia()` | [L413](../../src/powershell/Automation/Automation.psm1#413) | Enumerates virtual media devices |
+| `InsertMedia()` | [L433](../../src/powershell/Automation/Automation.psm1#433) | Mounts ISO URL into virtual media device |
+| `EjectMedia()` | [L439](../../src/powershell/Automation/Automation.psm1#439) | Ejects virtual media |
+| `SetOneTimeBootCd()` | [L445](../../src/powershell/Automation/Automation.psm1#445) | One-time boot override to CD |
+| `ResetSystem()` | [L455](../../src/powershell/Automation/Automation.psm1#455) | System reset (ForceRestart) |
+| `Logout()` | [L460](../../src/powershell/Automation/Automation.psm1#460) | DELETE session |
 
 ---
 
@@ -496,14 +494,14 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="81---start-installmonitor"></a>
 ### 8.1 - Start-InstallMonitor
 
-**[`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L8)** - [`Start-InstallMonitor()`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L8)
+**[`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#8)** - [`Start-InstallMonitor()`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#8)
 - Polls iLO Redfish + WinRM to track Windows installation phases
 - Sends progress metrics and alerts to OpsRamp
 - Default timeout: 7200s (2 hours), poll interval: 30s
-- Creates [`InstallationMonitor`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L94) at [L49](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L49)
-- Single server at [L53](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L53), bulk at [L57](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L57)
+- Creates [`InstallationMonitor`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#94) at [L49](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#49)
+- Single server at [L53](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#53), bulk at [L57](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#57)
 
-**Phase mapping** at [L88–91](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L88-L91):
+**Phase mapping** at [L88–91](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#88-91):
 ```
 0 = Not Started → 1 = Generalize → 2 = Specialize → 3 = Running Windows → 4 = RunPhase
 ```
@@ -511,7 +509,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="82---installationmonitor-class"></a>
 ### 8.2 - InstallationMonitor Class
 
-**[`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L94)** - class starts at [L94](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L94)
+**[`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#94)** - class starts at [L94](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#94)
 
 | Property | Line | Purpose |
 |----------|------|---------|
@@ -524,16 +522,16 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `InstallationMonitor()` | [L106](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L106) | Constructor: loads server list, initializes OpsRamp client |
-| `_InitOpsRampClient()` | [L115](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L115) | Creates `OpsRamp_Client` from config path |
-| `_Log()` | [L121](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L121) | Adds timestamped monitoring log entry |
-| `CheckIloStatus()` | [L126](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L126) | Ping + Redfish query → power state, boot source |
-| `CheckWinRM()` | [L147](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L147) | Tests WSMan accessibility via `Test-WSMan` |
-| `QueryInstallProgressWinRM()` | [L156](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L156) | Reads `HKLM:\SYSTEM\Setup` registry + Setup event log via WinRM |
-| `_SendOpsRampMetric()` | [L191](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L191) | Sends progress metrics to OpsRamp |
-| `_SendOpsRampAlert()` | [L198](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L198) | Sends alerts on timeout/failure/completion |
-| `MonitorServer()` | [L204](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L204) | Polling loop: iLO + WinRM → progress tracking |
-| `MonitorAll()` | [L285](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#L285) | Monitors all servers, writes summary JSON |
+| `InstallationMonitor()` | [L106](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#106) | Constructor: loads server list, initializes OpsRamp client |
+| `_InitOpsRampClient()` | [L115](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#115) | Creates `OpsRamp_Client` from config path |
+| `_Log()` | [L121](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#121) | Adds timestamped monitoring log entry |
+| `CheckIloStatus()` | [L126](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#126) | Ping + Redfish query → power state, boot source |
+| `CheckWinRM()` | [L147](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#147) | Tests WSMan accessibility via `Test-WSMan` |
+| `QueryInstallProgressWinRM()` | [L156](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#156) | Reads `HKLM:\SYSTEM\Setup` registry + Setup event log via WinRM |
+| `_SendOpsRampMetric()` | [L191](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#191) | Sends progress metrics to OpsRamp |
+| `_SendOpsRampAlert()` | [L198](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#198) | Sends alerts on timeout/failure/completion |
+| `MonitorServer()` | [L204](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#204) | Polling loop: iLO + WinRM → progress tracking |
+| `MonitorAll()` | [L285](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1#285) | Monitors all servers, writes summary JSON |
 
 ---
 
@@ -543,45 +541,45 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="91---test-prebuildvalidation"></a>
 ### 9.1 - Test-PreBuildValidation
 
-**[`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#L15)** - [`Test-PreBuildValidation()`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#L15)
+**[`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#15)** - [`Test-PreBuildValidation()`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#15)
 
 Pre-build checks from the runbook:
-1. OneView target identified (via `Get-OneViewServerTarget`) at [L106](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#L106)
-2. ISO URL reachable (HTTP HEAD) at [L120](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#L120)
-3. iLO credentials verified (Redfish session test) at [L131](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#L131)
-4. Management Point / Distribution Point reachability at [L150](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#L150)
-5. Audit entry recorded at [L162](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#L162)
+1. OneView target identified (via `Get-OneViewServerTarget`) at [L106](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#106)
+2. ISO URL reachable (HTTP HEAD) at [L120](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#120)
+3. iLO credentials verified (Redfish session test) at [L131](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#131)
+4. Management Point / Distribution Point reachability at [L143](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#143)
+5. Audit entry recorded at [L172](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#172)
 
 Skip switches: `-SkipOneView`, `-SkipIlo`, `-SkipDpMp`, `-SkipIsoUrl`
 
 <a name="92---test-postbuildvalidation"></a>
 ### 9.2 - Test-PostBuildValidation
 
-**[`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L16)** - [`Test-PostBuildValidation()`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L16)
+**[`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#16)** - [`Test-PostBuildValidation()`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#16)
 
 Post-build checks via WinRM:
-1. WinRM reachable at [L89](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L89)
-2. Expected hostname assigned at [L124](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L124)
-3. OS version + edition verified at [L125–126](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L125-L126)
-4. Domain join successful at [L127](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L127)
-5. HPE device drivers present at [L129](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L129)
-6. ConfigMgr client healthy at [L132–133](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L132-L133)
-7. RDP operational at [L135](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L135)
-8. Audit entry recorded at [L156](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#L156)
+1. WinRM reachable at [L89](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#89)
+2. Expected hostname assigned at [L124](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#124)
+3. OS version + edition verified at [L125–126](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#125-126)
+4. Domain join successful at [L127](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#127)
+5. HPE device drivers present at [L129](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#129)
+6. ConfigMgr client healthy at [L132–133](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#132-133)
+7. RDP operational at [L135](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#135)
+8. Audit entry recorded at [L168](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#168)
 
 Skip switches: `-SkipCmClient`, `-SkipDrivers`, `-SkipRemote`
 
 <a name="93---test-serverconnectivity"></a>
 ### 9.3 - Test-ServerConnectivity
 
-**[`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L157)** - [`Test-ServerConnectivity()`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L157)
+**[`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#157)** - [`Test-ServerConnectivity()`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#157)
 
 Read-only connectivity test safe during change freezes (694 lines):
-- **Phase 1: Network Ping** - DNS resolution + TCP port probe at [L448–497](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L448-L497)
-- **Phase 2: Auth Connect** - Full authentication via module (SCOM or OneView) + immediate disconnect at [L502–583](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L502-L583)
+- **Phase 1: Network Ping** - DNS resolution + TCP port probe at [L446–497](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#446-497)
+- **Phase 2: Auth Connect** - Full authentication via OneView module + immediate disconnect at [L502–585](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#502-585)
 - Host resolution: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `connection_hosts.json` → interactive prompt
-- `-DryRun` returns mock data at [L393](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L393)
-- `-Json` for API integration at [L598](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L598)
+- `-DryRun` returns mock data at [L393](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#393)
+- `-Json` for API integration at [L598](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#598)
 
 ---
 
@@ -591,7 +589,7 @@ Read-only connectivity test safe during change freezes (694 lines):
 <a name="101---local-powershell-execution"></a>
 ### 10.1 - Local PowerShell Execution
 
-**[`Invoke-PowerShellScript.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#L5)** - [`Invoke-PowerShellScript()`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#L5)
+**[`Invoke-PowerShellScript.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#5)** - [`Invoke-PowerShellScript()`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#5)
 - Spawns `powershell.exe` (Windows) or `pwsh` (Linux) as a new process via `System.Diagnostics.Process`
 - Parameters: `Script`, `CaptureOutput`, `TimeoutSeconds`, `ExecutionPolicy`
 - Configurable timeout (default: 300s), execution policy (default: `Bypass`)
@@ -600,7 +598,7 @@ Read-only connectivity test safe during change freezes (694 lines):
 <a name="102---remote-powershell-via-winrm"></a>
 ### 10.2 - Remote PowerShell via WinRM
 
-**[`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1#L5)** - [`Invoke-PowerShellWinRM()`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1#L5)
+**[`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1#5)** - [`Invoke-PowerShellWinRM()`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1#5)
 - Creates `New-PSSession` with NTLM authentication
 - Executes script block remotely via `Invoke-Command`
 - Cleans up session after execution
@@ -615,22 +613,22 @@ Read-only connectivity test safe during change freezes (694 lines):
 <a name="111---opsrampclient-class"></a>
 ### 11.1 - OpsRamp_Client Class
 
-Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L136), fully documented in [§11.2 of this document](#markdown-header-112-opsramp-entry-points).
+Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#136), members documented in the table below.
 
 | Member | Line | Purpose |
 |--------|------|---------|
-| `OpsRamp_Client()` | [L150](../../src/powershell/Automation/Automation.psm1#L150) | Constructor: loads config, creates HttpClient |
-| `_LoadConfig()` | [L161](../../src/powershell/Automation/Automation.psm1#L161) | Loads config, overrides credentials from env vars |
-| `EnsureToken()` | [L177](../../src/powershell/Automation/Automation.psm1#L177) | OAuth2 client_credentials flow, token caching with 90% TTL |
-| `_MakeRequest()` | [L209](../../src/powershell/Automation/Automation.psm1#L209) | Generic HTTP request with auth |
-| `SendMetric()` | [L240](../../src/powershell/Automation/Automation.psm1#L240) | POST metric gauge |
-| `SendAlert()` | [L257](../../src/powershell/Automation/Automation.psm1#L257) | POST alert |
-| `SendEvent()` | [L271](../../src/powershell/Automation/Automation.psm1#L271) | POST event |
-| `BatchSendMetrics()` | [L284](../../src/powershell/Automation/Automation.psm1#L284) | Batch POST metrics |
-| `ReportBuildStatus()` | [L289](../../src/powershell/Automation/Automation.psm1#L289) | Build status metric + failure alert |
-| `ReportDeploymentStatus()` | [L301](../../src/powershell/Automation/Automation.psm1#L301) | Deploy status metric + failure alert |
-| `ReportInstallationProgress()` | [L313](../../src/powershell/Automation/Automation.psm1#L313) | Progress percent + elapsed seconds |
-| `ReportVulnerabilityScan()` | [L322](../../src/powershell/Automation/Automation.psm1#L322) | Vuln counts + critical alert |
+| `OpsRamp_Client()` | [L150](../../src/powershell/Automation/Automation.psm1#150) | Constructor: loads config, creates HttpClient |
+| `_LoadConfig()` | [L161](../../src/powershell/Automation/Automation.psm1#161) | Loads config, overrides credentials from env vars |
+| `EnsureToken()` | [L177](../../src/powershell/Automation/Automation.psm1#177) | OAuth2 client_credentials flow, token caching with 90% TTL |
+| `_MakeRequest()` | [L209](../../src/powershell/Automation/Automation.psm1#209) | Generic HTTP request with auth |
+| `SendMetric()` | [L240](../../src/powershell/Automation/Automation.psm1#240) | POST metric gauge |
+| `SendAlert()` | [L257](../../src/powershell/Automation/Automation.psm1#257) | POST alert |
+| `SendEvent()` | [L271](../../src/powershell/Automation/Automation.psm1#271) | POST event |
+| `BatchSendMetrics()` | [L284](../../src/powershell/Automation/Automation.psm1#284) | Batch POST metrics |
+| `ReportBuildStatus()` | [L289](../../src/powershell/Automation/Automation.psm1#289) | Build status metric + failure alert |
+| `ReportDeploymentStatus()` | [L301](../../src/powershell/Automation/Automation.psm1#301) | Deploy status metric + failure alert |
+| `ReportInstallationProgress()` | [L313](../../src/powershell/Automation/Automation.psm1#313) | Progress percent + elapsed seconds |
+| `ReportVulnerabilityScan()` | [L322](../../src/powershell/Automation/Automation.psm1#322) | Vuln counts + critical alert |
 
 <a name="112---opsramp-entry-points"></a>
 ### 11.2 - OpsRamp Entry Points
@@ -639,8 +637,8 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Invoke-OpsRampClient()`](../../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1#L5) | L5 | Factory: creates `OpsRamp_Client` instance from config path |
-| [`Invoke-OpsRamp()`](../../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1#L29) | L29 | Quick connectivity test - returns boolean from `EnsureToken()` |
+| [`Invoke-OpsRampClient()`](../../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1#5) | L5 | Factory: creates `OpsRamp_Client` instance from config path |
+| [`Invoke-OpsRamp()`](../../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1#29) | L29 | Quick connectivity test - returns boolean from `EnsureToken()` |
 
 ---
 
@@ -649,7 +647,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 **[`Credentials.ps1`](../../src/powershell/Automation/Private/Credentials.ps1)** - 201 lines
 
-**Resolution order** (documented at [L5–14](../../src/powershell/Automation/Private/Credentials.ps1#L5-L14)):
+**Resolution order** (documented at [L5–14](../../src/powershell/Automation/Private/Credentials.ps1#5-14)):
 1. Environment variable (CI pre-fetches from CyberArk)
 2. CyberArk CCP CLI (`ark_ccl` / `ark_cc` / `CyberArk.CLI` on PATH)
 3. CyberArk AIM REST API (`$env:AIM_WEBSERVICE_URL` or `$env:CYBERARK_CCP_URL`)
@@ -657,13 +655,12 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Resolves |
 |----------|------|----------|
-| [`_Resolve-Credential()`](../../src/powershell/Automation/Private/Credentials.ps1#L17) | L17 | Core resolver - env → CLI → REST → default |
-| [`Get-EnvCredential()`](../../src/powershell/Automation/Private/Credentials.ps1#L127) | L127 | Generic env-var credential |
-| [`Get-IloCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#L145) | L145 | `ILO_USER` / `ILO_PASSWORD` |
-| [`Get-ScomCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#L158) | L158 | `SCOM_ADMIN_USER` / `SCOM_ADMIN_PASSWORD` |
-| [`Get-OpenViewCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#L173) | L173 | OpenView legacy credentials |
-| [`Get-OneViewCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#L183) | L183 | `ONEVIEW_USER` / `ONEVIEW_PASSWORD` |
-| [`Get-SmtpCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#L193) | L193 | SMTP email credentials |
+| [`_Resolve-Credential()`](../../src/powershell/Automation/Private/Credentials.ps1#17) | L17 | Core resolver - env → CLI → REST → default |
+| [`Get-EnvCredential()`](../../src/powershell/Automation/Private/Credentials.ps1#127) | L127 | Generic env-var credential |
+| [`Get-IloCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#145) | L145 | `ILO_USER` / `ILO_PASSWORD` |
+| [`Get-OpenViewCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#173) | L173 | OpenView legacy credentials |
+| [`Get-OneViewCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#183) | L183 | `ONEVIEW_USER` / `ONEVIEW_PASSWORD` |
+| [`Get-SmtpCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#193) | L193 | SMTP email credentials |
 
 ---
 
@@ -677,10 +674,10 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Load-ServerList()`](../../src/powershell/Automation/Private/Inventory.ps1#L5) | L5 | Reads `server_list.txt` → `ServerInfo[]` or plain strings |
-| [`Load-ClusterCatalogue()`](../../src/powershell/Automation/Private/Inventory.ps1#L46) | L46 | Loads `clusters_catalogue.json` → inner `clusters` hashtable |
-| [`Test-ClusterDefinition()`](../../src/powershell/Automation/Private/Inventory.ps1#L62) | L62 | Validates cluster definition fields: `display_name`, `servers`, `scom_group`, `environment` |
-| [`New-ServerInfo()`](../../src/powershell/Automation/Private/Inventory.ps1#L83) | L83 | Factory for `ServerInfo` objects |
+| [`Load-ServerList()`](../../src/powershell/Automation/Private/Inventory.ps1#5) | L5 | Reads `server_list.txt` → `ServerInfo[]` or plain strings |
+| [`Load-ClusterCatalogue()`](../../src/powershell/Automation/Private/Inventory.ps1#46) | L46 | Loads `clusters_catalogue.json` → inner `clusters` hashtable |
+| [`Test-ClusterDefinition()`](../../src/powershell/Automation/Private/Inventory.ps1#62) | L62 | Validates cluster definition fields (SCOM mode only): `display_name`, `servers`, `scom_group`, `environment` |
+| [`New-ServerInfo()`](../../src/powershell/Automation/Private/Inventory.ps1#83) | L83 | Factory for `ServerInfo` objects |
 
 <a name="132---configuration-functions"></a>
 ### 13.2 - Configuration Functions
@@ -689,20 +686,20 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Import-JsonConfig()`](../../src/powershell/Automation/Private/Config.ps1#L5) | L5 | Reads JSON file, converts to hashtable, substitutes `${VAR}` env references |
-| [`Import-YamlConfig()`](../../src/powershell/Automation/Private/Config.ps1#L44) | L44 | Reads YAML file, converts to hashtable |
-| [`_PS_ConvertTo-Hashtable()`](../../src/powershell/Automation/Private/Config.ps1#L64) | L64 | Recursively converts PSCustomObject → hashtable |
-| [`_PS_ReplaceEnvVars()`](../../src/powershell/Automation/Private/Config.ps1#L88) | L88 | Replaces `${VAR}` placeholders with environment variable values |
-| [`_PS_SubstituteEnvVars()`](../../src/powershell/Automation/Private/Config.ps1#L108) | L108 | Recursive env-var substitution across all nested hashtables |
+| [`Import-JsonConfig()`](../../src/powershell/Automation/Private/Config.ps1#5) | L5 | Reads JSON file, converts to hashtable, substitutes `${VAR}` env references |
+| [`Import-YamlConfig()`](../../src/powershell/Automation/Private/Config.ps1#44) | L44 | Reads YAML file, converts to hashtable |
+| [`_PS_ConvertTo-Hashtable()`](../../src/powershell/Automation/Private/Config.ps1#64) | L64 | Recursively converts PSCustomObject → hashtable |
+| [`_PS_ReplaceEnvVars()`](../../src/powershell/Automation/Private/Config.ps1#88) | L88 | Replaces `${VAR}` placeholders with environment variable values |
+| [`_PS_SubstituteEnvVars()`](../../src/powershell/Automation/Private/Config.ps1#108) | L108 | Recursive env-var substitution across all nested hashtables |
 
 <a name="133---validator-functions"></a>
 ### 13.3 - Validator Functions
 
 | Function | File | Purpose |
 |----------|------|---------|
-| [`Test-BuildParams()`](../../src/powershell/Automation/Public/Test-BuildParams.ps1#L5) | Validates base ISO path exists |
-| [`Test-ClusterId()`](../../src/powershell/Automation/Public/Test-ClusterId.ps1#L5) | Validates cluster ID in catalogue, checks required fields |
-| [`Test-ServerList()`](../../src/powershell/Automation/Public/Test-ServerList.ps1#L5) | Validates server list file, strips comments and empty lines |
+| [`Test-BuildParams()`](../../src/powershell/Automation/Public/Test-BuildParams.ps1#5) | Validates base ISO path exists |
+| [`Test-ClusterId()`](../../src/powershell/Automation/Public/Test-ClusterId.ps1#5) | Validates cluster ID in catalogue, checks required fields |
+| [`Test-ServerList()`](../../src/powershell/Automation/Public/Test-ServerList.ps1#5) | Validates server list file, strips comments and empty lines |
 
 ---
 
@@ -713,11 +710,11 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Invoke-NativeCommand()`](../../src/powershell/Automation/Private/Executor.ps1#L5) | L5 | Executes external program via `System.Diagnostics.Process`, captures stdout/stderr |
-| [`Invoke-NativeCommandWithRetry()`](../../src/powershell/Automation/Private/Executor.ps1#L68) | L68 | Exponential back-off retry wrapper (default: 3 attempts, 5s base delay) |
-| [`New-CommandResult()`](../../src/powershell/Automation/Private/Executor.ps1#L99) | L99 | Factory for `CommandResult` objects |
+| [`Invoke-NativeCommand()`](../../src/powershell/Automation/Private/Executor.ps1#5) | L5 | Executes external program via `System.Diagnostics.Process`, captures stdout/stderr |
+| [`Invoke-NativeCommandWithRetry()`](../../src/powershell/Automation/Private/Executor.ps1#68) | L68 | Exponential back-off retry wrapper (default: 3 attempts, 5s base delay) |
+| [`New-CommandResult()`](../../src/powershell/Automation/Private/Executor.ps1#99) | L99 | Factory for `CommandResult` objects |
 
-**Used by**: [`FirmwareUpdater._RunSut()`](../../src/powershell/Automation/Public/Update-Firmware.ps1#L154), [`WindowsPatcher._ApplyPatchesDism()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L138)
+**Used by**: [`FirmwareUpdater._RunSut()`](../../src/powershell/Automation/Public/Update-Firmware.ps1#154), [`WindowsPatcher._ApplyPatchesDism()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#138)
 
 ---
 
@@ -731,12 +728,12 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Ensure-DirectoryExists()`](../../src/powershell/Automation/Private/FileIO.ps1#L5) | L5 | Creates directory tree if missing |
-| [`Save-Json()`](../../src/powershell/Automation/Private/FileIO.ps1#L18) | L18 | Serializes object to JSON file |
-| [`Load-Json()`](../../src/powershell/Automation/Private/FileIO.ps1#L35) | L35 | Deserializes JSON file |
-| [`Save-JsonResult()`](../../src/powershell/Automation/Private/FileIO.ps1#L53) | L53 | Saves to `{outputDir}/{category}/{basename}_{timestamp}.json` |
-| [`Test-PathEx()`](../../src/powershell/Automation/Private/FileIO.ps1#L77) | L77 | Enhanced Test-Path with better error messages |
-| [`_FileIO_DeepHashtable()`](../../src/powershell/Automation/Private/FileIO.ps1#L94) | L94 | Internal: deep conversion of PSCustomObject tree to hashtable |
+| [`Ensure-DirectoryExists()`](../../src/powershell/Automation/Private/FileIO.ps1#5) | L5 | Creates directory tree if missing |
+| [`Save-Json()`](../../src/powershell/Automation/Private/FileIO.ps1#18) | L18 | Serializes object to JSON file |
+| [`Load-Json()`](../../src/powershell/Automation/Private/FileIO.ps1#35) | L35 | Deserializes JSON file |
+| [`Save-JsonResult()`](../../src/powershell/Automation/Private/FileIO.ps1#53) | L53 | Saves to `{outputDir}/{category}/{basename}_{timestamp}.json` |
+| [`Test-PathEx()`](../../src/powershell/Automation/Private/FileIO.ps1#77) | L77 | Enhanced Test-Path with better error messages |
+| [`_FileIO_DeepHashtable()`](../../src/powershell/Automation/Private/FileIO.ps1#94) | L94 | Internal: deep conversion of PSCustomObject tree to hashtable |
 
 <a name="152---path-resolution"></a>
 ### 15.2 - Path Resolution
@@ -745,8 +742,8 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Get-ProjectRoot()`](../../src/powershell/Automation/Private/PathResolver.ps1#L5) | L5 | Walks up from cwd looking for `kilo.json` or `Makefile` |
-| [`Get-LogDirectory()`](../../src/powershell/Automation/Private/PathResolver.ps1#L32) | L32 | Returns `{projectRoot}/generated/logs/{category}` |
+| [`Get-ProjectRoot()`](../../src/powershell/Automation/Private/PathResolver.ps1#5) | L5 | Walks up from cwd looking for `kilo.json` or `Makefile` |
+| [`Get-LogDirectory()`](../../src/powershell/Automation/Private/PathResolver.ps1#32) | L32 | Returns `{projectRoot}/generated/logs/{category}` |
 
 ---
 
@@ -760,19 +757,19 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Initialize-Logging()`](../../src/powershell/Automation/Private/Logging.ps1#L6) | L6 | Sets up log directory, creates timestamped log file |
-| [`Get-Logger()`](../../src/powershell/Automation/Private/Logging.ps1#L59) | L59 | Returns logger object with Info/Warning/Error/Debug methods |
+| [`Initialize-Logging()`](../../src/powershell/Automation/Private/Logging.ps1#6) | L6 | Sets up log directory, creates timestamped log file |
+| [`Get-Logger()`](../../src/powershell/Automation/Private/Logging.ps1#59) | L59 | Returns logger object with Info/Warning/Error/Debug methods |
 
 <a name="162---audit-logger"></a>
 ### 16.2 - Audit Logger
 
-**[`Audit.ps1`](../../src/powershell/Automation/Private/Audit.ps1#L5)** - [`New-AuditLogger()`](../../src/powershell/Automation/Private/Audit.ps1#L5)
+**[`Audit.ps1`](../../src/powershell/Automation/Private/Audit.ps1#5)** - [`New-AuditLogger()`](../../src/powershell/Automation/Private/Audit.ps1#5)
 - Factory for `AuditLogger` class instances (20 lines)
 
-Also defined as class in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L38) (documented in [§1.1](#markdown-header-11-root-module-loader)):
-- [`AuditLogger.Log()`](../../src/powershell/Automation/Automation.psm1#L66) - adds entry with action, status, server, details
-- [`AuditLogger.Save()`](../../src/powershell/Automation/Automation.psm1#L82) - writes JSON file
-- [`AuditLogger.AppendToMaster()`](../../src/powershell/Automation/Automation.psm1#L99) - appends to master log
+Also defined as class in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#38) (documented in [§1.1](#markdown-header-11-root-module-loader)):
+- [`AuditLogger.Log()`](../../src/powershell/Automation/Automation.psm1#66) - adds entry with action, status, server, details
+- [`AuditLogger.Save()`](../../src/powershell/Automation/Automation.psm1#82) - writes JSON file
+- [`AuditLogger.AppendToMaster()`](../../src/powershell/Automation/Automation.psm1#99) - appends to master log
 
 <a name="163---timestamp-helpers"></a>
 ### 16.3 - Timestamp Helpers
@@ -781,15 +778,15 @@ Also defined as class in [`Automation.psm1`](../../src/powershell/Automation/Aut
 
 | Function | Line | Purpose |
 |----------|------|---------|
-| [`Get-UtcTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#L5) | L5 | ISO-8601 UTC timestamp |
-| [`Get-LocalTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#L13) | L13 | ISO-8601 local timestamp |
-| [`Get-UtcFileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#L21) | L21 | `yyyy-MM-ddTHH-mm-ssZ` (filesystem-safe) |
-| [`Get-UtcApiTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#L29) | L29 | SCOM REST API format |
-| [`Convert-ToUtcIso8601()`](../../src/powershell/Automation/Private/Base.ps1#L37) | L37 | Converts arbitrary datetime to UTC ISO-8601 |
-| [`Get-LogTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#L51) | L51 | Log-friendly timestamp |
-| [`Get-FileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#L59) | L59 | File-safe timestamp |
-| [`Get-DateFileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#L67) | L67 | Date-only file timestamp |
-| [`New-AutomationBase()`](../../src/powershell/Automation/Private/Base.ps1#L75) | L75 | Factory for `AutomationBase` class |
+| [`Get-UtcTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#5) | L5 | ISO-8601 UTC timestamp |
+| [`Get-LocalTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#13) | L13 | ISO-8601 local timestamp |
+| [`Get-UtcFileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#21) | L21 | `yyyy-MM-ddTHH-mm-ssZ` (filesystem-safe) |
+| [`Get-UtcApiTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#29) | L29 | REST API format (ISO-8601 with timezone) |
+| [`Convert-ToUtcIso8601()`](../../src/powershell/Automation/Private/Base.ps1#37) | L37 | Converts arbitrary datetime to UTC ISO-8601 |
+| [`Get-LogTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#51) | L51 | Log-friendly timestamp |
+| [`Get-FileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#59) | L59 | File-safe timestamp |
+| [`Get-DateFileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#67) | L67 | Date-only file timestamp |
+| [`New-AutomationBase()`](../../src/powershell/Automation/Private/Base.ps1#75) | L75 | Factory for `AutomationBase` class |
 
 ---
 
@@ -824,7 +821,6 @@ Configures PowerShell profiles to auto-import the Automation module:
 | Script | File | Purpose |
 |--------|------|---------|
 | [`setup-runner.ps1`](../../scripts/setup-runner.ps1) | 436 lines | Full offline-capable runner setup: modules (Pester, PSScriptAnalyzer, PlatyPS) + binaries (Oh My Posh, make, checkmake) |
-| [`setup-scom.ps1`](../../scripts/setup-scom.ps1) | 70 lines | Validates SCOM setup: module, credentials, config file |
 | [`setup-oneview.ps1`](../../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
 | [`cyberark-bootstrap.ps1`](../../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for CI |
 
@@ -847,16 +843,14 @@ All configs loaded from `configs/` directory:
 
 | File | Purpose | Loaded By |
 |------|---------|-----------|
-| **`request_types.json`** | Request type → handler mapping, CI stage map | [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1#L9) |
-| **`server_list.txt`** | Server hostnames with optional IPMI/iLO IPs | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#L5) |
-| **`clusters_catalogue.json`** | Cluster definitions with servers, SCOM groups, OneView scopes | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#L46) |
-| **`hpe_firmware_drivers_nov2025.json`** | HPE SUT firmware/driver component manifest | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#L97) |
-| **`windows_patches.json`** | Windows security patch KB list (MSU packages) | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#L100) |
-| **`opsramp_config.json`** | OpsRamp API credentials + base URL | [`OpsRamp_Client`](../../src/powershell/Automation/Automation.psm1#L161) |
-| **`connection_hosts.json`** | SCOM/OneView management hosts per environment | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L281) |
-| **`scom_config.json`** | SCOM connection config (module, WinRM, credentials) | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L347) |
-| **`oneview_config.json`** | OneView connection config (module, WinRM, credentials) | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L353) |
-| **`clusters_catalogue.scom.json`** | SCOM cluster definitions | Maintenance mode |
+| **`request_types.json`** | Request type → handler mapping, CI stage map | [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1#9) |
+| **`server_list.txt`** | Server hostnames with optional IPMI/iLO IPs | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#5) |
+| **`clusters_catalogue.json`** | Cluster definitions with servers and OneView scopes | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#46) |
+| **`hpe_firmware_drivers_nov2025.json`** | HPE SUT firmware/driver component manifest | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#97) |
+| **`windows_patches.json`** | Windows security patch KB list (MSU packages) | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#100) |
+| **`opsramp_config.json`** | OpsRamp API credentials + base URL | [`OpsRamp_Client`](../../src/powershell/Automation/Automation.psm1#161) |
+| **`connection_hosts.json`** | OneView management hosts per environment | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#281) |
+| **`oneview_config.json`** | OneView connection config (module, WinRM, credentials) | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#353) |
 | **`clusters_catalogue.examples-only.json`** | Example cluster definitions | Reference |
 | **`servers_catalogue.oneview.json`** | OneView server definitions | OneView queries |
 | **`configmgr_config.json`** | ConfigMgr site connection details | Build pipeline |
@@ -885,8 +879,6 @@ All configs loaded from `configs/` directory:
 | [`Invoke-OpsRampClient.Unit.Tests.ps1`](../../tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1) | OpsRamp client, token management |
 | [`New-IsoBuild.Unit.Tests.ps1`](../../tests/powershell/New-IsoBuild.Unit.Tests.ps1) | ConfigMgr bootable ISO builder |
 | [`New-OneViewMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1) | OneView maintenance script generation |
-| [`New-ScomConnection.Unit.Tests.ps1`](../../tests/powershell/New-ScomConnection.Unit.Tests.ps1) | SCOM connection, REST connection |
-| [`New-ScomMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1) | SCOM maintenance script generation |
 | [`New-Uuid.Unit.Tests.ps1`](../../tests/powershell/New-Uuid.Unit.Tests.ps1) | Deterministic UUID generation |
 | [`Publish-BootIso.Unit.Tests.ps1`](../../tests/powershell/Publish-BootIso.Unit.Tests.ps1) | ISO publish to HTTPS repo |
 | [`Router.Unit.Tests.ps1`](../../tests/powershell/Router.Unit.Tests.ps1) | Invoke-RoutedRequest, Get-RouteMap, request type dispatch |
@@ -896,7 +888,7 @@ All configs loaded from `configs/` directory:
 | [`Start-PhysicalServerBuild.Unit.Tests.ps1`](../../tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1) | End-to-end build orchestrator |
 | [`Test-PostBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1) | Post-build validation checks |
 | [`Test-PreBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1) | Pre-build validation checks |
-| [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | SCOM/OneView connectivity |
+| [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | OneView connectivity |
 | [`Update-Firmware.Unit.Tests.ps1`](../../tests/powershell/Update-Firmware.Unit.Tests.ps1) | Firmware ISO builder |
 | [`Update-WindowsSecurity.Unit.Tests.ps1`](../../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
 | [`Validators.Unit.Tests.ps1`](../../tests/powershell/Validators.Unit.Tests.ps1) | Test-BuildParams, Test-ClusterId, Test-ServerList |
@@ -910,7 +902,6 @@ All configs loaded from `configs/` directory:
 | [`run-automation-mode-tests.ps1`](../../scripts/run-automation-mode-tests.ps1) | Automation mode tests |
 | [`run-maint-mode-tests.ps1`](../../scripts/run-maint-mode-tests.ps1) | High-priority maintenance mode tests only |
 | [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1) | Full maintenance test suite with environment/DateTime/connection filters |
-| [`test-maintenance-connection.ps1`](../../scripts/test-maintenance-connection.ps1) | Connectivity test for SCOM/OneView |
 | [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
 
 <a name="193---coverage-lint"></a>
@@ -930,22 +921,22 @@ All configs loaded from `configs/` directory:
 
 | User Journey | Entry Point | Handler | Key File | Lines |
 |--------------|-------------|---------|----------|-------|
-| **End-to-end build** | `Start-PhysicalServerBuild` | Full runbook orchestrator | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) | L18–272 |
-| **Build ISO** | `New-IsoBuild` | ConfigMgr bootable media | [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) | L13–247 |
-| **Publish ISO** | `Publish-BootIso` | HTTPS repo publish | [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) | L12–132 |
-| **iLO Redfish** | `Invoke-IloRedfish` | iLO Redfish actions | [`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) | L19–161 |
-| **Deploy ISO** | `Invoke-IsoDeploy` | Bulk deploy orchestrator | [`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) | L20–244 |
-| **Update firmware** | `Update-Firmware` | `FirmwareUpdater` | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) | L19–244 |
-| **Patch Windows** | `Invoke-WindowsSecurityUpdate` | `WindowsPatcher` | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) | L8–235 |
-| **Pre-build check** | `Test-PreBuildValidation` | Validation checklist | [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) | L15–182 |
-| **Post-build check** | `Test-PostBuildValidation` | Validation via WinRM | [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) | L16–178 |
+| **End-to-end build** | `Start-PhysicalServerBuild` | Full runbook orchestrator | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) | L18–280 |
+| **Build ISO** | `New-IsoBuild` | ConfigMgr bootable media | [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) | L13–291 |
+| **Publish ISO** | `Publish-BootIso` | HTTPS repo publish | [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) | L12–134 |
+| **iLO Redfish** | `Invoke-IloRedfish` | iLO Redfish actions | [`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) | L19–166 |
+| **Deploy ISO** | `Invoke-IsoDeploy` | Bulk deploy orchestrator | [`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) | L20–246 |
+| **Update firmware** | `Update-Firmware` | `FirmwareUpdater` | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) | L19–245 |
+| **Patch Windows** | `Invoke-WindowsSecurityUpdate` | `WindowsPatcher` | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) | L8–237 |
+| **Pre-build check** | `Test-PreBuildValidation` | Validation checklist | [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) | L15–184 |
+| **Post-build check** | `Test-PostBuildValidation` | Validation via WinRM | [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) | L16–180 |
 | **Connectivity test** | `Test-ServerConnectivity` | Network + auth check | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) | L157–694 |
-| **Monitor install** | `Start-InstallMonitor` | `InstallationMonitor` | [`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1) | L8–324 |
+| **Monitor install** | `Start-InstallMonitor` | `InstallationMonitor` | [`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1) | L8–326 |
 | **OpsRamp metric** | `Invoke-OpsRampClient` | `OpsRamp_Client` | [`Invoke-OpsRampClient.ps1`](../../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1) | L5–50 |
 | **Local script** | `Invoke-PowerShellScript` | New process | [`Invoke-PowerShellScript.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1) | L5–74 |
 | **Remote WinRM** | `Invoke-PowerShellWinRM` | `New-PSSession` | [`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) | L5–60 |
 | **Generate UUID** | `New-Uuid` | SHA-256 hash | [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) | L8–64 |
-| **OneView query** | `Get-OneViewServerTarget` | REST /rest/server-hardware | [`Get-OneViewServerTarget.ps1`](../../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) | L14–172 |
+| **OneView query** | `Get-OneViewServerTarget` | REST /rest/server-hardware | [`Get-OneViewServerTarget.ps1`](../../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) | L14–181 |
 
 
 

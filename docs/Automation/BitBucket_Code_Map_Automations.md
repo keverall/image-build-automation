@@ -109,7 +109,7 @@ Dot-sourced in dependency order by [`Automation.psm1`](../../src/powershell/Auto
 |-------|------|---------|
 | 1 | [`Audit.ps1`](../../src/powershell/Automation/Private/Audit.ps1) | `New-AuditLogger` factory (20 lines) |
 | 2 | [`Config.ps1`](../../src/powershell/Automation/Private/Config.ps1) | `Import-JsonConfig`, `Import-YamlConfig`, `_PS_ConvertTo-Hashtable`, env-var substitution (126 lines) |
-| 3 | [`Credentials.ps1`](../../src/powershell/Automation/Private/Credentials.ps1) | `Get-EnvCredential`, `Get-IloCredentials`, `Get-ScomCredentials`, `Get-OneViewCredentials`, CyberArk CCP fallback (201 lines) |
+| 3 | [`Credentials.ps1`](../../src/powershell/Automation/Private/Credentials.ps1) | `Get-EnvCredential`, `Get-IloCredentials`, `Get-OneViewCredentials`, CyberArk CCP fallback (201 lines) |
 | 4 | [`Executor.ps1`](../../src/powershell/Automation/Private/Executor.ps1) | `Invoke-NativeCommand`, `Invoke-NativeCommandWithRetry`, `New-CommandResult` (108 lines) |
 | 5 | [`FileIO.ps1`](../../src/powershell/Automation/Private/FileIO.ps1) | `Ensure-DirectoryExists`, `Save-Json`, `Load-Json`, `Save-JsonResult`, `Test-PathEx` (116 lines) |
 | 6 | [`PathResolver.ps1`](../../src/powershell/Automation/Private/PathResolver.ps1) | `Get-ProjectRoot`, `Get-LogDirectory` (53 lines) |
@@ -135,9 +135,7 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 10. [`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) - remote WinRM execution
 11. [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) - ConfigMgr bootable ISO builder
 12. [`New-OneViewMaintenanceScript.ps1`](../../src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1) - generate OneView maintenance scripts
-13. [`New-ScomConnection.ps1`](../../src/powershell/Automation/Public/New-ScomConnection.ps1) - SCOM connection scripts
-14. [`New-ScomMaintenanceScript.ps1`](../../src/powershell/Automation/Public/New-ScomMaintenanceScript.ps1) - generate SCOM maintenance scripts
-15. [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) - deterministic UUID generator
+13. [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) - deterministic UUID generator
 16. [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) - publish ISO to HTTPS repository
 17. [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - *see BitBucket_Code_Map_Maitenance_Mode.md*
 18. [`Start-AutomationOrchestrator.ps1`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1) - unified entry point
@@ -147,7 +145,7 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 22. [`Test-ClusterId.ps1`](../../src/powershell/Automation/Public/Test-ClusterId.ps1) - cluster ID validation
 23. [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) - post-build validation
 24. [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) - pre-build validation
-25. [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - SCOM/OneView connectivity check
+25. [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - OneView connectivity check
 26. [`Test-ServerList.ps1`](../../src/powershell/Automation/Public/Test-ServerList.ps1) - server list validation
 27. [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) - standalone firmware ISO builder
 28. [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) - Windows security patcher
@@ -578,7 +576,7 @@ Skip switches: `-SkipCmClient`, `-SkipDrivers`, `-SkipRemote`
 
 Read-only connectivity test safe during change freezes (694 lines):
 - **Phase 1: Network Ping** - DNS resolution + TCP port probe at [L446–497](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#446-497)
-- **Phase 2: Auth Connect** - Full authentication via module (SCOM or OneView) + immediate disconnect at [L502–585](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#502-585)
+- **Phase 2: Auth Connect** - Full authentication via OneView module + immediate disconnect at [L502–585](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#502-585)
 - Host resolution: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `connection_hosts.json` → interactive prompt
 - `-DryRun` returns mock data at [L393](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#393)
 - `-Json` for API integration at [L598](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#598)
@@ -660,7 +658,6 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | [`_Resolve-Credential()`](../../src/powershell/Automation/Private/Credentials.ps1#17) | L17 | Core resolver - env → CLI → REST → default |
 | [`Get-EnvCredential()`](../../src/powershell/Automation/Private/Credentials.ps1#127) | L127 | Generic env-var credential |
 | [`Get-IloCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#145) | L145 | `ILO_USER` / `ILO_PASSWORD` |
-| [`Get-ScomCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#158) | L158 | `SCOM_ADMIN_USER` / `SCOM_ADMIN_PASSWORD` |
 | [`Get-OpenViewCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#173) | L173 | OpenView legacy credentials |
 | [`Get-OneViewCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#183) | L183 | `ONEVIEW_USER` / `ONEVIEW_PASSWORD` |
 | [`Get-SmtpCredentials()`](../../src/powershell/Automation/Private/Credentials.ps1#193) | L193 | SMTP email credentials |
@@ -679,7 +676,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 |----------|------|---------|
 | [`Load-ServerList()`](../../src/powershell/Automation/Private/Inventory.ps1#5) | L5 | Reads `server_list.txt` → `ServerInfo[]` or plain strings |
 | [`Load-ClusterCatalogue()`](../../src/powershell/Automation/Private/Inventory.ps1#46) | L46 | Loads `clusters_catalogue.json` → inner `clusters` hashtable |
-| [`Test-ClusterDefinition()`](../../src/powershell/Automation/Private/Inventory.ps1#62) | L62 | Validates cluster definition fields: `display_name`, `servers`, `scom_group`, `environment` |
+| [`Test-ClusterDefinition()`](../../src/powershell/Automation/Private/Inventory.ps1#62) | L62 | Validates cluster definition fields (SCOM mode only): `display_name`, `servers`, `scom_group`, `environment` |
 | [`New-ServerInfo()`](../../src/powershell/Automation/Private/Inventory.ps1#83) | L83 | Factory for `ServerInfo` objects |
 
 <a name="132---configuration-functions"></a>
@@ -784,7 +781,7 @@ Also defined as class in [`Automation.psm1`](../../src/powershell/Automation/Aut
 | [`Get-UtcTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#5) | L5 | ISO-8601 UTC timestamp |
 | [`Get-LocalTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#13) | L13 | ISO-8601 local timestamp |
 | [`Get-UtcFileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#21) | L21 | `yyyy-MM-ddTHH-mm-ssZ` (filesystem-safe) |
-| [`Get-UtcApiTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#29) | L29 | SCOM REST API format |
+| [`Get-UtcApiTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#29) | L29 | REST API format (ISO-8601 with timezone) |
 | [`Convert-ToUtcIso8601()`](../../src/powershell/Automation/Private/Base.ps1#37) | L37 | Converts arbitrary datetime to UTC ISO-8601 |
 | [`Get-LogTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#51) | L51 | Log-friendly timestamp |
 | [`Get-FileTimestamp()`](../../src/powershell/Automation/Private/Base.ps1#59) | L59 | File-safe timestamp |
@@ -824,7 +821,6 @@ Configures PowerShell profiles to auto-import the Automation module:
 | Script | File | Purpose |
 |--------|------|---------|
 | [`setup-runner.ps1`](../../scripts/setup-runner.ps1) | 436 lines | Full offline-capable runner setup: modules (Pester, PSScriptAnalyzer, PlatyPS) + binaries (Oh My Posh, make, checkmake) |
-| [`setup-scom.ps1`](../../scripts/setup-scom.ps1) | 70 lines | Validates SCOM setup: module, credentials, config file |
 | [`setup-oneview.ps1`](../../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
 | [`cyberark-bootstrap.ps1`](../../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for CI |
 
@@ -849,14 +845,12 @@ All configs loaded from `configs/` directory:
 |------|---------|-----------|
 | **`request_types.json`** | Request type → handler mapping, CI stage map | [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1#9) |
 | **`server_list.txt`** | Server hostnames with optional IPMI/iLO IPs | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#5) |
-| **`clusters_catalogue.json`** | Cluster definitions with servers, SCOM groups, OneView scopes | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#46) |
+| **`clusters_catalogue.json`** | Cluster definitions with servers and OneView scopes | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#46) |
 | **`hpe_firmware_drivers_nov2025.json`** | HPE SUT firmware/driver component manifest | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#97) |
 | **`windows_patches.json`** | Windows security patch KB list (MSU packages) | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#100) |
 | **`opsramp_config.json`** | OpsRamp API credentials + base URL | [`OpsRamp_Client`](../../src/powershell/Automation/Automation.psm1#161) |
-| **`connection_hosts.json`** | SCOM/OneView management hosts per environment | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#281) |
-| **`scom_config.json`** | SCOM connection config (module, WinRM, credentials) | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#347) |
+| **`connection_hosts.json`** | OneView management hosts per environment | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#281) |
 | **`oneview_config.json`** | OneView connection config (module, WinRM, credentials) | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#353) |
-| **`clusters_catalogue.scom.json`** | SCOM cluster definitions | Maintenance mode |
 | **`clusters_catalogue.examples-only.json`** | Example cluster definitions | Reference |
 | **`servers_catalogue.oneview.json`** | OneView server definitions | OneView queries |
 | **`configmgr_config.json`** | ConfigMgr site connection details | Build pipeline |
@@ -885,8 +879,6 @@ All configs loaded from `configs/` directory:
 | [`Invoke-OpsRampClient.Unit.Tests.ps1`](../../tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1) | OpsRamp client, token management |
 | [`New-IsoBuild.Unit.Tests.ps1`](../../tests/powershell/New-IsoBuild.Unit.Tests.ps1) | ConfigMgr bootable ISO builder |
 | [`New-OneViewMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1) | OneView maintenance script generation |
-| [`New-ScomConnection.Unit.Tests.ps1`](../../tests/powershell/New-ScomConnection.Unit.Tests.ps1) | SCOM connection, REST connection |
-| [`New-ScomMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1) | SCOM maintenance script generation |
 | [`New-Uuid.Unit.Tests.ps1`](../../tests/powershell/New-Uuid.Unit.Tests.ps1) | Deterministic UUID generation |
 | [`Publish-BootIso.Unit.Tests.ps1`](../../tests/powershell/Publish-BootIso.Unit.Tests.ps1) | ISO publish to HTTPS repo |
 | [`Router.Unit.Tests.ps1`](../../tests/powershell/Router.Unit.Tests.ps1) | Invoke-RoutedRequest, Get-RouteMap, request type dispatch |
@@ -896,7 +888,7 @@ All configs loaded from `configs/` directory:
 | [`Start-PhysicalServerBuild.Unit.Tests.ps1`](../../tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1) | End-to-end build orchestrator |
 | [`Test-PostBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1) | Post-build validation checks |
 | [`Test-PreBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1) | Pre-build validation checks |
-| [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | SCOM/OneView connectivity |
+| [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | OneView connectivity |
 | [`Update-Firmware.Unit.Tests.ps1`](../../tests/powershell/Update-Firmware.Unit.Tests.ps1) | Firmware ISO builder |
 | [`Update-WindowsSecurity.Unit.Tests.ps1`](../../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
 | [`Validators.Unit.Tests.ps1`](../../tests/powershell/Validators.Unit.Tests.ps1) | Test-BuildParams, Test-ClusterId, Test-ServerList |
@@ -910,7 +902,6 @@ All configs loaded from `configs/` directory:
 | [`run-automation-mode-tests.ps1`](../../scripts/run-automation-mode-tests.ps1) | Automation mode tests |
 | [`run-maint-mode-tests.ps1`](../../scripts/run-maint-mode-tests.ps1) | High-priority maintenance mode tests only |
 | [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1) | Full maintenance test suite with environment/DateTime/connection filters |
-| [`test-maintenance-connection.ps1`](../../scripts/test-maintenance-connection.ps1) | Connectivity test for SCOM/OneView |
 | [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
 
 <a name="193---coverage-lint"></a>

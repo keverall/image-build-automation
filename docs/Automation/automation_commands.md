@@ -25,7 +25,7 @@
 - [Maintenance Mode](#maintenance-mode)
   - [Examples](#examples)
 - [Connectivity and Validation](#connectivity-and-validation)
-  - [Test server connectivity](#test-server-connectivity)
+  - [Test OneView connectivity](#test-server-connectivity)
   - [Validate server list](#validate-server-list)
   - [Validate cluster ID](#validate-cluster-id)
   - [Validate build parameters](#validate-build-parameters)
@@ -34,7 +34,6 @@
   - [Run a remote PowerShell script via WinRM](#run-a-remote-powershell-script-via-winrm)
   - [Generate a deterministic UUID](#generate-a-deterministic-uuid)
   - [OpsRamp API client](#opsramp-api-client)
-  - [SCOM connection string](#scom-connection-string)
 - [Routing and Control Surfaces](#routing-and-control-surfaces)
   - [Orchestrator (unified entry point)](#orchestrator-unified-entry-point)
   - [View the route map](#view-the-route-map)
@@ -542,9 +541,9 @@ See [`CLIENT-QUICK-START.md`](../CLIENT-QUICK-START.md#top) for the full guide.
 ### Examples
 
 ```powershell
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod -DryRun
 Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test
-Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode oneview -Environment Prod -Start 'now' -End '+2hours'
+Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode oneview -Environment Prod
 ```
 
 ---
@@ -555,34 +554,48 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 Pre-flight read-only checks. Safe to run during a change freeze.
 
 <a name="test-server-connectivity"></a>
-### Test server connectivity
+### Test OneView connectivity
+
+Combined network ping + authentication test for a OneView appliance. Read-only - safe during a change freeze. On a live run the command never reads config: the appliance host comes from `-ManagementHost` (used verbatim) and credentials come from `-Credential` or an interactive prompt. Config files are read **only** with `-DryRun`.
+
+**Note:** This command is for OneView connectivity testing only. For SCOM connectivity, use `Set-MaintenanceMode -Action validate -Mode scom`.
 
 ```powershell
-Test-ServerConnectivity -Mode scom -Environment Prod
+# LIVE: explicit host, credentials prompted interactively
+Test-ServerConnectivity -ManagementHost va-oneviewt-01
 ```
 
 ```powershell
-Test-ServerConnectivity -Mode oneview -Environment Test
+# LIVE: explicit host + supplied credential (no prompt)
+Test-ServerConnectivity -ManagementHost va-oneviewt-01 -Credential (Get-Credential)
 ```
 
 ```powershell
-Test-ServerConnectivity -ManagementHost myhost.corp.local
+# DRY-RUN using connection_hosts.json config (no real connection)
+Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
+```
+
+```powershell
+# DRY-RUN with explicit host (validates resolution only)
+Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 ```
 
 **Parameters:**
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Mode` | No | `scom` or `oneview` | - |
-| `-Environment` | No | `Test` or `Prod` | - |
-| `-ManagementHost` | No | Direct host override | - |
+| `-Environment` | No | `Test` or `Prod`. Only used with `-JsonConfig` (DryRun). | - |
+| `-ManagementHost` | No* | OneView appliance to connect to (server name or serial). REQUIRED for live runs; used verbatim - no config/env fallback. | - |
+| `-Credential` | No | `PSCredential` for the live connection (e.g. `(Get-Credential)`). If omitted, prompted interactively. | - |
 | `-ConfigDir` | No | Configuration directory | auto-resolved |
-| `-PingTimeoutMs` | No | TCP connect timeout | `3000` |
+| `-PingTimeoutMs` | No | TCP connect timeout (ms) | `3000` |
 | `-Json` | No | Output as JSON | - |
-| `-JsonConfig` | No | Resolve host from `connection_hosts.json` | - |
-| `-DryRun` | No | Return mock data | - |
+| `-JsonConfig` | No | Resolve host from `connection_hosts.json` (DryRun only) | - |
+| `-DryRun` | No | Return mock data; config may be read | - |
 
-**Returns:** `[hashtable]` with `Available`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
+\* `-ManagementHost` is required for a live (non-`-DryRun`) connectivity test.
+
+**Returns:** `[hashtable]` with `Available`, `Mode` (`oneview`), `ManagementHost`, `Environment`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
 
 ---
 
@@ -598,11 +611,20 @@ Test-ServerList
 ---
 
 <a name="validate-cluster-id"></a>
-### Validate cluster ID
+### Validate cluster ID (SCOM mode)
+
+Validates that a cluster ID exists in the cluster catalogue and checks required fields. **Note:** This function is intended for SCOM mode only. For OneView server validation, use `Get-OneViewServerTarget` instead.
 
 ```powershell
 Test-ClusterId -TargetId CLU-CLUSTER-01
 ```
+
+**Parameters:**
+
+| Parameter | Required | Description | Default |
+|-----------|----------|-------------|---------|
+| `-TargetId` | Yes | Cluster identifier string (SCOM mode only). Server names not accepted. | - |
+| `-CataloguePath` | No | Path to clusters_catalogue.json. | `configs\clusters_catalogue.json` |
 
 **Returns:** `[hashtable]` with `Success`, `Cluster`, and `Error`.
 
@@ -650,13 +672,6 @@ New-Uuid -ServerName srv01
 
 ```powershell
 Invoke-OpsRampClient
-```
-
-<a name="scom-connection-string"></a>
-### SCOM connection string
-
-```powershell
-New-ScomConnection -ManagementServer scom01.corp.local
 ```
 
 ---

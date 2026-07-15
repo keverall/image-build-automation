@@ -102,8 +102,6 @@
         # ── PowerShell execution ────────────────────────────────────────────────
         'Invoke-PowerShellScript'
         'Invoke-PowerShellWinRM'
-        'New-ScomConnection'
-        'New-ScomMaintenanceScript'
         'New-OneViewMaintenanceScript'
         # ── Validators ──────────────────────────────────────────────────────────
         'Test-BuildParams'
@@ -150,6 +148,10 @@
         'Get-RouteMap'
         # ── Base / factories ────────────────────────────────────────────────────
         'New-AutomationBase'
+        # ── SCOM ──────────────────────────────────────────────────────────────
+        'New-ScomConnection'
+        'New-ScomMaintenanceScript'
+        'Test-ScomMaintenanceConnectivity'
     )
 
     # Cmdlets to export from this module

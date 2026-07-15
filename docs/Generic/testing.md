@@ -350,7 +350,7 @@ Comprehensive testing for maintenance mode operations across SCOM and OneView sy
 |--------|---------|-------|
 | `scripts/validate-maintenance-config.ps1` | Validate configuration | `pwsh scripts/validate-maintenance-config.ps1 -Environment Test` |
 | `scripts/run-maintenance-tests.ps1` | Run test suite | `pwsh scripts/run-maintenance-tests.ps1 -TestSuite All -PassThru` |
-| `scripts/test-maintenance-connection.ps1` | Interactive connection test | `pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom` |
+| `scripts/test-maintenance-connection.ps1` | Interactive connection test | `pwsh scripts/test-maintenance-connection.ps1 -Environment Test` |
 
 <a name="running-maintenance-mode-tests"></a>
 ### Running Maintenance Mode Tests
@@ -457,7 +457,7 @@ Before deploying maintenance mode changes:
 - [ ] **Relative time formats work** - `-Start now -End +1hour`
 - [ ] **Absolute time formats work** - `-Start 2025-01-15T10:00:00Z -End 2025-01-15T12:00:00Z`
 - [ ] **Serial number lookup works** - Only OneView mode, requires real OneView server
-- [ ] **Connection validation works** - Both SCOM and OneView
+- [ ] **Connection validation works** - Use `Set-MaintenanceMode -Action validate -Mode scom` for SCOM, `Test-ServerConnectivity` for OneView
 - [ ] **Credential resolution works** - Environment vars and interactive prompt
 - [ ] **JSON output works** - `-Json` flag
 - [ ] **Backward compatibility** - Old command syntax still works

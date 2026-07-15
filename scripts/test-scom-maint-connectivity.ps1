@@ -1,22 +1,22 @@
 #!/usr/bin/env pwsh
-# Quick OneView connectivity check during maintenance windows.
+# Quick SCOM connectivity check during maintenance windows.
 # Combines network ping + authentication in a single command.  Read-only.
 
 <#
 .SYNOPSIS
-    OneView ping + connect test (safe during change freeze).
+    SCOM ping + connect test (safe during change freeze).
 
 .PARAMETER Environment
     Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
 .PARAMETER ManagementHost
-    Override OneView appliance hostname (highest priority, required for live runs)
+    Override SCOM management server hostname (highest priority, required for live runs)
 
 .PARAMETER Credential
     PSCredential for the live connection. If omitted, prompts interactively.
 
 .PARAMETER JsonConfig
-    Use configs/connection_hosts.json to resolve the appliance (DryRun only).
+    Use configs/connection_hosts.json to resolve the management server (DryRun only).
 
 .PARAMETER Json
     Output as JSON
@@ -28,13 +28,13 @@
     TCP connect timeout in milliseconds (default: 3000)
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01'
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
 #>
 
 [CmdletBinding()]
@@ -79,7 +79,7 @@ if ($Credential)    { $connParams['Credential'] = $Credential }
 if ($JsonConfig)     { $connParams['JsonConfig'] = $true }
 if ($Json)           { $connParams['Json'] = $true }
 
-$result = Test-ServerConnectivity @connParams
+$result = Test-ScomMaintenanceConnectivity @connParams
 
 if ($Json) {
     $result | ConvertTo-Json -Depth 10

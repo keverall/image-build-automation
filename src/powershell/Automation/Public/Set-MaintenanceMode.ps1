@@ -946,8 +946,8 @@ function Set-MaintenanceMode {
         }
         _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${validateAuditId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
 
-        Write-Output $message
-        Write-Output "Servers: $($servers -join ', ')"
+        Write-Host $message
+        Write-Host "Servers: $($servers -join ', ')"
 
         $validateResult = @{
             Success           = $true
@@ -1558,9 +1558,9 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             # to reboot, restart services, and stabilize before alerting resumes.
             # This prevents false alerts that support staff report frequently.
             if (-not $DryRun -and $PostDisableWaitSeconds -gt 0) {
-                Write-Output "Waiting ${PostDisableWaitSeconds}s for servers to stabilize after SCOM maintenance exit..."
+                Write-Host "Waiting ${PostDisableWaitSeconds}s for servers to stabilize after SCOM maintenance exit..."
                 Start-Sleep -Seconds $PostDisableWaitSeconds
-                Write-Output 'Stabilization wait complete. Alerting is now active.'
+                Write-Host 'Stabilization wait complete. Alerting is now active.'
                 $audit.steps['post_disable_wait'] = @{ Seconds = $PostDisableWaitSeconds }
             } else {
                 $audit.steps['post_disable_wait'] = @{ Skipped = $true; Reason = if ($DryRun) {
@@ -1712,7 +1712,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
     _Save-AuditRecord $audit $auditFile
 
     if ($overallOk) {
-        Write-Output $detailMessage 
+        Write-Host $detailMessage 
     } else {
         Write-Warning $detailMessage 
     }

@@ -9,15 +9,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a id="top"></a>
 ## Description
 
-Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (WinRM 5985/5986 for SCOM, HTTPS 443 for OneView) - Measures latency in milliseconds Phase 2: Authentication Connect - Resolves credentials from environment variables / CyberArk - Loads the relevant PowerShell module - Performs a full authentication (New-SCOMManagementGroupConnection or Connect-OVMgmt) - Immediately disconnects - No objects are modified Returns a structured hashtable with per-phase results and an overall Available boolean.
+Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe (HTTPS 443) - Measures latency in milliseconds Phase 2: Authentication Connect - Resolves credentials from environment variables / CyberArk - Loads the HPE OneView PowerShell module - Performs a full authentication (Connect-OVMgmt) - Immediately disconnects - No objects are modified Returns a structured hashtable with per-phase results and an overall Available boolean.
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Mode` | 'scom' or 'oneview'. |
 | `-Environment` | 'Test' or 'Prod'. Only used with -JsonConfig. Resolves host from connection_hosts.json. Without -JsonConfig, this parameter is ignored (host is prompted or provided directly). |
-| `-ManagementHost` | Direct override for the management server/appliance hostname. Highest priority. |
+| `-ManagementHost` | Direct override for the OneView appliance hostname. Highest priority. REQUIRED for live runs. |
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000). |
 | `-Json` | If set, outputs the result as a JSON string instead of formatted text. |
@@ -27,34 +26,31 @@ Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Combined network ping + authentication connectivity test for SCOM or OneView.
+        OneView-only network ping + authentication connectivity test.
         Read-only - safe during a change freeze.
 
     .DESCRIPTION
         Phase 1: Network Ping
-          - DNS resolution of the management host
-          - TCP port probe (WinRM 5985/5986 for SCOM, HTTPS 443 for OneView)
+          - DNS resolution of the OneView appliance
+          - TCP port probe (HTTPS 443)
           - Measures latency in milliseconds
 
         Phase 2: Authentication Connect
           - Resolves credentials from environment variables / CyberArk
-          - Loads the relevant PowerShell module
-          - Performs a full authentication (New-SCOMManagementGroupConnection or Connect-OVMgmt)
+          - Loads the HPE OneView PowerShell module
+          - Performs a full authentication (Connect-OVMgmt)
           - Immediately disconnects
           - No objects are modified
 
         Returns a structured hashtable with per-phase results and an overall
         Available boolean.
 
-    .PARAMETER Mode
-        'scom' or 'oneview'.
-
     .PARAMETER Environment
         'Test' or 'Prod'. Only used with -JsonConfig. Resolves host from connection_hosts.json.
         Without -JsonConfig, this parameter is ignored (host is prompted or provided directly).
 
     .PARAMETER ManagementHost
-        Direct override for the management server/appliance hostname. Highest priority.
+        Direct override for the OneView appliance hostname. Highest priority. REQUIRED for live runs.
 
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs').
@@ -77,7 +73,7 @@ Phase 1: Network Ping - DNS resolution of the management host - TCP port probe (
     .RETURNS
         [hashtable] with keys:
           Available        [bool]   - overall pass/fail
-          Mode             [string]
+          Mode             [string] - always 'oneview'
           ManagementHost   [string]
           Environment      [string]
           NetworkPing      [hashtable] - DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
