@@ -90,14 +90,15 @@ Before any function can be called, the `Automation` module must be loaded. This 
 
 | Section | Lines | Content |
 |---------|-------|---------|
-| Shared value type | [L19–33](../../src/powershell/Automation/Automation.psm1##19-33) | `CommandResult` class - holds `ReturnCode`, `StandardOutput`, `StandardError`, `Success` |
-| Shared reference type | [L38–106](../../src/powershell/Automation/Automation.psm1#38-106) | `AuditLogger` class - timestamped JSON audit log with `Log()`, `Save()`, `AppendToMaster()` |
+| Shared value type | [L19–37](../../src/powershell/Automation/Automation.psm1#19-37) | `CommandResult` class - holds `ReturnCode`, `StandardOutput`, `StandardError`, `Success` |
+| Shared reference type | [L38–110](../../src/powershell/Automation/Automation.psm1#38-110) | `AuditLogger` class - timestamped JSON audit log with `Log()`, `Save()`, `AppendToMaster()` |
+| Shared reference type | [L111–135](../../src/powershell/Automation/Automation.psm1#111-135) | `ServerInfo` class - server identity (`Hostname`, `IPMI_IP`, `ILO_IP`, `Name`, `LineNumber`) + `ShortName()` |
 | OpsRamp REST client | [L136–335](../../src/powershell/Automation/Automation.psm1#136-335) | `OpsRamp_Client` class - OAuth2 token management, REST calls, metric/alert/event senders |
 | iLO Redfish session | [L340–471](../../src/powershell/Automation/Automation.psm1#340-471) | `IloRedfishSession` class - Redfish session login/logout, virtual media, boot override, system reset |
 | Base class | [L476–528](../../src/powershell/Automation/Automation.psm1#476-528) | `AutomationBase` class - config dir, output dir, dry-run flag, audit, `RunCommand()` |
 | Private script load | [L530–557](../../src/powershell/Automation/Automation.psm1#530-557) | Dot-sources `Private/*.ps1` in dependency order (see §1.2) |
 | Public script load | [L559–565](../../src/powershell/Automation/Automation.psm1#559-565) | Dot-sources `Public/*.ps1` alphabetically |
-| Export surface | [L569–648](../../src/powershell/Automation/Automation.psm1#569-648) | `Export-ModuleMember` - explicit public API |
+| Export surface | [L569–652](../../src/powershell/Automation/Automation.psm1#569-652) | `Export-ModuleMember` - explicit public API |
 
 <a name="12---private-script-load-order"></a>
 ### 1.2 - Private Script Load Order
@@ -274,14 +275,14 @@ The end-to-end physical server build pipeline orchestrates the full runbook work
 **[`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#18)** - [`Start-PhysicalServerBuild()`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#18)
 
 One-call orchestrator for new HPE ProLiant server deployments. Steps:
-1. **Pre-build validation** - `Test-PreBuildValidation` at [L189](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#189)
-2. **Build ConfigMgr bootable ISO** - `New-IsoBuild` at [L173](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#173)
-3. **Publish ISO to HTTPS** - `Publish-BootIso` at [L183](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#183)
-4. **Resolve iLO via OneView** - `Get-OneViewServerTarget` at [L203](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#203)
-5. **Mount ISO + force boot via iLO Redfish** - `Invoke-IloRedfish` at [L231](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#231)
-6. **Monitor installation** - `Start-InstallMonitor` at [L239](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#239)
-7. **Post-build validation** - `Test-PostBuildValidation` at [L247](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#247)
-8. **Audit log entry** at [L266](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#266)
+1. **Pre-build validation** - `Test-PreBuildValidation` at [L198](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#198)
+2. **Build ConfigMgr bootable ISO** - `New-IsoBuild` at [L181](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#181)
+3. **Publish ISO to HTTPS** - `Publish-BootIso` at [L191](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#191)
+4. **Resolve iLO via OneView** - `Get-OneViewServerTarget` at [L211](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#211)
+5. **Mount ISO + force boot via iLO Redfish** - `Invoke-IloRedfish` at [L239](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#239)
+6. **Monitor installation** - `Start-InstallMonitor` at [L247](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#247)
+7. **Post-build validation** - `Test-PostBuildValidation` at [L255](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#255)
+8. **Audit log entry** at [L273](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#273)
 
 Skip switches: `-SkipPreBuild`, `-SkipIsoBuild`, `-SkipPublish`, `-SkipOneView`, `-SkipMount`, `-SkipMonitor`, `-SkipPostBuild`
 
@@ -294,7 +295,7 @@ Builds ConfigMgr bootable WinPE media (replaces old DSC/DISM firmware+patching p
 
 - Auto-detects ConfigMgr context: local module or PSRemoting to site server at [L249](../../src/powershell/Automation/Public/New-IsoBuild.ps1#249)
 - Output naming: `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso`
-- Auto-increments version from existing ISOs at [L114](../../src/powershell/Automation/Public/New-IsoBuild.ps1#114)
+- Auto-increments version from existing ISOs at [L120](../../src/powershell/Automation/Public/New-IsoBuild.ps1#120)
 - DryRun mode at [L155](../../src/powershell/Automation/Public/New-IsoBuild.ps1#155)
 - Mock mode for tests at [L144](../../src/powershell/Automation/Public/New-IsoBuild.ps1#144)
 - Writes `deployment_metadata.json` at [L239](../../src/powershell/Automation/Public/New-IsoBuild.ps1#239)
@@ -366,7 +367,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 **[`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)** - [`Invoke-WindowsSecurityUpdate()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)
 - Default patches config: `configs/windows_patches.json`
 - Default output: `output/patched`
-- Creates [`WindowsPatcher`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#88) instance at [L74](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#74) (3 params: config, baseIsoDir, outputDir)
+- Creates [`WindowsPatcher`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#88) instance at [L74](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#74) (2 args: `$PatchesConfig`, `$OutputDir`)
 - Calls `Build()` at [L75](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#75)
 - Saves patch result JSON at [L78](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#78)
 
@@ -548,8 +549,8 @@ Pre-build checks from the runbook:
 1. OneView target identified (via `Get-OneViewServerTarget`) at [L106](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#106)
 2. ISO URL reachable (HTTP HEAD) at [L120](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#120)
 3. iLO credentials verified (Redfish session test) at [L131](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#131)
-4. Management Point / Distribution Point reachability at [L150](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#150)
-5. Audit entry recorded at [L162](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#162)
+4. Management Point / Distribution Point reachability at [L143](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#143)
+5. Audit entry recorded at [L172](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1#172)
 
 Skip switches: `-SkipOneView`, `-SkipIlo`, `-SkipDpMp`, `-SkipIsoUrl`
 
@@ -566,7 +567,7 @@ Post-build checks via WinRM:
 5. HPE device drivers present at [L129](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#129)
 6. ConfigMgr client healthy at [L132–133](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#132-133)
 7. RDP operational at [L135](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#135)
-8. Audit entry recorded at [L156](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#156)
+8. Audit entry recorded at [L168](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1#168)
 
 Skip switches: `-SkipCmClient`, `-SkipDrivers`, `-SkipRemote`
 
@@ -576,8 +577,8 @@ Skip switches: `-SkipCmClient`, `-SkipDrivers`, `-SkipRemote`
 **[`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#157)** - [`Test-ServerConnectivity()`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#157)
 
 Read-only connectivity test safe during change freezes (694 lines):
-- **Phase 1: Network Ping** - DNS resolution + TCP port probe at [L448–497](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#448-497)
-- **Phase 2: Auth Connect** - Full authentication via module (SCOM or OneView) + immediate disconnect at [L502–583](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#502-583)
+- **Phase 1: Network Ping** - DNS resolution + TCP port probe at [L446–497](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#446-497)
+- **Phase 2: Auth Connect** - Full authentication via module (SCOM or OneView) + immediate disconnect at [L502–585](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#502-585)
 - Host resolution: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `connection_hosts.json` → interactive prompt
 - `-DryRun` returns mock data at [L393](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#393)
 - `-Json` for API integration at [L598](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#598)
@@ -614,7 +615,7 @@ Read-only connectivity test safe during change freezes (694 lines):
 <a name="111---opsrampclient-class"></a>
 ### 11.1 - OpsRamp_Client Class
 
-Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#136), fully documented in [§11.2 of this document](#markdown-header-112-opsramp-entry-points).
+Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#136), members documented in the table below.
 
 | Member | Line | Purpose |
 |--------|------|---------|
@@ -929,22 +930,22 @@ All configs loaded from `configs/` directory:
 
 | User Journey | Entry Point | Handler | Key File | Lines |
 |--------------|-------------|---------|----------|-------|
-| **End-to-end build** | `Start-PhysicalServerBuild` | Full runbook orchestrator | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) | L18–272 |
-| **Build ISO** | `New-IsoBuild` | ConfigMgr bootable media | [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) | L13–247 |
-| **Publish ISO** | `Publish-BootIso` | HTTPS repo publish | [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) | L12–132 |
-| **iLO Redfish** | `Invoke-IloRedfish` | iLO Redfish actions | [`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) | L19–161 |
-| **Deploy ISO** | `Invoke-IsoDeploy` | Bulk deploy orchestrator | [`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) | L20–244 |
-| **Update firmware** | `Update-Firmware` | `FirmwareUpdater` | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) | L19–244 |
-| **Patch Windows** | `Invoke-WindowsSecurityUpdate` | `WindowsPatcher` | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) | L8–235 |
-| **Pre-build check** | `Test-PreBuildValidation` | Validation checklist | [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) | L15–182 |
-| **Post-build check** | `Test-PostBuildValidation` | Validation via WinRM | [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) | L16–178 |
+| **End-to-end build** | `Start-PhysicalServerBuild` | Full runbook orchestrator | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) | L18–280 |
+| **Build ISO** | `New-IsoBuild` | ConfigMgr bootable media | [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) | L13–291 |
+| **Publish ISO** | `Publish-BootIso` | HTTPS repo publish | [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) | L12–134 |
+| **iLO Redfish** | `Invoke-IloRedfish` | iLO Redfish actions | [`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) | L19–166 |
+| **Deploy ISO** | `Invoke-IsoDeploy` | Bulk deploy orchestrator | [`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) | L20–246 |
+| **Update firmware** | `Update-Firmware` | `FirmwareUpdater` | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) | L19–245 |
+| **Patch Windows** | `Invoke-WindowsSecurityUpdate` | `WindowsPatcher` | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) | L8–237 |
+| **Pre-build check** | `Test-PreBuildValidation` | Validation checklist | [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) | L15–184 |
+| **Post-build check** | `Test-PostBuildValidation` | Validation via WinRM | [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) | L16–180 |
 | **Connectivity test** | `Test-ServerConnectivity` | Network + auth check | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) | L157–694 |
-| **Monitor install** | `Start-InstallMonitor` | `InstallationMonitor` | [`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1) | L8–324 |
+| **Monitor install** | `Start-InstallMonitor` | `InstallationMonitor` | [`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1) | L8–326 |
 | **OpsRamp metric** | `Invoke-OpsRampClient` | `OpsRamp_Client` | [`Invoke-OpsRampClient.ps1`](../../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1) | L5–50 |
 | **Local script** | `Invoke-PowerShellScript` | New process | [`Invoke-PowerShellScript.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1) | L5–74 |
 | **Remote WinRM** | `Invoke-PowerShellWinRM` | `New-PSSession` | [`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) | L5–60 |
 | **Generate UUID** | `New-Uuid` | SHA-256 hash | [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) | L8–64 |
-| **OneView query** | `Get-OneViewServerTarget` | REST /rest/server-hardware | [`Get-OneViewServerTarget.ps1`](../../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) | L14–172 |
+| **OneView query** | `Get-OneViewServerTarget` | REST /rest/server-hardware | [`Get-OneViewServerTarget.ps1`](../../src/powershell/Automation/Public/Get-OneViewServerTarget.ps1) | L14–181 |
 
 
 
