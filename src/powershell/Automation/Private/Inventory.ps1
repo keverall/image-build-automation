@@ -97,3 +97,74 @@ function New-ServerInfo {
     )
     return [ServerInfo]::new($Hostname, $IpmiIp, $IloIp, $LineNumber)
 }
+
+#
+# Resolve-OneViewTarget - Accept a server name OR serial number for any OneView task.
+#
+# Normalises operator input so every OneView automation command can be targeted by
+# either identifier. When -SerialNumber is supplied, it is resolved to the server
+# via Get-OneViewServerTarget (-IdentifierType Serial); the resolved hostname (and
+# iLO IP when available) is returned for downstream use.
+#
+# Returns a hashtable:
+#   Success      [bool]
+#   Identifier   [string] - the value the caller should use as the server name
+#   IloIp        [string] - resolved iLO IP (may be empty)
+#   SerialNumber [string] - the original serial, if supplied
+#   ResolvedBy   [string] - 'Serial' | 'Name' | $null
+#   Error         [string]
+#
+function Resolve-OneViewTarget {
+    <#
+    .SYNOPSIS
+        Normalise a server name or serial number into a OneView target.
+
+    .DESCRIPTION
+        Lets any OneView automation task accept EITHER a server name or a serial
+        number. A serial is resolved to its OneView server record (hostname + iLO
+        IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+
+    .PARAMETER SerialNumber
+        Hardware serial number. When supplied, -OneViewHost is required to
+        resolve it. Takes precedence over -ServerName.
+
+    .PARAMETER ServerName
+        Server hostname / OneView name. Used verbatim when no -SerialNumber.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname or IP (required to resolve a serial).
+
+    .PARAMETER DryRun
+        Resolve without performing a real OneView query.
+
+    .EXAMPLE
+        Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
+    #>
+    [CmdletBinding()]
+    param(
+        [string] $SerialNumber,
+        [string] $ServerName,
+        [string] $OneViewHost,
+        [switch] $DryRun
+    )
+
+    if ($SerialNumber) {
+        if (-not $OneViewHost) {
+            return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $SerialNumber; ResolvedBy = $null; Error = "OneViewHost is required to resolve -SerialNumber '$SerialNumber'." }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
+            -ServerIdentifier $SerialNumber -IdentifierType Serial -DryRun:$DryRun
+        if (-not $r.Success) {
+            return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $SerialNumber; ResolvedBy = $null; Error = "Serial '$SerialNumber' not resolved in OneView: $($r.Error)" }
+        }
+        $name = if ($r.Details -and $r.Details.name) { $r.Details.name } else { $SerialNumber }
+        $ilo  = if ($r.Details -and $r.Details.ilo_ip) { $r.Details.ilo_ip } else { '' }
+        return @{ Success = $true; Identifier = $name; IloIp = $ilo; SerialNumber = $SerialNumber; ResolvedBy = 'Serial'; Error = $null }
+    }
+
+    if ($ServerName) {
+        return @{ Success = $true; Identifier = $ServerName; IloIp = ''; SerialNumber = $null; ResolvedBy = 'Name'; Error = $null }
+    }
+
+    return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $null; ResolvedBy = $null; Error = "Either -SerialNumber or -ServerName must be supplied." }
+}

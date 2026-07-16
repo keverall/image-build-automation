@@ -11,6 +11,8 @@
 param(
     [Parameter(Mandatory = $false)][ValidateSet('redfish')][string] $Method = 'redfish',
     [Parameter(Mandatory = $false)][string] $Server = $null,
+    [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+    [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
     [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
     [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
     [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
@@ -32,10 +34,17 @@ function Invoke-IsoDeploy {
         Deployment method (only 'redfish' supported).
 
     .PARAMETER Server
-        Deploy to a single named server only.
+        Deploy to a single named server only. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Deploy to a server identified by its HPE serial number. Resolved to the
+        server hostname (and iLO IP) via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ServerList
-        Path to server_list.txt.
+        Path to server_list.txt. Only used for -DryRun mock targeting.
 
     .PARAMETER IsoDir
         Directory containing bootable ISO packages.
@@ -62,18 +71,35 @@ function Invoke-IsoDeploy {
     param(
         [Parameter(Mandatory = $false)][ValidateSet('redfish')][string] $Method = 'redfish',
         [Parameter(Mandatory = $false)][string] $Server = $null,
+        [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
         [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
         [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
         [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
         [Parameter(Mandatory = $false)][string] $RepoBaseUrl = $null,
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
+    if ($SerialNumber) {
+        $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        $Server = $resolved.Identifier
+        if ($resolved.IloIp) { Write-Verbose "Resolved serial '$SerialNumber' -> $Server (iLO $($resolved.IloIp))" }
+        else { Write-Verbose "Resolved serial '$SerialNumber' -> $Server" }
+    }
+    if (-not $DryRun -and -not $Server) {
+        throw "Server or SerialNumber is required for non-dryrun ISO deployment"
+    }
     try {
-        $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $RepoBaseUrl)
+        $serverInfo = $null
+        $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $RepoBaseUrl, $DryRun, $serverInfo)
         if ($Server) {
-            $si = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-            if (-not $si) { return @{ Success = $false; Error = "Server not found: $Server" } }
-            $ok = $deployer.Deploy($si, $Method, [bool]$DryRun)
+            if ($DryRun) {
+                $serverInfo = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
+                if (-not $serverInfo) { return @{ Success = $false; Error = "Server not found: $Server" } }
+            } else {
+                $serverInfo = [ServerInfo]::new($Server, '', '', 0)
+            }
+            $ok = $deployer.Deploy($serverInfo, $Method, [bool]$DryRun)
             return @{ Success = $ok; Server = $Server; Method = $Method }
         }
         else {
@@ -94,13 +120,19 @@ class ISODeployer {
     [ServerInfo[]]     $ServerDetails
     [System.Collections.ArrayList] $DeployLog
 
-    ISODeployer([string]$ServerList, [string]$IsoDir, [string]$DefaultIsoUrl, [string]$RepoBaseUrl) {
+    ISODeployer([string]$ServerList, [string]$IsoDir, [string]$DefaultIsoUrl, [string]$RepoBaseUrl, [bool]$DryRun = $false, [ServerInfo]$ServerInfo = $null) {
         $this.ServerListPath = $ServerList
         $this.IsoDir         = $IsoDir
         $this.DefaultIsoUrl  = $DefaultIsoUrl
         $this.RepoBaseUrl    = $RepoBaseUrl
-        $this.ServerDetails  = Load-ServerList -Path $ServerList -IncludeDetails
         $this.DeployLog      = [System.Collections.ArrayList]::new()
+        if ($DryRun) {
+            $this.ServerDetails = Load-ServerList -Path $ServerList -IncludeDetails
+        } elseif ($ServerInfo) {
+            $this.ServerDetails = @($ServerInfo)
+        } else {
+            $this.ServerDetails = @()
+        }
     }
 
     [string] _FindServerPackage([string]$ServerName) {
@@ -225,11 +257,23 @@ class ISODeployer {
 # ---- Main (script mode only) ----
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
-        $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl)
+        if ($SerialNumber) {
+            $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+            if (-not $resolved.Success) { Write-Error $resolved.Error; exit 1 }
+            $Server = $resolved.Identifier
+            Write-Output "Resolved serial '$SerialNumber' -> $Server"
+        }
+        $serverInfo = $null
+        if ($Server -and $DryRun) {
+            $tempDeployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $null, $true)
+            $serverInfo = ($tempDeployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
+            if (-not $serverInfo) { Write-Error "Server not found: $Server"; exit 1 }
+        } elseif ($Server) {
+            $serverInfo = [ServerInfo]::new($Server, '', '', 0)
+        }
+        $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $null, [bool]$DryRun, $serverInfo)
         if ($Server) {
-            $si = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-            if (-not $si) { Write-Error "Server not found: $Server"; exit 1 }
-            $ok = $deployer.Deploy($si, $Method, [bool]$DryRun)
+            $ok = $deployer.Deploy($serverInfo, $Method, [bool]$DryRun)
             exit (if ($ok) { 0 } else { 1 })
         }
         else {

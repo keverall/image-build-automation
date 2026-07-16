@@ -132,6 +132,7 @@
         'Load-ServerList'
         'New-ServerInfo'
         'Test-ClusterDefinition'
+        'Resolve-OneViewTarget'
         # ── Logging / audit / timestamps ────────────────────────────────────────
         'Get-Logger'
         'Get-LocalTimestamp'

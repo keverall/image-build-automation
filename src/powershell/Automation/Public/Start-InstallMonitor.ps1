@@ -17,10 +17,17 @@ function Start-InstallMonitor {
         to OpsRamp.  The PowerShell equivalent of automation.cli.monitor_install.
 
     .PARAMETER Server
-        Monitor a single server only.
+        Monitor a single server only. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Monitor a server identified by its HPE serial number. Resolved to the
+        server hostname via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ServerList
-        Path to server_list.txt (default: configs\server_list.txt).
+        Path to server_list.txt. Only used for -DryRun mock targeting.
 
     .PARAMETER TimeoutSeconds
         Maximum monitoring duration in seconds (default: 7200).
@@ -40,13 +47,25 @@ function Start-InstallMonitor {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false)][string] $Server    = $null,
+        [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
         [Parameter(Mandatory = $false)][string] $ServerList  = 'configs\server_list.txt',
         [Parameter(Mandatory = $false)][int]    $TimeoutSeconds  = 7200,
         [Parameter(Mandatory = $false)][int]    $PollIntervalSeconds = 30,
         [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json'
     )
+    if ($SerialNumber) {
+        $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        $Server = $resolved.Identifier
+        Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
+    }
+    if (-not $Server) {
+        throw "Server or SerialNumber is required for install monitoring"
+    }
     try {
-        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig)
+        $serverInfo = if ($Server) { [ServerInfo]::new($Server, '', '', 0) } else { $null }
+        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig, [bool]$DryRun, $serverInfo)
         if ($Server) {
             $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
             if (-not $si) { return @{ Success=$false; Error="Server not found: $Server" } }
@@ -103,13 +122,19 @@ class InstallationMonitor {
     [int] $CheckInterval    = 30
     [int] $InstallTimeout   = 7200
 
-    InstallationMonitor([string]$ServerList, [string]$OpsRampConfig) {
+    InstallationMonitor([string]$ServerList, [string]$OpsRampConfig, [bool]$DryRun = $false, [ServerInfo]$ServerInfo = $null) {
         $this.ServerListPath  = $ServerList
         $this.OpsRampConfigPath = $OpsRampConfig
-        $this.Servers         = Load-ServerList -Path $ServerList -IncludeDetails
         $this.Sessions        = @{}
         $this.MonitorLog      = [System.Collections.ArrayList]::new()
         $this.OpsRampClient   = $this._InitOpsRampClient()
+        if ($DryRun) {
+            $this.Servers = Load-ServerList -Path $ServerList -IncludeDetails
+        } elseif ($ServerInfo) {
+            $this.Servers = @($ServerInfo)
+        } else {
+            $this.Servers = @()
+        }
     }
 
     [OpsRamp_Client] _InitOpsRampClient() {
@@ -305,7 +330,14 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
 # --- Main (script mode only) ---
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
-        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig)
+        if ($SerialNumber) {
+            $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+            if (-not $resolved.Success) { Write-Error $resolved.Error; exit 1 }
+            $Server = $resolved.Identifier
+            Write-Output "Resolved serial '$SerialNumber' -> $Server"
+        }
+        $serverInfo = if ($Server) { [ServerInfo]::new($Server, '', '', 0) } else { $null }
+        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig, [bool]$DryRun, $serverInfo)
         if ($Server) {
             $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
             if (-not $si) { Write-Error "Server not found: $Server"; exit 1 }
