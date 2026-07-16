@@ -24,7 +24,14 @@ function Test-PostBuildValidation {
         post-build state.  Returns a hashtable of named checks.
 
     .PARAMETER Hostname
-        Target server hostname (FQDN or short).
+        Target server hostname (FQDN or short). Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Identify the server by its HPE serial number. Resolved to the
+        server hostname via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ExpectedHostname
         Expected hostname for cross-check. Defaults to -Hostname.
@@ -57,6 +64,8 @@ function Test-PostBuildValidation {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)][string] $Hostname,
+        [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
         [string] $ExpectedHostname = $null,
         [string] $Domain,
         [string] $ExpectedOsVersion,
@@ -65,6 +74,13 @@ function Test-PostBuildValidation {
         [switch] $SkipRemote,
         [switch] $DryRun
     )
+    if ($SerialNumber) {
+        $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        $Hostname = $resolved.Identifier
+        if (-not $ExpectedHostname) { $ExpectedHostname = $Hostname }
+        Write-Verbose "Resolved serial '$SerialNumber' -> $Hostname"
+    }
 
     $checks  = [ordered]@{}
     $overall = $true

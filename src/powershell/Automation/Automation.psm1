@@ -592,6 +592,7 @@ Export-ModuleMember -Function @(
     'Test-PostBuildValidation'
     'New-Uuid'
     'Update-Firmware'
+    'Invoke-WindowsSecurityUpdate'
     # OpsRamp
     'Invoke-OpsRamp'
     'Invoke-OpsRampClient'
@@ -627,6 +628,7 @@ Export-ModuleMember -Function @(
     'Load-ClusterCatalogue'
     'Test-ClusterDefinition'
     'New-ServerInfo'
+    'Resolve-OneViewTarget'
 # Logging / audit / timestamps
         'Initialize-Logging'
         'Get-Logger'

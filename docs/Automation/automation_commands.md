@@ -260,12 +260,19 @@ Invoke-IsoDeploy -DryRun
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
 | `-Method` | No | Deployment method (`redfish`) | `redfish` |
-| `-Server` | No | Single server hostname | - |
+| `-Server` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | No | Target a server by its HPE serial number; resolved to the hostname (and iLO IP) via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-IsoDir` | No | Directory containing ISO packages | auto-resolved |
 | `-IsoUrl` | No | Override the ISO URL | - |
 | `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | - |
 | `-DryRun` | No | Simulate only | - |
+
+```powershell
+# Target by serial number (resolved via OneView)
+Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
+```
 
 **Returns:** `[hashtable]` with `Success`, `Server`, and `Summary`.
 
@@ -294,11 +301,18 @@ Start-InstallMonitor
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Server` | No | Single server hostname | - |
+| `-Server` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-TimeoutSeconds` | No | Max monitoring duration | `7200` |
 | `-PollIntervalSeconds` | No | Seconds between polls | `30` |
 | `-OpsRampConfig` | No | Path to OpsRamp config | auto-resolved |
+
+```powershell
+# Target by serial number (resolved via OneView)
+Start-InstallMonitor -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
+```
 
 **Returns:** `[hashtable]` with `Success`, per-server `Status`/`Details`, or bulk `Summary`.
 
@@ -328,11 +342,18 @@ Update-Firmware -DryRun
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
 | `-Config` | No | Firmware manifest path | auto-resolved |
-| `-Server` | No | Single server hostname | - |
+| `-Server` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-OutputDir` | No | Output directory | - |
 | `-SkipDownload` | No | Skip component download | - |
 | `-DryRun` | No | Simulate only | - |
+
+```powershell
+# Target by serial number (resolved via OneView)
+Update-Firmware -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
+```
 
 **Returns:** `[hashtable]` with `Success` and details.
 
@@ -362,11 +383,18 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -DryRun
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
 | `-BaseIsoPath` | No | Path to the base Windows Server ISO | - |
-| `-Server` | No | Server hostname for output naming | - |
+| `-Server` | No | Server hostname for output naming. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | No | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
 | `-PatchesConfig` | No | Path to patch manifest | auto-resolved |
-| `-OutputDir` | No | Output directory | auto-resolved |
+| `-OutputDir` | No | Output directory | - |
 | `-Method` | No | Patching method: `dism` or `powershell` | `dism` |
 | `-DryRun` | No | Simulate only | - |
+
+```powershell
+# Target by serial number (resolved via OneView)
+Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
+```
 
 **Returns:** `[hashtable]` with `Success`, `PatchedIso`, and details.
 
@@ -512,14 +540,17 @@ Test-PostBuildValidation -Hostname srv01 -SkipCmClient
 #### Skip all remote checks (WinRM not available)
 
 ```powershell
-Test-PostBuildValidation -Hostname srv01 -SkipRemote
+# Target by serial number (resolved to hostname via OneView)
+Test-PostBuildValidation -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -Domain corp.local
 ```
 
 **Parameters:**
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Hostname` | Yes | Target server hostname | - |
+| `-Hostname` | Yes* | Target server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | No | Identify the server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
 | `-ExpectedHostname` | No | Expected hostname for cross-check | `$Hostname` |
 | `-Domain` | No | AD domain expected after build | - |
 | `-ExpectedOsVersion` | No | Expected OS version string | - |
@@ -527,6 +558,8 @@ Test-PostBuildValidation -Hostname srv01 -SkipRemote
 | `-SkipDrivers` | No | Skip HPE driver presence check | - |
 | `-SkipRemote` | No | Skip all WinRM-dependent checks | - |
 | `-DryRun` | No | Assume checks pass | - |
+
+\* `-Hostname` is required unless `-SerialNumber` is supplied.
 
 **Returns:** `[hashtable]` with `Success`, `Hostname`, `Timestamp`, `Checks`, and `AuditFile`.
 
