@@ -75,24 +75,25 @@ This document maps every code location executed by `Set-MaintenanceMode` and `Te
 <a name="test-serverconnectivity"></a>
 ## Test-ServerConnectivity
 
-This phase performs read-only connectivity checks against SCOM or OneView management infrastructure before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects.
+This phase performs read-only connectivity checks against the **OneView appliance only** before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects. This command is OneView-only - there is no SCOM path and no `-Mode` parameter.
 
 <a name="parameters"></a>
 ### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-Mode` | **Required** | `scom` or `oneview` - selects the integration path |
-| `-Mode` | **Required** | `scom` or `oneview` - selects the integration path |
-| `-Environment` | Optional | `Test` or `Prod` (default: `Prod`) |
-| `-ManagementHost` | Optional | Override management server/appliance hostname |
+| `-Environment` | Optional | `Test` or `Prod` (default: `Prod`). Only used with `-JsonConfig` (DryRun). |
+| `-ManagementHost` | Optional* | OneView appliance hostname (server name or serial). REQUIRED for live runs; used verbatim. |
+| `-Credential` | Optional | `PSCredential` for the live connection. If omitted, prompted interactively. |
 | `-ConfigDir` | Optional | Config file directory (default: `configs`) |
 | `-PingTimeoutMs` | Optional | TCP timeout in ms (default: 3000) |
 | `-Json` | Switch | Output as JSON for automation |
 | `-DryRun` | Switch | Test configuration without network calls |
 
-**Full `param()` block**: [`Lines 7-14`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L7-L14)
-**Function `param()` block**: [`Lines 131-140`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L131-L140)
+\* `-ManagementHost` is required for a live (non-`-DryRun`) connectivity test.
+
+**Full `param()` block**: [`Lines 7-17`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L7-L17)
+**Function `param()` block**: [`Lines 223-234`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L223-L234)
 
 <a name="dryrun-mode"></a>
 ### DryRun Mode
@@ -103,8 +104,8 @@ When `-DryRun` is specified, the function returns mock connectivity data without
 **Output formatter with DryRun**: [`Lines 408-536`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L408-L536)
 
 ```powershell
-# Mock successful connectivity check
-Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+# Mock successful connectivity check (OneView only)
+Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 ```
 
 **DryRun returns:**
@@ -119,9 +120,7 @@ Test-ServerConnectivity -Mode scom -Environment Test -DryRun
 **Code Location**: [`Lines 252-304`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L252-L304)
 
 1. **DNS Resolution**: Resolves the management host hostname using `System.Net.Dns::GetHostEntry()`
-2. **TCP Port Probe**: Attempts connection to relevant ports with configurable timeout
-   - SCOM (WinRM): 5985, 5986
-   - SCOM (non-WinRM): 5985, 135
+2. **TCP Port Probe**: Attempts connection to the OneView HTTPS port (443) with configurable timeout
    - OneView: 443
 
 <a name="phase-2-auth-connect"></a>
@@ -129,9 +128,8 @@ Test-ServerConnectivity -Mode scom -Environment Test -DryRun
 
 **Code Location**: [`Lines 306-390`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L306-L390)
 
-1. **SCOM**: Creates management group connection with credentials, immediately disconnects
-2. **OneView**: Calls `Connect-OVMgmt` with credentials, immediately calls `Disconnect-OVMgmt`
-3. Validates module loaded (operationsManager or HPEOneView.*), connected, and disconnected successfully
+1. **OneView**: Calls `Connect-OVMgmt` with credentials, immediately calls `Disconnect-OVMgmt`
+2. Validates module loaded (HPEOneView.*), connected, and disconnected successfully
 
 <a name="result-structure"></a>
 ### Result Structure
