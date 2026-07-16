@@ -31,10 +31,17 @@ function Update-Firmware {
         Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json).
 
     .PARAMETER Server
-        Build for a specific server only.
+        Build for a specific server only. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Build for a server identified by its HPE serial number. Resolved to the
+        server hostname via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ServerList
-        Path to server_list.txt.
+        Path to server_list.txt. Only used for -DryRun mock targeting.
 
     .PARAMETER OutputDir
         Output directory.
@@ -50,20 +57,33 @@ function Update-Firmware {
 
     .EXAMPLE
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
+    .EXAMPLE
+        Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
-    param(
-        [Parameter(Mandatory = $false)][string] $Config     = 'configs\hpe_firmware_drivers_nov2025.json',
-        [Parameter(Mandatory = $false)][string] $Server     = $null,
-        [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
-        [Parameter(Mandatory = $false)][string] $OutputDir  = 'output\firmware',
-        [Parameter(Mandatory = $false)][switch] $SkipDownload,
-        [Parameter(Mandatory = $false)][switch] $DryRun
-    )
+param(
+    [Parameter(Mandatory = $false)][string] $Config     = 'configs\hpe_firmware_drivers_nov2025.json',
+    [Parameter(Mandatory = $false)][string] $Server     = $null,
+    [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+    [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
+    [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
+    [Parameter(Mandatory = $false)][string] $OutputDir  = 'output\firmware',
+    [Parameter(Mandatory = $false)][switch] $SkipDownload,
+    [Parameter(Mandatory = $false)][switch] $DryRun
+)
+    if ($SerialNumber) {
+        $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        $Server = $resolved.Identifier
+        Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
+    }
+    if (-not $DryRun -and -not $Server) {
+        throw "Server or SerialNumber is required for non-dryrun firmware update"
+    }
     Initialize-Logging -LogFile 'firmware_updater.log'
     try {
-        $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $ServerList }
+        $servers = if ($DryRun -and -not $Server) { Load-ServerList -Path $ServerList } else { @($Server) }
         $updater = [FirmwareUpdater]::new($Config, $OutputDir)
         $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
         $okCount = ($results | Where-Object { $_.success }).Count
@@ -230,7 +250,13 @@ class FirmwareUpdater {
 # ── Main (script mode only) ───────────────────────────────────────────────────
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
-        $servers = if ($Server) { @($Server) } else { Load-ServerList -Path $ServerList }
+        if ($SerialNumber) {
+            $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+            if (-not $resolved.Success) { Write-Error $resolved.Error; exit 1 }
+            $Server = $resolved.Identifier
+            Write-Output "Resolved serial '$SerialNumber' -> $Server"
+        }
+        $servers = if ($DryRun -and -not $Server) { Load-ServerList -Path $ServerList } else { @($Server) }
         $updater = [FirmwareUpdater]::new($Config, $OutputDir)
         $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
         $okCount = ($results | Where-Object { $_.success }).Count

@@ -21,7 +21,14 @@ function Invoke-WindowsSecurityUpdate {
         Path to the base Windows Server ISO file.
 
     .PARAMETER Server
-        Server hostname for output naming.
+        Server hostname for output naming. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Identify the server by its HPE serial number; resolved to the hostname
+        (for output naming) via OneView. Requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER PatchesConfig
         Path to windows_patches.json (default: configs\windows_patches.json).
@@ -46,12 +53,20 @@ function Invoke-WindowsSecurityUpdate {
     param(
         [Parameter(Mandatory)][Alias('BaseIso', 'b')][string] $BaseIsoPath,
         [Parameter(Mandatory)][Alias('ServerName', 's')][string] $Server,
+        [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
         [Parameter(Mandatory = $false)][Alias('p')][string] $PatchesConfig = 'configs\windows_patches.json',
         [Parameter(Mandatory = $false)][Alias('o')][string] $OutputDir = 'output\patched',
         [ValidateSet('dism', 'powershell')]
         [Parameter(Mandatory = $false)][Alias('m')][string] $Method = 'dism',
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
+    if ($SerialNumber) {
+        $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
+        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        $Server = $resolved.Identifier
+        Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
+    }
     if (-not $Script:WinSecLogDir -or $Script:WinSecLogDir -eq '') {
         $current = $PSScriptRoot
         if (-not $current) { $current = Get-Location }
