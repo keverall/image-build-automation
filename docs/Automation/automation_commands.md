@@ -26,7 +26,6 @@
 - [Connectivity and Validation](#connectivity-and-validation)
   - [Test OneView connectivity](#test-oneview-connectivity)
   - [Validate server list](#validate-server-list)
-  - [Validate cluster ID (SCOM mode)](#validate-cluster-id-scom-mode)
   - [Validate build parameters](#validate-build-parameters)
 - [PowerShell Execution and Utility](#powershell-execution-and-utility)
   - [Run a local PowerShell script](#run-a-local-powershell-script)
@@ -591,8 +590,6 @@ Pre-flight read-only checks. Safe to run during a change freeze.
 
 Combined network ping + authentication test for a OneView appliance. Read-only - safe during a change freeze. On a live run the command never reads config: the appliance host comes from `-ManagementHost` (used verbatim) and credentials come from `-Credential` or an interactive prompt. Config files are read **only** with `-DryRun`.
 
-**Note:** This command is for OneView connectivity testing only. For SCOM connectivity, use `Set-MaintenanceMode -Action validate -Mode scom`.
-
 ```powershell
 # LIVE: explicit host, credentials prompted interactively
 Test-ServerConnectivity -ManagementHost va-oneviewt-01
@@ -640,26 +637,6 @@ Test-ServerList
 ```
 
 **Returns:** `[hashtable]` with `Success` and `Servers`.
-
----
-
-<a name="validate-cluster-id-scom-mode"></a>
-### Validate cluster ID (SCOM mode)
-
-Validates that a cluster ID exists in the cluster catalogue and checks required fields. **Note:** This function is intended for SCOM mode only. For OneView server validation, use `Get-OneViewServerTarget` instead.
-
-```powershell
-Test-ClusterId -TargetId CLU-CLUSTER-01
-```
-
-**Parameters:**
-
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-TargetId` | Yes | Cluster identifier string (SCOM mode only). Server names not accepted. | - |
-| `-CataloguePath` | No | Path to clusters_catalogue.json. | `configs\clusters_catalogue.json` |
-
-**Returns:** `[hashtable]` with `Success`, `Cluster`, and `Error`.
 
 ---
 
@@ -733,7 +710,6 @@ Get-RouteMap
 
 ```powershell
 Run-CIPipeline -Params @{ Stage = 'build'; Version = '1.0' }
-Run-IRequest -FormData @{ Action = 'enable'; TargetId = 'CLU-01' }
 Run-Scheduler -TaskParams @{ Server = 'srv01'; Timeout = 3600 }
 Run-GitLab -Params @{ TargetId = 'CLU-01'; Action = 'enable' }
 ```
