@@ -132,10 +132,10 @@ Preferred approach: use Configuration Manager bootable media (ISO) mounted over 
 ### Prepare or update the Windows Server build in Configuration Manager
 
 9.Import or update the Windows Server source image within Configuration Manager.  
-10. Create or update the OSD task sequence for the target operating system build.  
-11. Add or update HPE driver packages and ensure the required WinPE boot image contains the correct NIC and storage drivers.  
-12. Distribute all associated content to at least one distribution point.  
-13. Validate task sequence deployment scope (known / unknown computer support as required).  
+1. Create or update the OSD task sequence for the target operating system build.  
+2. Add or update HPE driver packages and ensure the required WinPE boot image contains the correct NIC and storage drivers.  
+3. Distribute all associated content to at least one distribution point.  
+4. Validate task sequence deployment scope (known / unknown computer support as required).  
 
 ```PWSH
 # Example ConfigMgr media creation command:
@@ -145,24 +145,24 @@ New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd -Path "\\fileserver\osdm
 <a name="create-bootable-media-iso"></a>
 ### Create bootable media ISO
 
-14. From the Configuration Manager console PowerShell context, create dynamic bootable media as an ISO.
-15. Apply a media password where required by policy.
-16. Store the ISO in a secured central repository.
-17. Version the ISO according to the OSD release standard (for example: WinSrv2025_HPE_BootableMedia_v1.7.iso).
+1. From the Configuration Manager console PowerShell context, create dynamic bootable media as an ISO.
+2. Apply a media password where required by policy.
+3. Store the ISO in a secured central repository.
+4. Version the ISO according to the OSD release standard (for example: WinSrv2025_HPE_BootableMedia_v1.7.iso).
 
 <a name="publish-the-iso-for-ilo-consumption"></a>
 ### Publish the ISO for iLO consumption
 
-18.	Place the ISO in a location accessible to iLO virtual media.
-19.	Prefer HTTPS with controlled access and auditable hosting.
-20.	Validate the full ISO path / URL before initiating the build.
+1. Place the ISO in a location accessible to iLO virtual media.
+2. Prefer HTTPS with controlled access and auditable hosting.
+3. Validate the full ISO path / URL before initiating the build.
 
 10.4 Identify and validate the target server in HPE OneView
 
-21.	Query HPE OneView for the target physical server by name, serial number, Bay/Enclosure position, or other approved identifier.
-22.	Verify the hardware state, power state, and health state before proceeding.
-23.	Confirm the correct server has been selected and is approved for build / rebuild.
-24.	Resolve or derive the corresponding iLO management address or endpoint for the server.
+1. Query HPE OneView for the target physical server by name, serial number, Bay/Enclosure position, or other approved identifier.
+2. Verify the hardware state, power state, and health state before proceeding.
+3. Confirm the correct server has been selected and is approved for build / rebuild.
+4. Resolve or derive the corresponding iLO management address or endpoint for the server.
 
 ```PWSH
 # Example OneView REST query pattern:
@@ -173,11 +173,11 @@ GET https://<oneview-appliance>/rest/server-hardware?filter="name='<ServerName>'
 <a name="mount-iso-via-hpe-ilo-and-force-one-time-boot"></a>
 ### Mount ISO via HPE iLO and force one-time boot
 
-25.	Authenticate to the target iLO using a service account with virtual media and power control rights.
-26.	Insert the ConfigMgr bootable ISO as virtual media.
-27.	Set a one-time boot override to the virtual CD/DVD device.
-28.	Restart or power on the physical server.
-29.	Observe console output or iLO event logs to verify the host boots to WinPE.
+1. Authenticate to the target iLO using a service account with virtual media and power control rights.
+2. Insert the ConfigMgr bootable ISO as virtual media.
+3. Set a one-time boot override to the virtual CD/DVD device.
+4. Restart or power on the physical server.
+5. Observe console output or iLO event logs to verify the host boots to WinPE.
 
 ```PWSH
 # Example Redfish operations (conceptual):
@@ -190,14 +190,14 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 <a name="task-sequence-execution"></a>
 ### Task sequence execution
 
-30. WinPE starts from the bootable ISO.
-31. he server connects to the Configuration Manager Management Point and downloads task sequence policy.
-32. Disk partitioning and formatting are performed according to task sequence standards.
-33.	The operating system image is applied.
-34.	Drivers and the Configuration Manager client are installed.
-35.	Post-install steps execute, such as domain join, security baseline, management agent installation, and standard software configuration.
-36.	The system reboots into the installed operating system.
-37.	Post-build validation is completed and the build record is updated.
+1. WinPE starts from the bootable ISO.
+2. he server connects to the Configuration Manager Management Point and downloads task sequence policy.
+3. Disk partitioning and formatting are performed according to task sequence standards.
+4. The operating system image is applied.
+5. Drivers and the Configuration Manager client are installed.
+6. Post-install steps execute, such as domain join, security baseline, management agent installation, and standard software configuration.
+7. The system reboots into the installed operating system.
+8. Post-build validation is completed and the build record is updated.
 
 <a name="validation-checklist"></a>
 ## Validation Checklist
@@ -240,10 +240,10 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 <a name="rollback-recovery-procedure"></a>
 ## Rollback / Recovery Procedure
 
-38.	If the task sequence fails before OS application, eject virtual media, reset boot order to normal, and investigate WinPE / network / driver issues.
-39.	If the task sequence fails after partial deployment, either rerun the build after remediation or wipe/reinitialize the local storage before retry.
-40.	If the wrong server was selected, stop the workflow immediately, eject media, cancel the change, and follow incident / change procedures.
-41.	If iLO virtual media operations fail, validate device index, iLO generation, ISO accessibility, and Redfish permission scope.
+1. If the task sequence fails before OS application, eject virtual media, reset boot order to normal, and investigate WinPE / network / driver issues.
+2. If the task sequence fails after partial deployment, either rerun the build after remediation or wipe/reinitialize the local storage before retry.
+3. If the wrong server was selected, stop the workflow immediately, eject media, cancel the change, and follow incident / change procedures.
+4. If iLO virtual media operations fail, validate device index, iLO generation, ISO accessibility, and Redfish permission scope.
 
 <a name="troubleshooting-guide"></a>
 ## Troubleshooting Guide

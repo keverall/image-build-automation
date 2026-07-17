@@ -574,8 +574,6 @@ See [`CLIENT-QUICK-START.md`](../CLIENT-QUICK-START.md#top) for the full guide.
 
 ```powershell
 Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test
-Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode oneview -Environment Prod -Start 'now' -End '+2hours'
-Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode oneview -Environment Prod
 ```
 
 ---
@@ -718,7 +716,6 @@ Run-GitLab -Params @{ TargetId = 'CLU-01'; Action = 'enable' }
 ### GitLab maintenance trigger
 
 ```powershell
-Invoke-GitLabMaintenanceTrigger -TargetId CLU-CLUSTER-01 -Action enable -Start now -End +4hours
 ```
 
 ---
