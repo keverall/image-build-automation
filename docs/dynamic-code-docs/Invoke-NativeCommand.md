@@ -1,19 +1,65 @@
 ---
 source:  ./src/powershell/Automation/Private/Executor.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-NativeCommand
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
-Factory for CommandResult (useful in tests / dry-run stubs).
+Wraps System.Diagnostics.Process to execute external programs with configurable timeout and optional working directory. Returns a CommandResult object containing exit code, stdout, and stderr.
 
+<a name="parameters"></a>
+## Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `-Command` | Command and arguments as a string array. |
+| `-TimeoutSeconds` | Execution timeout (default 300 s). |
+| `-WorkingDirectory` | Optional working directory. |
+
+<a name="examples"></a>
+## Examples
+
+<a name="example-1"></a>
+### Example 1
+```powershell
+$r = Invoke-NativeCommand -Command @('git','status')
+```
+
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Factory for CommandResult (useful in tests / dry-run stubs).
+        Execute a native command and return a CommandResult.
+
+    .DESCRIPTION
+        Wraps System.Diagnostics.Process to execute external programs with
+        configurable timeout and optional working directory. Returns a CommandResult
+        object containing exit code, stdout, and stderr.
+
+    .PARAMETER Command
+        Command and arguments as a string array.
+
+    .PARAMETER TimeoutSeconds
+        Execution timeout (default 300 s).
+
+    .PARAMETER WorkingDirectory
+        Optional working directory.
+
+    .EXAMPLE
+        $r = Invoke-NativeCommand -Command @('git','status')
 ```
 
 ---

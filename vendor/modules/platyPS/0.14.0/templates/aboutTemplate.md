@@ -1,4 +1,13 @@
 # {{TOPIC NAME}}
+
+## Table of Contents
+
+- [{{FileNameForHelpSystem}}](#filenameforhelpsystem)
+- [SomeHelpTopicFileName](#somehelptopicfilename)
+- [Optional Subtopics](#optional-subtopics)
+
+
+<a name="filenameforhelpsystem"></a>
 ## {{FileNameForHelpSystem}}
 
 ```
@@ -8,6 +17,7 @@ The second header contains the lookup name used by the help system.
 
 IE:
 # Some Help Topic Name
+<a name="somehelptopicfilename"></a>
 ## SomeHelpTopicFileName
 
 This will be transformed into the text file
@@ -29,6 +39,7 @@ The generated about topic will be encoded UTF-8.
 # LONG DESCRIPTION
 {{ Long Description Placeholder }}
 
+<a name="optional-subtopics"></a>
 ## Optional Subtopics
 {{ Optional Subtopic Placeholder }}
 

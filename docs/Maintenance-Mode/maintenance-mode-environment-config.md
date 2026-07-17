@@ -1,6 +1,5 @@
 # Maintenance Mode - Environment-Based Connection Configuration
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -41,6 +40,7 @@
 - [Future Enhancements](#future-enhancements)
 
 
+<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 

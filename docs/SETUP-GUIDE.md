@@ -1,6 +1,5 @@
 # Setup Guide - PowerShell Profile & Maintenance Mode
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Quick Setup (5 Minutes)](#quick-setup-5-minutes)
@@ -25,6 +24,7 @@
 - [Next Steps](#next-steps)
 
 
+<a id="top"></a>
 <a name="quick-setup-5-minutes"></a>
 ## Quick Setup (5 Minutes)
 

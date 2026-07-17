@@ -1,6 +1,5 @@
 # Plan: ConfigMgr Bootable Media Automation (per runbook-requirements.md)
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Goal](#goal)
@@ -26,6 +25,7 @@
 - [Risks](#risks)
 
 
+<a id="top"></a>
 <a name="goal"></a>
 ## Goal
 

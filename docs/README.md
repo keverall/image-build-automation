@@ -1,6 +1,5 @@
 # HPE ProLiant Windows Server ISO Automation - Documentation Index
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Repository Structure](#repository-structure)
@@ -14,6 +13,7 @@
 - [Contributing](#contributing)
 
 
+<a id="top"></a>
 Complete documentation for the PowerShell automation module (`src/powershell/Automation/`).
 
 ---

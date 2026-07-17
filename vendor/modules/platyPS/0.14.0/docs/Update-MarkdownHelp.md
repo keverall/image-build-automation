@@ -7,9 +7,130 @@ schema: 2.0.0
 
 # Update-MarkdownHelp
 
+## Table of Contents
+
+- [SYNOPSIS](#synopsis)
+- [SYNTAX](#syntax)
+- [DESCRIPTION](#description)
+- [EXAMPLES](#examples)
+  - [Example 1: Update all files in a folder](#example-1-update-all-files-in-a-folder)
+  - [Example 2: Update one file and capture log](#example-2-update-one-file-and-capture-log)
+- [PARAMETERS](#parameters)
+  - [-Encoding](#-encoding)
+  - [-LogAppend](#-logappend)
+  - [-LogPath](#-logpath)
+  - [-Path](#-path)
+  - [-AlphabeticParamsOrder](#-alphabeticparamsorder)
+  - [-UseFullTypeName](#-usefulltypename)
+  - [-Session](#-session)
+  - [-UpdateInputOutput](#-updateinputoutput)
+  - [-Force](#-force)
+  - [-ExcludeDontShow](#-excludedontshow)
+  - [CommonParameters](#commonparameters)
+- [INPUTS](#inputs)
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+<a name="synopsis"></a>
 ## SYNOPSIS
 Update PlatyPS markdown help files.
 
+<a name="syntax"></a>
 ## SYNTAX
 
 ```
@@ -18,6 +139,7 @@ Update-MarkdownHelp [-Path] <String[]> [[-Encoding] <Encoding>] [[-LogPath] <Str
  [-ExcludeDontShow] [<CommonParameters>]
 ```
 
+<a name="description"></a>
 ## DESCRIPTION
 The **Update-MarkdownHelp** cmdlet updates PlatyPS markdown help files without completely replacing the content of the files.
 
@@ -32,8 +154,10 @@ To propagate changes to your markdown help files, do the following:
 - Run the **Update-MarkdownHelp** cmdlet to update the files.
 - Check new parameters metadata in the markdown files.
 
+<a name="examples"></a>
 ## EXAMPLES
 
+<a name="example-1-update-all-files-in-a-folder"></a>
 ### Example 1: Update all files in a folder
 ```
 PS C:\> Update-MarkdownHelp -Path ".\docs"
@@ -55,6 +179,7 @@ Mode                LastWriteTime         Length Name
 
 This command updates all markdown help files in the specified path to match the current cmdlets.
 
+<a name="example-2-update-one-file-and-capture-log"></a>
 ### Example 2: Update one file and capture log
 ```
 PS C:\> Update-MarkdownHelp -Path ".\docs\Update-MarkdownHelp.md" -LogPath ".\markdown.log"
@@ -70,8 +195,10 @@ Mode                LastWriteTime         Length Name
 This command updates a markdown help file.
 It writes log information to the markdown.log file.
 
+<a name="parameters"></a>
 ## PARAMETERS
 
+<a name="-encoding"></a>
 ### -Encoding
 Specifies the character encoding for your markdown help files.
 Specify a **System.Text.Encoding** object.
@@ -91,6 +218,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-logappend"></a>
 ### -LogAppend
 Indicates that this cmdlet appends information to the log instead overwriting it.
 
@@ -106,6 +234,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-logpath"></a>
 ### -LogPath
 Specifies a file path for log information.
 The cmdlet writes the VERBOSE stream to the log.
@@ -123,6 +252,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-path"></a>
 ### -Path
 Specifies an array of paths of markdown files and folders to update.
 
@@ -138,6 +268,7 @@ Accept pipeline input: True (ByValue)
 Accept wildcard characters: True
 ```
 
+<a name="-alphabeticparamsorder"></a>
 ### -AlphabeticParamsOrder
 Order parameters alphabetically by name in PARAMETERS section.
 There are 5 exceptions: -Confirm, -WhatIf, -IncludeTotalCount, -Skip, and -First parameters will be the last.
@@ -155,6 +286,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-usefulltypename"></a>
 ### -UseFullTypeName
 Indicates that the target document will use a full type name instead of a short name for parameters.
 
@@ -170,6 +302,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-session"></a>
 ### -Session
 Provides support for remote commands.
 Pass the session that you used to create the commands with `Import-PSSession`.
@@ -187,6 +320,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-updateinputoutput"></a>
 ### -UpdateInputOutput
 Refreshes the Input and Output section to reflect the current state of the cmdlet.  WARNING: this parameter will remove any manual additions to these sections.
 
@@ -202,6 +336,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-force"></a>
 ### -Force
 Remove help files that no longer exists within sessions (for example if function was deleted)
 
@@ -217,6 +352,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-excludedontshow"></a>
 ### -ExcludeDontShow
 Exclude the parameters marked with `DontShow` in the parameter attribute from the help content.
 
@@ -232,23 +368,30 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="commonparameters"></a>
 ### CommonParameters
 This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable. For more information, see [about_CommonParameters](http://go.microsoft.com/fwlink/?LinkID=113216).
 
+<a name="inputs"></a>
 ## INPUTS
 
+<a name="string"></a>
 ### String[]
 You can pipe an array of paths to this cmdlet.
 
+<a name="outputs"></a>
 ## OUTPUTS
 
+<a name="systemiofileinfo"></a>
 ### System.IO.FileInfo[]
 This cmdlet returns a **FileInfo[]** object for updated files.
 
+<a name="notes"></a>
 ## NOTES
 The module for which you want to update the help should first be imported from the location containing the previous version of the help.
 If this condition is not met, the parameter order will be alphabetical in the updated help, even if the parameter *AlphabeticParamsOrder* has not been used.
 
+<a name="related-links"></a>
 ## RELATED LINKS
 
 [Character Encoding in the .NET Framework](https://msdn.microsoft.com/en-us/library/ms404377.aspx)

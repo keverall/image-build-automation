@@ -7,11 +7,150 @@ schema: 2.0.0
 
 # New-MarkdownHelp
 
+## Table of Contents
+
+- [SYNOPSIS](#synopsis)
+- [SYNTAX](#syntax)
+  - [FromModule](#frommodule)
+  - [FromCommand](#fromcommand)
+  - [FromMaml](#frommaml)
+- [DESCRIPTION](#description)
+- [EXAMPLES](#examples)
+  - [Example 1: Create help from a command](#example-1-create-help-from-a-command)
+  - [Example 2: Create help from a module](#example-2-create-help-from-a-module)
+  - [Example 3: Create help from an existing MAML file](#example-3-create-help-from-an-existing-maml-file)
+  - [Example 4: Create help from an existing MAML file for use in a CAB file](#example-4-create-help-from-an-existing-maml-file-for-use-in-a-cab-file)
+- [PARAMETERS](#parameters)
+  - [-Command](#-command)
+  - [-Encoding](#-encoding)
+  - [-Force](#-force)
+  - [-FwLink](#-fwlink)
+  - [-HelpVersion](#-helpversion)
+  - [-Locale](#-locale)
+  - [-MamlFile](#-mamlfile)
+  - [-Metadata](#-metadata)
+  - [-Module](#-module)
+  - [-ModuleGuid](#-moduleguid)
+  - [-ModuleName](#-modulename)
+  - [-NoMetadata](#-nometadata)
+  - [-OnlineVersionUrl](#-onlineversionurl)
+  - [-OutputFolder](#-outputfolder)
+  - [-WithModulePage](#-withmodulepage)
+  - [-ConvertNotesToList](#-convertnotestolist)
+  - [-ConvertDoubleDashLists](#-convertdoubledashlists)
+  - [-AlphabeticParamsOrder](#-alphabeticparamsorder)
+  - [-UseFullTypeName](#-usefulltypename)
+  - [-Session](#-session)
+  - [-ModulePagePath](#-modulepagepath)
+  - [-ExcludeDontShow](#-excludedontshow)
+  - [CommonParameters](#commonparameters)
+- [INPUTS](#inputs)
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [String[]](#string)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+<a name="synopsis"></a>
 ## SYNOPSIS
 Creates help in markdown format.
 
+<a name="syntax"></a>
 ## SYNTAX
 
+<a name="frommodule"></a>
 ### FromModule
 ```
 New-MarkdownHelp -Module <String[]> [-Session <PSSession>] [-Force] [-AlphabeticParamsOrder]
@@ -20,6 +159,7 @@ New-MarkdownHelp -Module <String[]> [-Session <PSSession>] [-Force] [-Alphabetic
  [-ExcludeDontShow] [<CommonParameters>]
 ```
 
+<a name="fromcommand"></a>
 ### FromCommand
 ```
 New-MarkdownHelp -Command <String[]> [-Session <PSSession>] [-Force] [-AlphabeticParamsOrder]
@@ -27,6 +167,7 @@ New-MarkdownHelp -Command <String[]> [-Session <PSSession>] [-Force] [-Alphabeti
  [-Encoding <Encoding>] [-ExcludeDontShow] [<CommonParameters>]
 ```
 
+<a name="frommaml"></a>
 ### FromMaml
 ```
 New-MarkdownHelp -MamlFile <String[]> [-ConvertNotesToList] [-ConvertDoubleDashLists] [-Force]
@@ -35,11 +176,14 @@ New-MarkdownHelp -MamlFile <String[]> [-ConvertNotesToList] [-ConvertDoubleDashL
  [-FwLink <String>] [-ModuleName <String>] [-ModuleGuid <String>] [-ExcludeDontShow] [<CommonParameters>]
 ```
 
+<a name="description"></a>
 ## DESCRIPTION
 The **New-MarkdownHelp** cmdlet creates help in markdown format based on a module, a command, or a file in Microsoft Assistance Markup Language (MAML) format.
 
+<a name="examples"></a>
 ## EXAMPLES
 
+<a name="example-1-create-help-from-a-command"></a>
 ### Example 1: Create help from a command
 ```
 PS C:\> function Command03 {param([string]$Value)}
@@ -58,6 +202,7 @@ The first command creates a function named Command03 by using standard Windows P
 
 The second command creates help for that stub function in the .\docs folder.
 
+<a name="example-2-create-help-from-a-module"></a>
 ### Example 2: Create help from a module
 ```
 PS C:\> Import-Module -Module "PlatyPS"
@@ -86,6 +231,7 @@ It stores them in the .\docs folder.
 This command specifies the *Force* parameter.
 Therefore, it overwrites existing help markdown files that have the same name.
 
+<a name="example-3-create-help-from-an-existing-maml-file"></a>
 ### Example 3: Create help from an existing MAML file
 ```
 PS C:\> New-MarkdownHelp -OutputFolder "D:\PSReadline\docs" -MamlFile 'C:\Program Files\WindowsPowerShell\Modules\PSReadline\1.1\en-US\Microsoft.PowerShell.PSReadline.dll-help.xml'
@@ -106,6 +252,7 @@ This command creates help in markdown format for the specified help MAML file.
 You do not have to load the module, as in the previous example.
 If the module is already loaded, this command creates help based on the MAML file, not on the currently installed module.
 
+<a name="example-4-create-help-from-an-existing-maml-file-for-use-in-a-cab-file"></a>
 ### Example 4: Create help from an existing MAML file for use in a CAB file
 ```
 PS C:\> New-MarkdownHelp -OutputFolder "D:\PSReadline\docs" -MamlFile 'C:\Program Files\WindowsPowerShell\Modules\PSReadline\1.1\en-US\Microsoft.PowerShell.PSReadline.dll-help.xml' -WithModulePage  -Force -ModuleName "PSReadLine"
@@ -128,8 +275,10 @@ This command creates help in markdown format for the specified help MAML file, a
 This command also specifies the *WithModulePage* parameter and the *ModuleName* parameter.
 The command creates a file named PSReadLine.md that contains links to the other markdown files in this module and metadata that can be used to create .cab files.
 
+<a name="parameters"></a>
 ## PARAMETERS
 
+<a name="-command"></a>
 ### -Command
 Specifies the name of a command in your current session.
 This can be any command supported by Windows PowerShell help, such as a cmdlet or a function.
@@ -146,6 +295,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-encoding"></a>
 ### -Encoding
 Specifies the character encoding for your markdown help files.
 Specify a **System.Text.Encoding** object.
@@ -165,6 +315,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-force"></a>
 ### -Force
 Indicates that this cmdlet overwrites existing files that have the same names.
 
@@ -180,6 +331,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-fwlink"></a>
 ### -FwLink
 Specifies the forward link for the module page.
 This value is required for .cab file creation.
@@ -197,6 +349,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-helpversion"></a>
 ### -HelpVersion
 Specifies the version of your help.
 This value is required for .cab file creation.
@@ -214,6 +367,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-locale"></a>
 ### -Locale
 Specifies the locale of your help.
 This value is required for .cab file creation.
@@ -231,6 +385,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-mamlfile"></a>
 ### -MamlFile
 Specifies an array of paths path of MAML .xml help files.
 
@@ -246,6 +401,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-metadata"></a>
 ### -Metadata
 Specifies metadata that this cmdlet includes in the help markdown files as a hash table of string-to-sting key-value pairs.
 This cmdlet writes the metadata in the header of each markdown help file.
@@ -265,6 +421,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-module"></a>
 ### -Module
 Specifies an array of names of modules for which this cmdlet creates help in markdown format.
 
@@ -280,6 +437,7 @@ Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
+<a name="-moduleguid"></a>
 ### -ModuleGuid
 Specifies the GUID of the module of your help.
 This value is required for .cab file creation.
@@ -297,6 +455,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-modulename"></a>
 ### -ModuleName
 Specifies the name of the module of your help.
 This value is required for .cab file creation.
@@ -314,6 +473,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-nometadata"></a>
 ### -NoMetadata
 Indicates that this cmdlet does not write any metadata in the generated markdown.
 
@@ -329,6 +489,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-onlineversionurl"></a>
 ### -OnlineVersionUrl
 Specifies the URL where the updatable help function downloads updated help.
 If you do not specify a value, the cmdlet uses an empty string.
@@ -345,6 +506,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-outputfolder"></a>
 ### -OutputFolder
 Specifies the path of the folder where this cmdlet creates the markdown help files.
 
@@ -360,6 +522,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-withmodulepage"></a>
 ### -WithModulePage
 Indicates that this cmdlet creates a module page in the output folder.
 This file has the name that the *ModuleName* parameter specifies.
@@ -378,6 +541,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-convertnotestolist"></a>
 ### -ConvertNotesToList
 Indicates that this cmldet formats multiple paragraph items in the **NOTES** section as single list items.
 This output follows TechNet formatting.
@@ -394,6 +558,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-convertdoubledashlists"></a>
 ### -ConvertDoubleDashLists
 Indicates that this cmldet converts double-hyphen list bullets into single-hyphen bullets.
 Double-hyphen lists are common in Windows PowerShell documentation.
@@ -411,6 +576,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-alphabeticparamsorder"></a>
 ### -AlphabeticParamsOrder
 Order parameters alphabetically by name in PARAMETERS section.
 There are 5 exceptions: -Confirm, -WhatIf, -IncludeTotalCount, -Skip, and -First parameters will be the last.
@@ -428,6 +594,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-usefulltypename"></a>
 ### -UseFullTypeName
 Indicates that the target document will use a full type name instead of a short name for parameters.
 
@@ -443,6 +610,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-session"></a>
 ### -Session
 Provides support for remote commands.
 Pass the session that you used to create the commands with `Import-PSSession`.
@@ -460,6 +628,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-modulepagepath"></a>
 ### -ModulePagePath
 When *WithModule* parameter is used by default it puts .md file in same location as all other docs. With this parameter you can specify new name/location providing better placement options.
 
@@ -475,6 +644,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-excludedontshow"></a>
 ### -ExcludeDontShow
 Exclude the parameters marked with `DontShow` in the parameter attribute from the help content.
 
@@ -490,22 +660,29 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="commonparameters"></a>
 ### CommonParameters
 This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable. For more information, see [about_CommonParameters](http://go.microsoft.com/fwlink/?LinkID=113216).
 
+<a name="inputs"></a>
 ## INPUTS
 
+<a name="string"></a>
 ### String[]
 You can pipe module names to this cmdlet.
 These are the modules from which this cmdlet creates help markdown.
 
+<a name="outputs"></a>
 ## OUTPUTS
 
+<a name="systemiofileinfo"></a>
 ### System.IO.FileInfo[]
 This cmdlet returns a **FileInfo[]** object for created files.
 
+<a name="notes"></a>
 ## NOTES
 
+<a name="related-links"></a>
 ## RELATED LINKS
 
 [Character Encoding in the .NET Framework](https://msdn.microsoft.com/en-us/library/ms404377.aspx)

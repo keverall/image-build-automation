@@ -1,9 +1,8 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
-<a id="top"></a>
 ## Table of Contents
 
-- [1. Entry Points & User Interface](#1-entry-points-user-interface)
+- [1. Entry Points & User Interface](#1-entry-points-and-user-interface)
   - [PowerShell Profile Functions](#powershell-profile-functions)
 - [2. Core Implementation](#2-core-implementation)
   - [Main Function](#main-function)
@@ -16,12 +15,12 @@
 - [6. Helper Functions](#6-helper-functions)
   - [Datetime Parsing](#datetime-parsing)
   - [Scheduling](#scheduling)
-  - [Audit & Logging](#audit-logging)
+  - [Audit & Logging](#audit-and-logging)
 - [7. Configuration Files](#7-configuration-files)
-- [8. Module Loading & Routing](#8-module-loading-routing)
+- [8. Module Loading & Routing](#8-module-loading-and-routing)
   - [Module Structure](#module-structure)
   - [Request Router](#request-router)
-- [9. Testing & Validation](#9-testing-validation)
+- [9. Testing & Validation](#9-testing-and-validation)
   - [Test Scripts](#test-scripts)
   - [Test Files](#test-files)
 - [11. Documentation References](#11-documentation-references)
@@ -29,11 +28,12 @@
 - [Quick Navigation for Clients](#quick-navigation-for-clients)
 
 
+<a id="top"></a>
 This document provides a complete map of all code locations hit by the `Set-MaintenanceMode` command, with direct links to source files for client review.
 
 ---
 
-<a name="1-entry-points-user-interface"></a>
+<a name="1-entry-points-and-user-interface"></a>
 ## 1. Entry Points & User Interface
 
 <a name="powershell-profile-functions"></a>
@@ -146,7 +146,7 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 - **`_Compute-NextWorkStart`**: Line 1332 - Calculate next maintenance window end time
 - **`_Compute-DefaultEnd`**: Line 1321 - Default end time calculation
 
-<a name="audit-logging"></a>
+<a name="audit-and-logging"></a>
 ### Audit & Logging
 - **`_Save-AuditRecord`**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1347)
 - **`Initialize-Logging`**: [`Logging.ps1`](../../src/powershell/Automation/Private/Logging.ps1)
@@ -167,7 +167,7 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="8-module-loading-routing"></a>
+<a name="8-module-loading-and-routing"></a>
 ## 8. Module Loading & Routing
 
 <a name="module-structure"></a>
@@ -184,7 +184,7 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="9-testing-validation"></a>
+<a name="9-testing-and-validation"></a>
 ## 9. Testing & Validation
 
 <a name="test-scripts"></a>

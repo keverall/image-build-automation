@@ -1,6 +1,5 @@
 # Automation Command Reference
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
@@ -25,9 +24,9 @@
 - [Maintenance Mode](#maintenance-mode)
   - [Examples](#examples)
 - [Connectivity and Validation](#connectivity-and-validation)
-  - [Test OneView connectivity](#test-server-connectivity)
+  - [Test OneView connectivity](#test-oneview-connectivity)
   - [Validate server list](#validate-server-list)
-  - [Validate cluster ID](#validate-cluster-id)
+  - [Validate cluster ID (SCOM mode)](#validate-cluster-id-scom-mode)
   - [Validate build parameters](#validate-build-parameters)
 - [PowerShell Execution and Utility](#powershell-execution-and-utility)
   - [Run a local PowerShell script](#run-a-local-powershell-script)
@@ -47,6 +46,7 @@
   - [Source links](#source-links)
 
 
+<a id="top"></a>
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
 ---
@@ -586,7 +586,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode oneview -Envi
 
 Pre-flight read-only checks. Safe to run during a change freeze.
 
-<a name="test-server-connectivity"></a>
+<a name="test-oneview-connectivity"></a>
 ### Test OneView connectivity
 
 Combined network ping + authentication test for a OneView appliance. Read-only - safe during a change freeze. On a live run the command never reads config: the appliance host comes from `-ManagementHost` (used verbatim) and credentials come from `-Credential` or an interactive prompt. Config files are read **only** with `-DryRun`.
@@ -643,7 +643,7 @@ Test-ServerList
 
 ---
 
-<a name="validate-cluster-id"></a>
+<a name="validate-cluster-id-scom-mode"></a>
 ### Validate cluster ID (SCOM mode)
 
 Validates that a cluster ID exists in the cluster catalogue and checks required fields. **Note:** This function is intended for SCOM mode only. For OneView server validation, use `Get-OneViewServerTarget` instead.

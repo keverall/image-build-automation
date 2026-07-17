@@ -1,15 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Public/New-ScomMaintenanceScript.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-ScomMaintenanceScript
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+  - [Example 2](#example-2)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Build a PowerShell script for SCOM maintenance mode start/stop. Supports two modes: Group (individual class instances) and Cluster (Microsoft.Windows.Cluster class).
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -22,18 +34,22 @@ Build a PowerShell script for SCOM maintenance mode start/stop. Supports two mod
 | `-Operation` | 'start' or 'stop' (default: start). |
 | `-UseClusterMode` | Switch. When set, operates at Microsoft.Windows.Cluster class level and applies maintenance mode recursively to all cluster nodes. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 # Group mode - set maintenance on all instances in a group $ps = New-ScomMaintenanceScript -GroupDisplayName 'CLU-CLUSTER-01' ` -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest'
 ```
 
+<a name="example-2"></a>
 ### Example 2
 ```powershell
 # Cluster mode - set maintenance at cluster level + all nodes $ps = New-ScomMaintenanceScript -ServerHostnames @('srv01.corp.local','srv02.corp.local') ` -EndTimeStr '2026-05-22T06:00:00' -Reason 'PlannedOther' -Comment 'iRequest' -UseClusterMode
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
