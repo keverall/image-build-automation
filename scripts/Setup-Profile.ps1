@@ -67,6 +67,11 @@ $Red = "`e[0;31m"
 $Reset = "`e[0m"
 
 function Write-Color {
+    <#
+    .SYNOPSIS
+        Writes color.
+    #>
+
     param([string]$Color, [string]$Message)
     Write-Output "${Color}${Message}${Reset}"
 }
@@ -128,6 +133,11 @@ if ($isWin) {
 
 # ─── Utility: Smart merge profile with template, preserving user customizations ───
 function Set-ContentProfilePair {
+    <#
+    .SYNOPSIS
+        Set content profile pair.
+    #>
+
     param(
         [string]$TemplatePath,
         [string]$LivePath,
