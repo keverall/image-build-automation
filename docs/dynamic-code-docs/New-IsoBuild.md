@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Public/New-IsoBuild.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-IsoBuild
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting to the site server) and invokes New-CMBootableMedia to produce a WinPE bootable ISO that can be mounted via iLO Redfish and used to run a task sequence against a freshly-racked HPE ProLiant server.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -32,13 +43,16 @@ Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting to the s
 | `-MockIso` | Create a 0-byte placeholder ISO without calling ConfigMgr (used by tests). |
 | `-DryRun` | Validate inputs and print plan without creating the ISO. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' -BootImageName 'WinPE x64 - HPE' ` -SiteServer 'cm01.ad.example.com'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

@@ -1,16 +1,29 @@
+## Table of Contents
+
+- [The Architecture: How They Interact](#the-architecture-how-they-interact)
+- [The 3 Ways to Connect iRequest to Your PowerShell Code](#the-3-ways-to-connect-irequest-to-your-powershell-code)
+- [Option A: The CI Web API (The Easiest & Safest Way)](#option-a-the-ci-web-api-the-easiest-and-safest-way)
+- [Option B: Windows Remote Management (WinRM)](#option-b-windows-remote-management-winrm)
+- [Option C: SCOM Alert/Event Database Drop (Decoupled Integration)](#option-c-scom-alertevent-database-drop-decoupled-integration)
+- [What This Means for Your API Documentation](#what-this-means-for-your-api-documentation)
+- [Recommendation for Your Test Jumpbox](#recommendation-for-your-test-jumpbox)
+
 If your code isn't a live listening web server, iRequest cannot directly "call" your PowerShell file over the network without a middleman protocol.
 Since your target environment is a unified Windows Test Jumpbox containing CI, SCOM, HPE iLO, and iLO modules, you actually have the perfect infrastructure already in place. You do not need the two systems running on the same OS, nor do you need to configure complex low-level Windows Networking (like SMB or WinRM).
 Instead, you use the CI pipeline as your API Gateway.
 ------------------------------
+<a name="the-architecture-how-they-interact"></a>
 ## The Architecture: How They Interact
 Instead of iRequest trying to execute code on a filesystem, iRequest makes a standard HTTPS webhook call to the CI pipeline, which executes your local script.
 
 iRequest -   HTTPS POST   → CI Pipeline -   Native Execution   → PowerShell Codebase -  HPE iLO / SCOM
 
 ------------------------------
+<a name="the-3-ways-to-connect-irequest-to-your-powershell-code"></a>
 ## The 3 Ways to Connect iRequest to Your PowerShell Code
 Depending on how iRequest is configured by your identity/portal team, you will use one of these three standard connection protocols: [1]
 
+<a name="option-a-the-ci-web-api-the-easiest-and-safest-way"></a>
 ## Option A: The CI Web API (The Easiest & Safest Way)
 CI pipelines have a built-in REST API out of the box. You do not write any API listening code in PowerShell.
 
@@ -18,6 +31,7 @@ CI pipelines have a built-in REST API out of the box. You do not write any API l
    2. The payload targets a trigger pipeline endpoint with the CI-specific URL format.
    3. CI receives the variables (e.g., $ImageName, $VMSpec), spins up your PowerShell repository, and passes those variables straight into your .ps1 script arguments.
 
+<a name="option-b-windows-remote-management-winrm"></a>
 ## Option B: Windows Remote Management (WinRM)
 If iRequest is a classic enterprise platform (like ServiceNow, Micro Focus, or an older internal portal) and must trigger a script directly on a target server:
 
@@ -26,6 +40,7 @@ If iRequest is a classic enterprise platform (like ServiceNow, Micro Focus, or a
    3. It uses a service account to execute a remote command:
     Invoke-Command -ComputerName "Your-Jumpbox" -ScriptBlock { C:\repos\automation\scripts\build.ps1 -Param1 "Value" }
     
+<a name="option-c-scom-alertevent-database-drop-decoupled-integration"></a>
 ## Option C: SCOM Alert/Event Database Drop (Decoupled Integration)
 If iRequest doesn't support active, outbound network connections:
 
@@ -34,6 +49,7 @@ If iRequest doesn't support active, outbound network connections:
    3. This native SCOM engine hook launches your local execution script on the jumpbox runner.
 
 ------------------------------
+<a name="what-this-means-for-your-api-documentation"></a>
 ## What This Means for Your API Documentation
 Since the CI pipeline acts as your actual HTTP entry gateway, the documentation format we discussed earlier fits perfectly.
 When you write your single-page OpenAPI/Swagger document, you aren't documenting raw PowerShell paths-you are documenting the CI API Endpoints that wrap them.
@@ -54,6 +70,7 @@ Your Swagger JSON file parameters map directly to your CI pipeline trigger varia
   }
 }
 
+<a name="recommendation-for-your-test-jumpbox"></a>
 ## Recommendation for Your Test Jumpbox
 Since you have everything co-located on that test jumpbox right now, start with Option A (CI Web API). It keeps your PowerShell code entirely pure, lets the CI pipeline handle the security tokens, and creates a clear, web-addressable API target that iRequest can hit easily.
 Do you know if your iRequest platform prefers calling REST Webhooks (HTTP POST), or does it typically use Mid-Server orchestrators to run native Windows commands?

@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Start-AutomationOrchestrator
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Validates the request parameters using _Validate-Request, then routes the request to the appropriate handler function based on the RequestType parameter. Returns a hashtable with success status and output from the handler. This is the unified entry point for all automation operations.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -17,13 +28,16 @@ Validates the request parameters using _Validate-Request, then routes the reques
 | `-RequestType` | Request type string (build_iso, maintenance_enable, etc.). |
 | `-Params` | Hashtable of request parameters. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 Start-AutomationOrchestrator -RequestType 'build_iso' -Params @{ BaseIsoPath = 'C:\ISOs\base.iso' }
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

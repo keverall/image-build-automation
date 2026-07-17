@@ -1,28 +1,26 @@
 # Configuration Files Reference
 
-<a id="top"></a>
-
 ## Table of Contents
 
-- [Configuration Files Reference](#configuration-files-reference)
-  - [Table of Contents](#table-of-contents)
-  - [Summary Table](#summary-table)
-  - [server\_list.txt](#server_listtxt)
-  - [clusters\_catalogue.json](#clusters_cataloguejson)
-    - [Fields](#fields)
-  - [hpe\_firmware\_drivers\_nov2025.json](#hpe_firmware_drivers_nov2025json)
-    - [Environment Substitution](#environment-substitution)
-    - [Component Selection](#component-selection)
-  - [windows\_patches.json](#windows_patchesjson)
-  - [scom\_config.json](#scom_configjson)
-    - [Fields](#fields-1)
-  - [oneview\_config.json](#oneview_configjson)
-    - [Modes](#modes)
-  - [email\_distribution\_lists.json](#email_distribution_listsjson)
-    - [Override File](#override-file)
-  - [opsramp\_config.json](#opsramp_configjson)
-  - [Environment Variable Cheat Sheet](#environment-variable-cheat-sheet)
+- [Summary Table](#summary-table)
+- [server_list.txt](#server_listtxt)
+- [clusters_catalogue.json](#clusters_cataloguejson)
+  - [Fields](#fields)
+- [hpe_firmware_drivers_nov2025.json](#hpe_firmware_drivers_nov2025json)
+  - [Environment Substitution](#environment-substitution)
+  - [Component Selection](#component-selection)
+- [windows_patches.json](#windows_patchesjson)
+- [scom_config.json](#scom_configjson)
+  - [Fields](#fields-1)
+- [oneview_config.json](#oneview_configjson)
+  - [Modes](#modes)
+- [email_distribution_lists.json](#email_distribution_listsjson)
+  - [Override File](#override-file)
+- [opsramp_config.json](#opsramp_configjson)
+- [Environment Variable Cheat Sheet](#environment-variable-cheat-sheet)
 
+
+<a id="top"></a>
 
 This directory contains all configuration for the HPE ProLiant Windows Server ISO Automation pipeline.
 

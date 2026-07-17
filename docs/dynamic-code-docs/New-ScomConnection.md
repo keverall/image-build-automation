@@ -1,28 +1,42 @@
 ---
 source:  ./src/powershell/Automation/Public/New-ScomConnection.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-ScomConnection
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Returns a PowerShell command string that creates an SCOM management-group connection and emits the SCOM server version for downstream routing.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
 | `-ManagementServer` | SCOM management server hostname / IP. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 $script = New-ScomConnection -ManagementServer 'scom01.corp.local'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

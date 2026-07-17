@@ -1,6 +1,5 @@
 # Automation test guide for process teams and change approvers
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Purpose of this document](#purpose-of-this-document)
@@ -8,17 +7,17 @@
 - [What the test suite does](#what-the-test-suite-does)
 - [How to read the test results](#how-to-read-the-test-results)
 - [Tests by runbook stage](#tests-by-runbook-stage)
-  - [1. ISO creation – `New-IsoBuild`](#1-iso-creation--new-isobuild)
-  - [2. Publishing the boot ISO – `Publish-BootIso`](#2-publishing-the-boot-iso--publish-bootiso)
-  - [3. Identifying the target server – `Get-OneViewServerTarget`](#3-identifying-the-target-server--get-oneviewservertarget)
-  - [4. Mounting the ISO and forcing boot – `Invoke-IloRedfish`](#4-mounting-the-iso-and-forcing-boot--invoke-iloredfish)
-  - [5. Pre-build checks – `Test-PreBuildValidation`](#5-pre-build-checks--test-prebuildvalidation)
-  - [6. Post-build checks – `Test-PostBuildValidation`](#6-post-build-checks--test-postbuildvalidation)
-  - [7. Monitoring the install – `Start-InstallMonitor`](#7-monitoring-the-install--start-installmonitor)
-  - [8. End-to-end orchestration – `Start-PhysicalServerBuild`](#8-end-to-end-orchestration--start-physicalserverbuild)
-  - [9. Deploy command layer – `Invoke-IsoDeploy`](#9-deploy-command-layer--invoke-isodeploy)
-  - [10. Firmware updates – `Update-Firmware`](#10-firmware-updates--update-firmware)
-  - [11. Windows security updates – `Invoke-WindowsSecurityUpdate`](#11-windows-security-updates--invoke-windowssecurityupdate)
+  - [1. ISO creation – `New-IsoBuild`](#1-iso-creation-new-isobuild)
+  - [2. Publishing the boot ISO – `Publish-BootIso`](#2-publishing-the-boot-iso-publish-bootiso)
+  - [3. Identifying the target server – `Get-OneViewServerTarget`](#3-identifying-the-target-server-get-oneviewservertarget)
+  - [4. Mounting the ISO and forcing boot – `Invoke-IloRedfish`](#4-mounting-the-iso-and-forcing-boot-invoke-iloredfish)
+  - [5. Pre-build checks – `Test-PreBuildValidation`](#5-pre-build-checks-test-prebuildvalidation)
+  - [6. Post-build checks – `Test-PostBuildValidation`](#6-post-build-checks-test-postbuildvalidation)
+  - [7. Monitoring the install – `Start-InstallMonitor`](#7-monitoring-the-install-start-installmonitor)
+  - [8. End-to-end orchestration – `Start-PhysicalServerBuild`](#8-end-to-end-orchestration-start-physicalserverbuild)
+  - [9. Deploy command layer – `Invoke-IsoDeploy`](#9-deploy-command-layer-invoke-isodeploy)
+  - [10. Firmware updates – `Update-Firmware`](#10-firmware-updates-update-firmware)
+  - [11. Windows security updates – `Invoke-WindowsSecurityUpdate`](#11-windows-security-updates-invoke-windowssecurityupdate)
 - [Test criticality at a glance](#test-criticality-at-a-glance)
 - [What a failed test means for a change request](#what-a-failed-test-means-for-a-change-request)
 - [Running the test suite](#running-the-test-suite)
@@ -26,6 +25,7 @@
 - [Related documents](#related-documents)
 
 
+<a id="top"></a>
 <a name="purpose-of-this-document"></a>
 ## Purpose of this document
 
@@ -95,7 +95,7 @@ How to interpret it:
 Each test file maps to one stage of the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md). They are listed below in the order the build actually happens.
 
 
-<a name="1-iso-creation--new-isobuild"></a>
+<a name="1-iso-creation-new-isobuild"></a>
 ### 1. ISO creation – `New-IsoBuild`
 
 **Test file:** `tests/powershell/New-IsoBuild.Unit.Tests.ps1`
@@ -118,7 +118,7 @@ The bootable ISO is the starting point of the entire build. If the ISO is not cr
 **Criticality:** HIGH. A failing test here means the ISO cannot be trusted to exist in the right place, with the right name, or with the right audit record.
 
 
-<a name="2-publishing-the-boot-iso--publish-bootiso"></a>
+<a name="2-publishing-the-boot-iso-publish-bootiso"></a>
 ### 2. Publishing the boot ISO – `Publish-BootIso`
 
 **Test file:** `tests/powershell/Publish-BootIso.Unit.Tests.ps1`
@@ -140,7 +140,7 @@ Publishing is the hand-off between the Configuration Manager side and the iLO si
 **Criticality:** HIGH. A failure here means the ISO may not be reachable by iLO when the build starts.
 
 
-<a name="3-identifying-the-target-server--get-oneviewservertarget"></a>
+<a name="3-identifying-the-target-server-get-oneviewservertarget"></a>
 ### 3. Identifying the target server – `Get-OneViewServerTarget`
 
 **Test file:** `tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1`
@@ -162,7 +162,7 @@ This is the "right server, right build" check. Getting it wrong is the highest-s
 **Criticality:** CRITICAL. A failure here, or a regression that allowed this function to silently accept bad input, would risk a wrong-server build.
 
 
-<a name="4-mounting-the-iso-and-forcing-boot--invoke-iloredfish"></a>
+<a name="4-mounting-the-iso-and-forcing-boot-invoke-iloredfish"></a>
 ### 4. Mounting the ISO and forcing boot – `Invoke-IloRedfish`
 
 **Test file:** `tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1`
@@ -185,7 +185,7 @@ Mounting the ISO and rebooting the server is the single most dangerous operation
 **Criticality:** CRITICAL. A regression here (for example, `-Force` no longer being required) would remove the safety interlock on a destructive operation.
 
 
-<a name="5-pre-build-checks--test-prebuildvalidation"></a>
+<a name="5-pre-build-checks-test-prebuildvalidation"></a>
 ### 5. Pre-build checks – `Test-PreBuildValidation`
 
 **Test file:** `tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1`
@@ -207,7 +207,7 @@ Pre-build validation is the difference between discovering a missing driver in t
 **Criticality:** HIGH. A failure here undermines the gate that prevents bad builds from starting.
 
 
-<a name="6-post-build-checks--test-postbuildvalidation"></a>
+<a name="6-post-build-checks-test-postbuildvalidation"></a>
 ### 6. Post-build checks – `Test-PostBuildValidation`
 
 **Test file:** `tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1`
@@ -228,7 +228,7 @@ This is the "did we actually succeed?" check. A server that appears to have buil
 **Criticality:** HIGH. A failure here means the build is being signed off without evidence that it actually finished correctly.
 
 
-<a name="7-monitoring-the-install--start-installmonitor"></a>
+<a name="7-monitoring-the-install-start-installmonitor"></a>
 ### 7. Monitoring the install – `Start-InstallMonitor`
 
 **Test file:** `tests/powershell/Start-InstallMonitor.Unit.Tests.ps1`
@@ -248,7 +248,7 @@ Monitoring is what separates an attended build from a fire-and-forget one. If th
 **Criticality:** MEDIUM. A failure here means the monitoring command is not available, but the build itself may still work; the risk is operational visibility rather than build correctness.
 
 
-<a name="8-end-to-end-orchestration--start-physicalserverbuild"></a>
+<a name="8-end-to-end-orchestration-start-physicalserverbuild"></a>
 ### 8. End-to-end orchestration – `Start-PhysicalServerBuild`
 
 **Test file:** `tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1`
@@ -268,7 +268,7 @@ This is "the build ran and everything agreed to proceed". If the orchestrator do
 **Criticality:** CRITICAL. The orchestrator is the single entry point operators and pipelines use. If it does not behave, the whole process is unreliable.
 
 
-<a name="9-deploy-command-layer--invoke-isodeploy"></a>
+<a name="9-deploy-command-layer-invoke-isodeploy"></a>
 ### 9. Deploy command layer – `Invoke-IsoDeploy`
 
 **Test file:** `tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1`
@@ -288,7 +288,7 @@ This is a supporting layer. It exists to keep the orchestrator clean and the dep
 **Criticality:** MEDIUM. Failures here usually surface as orchestrator failures, but if they do not, a deploy command silently behaving differently from expectation is a real risk.
 
 
-<a name="10-firmware-updates--update-firmware"></a>
+<a name="10-firmware-updates-update-firmware"></a>
 ### 10. Firmware updates – `Update-Firmware`
 
 **Test file:** `tests/powershell/Update-Firmware.Unit.Tests.ps1`
@@ -308,7 +308,7 @@ Firmware on HPE servers must be at a known baseline. If the automation that appl
 **Criticality:** MEDIUM. A failure here means firmware updates cannot be invoked by the automation; servers may still build, but the firmware baseline is no longer guaranteed.
 
 
-<a name="11-windows-security-updates--invoke-windowssecurityupdate"></a>
+<a name="11-windows-security-updates-invoke-windowssecurityupdate"></a>
 ### 11. Windows security updates – `Invoke-WindowsSecurityUpdate`
 
 **Test file:** `tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1`

@@ -1,16 +1,15 @@
 # Automation Code Map
 
-<a id="top"></a>
 ## Table of Contents
 
-- [1. Module Loading & Bootstrap](#1-module-loading-bootstrap)
+- [1. Module Loading & Bootstrap](#1-module-loading-and-bootstrap)
   - [1.1 - Root Module Loader](#11---root-module-loader)
   - [1.1 - Root Module Loader](#11---root-module-loader-1)
   - [1.2 - Private Script Load Order](#12---private-script-load-order)
   - [1.2 - Private Script Load Order](#12---private-script-load-order-1)
   - [1.3 - Public Function Load Order](#13---public-function-load-order)
   - [1.3 - Public Function Load Order](#13---public-function-load-order-1)
-- [2. Request Routing & Control Surfaces](#2-request-routing-control-surfaces)
+- [2. Request Routing & Control Surfaces](#2-request-routing-and-control-surfaces)
   - [2.1 - Request Router](#21---request-router)
   - [2.1 - Request Router](#21---request-router-1)
   - [2.2 - Unified Orchestrator Entry Point](#22---unified-orchestrator-entry-point)
@@ -56,25 +55,25 @@
   - [8.2 - Remote PowerShell via WinRM](#82---remote-powershell-via-winrm)
   - [8.2 - Remote PowerShell via WinRM](#82---remote-powershell-via-winrm-1)
 - [9. OpsRamp Integration](#9-opsramp-integration)
-  - [9.1 - OpsRamp_Client Class](#91---opsrampclient-class)
-  - [9.1 - OpsRamp_Client Class](#91---opsrampclient-class-1)
+  - [9.1 - OpsRamp_Client Class](#91---opsramp_client-class)
+  - [9.1 - OpsRamp_Client Class](#91---opsramp_client-class-1)
   - [9.2 - OpsRamp Entry Points](#92---opsramp-entry-points)
   - [9.2 - OpsRamp Entry Points](#92---opsramp-entry-points-1)
 - [10. Credential Resolution](#10-credential-resolution)
-- [11. Inventory & Configuration](#11-inventory-configuration)
+- [11. Inventory & Configuration](#11-inventory-and-configuration)
   - [11.1 - Inventory Functions](#111---inventory-functions)
   - [11.1 - Inventory Functions](#111---inventory-functions-1)
   - [11.2 - Configuration Functions](#112---configuration-functions)
   - [11.2 - Configuration Functions](#112---configuration-functions-1)
   - [11.3 - Validator Functions](#113---validator-functions)
   - [11.3 - Validator Functions](#113---validator-functions-1)
-- [12. Process Execution & Retry](#12-process-execution-retry)
-- [13. File I/O & Path Resolution](#13-file-io-path-resolution)
+- [12. Process Execution & Retry](#12-process-execution-and-retry)
+- [13. File I/O & Path Resolution](#13-file-io-and-path-resolution)
   - [13.1 - File I/O Functions](#131---file-io-functions)
   - [13.1 - File I/O Functions](#131---file-io-functions-1)
   - [13.2 - Path Resolution](#132---path-resolution)
   - [13.2 - Path Resolution](#132---path-resolution-1)
-- [14. Logging & Audit](#14-logging-audit)
+- [14. Logging & Audit](#14-logging-and-audit)
   - [14.1 - Logging Functions](#141---logging-functions)
   - [14.1 - Logging Functions](#141---logging-functions-1)
   - [14.2 - Audit Logger](#142---audit-logger)
@@ -84,22 +83,24 @@
 - [15. Script Helpers](#15-script-helpers)
   - [15.1 - PowerShell Profile Setup](#151---powershell-profile-setup)
   - [15.1 - PowerShell Profile Setup](#151---powershell-profile-setup-1)
-  - [15.2 - CI/Security & Lint Scripts](#152---cisecurity-lint-scripts)
-  - [15.2 - CI/Security & Lint Scripts](#152---cisecurity-lint-scripts-1)
-  - [15.3 - Setup & Bootstrap Scripts](#153---setup-bootstrap-scripts)
-  - [15.3 - Setup & Bootstrap Scripts](#153---setup-bootstrap-scripts-1)
-  - [15.4 - Documentation & Coverage Scripts](#154---documentation-coverage-scripts)
-  - [15.4 - Documentation & Coverage Scripts](#154---documentation-coverage-scripts-1)
+  - [15.2 - CI/Security & Lint Scripts](#152---cisecurity-and-lint-scripts)
+  - [15.2 - CI/Security & Lint Scripts](#152---cisecurity-and-lint-scripts-1)
+  - [15.3 - Setup & Bootstrap Scripts](#153---setup-and-bootstrap-scripts)
+  - [15.3 - Setup & Bootstrap Scripts](#153---setup-and-bootstrap-scripts-1)
+  - [15.4 - Documentation & Coverage Scripts](#154---documentation-and-coverage-scripts)
+  - [15.4 - Documentation & Coverage Scripts](#154---documentation-and-coverage-scripts-1)
 - [16. Configuration Files](#16-configuration-files)
 - [17. Testing](#17-testing)
   - [17.1 - Pester Unit Tests](#171---pester-unit-tests)
   - [17.1 - Pester Unit Tests](#171---pester-unit-tests-1)
   - [17.2 - Test Execution Scripts](#172---test-execution-scripts)
   - [17.2 - Test Execution Scripts](#172---test-execution-scripts-1)
-  - [17.3 - Coverage & Lint](#173---coverage-lint)
-  - [17.3 - Coverage & Lint](#173---coverage-lint-1)
+  - [17.3 - Coverage & Lint](#173---coverage-and-lint)
+  - [17.3 - Coverage & Lint](#173---coverage-and-lint-1)
 - [18. Quick Navigation](#18-quick-navigation)
 
+
+<a id="top"></a>
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
 
@@ -109,7 +110,7 @@ This document maps every code location in the automation module **excluding** ma
 
 ---
 
-<a name="1-module-loading-bootstrap"></a>
+<a name="1-module-loading-and-bootstrap"></a>
 ## 1. Module Loading & Bootstrap
 
 Before any function can be called, the `Automation` module must be loaded. This loads all shared types, private helpers (in dependency order), and public functions.
@@ -210,7 +211,7 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 
 ---
 
-<a name="2-request-routing-control-surfaces"></a>
+<a name="2-request-routing-and-control-surfaces"></a>
 ## 2. Request Routing & Control Surfaces
 
 After module load, requests arrive from one of four surfaces: CI pipeline, iRequest/ISAPI, Scheduled tasks, or GitLab CI/CD. All surfaces converge on the central router.
@@ -618,9 +619,9 @@ dism /Image:{mounted_iso} /Add-Package /PackagePath:{kb.msu} /LimitAccess /NoRes
 <a name="9-opsramp-integration"></a>
 ## 9. OpsRamp Integration
 
-<a name="91---opsrampclient-class"></a>
+<a name="91---opsramp_client-class"></a>
 ### 9.1 - OpsRamp_Client Class
-<a name="91---opsrampclient-class-1"></a>
+<a name="91---opsramp_client-class-1"></a>
 ### 9.1 - OpsRamp_Client Class
 
 Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L136), fully documented in [§9.2 of this document](#markdown-header-92-opsramp-entry-points).
@@ -676,7 +677,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 ---
 
-<a name="11-inventory-configuration"></a>
+<a name="11-inventory-and-configuration"></a>
 ## 11. Inventory & Configuration
 
 <a name="111---inventory-functions"></a>
@@ -723,7 +724,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 ---
 
-<a name="12-process-execution-retry"></a>
+<a name="12-process-execution-and-retry"></a>
 ## 12. Process Execution & Retry
 
 **[`Executor.ps1`](../../src/powershell/Automation/Private/Executor.ps1)** - 108 lines
@@ -739,7 +740,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 ---
 
-<a name="13-file-io-path-resolution"></a>
+<a name="13-file-io-and-path-resolution"></a>
 ## 13. File I/O & Path Resolution
 
 <a name="131---file-io-functions"></a>
@@ -774,7 +775,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#L
 
 ---
 
-<a name="14-logging-audit"></a>
+<a name="14-logging-and-audit"></a>
 ## 14. Logging & Audit
 
 <a name="141---logging-functions"></a>
@@ -846,9 +847,9 @@ Configures PowerShell profiles to auto-import the Automation module:
 - Supports `-Merge` (preserve user customizations), `-Uninstall`, `-DryRun`
 - Platform-aware: `windowspsprofile.ps1` (Windows) / `psprofile.ps1` (Linux)
 
-<a name="152---cisecurity-lint-scripts"></a>
+<a name="152---cisecurity-and-lint-scripts"></a>
 ### 15.2 - CI/Security & Lint Scripts
-<a name="152---cisecurity-lint-scripts-1"></a>
+<a name="152---cisecurity-and-lint-scripts-1"></a>
 ### 15.2 - CI/Security & Lint Scripts
 
 | Script | File | Purpose |
@@ -859,9 +860,9 @@ Configures PowerShell profiles to auto-import the Automation module:
 | [`run-checkmake.ps1`](../../scripts/run-checkmake.ps1) | 57 lines | Standalone checkmake runner |
 | [`prune-logs.ps1`](../../scripts/prune-logs.ps1) | 152 lines | Prunes excess log files, keeps max per type |
 
-<a name="153---setup-bootstrap-scripts"></a>
+<a name="153---setup-and-bootstrap-scripts"></a>
 ### 15.3 - Setup & Bootstrap Scripts
-<a name="153---setup-bootstrap-scripts-1"></a>
+<a name="153---setup-and-bootstrap-scripts-1"></a>
 ### 15.3 - Setup & Bootstrap Scripts
 
 | Script | File | Purpose |
@@ -871,9 +872,9 @@ Configures PowerShell profiles to auto-import the Automation module:
 | [`setup-oneview.ps1`](../../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
 | [`cyberark-bootstrap.ps1`](../../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for GitLab CI |
 
-<a name="154---documentation-coverage-scripts"></a>
+<a name="154---documentation-and-coverage-scripts"></a>
 ### 15.4 - Documentation & Coverage Scripts
-<a name="154---documentation-coverage-scripts-1"></a>
+<a name="154---documentation-and-coverage-scripts-1"></a>
 ### 15.4 - Documentation & Coverage Scripts
 
 | Script | File | Purpose |
@@ -939,9 +940,9 @@ All configs loaded from `configs/` directory:
 | [`test-maintenance-connection.ps1`](../../scripts/test-maintenance-connection.ps1) | Connectivity test for SCOM/OneView |
 | [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
 
-<a name="173---coverage-lint"></a>
+<a name="173---coverage-and-lint"></a>
 ### 17.3 - Coverage & Lint
-<a name="173---coverage-lint-1"></a>
+<a name="173---coverage-and-lint-1"></a>
 ### 17.3 - Coverage & Lint
 
 | Script | Purpose |

@@ -1,6 +1,5 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Test-ServerConnectivity](#test-serverconnectivity)
@@ -19,30 +18,34 @@
   - [SCOM Connection Test](#scom-connection-test)
   - [OneView Connection Test](#oneview-connection-test)
 - [4 Enable Maintenance Mode](#4-enable-maintenance-mode)
+- [4 Enable Maintenance Mode](#4-enable-maintenance-mode-1)
   - [4.1 Pre-Check: Already Enabled?](#41-pre-check-already-enabled)
   - [4.2 Start/End Time Resolution](#42-startend-time-resolution)
   - [4.3 SCOM: Enter Maintenance](#43-scom-enter-maintenance)
   - [4.4 OneView: Set Maintenance](#44-oneview-set-maintenance)
 - [5. Enable Post-Operation Actions](#5-enable-post-operation-actions)
+- [5. Enable Post-Operation Actions](#5-enable-post-operation-actions-1)
   - [5.1 SCOM: Schedule Auto-Disable Task](#51-scom-schedule-auto-disable-task)
   - [5.2 Email Notification (Enable)](#52-email-notification-enable)
-  - [5.3 OpsRamp Metrics & Alerts (Enable)](#53-opsramp-metrics-alerts-enable)
+  - [5.3 OpsRamp Metrics & Alerts (Enable)](#53-opsramp-metrics-and-alerts-enable)
 - [6 Disable Maintenance Mode](#6-disable-maintenance-mode)
+- [6 Disable Maintenance Mode](#6-disable-maintenance-mode-1)
   - [6.1 Pre-Check: Already Disabled?](#61-pre-check-already-disabled)
   - [6.2 SCOM: Exit Maintenance](#62-scom-exit-maintenance)
   - [6.3 SCOM: Post-Disable Stabilization Wait](#63-scom-post-disable-stabilization-wait)
   - [6.4 OneView: Disable Maintenance](#64-oneview-disable-maintenance)
   - [6.5 Email Notification (Disable)](#65-email-notification-disable)
-  - [6.6 OpsRamp Metrics & Alerts (Disable)](#66-opsramp-metrics-alerts-disable)
+  - [6.6 OpsRamp Metrics & Alerts (Disable)](#66-opsramp-metrics-and-alerts-disable)
 - [7 Validate Action (Read-Only)](#7-validate-action-read-only)
   - [DryRun Validation](#dryrun-validation)
   - [SCOM Validation](#scom-validation)
   - [OneView Validation](#oneview-validation)
   - [Status Computation](#status-computation)
   - [Result Assembly](#result-assembly)
-- [8 Audit Record & Output](#8-audit-record-output)
+- [8 Audit Record & Output](#8-audit-record-and-output)
+- [8 Audit Record & Output](#8-audit-record-and-output-1)
   - [8.1 Audit Initialization](#81-audit-initialization)
-  - [8.2 Audit Finalization & Save](#82-audit-finalization-save)
+  - [8.2 Audit Finalization & Save](#82-audit-finalization-and-save)
   - [8.3 Response Construction](#83-response-construction)
   - [8.4 CLI Output (Script-Mode Only)](#84-cli-output-script-mode-only)
 - [9 Helper Functions (Shared)](#9-helper-functions-shared)
@@ -59,6 +62,7 @@
 - [15 Documentation References](#15-documentation-references)
 
 
+<a id="top"></a>
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 
@@ -314,10 +318,12 @@ This step is skipped in DryRun mode - no credentials are needed when simulating.
 <a name="41-pre-check-already-enabled"></a>
 
 =======
+<a name="4-enable-maintenance-mode-1"></a>
 ## 4 Enable Maintenance Mode
 
 
 =======
+<a name="41-pre-check-already-enabled"></a>
 ### 4.1 Pre-Check: Already Enabled?
 
 Before issuing enable commands, the function checks whether the target is **already** in maintenance mode. If enabled, the operation is aborted to avoid duplicate entries.
@@ -410,6 +416,7 @@ SetMaintenance($targetName, $targetType, $startDt, $endDt, $DryRun)
 
 
 =======
+<a name="5-enable-post-operation-actions-1"></a>
 ## 5. Enable Post-Operation Actions
 
 
@@ -435,7 +442,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 2. [`Lines 3500–3528`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3500-L3528): Template variable substitution (`{cluster_name}`, `{environment}`, `{servers}`, etc.)
 3. [`Lines 3538–3565`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3538-L3565): `System.Net.Mail.SmtpClient` send to all recipients
 
-<a name="53-opsramp-metrics-alerts-enable"></a>
+<a name="53-opsramp-metrics-and-alerts-enable"></a>
 ### 5.3 OpsRamp Metrics & Alerts (Enable)
 
 - **[`Lines 1452–1478`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1452-L1478)**:
@@ -453,10 +460,12 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 <a name="61-pre-check-already-disabled"></a>
 
 =======
+<a name="6-disable-maintenance-mode-1"></a>
 ## 6 Disable Maintenance Mode
 
 
 =======
+<a name="61-pre-check-already-disabled"></a>
 ### 6.1 Pre-Check: Already Disabled?
 
 - **Call site**: [`Lines 1496–1538`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1496-L1538)
@@ -534,7 +543,7 @@ DisableMaintenance($targetName, $targetType, $DryRun)
 - Uses same [`EmailNotifier.SendMaintenanceNotification()`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3473) with action `'disabled'`
 
 
-<a name="66-opsramp-metrics-alerts-disable"></a>
+<a name="66-opsramp-metrics-and-alerts-disable"></a>
 ### 6.6 OpsRamp Metrics & Alerts (Disable)
 
 - **[`Lines 1607–1639`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1607-L1639)**:
@@ -587,21 +596,23 @@ The validate action queries current maintenance status **without making any chan
 
 ---
 
-<a name="8-audit-record-output"></a>
+<a name="8-audit-record-and-output"></a>
 ## 8 Audit Record & Output
 
 <a name="81-audit-initialization"></a>
 
 =======
+<a name="8-audit-record-and-output-1"></a>
 ## 8 Audit Record & Output
 
 
 =======
+<a name="81-audit-initialization"></a>
 ### 8.1 Audit Initialization
 
 - **[`Lines 1222–1239`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1222-L1239)**: Creates `$audit` hashtable with action, mode, environment, target_id, serial_number, timestamps, steps, success flag
 
-<a name="82-audit-finalization-save"></a>
+<a name="82-audit-finalization-and-save"></a>
 ### 8.2 Audit Finalization & Save
 
 - **[`Lines 1641–1712`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1641-L1712)**: Finalizes audit record with success status, timestamps, message

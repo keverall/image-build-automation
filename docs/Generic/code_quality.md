@@ -1,6 +1,5 @@
 # PowerShell Code Quality & Security Scanning
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -17,6 +16,7 @@
 - [See Also](#see-also)
 
 
+<a id="top"></a>
 Automated code quality, linting, and security scanning for PowerShell scripts in CI/CD pipelines.
 
 ---

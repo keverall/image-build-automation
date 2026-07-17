@@ -1,43 +1,57 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-OpsRampClient.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-OpsRampClient
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
-Convenience function to test OpsRamp API connectivity by obtaining an authentication token. Useful for verifying credentials and network access before running full integrations.
+Instantiates the OpsRamp_Client class which provides methods for sending metrics, alerts, and events to the OpsRamp monitoring platform. Use this to obtain a client object for programmatic OpsRamp integrations.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
 | `-ConfigPath` | Path to opsramp_config.json. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
-Invoke-OpsRamp -ConfigPath 'configs\opsramp_config.json'
+$client = Invoke-OpsRampClient -ConfigPath 'configs\opsramp_config.json'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Quick CLI test of the OpsRamp API connection.
+        Factory function: creates a new OpsRampClient class instance from a config path.
 
     .DESCRIPTION
-        Convenience function to test OpsRamp API connectivity by obtaining an
-        authentication token. Useful for verifying credentials and network
-        access before running full integrations.
+        Instantiates the OpsRamp_Client class which provides methods for sending
+        metrics, alerts, and events to the OpsRamp monitoring platform. Use this
+        to obtain a client object for programmatic OpsRamp integrations.
 
     .PARAMETER ConfigPath
         Path to opsramp_config.json.
 
     .EXAMPLE
-        Invoke-OpsRamp -ConfigPath 'configs\opsramp_config.json'
+        $client = Invoke-OpsRampClient -ConfigPath 'configs\opsramp_config.json'
 ```
 
 ---

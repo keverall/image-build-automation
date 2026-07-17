@@ -337,7 +337,11 @@ function Add-BitbucketMdToc {
 
     if ($All) {
         $files = Get-ChildItem -Path $repoRoot -Filter *.md -Recurse -File -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -notmatch '(^|[\\/])\.git([\\/]|$)' -and $_.FullName -notmatch '(^|[\\/])generated([\\/]|$)' } |
+            Where-Object {
+                $_.FullName -notmatch '(^|[\\/])\.git([\\/]|$)' -and
+                $_.FullName -notmatch '(^|[\\/])generated([\\/]|$)' -and
+                $_.FullName -notmatch '(^|[\\/])(scripts|vendor)[\\/]modules([\\/]|$)'
+            } |
             Sort-Object FullName
 
         $passCount = 0

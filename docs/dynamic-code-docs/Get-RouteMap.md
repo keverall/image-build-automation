@@ -1,22 +1,34 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-RouteMap.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-RouteMap
 
+## Table of Contents
+
+- [Description](#description)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Returns a hashtable mapping request type strings to their corresponding handler function names. This table is used by Invoke-RoutedRequest to dispatch requests to the appropriate handler function.
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 $routes = Get-RouteMap # Returns: @{ build_iso = 'New-IsoBuild'; maintenance_enable = 'Set-MaintenanceMode'; ... }
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
