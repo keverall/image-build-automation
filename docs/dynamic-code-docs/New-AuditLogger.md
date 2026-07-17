@@ -1,22 +1,34 @@
 ---
 source:  ./src/powershell/Automation/Private/Audit.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-AuditLogger
 
+## Table of Contents
+
+- [Description](#description)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Creates an AuditLogger instance.
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 $audit = New-AuditLogger -Category 'maintenance'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

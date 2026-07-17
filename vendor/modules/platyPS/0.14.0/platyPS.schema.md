@@ -1,8 +1,16 @@
 # Schema
 
+## Table of Contents
+
+- [Legend](#legend)
+  - [Version 2.0.0](#version-200)
+  - [Version 1.0.0 (Deprecated)](#version-100-deprecated)
+
+
 PlatyPS requires you to keep the content in a specific structure and Markdown notation. Any authoring must not break this formatting or the MAML will not be generated correctly.
 It closely resembles output of `Get-Help`.
 
+<a name="legend"></a>
 ## Legend
 
 *   `{string}` - single-line string value
@@ -10,6 +18,7 @@ It closely resembles output of `Get-Help`.
 *   `//` - line comment in schema
 *   tabs show the scopes of `// for` statements; they should not be included in the Markdown output.
 
+<a name="version-200"></a>
 ### Version 2.0.0
     
     // Every cmdlet help placed in it's own `Command-Name.md` file in one folder.
@@ -113,6 +122,7 @@ It closely resembles output of `Get-Help`.
     // for every link
         [{link name}]({link url})
 
+<a name="version-100-deprecated"></a>
 ### Version 1.0.0 (Deprecated)
 v0.7.6 is the last platyPS version that supports it.
 

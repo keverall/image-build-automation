@@ -7,9 +7,125 @@ schema: 2.0.0
 
 # Merge-MarkdownHelp
 
+## Table of Contents
+
+- [SYNOPSIS](#synopsis)
+- [SYNTAX](#syntax)
+- [DESCRIPTION](#description)
+- [EXAMPLES](#examples)
+  - [Example 1](#example-1)
+- [PARAMETERS](#parameters)
+  - [-Encoding](#-encoding)
+  - [-ExplicitApplicableIfAll](#-explicitapplicableifall)
+  - [-Force](#-force)
+  - [-MergeMarker](#-mergemarker)
+  - [-OutputPath](#-outputpath)
+  - [-Path](#-path)
+  - [CommonParameters](#commonparameters)
+- [INPUTS](#inputs)
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+<a name="synopsis"></a>
 ## SYNOPSIS
 Merge multiple markdown versions of the same cmdlet into a single markdown file.
 
+<a name="syntax"></a>
 ## SYNTAX
 
 ```
@@ -17,6 +133,7 @@ Merge-MarkdownHelp [-Path] <String[]> [-OutputPath] <String> [-Encoding <Encodin
  [-Force] [[-MergeMarker] <String>] [<CommonParameters>]
 ```
 
+<a name="description"></a>
 ## DESCRIPTION
 Similar modules, or different versions of the same module, often contain duplicate content.
 
@@ -30,8 +147,10 @@ Content that is unique to each file is merged using **merge markers**, followed 
 A **merge marker** is a string of text that acts as a marker to describe the content that was merged.
 The default **merge marker** text consists of three exclamation points !!! however this can be changed to any relevant text using the **-MergeMarker** flag.
 
+<a name="examples"></a>
 ## EXAMPLES
 
+<a name="example-1"></a>
 ### Example 1
 The Test-CsPhoneBootstrap.md cmdlet is included in both Lync Server 2010 and Lync Server 2013.
 Much of the content is duplicated and thus we want to have a single file for the cmdlet with unique content merged from each individual file.
@@ -42,8 +161,10 @@ PS C:\> Merge-MarkdownHelp -Path @('Lync Server 2010\Test-CsPhoneBootstrap.md', 
 
 The resulting file will be located at lync\Test-CsPhoneBootstrap.md
 
+<a name="parameters"></a>
 ## PARAMETERS
 
+<a name="-encoding"></a>
 ### -Encoding
 Specifies the character encoding for your external help file.
 Specify a **System.Text.Encoding** object.
@@ -63,6 +184,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-explicitapplicableifall"></a>
 ### -ExplicitApplicableIfAll
 Always write out full list of applicable tags.
 By default cmdlets and parameters that are present in all variations don't get an application tag.
@@ -79,6 +201,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-force"></a>
 ### -Force
 Indicates that this cmdlet overwrites an existing file that has the same name.
 
@@ -94,6 +217,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-mergemarker"></a>
 ### -MergeMarker
 String to be used as a merge text indicator.
 Applicable tag list would be included after the marker
@@ -110,6 +234,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-outputpath"></a>
 ### -OutputPath
 Specifies the path of the folder where this cmdlet creates the combined markdown help files.
 
@@ -125,6 +250,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-path"></a>
 ### -Path
 Specifies an array of paths of markdown files or folders.
 This cmdlet creates combined markdown help based on these files and folders.
@@ -141,17 +267,24 @@ Accept pipeline input: True (ByValue)
 Accept wildcard characters: True
 ```
 
+<a name="commonparameters"></a>
 ### CommonParameters
 This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable. For more information, see [about_CommonParameters](http://go.microsoft.com/fwlink/?LinkID=113216).
 
+<a name="inputs"></a>
 ## INPUTS
 
+<a name="systemstring"></a>
 ### System.String[]
 
+<a name="outputs"></a>
 ## OUTPUTS
 
+<a name="systemiofileinfo"></a>
 ### System.IO.FileInfo[]
 
+<a name="notes"></a>
 ## NOTES
 
+<a name="related-links"></a>
 ## RELATED LINKS

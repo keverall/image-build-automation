@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-IsoDeploy
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.txt, resolves the bootable ISO under -IsoDir, and delegates the actual virtual-media mount + boot to Invoke-IloRedfish.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -24,13 +35,16 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository. Combined with the bootable_iso filename from deployment_metadata.json to construct the full URL when -IsoUrl is not given. |
 | `-DryRun` | Simulate - no actual deployment. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

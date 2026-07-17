@@ -1,15 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Public/New-Uuid.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-Uuid
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+  - [Example 2](#example-2)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Creates a deterministic UUID (GUID) by computing SHA-256 hash of the server name combined with a timestamp. The first 16 bytes of the hash are converted to a standard UUID format. This ensures the same server and timestamp always produce the same UUID.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -18,18 +30,22 @@ Creates a deterministic UUID (GUID) by computing SHA-256 hash of the server name
 | `-Timestamp` | ISO-8601 timestamp (defaults to current UTC time). |
 | `-OutputPath` | Optional path to write the UUID to. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 New-Uuid -ServerName 'srv01.corp.local'
 ```
 
+<a name="example-2"></a>
 ### Example 2
 ```powershell
 $uuid = New-Uuid -ServerName 'srv01' -OutputPath 'C:\temp\srv01.uuid'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

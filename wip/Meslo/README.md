@@ -1,5 +1,13 @@
 # Nerd Fonts
 
+## Table of Contents
+
+- [Which font?](#which-font)
+  - [TL;DR](#tldr)
+  - [Ligatures](#ligatures)
+  - [Explanation](#explanation)
+
+
 This is an archived font from the Nerd Fonts release v3.4.0.
 
 For more information see:
@@ -17,8 +25,10 @@ For more information have a look at the upstream website: https://github.com/and
 
 Version: 1.21
 
+<a name="which-font"></a>
 ## Which font?
 
+<a name="tldr"></a>
 ### TL;DR
 
 * Pick your font family:
@@ -26,12 +36,14 @@ Version: 1.21
   * If you want to have bigger icons (usually around 1.5 normal letters wide) pick a font without `Mono` i.e. `Nerd Font` (or `NF`). Most terminals support this, but ymmv.
   * If you work in a proportional context (GUI elements or edit a presentation etc) pick a font with `Nerd Font Propo` (or `NFP`).
 
+<a name="ligatures"></a>
 ### Ligatures
 
 Ligatures are generally preserved in the patched fonts.
 Nerd Fonts `v2.0.0` had no ligatures in the `Nerd Font Mono` fonts, this has been dropped with `v2.1.0`.
 If you have a ligature-aware terminal and don't want ligatures you can (usually) disable them in the terminal settings.
 
+<a name="explanation"></a>
 ### Explanation
 
 Once you narrow down your font choice of family (`Droid Sans`, `Inconsolata`, etc) and style (`bold`, `italic`, etc) you have 2 main choices:

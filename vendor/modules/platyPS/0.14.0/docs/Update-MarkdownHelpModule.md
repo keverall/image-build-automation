@@ -7,9 +7,131 @@ schema: 2.0.0
 
 # Update-MarkdownHelpModule
 
+## Table of Contents
+
+- [SYNOPSIS](#synopsis)
+- [SYNTAX](#syntax)
+- [DESCRIPTION](#description)
+- [EXAMPLES](#examples)
+  - [Example 1: Update a markdown help module](#example-1-update-a-markdown-help-module)
+- [PARAMETERS](#parameters)
+  - [-Encoding](#-encoding)
+  - [-LogAppend](#-logappend)
+  - [-LogPath](#-logpath)
+  - [-Path](#-path)
+  - [-RefreshModulePage](#-refreshmodulepage)
+  - [-AlphabeticParamsOrder](#-alphabeticparamsorder)
+  - [-Session](#-session)
+  - [-UseFullTypeName](#-usefulltypename)
+  - [-UpdateInputOutput](#-updateinputoutput)
+  - [-ModulePagePath](#-modulepagepath)
+  - [-Force](#-force)
+  - [-ExcludeDontShow](#-excludedontshow)
+  - [CommonParameters](#commonparameters)
+- [INPUTS](#inputs)
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+  - [System.String[]](#systemstring)
+- [OUTPUTS](#outputs)
+  - [System.IO.FileInfo[]](#systemiofileinfo)
+- [NOTES](#notes)
+- [RELATED LINKS](#related-links)
+
+
+<a name="synopsis"></a>
 ## SYNOPSIS
 Update all files in a markdown help module folder.
 
+<a name="syntax"></a>
 ## SYNTAX
 
 ```
@@ -18,12 +140,15 @@ Update-MarkdownHelpModule [-Path] <String[]> [[-Encoding] <Encoding>] [-RefreshM
  [-UpdateInputOutput] [-Force] [-Session <PSSession>] [-ExcludeDontShow] [<CommonParameters>]
 ```
 
+<a name="description"></a>
 ## DESCRIPTION
 The **Update-MarkdownHelpModule** cmdlet updates existing help markdown files and creates markdown files for new cmdlets in a module.
 This cmdlet combines functionality of the [Update-MarkdownHelp](Update-MarkdownHelp.md) and [New-MarkdownHelp](New-MarkdownHelp.md) cmdlets to perform a bulk update.
 
+<a name="examples"></a>
 ## EXAMPLES
 
+<a name="example-1-update-a-markdown-help-module"></a>
 ### Example 1: Update a markdown help module
 ```
 PS C:\> Update-MarkdownHelpModule -Path ".\docs"
@@ -46,8 +171,10 @@ Mode                LastWriteTime         Length Name
 This command updates all the files in the specified folder based on the cmdlets as loaded into your current session.
 The command creates markdown help topics for any cmdlets that are not already included in the .\docs folder.
 
+<a name="parameters"></a>
 ## PARAMETERS
 
+<a name="-encoding"></a>
 ### -Encoding
 Specifies the character encoding for your markdown help files.
 Specify a **System.Text.Encoding** object.
@@ -67,6 +194,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-logappend"></a>
 ### -LogAppend
 Indicates that this cmdlet appends information to the log instead overwriting it.
 
@@ -82,6 +210,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-logpath"></a>
 ### -LogPath
 Specifies a file path for log information.
 The cmdlet writes the VERBOSE stream to the log.
@@ -99,6 +228,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-path"></a>
 ### -Path
 Specifies an array of paths of markdown folders to update.
 The folder must contain a module page from which this cmdlet can get the module name.
@@ -115,6 +245,7 @@ Accept pipeline input: True (ByValue)
 Accept wildcard characters: True
 ```
 
+<a name="-refreshmodulepage"></a>
 ### -RefreshModulePage
 Update module page when updating the help module.
 
@@ -130,6 +261,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-alphabeticparamsorder"></a>
 ### -AlphabeticParamsOrder
 Order parameters alphabetically by name in PARAMETERS section.
 There are 5 exceptions: -Confirm, -WhatIf, -IncludeTotalCount, -Skip, and -First parameters will be the last.
@@ -147,6 +279,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-session"></a>
 ### -Session
 Provides support for remote commands.
 Pass the session that you used to create the commands with `Import-PSSession`.
@@ -164,6 +297,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-usefulltypename"></a>
 ### -UseFullTypeName
 Indicates that the target document will use a full type name instead of a short name for parameters.
 
@@ -179,6 +313,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-updateinputoutput"></a>
 ### -UpdateInputOutput
 Refreshes the Input and Output sections to reflect the current state of the cmdlet.  WARNING: this parameter will remove any manual additions to these sections.
 
@@ -194,6 +329,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-modulepagepath"></a>
 ### -ModulePagePath
 When -RefreshModulePage is used by default it puts .md file in same location as all other docs. With this parameter you can specify new name/location providing better placement options.
 
@@ -209,6 +345,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-force"></a>
 ### -Force
 Remove help files that no longer exists within sessions (for example if function was deleted)
 
@@ -224,6 +361,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="-excludedontshow"></a>
 ### -ExcludeDontShow
 Exclude the parameters marked with `DontShow` in the parameter attribute from the help content.
 
@@ -239,23 +377,30 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+<a name="commonparameters"></a>
 ### CommonParameters
 This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable. For more information, see [about_CommonParameters](http://go.microsoft.com/fwlink/?LinkID=113216).
 
+<a name="inputs"></a>
 ## INPUTS
 
+<a name="systemstring"></a>
 ### System.String[]
 You can pipe an array of paths to this cmdlet.
 
+<a name="outputs"></a>
 ## OUTPUTS
 
+<a name="systemiofileinfo"></a>
 ### System.IO.FileInfo[]
 This cmdlet returns a **FileInfo[]** object for updated and new files.
 
+<a name="notes"></a>
 ## NOTES
 The module for which you want to update the help should first be imported from the location containing the previous version of the help.
  If this condition is not met, the parameter order will be alphabetical in the updated help, even if the parameter *AlphabeticParamsOrder* has not been used.
 
+<a name="related-links"></a>
 ## RELATED LINKS
 
 [Character Encoding in the .NET Framework](https://msdn.microsoft.com/en-us/library/ms404377.aspx)

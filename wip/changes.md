@@ -10,6 +10,11 @@ make: *** [test] Error 1
 On the Windows test server, run these PowerShell commands:
 
 # Remove the broken installation
+
+## Table of Contents
+
+
+
 Remove-Item -Recurse -Force "$env:USERPROFILE\Documents\PowerShell\Modules\Pester"
 
 # Install from PSGallery (requires internet)

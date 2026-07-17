@@ -1,6 +1,5 @@
 # Audit Process Documentation
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -39,6 +38,7 @@
 - [Change History](#change-history)
 
 
+<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 

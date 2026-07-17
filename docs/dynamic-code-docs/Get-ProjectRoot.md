@@ -1,28 +1,42 @@
 ---
 source:  ./src/powershell/Automation/Private/PathResolver.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-ProjectRoot
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
-Get the appropriate log directory based on context (testing vs production).
+Walk up directories from the current location to find the project root (identified by the presence of kilo.json or Makefile).
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Category` | Log category: 'test', 'audit', 'regulatory', 'build_reports', or 'production' (default). |
+| `-StartPath` | Directory to start searching from. Defaults to $PSScriptRoot. |
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Get the appropriate log directory based on context (testing vs production).
+        Walk up directories from the current location to find the project root
+        (identified by the presence of kilo.json or Makefile).
 
-    .PARAMETER Category
-        Log category: 'test', 'audit', 'regulatory', 'build_reports', or 'production' (default).
+    .PARAMETER StartPath
+        Directory to start searching from. Defaults to $PSScriptRoot.
+
+    .RETURNS
+        The resolved project root path, or $null if not found.
 ```
 
 ---

@@ -1,33 +1,45 @@
 ---
 source:  ./src/powershell/Automation/Public/Control.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # _Build-CIParams
 
+## Table of Contents
+
+- [Description](#description)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
-Initiates GitLab CI/CD pipeline for cluster maintenance instead of direct execution. Used by iRequest to delegate maintenance to GitLab pipelines.
+Processes iRequest form data to enable or disable cluster maintenance mode. Maps cluster_id and action to orchestrator request types.
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
-Run-GitLab -Params @{ cluster_id = 'CLUSTER01'; action = 'enable' }
+Run-IRequest -FormData @{ cluster_id = 'CLUSTER01'; action = 'enable' }
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Trigger GitLab CI/CD pipeline for maintenance operations.
+        Execute iRequest maintenance mode operation.
 
     .DESCRIPTION
-        Initiates GitLab CI/CD pipeline for cluster maintenance instead of direct execution.
-        Used by iRequest to delegate maintenance to GitLab pipelines.
+        Processes iRequest form data to enable or disable cluster maintenance mode.
+        Maps cluster_id and action to orchestrator request types.
 
     .EXAMPLE
-        Run-GitLab -Params @{ cluster_id = 'CLUSTER01'; action = 'enable' }
+        Run-IRequest -FormData @{ cluster_id = 'CLUSTER01'; action = 'enable' }
 ```
 
 ---

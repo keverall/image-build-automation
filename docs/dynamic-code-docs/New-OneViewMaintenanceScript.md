@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-OneViewMaintenanceScript
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Build a PowerShell script for HPE OneView maintenance mode operations.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -20,13 +31,16 @@ Build a PowerShell script for HPE OneView maintenance mode operations.
 | `-Async` | Use -Async parameter for bulk operations (default: true). |
 | `-ModuleName` | PowerShell module name for HPE OneView (required). Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.1000 for OneView 10.00). See https://github.com/HewlettPackard/POSH-HPEOneView |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.1000'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

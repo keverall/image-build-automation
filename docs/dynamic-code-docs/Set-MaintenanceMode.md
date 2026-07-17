@@ -1,15 +1,34 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Set-MaintenanceMode
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+  - [Example 2](#example-2)
+  - [Example 3](#example-3)
+  - [Example 4](#example-4)
+  - [Example 5](#example-5)
+  - [Example 6](#example-6)
+  - [Example 7](#example-7)
+  - [Example 8](#example-8)
+  - [Example 9](#example-9)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications.  The function is the PowerShell implementation. All datetime values are UTC only. Local time conversion is not performed.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -30,53 +49,64 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 | `-NoSchedule` | Do not create a Windows Scheduled Task for automatic disable at end time. |
 | `-Json` | Output as JSON for API/iRequest integration. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 # Validate configuration without making changes Set-MaintenanceMode -Action validate -TargetId 'CLU-CLUSTER-01' -Mode scom
 ```
 
+<a name="example-2"></a>
 ### Example 2
 ```powershell
 # Enable maintenance in Test environment with relative time Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom -Environment Test -Start 'now' -End '+2hours'
 ```
 
+<a name="example-3"></a>
 ### Example 3
 ```powershell
 # Enable maintenance in Prod environment with absolute UTC time Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 ```
 
+<a name="example-4"></a>
 ### Example 4
 ```powershell
 # Disable maintenance with custom stabilization wait Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 ```
 
+<a name="example-5"></a>
 ### Example 5
 ```powershell
 # Use host override for emergency maintenance Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -ManagementHost 'backup-server.local' -Start 'now' -End '+4hours'
 ```
 
+<a name="example-6"></a>
 ### Example 6
 ```powershell
 # Dry run to test configuration Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom -Environment Test -Start 'now' -End '+1hour' -DryRun
 ```
 
+<a name="example-7"></a>
 ### Example 7
 ```powershell
 # OneView single server maintenance Set-MaintenanceMode -Action enable -TargetId 'server01.ad.example.com' -Mode oneview -Environment Test -Start 'now' -End '+1hour'
 ```
 
+<a name="example-8"></a>
 ### Example 8
 ```powershell
 # OneView with serial number (Marin's preference) Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -Environment Test -Start 'now' -End '+1hour'
 ```
 
+<a name="example-9"></a>
 ### Example 9
 ```powershell
 # SCOM single server (no CLU- prefix) Set-MaintenanceMode -Action enable -TargetId 'myserver01' -Mode scom -Environment Prod -Start 'now' -End '+2hours'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

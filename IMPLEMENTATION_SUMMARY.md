@@ -1,18 +1,45 @@
 # Implementation Summary: Environment-Based Maintenance Mode Configuration
 
+## Table of Contents
+
+- [Changes Made](#changes-made)
+  - [1. New Configuration File: `configs/connection_hosts.json`](#1-new-configuration-file-configsconnection_hostsjson)
+  - [2. Template Credentials File: `.env`](#2-template-credentials-file-env)
+  - [3. Updated Script: `src/powershell/Automation/Public/Set-MaintenanceMode.ps1`](#3-updated-script-srcpowershellautomationpublicset-maintenancemodeps1)
+  - [4. Test Script: `scripts/test-maintenance-connection.ps1`](#4-test-script-scriptstest-maintenance-connectionps1)
+  - [5. Documentation: `docs/maintenance-mode-environment-config.md`](#5-documentation-docsmaintenance-mode-environment-configmd)
+- [Key Features](#key-features)
+  - [Security Enhancements](#security-enhancements)
+  - [Flexibility](#flexibility)
+  - [Compliance Ready](#compliance-ready)
+- [Usage Examples](#usage-examples)
+  - [Example 1: Production with environment variable](#example-1-production-with-environment-variable)
+  - [Example 2: Test with parameter override](#example-2-test-with-parameter-override)
+  - [Example 3: Interactive testing](#example-3-interactive-testing)
+- [Testing Checklist](#testing-checklist)
+- [Next Steps](#next-steps)
+- [Files Modified](#files-modified)
+- [Backward Compatibility](#backward-compatibility)
+- [Security Notes for Regulated Environments](#security-notes-for-regulated-environments)
+
+
 <a id="top"></a>
+<a name="changes-made"></a>
 ## Changes Made
 
+<a name="1-new-configuration-file-configsconnection_hostsjson"></a>
 ### 1. New Configuration File: `configs/connection_hosts.json`
 - Defines environment-specific connection settings for Test and Prod
 - Includes SCOM management servers and OneView appliances per environment
 - Contains group IDs and scope names for each environment
 
+<a name="2-template-credentials-file-env"></a>
 ### 2. Template Credentials File: `.env`
 - Template for environment variables (not committed to git)
 - Documents all required credentials and optional overrides
 - Provides examples for both SCOM and OneView connections
 
+<a name="3-updated-script-srcpowershellautomationpublicset-maintenancemodeps1"></a>
 ### 3. Updated Script: `src/powershell/Automation/Public/Set-MaintenanceMode.ps1`
 
 #### New Parameters Added:
@@ -49,12 +76,14 @@ Priority order:
 - `Test-ScomConnection`: Validates SCOM management server connectivity
 - `Test-OneViewConnection`: Validates OneView appliance connectivity
 
+<a name="4-test-script-scriptstest-maintenance-connectionps1"></a>
 ### 4. Test Script: `scripts/test-maintenance-connection.ps1`
 - Interactive test script for validating new functionality
 - Loads .env file automatically
 - Supports dry-run validation mode
 - Displays detailed connection information
 
+<a name="5-documentation-docsmaintenance-mode-environment-configmd"></a>
 ### 5. Documentation: `docs/maintenance-mode-environment-config.md`
 - Comprehensive guide for the new functionality
 - Usage examples for different scenarios
@@ -62,8 +91,10 @@ Priority order:
 - Migration guide from old config format
 - Troubleshooting section
 
+<a name="key-features"></a>
 ## Key Features
 
+<a name="security-enhancements"></a>
 ### Security Enhancements
 ✅ No hardcoded credentials  
 ✅ Environment isolation (Test vs Prod)  
@@ -71,20 +102,24 @@ Priority order:
 ✅ Connection pre-flight checks  
 ✅ Support for CyberArk integration (future enhancement)  
 
+<a name="flexibility"></a>
 ### Flexibility
 ✅ Parameter overrides for emergency scenarios  
 ✅ Multiple resolution paths (config > env var > parameter > prompt)  
 ✅ Backward compatible with existing configs  
 ✅ Works in both interactive and automated modes  
 
+<a name="compliance-ready"></a>
 ### Compliance Ready
 ✅ Clear audit trail  
 ✅ Environment separation  
 ✅ Connection validation prevents accidental operations  
 ✅ Detailed error messages for troubleshooting  
 
+<a name="usage-examples"></a>
 ## Usage Examples
 
+<a name="example-1-production-with-environment-variable"></a>
 ### Example 1: Production with environment variable
 ```powershell
 $env:ENVIRONMENT = "Prod"
@@ -94,6 +129,7 @@ $env:SCOM_ADMIN_PASSWORD = "secure_pass"
 Set-MaintenanceMode -Action enable -TargetId "CLU-CLUSTER-01" -Mode scom
 ```
 
+<a name="example-2-test-with-parameter-override"></a>
 ### Example 2: Test with parameter override
 ```powershell
 Set-MaintenanceMode `
@@ -104,11 +140,13 @@ Set-MaintenanceMode `
     -ManagementHost "backup-scom.test.local"
 ```
 
+<a name="example-3-interactive-testing"></a>
 ### Example 3: Interactive testing
 ```bash
 pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRun
 ```
 
+<a name="testing-checklist"></a>
 ## Testing Checklist
 
 - [x] Script parses without syntax errors
@@ -122,6 +160,7 @@ pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRu
 - [ ] Integration tests with real SCOM/OneView (requires access)
 - [ ] Jenkins pipeline integration tested
 
+<a name="next-steps"></a>
 ## Next Steps
 
 1. **Write Unit Tests**: Create Pester tests for new parameter handling
@@ -131,6 +170,7 @@ pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRu
 5. **CyberArk Integration**: Implement direct CyberArk lookups as alternative credential source
 6. **Monitoring**: Add metrics for connection success/failure rates
 
+<a name="files-modified"></a>
 ## Files Modified
 
 1. `/home/keverall/repos/image-build-automation/src/powershell/Automation/Public/Set-MaintenanceMode.ps1`
@@ -152,6 +192,7 @@ pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRu
 5. `/home/keverall/repos/image-build-automation/docs/maintenance-mode-environment-config.md` (NEW)
    - Complete documentation
 
+<a name="backward-compatibility"></a>
 ## Backward Compatibility
 
 All changes are **backward compatible**:
@@ -160,6 +201,7 @@ All changes are **backward compatible**:
 - Old single-host configs still supported
 - Default behavior unchanged when parameters not provided
 
+<a name="security-notes-for-regulated-environments"></a>
 ## Security Notes for Regulated Environments
 
 For EU GDPR/EMIR banking environments:
