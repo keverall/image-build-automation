@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-PowerShellScript.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-PowerShellScript
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Useful for isolating script execution or running scripts in a fresh PowerShell context. Returns a hashtable with success status and combined output.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -19,13 +30,16 @@ Executes PowerShell scripts locally by spawning a new PowerShell process with co
 | `-TimeoutSeconds` | Per-script timeout in seconds (default: 300). |
 | `-ExecutionPolicy` | PowerShell execution-policy override (default: Bypass). |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 $r = Invoke-PowerShellScript -Script 'Get-Service | Select-Object -First 5 Name' -TimeoutSeconds 30
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

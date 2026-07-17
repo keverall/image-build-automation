@@ -1,6 +1,5 @@
 # GDPR Compliance Statement
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -22,6 +21,7 @@
 - [Contact](#contact)
 
 
+<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 

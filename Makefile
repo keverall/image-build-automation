@@ -44,7 +44,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests coverage docs clean prune-logs help all ci fix-docs
+.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: prune-logs ## Setup PowerShell environment (install modules, configure profiles)
@@ -96,11 +96,17 @@ coverage: prune-logs ## Run Pester tests with code coverage and generate report
 	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage and generating report..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/coverage-report.ps1
 
-docs: prune-logs ## Generate PowerShell Markdown docs via PlatyPS
+docs: prune-logs gen-docs add-anchors ## Generate PowerShell Markdown docs + Bitbucket anchors
+	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
+
+gen-docs: ## Generate PowerShell API reference docs (src/ + scripts/ -> docs/dynamic-code-docs)
 	@echo "$(CYAN)[docs]$(NC) Generating PowerShell API reference docs..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-PSDocs.ps1 -OutputDir docs/dynamic-code-docs || \
 		(echo "$(YELLOW)[docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
-	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
+
+add-anchors: ## Add Bitbucket/GitStash-compatible anchors + TOC to all markdown
+	@echo "$(CYAN)[docs]$(NC) Adding Bitbucket/GitStash-compatible anchors + TOC to all markdown..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All
 
 # ─── Documentation Link Validation ───────────────────────────────────────────
 fix-docs: prune-logs ## Fix broken markdown links in configs/, docs/, and root

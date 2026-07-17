@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-BuildParams.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-BuildParams
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Checks that required build prerequisites are met, such as verifying the base Windows ISO file exists at the specified path. Returns an empty array on success or an array of error messages describing validation failures.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -17,13 +28,16 @@ Checks that required build prerequisites are met, such as verifying the base Win
 | `-BaseIsoPath` | Path to the base Windows ISO (required for ISO builds). |
 | `-DryRun` | Whether the run is a dry run (no additional validation required). |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 $errors = Test-BuildParams -BaseIsoPath 'C:\ISOs\server2022.iso'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

@@ -1,19 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Private/FileIO.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Ensure-DirectoryExists
 
+## Table of Contents
+
+- [Description](#description)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
-Boolean path existence test (avoids pipeline noise).
+Create a directory (and parents) if it does not exist. Returns the path.
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Boolean path existence test (avoids pipeline noise).
+        Create a directory (and parents) if it does not exist. Returns the path.
 ```
 
 ---

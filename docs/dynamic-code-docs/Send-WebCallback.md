@@ -1,15 +1,24 @@
 ---
 source:  ./scripts/gitlab/Send-WebCallback.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Send-WebCallback
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 POST JSON data to a webhook/callback URL.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -18,6 +27,7 @@ POST JSON data to a webhook/callback URL.
 | `-Data` | Hashtable or string to send as the request body. |
 | `-ApiKey` | Optional API key added as X-API-Key header. Not logged for security. |
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

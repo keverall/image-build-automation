@@ -1,3 +1,6 @@
+## Table of Contents
+
+
 #errors 
 
 pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1

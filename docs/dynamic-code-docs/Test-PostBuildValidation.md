@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PostBuildValidation.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-PostBuildValidation
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Connects over WinRM to the freshly-built server and verifies the post-build state.  Returns a hashtable of named checks.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -25,13 +36,16 @@ Connects over WinRM to the freshly-built server and verifies the post-build stat
 | `-SkipRemote` | Skip all WinRM-dependent checks (only do local / metadata validation). |
 | `-DryRun` | Skip WinRM probes - assume checks pass. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 Test-PostBuildValidation -Hostname 'srv01.ad.example.com' -Domain 'ad.example.com' -ExpectedOsVersion '10.0.20348'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

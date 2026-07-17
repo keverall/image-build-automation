@@ -1,19 +1,60 @@
 ---
 source:  ./src/powershell/Automation/Private/Config.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Import-JsonConfig
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
-Load a YAML config file. Requires the 'powershell-yaml' module.
+Load a JSON file into a hashtable, optionally resolving ${VAR} env placeholders.
 
+<a name="parameters"></a>
+## Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `-Path` | Path to the JSON config file. |
+| `-Required` | Throw when file is missing if $true (default). |
+| `-AutoEnvVarReplace` | Replace ${VAR} placeholder strings with environment variable values. |
+
+<a name="examples"></a>
+## Examples
+
+<a name="example-1"></a>
+### Example 1
+```powershell
+$cfg = Import-JsonConfig 'configs\clusters_catalogue.json'
+```
+
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Load a YAML config file. Requires the 'powershell-yaml' module.
+        Load a JSON file into a hashtable, optionally resolving ${VAR} env placeholders.
+
+    .PARAMETER Path
+        Path to the JSON config file.
+
+    .PARAMETER Required
+        Throw when file is missing if $true (default).
+
+    .PARAMETER AutoEnvVarReplace
+        Replace ${VAR} placeholder strings with environment variable values.
+
+    .EXAMPLE
+        $cfg = Import-JsonConfig 'configs\clusters_catalogue.json'
 ```
 
 ---

@@ -1,15 +1,29 @@
 ---
 source:  ./scripts/Generate-GitStash-MdToc.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Generate-GitStash-MdToc
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+  - [Example 2](#example-2)
+  - [Example 3](#example-3)
+  - [Example 4](#example-4)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Parses a Markdown file and generates a clickable Table of Contents based on headings. Optionally injects HTML anchor tags to ensure compatibility with Bitbucket and other renderers. Supports pipeline input, in-place updates, or writing to a new output file.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -20,28 +34,34 @@ Parses a Markdown file and generates a clickable Table of Contents based on head
 | `-MaxDepth` | Maximum heading depth to include (default: 3 = ###). |
 | `-NoAnchors` | Do not inject <a name="..."> anchor tags. |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 Generate-GitStash-MdToc -Path docs\file.md
 ```
 
+<a name="example-2"></a>
 ### Example 2
 ```powershell
 Generate-GitStash-MdToc docs\file.md -InPlace
 ```
 
+<a name="example-3"></a>
 ### Example 3
 ```powershell
 Get-ChildItem docs\*.md | Generate-GitStash-MdToc -InPlace
 ```
 
+<a name="example-4"></a>
 ### Example 4
 ```powershell
 Generate-GitStash-MdToc docs\file.md -MaxDepth 4 -Verbose
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

@@ -1,15 +1,26 @@
 ---
 source:  ./src/powershell/Automation/Private/Logging.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Initialize-Logging
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
 Configures logging with specified log file path and level. Creates timestamped log files in generated/logs/testing or generated/logs/production directories.
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
@@ -17,13 +28,16 @@ Configures logging with specified log file path and level. Creates timestamped l
 | `-LogFile` | Base name for the log file (without timestamp) |
 | `-Level` | Minimum log level: Verbose, Debug, Information, Warning, or Error (default: Information) |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
 Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS

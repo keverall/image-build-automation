@@ -1,9 +1,7 @@
 # Maintenance Mode Command Reference
 
-<a id="top"></a>
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
 - [Why Test First?](#why-test-first)
 - [Quick Start](#quick-start)
 - [Two-Phase Test](#two-phase-test)
@@ -47,11 +45,10 @@
 - [Related](#related-1)
 
 
+<a id="top"></a>
 > Complete guide for maintenance mode commands. **Always test connectivity first** before running maintenance operations.
 
 <a name="table-of-contents"></a>
-## Table of Contents
-
 1. [Test-ServerConnectivity - Test Connectivity First](#1-test-serverconnectivity---test-connectivity-first)
 2. [Set-MaintenanceMode - Maintenance Operations](#2-set-maintenancemode---maintenance-operations)
 

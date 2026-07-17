@@ -1,56 +1,56 @@
 ---
 source:  ./src/powershell/Automation/Private/Inventory.ps1
-generated: 2026-07-17 09:10 UTC
+generated: 2026-07-17 09:49 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Load-ServerList
 
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+
+<a name="description"></a>
 ## Description
 
-Lets any OneView automation task accept EITHER a server name or a serial number. A serial is resolved to its OneView server record (hostname + iLO IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+Load server list from a text file (format: hostname[,ipmi_ip[,ilo_ip]]).
 
+<a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-SerialNumber` | Hardware serial number. When supplied, -OneViewHost is required to resolve it. Takes precedence over -ServerName. |
-| `-ServerName` | Server hostname / OneView name. Used verbatim when no -SerialNumber. |
-| `-OneViewHost` | OneView appliance hostname or IP (required to resolve a serial). |
-| `-DryRun` | Resolve without performing a real OneView query. |
+| `-Path` | Path to server_list.txt. |
+| `-IncludeDetails` | Return [ServerInfo] objects when $true, plain strings when $false (default). |
 
+<a name="examples"></a>
 ## Examples
 
+<a name="example-1"></a>
 ### Example 1
 ```powershell
-Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
+$servers = Load-ServerList 'configs\server_list.txt' -IncludeDetails
 ```
 
+<a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Normalise a server name or serial number into a OneView target.
+        Load server list from a text file (format: hostname[,ipmi_ip[,ilo_ip]]).
 
-    .DESCRIPTION
-        Lets any OneView automation task accept EITHER a server name or a serial
-        number. A serial is resolved to its OneView server record (hostname + iLO
-        IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+    .PARAMETER Path
+        Path to server_list.txt.
 
-    .PARAMETER SerialNumber
-        Hardware serial number. When supplied, -OneViewHost is required to
-        resolve it. Takes precedence over -ServerName.
-
-    .PARAMETER ServerName
-        Server hostname / OneView name. Used verbatim when no -SerialNumber.
-
-    .PARAMETER OneViewHost
-        OneView appliance hostname or IP (required to resolve a serial).
-
-    .PARAMETER DryRun
-        Resolve without performing a real OneView query.
+    .PARAMETER IncludeDetails
+        Return [ServerInfo] objects when $true, plain strings when $false (default).
 
     .EXAMPLE
-        Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
+        $servers = Load-ServerList 'configs\server_list.txt' -IncludeDetails
 ```
 
 ---
