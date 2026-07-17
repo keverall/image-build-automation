@@ -62,6 +62,11 @@ function Import-YamlConfig {
 }
 
 function _PS_ConvertTo-Hashtable {
+    <#
+    .SYNOPSIS
+        Internal helper that convert to hashtable.
+    #>
+
     param([Parameter(ValueFromPipeline)] $InputObject)
     process {
         if ($null -eq $InputObject) { return $null }
@@ -86,6 +91,11 @@ function _PS_ConvertTo-Hashtable {
 }
 
 function _PS_ReplaceEnvVars {
+    <#
+    .SYNOPSIS
+        Internal helper that replace env vars.
+    #>
+
     param([hashtable] $Config)
     $out = @{}
     foreach ($key in $Config.Keys) {
@@ -106,6 +116,11 @@ function _PS_ReplaceEnvVars {
 }
 
 function _PS_SubstituteEnvVars {
+    <#
+    .SYNOPSIS
+        Internal helper that substitute env vars.
+    #>
+
     param([string] $Str)
     $result = $Str
     $start  = $result.IndexOf('${')

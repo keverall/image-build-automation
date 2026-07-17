@@ -49,6 +49,11 @@ Write-Output "[Generate-PSDocs] Output dir  : $OutputDir"
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Get-FunctionCommentPairs {
+    <#
+    .SYNOPSIS
+        Gets function comment pairs.
+    #>
+
     [OutputType([pscustomobject[]])]
     param([string]$Path)
 
@@ -89,12 +94,21 @@ function Get-FunctionCommentPairs {
 # Returns the file-level <# .SYNOPSIS #> block (the first <# ... #> that appears
 # BEFORE the first function declaration), or $null.
 function Get-FileHeaderComment {
+    <#
+    .SYNOPSIS
+        Gets file header comment.
+    #>
+
     [OutputType([string[]])]
     param([string]$Path)
 
     $content = Get-Content -Raw -LiteralPath $Path
 
-    $fnFirst = $content.IndexOf('function', 0)
+    # Locate the FIRST REAL function declaration (the 'function <Name> {' form), not the
+    # bare word "function" which may appear in prose/comments and would set the
+    # limit too early (excluding the actual header that follows).
+    $fnDecl = [regex]::Match($content, 'function\s+[A-Za-z0-9_-]+\s*\{')
+    $fnFirst = if ($fnDecl.Success) { $fnDecl.Index } else { -1 }
     # If a function exists, only consider comment blocks that start before it.
     $limit = if ($fnFirst -ge 0) { $fnFirst } else { $content.Length }
 
@@ -114,6 +128,11 @@ function Get-FileHeaderComment {
 }
 
 function ConvertFrom-CommentBlock {
+    <#
+    .SYNOPSIS
+        Convert from comment block.
+    #>
+
     [OutputType([pscustomobject])]
     param([string[]]$Lines)
 
@@ -130,6 +149,11 @@ function ConvertFrom-CommentBlock {
     $buf    = [System.Text.StringBuilder]::new()
 
     function _Flush {
+    <#
+    .SYNOPSIS
+        Flush flush.
+    #>
+
         param($r)
         $text = $buf.ToString().Trim()
         if (-not $text) { return }
@@ -185,6 +209,11 @@ function ConvertFrom-CommentBlock {
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Format-FunctionDoc {
+    <#
+    .SYNOPSIS
+        Format function doc.
+    #>
+
     [OutputType([string])]
     param(
         [string]$CmdName,
@@ -259,6 +288,11 @@ return ($md -join "`n")
 
 # Determine relative path for docs (consistent src/powershell or scripts style)
 function Get-RelSourcePath {
+    <#
+    .SYNOPSIS
+        Gets rel source path.
+    #>
+
 [OutputType([string])]
 param([string]$FullPath)
 $relPath = Resolve-Path -Relative $FullPath

@@ -48,16 +48,46 @@ $C_YELLOW = "`e[33m"
 $C_RED    = "`e[31m"
 
 # ── Log helpers ──────────────────────────────────────────────────────────────
-function _WL { param($tag, $colour, $msg)
+function _WL {
+    <#
+    .SYNOPSIS
+        Internal log writer used by the setup-runner log helpers.
+    #>
+ param($tag, $colour, $msg)
     Write-Output "${colour}${tag}${C_RESET} $msg"
     Add-Content $LOG_FILE "${tag} $msg" }
-function Write-Log  { param($m) _WL '[INFO]'  $C_CYAN   $m }
-function Write-OK   { param($m) _WL '[OK]'    $C_GREEN  $m }
-function Write-Warn { param($m) _WL '[WARN]'  $C_YELLOW $m }
-function Write-Err  { param($m) _WL '[ERROR]' $C_RED    $m }
+function Write-Log  {
+    <#
+    .SYNOPSIS
+        Writes log.
+    #>
+ param($m) _WL '[INFO]'  $C_CYAN   $m }
+function Write-OK   {
+    <#
+    .SYNOPSIS
+        Writes ok.
+    #>
+ param($m) _WL '[OK]'    $C_GREEN  $m }
+function Write-Warn {
+    <#
+    .SYNOPSIS
+        Writes warn.
+    #>
+ param($m) _WL '[WARN]'  $C_YELLOW $m }
+function Write-Err  {
+    <#
+    .SYNOPSIS
+        Writes err.
+    #>
+ param($m) _WL '[ERROR]' $C_RED    $m }
 
 # ── Utility: user PS module path (OS-aware) ─────────────────────────────────
 function Get-UserModulePath {
+    <#
+    .SYNOPSIS
+        Gets user module path.
+    #>
+
     $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform
     $base  = if ($isWin) { [Environment]::GetFolderPath('MyDocuments') } else { $HOME }
     $rel   = if ($isWin) { 'PowerShell\Modules' }         else { '.local/share/powershell/Modules' }
@@ -66,6 +96,11 @@ function Get-UserModulePath {
 
 # ── Utility: add directory to session + persistent user PATH ─────────────────
 function Add-BinToPath {
+    <#
+    .SYNOPSIS
+        Adds bin to path.
+    #>
+
     param([string]$Dir)
     if ($env:PATH -notlike "*$Dir*") { $env:PATH = "$Dir;$env:PATH" }
     $persisted = [Environment]::GetEnvironmentVariable('PATH', 'User')
@@ -80,6 +115,11 @@ function Add-BinToPath {
 # =============================================================================
 
 function Test-PowerShellVersion {
+    <#
+    .SYNOPSIS
+        Tests power shell version.
+    #>
+
     $v = $PSVersionTable.PSVersion
     if ($v.Major -lt 7) {
         Write-Err "PowerShell 7+ required. Current: $($v.ToString())"
@@ -94,6 +134,11 @@ function Test-PowerShellVersion {
 # =============================================================================
 
 function Get-BundledModulePath {
+    <#
+    .SYNOPSIS
+        Gets bundled module path.
+    #>
+
     param([string]$Name, [string]$Version)
 
     $parent = Get-ChildItem -Path $VENDOR_MODULES_DIR -Directory -ErrorAction SilentlyContinue |
@@ -135,6 +180,11 @@ function Get-BundledModulePath {
 }
 
 function Repair-TempModulesDirectory {
+    <#
+    .SYNOPSIS
+        Repairs temp modules directory.
+    #>
+
     if (-not (Test-Path $TEMP_MODULES_DIR -PathType Container)) { return }
 
     Write-Warn "Found legacy temp-modules directory; moving contents into scripts/modules"
@@ -159,6 +209,11 @@ function Repair-TempModulesDirectory {
 }
 
 function Copy-ModuleToUserPath {
+    <#
+    .SYNOPSIS
+        Copies module to user path.
+    #>
+
     param([string]$Name, [string]$Version, [string]$SrcDir)
     
     # Extract the actual module name from the .psd1 file in the source
@@ -177,6 +232,11 @@ function Copy-ModuleToUserPath {
 }
 
 function Install-RequiredModule {
+    <#
+    .SYNOPSIS
+        Installs required module.
+    #>
+
     param([string]$Name, [string]$Version)
 
     # 1. Already installed and importable?
@@ -235,6 +295,11 @@ function Install-RequiredModule {
 }
 
 function Install-RequiredModules {
+    <#
+    .SYNOPSIS
+        Installs required modules.
+    #>
+
     Write-Log "Installing PowerShell modules…"
     foreach ($m in $REQUIRED_MODULES) { Install-RequiredModule -Name $m.Name -Version $m.Version }
 }
@@ -247,6 +312,11 @@ function Install-RequiredModules {
 # If found, ensures it's on PATH (both session and persistent).  Returns $true.
 # Guards against Windows App Execution Aliases (real exes must have a Source path).
 function Find-LocalBinary {
+    <#
+    .SYNOPSIS
+        Finds local binary.
+    #>
+
     param([string]$BinaryName)            # e.g. 'checkmake.exe'
     # 1. Project bin/ (most reliable - avoids Windows app-picker stubs)
     $binPath = Join-Path $BIN_DIR $BinaryName
@@ -264,6 +334,11 @@ function Find-LocalBinary {
 }
 
 function Install-OhMyPosh {
+    <#
+    .SYNOPSIS
+        Installs oh my posh.
+    #>
+
     $bin = 'oh-my-posh.exe'
     if (Find-LocalBinary -BinaryName $bin) {
         $src = Join-Path $BIN_DIR $bin
@@ -283,6 +358,11 @@ function Install-OhMyPosh {
 }
 
 function Install-Make {
+    <#
+    .SYNOPSIS
+        Installs make.
+    #>
+
     $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
              $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
     if (-not $isWin) { Write-Log "Non-Windows platform - skipping make detection"; return }
@@ -310,6 +390,11 @@ function Install-Make {
 }
 
 function Test-ValidExecutable {
+    <#
+    .SYNOPSIS
+        Tests valid executable.
+    #>
+
     param([string]$Path)
     if (-not (Test-Path $Path)) { return $false }
     $size = (Get-Item $Path).Length
@@ -329,6 +414,11 @@ function Test-ValidExecutable {
 }
 
 function Install-Checkmake {
+    <#
+    .SYNOPSIS
+        Installs checkmake.
+    #>
+
     $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform
     $exe   = if ($isWin) { 'checkmake.exe' } else { 'checkmake' }
     $dest  = Join-Path $BIN_DIR $exe
@@ -397,6 +487,11 @@ function Install-Checkmake {
 # =============================================================================
 
 function Show-Summary {
+    <#
+    .SYNOPSIS
+        Shows summary.
+    #>
+
     $ok = ($REQUIRED_MODULES | ForEach-Object {
         $m = Get-Module $_.Name -ListAvailable -ErrorAction SilentlyContinue |
              Sort-Object Version -Descending | Select-Object -First 1
@@ -421,6 +516,11 @@ function Show-Summary {
 }
 
 function Main {
+    <#
+    .SYNOPSIS
+        Main entry point for the setup-runner script.
+    #>
+
     Write-Output ""
     Write-Output "${C_CYAN}╔══════════════════════════════════════════════════════╗${C_RESET}"
     Write-Output "${C_CYAN}║  HPE ProLiant ISO Automation - PowerShell Setup     ║${C_RESET}"

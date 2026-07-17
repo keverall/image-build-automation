@@ -247,6 +247,11 @@ function New-IsoBuild {
 }
 
 function Resolve-ConfigMgrContext {
+    <#
+    .SYNOPSIS
+        Resolves config mgr context.
+    #>
+
     param(
         [Parameter(Mandatory)][string] $SiteCode,
         [string] $SiteServer,

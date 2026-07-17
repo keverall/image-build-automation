@@ -610,6 +610,11 @@ Write-Output "DISCONNECTED"
 
 # ── Output formatting ─────────────────────────────────────────────────────────
 function _Format-ConnectivityResult {
+    <#
+    .SYNOPSIS
+        Formats connectivity result.
+    #>
+
     param([hashtable]$Result)
 
     $available = $Result.Available

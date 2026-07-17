@@ -1844,6 +1844,11 @@ Initialize-Logging -LogFile 'maintenance.log'
 
 # ---- Connection validation helpers ----
 function Test-ScomConnection {
+    <#
+    .SYNOPSIS
+        Tests scom connection (SCOM mode).
+    #>
+
     param(
         [string]$ManagementServer,
         [string]$Username,
@@ -1868,6 +1873,11 @@ Write-Output "CONNECTED"
 }
 
 function Test-OneViewConnection {
+    <#
+    .SYNOPSIS
+        Tests one view connection.
+    #>
+
     param(
         [string]$Appliance,
         [string]$Username,

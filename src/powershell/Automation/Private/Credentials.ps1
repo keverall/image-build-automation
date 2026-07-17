@@ -143,6 +143,11 @@ return _Resolve-Credential -EnvVarName $EnvVarName `
 }
 
 function Get-IloCredentials {
+    <#
+    .SYNOPSIS
+        Gets ilo credentials.
+    #>
+
     [CmdletBinding()]
     param(
         [string] $UsernameEnv     = 'ILO_USER',
@@ -171,6 +176,11 @@ function Get-ScomCredentials {
 }
 
 function Get-OpenViewCredentials {
+    <#
+    .SYNOPSIS
+        Gets open view credentials.
+    #>
+
     [CmdletBinding()]
     param(
         [string] $UserEnv = 'OPENVIEW_USER',
@@ -181,6 +191,11 @@ function Get-OpenViewCredentials {
 }
 
 function Get-OneViewCredentials {
+    <#
+    .SYNOPSIS
+        Gets one view credentials.
+    #>
+
     [CmdletBinding()]
     param(
         [string] $UserEnv = 'ONEVIEW_USER',
@@ -191,6 +206,11 @@ function Get-OneViewCredentials {
 }
 
 function Get-SmtpCredentials {
+    <#
+    .SYNOPSIS
+        Gets smtp credentials.
+    #>
+
     [CmdletBinding()]
     param(
         [string] $UserEnv = 'SMTP_USER',
