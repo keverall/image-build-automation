@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PostBuildValidation.ps1
-generated: 2026-07-17 13:02 UTC
+generated: 2026-07-17 13:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
