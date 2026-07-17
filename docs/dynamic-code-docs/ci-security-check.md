@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/ci-security-check.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # ci-security-check
 
-<a id="top"></a>
 ## Description
 
 Performs security validation on PowerShell source files including: - PSScriptAnalyzer security rule scanning - Hardcoded secrets detection - JSON configuration file validation Exits with code 1 if security issues are found.

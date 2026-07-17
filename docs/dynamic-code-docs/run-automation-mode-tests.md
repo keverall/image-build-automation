@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/run-automation-mode-tests.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # run-automation-mode-tests
 
-<a id="top"></a>
 ## Description
 
 Executes focused Pester tests for the automation module's runbook functions: - New-IsoBuild, Publish-BootIso - Get-OneViewServerTarget - Invoke-IloRedfish, Invoke-IsoDeploy - Start-PhysicalServerBuild - Test-PreBuildValidation, Test-PostBuildValidation - Start-InstallMonitor - Update-Firmware, Update-WindowsSecurity Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/{environment}/automation_mode_tests_*.log Exits with code 1 if any tests fail.

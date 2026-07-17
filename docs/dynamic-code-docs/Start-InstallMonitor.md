@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-InstallMonitor.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Start-InstallMonitor
 
-<a id="top"></a>
 ## Description
 
 Polls iLO Redfish and WinRM to track installation phases (Generalize, Specialize, Running Windows, etc.).  Sends progress metrics and alerts to OpsRamp.  The PowerShell equivalent of automation.cli.monitor_install.
@@ -15,8 +14,10 @@ Polls iLO Redfish and WinRM to track installation phases (Generalize, Specialize
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Server` | Monitor a single server only. |
-| `-ServerList` | Path to server_list.txt (default: configs\server_list.txt). |
+| `-Server` | Monitor a single server only. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` | Monitor a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
+| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-ServerList` | Path to server_list.txt. Only used for -DryRun mock targeting. |
 | `-TimeoutSeconds` | Maximum monitoring duration in seconds (default: 7200). |
 | `-PollIntervalSeconds` | Seconds between checks (default: 30). |
 | `-OpsRampConfig` | Path to opsramp_config.json. |
@@ -40,10 +41,17 @@ Start-InstallMonitor -Server 'srv01.corp.local' -TimeoutSeconds 3600
         to OpsRamp.  The PowerShell equivalent of automation.cli.monitor_install.
 
     .PARAMETER Server
-        Monitor a single server only.
+        Monitor a single server only. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Monitor a server identified by its HPE serial number. Resolved to the
+        server hostname via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ServerList
-        Path to server_list.txt (default: configs\server_list.txt).
+        Path to server_list.txt. Only used for -DryRun mock targeting.
 
     .PARAMETER TimeoutSeconds
         Maximum monitoring duration in seconds (default: 7200).

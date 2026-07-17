@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Private/PathResolver.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-ProjectRoot
 
-<a id="top"></a>
 ## Description
 
 Get the appropriate log directory based on context (testing vs production).

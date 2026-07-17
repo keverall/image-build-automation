@@ -1,23 +1,23 @@
 ---
-source:  ./scripts/test-connectivity.ps1
+source:  ./scripts/test-scom-maint-connectivity.ps1
 generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
-# test-connectivity
+# test-scom-maint-connectivity
 
 ## Description
 
-OneView ping + connect test (safe during change freeze).
+SCOM ping + connect test (safe during change freeze).
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
 | `-Environment` | Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig. |
-| `-ManagementHost` | Override OneView appliance hostname (highest priority, required for live runs) |
+| `-ManagementHost` | Override SCOM management server hostname (highest priority, required for live runs) |
 | `-Credential` | PSCredential for the live connection. If omitted, prompts interactively. |
-| `-JsonConfig` | Use configs/connection_hosts.json to resolve the appliance (DryRun only). |
+| `-JsonConfig` | Use configs/connection_hosts.json to resolve the management server (DryRun only). |
 | `-Json` | Output as JSON |
 | `-DryRun` | Simulate connectivity without actual network calls |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000) |
@@ -26,35 +26,35 @@ OneView ping + connect test (safe during change freeze).
 
 ### Example 1
 ```powershell
-pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01'
+pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 ```
 
 ### Example 2
 ```powershell
-pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
+pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 ```
 
 ### Example 3
 ```powershell
-pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)
+pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
 ```
 
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-    OneView ping + connect test (safe during change freeze).
+    SCOM ping + connect test (safe during change freeze).
 
 .PARAMETER Environment
     Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
 .PARAMETER ManagementHost
-    Override OneView appliance hostname (highest priority, required for live runs)
+    Override SCOM management server hostname (highest priority, required for live runs)
 
 .PARAMETER Credential
     PSCredential for the live connection. If omitted, prompts interactively.
 
 .PARAMETER JsonConfig
-    Use configs/connection_hosts.json to resolve the appliance (DryRun only).
+    Use configs/connection_hosts.json to resolve the management server (DryRun only).
 
 .PARAMETER Json
     Output as JSON
@@ -66,13 +66,13 @@ pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Crede
     TCP connect timeout in milliseconds (default: 3000)
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01'
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
 ```
 
 ---
