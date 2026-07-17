@@ -282,13 +282,26 @@ $generated = @()
 $seenNames = @{}   # guard against duplicate function names across files
 
 foreach ($f in $files) {
-$stem = [IO.Path]::GetFileNameWithoutExtension($f.Name)
-$relPath = Get-RelSourcePath -FullPath $f.FullName
+    $stem = [IO.Path]::GetFileNameWithoutExtension($f.Name)
+    $relPath = Get-RelSourcePath -FullPath $f.FullName
     $pairs = Get-FunctionCommentPairs -Path $f.FullName
 
-if ($pairs.Count -eq 0) {
-    Write-Warning "  SKIP  $stem - no function declarations found"
-    continue
+    # Emit a doc for the file-level <# .SYNOPSIS #> header (e.g. script files
+    # that are run directly and declare no functions). Named after the file stem.
+    $fileHeader = Get-FileHeaderComment -Path $f.FullName
+    if ($fileHeader -and -not $seenNames.ContainsKey($stem)) {
+        $doc = ConvertFrom-CommentBlock -Lines $fileHeader
+        $md  = Format-FunctionDoc -CmdName $stem -RelPath $relPath -Doc $doc
+        $outFile = Join-Path $OutputDir "$stem.md"
+        [IO.File]::WriteAllText($outFile, $md, [System.Text.UTF8Encoding]::new($false))
+        Write-Output "  OK   $stem.md"
+        $generated += "$stem.md"
+        $seenNames[$stem] = $stem
+    }
+
+    if ($pairs.Count -eq 0) {
+        if (-not $fileHeader) { Write-Warning "  SKIP  $stem - no function declarations or file header found" }
+        continue
     }
 
     foreach ($pair in $pairs) {

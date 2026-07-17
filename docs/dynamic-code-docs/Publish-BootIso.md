@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Publish-BootIso.ps1
-generated: 2026-07-17 09:49 UTC
+generated: 2026-07-17 09:57 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
