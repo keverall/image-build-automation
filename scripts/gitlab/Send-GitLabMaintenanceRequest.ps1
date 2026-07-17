@@ -101,6 +101,11 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Send-WebCallback.ps1')
 
 function _Trigger-Pipeline {
+    <#
+    .SYNOPSIS
+        Triggers pipeline.
+    #>
+
     param(
         [string] $GitLabUrl,
         [string] $ProjectId,
@@ -149,6 +154,11 @@ function _Trigger-Pipeline {
 }
 
 function Wait-GitLabMaintenanceResult {
+    <#
+    .SYNOPSIS
+        Waits for git lab maintenance result.
+    #>
+
     param(
         [Parameter(Mandatory = $true)][string] $GitLabUrl,
         [Parameter(Mandatory = $true)][string] $ProjectId,
@@ -198,6 +208,11 @@ function Wait-GitLabMaintenanceResult {
 
 # Define the main function for when this script is dot-sourced
 function Send-GitLabMaintenanceRequest {
+    <#
+    .SYNOPSIS
+        Sends git lab maintenance request.
+    #>
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][ValidateSet('enable', 'disable', 'validate')][string] $Action,

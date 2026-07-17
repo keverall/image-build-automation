@@ -41,6 +41,11 @@ if (-not (Test-Path $LogDir)) {
 $LogFile = Join-Path $LogDir "fix-docs-$LogTimestamp.log"
 
 function Write-Status {
+    <#
+    .SYNOPSIS
+        Writes status.
+    #>
+
     param([string]$Color, [string]$Message)
     # Strip ANSI codes for log file
     $cleanMessage = $Message -replace '\x1b\[[0-9;]*m', ''
@@ -55,6 +60,11 @@ function Write-Status {
 Add-Content -Path $LogFile -Value "=== Fix Docs Log Started: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ===" -Encoding UTF8
 
 function Find-TargetFile {
+    <#
+    .SYNOPSIS
+        Finds target file.
+    #>
+
     param([string]$TargetFilename)
     $files = Get-ChildItem -Path $RepoRoot -Filter $TargetFilename -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object { $_.FullName -notmatch '\.git|generated/' }
@@ -71,6 +81,11 @@ function Find-TargetFile {
 }
 
 function Get-RelativeLink {
+    <#
+    .SYNOPSIS
+        Gets relative link.
+    #>
+
     param([string]$SourceFile, [string]$TargetPath)
     $sourceDir = Split-Path $SourceFile -Parent
     $targetFullPath = Join-Path $RepoRoot $TargetPath.TrimStart('/')
@@ -79,6 +94,11 @@ function Get-RelativeLink {
 }
 
 function Ensure-TopAnchor {
+    <#
+    .SYNOPSIS
+        Ensures top anchor.
+    #>
+
     # Ensures every markdown file has an <a id="top"></a> anchor placed
     # below its first H1 (# Heading) so #top fragment links scroll to the
     # top without violating MD041 (first-line-heading) or MD033 in the title.
@@ -111,12 +131,22 @@ function Ensure-TopAnchor {
 }
 
 function Remove-TopAnchorArtifacts {
+    <#
+    .SYNOPSIS
+        Removes top anchor artifacts.
+    #>
+
     # Backwards-compat wrapper: delegates to Ensure-TopAnchor
     param([System.IO.FileInfo]$File)
     Ensure-TopAnchor -File $File
 }
 
 function Get-Anchor {
+    <#
+    .SYNOPSIS
+        Gets anchor.
+    #>
+
     param([string]$LinkPath)
     if ($LinkPath -match '#(.+)$') { return '#' + $Matches[1] }
     if ($LinkPath -match '\.md$') { return '#top' }
@@ -124,6 +154,11 @@ function Get-Anchor {
 }
 
 function Get-MarkdownFiles {
+    <#
+    .SYNOPSIS
+        Gets markdown files.
+    #>
+
     $files = @()
     $files += Get-ChildItem -Path $RepoRoot -Filter *.md -File -ErrorAction SilentlyContinue
     $configsPath = Join-Path $RepoRoot 'configs'

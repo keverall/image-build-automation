@@ -53,6 +53,11 @@ $script:LogDir    = Join-Path $script:RepoRoot "generated/logs/toc-anchor"
 $script:LogFile   = $null
 
 function Write-Status {
+    <#
+    .SYNOPSIS
+        Writes status.
+    #>
+
     param([string]$Color, [string]$Message)
     $cleanMessage = $Message -replace '\x1b\[[0-9;]*m', ''
     Write-Output "${Color}${Message}${script:Reset}"
@@ -69,6 +74,11 @@ $script:Cyan   = "`e[0;36m"
 $script:Reset  = "`e[0m"
 
 function Add-BitbucketMdToc {
+    <#
+    .SYNOPSIS
+        Adds bitbucket md toc.
+    #>
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false)]

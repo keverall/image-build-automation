@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Credentials.ps1
-generated: 2026-07-17 09:57 UTC
+generated: 2026-07-17 13:02 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,14 +15,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Return SCOM admin username + password. Env var: SCOM_ADMIN_USER / SCOM_ADMIN_PASSWORD → CyberArk safe SCOM-2015 → required-error.
+Gets ilo credentials.
 
 <a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Return SCOM admin username + password.
-        Env var: SCOM_ADMIN_USER / SCOM_ADMIN_PASSWORD → CyberArk safe SCOM-2015 → required-error.
+        Gets ilo credentials.
 ```
 
 ---

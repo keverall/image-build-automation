@@ -92,6 +92,11 @@ function Test-PathEx {
 }
 
 function _FileIO_DeepHashtable {
+    <#
+    .SYNOPSIS
+        Internal file helper that io deep hashtable.
+    #>
+
     param([Parameter(ValueFromPipeline)] $Obj)
     process {
         if ($null -eq $Obj) { return $null }

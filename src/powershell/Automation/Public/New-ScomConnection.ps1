@@ -50,6 +50,11 @@ Write-Output "SCOM_REST_READY: `$restReady"
 }
 
 function New-ScomRestConnection {
+    <#
+    .SYNOPSIS
+        Creates scom rest connection (SCOM mode).
+    #>
+
     [CmdletBinding()]
     [OutputType([string])]
     param(
