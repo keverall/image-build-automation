@@ -23,11 +23,9 @@ param()
 $Cyan = "$([char]27)[36m"
 $Yellow = "$([char]27)[33m"
 $Magenta = "$([char]27)[35m"
+$Green = "$([char]27)[32m"
 $Bold = "$([char]27)[1m"
 $Reset = "$([char]27)[0m"
-
-# Inner width of the funky box (matches the ═ border: 60 dashes + 2 walls = 62 cols)
-$BoxW = 62
 
 function Get-DisplayWidth {
     # Counts terminal cells using UTF-32 codepoints: ANSI escapes = 0,
@@ -52,9 +50,9 @@ function Get-DisplayWidth {
 }
 
 function Format-BoxLine {
-    param([string]$Text, [string]$Color)
-    $contentW = (Get-DisplayWidth -Text $Text) + 2   # +2 for the single spaces inside each wall
-    $pad = [Math]::Max(0, $BoxW - $contentW)
+    param([string]$Text, [string]$Color, [int]$InnerWidth)
+    $displayWidth = Get-DisplayWidth -Text $Text
+    $pad = [Math]::Max(0, $InnerWidth - $displayWidth - 2)
     Write-Output ("$Color║${Reset} $Text" + (' ' * $pad) + " $Color║${Reset}")
 }
 
@@ -87,9 +85,26 @@ $Tips = @(
 )
 $Tip = $Tips[(Get-Random -Minimum 0 -Maximum $Tips.Count)]
 
-Write-Output "${Magenta}╔══════════════════════════════════════════════════════════╗${Reset}"
-Format-BoxLine -Text "${Bold}💡 Maintenance Tip${Reset}" -Color $Magenta
-Write-Output "${Magenta}╟──────────────────────────────────────────────────────────────╢${Reset}"
-Format-BoxLine -Text $Tip -Color $Yellow
-Write-Output "${Magenta}╚══════════════════════════════════════════════════════════╝${Reset}"
+# Build content lines and calculate inner width to fit
+$titleLine = "${Bold}💡 Maintenance Tip${Reset}"
+$contentLines = @(
+    $titleLine,
+    $Tip,
+    "Ispeci pa reci, Pomalo, Kad na vrbi rodi grožđe.",
+    "Tko vino večera, vodu doručkuje."
+)
+$innerW = ($contentLines | ForEach-Object { Get-DisplayWidth -Text $_ } | Measure-Object -Maximum).Maximum + 2
+
+# Build borders to match content width
+$topBorder = "${Magenta}╔$('═' * $innerW)╗${Reset}"
+$sepBorder = "${Magenta}╟$('─' * $innerW)╢${Reset}"
+$botBorder = "${Magenta}╚$('═' * $innerW)╝${Reset}"
+
+Write-Output $topBorder
+Format-BoxLine -Text $titleLine -Color $Magenta -InnerWidth $innerW
+Write-Output $sepBorder
+Format-BoxLine -Text $Tip -Color $Yellow -InnerWidth $innerW
+Format-BoxLine -Text "Ispeci pa reci, Pomalo, Kad na vrbi rodi grožđe." -Color $Cyan -InnerWidth $innerW
+Format-BoxLine -Text "Tko vino večera, vodu doručkuje." -Color $Cyan -InnerWidth $innerW
+Write-Output $botBorder
 Write-Output ''
