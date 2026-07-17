@@ -113,7 +113,6 @@ Dot-sourced in dependency order by [`Automation.psm1`](../../src/powershell/Auto
 | 4 | [`Executor.ps1`](../../src/powershell/Automation/Private/Executor.ps1) | `Invoke-NativeCommand`, `Invoke-NativeCommandWithRetry`, `New-CommandResult` (108 lines) |
 | 5 | [`FileIO.ps1`](../../src/powershell/Automation/Private/FileIO.ps1) | `Ensure-DirectoryExists`, `Save-Json`, `Load-Json`, `Save-JsonResult`, `Test-PathEx` (116 lines) |
 | 6 | [`PathResolver.ps1`](../../src/powershell/Automation/Private/PathResolver.ps1) | `Get-ProjectRoot`, `Get-LogDirectory` (53 lines) |
-| 7 | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1) | `Load-ServerList`, `Load-ClusterCatalogue`, `Test-ClusterDefinition`, `New-ServerInfo` (99 lines) |
 | 8 | [`Logging.ps1`](../../src/powershell/Automation/Private/Logging.ps1) | `Initialize-Logging`, `Get-Logger` (97 lines) |
 | 9 | [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1) | `Invoke-RoutedRequest` - dispatches by `request_types.json` (66 lines) |
 | 10 | [`Base.ps1`](../../src/powershell/Automation/Private/Base.ps1) | `New-AutomationBase`, timestamp helpers (91 lines) |
@@ -136,19 +135,18 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 11. [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) - ConfigMgr bootable ISO builder
 12. [`New-OneViewMaintenanceScript.ps1`](../../src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1) - generate OneView maintenance scripts
 13. [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) - deterministic UUID generator
-16. [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) - publish ISO to HTTPS repository
-17. [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - *see BitBucket_Code_Map_Maitenance_Mode.md*
-18. [`Start-AutomationOrchestrator.ps1`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1) - unified entry point
-19. [`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1) - installation progress monitor
-20. [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) - end-to-end physical server build
-21. [`Test-BuildParams.ps1`](../../src/powershell/Automation/Public/Test-BuildParams.ps1) - build parameter validation
-22. [`Test-ClusterId.ps1`](../../src/powershell/Automation/Public/Test-ClusterId.ps1) - cluster ID validation
-23. [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) - post-build validation
-24. [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) - pre-build validation
-25. [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - OneView connectivity check
-26. [`Test-ServerList.ps1`](../../src/powershell/Automation/Public/Test-ServerList.ps1) - server list validation
-27. [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) - standalone firmware ISO builder
-28. [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) - Windows security patcher
+14. [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) - publish ISO to HTTPS repository
+15. [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - *see BitBucket_Code_Map_Maitenance_Mode.md*
+16. [`Start-AutomationOrchestrator.ps1`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1) - unified entry point
+17. [`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1) - installation progress monitor
+18. [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) - end-to-end physical server build
+19. [`Test-BuildParams.ps1`](../../src/powershell/Automation/Public/Test-BuildParams.ps1) - build parameter validation
+20. [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) - post-build validation
+21. [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) - pre-build validation
+22. [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - OneView connectivity check
+23. [`Test-ServerList.ps1`](../../src/powershell/Automation/Public/Test-ServerList.ps1) - server list validation
+24. [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) - standalone firmware ISO builder
+25. [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) - Windows security patcher
 
 ---
 
@@ -204,7 +202,6 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 | Check | Lines | Logic |
 |-------|-------|-------|
 | Build params | [L31–33](../../src/powershell/Automation/Public/_Validate-Request.ps1#31-33) | Calls `Test-BuildParams` for `build_iso` / `patch_windows` |
-| Maintenance target | [L34–39](../../src/powershell/Automation/Public/_Validate-Request.ps1#34-39) | Calls `Test-ClusterId` for `maintenance_*` requests |
 
 <a name="24---ci-pipeline-surface"></a>
 ### 2.4 - CI Pipeline Surface
@@ -222,7 +219,6 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 ### 2.5 - iRequest/ISAPI Surface
 
 **[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#207)** - [`Run-IRequest()`](../../src/powershell/Automation/Public/Control.ps1#207)
-- Builds params via [`_Build-IRequestParams()`](../../src/powershell/Automation/Public/Control.ps1#64) mapping `cluster_id` + `action` → `maintenance_{action}`
 - Executes via [`_Execute()`](../../src/powershell/Automation/Public/Control.ps1#164)
 
 <a name="26---scheduled-task-surface"></a>
@@ -675,8 +671,6 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | Function | Line | Purpose |
 |----------|------|---------|
 | [`Load-ServerList()`](../../src/powershell/Automation/Private/Inventory.ps1#5) | L5 | Reads `server_list.txt` → `ServerInfo[]` or plain strings |
-| [`Load-ClusterCatalogue()`](../../src/powershell/Automation/Private/Inventory.ps1#46) | L46 | Loads `clusters_catalogue.json` → inner `clusters` hashtable |
-| [`Test-ClusterDefinition()`](../../src/powershell/Automation/Private/Inventory.ps1#62) | L62 | Validates cluster definition fields (SCOM mode only): `display_name`, `servers`, `scom_group`, `environment` |
 | [`New-ServerInfo()`](../../src/powershell/Automation/Private/Inventory.ps1#83) | L83 | Factory for `ServerInfo` objects |
 
 <a name="132---configuration-functions"></a>
@@ -698,7 +692,6 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | Function | File | Purpose |
 |----------|------|---------|
 | [`Test-BuildParams()`](../../src/powershell/Automation/Public/Test-BuildParams.ps1#5) | Validates base ISO path exists |
-| [`Test-ClusterId()`](../../src/powershell/Automation/Public/Test-ClusterId.ps1#5) | Validates cluster ID in catalogue, checks required fields |
 | [`Test-ServerList()`](../../src/powershell/Automation/Public/Test-ServerList.ps1#5) | Validates server list file, strips comments and empty lines |
 
 ---
@@ -845,13 +838,11 @@ All configs loaded from `configs/` directory:
 |------|---------|-----------|
 | **`request_types.json`** | Request type → handler mapping, CI stage map | [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1#9) |
 | **`server_list.txt`** | Server hostnames with optional IPMI/iLO IPs | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#5) |
-| **`clusters_catalogue.json`** | Cluster definitions with servers and OneView scopes | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#46) |
 | **`hpe_firmware_drivers_nov2025.json`** | HPE SUT firmware/driver component manifest | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#97) |
 | **`windows_patches.json`** | Windows security patch KB list (MSU packages) | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#100) |
 | **`opsramp_config.json`** | OpsRamp API credentials + base URL | [`OpsRamp_Client`](../../src/powershell/Automation/Automation.psm1#161) |
 | **`connection_hosts.json`** | OneView management hosts per environment | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#281) |
 | **`oneview_config.json`** | OneView connection config (module, WinRM, credentials) | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#353) |
-| **`clusters_catalogue.examples-only.json`** | Example cluster definitions | Reference |
 | **`servers_catalogue.oneview.json`** | OneView server definitions | OneView queries |
 | **`configmgr_config.json`** | ConfigMgr site connection details | Build pipeline |
 | **`email_distribution_lists.json`** | Maintenance notification recipients | Notifications |
@@ -873,7 +864,6 @@ All configs loaded from `configs/` directory:
 | [`Executor.Unit.Tests.ps1`](../../tests/powershell/Executor.Unit.Tests.ps1) | Invoke-NativeCommand, Invoke-NativeCommandWithRetry, New-CommandResult |
 | [`FileIO.Unit.Tests.ps1`](../../tests/powershell/FileIO.Unit.Tests.ps1) | Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult |
 | [`Get-OneViewServerTarget.Unit.Tests.ps1`](../../tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1) | OneView server query, identifier resolution |
-| [`Inventory.Unit.Tests.ps1`](../../tests/powershell/Inventory.Unit.Tests.ps1) | Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo |
 | [`Invoke-IloRedfish.Unit.Tests.ps1`](../../tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1) | iLO Redfish actions (Mount, MountAndBoot, Eject, Status) |
 | [`Invoke-IsoDeploy.Unit.Tests.ps1`](../../tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1) | ISO deployment orchestrator |
 | [`Invoke-OpsRampClient.Unit.Tests.ps1`](../../tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1) | OpsRamp client, token management |
@@ -891,7 +881,6 @@ All configs loaded from `configs/` directory:
 | [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | OneView connectivity |
 | [`Update-Firmware.Unit.Tests.ps1`](../../tests/powershell/Update-Firmware.Unit.Tests.ps1) | Firmware ISO builder |
 | [`Update-WindowsSecurity.Unit.Tests.ps1`](../../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
-| [`Validators.Unit.Tests.ps1`](../../tests/powershell/Validators.Unit.Tests.ps1) | Test-BuildParams, Test-ClusterId, Test-ServerList |
 
 <a name="192---test-execution-scripts"></a>
 ### 19.2 - Test Execution Scripts
