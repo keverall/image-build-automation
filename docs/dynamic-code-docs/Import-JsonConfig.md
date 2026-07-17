@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Private/Config.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Import-JsonConfig
 
-<a id="top"></a>
 ## Description
 
 Load a YAML config file. Requires the 'powershell-yaml' module.

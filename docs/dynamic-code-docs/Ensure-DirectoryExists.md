@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Private/FileIO.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Ensure-DirectoryExists
 
-<a id="top"></a>
 ## Description
 
 Boolean path existence test (avoids pipeline noise).

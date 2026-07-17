@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PostBuildValidation.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-PostBuildValidation
 
-<a id="top"></a>
 ## Description
 
 Connects over WinRM to the freshly-built server and verifies the post-build state.  Returns a hashtable of named checks.
@@ -15,7 +14,9 @@ Connects over WinRM to the freshly-built server and verifies the post-build stat
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Hostname` | Target server hostname (FQDN or short). |
+| `-Hostname` | Target server hostname (FQDN or short). Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` | Identify the server by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
+| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
 | `-ExpectedHostname` | Expected hostname for cross-check. Defaults to -Hostname. |
 | `-Domain` | AD domain to verify join (e.g. ad.example.com). |
 | `-ExpectedOsVersion` | Expected OS version string (e.g. '10.0.20348' for Server 2022). |
@@ -42,7 +43,14 @@ Test-PostBuildValidation -Hostname 'srv01.ad.example.com' -Domain 'ad.example.co
         post-build state.  Returns a hashtable of named checks.
 
     .PARAMETER Hostname
-        Target server hostname (FQDN or short).
+        Target server hostname (FQDN or short). Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Identify the server by its HPE serial number. Resolved to the
+        server hostname via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ExpectedHostname
         Expected hostname for cross-check. Defaults to -Hostname.

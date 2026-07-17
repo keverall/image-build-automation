@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/Generate-GitStash-MdToc.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Generate-GitStash-MdToc
 
-<a id="top"></a>
 ## Description
 
 Parses a Markdown file and generates a clickable Table of Contents based on headings. Optionally injects HTML anchor tags to ensure compatibility with Bitbucket and other renderers. Supports pipeline input, in-place updates, or writing to a new output file.
