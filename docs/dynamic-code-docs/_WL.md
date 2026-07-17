@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/setup-runner.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # _WL
 
-<a id="top"></a>
 ## Description
 
 Fully offline-capable setup script that installs required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS) and binary tools (Oh My Posh, GNU make, checkmake). Bundled copies live in scripts/modules/; if absent it attempts a PSGallery download via Save-Module with no admin rights needed.

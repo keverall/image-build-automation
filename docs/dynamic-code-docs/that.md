@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # that
 
-<a id="top"></a>
 ## Description
 
 Router handler that initiates GitLab CI/CD pipeline for maintenance operations. Wraps Send-GitLabMaintenanceRequest to enable, disable, or validate maintenance mode via GitLab pipelines instead of direct execution.

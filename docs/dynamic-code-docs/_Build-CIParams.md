@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Control.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # _Build-CIParams
 
-<a id="top"></a>
 ## Description
 
 Initiates GitLab CI/CD pipeline for cluster maintenance instead of direct execution. Used by iRequest to delegate maintenance to GitLab pipelines.

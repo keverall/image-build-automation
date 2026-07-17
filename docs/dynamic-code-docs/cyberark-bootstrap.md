@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/cyberark-bootstrap.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # cyberark-bootstrap
 
-<a id="top"></a>
 ## Description
 
 Fetches required secrets from CyberArk Central Credential Provider (CCP) and exports them as environment variables for use in automation scripts. Required secrets: - SCOM_ADMIN_USER / SCOM_ADMIN_PASSWORD (from SCOM-2015 safe) - ONEVIEW_USER / ONEVIEW_PASSWORD (from HPE-OneView safe) Supports two output modes: - ExportForGitLab: Outputs dotenv format for GitLab CI (.env file) - Default: Sets environment variables in current PowerShell session

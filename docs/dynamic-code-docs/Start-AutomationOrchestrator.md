@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Start-AutomationOrchestrator
 
-<a id="top"></a>
 ## Description
 
 Validates the request parameters using _Validate-Request, then routes the request to the appropriate handler function based on the RequestType parameter. Returns a hashtable with success status and output from the handler. This is the unified entry point for all automation operations.

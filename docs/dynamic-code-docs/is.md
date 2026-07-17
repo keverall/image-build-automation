@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-Firmware.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # is
 
-<a id="top"></a>
 ## Description
 
 Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the reference implementation automation.cli.update_firmware_drivers module.
@@ -16,8 +15,10 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 | Parameter | Description |
 |-----------|-------------|
 | `-Config` | Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json). |
-| `-Server` | Build for a specific server only. |
-| `-ServerList` | Path to server_list.txt. |
+| `-Server` | Build for a specific server only. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` | Build for a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
+| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-ServerList` | Path to server_list.txt. Only used for -DryRun mock targeting. |
 | `-OutputDir` | Output directory. |
 | `-SkipDownload` | Skip component download step. |
 | `-DryRun` | Simulate without executing. |
@@ -27,6 +28,11 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 ### Example 1
 ```powershell
 Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
+```
+
+### Example 2
+```powershell
+Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
 ## Original Comment-Based Help
@@ -44,10 +50,17 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv
         Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json).
 
     .PARAMETER Server
-        Build for a specific server only.
+        Build for a specific server only. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Build for a server identified by its HPE serial number. Resolved to the
+        server hostname via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ServerList
-        Path to server_list.txt.
+        Path to server_list.txt. Only used for -DryRun mock targeting.
 
     .PARAMETER OutputDir
         Output directory.
@@ -63,6 +76,8 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv
 
     .EXAMPLE
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
+    .EXAMPLE
+        Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
 ---

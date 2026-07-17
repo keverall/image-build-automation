@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/Setup-Profile.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Write-Color
 
-<a id="top"></a>
 ## Description
 
 Copies the correct WIP profile template to the live profile location (platform-aware: windowspsprofile.ps1 on Windows, psprofile.ps1 on Linux/macOS, vscodeprofile.ps1 for the VS Code profile), then injects the Automation module import block (with the machine-specific absolute path) into the live profile(s). Can be run from anywhere - uses the script's repo root as the base path.

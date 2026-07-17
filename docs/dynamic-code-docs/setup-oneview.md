@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/setup-oneview.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # setup-oneview
 
-<a id="top"></a>
 ## Description
 
 Validates OneView setup by checking: - HPEOneView.Xxx PowerShell module availability (only ONE version allowed) - ONEVIEW_USER and ONEVIEW_PASSWORD environment variables - OneView configuration file (oneview_config.json) existence Displays warnings if components are missing but doesn't fail execution.

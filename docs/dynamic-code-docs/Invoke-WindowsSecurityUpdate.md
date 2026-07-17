@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-WindowsSecurity.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-WindowsSecurityUpdate
 
-<a id="top"></a>
 ## Description
 
 Applies Windows security patches to a base ISO using DISM or PowerShell DISM equivalent, creating a patched ISO ready for deployment. Reads patch manifest from windows_patches.json and downloads/applies MSU packages to the mounted ISO image.
@@ -16,7 +15,9 @@ Applies Windows security patches to a base ISO using DISM or PowerShell DISM equ
 | Parameter | Description |
 |-----------|-------------|
 | `-BaseIsoPath` | Path to the base Windows Server ISO file. |
-| `-Server` | Server hostname for output naming. |
+| `-Server` | Server hostname for output naming. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires -OneViewHost. |
+| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
 | `-PatchesConfig` | Path to windows_patches.json (default: configs\windows_patches.json). |
 | `-OutputDir` | Output directory (default: output\patched). |
 | `-Method` | Patching method: 'dism' or 'powershell' (default: dism). |
@@ -45,7 +46,14 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 's
         Path to the base Windows Server ISO file.
 
     .PARAMETER Server
-        Server hostname for output naming.
+        Server hostname for output naming. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Identify the server by its HPE serial number; resolved to the hostname
+        (for output naming) via OneView. Requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER PatchesConfig
         Path to windows_patches.json (default: configs\windows_patches.json).

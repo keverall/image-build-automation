@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/test-maintenance-connection.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # test-maintenance-connection
 
-<a id="top"></a>
 ## Description
 
 Validates connection to maintenance mode infrastructure (SCOM or OneView) using environment-based host selection from connection_hosts.json. Loads .env file if present, builds parameters, and executes validation against Set-MaintenanceMode function.

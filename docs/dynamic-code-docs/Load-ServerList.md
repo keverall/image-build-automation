@@ -1,30 +1,56 @@
 ---
 source:  ./src/powershell/Automation/Private/Inventory.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Load-ServerList
 
-<a id="top"></a>
 ## Description
 
-Factory for ServerInfo objects.
+Lets any OneView automation task accept EITHER a server name or a serial number. A serial is resolved to its OneView server record (hostname + iLO IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+
+## Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `-SerialNumber` | Hardware serial number. When supplied, -OneViewHost is required to resolve it. Takes precedence over -ServerName. |
+| `-ServerName` | Server hostname / OneView name. Used verbatim when no -SerialNumber. |
+| `-OneViewHost` | OneView appliance hostname or IP (required to resolve a serial). |
+| `-DryRun` | Resolve without performing a real OneView query. |
 
 ## Examples
 
 ### Example 1
 ```powershell
-$si = New-ServerInfo -Hostname 'srv01.corp.local' -IloIp '10.0.0.10'
+Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Factory for ServerInfo objects.
+        Normalise a server name or serial number into a OneView target.
+
+    .DESCRIPTION
+        Lets any OneView automation task accept EITHER a server name or a serial
+        number. A serial is resolved to its OneView server record (hostname + iLO
+        IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+
+    .PARAMETER SerialNumber
+        Hardware serial number. When supplied, -OneViewHost is required to
+        resolve it. Takes precedence over -ServerName.
+
+    .PARAMETER ServerName
+        Server hostname / OneView name. Used verbatim when no -SerialNumber.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname or IP (required to resolve a serial).
+
+    .PARAMETER DryRun
+        Resolve without performing a real OneView query.
 
     .EXAMPLE
-        $si = New-ServerInfo -Hostname 'srv01.corp.local' -IloIp '10.0.0.10'
+        Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
 ---

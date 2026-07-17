@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/run-tests.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # run-tests
 
-<a id="top"></a>
 ## Description
 
 Executes comprehensive Pester tests for all automation module components: - Audit, Config, Credentials, Executor, FileIO, Inventory, Router unit tests - Set-MaintenanceMode unit tests - Validators unit tests Automatically repairs Pester installation if broken (using PSGallery or bundled vendor copy). Generates detailed test logs and Cobertura coverage reports. Exits with code 1 if any tests fail.

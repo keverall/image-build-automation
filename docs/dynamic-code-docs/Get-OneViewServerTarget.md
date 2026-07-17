@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerTarget.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-OneViewServerTarget
 
-<a id="top"></a>
 ## Description
 
 Sends a query against the OneView /rest/server-hardware endpoint and returns a normalized hashtable describing the server.  Validates health (must be OK) and tolerates power state Off or On.
