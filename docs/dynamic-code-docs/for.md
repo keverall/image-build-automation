@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/gitlab/Send-GitLabMaintenanceRequest.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # for
 
-<a id="top"></a>
 ## Description
 
 Initiates GitLab pipeline via trigger API and optionally waits for completion. Sends web callback with results when pipeline finishes. Can be used two ways: 1. Dot-sourced: Defines Send-GitLabMaintenanceRequest function for reuse 2. Direct execution: Runs immediately with provided parameters Integrates with GitLab trigger tokens, job tokens, and pipeline variables.

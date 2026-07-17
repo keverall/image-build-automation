@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/New-ScomConnection.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-ScomConnection
 
-<a id="top"></a>
 ## Description
 
 Returns a PowerShell command string that creates an SCOM management-group connection and emits the SCOM server version for downstream routing.

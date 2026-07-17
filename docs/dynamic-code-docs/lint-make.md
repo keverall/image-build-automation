@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/lint-make.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # lint-make
 
-<a id="top"></a>
 ## Description
 
 Validates Makefile syntax using checkmake if available, otherwise performs a basic dry-run validation. Acts as a fallback for environments without checkmake installed.

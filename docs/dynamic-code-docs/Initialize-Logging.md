@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Private/Logging.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Initialize-Logging
 
-<a id="top"></a>
 ## Description
 
 Configures logging with specified log file path and level. Creates timestamped log files in generated/logs/testing or generated/logs/production directories.

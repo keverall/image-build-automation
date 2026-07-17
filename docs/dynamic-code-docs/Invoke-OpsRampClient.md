@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-OpsRampClient.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-OpsRampClient
 
-<a id="top"></a>
 ## Description
 
 Convenience function to test OpsRamp API connectivity by obtaining an authentication token. Useful for verifying credentials and network access before running full integrations.

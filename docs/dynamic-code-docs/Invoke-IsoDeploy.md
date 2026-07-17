@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-IsoDeploy
 
-<a id="top"></a>
 ## Description
 
 Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.txt, resolves the bootable ISO under -IsoDir, and delegates the actual virtual-media mount + boot to Invoke-IloRedfish.
@@ -16,8 +15,10 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | Parameter | Description |
 |-----------|-------------|
 | `-Method` | Deployment method (only 'redfish' supported). |
-| `-Server` | Deploy to a single named server only. |
-| `-ServerList` | Path to server_list.txt. |
+| `-Server` | Deploy to a single named server only. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` | Deploy to a server identified by its HPE serial number. Resolved to the server hostname (and iLO IP) via OneView; requires -OneViewHost. |
+| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-ServerList` | Path to server_list.txt. Only used for -DryRun mock targeting. |
 | `-IsoDir` | Directory containing bootable ISO packages. |
 | `-IsoUrl` | Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json joined with -RepoBaseUrl). |
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository. Combined with the bootable_iso filename from deployment_metadata.json to construct the full URL when -IsoUrl is not given. |
@@ -45,10 +46,17 @@ Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinS
         Deployment method (only 'redfish' supported).
 
     .PARAMETER Server
-        Deploy to a single named server only.
+        Deploy to a single named server only. Mutually exclusive with -SerialNumber.
+
+    .PARAMETER SerialNumber
+        Deploy to a server identified by its HPE serial number. Resolved to the
+        server hostname (and iLO IP) via OneView; requires -OneViewHost.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname/IP used to resolve -SerialNumber.
 
     .PARAMETER ServerList
-        Path to server_list.txt.
+        Path to server_list.txt. Only used for -DryRun mock targeting.
 
     .PARAMETER IsoDir
         Directory containing bootable ISO packages.

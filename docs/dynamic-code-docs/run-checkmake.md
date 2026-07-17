@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/run-checkmake.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # run-checkmake
 
-<a id="top"></a>
 ## Description
 
 Validates Makefile syntax using the checkmake tool. If checkmake is not installed, the script exits gracefully with a warning message.

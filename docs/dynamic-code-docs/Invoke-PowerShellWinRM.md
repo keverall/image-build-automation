@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-PowerShellWinRM
 
-<a id="top"></a>
 ## Description
 
 Executes PowerShell scripts on remote Windows servers using WinRM (WS-Man). Creates a temporary PSSession for the operation and returns results including stdout and any errors encountered during execution.

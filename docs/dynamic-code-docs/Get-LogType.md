@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/prune-logs.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-LogType
 
-<a id="top"></a>
 ## Description
 
 Scans generated/logs and generated/output directories for log files. Groups logs by type (based on filename pattern) and removes excess files beyond the configured maximum (default: 10 per type). Also removes legacy redundant log files (pester-log.txt, pester.log). Skips coverage report files and .gitkeep files.

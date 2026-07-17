@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-PowerShellScript.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-PowerShellScript
 
-<a id="top"></a>
 ## Description
 
 Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Useful for isolating script execution or running scripts in a fresh PowerShell context. Returns a hashtable with success status and combined output.

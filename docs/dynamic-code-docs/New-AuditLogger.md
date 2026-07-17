@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Private/Audit.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-AuditLogger
 
-<a id="top"></a>
 ## Description
 
 Creates an AuditLogger instance.

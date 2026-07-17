@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Private/Base.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-UtcTimestamp
 
-<a id="top"></a>
 ## Description
 
 Factory for AutomationBase (useful for classes that cannot inherit in PS without extra steps).

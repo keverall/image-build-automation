@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/New-IsoBuild.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-IsoBuild
 
-<a id="top"></a>
 ## Description
 
 Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting to the site server) and invokes New-CMBootableMedia to produce a WinPE bootable ISO that can be mounted via iLO Redfish and used to run a task sequence against a freshly-racked HPE ProLiant server.

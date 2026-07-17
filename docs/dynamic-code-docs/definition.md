@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
-generated: 2026-07-03 16:08 UTC
+generated: 2026-07-17 09:10 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # definition
 
-<a id="top"></a>
 ## Description
 
 Standalone script executed by GitLab CI/CD pipelines to perform maintenance mode operations. Wraps Set-MaintenanceMode with GitLab-specific context, logging, and callback support. Outputs results as JSON artifacts and sends web callbacks on completion. Integrates with GitLab pipeline variables for configuration.
