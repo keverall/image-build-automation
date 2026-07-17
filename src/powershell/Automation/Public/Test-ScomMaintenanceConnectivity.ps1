@@ -608,6 +608,11 @@ Write-Output "DISCONNECTED"
 
 # ── Output formatting ─────────────────────────────────────────────────────────
 function _Format-ScomMaintenanceConnectivityResult {
+    <#
+    .SYNOPSIS
+        Formats scom maintenance connectivity result.
+    #>
+
     param([hashtable]$Result)
 
     $available = $Result.Available
