@@ -41,7 +41,6 @@ Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bo
 | iLO API | Redfish (`/redfish/v1/`) not iLO REST (`/rest/v1/`) | Industry standard, future-proof, client explicitly specified in runbook |
 | Firmware/patch code | Relocate from `New-IsoBuild` into standalone `Update-Firmware.ps1` | Preserve for future use; not part of the ConfigMgr workflow |
 | Terminology | No "patching", no "firmware in ISO". Use "OSD", "bootable media", "task sequence", "image deployment" | Bladelogic handles patching; this code is for new server builds only |
-| SCOM | Not involved | Not mentioned in the runbook; out of scope |
 
 <a name="scope-boundary"></a>
 ## Scope Boundary
@@ -63,7 +62,6 @@ Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bo
 - Driver package management in ConfigMgr (ConfigMgr Admin)
 - HPE hardware assembly/rack-and-stack (Hardware Engineer)
 - OneView server inventory maintenance (OneView Admin)
-- SCOM monitoring/maintenance mode (separate workflows)
 
 <a name="implementation-tasks-ordered"></a>
 ## Implementation Tasks (Ordered)
@@ -80,21 +78,21 @@ Replace the current iLO REST scaffold with full Redfish implementation:
    - Store `X-Auth-Token` header for subsequent calls
    - Session logout on completion
 
-2. **Virtual media mount**:
+1. **Virtual media mount**:
    - `GET /redfish/v1/Managers/1/VirtualMedia/` to enumerate devices
    - Find the CD/DVD virtual media device
    - `POST …/VirtualMedia/<id>/Actions/VirtualMedia.InsertMedia` with ISO URL
 
-3. **One-time boot override**:
+1. **One-time boot override**:
    - `PATCH /redfish/v1/Systems/1` with `BootSourceOverrideTarget: "Cd"` and `BootSourceOverrideEnabled: "Once"`
 
-4. **System reset**:
+1. **System reset**:
    - `POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset` with `ResetType: "ForceRestart"`
 
-5. **Eject media** (for rollback/recovery):
+1. **Eject media** (for rollback/recovery):
    - `POST …/VirtualMedia/<id>/Actions/VirtualMedia.EjectMedia`
 
-6. **Skip certificate check** (iLO ships with self-signed certs - same as existing code)
+1. **Skip certificate check** (iLO ships with self-signed certs - same as existing code)
 
 All Redfish calls reuse the existing `Get-IloCredentials` function and the existing `Invoke-RestMethod -SkipCertificateCheck` pattern.
 
@@ -193,7 +191,7 @@ Replace the current firmware-DISM logic with ConfigMgr `New-CMBootableMedia`:
    - If not, attempt PSRemoting to the ConfigMgr site server (configured in config)
    - Fall back to explicit credentials for remote context
 
-2. **Create bootable media:**
+1. **Create bootable media:**
    ```
    New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd `
        -Path "<output path>" `
@@ -204,16 +202,16 @@ Replace the current firmware-DISM logic with ConfigMgr `New-CMBootableMedia`:
        -MediaPassword $MediaPassword
    ```
 
-3. **Configurable parameters** (from a new or extended config file):
+1. **Configurable parameters** (from a new or extended config file):
    - Boot image name/ID
    - Management Point FQDN
    - Distribution Point(s)
    - Media password (optional, from secret store)
    - Output path for ISO
 
-4. **ISO versioning** per runbook standard: `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso`
+1. **ISO versioning** per runbook standard: `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso`
 
-5. **Return** the ISO path and metadata for the next step (Task 2 publishing)
+1. **Return** the ISO path and metadata for the next step (Task 2 publishing)
 
 **Remove:** All `[FirmwareUpdater]`, `[WindowsPatcher]`, DISM logic, `Build-ForServer` function, `$FwConfig`, `$PatchConfig`, `generated_patched_iso`, `firmware_iso` references.
 
