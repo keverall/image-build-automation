@@ -558,12 +558,17 @@ function Test-ServerConnectivity {
             ($modeCfg.Get_Item('winrm') ?? @{}).Get_Item('server') ?? $resolvedHost
         } else { $null }
 
+        # Escape single quotes for safe interpolation into the child script
+        $escapedPass = $resolvedPass -replace "'", "''"
+        $escapedUser = $resolvedUser -replace "'", "''"
+        $escapedHost = $ovAppliance -replace "'", "''"
+
         $scriptContent = @"
 Import-Module $moduleName -ErrorAction Stop
 Write-Output "MODULE_LOADED"
-`$securePass = ConvertTo-SecureString '$resolvedPass' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$resolvedUser', `$securePass)
-Connect-OVMgmt -Hostname '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
+Connect-OVMgmt -Hostname '$escapedHost' -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
 Disconnect-OVMgmt -ErrorAction SilentlyContinue
 Write-Output "DISCONNECTED"
