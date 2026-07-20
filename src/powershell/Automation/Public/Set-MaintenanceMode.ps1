@@ -1857,11 +1857,14 @@ function Test-ScomConnection {
     )
     
     try {
+        $escapedPass = $Password -replace "'", "''"
+        $escapedUser = $Username -replace "'", "''"
+        $escapedServer = $ManagementServer -replace "'", "''"
         $scriptContent = @"
 Import-Module $ModuleName -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$Password' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$Username', `$securePass)
-`$conn = New-SCOMManagementGroupConnection -ComputerName '$ManagementServer' -Credential `$cred -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
+`$conn = New-SCOMManagementGroupConnection -ComputerName '$escapedServer' -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
 "@
         $result = Invoke-PowerShellScript -Script $scriptContent
@@ -1886,11 +1889,14 @@ function Test-OneViewConnection {
     )
     
     try {
+        $escapedPass = $Password -replace "'", "''"
+        $escapedUser = $Username -replace "'", "''"
+        $escapedAppliance = $Appliance -replace "'", "''"
         $scriptContent = @"
 Import-Module $ModuleName -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$Password' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$Username', `$securePass)
-Connect-OVMgmt -Hostname '$Appliance' -Credential `$cred -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
+Connect-OVMgmt -Hostname '$escapedAppliance' -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
 Disconnect-OVMgmt -ErrorAction SilentlyContinue
 "@
