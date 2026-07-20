@@ -587,7 +587,7 @@ dism /Image:{mounted_iso} /Add-Package /PackagePath:{kb.msu} /LimitAccess /NoRes
 
 **[`Invoke-PowerShellScript.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#L5)** - [`Invoke-PowerShellScript()`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#L5)
 **[`Invoke-PowerShellScript.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#L5)** - [`Invoke-PowerShellScript()`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1#L5)
-- Spawns `powershell.exe` (Windows) or `pwsh` (Linux) as a new process via `System.Diagnostics.Process`
+- Spawns `pwsh` (PowerShell 7+) on all platforms, falling back to `powershell.exe` only when `pwsh` is unavailable, via `System.Diagnostics.Process`
 - Parameters: `Script`, `CaptureOutput`, `TimeoutSeconds`, `ExecutionPolicy`
 - Configurable timeout (default: 300s), execution policy (default: `Bypass`)
 - Returns `@{ Success, Output }`
