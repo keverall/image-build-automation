@@ -16,7 +16,11 @@ param(
     [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
     [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
     [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
-    [Parameter(Mandatory = $false)][switch] $DryRun
+    [Parameter(Mandatory = $false)][string] $ExternalIsoPath = $null,
+    [Parameter(Mandatory = $false)][string] $RepoBaseUrl = $null,
+    [Parameter(Mandatory = $false)][string] $RepoLocalPath = $null,
+    [Parameter(Mandatory = $false)][switch] $DryRun,
+    [Parameter(Mandatory = $false)][switch] $SkipConfirmation
 )
 
 function Invoke-IsoDeploy {
@@ -53,18 +57,38 @@ function Invoke-IsoDeploy {
         Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json
         joined with -RepoBaseUrl).
 
+    .PARAMETER ExternalIsoPath
+        Path to a client-supplied ISO for deployment (skip package resolution).
+        Accepts three formats:
+          - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
+          - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
+          - Local file path: Copied to RepoLocalPath to make it network-accessible
+        When supplied, -IsoUrl is ignored and package resolution is skipped.
+        The iLO BMC must be able to reach the ISO over the network.
+
     .PARAMETER RepoBaseUrl
         HTTPS base URL of the ISO repository. Combined with the bootable_iso filename
         from deployment_metadata.json to construct the full URL when -IsoUrl is not given.
+        Also used when -ExternalIsoPath is a local file that needs to be copied.
+
+    .PARAMETER RepoLocalPath
+        Local filesystem path of the ISO repository. Required when -ExternalIsoPath
+        is a local file that needs to be copied to make it network-accessible.
 
     .PARAMETER DryRun
         Simulate - no actual deployment.
+
+    .PARAMETER SkipConfirmation
+        Skip the interactive confirmation prompt before deployment.
 
     .RETURNS
         [hashtable] with Success, Server, Summary.
 
     .EXAMPLE
         Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
+
+    .EXAMPLE
+        Invoke-IsoDeploy -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.example.com' -ExternalIsoPath 'H:\windows.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos'
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -76,8 +100,11 @@ function Invoke-IsoDeploy {
         [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
         [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
         [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
+        [Parameter(Mandatory = $false)][string] $ExternalIsoPath = $null,
         [Parameter(Mandatory = $false)][string] $RepoBaseUrl = $null,
-        [Parameter(Mandatory = $false)][switch] $DryRun
+        [Parameter(Mandatory = $false)][string] $RepoLocalPath = $null,
+        [Parameter(Mandatory = $false)][switch] $DryRun,
+        [Parameter(Mandatory = $false)][switch] $SkipConfirmation
     )
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
@@ -89,6 +116,25 @@ function Invoke-IsoDeploy {
     if (-not $DryRun -and -not $Server) {
         throw "Server or SerialNumber is required for non-dryrun ISO deployment"
     }
+
+    # ── Handle External ISO Path ──────────────────────────────────────────────
+    if ($ExternalIsoPath) {
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  External ISO Deployment Mode" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "ISO Source: $ExternalIsoPath" -ForegroundColor Yellow
+
+        # Resolve the ISO path to an accessible URL
+        $resolvedIsoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+        if (-not $resolvedIsoUrl) {
+            return @{ Success = $false; Error = "Failed to resolve external ISO path to accessible URL" }
+        }
+
+        $IsoUrl = $resolvedIsoUrl
+        Write-Host "ISO URL for iLO: $IsoUrl" -ForegroundColor Green
+        Write-Host "========================================`n" -ForegroundColor Cyan
+    }
+
     try {
         $serverInfo = $null
         $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $RepoBaseUrl, $DryRun, $serverInfo)
@@ -254,6 +300,198 @@ class ISODeployer {
     }
 }
 
+function Get-SmbPathFromDriveLetter {
+    <#
+    .SYNOPSIS
+        Resolve a Windows drive letter to its UNC/SMB path (if it's a mapped network drive).
+
+    .DESCRIPTION
+        Helper function to find the SMB address of a mapped drive. Useful when you have
+        a file on a mapped drive (e.g. H:\windows.iso) and need to find the UNC path
+        for iLO virtual media.
+
+    .PARAMETER DriveLetter
+        The drive letter to resolve (e.g. 'H', 'Z').
+
+    .EXAMPLE
+        Get-SmbPathFromDriveLetter -DriveLetter 'H'
+        # Returns: \\fileserver\isos
+
+    .EXAMPLE
+        # Find the full UNC path for a file on H:\
+        $uncBase = Get-SmbPathFromDriveLetter -DriveLetter 'H'
+        $fullUnc = Join-Path $uncBase 'windows.iso'
+        # Returns: \\fileserver\isos\windows.iso
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string] $DriveLetter
+    )
+
+    $DriveLetter = $DriveLetter.TrimEnd(':', '\').ToUpper()
+
+    if ($DriveLetter.Length -ne 1) {
+        throw "Invalid drive letter: '$DriveLetter'. Expected a single letter (e.g. 'H')."
+    }
+
+    $psDrive = Get-PSDrive -Name $DriveLetter -ErrorAction SilentlyContinue
+
+    if (-not $psDrive) {
+        throw "Drive $DriveLetter`: does not exist."
+    }
+
+    if (-not $psDrive.DisplayRoot) {
+        Write-Host "Drive $DriveLetter`: is a local drive, not a mapped network drive." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "To find the SMB address, you have two options:" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "1. If the drive is already shared on the network:" -ForegroundColor Gray
+        Write-Host "   Run: Get-SmbShare | Where-Object { \$_.Path -eq '$($psDrive.Root)' }" -ForegroundColor Gray
+        Write-Host "   Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\ShareName\file.iso'" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "2. Create a new SMB share for this drive:" -ForegroundColor Gray
+        Write-Host "   Run (as Administrator):" -ForegroundColor Gray
+        Write-Host "   New-SmbShare -Name 'isos' -Path '$($psDrive.Root)' -ReadAccess 'Everyone'" -ForegroundColor Gray
+        Write-Host "   Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\isos\file.iso'" -ForegroundColor Gray
+        return $null
+    }
+
+    if ($psDrive.DisplayRoot -match '^\\\\') {
+        Write-Host "Drive $DriveLetter`: maps to: $($psDrive.DisplayRoot)" -ForegroundColor Green
+        return $psDrive.DisplayRoot
+    }
+
+    throw "Drive $DriveLetter`: is not a UNC/SMB mapped drive (root: $($psDrive.DisplayRoot))."
+}
+
+function Resolve-ExternalIsoPath {
+    <#
+    .SYNOPSIS
+        Resolve an external ISO path to a URL accessible by the iLO BMC.
+
+    .DESCRIPTION
+        The iLO virtual media controller requires network-accessible ISO sources.
+        Supported formats:
+          - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
+          - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
+          - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
+          - Local file path: MUST be copied to a network share first
+
+        iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or
+        'C:\isos\win.iso'). The iLO BMC is a separate management controller on
+        the physical server and cannot access local drives on your workstation.
+
+    .PARAMETER IsoPath
+        Path to the ISO file (UNC/SMB, NFS, or HTTP/HTTPS URL).
+
+    .PARAMETER RepoLocalPath
+        Local filesystem path of the ISO repository (for copying local files).
+
+    .PARAMETER RepoBaseUrl
+        HTTPS base URL of the ISO repository (for constructing the accessible URL).
+
+    .RETURNS
+        [string] URL accessible by iLO BMC.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string] $IsoPath,
+        [string] $RepoLocalPath,
+        [string] $RepoBaseUrl
+    )
+
+    # HTTP/HTTPS URL - use directly
+    if ($IsoPath -match '^https?://') {
+        Write-Verbose "ISO is an HTTP/HTTPS URL: $IsoPath"
+        Write-Host "  [OK] HTTP/HTTPS URL - iLO will download directly" -ForegroundColor Green
+        return $IsoPath
+    }
+
+    # NFS path - use directly
+    if ($IsoPath -match '^nfs://') {
+        Write-Verbose "ISO is an NFS path: $IsoPath"
+        Write-Host "  [OK] NFS path - iLO will mount directly" -ForegroundColor Green
+        return $IsoPath
+    }
+
+    # UNC/SMB path - convert to CIFS URL for iLO
+    if ($IsoPath -match '^\\\\') {
+        Write-Verbose "ISO is a UNC/SMB path: $IsoPath"
+        # Convert \\server\share\file.iso -> cifs://server/share/file.iso
+        $cifsUrl = $IsoPath -replace '\\\\', 'cifs://' -replace '\\', '/'
+        Write-Host "  [OK] UNC/SMB path converted to CIFS URL: $cifsUrl" -ForegroundColor Green
+        return $cifsUrl
+    }
+
+    # Check if it's a mapped network drive (e.g. H:\ that maps to \\server\share)
+    if ($IsoPath -match '^[A-Z]:\\' -or $IsoPath -match '^[a-z]:\\') {
+        $driveLetter = $IsoPath.Substring(0, 1)
+        $psDrive = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
+
+        if ($psDrive -and $psDrive.DisplayRoot -and $psDrive.DisplayRoot -match '^\\\\') {
+            # It's a mapped network drive - construct the UNC path
+            $relativePath = $IsoPath.Substring(3) # Remove "H:\"
+            $uncPath = Join-Path $psDrive.DisplayRoot $relativePath
+            Write-Host "  [INFO] Detected mapped drive: $driveLetter`: -> $($psDrive.DisplayRoot)" -ForegroundColor Yellow
+            Write-Host "  [INFO] Resolved UNC path: $uncPath" -ForegroundColor Yellow
+
+            $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
+            Write-Host "  [OK] Mapped drive converted to CIFS URL: $cifsUrl" -ForegroundColor Green
+            return $cifsUrl
+        }
+
+        # It's a local drive - need to copy to repo or error
+        Write-Host "  [ERROR] Local path detected: $IsoPath" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "  The iLO BMC cannot access local drives on your workstation." -ForegroundColor Yellow
+        Write-Host "  You have three options:" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "  1. Use the mapped drive's UNC path (if H:\ is a network share):" -ForegroundColor Cyan
+        Write-Host "     Run: net use $driveLetter`:  to see the UNC path" -ForegroundColor Gray
+        Write-Host "     Then use: -ExternalIsoPath '\\server\share\file.iso'" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  2. Create an SMB share for the local folder:" -ForegroundColor Cyan
+        Write-Host "     Run: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'" -ForegroundColor Gray
+        Write-Host "     Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\isos\file.iso'" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  3. Copy to your repo share (requires -RepoLocalPath and -RepoBaseUrl):" -ForegroundColor Cyan
+
+        if (-not $RepoLocalPath -or -not $RepoBaseUrl) {
+            throw "Local ISO path '$IsoPath' requires -RepoLocalPath and -RepoBaseUrl parameters to copy the file to a network-accessible location."
+        }
+
+        if (-not (Test-Path $IsoPath)) {
+            throw "ISO file not found: $IsoPath"
+        }
+
+        $fileInfo = Get-Item $IsoPath
+        Write-Host ""
+        Write-Host "  Copying local ISO to repository..." -ForegroundColor Yellow
+        Write-Host "    Source:      $IsoPath" -ForegroundColor Gray
+        Write-Host "    File size:   $([math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Gray
+
+        $fileName = $fileInfo.Name
+        $destPath = Join-Path $RepoLocalPath $fileName
+        Write-Host "    Destination: $destPath" -ForegroundColor Gray
+
+        try {
+            Copy-Item -Path $IsoPath -Destination $destPath -Force
+            Write-Host "    [OK] Copy complete." -ForegroundColor Green
+        } catch {
+            throw "Failed to copy ISO to repository: $($_.Exception.Message)"
+        }
+
+        $isoUrl = "$($RepoBaseUrl.TrimEnd('/'))/$fileName"
+        Write-Host "    [OK] Accessible URL: $isoUrl" -ForegroundColor Green
+        return $isoUrl
+    }
+
+    # Unknown format
+    throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTTPS URL, NFS path, UNC/SMB path (\\server\share\file.iso), or local path with -RepoLocalPath/-RepoBaseUrl."
+}
+
 # ---- Main (script mode only) ----
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
     try {
@@ -263,6 +501,25 @@ if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRo
             $Server = $resolved.Identifier
             Write-Output "Resolved serial '$SerialNumber' -> $Server"
         }
+
+        # Handle External ISO Path in script mode
+        if ($ExternalIsoPath) {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host "  External ISO Deployment Mode" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host "ISO Source: $ExternalIsoPath" -ForegroundColor Yellow
+
+            $resolvedIsoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+            if (-not $resolvedIsoUrl) {
+                Write-Error "Failed to resolve external ISO path to accessible URL"
+                exit 1
+            }
+
+            $IsoUrl = $resolvedIsoUrl
+            Write-Host "ISO URL for iLO: $IsoUrl" -ForegroundColor Green
+            Write-Host "========================================`n" -ForegroundColor Cyan
+        }
+
         $serverInfo = $null
         if ($Server -and $DryRun) {
             $tempDeployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $null, $true)
