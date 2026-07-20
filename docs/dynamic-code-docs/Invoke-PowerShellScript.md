@@ -43,13 +43,15 @@ $r = Invoke-PowerShellScript -Script 'Get-Service | Select-Object -First 5 Name'
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Execute a PowerShell script block / string locally via `powershell.exe`.
+        Execute a PowerShell script block / string locally via `pwsh` (or `powershell.exe` fallback).
 
     .DESCRIPTION
         Executes PowerShell scripts locally by spawning a new PowerShell process
         with configurable timeout, execution policy, and output capture. Useful
         for isolating script execution or running scripts in a fresh PowerShell
-        context. Returns a hashtable with success status and combined output.
+        context. Prefers `pwsh` (PowerShell 7+) on all platforms and falls back
+        to `powershell.exe` (Windows PowerShell 5.1) only when `pwsh` is not
+        available. Returns a hashtable with success status and combined output.
 
     .PARAMETER Script
         PowerShell script to execute.
