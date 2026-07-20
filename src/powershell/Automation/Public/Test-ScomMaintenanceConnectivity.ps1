@@ -556,14 +556,19 @@ function Test-ScomMaintenanceConnectivity {
         $moduleName = $modeCfg.Get_Item('powershell_module') ?? 'OperationsManager'
         $winrmServer = if ($useWinRM) { $resolvedHost } else { $null }
 
+        # Escape single quotes for safe interpolation into the child script
+        $escapedPass = $resolvedPass -replace "'", "''"
+        $escapedUser = $resolvedUser -replace "'", "''"
+        $escapedHost = $resolvedHost -replace "'", "''"
+
         $scriptContent = @"
 Import-Module $moduleName -ErrorAction Stop
 Write-Output "MODULE_LOADED"
-`$securePass = ConvertTo-SecureString '$resolvedPass' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$resolvedUser', `$securePass)
-`$conn = New-SCOMManagementGroupConnection -ComputerName '$resolvedHost' -Credential `$cred -ErrorAction Stop
+`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
+`$conn = New-SCOMManagementGroupConnection -ComputerName '$escapedHost' -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
-Remove-SCOMManagementGroupConnection -ComputerName '$resolvedHost' -ErrorAction SilentlyContinue
+Remove-SCOMManagementGroupConnection -ComputerName '$escapedHost' -ErrorAction SilentlyContinue
 Write-Output "DISCONNECTED"
 "@
         try {
