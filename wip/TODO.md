@@ -31,86 +31,64 @@ CI pipelines have a built-in REST API out of the box. You do not write any API l
    2. The payload targets a trigger pipeline endpoint with the CI-specific URL format.
    3. CI receives the variables (e.g., $ImageName, $VMSpec), spins up your PowerShell repository, and passes those variables straight into your .ps1 script arguments.
 
-<a name="option-b-windows-remote-management-winrm"></a>
-## Option B: Windows Remote Management (WinRM)
-If iRequest is a classic enterprise platform (like ServiceNow, Micro Focus, or an older internal portal) and must trigger a script directly on a target server:
-
-   1. Both servers must talk over your internal Windows Domain Network.
-   2. iRequest uses the WinRM protocol (Ports 5985/5986).
-   3. It uses a service account to execute a remote command:
-    Invoke-Command -ComputerName "Your-Jumpbox" -ScriptBlock { C:\repos\automation\scripts\build.ps1 -Param1 "Value" }
-    
-<a name="option-c-scom-alertevent-database-drop-decoupled-integration"></a>
-## Option C: SCOM Alert/Event Database Drop (Decoupled Integration)
-If iRequest doesn't support active, outbound network connections:
-
-   1. iRequest can drops a specific log event or registry key changes to a server monitored by SCOM.
-   2. SCOM detects this flag state change and triggers a "Management Pack Recovery Action".
-   3. This native SCOM engine hook launches your local execution script on the jumpbox runner.
-
-------------------------------
-<a name="what-this-means-for-your-api-documentation"></a>
-## What This Means for Your API Documentation
-Since the CI pipeline acts as your actual HTTP entry gateway, the documentation format we discussed earlier fits perfectly.
-When you write your single-page OpenAPI/Swagger document, you aren't documenting raw PowerShell paths-you are documenting the CI API Endpoints that wrap them.
-Your Swagger JSON file parameters map directly to your CI pipeline trigger variables:
-
-{
-  "openapi": "3.0.3",
-  "paths": {
-    "/api/v4/projects/{id}/trigger/pipeline": {
-      "post": {
-        "summary": "Invokes the HPE iLO configuration loop via iRequest",
-        "parameters": [
-          { "name": "TargetServerIP", "in": "formData", "required": true },
-          { "name": "FirmwareVersion", "in": "formData", "required": false }
-        ]
-      }
-    }
-  }
-}
-
-<a name="recommendation-for-your-test-jumpbox"></a>
-## Recommendation for Your Test Jumpbox
-Since you have everything co-located on that test jumpbox right now, start with Option A (CI Web API). It keeps your PowerShell code entirely pure, lets the CI pipeline handle the security tokens, and creates a clear, web-addressable API target that iRequest can hit easily.
-Do you know if your iRequest platform prefers calling REST Webhooks (HTTP POST), or does it typically use Mid-Server orchestrators to run native Windows commands?
-
-[1] https://www.reddit.com/r/PowerShell/comments/gdf401/run_scripts_simultaneously_on_different_servers/
-[2] https://www.youtube.com/watch?v=roqtA8JRKzU&t=283
-
-
-
-
- 2       10.986 uninstall-module HPEOneView.1000 -force
-   3        0.137 remove-module HPEOneView.1000
-   4       13.049 Install-Module HPEOneView.900
-   5       11.103 Install-Module HPEOneView.900 -AllowClobber
-   6        2.310 import-module HPEOneView.900
-   7        0.333 remove-module HPEOneView.1000
-   8       45.914 Connect-OVMgmt
-   9       37.533 Connect-OVMgmt
-  10        0.376 Get-HPEOVVersion
-  11        0.252 Get-HPEOVersion
-  12        0.030 get-command -module HPOneView.900
-  13        0.014 Get-Command -module HPOneView.900
-  14        2.327 Get-Command -module HPEOneView.900
-  15        0.443 Get-OVUser  
-  16        0.112 Get-OVVersion 
-  17        0.235 Disconnect-OVMgmt
-  18        0.387 Get-OVVersion 
-
-  install-module HPOneView.860  -scope currentuser
-
-   
-
-
-
-   [WARN] OperationsManager 1.0 corrupt - removing and reinstalling
-[INFO] Removing corrupt module directory: C:\Users\98253\Documents\PowerShell\Modules\OperationsManager
-[INFO] Installing OperationsManager 1.0 from bundle
-Copy-Item: C:\Users\98253\repos\image-build-automation\scripts\setup-runner.ps1:174:9
+ Test-ServerConnectivity -ManagementHost va-oneviewt-01                                       0  47s 819ms  14:28:36 Enter OneView username for 'va-oneviewt-01': test 
+Enter OneView password for 'va-oneviewt-01': : ************* 
+Invoke-PowerShellScript: C:\Products\repos\image-build-automation\src\powershell\Automation\Public\Test-ServerConnectivity.ps1:577:33 
 Line |
- 174 |          Copy-Item -Path $_.FullName -Destination $dest -Recurse -Forc …
-     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | The process cannot access the file 'C:\Users\98253\Documents\PowerShell\Modules\OperationsManager\1.0\OM10.CoreCommands\Microsoft.EnterpriseManagement.Core.Cmdlets.dll' because it is being used by another process.
-make: *** [Makefile:51: setup] Error 1
+ 577 |  …        $scriptResult = Invoke-PowerShellScript -Script $scriptContent 
+     |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+     | PowerShell error (exit code 1): Import-Module : The version of Windows PowerShell on this computer is '5.1.17763.8880'. The module         
+     | 'C:\Users\adm_98253\Documents\PowerShell\Modules\HPEOneView.1000\10.0.4265.2221\HPEOneView.1000.psd1' requires a  minimum Windows
+     | PowerShell version of '7.0' to run. Verify that you have the minimum required version of Windows  PowerShell installed, and then try       
+     | again. At line:1 char:1 + Import-Module HPEOneView.1000 -ErrorAction Stop + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     +
+     | CategoryInfo          : ResourceUnavailable: (C:\Users\adm_98...eView.1000.psd1:String) [Import-Module], Invalid     OperationException    
+     | + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
+
+==============================================
+  OneView Connectivity Test
+============================================== 
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-07-20T13:29:04.2127979Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 3ms) 
+
+  --- Phase 2: Auth Connect ---
+    Module:    Not loaded
+    Connected: No
+    Clean up:  N/A
+    Error:     Connection script failed: 
+Import-Module : The version of Windows PowerShell on this computer is '5.1.17763.8880'. The module
+'C:\Users\adm_98253\Documents\PowerShell\Modules\HPEOneView.1000\10.0.4265.2221\HPEOneView.1000.psd1' requires a
+minimum Windows PowerShell version of '7.0' to run. Verify that you have the minimum required version of Windows
+PowerShell installed, and then try again.
+At line:1 char:1
++ Import-Module HPEOneView.1000 -ErrorAction Stop
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ResourceUnavailable: (C:\Users\adm_98...eView.1000.psd1:String) [Import-Module], Invalid
+   OperationException
+    + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
+
+   OperationException
+    + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
+   OperationException
+    + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
+
+==============================================
+
+
+Name                           Value
+----                           -----
+Mode                           oneview
+NetworkPing                    {[IpAddress, 10.239.124.79], [Port, 443], [DnsResolved, True], [Error, ]…}
+Available                      False
+Timestamp                      2026-07-20T13:29:04.2127979Z
+ManagementHost                 va-oneviewt-01
+AuthConnect                    {[Error, Connection script failed: …
+Environment                    Prod
