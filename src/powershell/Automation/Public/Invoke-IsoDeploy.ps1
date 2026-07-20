@@ -59,12 +59,23 @@ function Invoke-IsoDeploy {
 
     .PARAMETER ExternalIsoPath
         Path to a client-supplied ISO for deployment (skip package resolution).
-        Accepts three formats:
+        Accepts the following formats:
           - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
           - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
-          - Local file path: Copied to RepoLocalPath to make it network-accessible
+          - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
+          - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso')
+          - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share
+        
+        IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'):
+          The iLO BMC cannot access local drives. When a local path is supplied:
+            - If running as Administrator: Creates SMB share automatically
+            - If NOT running as Administrator: Command will FAIL with instructions
+              to either run as Administrator or obtain an SMB path from your admin
+        
         When supplied, -IsoUrl is ignored and package resolution is skipped.
-        The iLO BMC must be able to reach the ISO over the network.
+        For non-Administrator users, obtain the SMB path from your IT admin:
+          - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'
+          - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso'
 
     .PARAMETER RepoBaseUrl
         HTTPS base URL of the ISO repository. Combined with the bootable_iso filename
@@ -442,50 +453,93 @@ function Resolve-ExternalIsoPath {
             return $cifsUrl
         }
 
-        # It's a local drive - need to copy to repo or error
-        Write-Host "  [ERROR] Local path detected: $IsoPath" -ForegroundColor Red
+        # It's a local drive - requires Administrator to create SMB share
         Write-Host ""
-        Write-Host "  The iLO BMC cannot access local drives on your workstation." -ForegroundColor Yellow
-        Write-Host "  You have three options:" -ForegroundColor Yellow
+        Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Red
+        Write-Host "  ║  WARNING: Local Drive Path Detected                              ║" -ForegroundColor Red
+        Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Red
         Write-Host ""
-        Write-Host "  1. Use the mapped drive's UNC path (if H:\ is a network share):" -ForegroundColor Cyan
-        Write-Host "     Run: net use $driveLetter`:  to see the UNC path" -ForegroundColor Gray
-        Write-Host "     Then use: -ExternalIsoPath '\\server\share\file.iso'" -ForegroundColor Gray
+        Write-Host "  Path: $IsoPath" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "  2. Create an SMB share for the local folder:" -ForegroundColor Cyan
-        Write-Host "     Run: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'" -ForegroundColor Gray
-        Write-Host "     Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\isos\file.iso'" -ForegroundColor Gray
+        Write-Host "  The iLO BMC is a separate physical controller on the server." -ForegroundColor Yellow
+        Write-Host "  It CANNOT access local drives (H:\, C:\, etc.) on this machine." -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "  3. Copy to your repo share (requires -RepoLocalPath and -RepoBaseUrl):" -ForegroundColor Cyan
-
-        if (-not $RepoLocalPath -or -not $RepoBaseUrl) {
-            throw "Local ISO path '$IsoPath' requires -RepoLocalPath and -RepoBaseUrl parameters to copy the file to a network-accessible location."
-        }
-
+        Write-Host "  To use this ISO, you need an SMB (network share) path." -ForegroundColor Cyan
+        Write-Host ""
+        
         if (-not (Test-Path $IsoPath)) {
             throw "ISO file not found: $IsoPath"
         }
-
+        
         $fileInfo = Get-Item $IsoPath
-        Write-Host ""
-        Write-Host "  Copying local ISO to repository..." -ForegroundColor Yellow
-        Write-Host "    Source:      $IsoPath" -ForegroundColor Gray
-        Write-Host "    File size:   $([math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Gray
-
-        $fileName = $fileInfo.Name
-        $destPath = Join-Path $RepoLocalPath $fileName
-        Write-Host "    Destination: $destPath" -ForegroundColor Gray
-
-        try {
-            Copy-Item -Path $IsoPath -Destination $destPath -Force
-            Write-Host "    [OK] Copy complete." -ForegroundColor Green
-        } catch {
-            throw "Failed to copy ISO to repository: $($_.Exception.Message)"
+        $isoDirectory = Split-Path $IsoPath -Parent
+        $isoFileName = $fileInfo.Name
+        $computerName = $env:COMPUTERNAME
+        
+        # Check if running as Administrator
+        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        
+        if ($isAdmin) {
+            # Auto-create SMB share
+            $shareName = "isos_" + ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Substring(0, [Math]::Min(20, ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Length))
+            
+            Write-Host "  [OK] Running as Administrator - creating SMB share automatically..." -ForegroundColor Green
+            Write-Host ""
+            Write-Host "  Share name:   $shareName" -ForegroundColor Gray
+            Write-Host "  Share path:   $isoDirectory" -ForegroundColor Gray
+            Write-Host "  Computer:     $computerName" -ForegroundColor Gray
+            
+            try {
+                $existingShare = Get-SmbShare -Name $shareName -ErrorAction SilentlyContinue
+                
+                if ($existingShare) {
+                    Write-Host "  [OK] Share already exists" -ForegroundColor Green
+                } else {
+                    New-SmbShare -Name $shareName -Path $isoDirectory -ReadAccess 'Everyone' -ErrorAction Stop | Out-Null
+                    Write-Host "  [OK] Share created successfully" -ForegroundColor Green
+                }
+                
+                $uncPath = "\\$computerName\$shareName\$isoFileName"
+                Write-Host "  [OK] UNC path: $uncPath" -ForegroundColor Green
+                
+                $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
+                Write-Host "  [OK] CIFS URL for iLO: $cifsUrl" -ForegroundColor Green
+                
+                return $cifsUrl
+                
+            } catch {
+                throw "Failed to create SMB share: $($_.Exception.Message)"
+            }
+        } else {
+            # Not running as Administrator - show instructions
+            Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
+            Write-Host "  ║  Administrator Privileges Required                               ║" -ForegroundColor Yellow
+            Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "  You are NOT running PowerShell as Administrator." -ForegroundColor Red
+            Write-Host "  Creating an SMB share requires Administrator privileges." -ForegroundColor Red
+            Write-Host ""
+            Write-Host "  OPTION 1: Run as Administrator (if you have access)" -ForegroundColor Cyan
+            Write-Host "    1. Close this PowerShell window" -ForegroundColor Gray
+            Write-Host "    2. Right-click PowerShell → Run as Administrator" -ForegroundColor Gray
+            Write-Host "    3. Re-run your command with the same local path" -ForegroundColor Gray
+            Write-Host ""
+            Write-Host "  OPTION 2: Ask your Administrator to create the share" -ForegroundColor Cyan
+            Write-Host "    Ask your IT admin to run this command on $computerName`:" -ForegroundColor Gray
+            Write-Host ""
+            Write-Host "    New-SmbShare -Name 'isos' -Path '$isoDirectory' -ReadAccess 'Everyone'" -ForegroundColor White
+            Write-Host ""
+            Write-Host "    Then use this SMB path in your command:" -ForegroundColor Gray
+            Write-Host "    -ExternalIsoPath '\\$computerName\isos\$isoFileName'" -ForegroundColor White
+            Write-Host ""
+            Write-Host "  OPTION 3: Use an existing SMB/HTTP path" -ForegroundColor Cyan
+            Write-Host "    If the ISO is already on a network share or web server, use that path:" -ForegroundColor Gray
+            Write-Host "    -ExternalIsoPath '\\fileserver\share\$isoFileName'" -ForegroundColor White
+            Write-Host "    -ExternalIsoPath 'https://webserver/isos/$isoFileName'" -ForegroundColor White
+            Write-Host ""
+            
+            throw "Local drive path '$IsoPath' requires Administrator privileges to create SMB share, or an existing SMB/HTTP path must be provided."
         }
-
-        $isoUrl = "$($RepoBaseUrl.TrimEnd('/'))/$fileName"
-        Write-Host "    [OK] Accessible URL: $isoUrl" -ForegroundColor Green
-        return $isoUrl
     }
 
     # Unknown format
