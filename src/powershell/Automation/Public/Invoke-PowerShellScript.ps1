@@ -5,13 +5,15 @@
 function Invoke-PowerShellScript {
     <#
     .SYNOPSIS
-        Execute a PowerShell script block / string locally via `powershell.exe`.
+        Execute a PowerShell script block / string locally via `pwsh` (or `powershell.exe` fallback).
 
     .DESCRIPTION
         Executes PowerShell scripts locally by spawning a new PowerShell process
         with configurable timeout, execution policy, and output capture. Useful
         for isolating script execution or running scripts in a fresh PowerShell
-        context. Returns a hashtable with success status and combined output.
+        context. Prefers `pwsh` (PowerShell 7+) on all platforms and falls back
+        to `powershell.exe` (Windows PowerShell 5.1) only when `pwsh` is not
+        available. Returns a hashtable with success status and combined output.
 
     .PARAMETER Script
         PowerShell script to execute.
@@ -46,7 +48,15 @@ function Invoke-PowerShellScript {
         '-Command', $Script
     )
     try {
-        $psPath = if ($IsWindows) { 'powershell.exe' } else { 'pwsh' }
+        # Prefer pwsh (PowerShell 7+) on all platforms; fall back to powershell.exe
+        # (Windows PowerShell 5.1) only when pwsh is not on PATH.
+        $psPath = if (Get-Command 'pwsh' -ErrorAction SilentlyContinue) {
+            if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' }
+        } elseif ($IsWindows) {
+            'powershell.exe'
+        } else {
+            throw 'pwsh (PowerShell 7+) is not installed or not on PATH.'
+        }
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName              = $psPath
         $psi.Arguments             = ($psArgs -join ' ')
