@@ -72,6 +72,16 @@
       "ci_stage": null,
       "description": "Query HPE OneView for server identity and health"
     },
+    "oneview_connection_status": {
+      "powershell_handler": "Get-OneViewConnectionStatus",
+      "ci_stage": null,
+      "description": "Quick OneView appliance connectivity + optional server status check"
+    },
+    "oneview_server_list": {
+      "powershell_handler": "Get-OneViewServerList",
+      "ci_stage": null,
+      "description": "List all servers managed by HPE OneView"
+    },
     "prebuild_validation": {
       "powershell_handler": "Test-PreBuildValidation",
       "ci_stage": null,
