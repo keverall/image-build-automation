@@ -51,6 +51,8 @@ $config.Run.Path = @(
     (Join-Path $testPath 'New-IsoBuild.Unit.Tests.ps1'),
     (Join-Path $testPath 'Publish-BootIso.Unit.Tests.ps1'),
     (Join-Path $testPath 'Get-OneViewServerTarget.Unit.Tests.ps1'),
+    (Join-Path $testPath 'Get-OneViewConnectionStatus.Unit.Tests.ps1'),
+    (Join-Path $testPath 'Get-OneViewServerList.Unit.Tests.ps1'),
     (Join-Path $testPath 'Invoke-IloRedfish.Unit.Tests.ps1'),
     (Join-Path $testPath 'Invoke-IsoDeploy.Unit.Tests.ps1'),
     (Join-Path $testPath 'Start-PhysicalServerBuild.Unit.Tests.ps1'),
