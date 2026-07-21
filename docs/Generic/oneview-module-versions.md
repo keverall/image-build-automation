@@ -1,5 +1,6 @@
 # HPE OneView PowerShell Module Version Compatibility
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Quick Selection Guide](#quick-selection-guide)
@@ -10,9 +11,6 @@
 - [How the Automation Selects Modules](#how-the-automation-selects-modules)
 - [Module Validation](#module-validation)
 - [Related Documentation](#related-documentation)
-
-
-<a id="top"></a>
 This table helps you select the correct PowerShell module for your OneView appliance version.
 
 | Module Name | PowerShell | .NET Standard | OneView Appliance Min | Notes |

@@ -1,5 +1,6 @@
 # Maintenance Mode - Environment-Based Connection Configuration
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -38,9 +39,6 @@
 - [Migration Guide](#migration-guide)
   - [From Old Config Format](#from-old-config-format)
 - [Future Enhancements](#future-enhancements)
-
-
-<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 
