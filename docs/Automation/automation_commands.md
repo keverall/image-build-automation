@@ -684,7 +684,12 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 <a name="get-oneview-connection-status"></a>
 ### Get OneView connection status
 
-Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health.
+Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing HPEOneView module session (`Connect-OVMgmt`) and uses that appliance automatically - no connect/disconnect. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the session token or supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health.
+
+```powershell
+# Check current HPEOneView session (no params needed if connected via Connect-OVMgmt)
+Get-OneViewConnectionStatus
+```
 
 ```powershell
 # Connectivity + appliance version + managed server count
@@ -705,7 +710,7 @@ Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier MXQ1
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-OneViewHost` | No* | OneView appliance hostname or IP | - |
+| `-OneViewHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
 | `-ServerIdentifier` | No | Optional server name, serial, iLO IP or bay to look up | - |
 | `-IdentifierType` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
 | `-Credential` | No | `PSCredential` for the connection. Preferred over plaintext fallback. | env / CyberArk |
@@ -717,16 +722,21 @@ Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier MXQ1
 | `-IncludeServerCount` | No | Include the total number of servers managed by OneView | - |
 | `-DryRun` | No | Print the checks without performing them | - |
 
-\* `-OneViewHost` is required for a live (non-`-DryRun`) status check.
+If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
-**Returns:** `[hashtable]` with `Success`, `Connected`, `Reachable`, `Authenticated`, `Appliance`, `Version`, `ServerCount` (optional), and `Server` (optional).
+**Returns:** `[hashtable]` with `Success`, `Connected`, `Reachable`, `Authenticated`, `Appliance`, `Version`, `ServerCount` (optional), `Server` (optional), and `SessionSource` (`HPEOneViewModule` or `Explicit`).
 
 ---
 
 <a name="get-oneview-server-list"></a>
 ### Get OneView server list
 
-Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name. Read-only - safe during a change freeze.
+Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing HPEOneView module session (`Connect-OVMgmt`) and uses that appliance automatically.
+
+```powershell
+# Full list of servers from current HPEOneView session (no params needed if connected)
+Get-OneViewServerList
+```
 
 ```powershell
 # Full list of servers connected to the appliance
@@ -743,7 +753,7 @@ Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'power:On'
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-OneViewHost` | No* | OneView appliance hostname or IP | - |
+| `-OneViewHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
 | `-Credential` | No | `PSCredential` for the connection. Preferred over plaintext fallback. | env / CyberArk |
 | `-OneViewUser` | No | OneView username | `$env:ONEVIEW_USER` |
 | `-OneViewPassword` | No | OneView password | `$env:ONEVIEW_PASSWORD` |
@@ -754,7 +764,7 @@ Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'power:On'
 | `-Filter` | No | `health:<status>` / `power:<state>` / `name:<substring>` | - |
 | `-DryRun` | No | Print the query without performing it | - |
 
-\* `-OneViewHost` is required for a live (non-`-DryRun`) list.
+If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
 **Returns:** `[hashtable]` with `Success`, `Count`, and `Servers` (array of name, serial, model, power_state, health_status, ilo_ip, enclosure, rom_version).
 

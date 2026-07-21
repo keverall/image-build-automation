@@ -26,6 +26,8 @@ function Get-OneViewConnectionStatus {
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
+        If omitted, the command checks for an existing HPEOneView module
+        session (Connect-OVMgmt) and uses that appliance automatically.
 
     .PARAMETER ServerIdentifier
         Optional server name, serial number, iLO IP or bay position to look up.
@@ -67,6 +69,12 @@ function Get-OneViewConnectionStatus {
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
+
+    .EXAMPLE
+        Get-OneViewConnectionStatus
+
+        Uses an existing HPEOneView module session if available. Returns
+        Connected=$false if no session is active.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -100,18 +108,23 @@ function Get-OneViewConnectionStatus {
         return $MockResult
     }
 
+    $sessionToken = $null
+
     if (-not $OneViewHost) {
-        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-        if (-not $isAutomated) {
-            Write-Host "Enter OneView appliance hostname/IP:" -ForegroundColor Yellow
-            $OneViewHost = Read-Host
+        if ($global:ConnectedSessions) {
+            $activeSession = $global:ConnectedSessions | Where-Object { $_.Connected -eq $true } | Select-Object -First 1
+            if ($activeSession) {
+                $OneViewHost = $activeSession.Name
+                $sessionToken = $activeSession.SessionID
+            }
         }
+
         if (-not $OneViewHost) {
-            return @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = "OneViewHost parameter is required" }
+            return @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = "No active OneView session. Use Connect-OVMgmt to connect, or supply -OneViewHost." }
         }
     }
 
-    if (-not $Credential) {
+    if (-not $sessionToken -and -not $Credential) {
         if (-not $OneViewUser -or -not $OneViewPassword) {
             $ovCred = Get-OneViewCredentials
             if (-not $OneViewUser)     { $OneViewUser     = $ovCred[0] }
@@ -127,7 +140,8 @@ function Get-OneViewConnectionStatus {
         return @{
             Success = $true; Connected = $true; Reachable = $true; Authenticated = $true
             Appliance = $OneViewHost; Version = $null; ServerCount = $null
-            Server = $null; DryRun = $true
+            Server = $null; SessionSource = $(if ($sessionToken) { 'HPEOneViewModule' } else { 'Explicit' })
+            DryRun = $true
         }
     }
 
@@ -143,6 +157,7 @@ function Get-OneViewConnectionStatus {
         Version        = $null
         ServerCount    = $null
         Server         = $null
+        SessionSource  = $(if ($sessionToken) { 'HPEOneViewModule' } else { 'Explicit' })
         Error          = $null
     }
 
@@ -162,10 +177,16 @@ function Get-OneViewConnectionStatus {
         # 2. Authentication - authenticated server-hardware probe
         if ($result.Reachable) {
             try {
-                $probe = Invoke-RestMethod -Uri "$apiBase/server-hardware?start=0&count=1" -Method Get `
-                    -Credential $Credential `
-                    -SkipCertificateCheck:$SkipCertificateCheck `
-                    -TimeoutSec $TimeoutSec -ErrorAction Stop
+                $probeParams = @{
+                    Uri                  = "$apiBase/server-hardware?start=0&count=1"
+                    Method               = 'Get'
+                    SkipCertificateCheck = $SkipCertificateCheck
+                    TimeoutSec           = $TimeoutSec
+                    ErrorAction          = 'Stop'
+                }
+                if ($sessionToken) { $probeParams['Headers'] = @{ auth = $sessionToken } }
+                else               { $probeParams['Credential'] = $Credential }
+                $probe = Invoke-RestMethod @probeParams
                 $result.Authenticated = $true
                 if ($IncludeServerCount) {
                     if ($null -ne $probe.total)      { $result.ServerCount = $probe.total }
@@ -173,7 +194,8 @@ function Get-OneViewConnectionStatus {
                 }
             } catch {
                 $result.Authenticated = $false
-                $result.Error = "OneView authentication failed for '$OneViewUser': $($_.Exception.Message)"
+                $errMsg = if ($sessionToken) { "OneView session authentication failed" } else { "OneView authentication failed for '$OneViewUser'" }
+                $result.Error = "$errMsg`: $($_.Exception.Message)"
             }
         }
 
@@ -195,10 +217,16 @@ function Get-OneViewConnectionStatus {
                 }
                 $url = "$apiBase/server-hardware?filter=`"$filter`""
                 try {
-                    $resp = Invoke-RestMethod -Uri $url -Method Get `
-                        -Credential $Credential `
-                        -SkipCertificateCheck:$SkipCertificateCheck `
-                        -TimeoutSec $TimeoutSec -ErrorAction Stop
+                    $srvParams = @{
+                        Uri                  = $url
+                        Method               = 'Get'
+                        SkipCertificateCheck = $SkipCertificateCheck
+                        TimeoutSec           = $TimeoutSec
+                        ErrorAction          = 'Stop'
+                    }
+                    if ($sessionToken) { $srvParams['Headers'] = @{ auth = $sessionToken } }
+                    else               { $srvParams['Credential'] = $Credential }
+                    $resp = Invoke-RestMethod @srvParams
                     if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
                         if ($resp.members.Count -gt 1) {
                             Write-Warning "Multiple servers match '$ServerIdentifier' via $t ($($resp.members.Count) matches). Using first; supply a more specific identifier to disambiguate."
