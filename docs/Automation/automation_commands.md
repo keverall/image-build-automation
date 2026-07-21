@@ -130,8 +130,8 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 ```
 
 ```powershell
-# Deploy an external ISO from a local path (auto-creates SMB share if Administrator)
-Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -ExternalIsoPath 'H:\windows.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos' -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
+# Deploy an external ISO from a local path (auto-creates an SMB share when run as Administrator)
+Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -ExternalIsoPath 'H:\windows.iso' -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
 ```
 
 ```powershell
@@ -275,8 +275,8 @@ Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts/isos/WinSrv20
 ```
 
 ```powershell
-# Deploy from a local path - auto-creates SMB share if running as Administrator
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'H:\windows.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos'
+# Deploy from a local path - auto-creates an SMB share if running as Administrator
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'H:\windows.iso'
 ```
 
 #### Deploy by serial number (resolved via OneView)
@@ -288,7 +288,7 @@ Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -I
 #### Deploy by serial number with external ISO
 
 ```powershell
-Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -ExternalIsoPath 'H:\custom.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos'
+Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -ExternalIsoPath 'H:\custom.iso'
 ```
 
 #### Bulk deploy to all servers
@@ -314,10 +314,10 @@ Invoke-IsoDeploy -DryRun
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-IsoDir` | No | Directory containing ISO packages | auto-resolved |
 | `-IsoUrl` | No | Override the ISO URL | - |
-| `-ExternalIsoPath` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-IsoUrl` is ignored and package resolution is skipped. | - |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository. Used when `-ExternalIsoPath` is a local file that needs copying. | - |
-| `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl`. Required when `-ExternalIsoPath` is a local file. | - |
-| `-SkipConfirmation` | No | Skip the interactive confirmation prompt before deployment. | - |
+| `-ExternalIsoPath` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-IsoUrl` is ignored and package resolution is skipped. For local paths, an SMB share is auto-created when run as Administrator. | - |
+| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository. Unused by `-ExternalIsoPath` resolution (local files are shared via an auto-created SMB share instead). | - |
+| `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl`. Unused by `-ExternalIsoPath` resolution. | - |
+| `-SkipConfirmation` | No | Skip the interactive confirmation prompt before deployment. (Currently only enforced by `Start-PhysicalServerBuild`; ignored by `Invoke-IsoDeploy`.) | - |
 | `-DryRun` | No | Simulate only | - |
 
 ```powershell
