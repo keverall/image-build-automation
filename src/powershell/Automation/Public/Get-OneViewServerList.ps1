@@ -20,6 +20,8 @@ function Get-OneViewServerList {
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
+        If omitted, the command checks for an existing HPEOneView module
+        session (Connect-OVMgmt) and uses that appliance automatically.
 
     .PARAMETER OneViewUser
         OneView username. Defaults to $env:ONEVIEW_USER.
@@ -59,6 +61,11 @@ function Get-OneViewServerList {
 
     .EXAMPLE
         Get-OneViewServerList -OneViewHost 'oneview.ad.example.com' -Filter 'health:Critical'
+
+    .EXAMPLE
+        Get-OneViewServerList
+
+        Uses an existing HPEOneView module session if available.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -91,18 +98,23 @@ function Get-OneViewServerList {
         return $MockResult
     }
 
+    $sessionToken = $null
+
     if (-not $OneViewHost) {
-        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-        if (-not $isAutomated) {
-            Write-Host "Enter OneView appliance hostname/IP:" -ForegroundColor Yellow
-            $OneViewHost = Read-Host
+        if ($global:ConnectedSessions) {
+            $activeSession = $global:ConnectedSessions | Where-Object { $_.Connected -eq $true } | Select-Object -First 1
+            if ($activeSession) {
+                $OneViewHost = $activeSession.Name
+                $sessionToken = $activeSession.SessionID
+            }
         }
+
         if (-not $OneViewHost) {
-            return @{ Success = $false; Count = 0; Servers = @(); Error = "OneViewHost parameter is required" }
+            return @{ Success = $false; Count = 0; Servers = @(); Error = "No active OneView session. Use Connect-OVMgmt to connect, or supply -OneViewHost." }
         }
     }
 
-    if (-not $Credential) {
+    if (-not $sessionToken -and -not $Credential) {
         if (-not $OneViewUser -or -not $OneViewPassword) {
             $ovCred = Get-OneViewCredentials
             if (-not $OneViewUser)     { $OneViewUser     = $ovCred[0] }
@@ -138,10 +150,16 @@ function Get-OneViewServerList {
         $total = $null
         do {
             $url = "$apiBase/server-hardware?start=$start&count=$PageSize"
-            $resp = Invoke-RestMethod -Uri $url -Method Get `
-                -Credential $Credential `
-                -SkipCertificateCheck:$SkipCertificateCheck `
-                -TimeoutSec $TimeoutSec -ErrorAction Stop
+            $listParams = @{
+                Uri                  = $url
+                Method               = 'Get'
+                SkipCertificateCheck = $SkipCertificateCheck
+                TimeoutSec           = $TimeoutSec
+                ErrorAction          = 'Stop'
+            }
+            if ($sessionToken) { $listParams['Headers'] = @{ auth = $sessionToken } }
+            else               { $listParams['Credential'] = $Credential }
+            $resp = Invoke-RestMethod @listParams
 
             if ($null -eq $total) {
                 if ($null -ne $resp.total)     { $total = $resp.total }
