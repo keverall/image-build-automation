@@ -1,5 +1,6 @@
 # Automation Command Reference
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
@@ -48,9 +49,6 @@
   - [Check module is loaded](#check-module-is-loaded)
   - [Force reimport](#force-reimport)
   - [Source links](#source-links)
-
-
-<a id="top"></a>
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
 ---
