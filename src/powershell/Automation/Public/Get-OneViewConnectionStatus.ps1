@@ -62,7 +62,8 @@ function Get-OneViewConnectionStatus {
 
     .RETURNS
         [hashtable] with Success, Connected, Reachable, Authenticated, Appliance,
-        Version, ServerCount (optional) and Server (optional).
+        Version, ServerCount (optional), Server (optional) and SessionSource
+        ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise).
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
