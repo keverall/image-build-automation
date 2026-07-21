@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-WindowsSecurity.ps1
-generated: 2026-07-17 13:06 UTC
+generated: 2026-07-21 15:48 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
