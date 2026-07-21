@@ -1,32 +1,131 @@
-# Ignore virtual environments
+# ==========================================
+# POWERSHELL & DOTNET HARDENING (Critical Wallet Protection)
+# ==========================================
+# Compiled binaries, build artifacts, and local publishing outputs
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.msi
+*.appx
+*.nuget
+packages/
+.nuget/
+
+# PowerShell module dependencies, localized history, and run state data
+.msh_history
+.ps_history
+modules/
+PSScriptAnalyzer/
+*.ps1xml
+*.clixml
+*.psct
+*.vsix
+
+# Secret tracking, local machine configs, and user preference profiles
+*user.config
+*.suo
+*.user
+*.userprefs
+appsettings.Development.json
+
+# ==========================================
+# EXPENSIVE ENGINE BLOCKS (Massive Text Strings)
+# ==========================================
+# Repetitive dependency lists and lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+composer.lock
+Cargo.lock
+Gemfile.lock
+poetry.lock
+mix.lock
+
+# Global Dependency Directories
+node_modules/
+bower_components/
+vendor/
 .venv/
+env/
 venv/
-__pycache__/
-*.pyc
+ENV/
+lib/
+packs/
 
-# Ignore local CI workspace data & state
-.ci-cache/
-workspace/
-*.log
+# ==========================================
+# BUILD OUTS & MINIFIED ASSETS
+# ==========================================
+# Compiled tracking frameworks
+dist/
+build/
+out/
+target/
+.next/
+.nuxt/
+.docusaurus/
+public/build/
+htmlcov/
 
-# Ignore local OS metadata
+# Minified text files and source maps
+*.min.js
+*.min.css
+*.map
+*.bundle.js
+
+# ==========================================
+# MEDIA, BINARIES, & DATA EXPORTS
+# ==========================================
+# Static project assets and database snapshots
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.mp4
+*.mp3
+*.pdf
+*.zip
+*.tar.gz
+*.rar
+*.so
+*.dylib
+*.sql
+*.sqlite
+*.db
+*.csv
+*.tsv
+*.jsonl
+
+# ==========================================
+# IDE, SYSTEM, & DIAGNOSTIC LOGS
+# ==========================================
+# Operational tracking metrics
+.git/
+.svn/
+.idea/
+.vscode/
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
 .DS_Store
 Thumbs.db
 
-# Ignore secure credentials (never send to LLMs)
-*.pkcs12
-*.pem
-*.key
+# Log dumps and standard error streams
+*.log
+logs/
+.logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.history/
 
-# Block local Justfile execution histories
-.justfile/
-.just/
+# Generated API docs (machine-produced; link targets only)
+docs/dynamic-code-docs/
 
-# Block uv internal cache storage blocks
-.uv/
-uv.lock
-
-# Vendored PowerShell modules & binaries (not project code)
-scripts/modules/
-vendor/
-bin/
+# Work-in-progress assets (fonts, scratch)
+wip/
