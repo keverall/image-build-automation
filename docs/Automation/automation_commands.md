@@ -23,10 +23,12 @@
   - [Post-build validation](#post-build-validation)
 - [Maintenance Mode](#maintenance-mode)
   - [Examples](#examples)
-- [Connectivity and Validation](#connectivity-and-validation)
-  - [Test OneView connectivity](#test-oneview-connectivity)
-  - [Validate server list](#validate-server-list)
-  - [Validate build parameters](#validate-build-parameters)
+  - [Connectivity and Validation](#connectivity-and-validation)
+    - [Test OneView connectivity](#test-oneview-connectivity)
+    - [Get OneView connection status](#get-oneview-connection-status)
+    - [Get OneView server list](#get-oneview-server-list)
+    - [Validate server list](#validate-server-list)
+    - [Validate build parameters](#validate-build-parameters)
 - [PowerShell Execution and Utility](#powershell-execution-and-utility)
   - [Run a local PowerShell script](#run-a-local-powershell-script)
   - [Run a remote PowerShell script via WinRM](#run-a-remote-powershell-script-via-winrm)
@@ -676,6 +678,85 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 \* `-ManagementHost` is required for a live (non-`-DryRun`) connectivity test.
 
 **Returns:** `[hashtable]` with `Available`, `Mode` (`oneview`), `ManagementHost`, `Environment`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
+
+---
+
+<a name="get-oneview-connection-status"></a>
+### Get OneView connection status
+
+Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health.
+
+```powershell
+# Connectivity + appliance version + managed server count
+Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -Credential (Get-Credential) -IncludeServerCount
+```
+
+```powershell
+# Specific server status by name
+Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier srv01
+```
+
+```powershell
+# Specific server status by serial number (resolved via OneView)
+Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier MXQ1234567 -IdentifierType Serial
+```
+
+**Parameters:**
+
+| Parameter | Required | Description | Default |
+|-----------|----------|-------------|---------|
+| `-OneViewHost` | No* | OneView appliance hostname or IP | - |
+| `-ServerIdentifier` | No | Optional server name, serial, iLO IP or bay to look up | - |
+| `-IdentifierType` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
+| `-Credential` | No | `PSCredential` for the connection. Preferred over plaintext fallback. | env / CyberArk |
+| `-OneViewUser` | No | OneView username | `$env:ONEVIEW_USER` |
+| `-OneViewPassword` | No | OneView password | `$env:ONEVIEW_PASSWORD` |
+| `-Port` | No | OneView HTTPS port | `443` |
+| `-SkipCertificateCheck` | No | Skip SSL cert verification | `true` |
+| `-TimeoutSec` | No | Per-call timeout | `30` |
+| `-IncludeServerCount` | No | Include the total number of servers managed by OneView | - |
+| `-DryRun` | No | Print the checks without performing them | - |
+
+\* `-OneViewHost` is required for a live (non-`-DryRun`) status check.
+
+**Returns:** `[hashtable]` with `Success`, `Connected`, `Reachable`, `Authenticated`, `Appliance`, `Version`, `ServerCount` (optional), and `Server` (optional).
+
+---
+
+<a name="get-oneview-server-list"></a>
+### Get OneView server list
+
+Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name. Read-only - safe during a change freeze.
+
+```powershell
+# Full list of servers connected to the appliance
+Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Credential (Get-Credential)
+```
+
+```powershell
+# Narrow to critical-health or powered-on servers
+Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'health:Critical'
+Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'power:On'
+```
+
+**Parameters:**
+
+| Parameter | Required | Description | Default |
+|-----------|----------|-------------|---------|
+| `-OneViewHost` | No* | OneView appliance hostname or IP | - |
+| `-Credential` | No | `PSCredential` for the connection. Preferred over plaintext fallback. | env / CyberArk |
+| `-OneViewUser` | No | OneView username | `$env:ONEVIEW_USER` |
+| `-OneViewPassword` | No | OneView password | `$env:ONEVIEW_PASSWORD` |
+| `-Port` | No | OneView HTTPS port | `443` |
+| `-SkipCertificateCheck` | No | Skip SSL cert verification | `true` |
+| `-TimeoutSec` | No | Per-call timeout | `30` |
+| `-PageSize` | No | Servers fetched per page (max 1000) | `100` |
+| `-Filter` | No | `health:<status>` / `power:<state>` / `name:<substring>` | - |
+| `-DryRun` | No | Print the query without performing it | - |
+
+\* `-OneViewHost` is required for a live (non-`-DryRun`) list.
+
+**Returns:** `[hashtable]` with `Success`, `Count`, and `Servers` (array of name, serial, model, power_state, health_status, ilo_ip, enclosure, rom_version).
 
 ---
 
