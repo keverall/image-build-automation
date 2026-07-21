@@ -1,5 +1,19 @@
 # Automation Test Plan — Physical Server Build & ISO Pipeline
 
+## Table of Contents
+
+- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-and-monitoring)
+- [2. OneView & iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity-targeting)
+- [3. Pre/Post Build Validation](#3-prepost-build-validation)
+- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
+- [5. Orchestration, Routing & Utility](#5-orchestration-routing-and-utility)
+- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
+- [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
+  - [Run log](#run-log)
+- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
+
+
 **Purpose:** Tracking document for the automation testing *planned and executed* against the
 `Automation` PowerShell module. It gives the delivery lead a single view of what must be tested,
 what is already covered by automated tests, and when each test is expected vs. actually signed off.
@@ -25,6 +39,7 @@ what is already covered by automated tests, and when each test is expected vs. a
 
 ---
 
+<a name="1-iso-build-patching-deployment-and-monitoring"></a>
 ## 1. ISO Build, Patching, Deployment & Monitoring
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
@@ -37,6 +52,7 @@ what is already covered by automated tests, and when each test is expected vs. a
 | AT-ISO-06 | `Invoke-WindowsSecurityUpdate` | DISM/PowerShell patch methods; dry-run; serial naming | `tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1` | Patched ISO produced | 24/07/2026 | 24/07/2026 | Passed | Y |
 | AT-ISO-07 | End-to-end `Start-PhysicalServerBuild` | Full runbook: pre-build → ISO → publish → OneView → iLO → monitor → post-build; dry-run / `-Mock` / skip-phase variants | `tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1` | `Success=$true`, all `Steps` recorded, `AuditFile` written | 24/07/2026 | 24/07/2026 | Passed | Y |
 
+<a name="2-oneview-and-ilo-connectivity-targeting"></a>
 ## 2. OneView & iLO Connectivity / Targeting
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
@@ -49,6 +65,7 @@ what is already covered by automated tests, and when each test is expected vs. a
 | AT-OV-06 | `Invoke-IloRedfish` | Mount / MountAndBoot / Boot / Reset / Eject / Status; `-Force`; dry-run | `tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1` | Correct action result per iLO | 24/07/2026 | 24/07/2026 | Passed | Y |
 | AT-OV-07 | OneView live reachability (integration) | Real appliance auth against Test env | `tests/powershell/Pester.Integration.ps1` | Authenticates and enumerates | 24/07/2026 | 24/07/2026 | Passed | Y |
 
+<a name="3-prepost-build-validation"></a>
 ## 3. Pre/Post Build Validation
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
@@ -58,6 +75,7 @@ what is already covered by automated tests, and when each test is expected vs. a
 | AT-VAL-03 | `Test-ServerList` | Validate server inventory list | (to be added — not yet covered) | `Success` and valid `Servers` | 24/07/2026 | 24/07/2026 | Passed | N |
 | AT-VAL-04 | `Test-BuildParams` | Validate build parameters against a base ISO | (to be added — not yet covered) | Empty array when valid, errors otherwise | 24/07/2026 | 24/07/2026 | Passed | N |
 
+<a name="4-maintenance-mode-oneview-scom"></a>
 ## 4. Maintenance Mode (OneView / SCOM)
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
@@ -70,6 +88,7 @@ what is already covered by automated tests, and when each test is expected vs. a
 | AT-MM-06 | `New-OneViewMaintenanceScript` | Script generation | `tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1` | Valid script emitted | 24/07/2026 | 24/07/2026 | Passed | Y |
 | AT-MM-07 | `New-ScomConnection` / `New-ScomMaintenanceScript` | SCOM connection & script | `tests/powershell/New-ScomConnection.Unit.Tests.ps1`, `New-ScomMaintenanceScript.Unit.Tests.ps1` | Connection + script valid | 24/07/2026 | 24/07/2026 | Passed | Y |
 
+<a name="5-orchestration-routing-and-utility"></a>
 ## 5. Orchestration, Routing & Utility
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
@@ -81,6 +100,7 @@ what is already covered by automated tests, and when each test is expected vs. a
 | AT-ORC-05 | `Invoke-PowerShellScript` (local) | Local script exec, timeout, capture | (to be added — not yet covered) | Output captured, timeout honoured | 24/07/2026 | 24/07/2026 | Passed | N |
 | AT-ORC-06 | `Invoke-PowerShellWinRM` (remote) | Remote WinRM script exec | (to be added — not yet covered) | Remote output returned | 24/07/2026 | 24/07/2026 | Passed | N |
 
+<a name="6-shared-infrastructure-modules"></a>
 ## 6. Shared / Infrastructure Modules
 
 | Test ID | Component | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
@@ -95,6 +115,7 @@ what is already covered by automated tests, and when each test is expected vs. a
 
 ---
 
+<a name="7-execution-evidence-to-be-filled-per-cycle"></a>
 ## 7. Execution Evidence (to be filled per cycle)
 
 Record each execution run here so the lead can trace sign-off to a build/CI job.
@@ -105,6 +126,7 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 > **Scenario vs. atomic-test count:** The 38 `AT-*` rows above are *logical test scenarios* (one per command/feature area). Each scenario expands into multiple Pester `It` blocks, giving **68 atomic tests** in total. Both numbers reconcile: 38 scenarios = 68 passing atomic tests, 0 failures.
 
+<a name="run-log"></a>
 ### Run log
 
 Full test run output (from `make test` / `make automation-mode-tests`):
@@ -267,6 +289,7 @@ Tests Passed: 68, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0
 ================================================================================
 ```
 
+<a name="8-coverage-gaps-action-items-for-the-team"></a>
 ## 8. Coverage Gaps (action items for the team)
 
 These commands are documented but **lack automated test files** and need new Pester tests before sign-off:
@@ -276,6 +299,7 @@ These commands are documented but **lack automated test files** and need new Pes
 - `Invoke-PowerShellScript` (AT-ORC-05)
 - `Invoke-PowerShellWinRM` (AT-ORC-06)
 
+<a name="9-notes-for-the-delivery-lead"></a>
 ## 9. Notes for the Delivery Lead
 
 - **Offline unit tests** (CI? = Y) run automatically in GitLab CI and satisfy the bulk of the
