@@ -78,7 +78,9 @@ Get-Command -Module Automation
 <a name="physical-server-build-end-to-end"></a>
 ## Physical Server Build (End-to-End)
 
-The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, publish to HTTPS, OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, and audit logging.
+The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, publish to HTTPS, OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, and audit logging. Supports two modes:
+- **Build mode** (default): Builds a ConfigMgr bootable ISO, publishes it, deploys it.
+- **External ISO mode** (`-ExternalIsoPath`): Deploys a client-supplied ISO directly, skipping build and publish.
 
 <a name="full-build-most-common"></a>
 ### Full build (most common)
@@ -122,6 +124,21 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 Start-PhysicalServerBuild -ServerIdentifier srv01 -Mock
 ```
 
+```powershell
+# Deploy an external ISO directly (skip build/publish phases)
+Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -ExternalIsoPath '\\fileserver\isos\custom.iso' -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
+```
+
+```powershell
+# Deploy an external ISO from a local path (auto-creates SMB share if Administrator)
+Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -ExternalIsoPath 'H:\windows.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos' -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
+```
+
+```powershell
+# Skip confirmation prompt for automated deployments
+Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow -SkipConfirmation
+```
+
 **Parameters:**
 
 | Parameter | Required | Description | Default |
@@ -139,6 +156,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -Mock
 | `-TaskSequenceName` | No | Task sequence name (informational) | - |
 | `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | - |
 | `-RepoLocalPath` | No | Local path mirrored to `-RepoBaseUrl` | - |
+| `-ExternalIsoPath` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-SkipIsoBuild` and `-SkipPublish` are implied. | - |
 | `-MonitorTimeoutSeconds` | No | Max monitoring duration | `7200` |
 | `-MonitorPollSeconds` | No | Poll interval | `30` |
 | `-SkipPreBuild` | No | Skip pre-build validation | - |
@@ -148,6 +166,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -Mock
 | `-SkipMount` | No | Skip iLO mount and boot | - |
 | `-SkipMonitor` | No | Skip installation monitoring | - |
 | `-SkipPostBuild` | No | Skip post-build validation | - |
+| `-SkipConfirmation` | No | Skip the interactive confirmation prompt before deployment. | - |
 | `-Mock` | No | Mock all calls (implies `-DryRun`) | - |
 | `-DryRun` | No | Validate and print plan only | - |
 | `-Force` | No | Allow destructive `ForceRestart` | - |
@@ -239,7 +258,37 @@ Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
 ### Deploy ISOs to servers
 
 ```powershell
+# Deploy by server hostname
 Invoke-IsoDeploy -Server srv01 -IsoUrl 'https://artifacts/isos/WinSrv2025_v1.0.iso'
+```
+
+#### Deploy an external ISO (HTTP/HTTPS, UNC/SMB, NFS, or local path)
+
+```powershell
+# Deploy from a network share (auto-converted to CIFS URL for iLO)
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso'
+```
+
+```powershell
+# Deploy from an HTTP URL (used directly)
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts/isos/WinSrv2025.iso'
+```
+
+```powershell
+# Deploy from a local path - auto-creates SMB share if running as Administrator
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'H:\windows.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos'
+```
+
+#### Deploy by serial number (resolved via OneView)
+
+```powershell
+Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
+```
+
+#### Deploy by serial number with external ISO
+
+```powershell
+Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -ExternalIsoPath 'H:\custom.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos'
 ```
 
 #### Bulk deploy to all servers
@@ -265,7 +314,10 @@ Invoke-IsoDeploy -DryRun
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-IsoDir` | No | Directory containing ISO packages | auto-resolved |
 | `-IsoUrl` | No | Override the ISO URL | - |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | - |
+| `-ExternalIsoPath` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-IsoUrl` is ignored and package resolution is skipped. | - |
+| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository. Used when `-ExternalIsoPath` is a local file that needs copying. | - |
+| `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl`. Required when `-ExternalIsoPath` is a local file. | - |
+| `-SkipConfirmation` | No | Skip the interactive confirmation prompt before deployment. | - |
 | `-DryRun` | No | Simulate only | - |
 
 ```powershell
@@ -656,6 +708,8 @@ Low-level helpers used by other commands.
 
 <a name="run-a-local-powershell-script"></a>
 ### Run a local PowerShell script
+
+Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Prefers `pwsh` (PowerShell 7+) on all platforms and falls back to `powershell.exe` (Windows PowerShell 5.1) only when `pwsh` is not available.
 
 ```powershell
 Invoke-PowerShellScript -Script 'Get-Process | Select-Object -First 5' -TimeoutSeconds 30
