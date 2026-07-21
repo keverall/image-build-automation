@@ -23,13 +23,15 @@ class CommandResult {
     [bool]   $Success
 
     CommandResult([int]$rc, [string]$stdout, [string]$stderr) {
-        $this.ReturnCode     = $rc
+        $this.ReturnCode = $rc
         $this.StandardOutput = $stdout
-        $this.StandardError  = $stderr
-        $this.Success        = ($rc -eq 0)
+        $this.StandardError = $stderr
+        $this.Success = ($rc -eq 0)
     }
 
-    [string] Output() { return $this.StandardOutput + $this.StandardError }
+    [string] Output() {
+        return $this.StandardOutput + $this.StandardError 
+    }
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -42,15 +44,15 @@ class AuditLogger {
     [System.Collections.ArrayList] $Entries
 
     AuditLogger([string]$Category, [string]$LogDir, [string]$MasterLogName) {
-        $this.Category      = $Category
-        $this.LogDir        = $LogDir
+        $this.Category = $Category
+        $this.LogDir = $LogDir
         $baseName = [System.IO.Path]::GetFileNameWithoutExtension($MasterLogName)
         $ext = [System.IO.Path]::GetExtension($MasterLogName)
         $ts = Get-UtcFileTimestamp
         $levelStr = 'INFO'
         $realLogFile = "${baseName}_${ts}_${levelStr}${ext}"
         $this.MasterLogPath = [System.IO.Path]::Combine($LogDir, $realLogFile)
-        $this.Entries       = [System.Collections.ArrayList]::new()
+        $this.Entries = [System.Collections.ArrayList]::new()
     }
 
     # 4-arg convenience overload - Extra defaults to $null
@@ -64,7 +66,7 @@ class AuditLogger {
     }
 
     [hashtable] Log([string]$Action, [string]$Status, [string]$Server,
-                    [string]$Details, [hashtable]$Extra) {
+        [string]$Details, [hashtable]$Extra) {
         $entry = @{
             timestamp = Get-UtcTimestamp
             category  = $this.Category
@@ -73,7 +75,11 @@ class AuditLogger {
             server    = $Server
             details   = $Details
         }
-        if ($Extra) { foreach ($k in $Extra.Keys) { $entry[$k] = $Extra[$k] } }
+        if ($Extra) {
+            foreach ($k in $Extra.Keys) {
+                $entry[$k] = $Extra[$k] 
+            } 
+        }
         $null = $this.Entries.Add($entry)
         Write-Output "[$Status] $Action | $Server | $Details"
         return $entry
@@ -102,7 +108,9 @@ class AuditLogger {
         }
     }
 
-    [void] Clear() { $this.Entries.Clear() }
+    [void] Clear() {
+        $this.Entries.Clear() 
+    }
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -116,16 +124,18 @@ class ServerInfo {
     [int]    $LineNumber
 
     ServerInfo([string]$Hostname, [string]$IPMI_IP, [string]$ILO_IP, [int]$LineNumber) {
-        $this.Hostname   = $Hostname
-        $this.IPMI_IP    = $IPMI_IP
-        $this.ILO_IP     = $ILO_IP
+        $this.Hostname = $Hostname
+        $this.IPMI_IP = $IPMI_IP
+        $this.ILO_IP = $ILO_IP
         $this.LineNumber = $LineNumber
-        $this.Name       = $this.ShortName()
+        $this.Name = $this.ShortName()
     }
 
     [string] ShortName() {
         $idx = $this.Hostname.IndexOf('.')
-        if ($idx -ge 0) { return $this.Hostname.Substring(0, $idx) }
+        if ($idx -ge 0) {
+            return $this.Hostname.Substring(0, $idx) 
+        }
         return $this.Hostname
     }
 }
@@ -142,29 +152,33 @@ class OpsRamp_Client {
     [datetime] $TokenExpiry
     [System.Net.Http.HttpClient] $HttpClient
 
-    static [string] $TokenUrlSuffix    = '/oauth/token'
-    static [string] $MetricsUrlSuffix  = '/metrics'
-    static [string] $AlertsUrlSuffix   = '/alerts'
-    static [string] $EventsUrlSuffix   = '/events'
+    static [string] $TokenUrlSuffix = '/oauth/token'
+    static [string] $MetricsUrlSuffix = '/metrics'
+    static [string] $AlertsUrlSuffix = '/alerts'
+    static [string] $EventsUrlSuffix = '/events'
 
     OpsRamp_Client([string] $ConfigPath) {
         $this.ConfigPath = $ConfigPath
-        $this.Config     = $this._LoadConfig()
-        $opsr            = $this.Config.Get_Item('opsramp_api')  ?? @{}
-        $this.BaseUrl    = $opsr.Get_Item('base_url')  ?? ''
-        $this.ApiVersion = $opsr.Get_Item('version')    ?? 'v2'
-        $this.AccessToken   = $null
-        $this.TokenExpiry   = [DateTime]::MinValue
-        $this.HttpClient    = [System.Net.Http.HttpClient]::new()
+        $this.Config = $this._LoadConfig()
+        $opsr = $this.Config.Get_Item('opsramp_api') ?? @{}
+        $this.BaseUrl = $opsr.Get_Item('base_url') ?? ''
+        $this.ApiVersion = $opsr.Get_Item('version') ?? 'v2'
+        $this.AccessToken = $null
+        $this.TokenExpiry = [DateTime]::MinValue
+        $this.HttpClient = [System.Net.Http.HttpClient]::new()
     }
 
     [hashtable] _LoadConfig() {
-        if (-not (Test-Path $this.ConfigPath)) { return @{} }
+        if (-not (Test-Path $this.ConfigPath)) {
+            return @{} 
+        }
         $cfg = Import-JsonConfig -Path $this.ConfigPath -Required:$false
         if ($cfg.ContainsKey('credentials')) {
-            foreach ($envName in @('OPSRAMP_CLIENT_ID','OPSRAMP_CLIENT_SECRET','OPSRAMP_TENANT_ID')) {
+            foreach ($envName in @('OPSRAMP_CLIENT_ID', 'OPSRAMP_CLIENT_SECRET', 'OPSRAMP_TENANT_ID')) {
                 $envVal = [System.Environment]::GetEnvironmentVariable($envName)
-                if ($envVal) { $cfg['credentials'][$envName] = $envVal }
+                if ($envVal) {
+                    $cfg['credentials'][$envName] = $envVal 
+                }
             }
         }
         return $cfg
@@ -175,29 +189,33 @@ class OpsRamp_Client {
     }
 
     [bool] EnsureToken() {
-        if ($this.AccessToken -and $this.TokenExpiry -gt [DateTime]::UtcNow) { return $true }
+        if ($this.AccessToken -and $this.TokenExpiry -gt [DateTime]::UtcNow) {
+            return $true 
+        }
         $creds = $this.Config.Get_Item('credentials') ?? @{}
-        $cid   = $creds.Get_Item('client_id')
-        $csec  = $creds.Get_Item('client_secret')
-        if (-not $cid -or -not $csec) { Write-Error 'OpsRamp client_id and client_secret required.'; return $false }
+        $cid = $creds.Get_Item('client_id')
+        $csec = $creds.Get_Item('client_secret')
+        if (-not $cid -or -not $csec) {
+            Write-Error 'OpsRamp client_id and client_secret required.'; return $false 
+        }
         $tokenUrl = $this._GetTokenUrl()
-        $pair     = "$($cid):$($csec)"
-        $bytes    = [System.Text.Encoding]::UTF8.GetBytes($pair)
-        $b64      = [Convert]::ToBase64String($bytes)
+        $pair = "$($cid):$($csec)"
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
+        $b64 = [Convert]::ToBase64String($bytes)
         $this.HttpClient.DefaultRequestHeaders.Authorization =
-            New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Basic', $b64)
+        New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Basic', $b64)
         $body = New-Object System.Net.Http.FormUrlEncodedContent(@(
-            'grant_type=client_credentials'
-        ))
+                'grant_type=client_credentials'
+            ))
         try {
             $resp = $this.HttpClient.PostAsync($tokenUrl, $body).Result
             $resp.EnsureSuccessStatusCode() | Out-Null
-            $json          = $resp.Content.ReadAsStringAsync().Result | ConvertFrom-Json | _PS_ConvertTo-Hashtable
-            $this.AccessToken  = $json.Get_Item('access_token')
-            $expiresIn         = ($json.Get_Item('expires_in')) ?? 3600
-            $this.TokenExpiry  = [DateTime]::UtcNow.AddSeconds($expiresIn * 0.9)
+            $json = $resp.Content.ReadAsStringAsync().Result | ConvertFrom-Json | _PS_ConvertTo-Hashtable
+            $this.AccessToken = $json.Get_Item('access_token')
+            $expiresIn = ($json.Get_Item('expires_in')) ?? 3600
+            $this.TokenExpiry = [DateTime]::UtcNow.AddSeconds($expiresIn * 0.9)
             $this.HttpClient.DefaultRequestHeaders.Authorization =
-                New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Bearer', $this.AccessToken)
+            New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Bearer', $this.AccessToken)
             Write-Verbose 'OpsRamp access token obtained successfully.'
             return $true
         } catch {
@@ -207,7 +225,9 @@ class OpsRamp_Client {
     }
 
     [hashtable] _MakeRequest([string] $Method, [string] $Endpoint, [object] $Data = $null, [hashtable] $QueryParams = $null) {
-        if (-not $this.EnsureToken()) { return $null }
+        if (-not $this.EnsureToken()) {
+            return $null 
+        }
         [string]$url = "$($this.BaseUrl.TrimEnd('/'))/$($this.ApiVersion.TrimStart('/'))$($Endpoint.TrimStart('/'))"
         if ($QueryParams) {
             [string]$qs = ($QueryParams.Keys | ForEach-Object { "$_=$([Uri]::EscapeDataString($QueryParams[$_]))" }) -join '&'
@@ -238,24 +258,30 @@ class OpsRamp_Client {
     }
 
     [bool] SendMetric([string]$ResourceId, [string]$MetricName, [double]$Value,
-                      [datetime]$Timestamp = [DateTime]::MinValue, [hashtable]$Tags = $null) {
+        [datetime]$Timestamp = [DateTime]::MinValue, [hashtable]$Tags = $null) {
         $metric = @{
             resourceId = $ResourceId
             metric     = @{
                 name      = $MetricName
                 value     = $Value
-                timestamp = if ($Timestamp -eq [DateTime]::MinValue) { Get-UtcTimestamp } else { $Timestamp.ToString('o') }
+                timestamp = if ($Timestamp -eq [DateTime]::MinValue) {
+                    Get-UtcTimestamp 
+                } else {
+                    $Timestamp.ToString('o') 
+                }
                 type      = 'gauge'
             }
         }
-        if ($Tags) { $metric['metric']['tags'] = $Tags }
-        $url  = [OpsRamp_Client]::MetricsUrlSuffix
+        if ($Tags) {
+            $metric['metric']['tags'] = $Tags 
+        }
+        $url = [OpsRamp_Client]::MetricsUrlSuffix
         $resp = $this._MakeRequest('POST', $url, @($metric))
         return ($null -ne $resp)
     }
 
     [bool] SendAlert([string]$ResourceId, [string]$AlertType, [string]$Severity,
-                     [string]$Message, [hashtable]$Details = $null) {
+        [string]$Message, [hashtable]$Details = $null) {
         $alert = @{
             resourceId = $ResourceId
             type       = $AlertType
@@ -263,20 +289,24 @@ class OpsRamp_Client {
             message    = $Message
             timestamp  = Get-UtcTimestamp
         }
-        if ($Details) { $alert['details'] = $Details }
+        if ($Details) {
+            $alert['details'] = $Details 
+        }
         $resp = $this._MakeRequest('POST', [OpsRamp_Client]::AlertsUrlSuffix, $alert)
         return ($null -ne $resp)
     }
 
     [bool] SendEvent([string]$ResourceId, [string]$EventType, [string]$Message,
-                     [hashtable]$Properties = $null) {
+        [hashtable]$Properties = $null) {
         $evt = @{
             resourceId = $ResourceId
             type       = $EventType
             message    = $Message
             timestamp  = Get-UtcTimestamp
         }
-        if ($Properties) { $evt['properties'] = $Properties }
+        if ($Properties) {
+            $evt['properties'] = $Properties 
+        }
         $resp = $this._MakeRequest('POST', [OpsRamp_Client]::EventsUrlSuffix, $evt)
         return ($null -ne $resp)
     }
@@ -288,7 +318,7 @@ class OpsRamp_Client {
 
     [bool] ReportBuildStatus([string]$ServerName, [hashtable]$BuildData) {
         $uuid = $BuildData.Get_Item('uuid') ?? $ServerName
-        $ok   = [int]($BuildData.Get_Item('success') ?? $false)
+        $ok = [int]($BuildData.Get_Item('success') ?? $false)
         $this.SendMetric($uuid, 'build.status', $ok, @{ server = $ServerName; type = 'hpe_iso_build' })
         $this.SendMetric($uuid, 'build.timestamp', [DateTimeOffset]::UtcNow.ToUnixTimeSeconds(), @{ server = $ServerName })
         if (-not $BuildData.Get_Item('success')) {
@@ -300,7 +330,7 @@ class OpsRamp_Client {
 
     [bool] ReportDeploymentStatus([string]$ServerName, [hashtable]$DeployData) {
         $uuid = $DeployData.Get_Item('uuid') ?? $ServerName
-        $ok   = [int]($DeployData.Get_Item('success') ?? $false)
+        $ok = [int]($DeployData.Get_Item('success') ?? $false)
         $this.SendMetric($uuid, 'deployment.status', $ok,
             @{ server = $ServerName; method = $DeployData.Get_Item('method') })
         if (-not $DeployData.Get_Item('success')) {
@@ -311,8 +341,12 @@ class OpsRamp_Client {
     }
 
     [bool] ReportInstallationProgress([string]$ServerName, [string]$Uuid, [int]$ProgressPercent,
-                                      [string]$Phase, [int]$ElapsedSeconds) {
-        $rid = if ($Uuid) { $Uuid } else { $ServerName }
+        [string]$Phase, [int]$ElapsedSeconds) {
+        $rid = if ($Uuid) {
+            $Uuid 
+        } else {
+            $ServerName 
+        }
         $tags = @{ server = $ServerName; phase = $Phase }
         $this.SendMetric($rid, 'install.progress.percent', $ProgressPercent, $tags)
         $this.SendMetric($rid, 'install.elapsed_seconds', $ElapsedSeconds, $tags)
@@ -320,13 +354,21 @@ class OpsRamp_Client {
     }
 
     [bool] ReportVulnerabilityScan([string]$ServerName, [string]$Uuid, [hashtable]$ScanResults) {
-        $rid        = if ($Uuid) { $Uuid } else { $ServerName }
-        $vulnCount  = $ScanResults.Get_Item('vulnerability_count') ?? 0
-        $critCount  = $ScanResults.Get_Item('critical_count')     ?? 0
-        $this.SendMetric($rid, 'security.vulnerabilities.total',  $vulnCount, @{ server = $ServerName })
+        $rid = if ($Uuid) {
+            $Uuid 
+        } else {
+            $ServerName 
+        }
+        $vulnCount = $ScanResults.Get_Item('vulnerability_count') ?? 0
+        $critCount = $ScanResults.Get_Item('critical_count') ?? 0
+        $this.SendMetric($rid, 'security.vulnerabilities.total', $vulnCount, @{ server = $ServerName })
         $this.SendMetric($rid, 'security.vulnerabilities.critical', $critCount, @{ server = $ServerName })
         if ($critCount -gt 0) {
-            $sev = if ($critCount -gt 0) { 'CRITICAL' } else { 'WARNING' }
+            $sev = if ($critCount -gt 0) {
+                'CRITICAL' 
+            } else {
+                'WARNING' 
+            }
             $this.SendAlert($rid, 'security.vulnerability', $sev,
                 "$critCount critical vulnerabilities found on $ServerName", $ScanResults)
         }
@@ -347,25 +389,25 @@ class IloRedfishSession {
     [string] $SessionUri
 
     IloRedfishSession([string]$BaseUrl, [string]$User, [string]$Password,
-                      [bool]$SkipCert, [int]$TimeoutSec) {
-        $this.BaseUrl       = $BaseUrl.TrimEnd('/')
-        $this.User          = $User
-        $this.Password      = $Password
-        $this.SkipCert      = $SkipCert
-        $this.TimeoutSec    = $TimeoutSec
-        $this.AuthToken     = $null
-        $this.SessionUri    = $null
+        [bool]$SkipCert, [int]$TimeoutSec) {
+        $this.BaseUrl = $BaseUrl.TrimEnd('/')
+        $this.User = $User
+        $this.Password = $Password
+        $this.SkipCert = $SkipCert
+        $this.TimeoutSec = $TimeoutSec
+        $this.AuthToken = $null
+        $this.SessionUri = $null
         $this._Login()
     }
 
     [void] _Login() {
-        $url  = "$($this.BaseUrl)/SessionService/Sessions"
+        $url = "$($this.BaseUrl)/SessionService/Sessions"
         $body = @{ UserName = $this.User; Password = $this.Password } | ConvertTo-Json
         $resp = Invoke-RestMethod -Uri $url -Method Post -Body $body `
             -ContentType 'application/json;charset=utf-8' `
             -SkipCertificateCheck:$this.SkipCert `
             -TimeoutSec $this.TimeoutSec -ErrorAction Stop
-        $this.AuthToken  = $resp.token
+        $this.AuthToken = $resp.token
         $this.SessionUri = $resp.'@odata.id'
     }
 
@@ -401,12 +443,12 @@ class IloRedfishSession {
     [hashtable] GetSystem() {
         $s = $this._Get("$($this.BaseUrl)/Systems/1")
         return @{
-            power_state             = $s.PowerState
-            boot_source_override    = $s.Boot.BootSourceOverrideTarget
-            boot_override_enabled   = $s.Boot.BootSourceOverrideEnabled
-            manufacturer            = $s.Manufacturer
-            model                   = $s.Model
-            serial                  = $s.SerialNumber
+            power_state           = $s.PowerState
+            boot_source_override  = $s.Boot.BootSourceOverrideTarget
+            boot_override_enabled = $s.Boot.BootSourceOverrideEnabled
+            manufacturer          = $s.Manufacturer
+            model                 = $s.Model
+            serial                = $s.SerialNumber
         }
     }
 
@@ -417,11 +459,11 @@ class IloRedfishSession {
             try {
                 $d = $this._Get($m.'@odata.id')
                 $members += @{
-                    id       = Split-Path $d.'@odata.id' -Leaf
-                    name     = $d.Name
+                    id          = Split-Path $d.'@odata.id' -Leaf
+                    name        = $d.Name
                     media_types = $d.MediaTypes
-                    inserted = $d.Inserted
-                    image    = $d.Image
+                    inserted    = $d.Inserted
+                    image       = $d.Image
                 }
             } catch {
                 $members += @{ id = Split-Path $m.'@odata.id' -Leaf; error = $_.Exception.Message }
@@ -445,11 +487,11 @@ class IloRedfishSession {
     [void] SetOneTimeBootCd() {
         $uri = "$($this.BaseUrl)/Systems/1"
         $this._Patch($uri, @{
-            Boot = @{
-                BootSourceOverrideTarget  = 'Cd'
-                BootSourceOverrideEnabled = 'Once'
-            }
-        })
+                Boot = @{
+                    BootSourceOverrideTarget  = 'Cd'
+                    BootSourceOverrideEnabled = 'Once'
+                }
+            })
     }
 
     [void] ResetSystem([string]$ResetType) {
@@ -458,7 +500,9 @@ class IloRedfishSession {
     }
 
     [void] Logout() {
-        if (-not $this.SessionUri) { return }
+        if (-not $this.SessionUri) {
+            return 
+        }
         try {
             Invoke-RestMethod -Uri $this.SessionUri -Method Delete `
                 -Headers $this._Headers() `
@@ -483,16 +527,18 @@ class AutomationBase {
     AutomationBase([string]$ConfigDir, [string]$OutputDir, [bool]$DryRun) {
         $this.ConfigDir = $ConfigDir
         $this.OutputDir = $OutputDir
-        $this.DryRun    = $DryRun
+        $this.DryRun = $DryRun
 
         Ensure-DirectoryExists -Path $OutputDir
         $projectRoot = Get-ProjectRoot
-        if (-not $projectRoot) { $projectRoot = Get-Location }
+        if (-not $projectRoot) {
+            $projectRoot = Get-Location 
+        }
         $logDir = Join-Path $projectRoot 'generated/logs'
         Ensure-DirectoryExists -Path $logDir
 
         $this.Logger = $null
-        $this.Audit  = [AuditLogger]::new($this.GetType().Name.ToLower(), $logDir, 'audit.log')
+        $this.Audit = [AuditLogger]::new($this.GetType().Name.ToLower(), $logDir, 'audit.log')
         $this.Audit.Log('initialization', 'INFO',
             '', "ConfigDir=$ConfigDir OutputDir=$OutputDir DryRun=$DryRun", $null)
     }
@@ -530,9 +576,9 @@ class AutomationBase {
 # ──────────────────────────────────────────────────────────────────────────────
 # Load Private scripts (dot-sourced in dependency order)
 # ──────────────────────────────────────────────────────────────────────────────
-$_moduleBase  = $PSScriptRoot
+$_moduleBase = $PSScriptRoot
 $_privateRoot = Join-Path $_moduleBase 'Private'
-$_publicRoot  = Join-Path $_moduleBase 'Public'
+$_publicRoot = Join-Path $_moduleBase 'Public'
 
 # Private - dependency-ordered load
 $_privateOrder = @(
@@ -546,21 +592,28 @@ $_privateOrder = @(
     'Logging.ps1',      # Initialize-Logging, Get-Logger
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
+    'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild)
 )
 
 foreach ($_f in $_privateOrder) {
     $_fp = Join-Path $_privateRoot $_f
     if (Test-Path $_fp) {
-        try   { . $_fp }
-        catch { Write-Warning "Failed to load private script $($_f): $_" }
+        try {
+            . $_fp 
+        } catch {
+            Write-Warning "Failed to load private script $($_f): $_" 
+        }
     }
 }
 
 # Public - alphabetical, self-contained
 if (Test-Path $_publicRoot) {
     Get-ChildItem $_publicRoot -Filter '*.ps1' | Sort-Object Name | ForEach-Object {
-        try   { . $_.FullName }
-        catch { Write-Warning "Failed to load public script $($_.Name): $_" }
+        try {
+            . $_.FullName 
+        } catch {
+            Write-Warning "Failed to load public script $($_.Name): $_" 
+        }
     }
 }
 
@@ -586,6 +639,8 @@ Export-ModuleMember -Function @(
     'Set-MaintenanceMode'
     'Start-InstallMonitor'
     'Get-OneViewServerTarget'
+    'Get-OneViewConnectionStatus'
+    'Get-OneViewServerList'
     'Invoke-IloRedfish'
     'Publish-BootIso'
     'Test-PreBuildValidation'
@@ -629,15 +684,15 @@ Export-ModuleMember -Function @(
     'Test-ClusterDefinition'
     'New-ServerInfo'
     'Resolve-OneViewTarget'
-# Logging / audit / timestamps
-        'Initialize-Logging'
-        'Get-Logger'
-        'New-AuditLogger'
-        'Get-UtcTimestamp'
-        'Get-LocalTimestamp'
-        'Get-UtcFileTimestamp'
-        'Get-UtcApiTimestamp'
-        'Convert-ToUtcIso8601'
+    # Logging / audit / timestamps
+    'Initialize-Logging'
+    'Get-Logger'
+    'New-AuditLogger'
+    'Get-UtcTimestamp'
+    'Get-LocalTimestamp'
+    'Get-UtcFileTimestamp'
+    'Get-UtcApiTimestamp'
+    'Convert-ToUtcIso8601'
     # Routing
     'Invoke-RoutedRequest'
     # Debug / introspection
