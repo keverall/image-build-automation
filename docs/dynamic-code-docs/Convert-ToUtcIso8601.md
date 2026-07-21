@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Convert-ToUtcIso8601
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
