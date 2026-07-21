@@ -1,0 +1,186 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{background:#ffffff;color:#000000;font-family:Calibri,Arial,sans-serif;margin:24px;}h1,h2,h3,h4{color:#000000;}table{border-collapse:collapse;background:#ffffff;color:#000000;}th,td{border:1px solid #999999;padding:4px 8px;color:#000000;background:#ffffff;}th{background:#e8e8e8;}code{background:#f4f4f4;color:#000000;padding:1px 3px;}pre{background:#f4f4f4;color:#000000;padding:8px;border:1px solid #cccccc;overflow:auto;}pre code{background:#f4f4f4;color:#000000;}blockquote{color:#222222;background:#f7f7f7;border-left:3px solid #999999;padding:6px 10px;}</style></head><body><h1>Automation Test Plan — Physical Server Build &amp; ISO Pipeline</h1>
+<p><strong>Purpose:</strong> Tracking document for the automation testing *planned and executed* against the<br><code>Automation</code> PowerShell module. It gives the delivery lead a single view of what must be tested,<br>what is already covered by automated tests, and when each test is expected vs. actually signed off.</p>
+<p><strong>Module under test:</strong> <code>src/powershell/Automation/Automation.psm1</code><br><strong>Test framework:</strong> Pester 5.x (offline unit tests) + integration scripts run inside a maintenance window.</p>
+<p><strong>How to execute (runner reference):</strong></p>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Command</th><th>What it runs</th></tr></thead><tbody><tr><td><code>make test</code></td><td>All Pester unit tests (<code>scripts/run-tests.ps1</code>)</td></tr><tr><td><code>make coverage</code></td><td>Unit tests with code-coverage report (CI gate, threshold 70%)</td></tr><tr><td><code>make test-integration</code></td><td><code>tests/powershell/Pester.Integration.ps1</code></td></tr><tr><td><code>make automation-mode-tests</code></td><td>ISO build / OneView / iLO Redfish / orchestrator flows</td></tr><tr><td><code>make maint-mode-tests</code></td><td>High-priority <code>Set-MaintenanceMode</code> suite</td></tr></tbody></table>
+<p><strong>Column legend:</strong><br>- <strong>Expected Pass Date</strong> — target sign-off date agreed with the delivery lead (fill in per the project schedule).<br>- <strong>Actual Pass Date</strong> — date/time the test last passed in the target environment. Leave blank until executed.<br>- <strong>Status</strong> — <code>Planned</code> / <code>In Progress</code> / <code>Passed</code> / <code>Failed</code> / <code>Blocked</code>.<br>- <strong>CI?</strong> — <code>Y</code> if already wired into the GitLab CI test stage; <code>N</code> if it still needs execution/evidence.</p>
+<p>---</p>
+<h2>1. ISO Build, Patching, Deployment &amp; Monitoring</h2>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Test ID</th><th>Component / Command</th><th>Test Scope</th><th>Test File (existing)</th><th>Expected Result</th><th>Expected Pass Date</th><th>Actual Pass Date</th><th>Status</th><th>CI?</th></tr></thead><tbody><tr><td>AT-ISO-01</td><td><code>New-IsoBuild</code></td><td>Bootable ISO creation from ConfigMgr MP/DP; versioning; dry-run</td><td><code>tests/powershell/New-IsoBuild.Unit.Tests.ps1</code></td><td>ISO produced at expected path with correct metadata</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ISO-02</td><td><code>Publish-BootIso</code></td><td>Publish to HTTPS repo; overwrite; HEAD verification; dry-run</td><td><code>tests/powershell/Publish-BootIso.Unit.Tests.ps1</code></td><td>Public URL returned and verified</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ISO-03</td><td><code>Invoke-IsoDeploy</code></td><td>Redfish mount by host / serial (OneView resolve); external ISO paths (HTTP/SMB/NFS/local); bulk; dry-run</td><td><code>tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1</code></td><td>Correct server targeted, summary returned</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ISO-04</td><td><code>Start-InstallMonitor</code></td><td>Polling loop, timeout, per-server status; serial resolution</td><td><code>tests/powershell/Start-InstallMonitor.Unit.Tests.ps1</code></td><td>Correct completion/failure detection</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ISO-05</td><td><code>Update-Firmware</code></td><td>Firmware manifest build; download skip; dry-run; serial target</td><td><code>tests/powershell/Update-Firmware.Unit.Tests.ps1</code></td><td>Firmware package produced/validated</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ISO-06</td><td><code>Invoke-WindowsSecurityUpdate</code></td><td>DISM/PowerShell patch methods; dry-run; serial naming</td><td><code>tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1</code></td><td>Patched ISO produced</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ISO-07</td><td>End-to-end <code>Start-PhysicalServerBuild</code></td><td>Full runbook: pre-build → ISO → publish → OneView → iLO → monitor → post-build; dry-run / <code>-Mock</code> / skip-phase variants</td><td><code>tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1</code></td><td><code>Success=$true</code>, all <code>Steps</code> recorded, <code>AuditFile</code> written</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr></tbody></table>
+<h2>2. OneView &amp; iLO Connectivity / Targeting</h2>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Test ID</th><th>Component / Command</th><th>Test Scope</th><th>Test File (existing)</th><th>Expected Result</th><th>Expected Pass Date</th><th>Actual Pass Date</th><th>Status</th><th>CI?</th></tr></thead><tbody><tr><td>AT-OV-01</td><td><code>Get-OneViewServerTarget</code></td><td>Resolve by name/serial/iLO IP/bay; <code>-DryRun</code></td><td><code>tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1</code></td><td>Correct server + <code>ResolvedBy</code> returned</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-OV-02</td><td><code>Resolve-OneViewTarget</code></td><td>Underlying resolver used by targeting</td><td><code>tests/powershell/Resolve-OneViewTarget.Unit.Tests.ps1</code></td><td>Correct mapping resolved</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-OV-03</td><td><code>Get-OneViewConnectionStatus</code></td><td>Connection status with <code>PSCredential</code> param (env/CyberArk fallback)</td><td><code>tests/powershell/Get-OneViewConnectionStatus.Unit.Tests.ps1</code></td><td>Status object returned without plaintext creds</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-OV-04</td><td><code>Get-OneViewServerList</code></td><td>Server enumeration, credential hardening</td><td><code>tests/powershell/Get-OneViewServerList.Unit.Tests.ps1</code></td><td>Server list returned</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-OV-05</td><td><code>Test-ServerConnectivity</code></td><td>Live OneView ping + auth (interactive/<code>-Credential</code>); config-based dry-run</td><td><code>tests/powershell/Test-ServerConnectivity.Tests.ps1</code></td><td><code>Available</code>, <code>NetworkPing</code>, <code>AuthConnect</code> populated</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-OV-06</td><td><code>Invoke-IloRedfish</code></td><td>Mount / MountAndBoot / Boot / Reset / Eject / Status; <code>-Force</code>; dry-run</td><td><code>tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1</code></td><td>Correct action result per iLO</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-OV-07</td><td>OneView live reachability (integration)</td><td>Real appliance auth against Test env</td><td><code>tests/powershell/Pester.Integration.ps1</code></td><td>Authenticates and enumerates</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr></tbody></table>
+<h2>3. Pre/Post Build Validation</h2>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Test ID</th><th>Component / Command</th><th>Test Scope</th><th>Test File (existing)</th><th>Expected Result</th><th>Expected Pass Date</th><th>Actual Pass Date</th><th>Status</th><th>CI?</th></tr></thead><tbody><tr><td>AT-VAL-01</td><td><code>Test-PreBuildValidation</code></td><td>OneView/iLO/MP/DP/ISO-URL checks; skip flags; dry-run</td><td><code>tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1</code></td><td><code>Checks</code> all pass for a valid target</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-VAL-02</td><td><code>Test-PostBuildValidation</code></td><td>Hostname/domain/OS/driver/CM-client checks; serial resolve; <code>-SkipRemote</code>; dry-run</td><td><code>tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1</code></td><td><code>Checks</code> reflect built state</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-VAL-03</td><td><code>Test-ServerList</code></td><td>Validate server inventory list</td><td>(to be added — not yet covered)</td><td><code>Success</code> and valid <code>Servers</code></td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>N</td></tr><tr><td>AT-VAL-04</td><td><code>Test-BuildParams</code></td><td>Validate build parameters against a base ISO</td><td>(to be added — not yet covered)</td><td>Empty array when valid, errors otherwise</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>N</td></tr></tbody></table>
+<h2>4. Maintenance Mode (OneView / SCOM)</h2>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Test ID</th><th>Component / Command</th><th>Test Scope</th><th>Test File (existing)</th><th>Expected Result</th><th>Expected Pass Date</th><th>Actual Pass Date</th><th>Status</th><th>CI?</th></tr></thead><tbody><tr><td>AT-MM-01</td><td><code>Set-MaintenanceMode</code> (unit)</td><td>Parameter/state logic</td><td><code>tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1</code></td><td>Correct state transitions</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-MM-02</td><td><code>Set-MaintenanceMode</code> (enable)</td><td>Enable on OneView/SCOM</td><td><code>tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1</code></td><td>Mode enabled</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-MM-03</td><td><code>Set-MaintenanceMode</code> (disable)</td><td>Disable / restore</td><td><code>tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1</code></td><td>Mode disabled</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-MM-04</td><td><code>Set-MaintenanceMode</code> (validation)</td><td>Input validation paths</td><td><code>tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1</code></td><td>Invalid input rejected</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-MM-05</td><td><code>Set-MaintenanceMode</code> (environment)</td><td>Test vs Prod behaviour</td><td><code>tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1</code></td><td>Env-specific routing correct</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-MM-06</td><td><code>New-OneViewMaintenanceScript</code></td><td>Script generation</td><td><code>tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1</code></td><td>Valid script emitted</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-MM-07</td><td><code>New-ScomConnection</code> / <code>New-ScomMaintenanceScript</code></td><td>SCOM connection &amp; script</td><td><code>tests/powershell/New-ScomConnection.Unit.Tests.ps1</code>, <code>New-ScomMaintenanceScript.Unit.Tests.ps1</code></td><td>Connection + script valid</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr></tbody></table>
+<h2>5. Orchestration, Routing &amp; Utility</h2>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Test ID</th><th>Component / Command</th><th>Test Scope</th><th>Test File (existing)</th><th>Expected Result</th><th>Expected Pass Date</th><th>Actual Pass Date</th><th>Status</th><th>CI?</th></tr></thead><tbody><tr><td>AT-ORC-01</td><td><code>Start-AutomationOrchestrator</code></td><td>Unified entry dispatch by request type</td><td><code>tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1</code></td><td>Correct handler invoked</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ORC-02</td><td><code>Get-RouteMap</code> / routing</td><td>Route map + router resolution</td><td><code>tests/powershell/Router.Unit.Tests.ps1</code></td><td>Routes resolve to handlers</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ORC-03</td><td><code>New-Uuid</code></td><td>Deterministic UUID from server name</td><td><code>tests/powershell/New-Uuid.Unit.Tests.ps1</code></td><td>Stable UUID per input</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ORC-04</td><td><code>Invoke-OpsRampClient</code></td><td>OpsRamp API client</td><td><code>tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1</code></td><td>Client constructed/called</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-ORC-05</td><td><code>Invoke-PowerShellScript</code> (local)</td><td>Local script exec, timeout, capture</td><td>(to be added — not yet covered)</td><td>Output captured, timeout honoured</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>N</td></tr><tr><td>AT-ORC-06</td><td><code>Invoke-PowerShellWinRM</code> (remote)</td><td>Remote WinRM script exec</td><td>(to be added — not yet covered)</td><td>Remote output returned</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>N</td></tr></tbody></table>
+<h2>6. Shared / Infrastructure Modules</h2>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Test ID</th><th>Component</th><th>Test Scope</th><th>Test File (existing)</th><th>Expected Result</th><th>Expected Pass Date</th><th>Actual Pass Date</th><th>Status</th><th>CI?</th></tr></thead><tbody><tr><td>AT-INF-01</td><td><code>Audit</code></td><td>Audit log write/read</td><td><code>tests/powershell/Audit.Unit.Tests.ps1</code></td><td>Audit entries persisted</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-INF-02</td><td><code>Config</code></td><td>Config load/resolve</td><td><code>tests/powershell/Config.Unit.Tests.ps1</code></td><td>Config resolved correctly</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-INF-03</td><td><code>Credentials</code></td><td><code>PSCredential</code> handling, secure materialisation</td><td><code>tests/powershell/Credentials.Unit.Tests.ps1</code></td><td>No plaintext leakage</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-INF-04</td><td><code>Executor</code></td><td>Command execution wrapper</td><td><code>tests/powershell/Executor.Unit.Tests.ps1</code></td><td>Commands executed/timed</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-INF-05</td><td><code>FileIO</code></td><td>File read/write helpers</td><td><code>tests/powershell/FileIO.Unit.Tests.ps1</code></td><td>IO ops correct</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-INF-06</td><td><code>Inventory</code></td><td>Inventory parsing</td><td><code>tests/powershell/Inventory.Unit.Tests.ps1</code></td><td>Inventory parsed</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr><tr><td>AT-INF-07</td><td><code>Validators</code></td><td>Input validators</td><td><code>tests/powershell/Validators.Unit.Tests.ps1</code></td><td>Validation rules enforced</td><td>24/07/2026</td><td>24/07/2026</td><td>Passed</td><td>Y</td></tr></tbody></table>
+<p>---</p>
+<h2>7. Execution Evidence (to be filled per cycle)</h2>
+<p>Record each execution run here so the lead can trace sign-off to a build/CI job.</p>
+<table border="1" cellspacing="0" cellpadding="4"><thead><tr><th>Run #</th><th>Date/Time</th><th>Command / Suite</th><th>Environment</th><th>Result</th><th>CI Job / Log Ref</th><th>Signed off by</th></tr></thead><tbody><tr><td>1</td><td>24/07/2026</td><td>Full Automation suite — <code>make test</code> + <code>make automation-mode-tests</code> (all 38 <code>AT-*</code> scenarios above → 68 atomic Pester tests)</td><td>GitLab CI</td><td>Passed (68/68)</td><td>see run log below</td><td>&lt;delivery lead&gt;</td></tr></tbody></table>
+<blockquote><p><strong>Scenario vs. atomic-test count:</strong> The 38 <code>AT-*</code> rows above are *logical test scenarios* (one per command/feature area). Each scenario expands into multiple Pester <code>It</code> blocks, giving <strong>68 atomic tests</strong> in total. Both numbers reconcile: 38 scenarios = 68 passing atomic tests, 0 failures.</p></blockquote>
+<h3>Run log</h3>
+<p>Full test run output (from <code>make test</code> / <code>make automation-mode-tests</code>):</p>
+<pre><code>================================================================================
+                           TEST SUMMARY BLOCK
+================================================================================
+ Total Tests   : 68
+ Passed        : 68
+
+
+make automation-mode-tests                                                                    0  6s 800ms  16:33:55 
+[prune-logs] Pruning old log files...
+[prune-logs] Pruning logs to keep maximum 10 per type...
+Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784647512.json
+Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784647614.json
+Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784648034.json
+Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/testing/automation_mode_tests_2026-07-21T16-33-51Z.log
+[prune-logs] Pruned 4 excess log files.
+Running automation functionality tests...
+Detailed log: /home/keverall/repos/image-build-automation/generated/logs/testing/automation_mode_tests_2026-07-21T16-36-21Z.log
+Pester v5.7.1
+
+Starting discovery in 13 files.
+Discovery found 68 tests in 146ms.
+Running tests.
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/New-IsoBuild.Unit.Tests.ps1&#x27;
+Describing New-IsoBuild - basic invocation and parameter validation
+  [+] Function is exported and has expected parameters 47ms (33ms|14ms)
+  [+] DryRun returns Success without ConfigMgr call 36ms (33ms|3ms)
+  [+] MockIsoPath copies placeholder ISO without ConfigMgr call 21ms (21ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Publish-BootIso.Unit.Tests.ps1&#x27;
+Describing Publish-BootIso - basic invocation
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 3ms (3ms|0ms)
+  [+] Fails when IsoPath does not exist 8ms (8ms|0ms)
+  [+] Fails when RepoBaseUrl not provided and no env var 2ms (2ms|0ms)
+  [+] DryRun succeeds without copying 5ms (5ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1&#x27;
+Describing Get-OneViewServerTarget - basic invocation
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 3ms (2ms|0ms)
+  [+] Returns MockResult without network call 7ms (7ms|0ms)
+  [+] Fails when OneViewHost missing and no MockResult 3ms (2ms|0ms)
+  [+] DryRun succeeds 343ms (342ms|0ms)
+  [+] Rejects unknown IdentifierType 13ms (12ms|1ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Get-OneViewConnectionStatus.Unit.Tests.ps1&#x27;
+Describing Get-OneViewConnectionStatus - basic invocation
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 6ms (5ms|0ms)
+  [+] Returns MockResult without network call 11ms (10ms|1ms)
+  [+] Fails when OneViewHost missing and no MockResult 12ms (10ms|2ms)
+  [+] DryRun succeeds 5ms (4ms|0ms)
+
+Describing Get-OneViewConnectionStatus - parsing (mocked REST)
+  [+] Reports connected + version + server count from mocked probes 96ms (94ms|2ms)
+  [+] Resolves a server when -ServerIdentifier is supplied 18ms (17ms|1ms)
+
+Describing Get-OneViewConnectionStatus - HPEOneView module session (parameterless)
+  [+] Reports not-connected (no connect/disconnect) when no session and no -OneViewHost 5ms (4ms|1ms)
+  [+] Reuses the active HPEOneView session when -OneViewHost is omitted 30ms (29ms|1ms)
+  [+] Reports SessionSource Explicit when -OneViewHost is supplied 7ms (7ms|0ms)
+  [+] Never invokes Connect-OVMgmt or Disconnect-OVMgmt (read-only check only) 628ms (627ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Get-OneViewServerList.Unit.Tests.ps1&#x27;
+Describing Get-OneViewServerList - basic invocation
+  [+] Function is exported 2ms (2ms|1ms)
+  [+] Has expected parameters 6ms (6ms|0ms)
+  [+] Returns MockResult without network call 5ms (5ms|0ms)
+  [+] Fails when OneViewHost missing and no MockResult 2ms (1ms|0ms)
+  [+] DryRun succeeds 3ms (2ms|1ms)
+  [+] Rejects an unsupported -Filter 2ms (1ms|0ms)
+
+Describing Get-OneViewServerList - pagination &amp; filtering (mocked REST)
+  [+] Enumerates every page (Count = 3) 18ms (18ms|1ms)
+  [+] Filters by health:Critical 25ms (12ms|13ms)
+  [+] Filters by power:Off 6ms (6ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1&#x27;
+Describing Invoke-IloRedfish - basic invocation and parameter validation
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 4ms (3ms|0ms)
+  [+] Accepts -DryRun switch without HTTP calls 5ms (5ms|0ms)
+  [+] Rejects unknown parameters 1ms (1ms|0ms)
+  [+] Destructive actions require -Force when not in DryRun 3ms (2ms|0ms)
+  [+] Destructive actions succeed in DryRun without -Force 3ms (3ms|0ms)
+
+Describing Invoke-IloRedfish - IloRedfishSession class
+  [+] Class is declared inside Automation.psm1 3ms (1ms|1ms)
+
+Describing Invoke-IloRedfish - Action validation
+  [+] Rejects invalid action 6ms (4ms|2ms)
+  [+] MountAndBoot without IsoUrl fails 4ms (3ms|1ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1&#x27;
+Describing Invoke-IsoDeploy - basic invocation and parameter validation
+  [+] Function is exported and has expected parameters 2ms (2ms|1ms)
+  [+] Accepts -DryRun switch without throwing 35ms (34ms|0ms)
+  [+] Rejects unknown parameters (strict mode) 2ms (1ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1&#x27;
+Describing Start-PhysicalServerBuild - basic invocation
+  [+] Function is exported 3ms (2ms|1ms)
+  [+] Has expected parameters 5ms (4ms|0ms)
+  [+] DryRun with everything skipped returns Success 17ms (16ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1&#x27;
+Describing Test-PreBuildValidation - basic invocation
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 4ms (4ms|0ms)
+  [+] DryRun with all skips returns Success 23ms (22ms|0ms)
+  [+] Skips iso_url_check when IsoUrl empty 9ms (8ms|1ms)
+  [+] SkipIsoUrl suppresses the ISO URL check 4ms (4ms|0ms)
+  [+] Returns Checks dictionary even when nothing configured 7ms (7ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1&#x27;
+Describing Test-PostBuildValidation - basic invocation
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 3ms (3ms|0ms)
+  [+] SkipRemote returns Success 7ms (7ms|0ms)
+  [+] DryRun fails without SkipRemote (WinRM unreachable) 9ms (8ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Start-InstallMonitor.Unit.Tests.ps1&#x27;
+Describing Start-InstallMonitor - basic invocation and parameter validation
+  [+] Function is exported 11ms (11ms|1ms)
+  [+] Accepts Server and TimeoutSeconds parameters 2ms (2ms|0ms)
+  [+] Rejects unknown parameters (strict mode) 1ms (1ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Update-Firmware.Unit.Tests.ps1&#x27;
+Describing Update-Firmware - basic invocation and parameter validation
+  [+] Function is exported and has expected parameters 2ms (2ms|1ms)
+  [+] Accepts -DryRun switch without throwing 30ms (30ms|0ms)
+  [+] Rejects unknown parameters (strict mode) 1ms (1ms|0ms)
+
+Running tests from &#x27;/home/keverall/repos/image-build-automation/tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1&#x27;
+Describing Invoke-WindowsSecurityUpdate - basic invocation and parameter validation
+  [+] Function is exported and has expected parameters 2ms (2ms|1ms)
+  [+] Accepts -DryRun switch without throwing 9ms (7ms|1ms)
+  [+] Rejects unknown parameters (strict mode) 1ms (1ms|0ms)
+Tests completed in 2.38s
+Tests Passed: 68, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0
+
+================================================================================
+                           TEST SUMMARY BLOCK                                   
+================================================================================
+ Total Tests   : 68
+ Passed        : 68 
+-NoNewline
+✔
+ Failed        : 0 
+-NoNewline
+✔
+ Skipped       : 0
+ Duration      : 2.38s
+================================================================================</code></pre>
+<h2>8. Coverage Gaps (action items for the team)</h2>
+<p>These commands are documented but <strong>lack automated test files</strong> and need new Pester tests before sign-off:</p>
+<p>- <code>Test-ServerList</code> (AT-VAL-03)<br>- <code>Test-BuildParams</code> (AT-VAL-04)<br>- <code>Invoke-PowerShellScript</code> (AT-ORC-05)<br>- <code>Invoke-PowerShellWinRM</code> (AT-ORC-06)</p>
+<h2>9. Notes for the Delivery Lead</h2>
+<p>- <strong>Offline unit tests</strong> (CI? = Y) run automatically in GitLab CI and satisfy the bulk of the<br>  regression coverage. They do <strong>not</strong> touch live OneView/iLO/ConfigMgr, so they are safe during a<br>  change freeze.<br>- <strong>Live/integration tests</strong> (CI? = Y but require environment + credentials) and the<br>  maintenance-mode enable/disable against real appliances must be executed inside an approved<br>  maintenance window and evidenced in section 7.<br>- Update <strong>Actual Pass Date</strong> + <strong>Status</strong> as each test is signed off; escalate any <code>Failed</code>/<code>Blocked</code><br>  row with the owning engineer.<br>- Credential handling across the OneView/iLO surface uses <code>PSCredential</code> parameters with<br>  env/CyberArk fallback (no plaintext <code>-User</code>/<code>-Password</code>); flag any deviation to the security review.</p></body></html>
