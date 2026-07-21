@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-generated: 2026-07-17 13:06 UTC
+generated: 2026-07-21 15:48 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -38,6 +38,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 | `-TaskSequenceName` | Optional task sequence name. |
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository (used by Publish-BootIso). |
 | `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl. |
+| `-ExternalIsoPath` | Path to a client-supplied ISO for deployment (skip build/publish). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives. When a local path is supplied: - If running as Administrator: Creates SMB share automatically - If NOT running as Administrator: Command will FAIL with instructions to either run as Administrator or obtain an SMB path from your admin When supplied, -SkipIsoBuild and -SkipPublish are implied. For non-Administrator users, obtain the SMB path from your IT admin: - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone' - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso' |
 | `-MonitorTimeoutSeconds` | Install monitor timeout (default 7200). |
 | `-MonitorPollSeconds` | Install monitor poll interval (default 30). |
 | `-Mock` | Run with mocked calls - no network calls are made; useful for CI smoke tests. When -Mock is set, all downstream steps run as if -DryRun was also set. |
@@ -45,6 +46,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 | `-Force` | Required for the destructive Reset action (ForceRestart) issued by Invoke-IloRedfish. Refuses to proceed without this switch when the server's iLO reports power state On. |
 | `-InMaintenanceWindow` | Acknowledge that the target server is in an approved maintenance window. Required when -Force is not supplied and the server is currently On. |
 | `-AllowUnknownIsoUrl` | Skip the head-verify check on the ISO URL during pre-build validation (use only when the build pipeline runs offline). |
+| `-SkipConfirmation` | Skip the interactive confirmation prompt before deployment. By default, the operator must type 'YES' to confirm the deployment plan (server details, ISO, and actions). Use -SkipConfirmation for automated/unattended deployments. |
 
 <a name="examples"></a>
 ## Examples
@@ -107,6 +109,26 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
     .PARAMETER RepoLocalPath
         Local filesystem path mirrored to RepoBaseUrl.
 
+    .PARAMETER ExternalIsoPath
+        Path to a client-supplied ISO for deployment (skip build/publish).
+        Accepts the following formats:
+          - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
+          - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
+          - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
+          - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso')
+          - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share
+        
+        IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'):
+          The iLO BMC cannot access local drives. When a local path is supplied:
+            - If running as Administrator: Creates SMB share automatically
+            - If NOT running as Administrator: Command will FAIL with instructions
+              to either run as Administrator or obtain an SMB path from your admin
+        
+        When supplied, -SkipIsoBuild and -SkipPublish are implied.
+        For non-Administrator users, obtain the SMB path from your IT admin:
+          - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'
+          - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso'
+
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
 
@@ -139,6 +161,11 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
     .PARAMETER AllowUnknownIsoUrl
         Skip the head-verify check on the ISO URL during pre-build validation (use only
         when the build pipeline runs offline).
+
+    .PARAMETER SkipConfirmation
+        Skip the interactive confirmation prompt before deployment. By default, the
+        operator must type 'YES' to confirm the deployment plan (server details, ISO,
+        and actions). Use -SkipConfirmation for automated/unattended deployments.
 
     .RETURNS
         [hashtable] with Success, Steps (ordered list of step results), AuditFile.

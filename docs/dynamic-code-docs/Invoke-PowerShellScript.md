@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-PowerShellScript.ps1
-generated: 2026-07-17 13:06 UTC
+generated: 2026-07-21 15:48 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,7 +18,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Useful for isolating script execution or running scripts in a fresh PowerShell context. Returns a hashtable with success status and combined output.
+Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Useful for isolating script execution or running scripts in a fresh PowerShell context. Prefers `pwsh` (PowerShell 7+) on all platforms and falls back to `powershell.exe` (Windows PowerShell 5.1) only when `pwsh` is not available. Returns a hashtable with success status and combined output.
 
 <a name="parameters"></a>
 ## Parameters
