@@ -3,13 +3,15 @@
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
-- [Connectivity, Connection & Server Lookup](#connectivity-and-validation)
+- [Connectivity, Connection & Server Lookup](#connectivity-connection-and-server-lookup)
   - [Test OneView connectivity](#test-oneview-connectivity)
   - [Get OneView connection status](#get-oneview-connection-status)
   - [Get OneView server list](#get-oneview-server-list)
   - [Validate server list](#validate-server-list)
   - [Validate build parameters](#validate-build-parameters)
-- [ISO Image Naming & SMB Shares](#iso-image-naming--smb-shares)
+- [ISO Image Naming & SMB Shares](#iso-image-naming-and-smb-shares)
+  - [Bootable ISO filename convention](#bootable-iso-filename-convention)
+  - [SMB / CIFS share naming for local ISO paths](#smb-cifs-share-naming-for-local-iso-paths)
 - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
   - [Full build (most common)](#full-build-most-common)
   - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
@@ -17,7 +19,7 @@
   - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
   - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
   - [Mock build (testing)](#mock-build-testing)
-- [ISO Build, Deployment & Monitoring](#iso-build-patching-deployment-and-monitoring)
+- [ISO Build, Deployment & Monitoring](#iso-build-deployment-and-monitoring)
   - [Build a bootable ISO](#build-a-bootable-iso)
   - [Publish a bootable ISO](#publish-a-bootable-iso)
   - [Deploy ISOs to servers](#deploy-isos-to-servers)
@@ -78,7 +80,7 @@ Get-Command -Module Automation
 
 ---
 
-<a name="connectivity-and-validation"></a>
+<a name="connectivity-connection-and-server-lookup"></a>
 ## Connectivity, Connection & Server Lookup
 
 Pre-flight read-only checks. Safe to run during a change freeze. Start here - confirm the appliance is reachable, that you have an active session, and which servers are managed before you build or deploy anything.
@@ -238,11 +240,12 @@ Test-BuildParams -BaseIsoPath 'C:\isos\WinSrv2025.iso'
 
 ---
 
-<a name="iso-image-naming--smb-shares"></a>
+<a name="iso-image-naming-and-smb-shares"></a>
 ## ISO Image Naming & SMB Shares
 
 How ISO filenames are generated and how local ISO paths are exposed to the iLO BMC over SMB/CIFS. Read this before passing a local path to a deploy command so you know the expected filename and the share name the iLO will mount.
 
+<a name="bootable-iso-filename-convention"></a>
 ### Bootable ISO filename convention
 
 `New-IsoBuild` emits a ConfigMgr bootable media ISO using the runbook naming standard:
@@ -263,6 +266,7 @@ Example generated names:
 
 The same `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso` name is what `Publish-BootIso` and `Invoke-IsoDeploy -IsoUrl` expect to reference in the repository.
 
+<a name="smb-cifs-share-naming-for-local-iso-paths"></a>
 ### SMB / CIFS share naming for local ISO paths
 
 The iLO BMC is a separate physical controller and **cannot** read local drives (`C:\`, `H:\`, ...) on your admin workstation. To deploy a local ISO, it must be reachable over the network as an SMB/CIFS share that the iLO can mount.
@@ -402,7 +406,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 
 ---
 
-<a name="iso-build-patching-deployment-and-monitoring"></a>
+<a name="iso-build-deployment-and-monitoring"></a>
 ## ISO Build, Deployment & Monitoring
 
 Individual commands for the ISO pipeline - build, publish, deploy (reboot + install), and monitor. These are the building blocks the full build above orchestrates.
