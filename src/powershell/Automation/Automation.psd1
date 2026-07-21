@@ -90,6 +90,8 @@
         'Start-InstallMonitor'
         'Start-PhysicalServerBuild'
         'Get-OneViewServerTarget'
+        'Get-OneViewConnectionStatus'
+        'Get-OneViewServerList'
         'Invoke-IloRedfish'
         'Publish-BootIso'
         'Test-PreBuildValidation'
