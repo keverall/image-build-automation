@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Invoke-NativeCommandWithRetry
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)

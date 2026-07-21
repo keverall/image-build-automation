@@ -6,6 +6,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 # Ensure-TopAnchor
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)

@@ -1,5 +1,6 @@
 # Automation test guide for process teams and change approvers
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Purpose of this document](#purpose-of-this-document)
@@ -23,9 +24,6 @@
 - [Running the test suite](#running-the-test-suite)
 - [Glossary for non-technical readers](#glossary-for-non-technical-readers)
 - [Related documents](#related-documents)
-
-
-<a id="top"></a>
 <a name="purpose-of-this-document"></a>
 ## Purpose of this document
 
@@ -37,7 +35,7 @@ This guide explains what the automation test suite for the HPE physical server b
 
 It is intentionally written without requiring scripting or development knowledge.
 
-The companion technical document is the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md). This guide explains the tests; the runbook explains the process the tests are protecting.
+The companion technical document is the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md#top). This guide explains the tests; the runbook explains the process the tests are protecting.
 
 
 <a name="who-this-is-for"></a>
@@ -92,7 +90,7 @@ How to interpret it:
 <a name="tests-by-runbook-stage"></a>
 ## Tests by runbook stage
 
-Each test file maps to one stage of the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md). They are listed below in the order the build actually happens.
+Each test file maps to one stage of the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md#top). They are listed below in the order the build actually happens.
 
 
 <a name="1-iso-creation-new-isobuild"></a>
@@ -400,5 +398,6 @@ Process and CAB members do not need to run the suite themselves; they need to se
 <a name="related-documents"></a>
 ## Related documents
 
-- [Runbook: automating the build of physical HPE servers](./runbook-requirements.md) — the process this test suite protects.
-- [Code map of the automations](./Code_Map_Automations.md) — the engineering-level map of the same functions.
+- [Runbook: automating the build of physical HPE servers](./runbook-requirements.md#top) — the process this test suite protects.
+- [Code map of the automations](./Code_Map_Automations.md#top) — the engineering-level map of the same functions.
+
