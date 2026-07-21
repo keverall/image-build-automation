@@ -88,3 +88,74 @@ Describe 'Get-OneViewConnectionStatus - parsing (mocked REST)' {
         $r.Server.connected    | Should -Be $true
     }
 }
+
+Describe 'Get-OneViewConnectionStatus - HPEOneView module session (parameterless)' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/version*' } -MockWith {
+                @{ currentVersion = '10.00' }
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -notlike '*filter*' } -MockWith {
+                @{ total = 3; members = @() }
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -like '*filter*' } -MockWith {
+                @{ count = 0; members = @() }
+            }
+        }
+    }
+
+    It 'Reports not-connected (no connect/disconnect) when no session and no -OneViewHost' {
+        $prevAuto = $env:AUTOMATED_MODE
+        try {
+            $env:AUTOMATED_MODE = 'true'
+            $global:ConnectedSessions = $null
+            $r = Get-OneViewConnectionStatus
+            $r.Success   | Should -Be $false
+            $r.Connected | Should -Be $false
+            $r.Appliance | Should -Be $null
+            $r.Error     | Should -Match 'No active OneView session'
+        } finally {
+            $global:ConnectedSessions = $null
+            if ($prevAuto) { $env:AUTOMATED_MODE = $prevAuto } else { $env:AUTOMATED_MODE = $null }
+        }
+    }
+
+    It 'Reuses the active HPEOneView session when -OneViewHost is omitted' {
+        try {
+            $global:ConnectedSessions = @(
+                [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'token-abc'; Connected = $true }
+            )
+            $r = Get-OneViewConnectionStatus
+            $r.Connected     | Should -Be $true
+            $r.Appliance     | Should -Be 'ov-session.local'
+            $r.SessionSource | Should -Be 'HPEOneViewModule'
+        } finally {
+            $global:ConnectedSessions = $null
+        }
+    }
+
+    It 'Reports SessionSource Explicit when -OneViewHost is supplied' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'explicit.local' -Credential $Script:TestCred
+        $r.Connected     | Should -Be $true
+        $r.Appliance     | Should -Be 'explicit.local'
+        $r.SessionSource | Should -Be 'Explicit'
+    }
+
+    It 'Never invokes Connect-OVMgmt or Disconnect-OVMgmt (read-only check only)' {
+        try {
+            $global:ConnectedSessions = @(
+                [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'token-abc'; Connected = $true }
+            )
+            # The HPEOneView module is not loaded in tests; mock both cmdlets so
+            # any erroneous call would throw, proving the command never connects
+            # or disconnects an existing session.
+            InModuleScope Automation {
+                Mock Connect-OVMgmt    { throw 'Connect-OVMgmt was called erroneously' }
+                Mock Disconnect-OVMgmt { throw 'Disconnect-OVMgmt was called erroneously' }
+            }
+            { Get-OneViewConnectionStatus } | Should -Not -Throw
+        } finally {
+            $global:ConnectedSessions = $null
+        }
+    }
+}
