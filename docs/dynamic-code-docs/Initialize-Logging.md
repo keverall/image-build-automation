@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Logging.ps1
-generated: 2026-07-22 15:12 UTC
+generated: 2026-07-22 22:20 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -19,14 +19,16 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Configures logging with specified log file path and level. By default creates timestamped log files in generated/logs/testing or generated/logs/production. When -CommandName is supplied the log is written to generated/logs/commands/<CommandName>/ with an ISO-8601 UTC timestamp.
+Configures logging with specified log file path and level. By default creates timestamped log files in generated/logs/testing or generated/logs/production. When -CommandName is supplied the log is written to a dedicated per-command folder so every command's run history stays isolated (critical logs are never pruned early or lost in a shared, mixed folder): generated/logs/commands/<CommandName>/<LogName|CommandName>_<isotimestamp>_<level>.log -CommandName is optional: when omitted on the Get-Logger auto-init path (no -LogFile either), it is auto-derived from the PowerShell call stack as the innermost Verb-Noun command frame, so any command that logs through Get-Logger gets an isolated log automatically. All filenames carry an ISO-8601 UTC timestamp (e.g. 2026-07-22T15-03-27Z), never a unix epoch.
 
 <a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-LogFile` | Base name for the log file (without timestamp) |
+| `-LogFile` | Base name for the log file (without timestamp). Defaults to '<CommandName>.log' when -CommandName is supplied without -LogFile. |
+| `-CommandName` | Name of the command owning this log. When set, the log is stored under generated/logs/commands/<CommandName>/. |
+| `-LogName` | Optional explicit base name for the log file (e.g. include significant parameters such as the target host). Used verbatim for the filename stem. |
 | `-Level` | Minimum log level: Verbose, Debug, Information, Warning, or Error (default: Information) |
 
 <a name="examples"></a>
@@ -35,7 +37,7 @@ Configures logging with specified log file path and level. By default creates ti
 <a name="example-1"></a>
 ### Example 1
 ```powershell
-Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
+Initialize-Logging -LogFile 'automation.log' -Level 'Debug' Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-ManagementHost-va-ov-01'
 ```
 
 <a name="original-comment-based-help"></a>
@@ -45,20 +47,41 @@ Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
         Initialize centralized logging system.
 
     .DESCRIPTION
-        Configures logging with specified log file path and level. By default
-        creates timestamped log files in generated/logs/testing or
+        Configures logging with specified log file path and level.
+        By default creates timestamped log files in generated/logs/testing or
         generated/logs/production. When -CommandName is supplied the log is
-        written to generated/logs/commands/<CommandName>/ with an ISO-8601 UTC
-        timestamp.
+        written to a dedicated per-command folder so every command's run history
+        stays isolated (critical logs are never pruned early or lost in a shared,
+        mixed folder):
+
+            generated/logs/commands/<CommandName>/<LogName|CommandName>_<isotimestamp>_<level>.log
+
+        -CommandName is optional: when omitted on the Get-Logger auto-init path
+        (no -LogFile either), it is auto-derived from the PowerShell call stack
+        as the innermost Verb-Noun command frame, so any command that logs
+        through Get-Logger gets an isolated log automatically.
+
+        All filenames carry an ISO-8601 UTC timestamp
+        (e.g. 2026-07-22T15-03-27Z), never a unix epoch.
 
     .PARAMETER LogFile
-        Base name for the log file (without timestamp)
+        Base name for the log file (without timestamp). Defaults to
+        '<CommandName>.log' when -CommandName is supplied without -LogFile.
+
+    .PARAMETER CommandName
+        Name of the command owning this log. When set, the log is stored under
+        generated/logs/commands/<CommandName>/.
+
+    .PARAMETER LogName
+        Optional explicit base name for the log file (e.g. include significant
+        parameters such as the target host). Used verbatim for the filename stem.
 
     .PARAMETER Level
         Minimum log level: Verbose, Debug, Information, Warning, or Error (default: Information)
 
     .EXAMPLE
         Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
+        Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-ManagementHost-va-ov-01'
 ```
 
 ---
