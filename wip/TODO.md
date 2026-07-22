@@ -105,3 +105,84 @@ Available                      False
 AuthConnect                    {[Error, Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code… 
 Environment                    Prod
 NetworkPing                    {[Port, 443], [TcpPortOpen, True], [IpAddress, 10.239.124.79], [Error, ]…}
+
+
+
+
+
+image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                  0  16:51:55 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-22 15:52:42 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-22 15:52:42 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 32ms) 
+2026-07-22 15:52:43 - Connectivity - INFO - Applied web-proxy bypass for appliance 'va-oneviewt-01' 
+
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE 
+  Mode:       oneview 
+  Host:       va-oneviewt-01 
+  Environment:Prod
+  Timestamp:  2026-07-22T15:53:06.2929702Z 
+
+  --- Phase 1: Network Ping --- 
+    DNS:       Resolved 
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 32ms)
+
+  --- Phase 2: Auth Connect --- 
+    Module:    Loaded 
+    Connected: No 
+    Session:   N/A 
+    Error:     Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '504'."
+
+==============================================
+
+2026-07-22 15:53:06 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)    
+ 
+Name                           Value
+----                           -----
+Mode                           oneview
+Environment                    Prod
+Timestamp                      2026-07-22T15:53:06.2929702Z
+Available                      False
+AuthConnect                    {[Error, Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code… 
+ManagementHost                 va-oneviewt-01
+NetworkPing                    {[TcpPortOpen, True], [LatencyMs, 32], [Error, ], [IpAddress, 10.239.124.79]…}
+
+   image-build-automation  ping va-oneviewt-01                                                                        0  1m 3s 965ms  16:53:07 
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+ 
+
+Ping statistics for 10.239.124.79:                                                                                                      16:54:08 
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 1ms, Maximum = 1ms, Average = 1ms
+   image-build-automation  Connect-OVMgmt                                                                                0  3s 118ms  
+16:54:08 
+cmdlet Connect-OVMgmt at command pipeline position 1
+Supply values for the following parameters:
+Hostname: va-oneviewt-01                                                                                                                : "Cannot 
+UserName: ADM_98253                                                                                                                     ""  
+WARNING: Parameter 'UserName' is obsolete.                                                                                              16:55:26 
+Password: ************************
+Connect-OVMgmt: Cannot convert argument "uri", with value: "https://va-oneviewt-01 /rest/version", for "RestClient" to type "System.Uri": "Cannot convert value "https://va-oneviewt-01 /rest/version" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+   image-build-automation                                                                                               1  39s 564ms  
+16:55:26                    Connect-OVMgmt
+
+cmdlet Connect-OVMgmt at command pipeline position 1
+Supply values for the following parameters:
+Hostname: va-oneviewt-01.ad.aib.pri
+UserName: test
+WARNING: Parameter 'UserName' is obsolete.
+Password: *************
+Connect-OVMgmt: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '407'."
+   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01     
