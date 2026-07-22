@@ -38,11 +38,27 @@ $ModuleRoot = (Get-Item -LiteralPath $ModuleRoot).FullName
 if (-not $OutputDir) { $OutputDir = Join-Path $repoRoot 'docs/dynamic-code-docs' }
 New-Item -ItemType Directory -Force -Path $OutputDir -ErrorAction Stop | Out-Null
 
+# ── Logging ──────────────────────────────────────────────────────────────────
+# Writes a run log to generated/logs/docs/ (mirrors the other make targets so
+# every command produces an auditable log file), while still echoing to console.
+$LogTimestamp = Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'
+$LogDir = Join-Path $repoRoot 'generated/logs/docs'
+if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
+$LogFile = Join-Path $LogDir "docs-$LogTimestamp.log"
+
+function Write-Status {
+    param([string]$Message)
+    Write-Output $Message
+    $clean = $Message -replace '\x1b\[[0-9;]*m', ''
+    try { Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'HH:mm:ss')] $clean" -Encoding UTF8 } catch { }
+}
+Add-Content -Path $LogFile -Value "=== Generate-PSDocs Log Started: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ===" -Encoding UTF8
+
 # Clear existing files in output directory for clean generation
 Get-ChildItem -Path $OutputDir -File -ErrorAction SilentlyContinue | Remove-Item -Force
 
-Write-Output "[Generate-PSDocs] Module root : $ModuleRoot"
-Write-Output "[Generate-PSDocs] Output dir  : $OutputDir"
+Write-Status "[Generate-PSDocs] Module root : $ModuleRoot"
+Write-Status "[Generate-PSDocs] Output dir  : $OutputDir"
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Robust comment-block extractor (handles PS 5.1 / 7 syntax differences)
@@ -341,11 +357,11 @@ foreach ($f in $files) {
     foreach ($pair in $pairs) {
         $cmdName = $pair.Name
         if (-not $pair.Comment) {
-            Write-Warning "  SKIP  $cmdName ($stem) - no <# .SYNOPSIS #> help block"
+            Write-Status "  SKIP  $cmdName ($stem) - no <# .SYNOPSIS #> help block"
             continue
         }
         if ($seenNames.ContainsKey($cmdName)) {
-            Write-Warning "  DUP   $cmdName already documented from $($seenNames[$cmdName]); skipping $stem"
+            Write-Status "  DUP   $cmdName already documented from $($seenNames[$cmdName]); skipping $stem"
             continue
         }
 
@@ -354,7 +370,7 @@ foreach ($f in $files) {
 
         $outFile = Join-Path $OutputDir "$cmdName.md"
         [IO.File]::WriteAllText($outFile, $md, [System.Text.UTF8Encoding]::new($false))
-        Write-Output "  OK   $cmdName.md"
+        Write-Status "  OK   $cmdName.md"
         $generated += "$cmdName.md"
         $seenNames[$cmdName] = $stem
     }
@@ -379,7 +395,9 @@ foreach ($fn in ($generated | Sort-Object)) {
 }
 $idx += @('', '---', '')
 [IO.File]::WriteAllText($indexPath, ($idx -join "`n"), [System.Text.UTF8Encoding]::new($false))
-Write-Output "  OK   INDEX.md"
+Write-Status "  OK   INDEX.md"
 
-Write-Output ""
-Write-Output "[Generate-PSDocs] Done. $($generated.Count) file(s) written to $OutputDir"
+Write-Status ""
+Write-Status "[Generate-PSDocs] Done. $($generated.Count) file(s) written to $OutputDir"
+Add-Content -Path $LogFile -Value "=== Generate-PSDocs Log Finished: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - $($generated.Count) file(s) ===" -Encoding UTF8
+Write-Status "Log file: $LogFile"
