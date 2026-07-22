@@ -25,6 +25,10 @@ Describe 'Initialize-Logging - file creation and path resolution' {
     It 'Creates a timestamped log file in the testing directory when run under Pester' {
         Initialize-Logging -LogFile 'test_log_a.log' -Level 'Information'
         $global:__AutomationLogPath | Should -Not -BeNullOrEmpty
+        # Initialize-Logging sets the path; a log entry is required to materialise
+        # the file on disk.
+        $logger = Get-Logger 'Seed'
+        $logger.Info('seed entry')
         Test-Path $global:__AutomationLogPath | Should -Be $true
         $global:__AutomationLogPath | Should -Match 'generated[\\/]logs[\\/]testing'
         Split-Path $global:__AutomationLogPath -Leaf | Should -Match '^test_log_a_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z_INFO\.log$'

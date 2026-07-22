@@ -3,19 +3,16 @@
 <a id="top"></a>
 ## Table of Contents
 
-- [Automation Test Plan — Physical Server Build \& ISO Pipeline](#automation-test-plan--physical-server-build--iso-pipeline)
-  - [Table of Contents](#table-of-contents)
-  - [1. ISO Build, Patching, Deployment \& Monitoring](#1-iso-build-patching-deployment--monitoring)
-  - [2. OneView \& iLO Connectivity / Targeting](#2-oneview--ilo-connectivity--targeting)
-  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
-  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
-  - [5. Orchestration, Routing \& Utility](#5-orchestration-routing--utility)
-  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
-  - [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
-    - [Run log](#run-log)
-  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
-
+- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-and-monitoring)
+- [2. OneView & iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity-targeting)
+- [3. Pre/Post Build Validation](#3-prepost-build-validation)
+- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
+- [5. Orchestration, Routing & Utility](#5-orchestration-routing-and-utility)
+- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
+- [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
+  - [Run log](#run-log)
+- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 **Module under test:** `src/powershell/Automation/Automation.psm1`
 **Test framework:** Pester 5.x (offline unit tests) + integration scripts run inside a maintenance window.
 
