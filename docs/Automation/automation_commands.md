@@ -1,11 +1,11 @@
 # Automation Command Reference
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
 - [Connectivity, Connection & Server Lookup](#connectivity-connection-and-server-lookup)
   - [Test OneView connectivity](#test-oneview-connectivity)
+  - [Disconnect from OneView](#disconnect-from-oneview)
   - [Get OneView connection status](#get-oneview-connection-status)
   - [Get OneView server list](#get-oneview-server-list)
   - [Validate server list](#validate-server-list)
@@ -49,6 +49,9 @@
   - [Check module is loaded](#check-module-is-loaded)
   - [Force reimport](#force-reimport)
   - [Source links](#source-links)
+
+
+<a id="top"></a>
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
 ---
@@ -88,6 +91,8 @@ Pre-flight read-only checks. Safe to run during a change freeze. Start here - co
 
 Combined network ping + authentication test for a OneView appliance. Read-only - safe during a change freeze. On a live run the command never reads config: the appliance host comes from `-ManagementHost` (used verbatim) and credentials come from `-Credential` or an interactive prompt. Config files are read **only** with `-DryRun`.
 
+**The OneView session established by this command persists in the current PowerShell session.** Use `Disconnect-OneView` to explicitly close the session when finished.
+
 ```powershell
 # LIVE: explicit host, credentials prompted interactively
 Test-ServerConnectivity -ManagementHost va-oneviewt-01
@@ -124,6 +129,33 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 \* `-ManagementHost` is required for a live (non-`-DryRun`) connectivity test.
 
 **Returns:** `[hashtable]` with `Available`, `Mode` (`oneview`), `ManagementHost`, `Environment`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
+
+**Note:** The OneView session persists after a successful connection. Use `Disconnect-OneView` to close it.
+
+---
+
+<a name="disconnect-from-oneview"></a>
+### Disconnect from OneView
+
+Closes the active HPE OneView session established by `Test-ServerConnectivity` or `Connect-OVMgmt`. Use this command when you are finished running OneView commands and want to explicitly close the connection.
+
+```powershell
+# Disconnect from the current OneView session
+Disconnect-OneView
+```
+
+```powershell
+# Force disconnection, suppressing any cleanup errors
+Disconnect-OneView -Force
+```
+
+**Parameters:**
+
+| Parameter | Required | Description | Default |
+|-----------|----------|-------------|---------|
+| `-Force` | No | Force disconnection even if errors occur during cleanup | - |
+
+**Returns:** `[hashtable]` with `Success`, `Message`, and `Timestamp`.
 
 ---
 

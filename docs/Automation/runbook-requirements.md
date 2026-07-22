@@ -1,6 +1,5 @@
 # Runbook for automating the build of physical HPE servers
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Purpose](#purpose)
@@ -30,6 +29,9 @@
   - [Sample workflow components](#sample-workflow-components)
   - [Example file naming and versioning standard](#example-file-naming-and-versioning-standard)
 - [Source Note](#source-note)
+
+
+<a id="top"></a>
 <a name="purpose"></a>
 ## Purpose
 

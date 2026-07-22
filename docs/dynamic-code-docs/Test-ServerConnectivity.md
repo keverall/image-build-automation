@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-07-21 15:48 UTC
+generated: 2026-07-22 10:18 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-ServerConnectivity
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -17,7 +16,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe (HTTPS 443) - Measures latency in milliseconds Phase 2: Authentication Connect - Prompts for username/password (or uses -Credential) - Loads the HPE OneView PowerShell module - Performs a full authentication (Connect-OVMgmt) - Immediately disconnects (Disconnect-OVMgmt) - No objects are modified SAFETY / COMPLIANCE (regulated EMIR environment): - On a live run, config files are NEVER read. The appliance host is taken verbatim from -ManagementHost and only that appliance is contacted. Credentials are never taken from config - they are supplied via -Credential or entered interactively. - Config files (connection_hosts.json, oneview_config.json) are read ONLY with -DryRun, for dry-run validation. Returns a structured hashtable with per-phase results and an overall Available boolean.
+Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe (HTTPS 443) - Measures latency in milliseconds Phase 2: Authentication Connect - Prompts for username/password (or uses -Credential) - Loads the HPE OneView PowerShell module - Performs a full authentication (Connect-OVMgmt) - Session persists for subsequent OneView commands - No objects are modified SAFETY / COMPLIANCE (regulated EMIR environment): - On a live run, config files are NEVER read. The appliance host is taken verbatim from -ManagementHost and only that appliance is contacted. Credentials are never taken from config - they are supplied via -Credential or entered interactively. - Config files (connection_hosts.json, oneview_config.json) are read ONLY with -DryRun, for dry-run validation. Returns a structured hashtable with per-phase results and an overall Available boolean.
 
 <a name="parameters"></a>
 ## Parameters
@@ -50,7 +49,7 @@ Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe
           - Prompts for username/password (or uses -Credential)
           - Loads the HPE OneView PowerShell module
           - Performs a full authentication (Connect-OVMgmt)
-          - Immediately disconnects (Disconnect-OVMgmt)
+          - Session persists for subsequent OneView commands
           - No objects are modified
 
         SAFETY / COMPLIANCE (regulated EMIR environment):
@@ -106,6 +105,11 @@ Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe
           NetworkPing      [hashtable] - DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
           AuthConnect      [hashtable] - Connected, Disconnected, ModuleLoaded, Error
           Timestamp        [string]   - UTC ISO 8601
+
+    .NOTES
+        The OneView session established by this command persists in the current
+        PowerShell session. Use Disconnect-OneView to explicitly close the session
+        when finished.
 ```
 
 ---

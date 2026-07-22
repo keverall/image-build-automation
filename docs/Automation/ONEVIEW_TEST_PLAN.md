@@ -1,6 +1,5 @@
 # HPE OneView 1000 — Live Integration Test Plan
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0-environment-prerequisites-checklist-before-live-run)
@@ -18,6 +17,7 @@
 - [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
 
 
+<a id="top"></a>
 **Purpose:** A *separate* test plan covering automation tested **against the test HPE OneView 1000
 appliance** (`HPEOpenview.1000`), ordered as a logical end-to-end run: connect → server list →
 information on connected servers → information on a specific server → assign ISO → SMB boot-image

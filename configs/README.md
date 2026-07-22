@@ -1,6 +1,5 @@
 # Configuration Files Reference
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Summary Table](#summary-table)
@@ -19,6 +18,9 @@
   - [Override File](#override-file)
 - [opsramp_config.json](#opsramp_configjson)
 - [Environment Variable Cheat Sheet](#environment-variable-cheat-sheet)
+
+
+<a id="top"></a>
 This directory contains all configuration for the HPE ProLiant Windows Server ISO Automation pipeline.
 
 <a name="summary-table"></a>

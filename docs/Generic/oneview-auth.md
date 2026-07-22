@@ -1,8 +1,11 @@
 # OneView Maintenance Mode - Authentication & Configuration
 
-<a id="top"></a>
 ## Table of Contents
 
+- [OneView Session Management](#oneview-session-management)
+  - [Establishing a Connection](#establishing-a-connection)
+  - [Closing the Connection](#closing-the-connection)
+  - [Session Lifecycle](#session-lifecycle)
 - [Required Secrets (CyberArk Safe: `HPE-OneView`)](#required-secrets-cyberark-safe-hpe-oneview)
 - [Configuration Files](#configuration-files)
   - [`configs/oneview_config.json`](#configsoneview_configjson)
@@ -12,7 +15,55 @@
   - [How it works](#how-it-works)
   - [Manual Testing](#manual-testing)
 - [Setup Script](#setup-script)
+
+
+<a id="top"></a>
 Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between OneView maintenance mode and iLO maintenance mode.
+
+<a name="oneview-session-management"></a>
+## OneView Session Management
+
+OneView connections use a **persistent session model**. The session is established once and remains active for subsequent commands until explicitly closed.
+
+<a name="establishing-a-connection"></a>
+### Establishing a Connection
+
+Use `Test-ServerConnectivity` to verify connectivity and establish a persistent OneView session:
+
+```powershell
+# Connect to OneView (session persists)
+Test-ServerConnectivity -ManagementHost va-oneviewt-01 -Credential (Get-Credential)
+
+# Run OneView commands while the session is active
+Get-OneViewServerList
+Get-OneViewConnectionStatus
+```
+
+The session is stored in `$global:ConnectedSessions` and is automatically reused by other OneView commands (`Get-OneViewServerList`, `Get-OneViewConnectionStatus`, etc.) without requiring re-authentication.
+
+<a name="closing-the-connection"></a>
+### Closing the Connection
+
+Use `Disconnect-OneView` to explicitly close the session when finished:
+
+```powershell
+# Disconnect from OneView
+Disconnect-OneView
+
+# Force disconnection (suppress cleanup errors)
+Disconnect-OneView -Force
+```
+
+The session is also automatically closed when the PowerShell session ends.
+
+<a name="session-lifecycle"></a>
+### Session Lifecycle
+
+1. **Connect**: `Test-ServerConnectivity` establishes the session
+2. **Use**: OneView commands reuse the existing session automatically
+3. **Disconnect**: `Disconnect-OneView` closes the session (or it closes when PowerShell exits)
+
+This model avoids repeated authentication overhead and aligns with the HPE OneView PowerShell module's session management.
 
 <a name="required-secrets-cyberark-safe-hpe-oneview"></a>
 ## Required Secrets (CyberArk Safe: `HPE-OneView`)

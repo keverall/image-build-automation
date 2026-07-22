@@ -1,6 +1,5 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Test-ServerConnectivity](#test-serverconnectivity)
@@ -61,6 +60,9 @@
   - [Test Scripts](#test-scripts)
 - [14 Quick Navigation](#14-quick-navigation)
 - [15 Documentation References](#15-documentation-references)
+
+
+<a id="top"></a>
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 
@@ -112,7 +114,7 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 
 **DryRun returns:**
 - Mock `NetworkPing` result (DNS resolved, TCP port open, 1ms latency)
-- Mock `AuthConnect` result (module loaded, connected, disconnected)
+- Mock `AuthConnect` result (module loaded, connected)
 - MockData with resolved configuration (target ports, PowerShell module, WinRM status, credential env vars)
 - `DryRun = $true` flag in result
 
@@ -130,8 +132,8 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 
 **Code Location**: [`Lines 306-390`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L306-L390)
 
-1. **OneView**: Calls `Connect-OVMgmt` with credentials, immediately calls `Disconnect-OVMgmt`
-2. Validates module loaded (HPEOneView.*), connected, and disconnected successfully
+1. **OneView**: Calls `Connect-OVMgmt` with credentials. **Session persists** for subsequent commands - use `Disconnect-OneView` to close explicitly
+2. Validates module loaded (HPEOneView.*) and connected successfully
 
 <a name="result-structure"></a>
 ### Result Structure
