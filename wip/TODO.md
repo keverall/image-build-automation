@@ -27,64 +27,81 @@ CI pipelines have a built-in REST API out of the box. You do not write any API l
    2. The payload targets a trigger pipeline endpoint with the CI-specific URL format.
    3. CI receives the variables (e.g., $ImageName, $VMSpec), spins up your PowerShell repository, and passes those variables straight into your .ps1 script arguments.
 
- Test-ServerConnectivity -ManagementHost va-oneviewt-01                                       0  47s 819ms  14:28:36 Enter OneView username for 'va-oneviewt-01': test 
-Enter OneView password for 'va-oneviewt-01': : ************* 
-Invoke-PowerShellScript: C:\Products\repos\image-build-automation\src\powershell\Automation\Public\Test-ServerConnectivity.ps1:577:33 
-Line |
- 577 |  …        $scriptResult = Invoke-PowerShellScript -Script $scriptContent 
-     |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-     | PowerShell error (exit code 1): Import-Module : The version of Windows PowerShell on this computer is '5.1.17763.8880'. The module         
-     | 'C:\Users\adm_98253\Documents\PowerShell\Modules\HPEOneView.1000\10.0.4265.2221\HPEOneView.1000.psd1' requires a  minimum Windows
-     | PowerShell version of '7.0' to run. Verify that you have the minimum required version of Windows  PowerShell installed, and then try       
-     | again. At line:1 char:1 + Import-Module HPEOneView.1000 -ErrorAction Stop + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     +
-     | CategoryInfo          : ResourceUnavailable: (C:\Users\adm_98...eView.1000.psd1:String) [Import-Module], Invalid     OperationException    
-     | + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
 
-==============================================
-  OneView Connectivity Test
+
+image-build-automation  ping va-oneviewt-01                                                                       0  1m 27s 899ms  12:03:20 
+Pinging va-oneviewt-01.ad.aib.pri [10.239.124.79] with 32 bytes of data:
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+
+Ping statistics for 10.239.124.79:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 1ms, Maximum = 1ms, Average = 1ms
+   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01                                        0  3s 172ms  12:03:39 Enter OneView username for 'va-oneviewt-01':  
+   image-build-automation  Get-OneViewConnectionStatus                                                                  0  28s 556ms  12:04:45 
+Name                           Value
+----                           -----
+Connected                      False
+Reachable                      False
+Success                        False 
+Authenticated                  False
+Appliance
+Error                          No active OneView session. Use Connect-OVMgmt to connect, or supply -OneViewHost.
+
+   image-build-automation  Get-OneViewConnectionStatus -IncludeServerCount                                                         0  12:04:49  
+Name                           Value 
+----                           ----- 
+Connected                      False 
+Reachable                      False 
+Success                        False 
+Authenticated                  False
+Appliance
+Error                          No active OneView session. Use Connect-OVMgmt to connect, or supply -OneViewHost.
+
+   image-build-automation  Connect-OVMgmt                                                                                          0  12:05:30 
+cmdlet Connect-OVMgmt at command pipeline position 1 
+Supply values for the following parameters:
+Hostname: va-oneviewt-01 
+UserName: adm_98253 
+WARNING: Parameter 'UserName' is obsolete.  
+Password: ************************ 
+Connect-OVMgmt: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '504'." 
+   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01                                       1  43s 393ms  12:06:27 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+
 ============================================== 
+  OneView Connectivity Test
+==============================================
 
   Status:     UNAVAILABLE
   Mode:       oneview
   Host:       va-oneviewt-01
   Environment:Prod
-  Timestamp:  2026-07-20T13:29:04.2127979Z
+  Timestamp:  2026-07-22T11:07:11.2475726Z 
 
   --- Phase 1: Network Ping ---
     DNS:       Resolved
     IP:        10.239.124.79
-    TCP:       Open (port 443, 3ms) 
+    TCP:       Open (port 443, 4ms)
 
   --- Phase 2: Auth Connect ---
-    Module:    Not loaded
+    Module:    Loaded
     Connected: No
-    Clean up:  N/A
-    Error:     Connection script failed: 
-Import-Module : The version of Windows PowerShell on this computer is '5.1.17763.8880'. The module
-'C:\Users\adm_98253\Documents\PowerShell\Modules\HPEOneView.1000\10.0.4265.2221\HPEOneView.1000.psd1' requires a
-minimum Windows PowerShell version of '7.0' to run. Verify that you have the minimum required version of Windows
-PowerShell installed, and then try again.
-At line:1 char:1
-+ Import-Module HPEOneView.1000 -ErrorAction Stop
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : ResourceUnavailable: (C:\Users\adm_98...eView.1000.psd1:String) [Import-Module], Invalid
-   OperationException
-    + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
-
-   OperationException
-    + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
-   OperationException
-    + FullyQualifiedErrorId : Modules_InsufficientPowerShellVersion,Microsoft.PowerShell.Commands.ImportModuleCommand
+    Session:   N/A 
+    Error:     Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '504'."
 
 ==============================================
 
 
 Name                           Value
 ----                           -----
-Mode                           oneview
-NetworkPing                    {[IpAddress, 10.239.124.79], [Port, 443], [DnsResolved, True], [Error, ]…}
-Available                      False
-Timestamp                      2026-07-20T13:29:04.2127979Z
 ManagementHost                 va-oneviewt-01
-AuthConnect                    {[Error, Connection script failed: …
+Timestamp                      2026-07-22T11:07:11.2475726Z 
+Mode                           oneview
+Available                      False
+AuthConnect                    {[Error, Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code… 
 Environment                    Prod
+NetworkPing                    {[Port, 443], [TcpPortOpen, True], [IpAddress, 10.239.124.79], [Error, ]…}
