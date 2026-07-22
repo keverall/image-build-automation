@@ -355,7 +355,7 @@ In plain terms:
 - If the test suite is **red** (any test failed), something the runbook depends on is not behaving as specified. **Do not approve the change** without a root-cause explanation from the engineering team and evidence that the failing test has been fixed.
 - If the test suite has **skips** but no failures, the suite ran and passed the tests it was able to run. Skips are expected in some test environments and are not a blocker in themselves, but they should be noted in the change record.
 
-The test log in `generated/logs/<environment>/automation_mode_tests_<timestamp>.log` provides the evidence that can be attached to the change record.
+The test log in `generated/logs/automation/automated-mode-test_<timestamp>.log` provides the evidence that can be attached to the change record.
 
 
 <a name="running-the-test-suite"></a>

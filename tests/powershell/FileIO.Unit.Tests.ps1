@@ -79,13 +79,13 @@ Describe 'Save-Json / Load-Json' {
 Describe 'Save-JsonResult' {
     It 'Creates a timestamped file in the right directory' {
         $r = Save-JsonResult -Data @{ ok=$true } -BaseName 'test_result' -OutputDir $Script:TestDir
-        $r | Should -Match 'test_result_\d+\.json$'
+        $r | Should -Match 'test_result_20\d{2}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z\.json$'
         Test-Path $r | Should -Be $true
     }
 
     It 'Places file under category sub-directory when given' {
         $r = Save-JsonResult -Data @{ ok=$true } -BaseName 'cat_test' -OutputDir $Script:TestDir -Category 'sub'
-        $r | Should -Match 'cat_test_\d+\.json$'
+        $r | Should -Match 'cat_test_20\d{2}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z\.json$'
     }
 }
 

@@ -628,7 +628,7 @@ function Start-PhysicalServerBuild {
         try {
             $auditDir = Join-Path (Get-ProjectRoot) 'generated/logs/audit'
             Ensure-DirectoryExists -Path $auditDir
-            $overall['audit_file'] = Join-Path $auditDir "build_$($ServerIdentifier)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+            $overall['audit_file'] = Join-Path $auditDir "build_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json"
             Save-Json -Data $overall -Path $overall['audit_file']
         } catch { Write-Warning "Audit log write failed: $($_.Exception.Message)" }
     }

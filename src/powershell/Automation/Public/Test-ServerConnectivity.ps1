@@ -241,7 +241,6 @@ function Test-ServerConnectivity {
     $ErrorActionPreference = 'Continue'
     $Mode = 'oneview'
     $logger = Get-Logger 'Connectivity'
-
     # ── Resolve config directory ──────────────────────────────────────────────
     $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
     $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) {
@@ -479,7 +478,7 @@ function Test-ServerConnectivity {
         if (-not $Json) {
             _Format-ConnectivityResult -Result $mockResult
         }
-
+        $logger.Info("Connectivity test for '$resolvedHost' completed (DryRun): Available=$($mockResult.Available), Mode=$($mockResult.Mode)")
         return $mockResult
     }
 
@@ -687,7 +686,7 @@ function _Format-ConnectivityResult {
 
 # ── Script-mode entry point ───────────────────────────────────────────────────
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
-    Initialize-Logging -LogFile 'connectivity.log'
+    Initialize-Logging -LogFile 'connectivity.log' -CommandName 'Test-ServerConnectivity' -LogName "Test-ServerConnectivity-ManagementHost-$ManagementHost"
     $connParams = @{ PingTimeoutMs = $PingTimeoutMs }
     if ($PSBoundParameters.ContainsKey('Environment'))    { $connParams['Environment'] = $Environment }
     if ($PSBoundParameters.ContainsKey('ManagementHost')) { $connParams['ManagementHost'] = $ManagementHost }

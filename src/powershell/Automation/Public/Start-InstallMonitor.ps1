@@ -101,7 +101,7 @@ if (-not $Script:MonitorLogDir -or $Script:MonitorLogDir -eq '') {
         $Script:MonitorLogDir = Join-Path $projectRoot 'generated/logs/production'
     }
 }
-Initialize-Logging -LogFile 'monitoring.log'
+Initialize-Logging -LogFile 'monitoring.log' -CommandName 'Start-InstallMonitor'
 
 # ---- Phase-name map ----
 $Script:PhaseMap = @{
