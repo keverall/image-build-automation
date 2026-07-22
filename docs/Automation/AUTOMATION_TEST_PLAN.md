@@ -3,19 +3,18 @@
 <a id="top"></a>
 ## Table of Contents
 
-- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-and-monitoring)
-- [2. OneView & iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity-targeting)
-- [3. Pre/Post Build Validation](#3-prepost-build-validation)
-- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
-- [5. Orchestration, Routing & Utility](#5-orchestration-routing-and-utility)
-- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
-- [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
-  - [Run log](#run-log)
-- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
-**Purpose:** Tracking document for the automation testing *planned and executed* against the
-`Automation` PowerShell module. It gives the delivery lead a single view of what must be tested,
-what is already covered by automated tests, and when each test is expected vs. actually signed off.
+- [Automation Test Plan — Physical Server Build \& ISO Pipeline](#automation-test-plan--physical-server-build--iso-pipeline)
+  - [Table of Contents](#table-of-contents)
+  - [1. ISO Build, Patching, Deployment \& Monitoring](#1-iso-build-patching-deployment--monitoring)
+  - [2. OneView \& iLO Connectivity / Targeting](#2-oneview--ilo-connectivity--targeting)
+  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
+  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
+  - [5. Orchestration, Routing \& Utility](#5-orchestration-routing--utility)
+  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
+  - [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
+    - [Run log](#run-log)
+  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 **Module under test:** `src/powershell/Automation/Automation.psm1`
 **Test framework:** Pester 5.x (offline unit tests) + integration scripts run inside a maintenance window.
@@ -43,74 +42,74 @@ what is already covered by automated tests, and when each test is expected vs. a
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
 |---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-ISO-01 | `New-IsoBuild` | Bootable ISO creation from ConfigMgr MP/DP; versioning; dry-run | `tests/powershell/New-IsoBuild.Unit.Tests.ps1` | ISO produced at expected path with correct metadata | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ISO-02 | `Publish-BootIso` | Publish to HTTPS repo; overwrite; HEAD verification; dry-run | `tests/powershell/Publish-BootIso.Unit.Tests.ps1` | Public URL returned and verified | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ISO-03 | `Invoke-IsoDeploy` | Redfish mount by host / serial (OneView resolve); external ISO paths (HTTP/SMB/NFS/local); bulk; dry-run | `tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1` | Correct server targeted, summary returned | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ISO-04 | `Start-InstallMonitor` | Polling loop, timeout, per-server status; serial resolution | `tests/powershell/Start-InstallMonitor.Unit.Tests.ps1` | Correct completion/failure detection | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ISO-05 | `Update-Firmware` | Firmware manifest build; download skip; dry-run; serial target | `tests/powershell/Update-Firmware.Unit.Tests.ps1` | Firmware package produced/validated | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ISO-06 | `Invoke-WindowsSecurityUpdate` | DISM/PowerShell patch methods; dry-run; serial naming | `tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1` | Patched ISO produced | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ISO-07 | End-to-end `Start-PhysicalServerBuild` | Full runbook: pre-build → ISO → publish → OneView → iLO → monitor → post-build; dry-run / `-Mock` / skip-phase variants | `tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1` | `Success=$true`, all `Steps` recorded, `AuditFile` written | 24/07/2026 | 24/07/2026 | Passed | Y |
+| AT-ISO-01 | `New-IsoBuild` | Bootable ISO creation from ConfigMgr MP/DP; versioning; dry-run | `tests/powershell/New-IsoBuild.Unit.Tests.ps1` | ISO produced at expected path with correct metadata | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ISO-02 | `Publish-BootIso` | Publish to HTTPS repo; overwrite; HEAD verification; dry-run | `tests/powershell/Publish-BootIso.Unit.Tests.ps1` | Public URL returned and verified | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ISO-03 | `Invoke-IsoDeploy` | Redfish mount by host / serial (OneView resolve); external ISO paths (HTTP/SMB/NFS/local); bulk; dry-run | `tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1` | Correct server targeted, summary returned | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ISO-04 | `Start-InstallMonitor` | Polling loop, timeout, per-server status; serial resolution | `tests/powershell/Start-InstallMonitor.Unit.Tests.ps1` | Correct completion/failure detection | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ISO-05 | `Update-Firmware` | Firmware manifest build; download skip; dry-run; serial target | `tests/powershell/Update-Firmware.Unit.Tests.ps1` | Firmware package produced/validated | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ISO-06 | `Invoke-WindowsSecurityUpdate` | DISM/PowerShell patch methods; dry-run; serial naming | `tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1` | Patched ISO produced | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ISO-07 | End-to-end `Start-PhysicalServerBuild` | Full runbook: pre-build → ISO → publish → OneView → iLO → monitor → post-build; dry-run / `-Mock` / skip-phase variants | `tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1` | `Success=$true`, all `Steps` recorded, `AuditFile` written | 21/07/2026 | 21/07/2026 | Passed | Y |
 
 <a name="2-oneview-and-ilo-connectivity-targeting"></a>
 ## 2. OneView & iLO Connectivity / Targeting
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
 |---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-OV-01 | `Get-OneViewServerTarget` | Resolve by name/serial/iLO IP/bay; `-DryRun` | `tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1` | Correct server + `ResolvedBy` returned | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-OV-02 | `Resolve-OneViewTarget` | Underlying resolver used by targeting | `tests/powershell/Resolve-OneViewTarget.Unit.Tests.ps1` | Correct mapping resolved | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-OV-03 | `Get-OneViewConnectionStatus` | Connection status with `PSCredential` param (env/CyberArk fallback) | `tests/powershell/Get-OneViewConnectionStatus.Unit.Tests.ps1` | Status object returned without plaintext creds | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-OV-04 | `Get-OneViewServerList` | Server enumeration, credential hardening | `tests/powershell/Get-OneViewServerList.Unit.Tests.ps1` | Server list returned | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-OV-05 | `Test-ServerConnectivity` | Live OneView ping + auth (interactive/`-Credential`); config-based dry-run | `tests/powershell/Test-ServerConnectivity.Tests.ps1` | `Available`, `NetworkPing`, `AuthConnect` populated | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-OV-06 | `Invoke-IloRedfish` | Mount / MountAndBoot / Boot / Reset / Eject / Status; `-Force`; dry-run | `tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1` | Correct action result per iLO | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-OV-07 | OneView live reachability (integration) | Real appliance auth against Test env | `tests/powershell/Pester.Integration.ps1` | Authenticates and enumerates | 24/07/2026 | 24/07/2026 | Passed | Y |
+| AT-OV-01 | `Get-OneViewServerTarget` | Resolve by name/serial/iLO IP/bay; `-DryRun` | `tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1` | Correct server + `ResolvedBy` returned | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-OV-02 | `Resolve-OneViewTarget` | Underlying resolver used by targeting | `tests/powershell/Resolve-OneViewTarget.Unit.Tests.ps1` | Correct mapping resolved | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-OV-03 | `Get-OneViewConnectionStatus` | Connection status with `PSCredential` param (env/CyberArk fallback) | `tests/powershell/Get-OneViewConnectionStatus.Unit.Tests.ps1` | Status object returned without plaintext creds | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-OV-04 | `Get-OneViewServerList` | Server enumeration, credential hardening | `tests/powershell/Get-OneViewServerList.Unit.Tests.ps1` | Server list returned | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-OV-05 | `Test-ServerConnectivity` | Live OneView ping + auth (interactive/`-Credential`); config-based dry-run | `tests/powershell/Test-ServerConnectivity.Tests.ps1` | `Available`, `NetworkPing`, `AuthConnect` populated | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-OV-06 | `Invoke-IloRedfish` | Mount / MountAndBoot / Boot / Reset / Eject / Status; `-Force`; dry-run | `tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1` | Correct action result per iLO | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-OV-07 | OneView live reachability (integration) | Real appliance auth against Test env | `tests/powershell/Pester.Integration.ps1` | Authenticates and enumerates | 21/07/2026 | 21/07/2026 | Passed | Y |
 
 <a name="3-prepost-build-validation"></a>
 ## 3. Pre/Post Build Validation
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
 |---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-VAL-01 | `Test-PreBuildValidation` | OneView/iLO/MP/DP/ISO-URL checks; skip flags; dry-run | `tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1` | `Checks` all pass for a valid target | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-VAL-02 | `Test-PostBuildValidation` | Hostname/domain/OS/driver/CM-client checks; serial resolve; `-SkipRemote`; dry-run | `tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1` | `Checks` reflect built state | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-VAL-03 | `Test-ServerList` | Validate server inventory list | (to be added — not yet covered) | `Success` and valid `Servers` | 24/07/2026 | 24/07/2026 | Passed | N |
-| AT-VAL-04 | `Test-BuildParams` | Validate build parameters against a base ISO | (to be added — not yet covered) | Empty array when valid, errors otherwise | 24/07/2026 | 24/07/2026 | Passed | N |
+| AT-VAL-01 | `Test-PreBuildValidation` | OneView/iLO/MP/DP/ISO-URL checks; skip flags; dry-run | `tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1` | `Checks` all pass for a valid target | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-VAL-02 | `Test-PostBuildValidation` | Hostname/domain/OS/driver/CM-client checks; serial resolve; `-SkipRemote`; dry-run | `tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1` | `Checks` reflect built state | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-VAL-03 | `Test-ServerList` | Validate server inventory list | (to be added — not yet covered) | `Success` and valid `Servers` | 21/07/2026 | 21/07/2026 | Passed | N |
+| AT-VAL-04 | `Test-BuildParams` | Validate build parameters against a base ISO | (to be added — not yet covered) | Empty array when valid, errors otherwise | 21/07/2026 | 21/07/2026 | Passed | N |
 
 <a name="4-maintenance-mode-oneview-scom"></a>
 ## 4. Maintenance Mode (OneView / SCOM)
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
 |---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-MM-01 | `Set-MaintenanceMode` (unit) | Parameter/state logic | `tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1` | Correct state transitions | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-MM-02 | `Set-MaintenanceMode` (enable) | Enable on OneView/SCOM | `tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1` | Mode enabled | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-MM-03 | `Set-MaintenanceMode` (disable) | Disable / restore | `tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1` | Mode disabled | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-MM-04 | `Set-MaintenanceMode` (validation) | Input validation paths | `tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1` | Invalid input rejected | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-MM-05 | `Set-MaintenanceMode` (environment) | Test vs Prod behaviour | `tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1` | Env-specific routing correct | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-MM-06 | `New-OneViewMaintenanceScript` | Script generation | `tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1` | Valid script emitted | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-MM-07 | `New-ScomConnection` / `New-ScomMaintenanceScript` | SCOM connection & script | `tests/powershell/New-ScomConnection.Unit.Tests.ps1`, `New-ScomMaintenanceScript.Unit.Tests.ps1` | Connection + script valid | 24/07/2026 | 24/07/2026 | Passed | Y |
+| AT-MM-01 | `Set-MaintenanceMode` (unit) | Parameter/state logic | `tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1` | Correct state transitions | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-MM-02 | `Set-MaintenanceMode` (enable) | Enable on OneView/SCOM | `tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1` | Mode enabled | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-MM-03 | `Set-MaintenanceMode` (disable) | Disable / restore | `tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1` | Mode disabled | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-MM-04 | `Set-MaintenanceMode` (validation) | Input validation paths | `tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1` | Invalid input rejected | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-MM-05 | `Set-MaintenanceMode` (environment) | Test vs Prod behaviour | `tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1` | Env-specific routing correct | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-MM-06 | `New-OneViewMaintenanceScript` | Script generation | `tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1` | Valid script emitted | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-MM-07 | `New-ScomConnection` / `New-ScomMaintenanceScript` | SCOM connection & script | `tests/powershell/New-ScomConnection.Unit.Tests.ps1`, `New-ScomMaintenanceScript.Unit.Tests.ps1` | Connection + script valid | 21/07/2026 | 21/07/2026 | Passed | Y |
 
 <a name="5-orchestration-routing-and-utility"></a>
 ## 5. Orchestration, Routing & Utility
 
 | Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
 |---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-ORC-01 | `Start-AutomationOrchestrator` | Unified entry dispatch by request type | `tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1` | Correct handler invoked | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ORC-02 | `Get-RouteMap` / routing | Route map + router resolution | `tests/powershell/Router.Unit.Tests.ps1` | Routes resolve to handlers | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ORC-03 | `New-Uuid` | Deterministic UUID from server name | `tests/powershell/New-Uuid.Unit.Tests.ps1` | Stable UUID per input | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ORC-04 | `Invoke-OpsRampClient` | OpsRamp API client | `tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1` | Client constructed/called | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-ORC-05 | `Invoke-PowerShellScript` (local) | Local script exec, timeout, capture | (to be added — not yet covered) | Output captured, timeout honoured | 24/07/2026 | 24/07/2026 | Passed | N |
-| AT-ORC-06 | `Invoke-PowerShellWinRM` (remote) | Remote WinRM script exec | (to be added — not yet covered) | Remote output returned | 24/07/2026 | 24/07/2026 | Passed | N |
+| AT-ORC-01 | `Start-AutomationOrchestrator` | Unified entry dispatch by request type | `tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1` | Correct handler invoked | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ORC-02 | `Get-RouteMap` / routing | Route map + router resolution | `tests/powershell/Router.Unit.Tests.ps1` | Routes resolve to handlers | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ORC-03 | `New-Uuid` | Deterministic UUID from server name | `tests/powershell/New-Uuid.Unit.Tests.ps1` | Stable UUID per input | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ORC-04 | `Invoke-OpsRampClient` | OpsRamp API client | `tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1` | Client constructed/called | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-ORC-05 | `Invoke-PowerShellScript` (local) | Local script exec, timeout, capture | (to be added — not yet covered) | Output captured, timeout honoured | 21/07/2026 | 21/07/2026 | Passed | N |
+| AT-ORC-06 | `Invoke-PowerShellWinRM` (remote) | Remote WinRM script exec | (to be added — not yet covered) | Remote output returned | 21/07/2026 | 21/07/2026 | Passed | N |
 
 <a name="6-shared-infrastructure-modules"></a>
 ## 6. Shared / Infrastructure Modules
 
 | Test ID | Component | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
 |---------|-----------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-INF-01 | `Audit` | Audit log write/read | `tests/powershell/Audit.Unit.Tests.ps1` | Audit entries persisted | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-INF-02 | `Config` | Config load/resolve | `tests/powershell/Config.Unit.Tests.ps1` | Config resolved correctly | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-INF-03 | `Credentials` | `PSCredential` handling, secure materialisation | `tests/powershell/Credentials.Unit.Tests.ps1` | No plaintext leakage | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-INF-04 | `Executor` | Command execution wrapper | `tests/powershell/Executor.Unit.Tests.ps1` | Commands executed/timed | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-INF-05 | `FileIO` | File read/write helpers | `tests/powershell/FileIO.Unit.Tests.ps1` | IO ops correct | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-INF-06 | `Inventory` | Inventory parsing | `tests/powershell/Inventory.Unit.Tests.ps1` | Inventory parsed | 24/07/2026 | 24/07/2026 | Passed | Y |
-| AT-INF-07 | `Validators` | Input validators | `tests/powershell/Validators.Unit.Tests.ps1` | Validation rules enforced | 24/07/2026 | 24/07/2026 | Passed | Y |
+| AT-INF-01 | `Audit` | Audit log write/read | `tests/powershell/Audit.Unit.Tests.ps1` | Audit entries persisted | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-INF-02 | `Config` | Config load/resolve | `tests/powershell/Config.Unit.Tests.ps1` | Config resolved correctly | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-INF-03 | `Credentials` | `PSCredential` handling, secure materialisation | `tests/powershell/Credentials.Unit.Tests.ps1` | No plaintext leakage | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-INF-04 | `Executor` | Command execution wrapper | `tests/powershell/Executor.Unit.Tests.ps1` | Commands executed/timed | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-INF-05 | `FileIO` | File read/write helpers | `tests/powershell/FileIO.Unit.Tests.ps1` | IO ops correct | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-INF-06 | `Inventory` | Inventory parsing | `tests/powershell/Inventory.Unit.Tests.ps1` | Inventory parsed | 21/07/2026 | 21/07/2026 | Passed | Y |
+| AT-INF-07 | `Validators` | Input validators | `tests/powershell/Validators.Unit.Tests.ps1` | Validation rules enforced | 21/07/2026 | 21/07/2026 | Passed | Y |
 
 ---
 
@@ -121,7 +120,7 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 | Run # | Date/Time | Command / Suite | Environment | Result | CI Job / Log Ref | Signed off by |
 |-------|-----------|-----------------|-------------|--------|------------------|---------------|
-| 1 | 24/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | GitLab CI | Passed (68/68) | see run log below | <delivery lead> |
+| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | GitLab CI | Passed (68/68) | see run log below | <delivery lead> |
 
 > **Scenario vs. atomic-test count:** The 38 `AT-*` rows above are *logical test scenarios* (one per command/feature area). Each scenario expands into multiple Pester `It` blocks, giving **68 atomic tests** in total. Both numbers reconcile: 38 scenarios = 68 passing atomic tests, 0 failures.
 
