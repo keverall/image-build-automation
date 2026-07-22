@@ -66,7 +66,7 @@ function Save-JsonResult {
     if (-not $OutputDir) {
         $OutputDir = Get-LogDirectory -Category $Category
     }
-    $ts  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    $ts  = Get-UtcFileTimestamp
     $dir = $OutputDir
     Ensure-DirectoryExists $dir | Out-Null
     $fp  = [System.IO.Path]::Combine($dir, "$BaseName`_$ts.json")

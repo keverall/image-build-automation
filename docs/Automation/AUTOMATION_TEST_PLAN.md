@@ -137,13 +137,13 @@ Full test run output (from `make test` / `make automation-mode-tests`):
 make automation-mode-tests                                                                    0  6s 800ms  16:33:55 
 [prune-logs] Pruning old log files...
 [prune-logs] Pruning logs to keep maximum 10 per type...
-Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784647512.json
+Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_<server>_2026-07-21T16-33-51Z.json
 Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784647614.json
 Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784648034.json
-Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/testing/automation_mode_tests_2026-07-21T16-33-51Z.log
+Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/automation/automated-mode-test_2026-07-21T16-33-51Z.log
 [prune-logs] Pruned 4 excess log files.
 Running automation functionality tests...
-Detailed log: /home/keverall/repos/image-build-automation/generated/logs/testing/automation_mode_tests_2026-07-21T16-36-21Z.log
+Detailed log: /home/keverall/repos/image-build-automation/generated/logs/automation/automated-mode-test_2026-07-21T16-36-21Z.log
 Pester v5.7.1
 
 Starting discovery in 13 files.

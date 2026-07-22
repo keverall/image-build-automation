@@ -23,7 +23,7 @@
     - Update-Firmware, Update-WindowsSecurity
 
     Displays detailed test summary with pass/fail/skip counts and duration.
-    Logs detailed output to generated/logs/{environment}/automation_mode_tests_*.log
+    Logs detailed output to generated/logs/automation/automated-mode-test_*.log
 
     Exits with code 1 if any tests fail.
 
@@ -39,9 +39,9 @@ Import-Module (Join-Path $PROJECT_ROOT 'src/powershell/Automation/Automation.psd
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
-$logDir = Join-Path $PROJECT_ROOT "generated/logs/$envName"
+$logDir = Join-Path $PROJECT_ROOT 'generated/logs/automation'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
-$pesterLogPath = Join-Path $logDir "automation_mode_tests_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+$pesterLogPath = Join-Path $logDir "automated-mode-test_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
 
 Write-Host "Running automation functionality tests..." -ForegroundColor Cyan
 Write-Host "Detailed log: $pesterLogPath" -ForegroundColor Cyan
@@ -98,5 +98,22 @@ if ($results.FailedCount -gt 0) {
 Write-Host " Skipped       : $($results.SkippedCount)" -ForegroundColor Yellow
 Write-Host " Duration      : $($results.Duration.TotalSeconds.ToString('0.00'))s" -ForegroundColor White
 Write-Host "================================================================================" -ForegroundColor Cyan
+
+# Persist the summary to the log file. The block above is written to the host
+# after Stop-Transcript, so it never lands in the transcript. Append a
+# plain-text copy here so the result is always recorded in the log.
+$summaryLines = @(
+    '',
+    '================================================================================',
+    '                           TEST SUMMARY BLOCK',
+    '================================================================================',
+    " Total Tests   : $($results.TotalCount)",
+    " Passed        : $($results.PassedCount)",
+    " Failed        : $($results.FailedCount)$(if ($results.FailedCount -gt 0) { ' (CRITICAL)' } else { '' })",
+    " Skipped       : $($results.SkippedCount)",
+    " Duration      : $($results.Duration.TotalSeconds.ToString('0.00'))s",
+    '================================================================================'
+)
+Add-Content -Path $pesterLogPath -Value $summaryLines -Encoding utf8
 
 exit ([int]($results.FailedCount -gt 0))

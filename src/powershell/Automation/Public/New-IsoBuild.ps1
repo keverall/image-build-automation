@@ -104,7 +104,7 @@ function New-IsoBuild {
         [switch] $DryRun
     )
 
-    Initialize-Logging -LogFile 'iso_build.log'
+    Initialize-Logging -LogFile 'iso_build.log' -CommandName 'New-IsoBuild'
 
     if (-not $OutputPath) {
         $projectRoot = Get-ProjectRoot

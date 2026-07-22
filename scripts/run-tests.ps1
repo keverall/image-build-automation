@@ -89,9 +89,9 @@ $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $publicPath = Join-Path $PROJECT_ROOT 'src/powershell'
 
 $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
-$logDir = Join-Path $PROJECT_ROOT "generated/logs/$envName"
+$logDir = Join-Path $PROJECT_ROOT 'generated/logs/test'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
-$pesterLogPath = Join-Path $logDir "testing_coverage_detail_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+$pesterLogPath = Join-Path $logDir "test_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
 
 Write-Host "Running Pester tests from: $testPath" -ForegroundColor Cyan
 Write-Host "Detailed log: $pesterLogPath" -ForegroundColor Cyan
@@ -139,5 +139,22 @@ if ($results.FailedCount -gt 0) {
 Write-Host " Skipped       : $($results.SkippedCount)" -ForegroundColor Yellow
 Write-Host " Duration      : $($results.Duration.TotalSeconds.ToString('0.00'))s" -ForegroundColor White
 Write-Host "================================================================================" -ForegroundColor Cyan
+
+# Persist the summary to the log file. The block above is written to the host
+# after Stop-Transcript, so it never lands in the transcript. Append a
+# plain-text copy here so the result is always recorded in the log.
+$summaryLines = @(
+    '',
+    '================================================================================',
+    '                           TEST SUMMARY BLOCK                                   ',
+    '================================================================================',
+    " Total Tests   : $($results.TotalCount)",
+    " Passed        : $($results.PassedCount)",
+    " Failed        : $($results.FailedCount)$(if ($results.FailedCount -gt 0) { ' (CRITICAL)' } else { '' })",
+    " Skipped       : $($results.SkippedCount)",
+    " Duration      : $($results.Duration.TotalSeconds.ToString('0.00'))s",
+    '================================================================================'
+)
+Add-Content -Path $pesterLogPath -Value $summaryLines -Encoding utf8
 
 exit ([int]($results.FailedCount -gt 0))

@@ -81,7 +81,7 @@ param(
     if (-not $DryRun -and -not $Server) {
         throw "Server or SerialNumber is required for non-dryrun firmware update"
     }
-    Initialize-Logging -LogFile 'firmware_updater.log'
+    Initialize-Logging -LogFile 'firmware_updater.log' -CommandName 'Update-Firmware'
     try {
         $servers = if ($DryRun -and -not $Server) { Load-ServerList -Path $ServerList } else { @($Server) }
         $updater = [FirmwareUpdater]::new($Config, $OutputDir)

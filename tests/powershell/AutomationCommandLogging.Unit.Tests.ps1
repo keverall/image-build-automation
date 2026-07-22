@@ -32,12 +32,10 @@ $Script:LoggingCommands = @(
 
 Describe 'Every automation command that should log is wired to Initialize-Logging' {
 
-    foreach ($cmd in $Script:LoggingCommands) {
-        It "'$($cmd.Name)' calls Initialize-Logging with a LogFile" {
-            $path = Join-Path $Script:PublicDir $cmd.File
-            $content = Get-Content -Path $path -Raw
-            $content | Should -Match "Initialize-Logging\s+-LogFile"
-        }
+    It "calls Initialize-Logging with a LogFile" -ForEach $Script:LoggingCommands {
+        $path = Join-Path $Script:PublicDir $_.File
+        $content = Get-Content -Path $path -Raw
+        $content | Should -Match "Initialize-Logging\s+-LogFile"
     }
 }
 
@@ -46,15 +44,16 @@ Describe 'Logging is functional: commands initialise and write logs' {
     It 'Test-ServerConnectivity writes a real connectivity log file (script mode, DryRun)' {
         $logDirs = @(
             (Join-Path $Script:RepoRoot 'generated/logs/testing'),
-            (Join-Path $Script:RepoRoot 'generated/logs/production')
+            (Join-Path $Script:RepoRoot 'generated/logs/production'),
+            (Join-Path $Script:RepoRoot 'generated/logs/commands/Test-ServerConnectivity')
         )
         $before = foreach ($d in $logDirs) {
-            if (Test-Path $d) { Get-ChildItem $d -Filter 'connectivity_*.log' -ErrorAction SilentlyContinue }
+            if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
         $scriptPath = Join-Path $Script:PublicDir 'Test-ServerConnectivity.ps1'
         & $scriptPath -ManagementHost 'test-ov.local' -DryRun
         $after = foreach ($d in $logDirs) {
-            if (Test-Path $d) { Get-ChildItem $d -Filter 'connectivity_*.log' -ErrorAction SilentlyContinue }
+            if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
         $new = $after | Where-Object { $_.FullName -notin ($before.FullName) }
         $new.Count | Should -BeGreaterThan 0

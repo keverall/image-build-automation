@@ -75,7 +75,7 @@ Describe 'Get-Logger - methods and level filtering' {
         Initialize-Logging -LogFile 'info.log' -Level 'Information'
         $logger = Get-Logger 'Comp'
         $logger.Info('hello world')
-        $lines = Get-Content $global:__AutomationLogPath
+        $lines = @(Get-Content $global:__AutomationLogPath)
         $lines[-1] | Should -Match ' - Comp - INFO - hello world$'
         $lines[-1] | Should -Match '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} - '
     }
@@ -84,19 +84,21 @@ Describe 'Get-Logger - methods and level filtering' {
         Initialize-Logging -LogFile 'warn.log' -Level 'Information'
         $logger = Get-Logger 'Comp'
         $logger.Warning('careful')
-        (Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - WARNING - careful$'
+        @(Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - WARNING - careful$'
     }
 
     It 'Error appends an ERROR line' {
         Initialize-Logging -LogFile 'err.log' -Level 'Information'
         $logger = Get-Logger 'Comp'
         $logger.Error('boom')
-        (Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - ERROR - boom$'
+        @(Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - ERROR - boom$'
     }
 
     It 'Debug is suppressed when the level is Information' {
         Initialize-Logging -LogFile 'dbg.log' -Level 'Information'
         $logger = Get-Logger 'Comp'
+        # Materialise the file first with an allowed message so Get-Content has a target.
+        $logger.Info('warmup')
         $logger.Debug('secret-trace')
         $content = Get-Content $global:__AutomationLogPath
         ($content | Where-Object { $_ -match 'secret-trace' }) | Should -BeNullOrEmpty
@@ -106,14 +108,14 @@ Describe 'Get-Logger - methods and level filtering' {
         Initialize-Logging -LogFile 'dbg2.log' -Level 'Debug'
         $logger = Get-Logger 'Comp'
         $logger.Debug('traceme')
-        (Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - DEBUG - traceme$'
+        @(Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - DEBUG - traceme$'
     }
 
     It 'Debug is written when the level is Verbose' {
         Initialize-Logging -LogFile 'dbg3.log' -Level 'Verbose'
         $logger = Get-Logger 'Comp'
         $logger.Debug('traceme2')
-        (Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - DEBUG - traceme2$'
+        @(Get-Content $global:__AutomationLogPath)[-1] | Should -Match ' - Comp - DEBUG - traceme2$'
     }
 
     It 'Multiple named loggers append to the same file' {
@@ -151,7 +153,7 @@ Describe 'Log file format validation' {
         $logger.Warning('two')
         $logger.Error('three')
         $logger.Debug('four')
-        $lines = Get-Content $global:__AutomationLogPath
+        $lines = @(Get-Content $global:__AutomationLogPath)
         $lines.Count | Should -BeGreaterThan 0
         foreach ($l in $lines) {
             $l | Should -Match '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} - [^-]+ - (INFO|WARNING|ERROR|DEBUG) - .+$'

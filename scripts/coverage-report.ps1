@@ -59,10 +59,10 @@ $config.CodeCoverage.OutputPath = $outputPath
 $config.CodeCoverage.OutputFormat = 'Cobertura'
 
 $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
-$logDir = Join-Path $PROJECT_ROOT "generated/logs/$envName"
+$logDir = Join-Path $PROJECT_ROOT 'generated/logs/test'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
 
-$pesterLogPath = Join-Path $logDir "testing_coverage_detail_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+$pesterLogPath = Join-Path $logDir "test_coverage_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
 Write-Host "[coverage-report] Running Pester tests... (Detailed log: $pesterLogPath)" -ForegroundColor Cyan
 
 if ($PSVersionTable.PSVersion.Major -ge 7) { $PSStyle.OutputRendering = 'Ansi' }
