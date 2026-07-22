@@ -1,12 +1,11 @@
 ---
 source:  ./scripts/prune-logs.ps1
-generated: 2026-07-21 15:48 UTC
+generated: 2026-07-22 10:18 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # prune-logs
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)

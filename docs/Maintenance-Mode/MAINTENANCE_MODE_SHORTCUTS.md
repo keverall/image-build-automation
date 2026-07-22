@@ -1,6 +1,5 @@
 # Maintenance Mode Command Reference
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Why Test First?](#why-test-first)
@@ -44,6 +43,9 @@
 - [Troubleshooting](#troubleshooting-1)
 - [Best Practices](#best-practices)
 - [Related](#related-1)
+
+
+<a id="top"></a>
 > Complete guide for maintenance mode commands. **Always test connectivity first** before running maintenance operations.
 
 <a name="table-of-contents"></a>
@@ -54,7 +56,7 @@
 
 # 1. Test-ServerConnectivity - Test Connectivity First
 
-> **ALWAYS test connectivity before running maintenance commands.** This read-only command verifies SCOM/OneView availability and is safe during change freezes.
+> **ALWAYS test connectivity before running maintenance commands.** This read-only command verifies SCOM/OneView availability and is safe during change freezes. For OneView, the session persists after testing - use `Disconnect-OneView` when finished.
 
 <a name="why-test-first"></a>
 ## Why Test First?
@@ -98,7 +100,9 @@ Test-ServerConnectivity -Mode oneview -Environment Prod
 
 - **Module Check**: Verifies PowerShell module is installed
 - **Authentication Test**: Full login with credentials
-- **Immediate Disconnect**: Cleans up session after test
+- **Persistent Session**: OneView session remains active for subsequent commands
+
+**Note:** The OneView session established by `Test-ServerConnectivity` persists in the current PowerShell session. Use `Disconnect-OneView` to explicitly close the session when finished.
 
 <a name="parameters"></a>
 ## Parameters
@@ -542,11 +546,12 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environm
 ## Best Practices
 
 1. **Always test connectivity first**: Use `Test-ServerConnectivity` before running maintenance
-2. **Start with DryRun**: Verify configuration with `-DryRun` before applying
-3. **Use appropriate environment**: `Test` for development, `Prod` for production
-4. **Set reasonable time windows**: Don't leave maintenance mode indefinitely
-5. **Validate before and after**: Ensure objects are actually in maintenance mode
-6. **Document your actions**: Maintain audit logs of all maintenance operations
+2. **Disconnect OneView when finished**: Use `Disconnect-OneView` to close the persistent session after completing OneView operations
+3. **Start with DryRun**: Verify configuration with `-DryRun` before applying
+4. **Use appropriate environment**: `Test` for development, `Prod` for production
+5. **Set reasonable time windows**: Don't leave maintenance mode indefinitely
+6. **Validate before and after**: Ensure objects are actually in maintenance mode
+7. **Document your actions**: Maintain audit logs of all maintenance operations
 
 <a name="related-1"></a>
 ## Related

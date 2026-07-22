@@ -1,6 +1,5 @@
 # Authentication & Configuration Index
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Quick Reference](#quick-reference)
@@ -8,6 +7,9 @@
 - [Working Config Files](#working-config-files)
 - [GitLab CI Integration](#gitlab-ci-integration)
 - [Usage](#usage)
+
+
+<a id="top"></a>
 Configuration and secrets for `Set-MaintenanceMode.ps1`. All secrets stored in CyberArk vault `pas.example.com`. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between SCOM, OneView, and iLO.
 
 <a name="quick-reference"></a>

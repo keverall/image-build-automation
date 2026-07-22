@@ -136,7 +136,6 @@ Describe 'Test-ServerConnectivity - Result Structure' {
     It 'Should have AuthConnect sub-structure with expected keys' {
         $ac = $result.AuthConnect
         $ac.ContainsKey('Connected') | Should -Be $true
-        $ac.ContainsKey('Disconnected') | Should -Be $true
         $ac.ContainsKey('ModuleLoaded') | Should -Be $true
     }
 

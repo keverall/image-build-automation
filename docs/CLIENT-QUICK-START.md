@@ -1,6 +1,5 @@
 # Maintenance Mode - Quick Start Guide
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
@@ -17,6 +16,9 @@
 - [Troubleshooting](#troubleshooting)
   - [Command Not Found](#command-not-found)
   - [Check Available Commands](#check-available-commands)
+
+
+<a id="top"></a>
 <a name="setup-one-time"></a>
 ## Setup (One-Time)
 

@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-BuildParams.ps1
-generated: 2026-07-21 15:48 UTC
+generated: 2026-07-22 10:18 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-BuildParams
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)

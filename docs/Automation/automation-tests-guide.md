@@ -1,6 +1,5 @@
 # Automation test guide for process teams and change approvers
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Purpose of this document](#purpose-of-this-document)
@@ -24,6 +23,9 @@
 - [Running the test suite](#running-the-test-suite)
 - [Glossary for non-technical readers](#glossary-for-non-technical-readers)
 - [Related documents](#related-documents)
+
+
+<a id="top"></a>
 <a name="purpose-of-this-document"></a>
 ## Purpose of this document
 
