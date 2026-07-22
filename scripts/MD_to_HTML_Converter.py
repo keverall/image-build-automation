@@ -117,7 +117,7 @@ def convert(md):
             i += 1
             continue
         # raw HTML passthrough for specific tags (e.g., <p class="report-run-date">)
-        if re.match(r'^\s*<(p|div|span)\s+class=', line, re.I):
+        if re.match(r"^\s*<(p|div|span)\s+class=", line, re.I):
             out.append(line.strip())
             i += 1
             continue
