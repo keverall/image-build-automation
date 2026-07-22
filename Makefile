@@ -137,3 +137,12 @@ all: lint test ## Run linting and tests
 
 # CI pipeline target
 ci: lint coverage ## Run full CI pipeline
+
+# ─── Test Progress Updates ───────────────────────────────────────────────────
+test-progress-update: ## Update test plans with today's test execution progress (interactive)
+	@echo "$(CYAN)[test-progress-update]$(NC) Updating test plans with execution progress..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Update-TestProgress.ps1
+
+test-progress-update-ci: ## Update test plans non-interactively (use REASON="..." COMMAND="..." ENV="...")
+	@echo "$(CYAN)[test-progress-update]$(NC) Updating test plans (non-interactive)..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Update-TestProgress.ps1 -NonInteractive -Reason "$(REASON)" -CommandSuite "$(COMMAND)" -Environment "$(ENV)"

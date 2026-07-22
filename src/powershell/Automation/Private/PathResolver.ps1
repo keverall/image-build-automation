@@ -43,11 +43,14 @@ function Get-LogDirectory {
     if (-not $projectRoot) { return $null }
 
     $isTesting = (Get-PSCallStack | Where-Object { $_.ScriptName -match '\.Tests?\.ps1$' }) -ne $null
-    $subDir = switch ($Category) {
-        { $_ -in 'test' -or $isTesting } { 'testing' }
-        { $_ -in 'audit', 'regulatory' } { 'audit' }
-        'build_reports' { 'build_reports' }
-        default { 'production' }
+    if ($Category -eq 'test' -or ($isTesting -and $Category -eq 'production')) {
+        $subDir = 'testing'
+    } elseif ($Category -in 'audit', 'regulatory') {
+        $subDir = 'audit'
+    } elseif ($Category -eq 'build_reports') {
+        $subDir = 'build_reports'
+    } else {
+        $subDir = 'production'
     }
     return Join-Path $projectRoot "generated/logs/$subDir"
 }
