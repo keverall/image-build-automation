@@ -1,22 +1,25 @@
 # Automation Test Plan — Physical Server Build & ISO Pipeline
 
+<p class="report-run-date"><strong>Run date:</strong> 22/07/2026 22:49</p>
+
 <a id="top"></a>
 ## Table of Contents
 
-- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-and-monitoring)
-- [2. OneView & iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity-targeting)
-- [3. Pre/Post Build Validation](#3-prepost-build-validation)
-- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
-- [5. Orchestration, Routing & Utility](#5-orchestration-routing-and-utility)
-- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
-- [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
-  - [Run log](#run-log)
-- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
-**Module under test:** `src/powershell/Automation/Automation.psm1`
-**Test framework:** Pester 5.x (offline unit tests) + integration scripts run inside a maintenance window.
-
-**How to execute (runner reference):**
+- [Automation Test Plan — Physical Server Build \& ISO Pipeline](#automation-test-plan--physical-server-build--iso-pipeline)
+  - [Table of Contents](#table-of-contents)
+  - [How to execute (runner reference):](#how-to-execute-runner-reference)
+    - [Column legend:](#column-legend)
+  - [1. ISO Build, Patching, Deployment \& Monitoring](#1-iso-build-patching-deployment--monitoring)
+  - [2. OneView \& iLO Connectivity / Targeting](#2-oneview--ilo-connectivity--targeting)
+  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
+  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
+  - [5. Orchestration, Routing \& Utility](#5-orchestration-routing--utility)
+  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
+  - [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
+    - [Run log](#run-log)
+  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
+## How to execute (runner reference):
 
 | Command | What it runs |
 |---------|--------------|
@@ -26,7 +29,9 @@
 | `make automation-mode-tests` | ISO build / OneView / iLO Redfish / orchestrator flows |
 | `make maint-mode-tests` | High-priority `Set-MaintenanceMode` suite |
 
-**Column legend:**
+<a name="column-legend-"></a>
+### Column legend:  
+
 - **Expected Pass Date** — target sign-off date agreed with the delivery lead (fill in per the project schedule).
 - **Actual Pass Date** — date/time the test last passed in the target environment. Leave blank until executed.
 - **Status** — `Planned` / `In Progress` / `Passed` / `Failed` / `Blocked`.
@@ -115,16 +120,16 @@
 
 Record each execution run here so the lead can trace sign-off to a build/CI job.
 
-| Run # | Date/Time | Command / Suite | Environment | Result | CI Job / Log Ref | Signed off by |
+| Run # | Date/Time | Command / Suite | Environment | Result | CI Job / Log Ref | Reason for full testing rerun |
 |-------|-----------|-----------------|-------------|--------|------------------|---------------|
-| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | GitLab CI | Passed (68/68) | see run log below | <delivery lead> |
+| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | GitLab CI | Passed (68/68) | see run log below | Initial test run |
 
 > **Scenario vs. atomic-test count:** The 38 `AT-*` rows above are *logical test scenarios* (one per command/feature area). Each scenario expands into multiple Pester `It` blocks, giving **68 atomic tests** in total. Both numbers reconcile: 38 scenarios = 68 passing atomic tests, 0 failures.
 
 <a name="run-log"></a>
 ### Run log
 
-Full test run output (from `make test` / `make automation-mode-tests`):
+Latest Full test run output (from `make test` / `make automation-mode-tests`):
 
 ```text
 ================================================================================

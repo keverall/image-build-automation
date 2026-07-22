@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-InstallMonitor.ps1
-generated: 2026-07-22 15:12 UTC
+generated: 2026-07-22 22:20 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

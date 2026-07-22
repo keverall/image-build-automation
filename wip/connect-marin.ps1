@@ -1,5 +1,5 @@
 # OneView information
-
+$IP = "va-oneviewt-01"
 # Connection to the Synergy Composer
 #$credentials = New-Object System.Management.Automation.PSCredential ($username, $secpasswd)
 #Connect-OVMgmt -Hostname $IP -Credential $credentials | Out-Null
