@@ -1,6 +1,5 @@
 # PowerShell Module - CI Run Requirements
 
-<a id="top"></a>
 ## Table of Contents
 
 - [CyberArk Credential Bootstrap](#cyberark-credential-bootstrap)
@@ -22,6 +21,9 @@
   - [`Start-InstallMonitor` - iLO Redfish polling ✅](#start-installmonitor---ilo-redfish-polling--1)
 - [Open Items](#open-items)
 - [See Also](#see-also)
+
+
+<a id="top"></a>
 What is required to run the `src/powershell/Automation` module standalone or inside a CI pipeline stage. Does **not** duplicate Pester testing guidance (see [`testing.md`](testing.md#top)).
 
 

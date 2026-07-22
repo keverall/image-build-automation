@@ -101,16 +101,14 @@ function Get-OneViewServerList {
     $sessionToken = $null
 
     if (-not $OneViewHost) {
-        if ($global:ConnectedSessions) {
-            $activeSession = $global:ConnectedSessions | Where-Object { $_.Connected -eq $true } | Select-Object -First 1
-            if ($activeSession) {
-                $OneViewHost = $activeSession.Name
-                $sessionToken = $activeSession.SessionID
-            }
+        $activeSession = Get-OneViewActiveSession
+        if ($activeSession) {
+            $OneViewHost = $activeSession.Name
+            $sessionToken = $activeSession.SessionID
         }
 
         if (-not $OneViewHost) {
-            return @{ Success = $false; Count = 0; Servers = @(); Error = "No active OneView session. Use Connect-OVMgmt to connect, or supply -OneViewHost." }
+            return @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
         }
     }
 

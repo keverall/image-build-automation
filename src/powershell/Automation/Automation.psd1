@@ -110,6 +110,8 @@
         'Test-ClusterId'
         'Test-ServerConnectivity'
         'Test-ServerList'
+        # ── OneView session management ──────────────────────────────────────────
+        'Disconnect-OneView'
         # ── Config / credential helpers ─────────────────────────────────────────
         'Import-JsonConfig'
         'Import-YamlConfig'

@@ -1,6 +1,5 @@
 # Automation Test Plan — Physical Server Build & ISO Pipeline
 
-<a id="top"></a>
 ## Table of Contents
 
 - [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-and-monitoring)
@@ -15,6 +14,7 @@
 - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 
+<a id="top"></a>
 **Purpose:** Tracking document for the automation testing *planned and executed* against the
 `Automation` PowerShell module. It gives the delivery lead a single view of what must be tested,
 what is already covered by automated tests, and when each test is expected vs. actually signed off.
