@@ -51,9 +51,9 @@ function Initialize-Logging {
         if ($levelStr -eq 'VERBOSE') { $levelStr = 'DEBUG' }
         
         $realLogFile = "${baseName}_${timestamp}_${levelStr}${ext}"
-        $script:__AutomationLogPath = Join-Path $dir $realLogFile
+        $global:__AutomationLogPath = Join-Path $dir $realLogFile
     }
-    $script:__AutomationLogLevel = $Level
+    $global:__AutomationLogLevel = $Level
 }
 
 function Get-Logger {
