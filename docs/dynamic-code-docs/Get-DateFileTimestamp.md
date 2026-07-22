@@ -1,11 +1,12 @@
 ---
 source:  ./src/powershell/Automation/Private/Base.ps1
-generated: 2026-07-22 10:18 UTC
+generated: 2026-07-22 12:04 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-DateFileTimestamp
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)

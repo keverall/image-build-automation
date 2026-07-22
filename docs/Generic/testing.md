@@ -1,5 +1,6 @@
 # PowerShell Module Testing Guide (Pester)
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -31,9 +32,6 @@
   - [Maintenance Mode Testing Examples](#maintenance-mode-testing-examples)
   - [Per-Object Status Reporting](#per-object-status-reporting)
   - [Safety Warnings](#safety-warnings)
-
-
-<a id="top"></a>
 Complete guide to running and maintaining the Pester test suite for the `src/powershell/Automation` module.
 
 ---

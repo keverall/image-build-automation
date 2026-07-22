@@ -1,5 +1,6 @@
 # Audit Process Documentation
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -36,9 +37,6 @@
   - [monitor_*.json](#monitor_json)
   - [maintenance_<action>_<cluster>_<timestamp>.json](#maintenance_action_cluster_timestampjson)
 - [Change History](#change-history)
-
-
-<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 
