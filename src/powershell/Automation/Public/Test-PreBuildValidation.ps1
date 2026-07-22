@@ -169,7 +169,7 @@ function Test-PreBuildValidation {
             success   = $overallSuccess
             checks    = $checks
         }
-        Save-Json -Data $entry -Path (Join-Path $auditDir "prebuild_$($ServerIdentifier)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
+        Save-Json -Data $entry -Path (Join-Path $auditDir "prebuild_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json")
         _Set 'audit_recorded' $true "prebuild_$ServerIdentifier logged"
     } catch { _Set 'audit_recorded' $false $_.Exception.Message }
 

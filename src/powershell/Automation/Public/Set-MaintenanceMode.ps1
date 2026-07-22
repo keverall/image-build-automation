@@ -944,7 +944,7 @@ function Set-MaintenanceMode {
             }
             success             = $true
         }
-        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${validateAuditId}_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json")
+        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${validateAuditId}_$(Get-UtcFileTimestamp).json")
 
         Write-Host $message
         Write-Host "Servers: $($servers -join ', ')"
@@ -1271,7 +1271,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             $audit.success = $false
             $audit.message = $msg
             $audit.timestamp_end = Get-UtcTimestamp
-            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$(Get-UtcFileTimestamp).json"
             _Save-AuditRecord $audit $auditFile
             return @{
                 Success   = $false
@@ -1525,7 +1525,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
             $audit.success = $false
             $audit.message = $msg
             $audit.timestamp_end = Get-UtcTimestamp
-            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$(Get-UtcFileTimestamp).json"
             _Save-AuditRecord $audit $auditFile
             return @{
                 Success   = $false
@@ -1650,7 +1650,7 @@ if (-not $resolvedUsername -or -not $resolvedPassword) {
     } else {
         $audit.timestamp_end = Get-UtcTimestamp
     }
-    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()).json"
+    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$(Get-UtcFileTimestamp).json"
 
     # Build detailed completion message
     $serverCount = ($servers | Measure-Object).Count
@@ -1840,7 +1840,7 @@ if (-not (Test-Path $Script:MaintLogDir)) {
 }
 
 # ---- Logging ----
-Initialize-Logging -LogFile 'maintenance.log'
+Initialize-Logging -LogFile 'maintenance.log' -CommandName 'Set-MaintenanceMode'
 
 # ---- Connection validation helpers ----
 function Test-ScomConnection {

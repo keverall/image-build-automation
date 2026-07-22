@@ -83,7 +83,7 @@ function Invoke-WindowsSecurityUpdate {
             $Script:WinSecLogDir = Join-Path $projectRoot 'generated/logs/production'
         }
     }
-    Initialize-Logging -LogFile 'windows_patcher.log'
+    Initialize-Logging -LogFile 'windows_patcher.log' -CommandName 'Update-WindowsSecurity'
     $Script:PatchesConfigBuildDir = $OutputDir    # used by WindowsPatcher.Build
     try {
         $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)

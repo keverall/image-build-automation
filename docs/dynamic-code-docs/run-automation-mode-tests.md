@@ -18,7 +18,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Executes focused Pester tests for the automation module's runbook functions: - New-IsoBuild, Publish-BootIso - Get-OneViewServerTarget - Invoke-IloRedfish, Invoke-IsoDeploy - Start-PhysicalServerBuild - Test-PreBuildValidation, Test-PostBuildValidation - Start-InstallMonitor - Update-Firmware, Update-WindowsSecurity Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/{environment}/automation_mode_tests_*.log Exits with code 1 if any tests fail.
+Executes focused Pester tests for the automation module's runbook functions: - New-IsoBuild, Publish-BootIso - Get-OneViewServerTarget - Invoke-IloRedfish, Invoke-IsoDeploy - Start-PhysicalServerBuild - Test-PreBuildValidation, Test-PostBuildValidation - Start-InstallMonitor - Update-Firmware, Update-WindowsSecurity Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/automation/automated-mode-test_*.log Exits with code 1 if any tests fail.
 
 <a name="examples"></a>
 ## Examples
@@ -46,7 +46,7 @@ pwsh -File scripts/run-automation-mode-tests.ps1
     - Update-Firmware, Update-WindowsSecurity
 
     Displays detailed test summary with pass/fail/skip counts and duration.
-    Logs detailed output to generated/logs/{environment}/automation_mode_tests_*.log
+    Logs detailed output to generated/logs/automation/automated-mode-test_*.log
 
     Exits with code 1 if any tests fail.
 

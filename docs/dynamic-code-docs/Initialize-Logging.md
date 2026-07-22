@@ -19,7 +19,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Configures logging with specified log file path and level. Creates timestamped log files in generated/logs/testing or generated/logs/production directories.
+Configures logging with specified log file path and level. By default creates timestamped log files in generated/logs/testing or generated/logs/production. When -CommandName is supplied the log is written to generated/logs/commands/<CommandName>/ with an ISO-8601 UTC timestamp.
 
 <a name="parameters"></a>
 ## Parameters
@@ -45,8 +45,11 @@ Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
         Initialize centralized logging system.
 
     .DESCRIPTION
-        Configures logging with specified log file path and level.
-        Creates timestamped log files in generated/logs/testing or generated/logs/production directories.
+        Configures logging with specified log file path and level. By default
+        creates timestamped log files in generated/logs/testing or
+        generated/logs/production. When -CommandName is supplied the log is
+        written to generated/logs/commands/<CommandName>/ with an ISO-8601 UTC
+        timestamp.
 
     .PARAMETER LogFile
         Base name for the log file (without timestamp)

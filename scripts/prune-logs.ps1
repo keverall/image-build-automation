@@ -72,16 +72,31 @@ foreach ($dir in $searchDirs) {
     $allLogs += Get-ChildItem -Path $dir -Recurse -File -Include *.log, *.json, *.txt -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne '.gitkeep' -and $_.Name -notmatch 'coverage-report' }
 }
 
-$allLogs = $allLogs | Select-Object -Unique FullName
+# De-duplicate by full path WITHOUT flattening the FileInfo objects: using
+# Select-Object -Unique FullName would discard DirectoryName/Name, which the
+# grouping below relies on. Sort-Object -Unique keeps the rich objects intact.
+$allLogs = $allLogs | Sort-Object FullName -Unique
 
 function Get-LogType ($filename) {
+    # Reduce a log filename to its stable "prefix" (the command/test that owns
+    # it) so every log belonging to the same command/test groups together and is
+    # capped at MaxLogsToKeep. Log filenames look like:
+    #   <Prefix>_<ISO-timestamp>_<LEVEL>.log      e.g. monitoring_2026-07-22T19-54-50Z_INFO
+    #   <Prefix>_<ISO-timestamp>.log              e.g. automated-mode-test_2026-07-22T21-05-45Z
+    #   <Prefix>_<epoch>.log / <Prefix>_<yyyyMMdd_HHmmss>.log
+    # The level suffix and timestamp(s) must be removed wherever they appear, not
+    # only when anchored at the end, otherwise level-suffixed per-command logs
+    # each become a unique "prefix" and are never pruned.
     $base = [System.IO.Path]::GetFileNameWithoutExtension($filename)
-    $base = $base -replace '_\d{10,}$', '' # UNIX epoch timestamp
-    $base = $base -replace '_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z$', '' # ISO timestamp
-    $base = $base -replace '_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$', ''
-    $base = $base -replace '-\d{8}-\d{6}$', ''
-    $base = $base -replace '_\d{8}_\d{6}$', '' # e.g. deploy_log_20260526_204021
-    $base = $base -replace '_\d{4}-\d{2}-\d{2}$', ''
+    $base = $base -replace '_(INFO|DEBUG|WARNING|ERROR)$', ''   # trailing level
+    $base = $base -replace '_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z', '' # ISO timestamp
+    $base = $base -replace '_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', ''    # alt ISO
+    $base = $base -replace '-\d{8}-\d{6}', ''                          # yyyymmdd-HHmmss
+    $base = $base -replace '_\d{8}_\d{6}', ''                           # yyyymmdd_HHmmss
+    $base = $base -replace '_\d{4}-\d{2}-\d{2}', ''                     # bare date
+    $base = $base -replace '_\d{10,}', ''                               # UNIX epoch
+    # Collapse separators left dangling by the removals above.
+    $base = $base -replace '_+', '_' -replace '_$', '' -replace '^_', ''
     return $base
 }
 

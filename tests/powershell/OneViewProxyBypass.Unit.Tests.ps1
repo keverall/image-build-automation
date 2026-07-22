@@ -46,15 +46,22 @@ Describe 'Set-OneViewProxyBypass - WebRequest proxy bypass list' {
     It 'Preserves existing bypass entries while adding the host' {
         InModuleScope Automation { Set-OneViewProxyBypass -ApplianceHost 'va-oneviewt-01' }
         $list = [System.Net.WebRequest]::DefaultWebProxy.BypassList -join ','
-        $list | Should -Match '192\.168\.'   # pre-existing entry retained
+        $list | Should -Match '192\\?\.168'   # pre-existing entry retained (literal backslash in the regex pattern)
         $list | Should -Match 'va-oneviewt-01'
     }
 
     It 'Resolves and adds the FQDN and IP addresses (localhost resolves)' {
         InModuleScope Automation { Set-OneViewProxyBypass -ApplianceHost 'localhost' }
-        $list = [System.Net.WebRequest]::DefaultWebProxy.BypassList -join ','
-        $list | Should -Match 'localhost'                       # raw host always added
-        $list | Should -Match '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'  # resolved IPv4 added
+        $list = [System.Net.WebRequest]::DefaultWebProxy.BypassList
+        $list -contains 'localhost' | Should -Be $true          # raw host always added
+        # The function adds every address localhost resolves to (IPv4 and/or IPv6);
+        # assert each actually-resolved address is present rather than assuming a
+        # specific address family, so the test passes on IPv6-only hosts too.
+        $addrs = ([System.Net.Dns]::GetHostEntry('localhost')).AddressList
+        $addrs.Count | Should -BeGreaterThan 0
+        foreach ($addr in $addrs) {
+            $list -contains $addr.IPAddressToString | Should -Be $true
+        }
     }
 
     It 'Is idempotent - re-applying does not duplicate the host' {
