@@ -568,6 +568,11 @@ function Test-ServerConnectivity {
         $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
         $ovAppliance = $resolvedHost
 
+        # Internal appliances must be reached directly, not via the corporate
+        # web proxy (which returns HTTP 504 for intranet hosts). Bypass it.
+        Set-OneViewProxyBypass -ApplianceHost $ovAppliance
+        $logger.Info("Applied web-proxy bypass for appliance '$ovAppliance'")
+
         try {
             Import-Module $moduleName -ErrorAction Stop
             $authResult.ModuleLoaded = $true
