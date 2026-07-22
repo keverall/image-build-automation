@@ -1,5 +1,6 @@
 # HPE ProLiant Windows Server ISO Automation (Root Readme)
 
+<a id="top"></a>
 ## Table of Contents
 
 - [🚀 Quick Start - Setup & Installation](#-quick-start---setup-and-installation)
@@ -15,9 +16,6 @@
 - [Support](#support)
 - [License](#license)
 - [HPe Doc](#hpe-doc)
-
-
-<a id="top"></a>
 Automated build pipelines for creating customized Windows Server installation ISOs and for orchestrating physical HPE ProLiant server deployments using Microsoft Configuration Manager bootable media, HPE OneView, and HPE iLO Redfish. Integrates firmware/driver updates, security patching, vulnerability scanning, complete audit trails, with OpsRamp monitoring and reporting.
 
 ---

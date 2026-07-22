@@ -1,11 +1,12 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-07-22 10:18 UTC
+generated: 2026-07-22 12:04 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-ServerConnectivity
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -103,7 +104,7 @@ Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe
           ManagementHost   [string]
           Environment      [string]
           NetworkPing      [hashtable] - DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
-          AuthConnect      [hashtable] - Connected, Disconnected, ModuleLoaded, Error
+          AuthConnect      [hashtable] - Connected, ModuleLoaded, Error
           Timestamp        [string]   - UTC ISO 8601
 
     .NOTES

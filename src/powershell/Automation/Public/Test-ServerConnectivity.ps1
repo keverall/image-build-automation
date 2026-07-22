@@ -240,6 +240,7 @@ function Test-ServerConnectivity {
 
     $ErrorActionPreference = 'Continue'
     $Mode = 'oneview'
+    $logger = Get-Logger 'Connectivity'
 
     # ── Resolve config directory ──────────────────────────────────────────────
     $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
@@ -506,6 +507,7 @@ function Test-ServerConnectivity {
     } catch {
         $pingResult.Error = "DNS resolution failed: $($_.Exception.Message)"
     }
+    $logger.Info("DNS resolution for '$resolvedHost': $(if ($pingResult.DnsResolved) { "Resolved -> $($pingResult.IpAddress)" } else { "FAILED - $($pingResult.Error)" })")
 
     # TCP port probe
     if ($pingResult.DnsResolved) {
@@ -535,6 +537,8 @@ function Test-ServerConnectivity {
             $pingResult.Error = "TCP connection failed - no open port found ($portList) on '$resolvedHost' within ${PingTimeoutMs}ms"
         }
     }
+
+    $logger.Info("TCP probe for '$resolvedHost': $(if ($pingResult.TcpPortOpen) { "Open (port $($pingResult.Port), $($pingResult.LatencyMs)ms)" } else { "FAILED - $($pingResult.Error)" })")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 2: Authentication Connect (OneView)
@@ -572,8 +576,10 @@ function Test-ServerConnectivity {
             $cred = New-Object System.Management.Automation.PSCredential($resolvedUser, $secPass)
             Connect-OVMgmt -Hostname $ovAppliance -Credential $cred -ErrorAction Stop
             $authResult.Connected = $true
+            $logger.Info("Authentication to '$ovAppliance' succeeded")
         } catch {
             $authResult.Error = "Auth error: $($_.Exception.Message)"
+            $logger.Error("Authentication to '$ovAppliance' failed: $($_.Exception.Message)")
         }
     }
 
@@ -593,6 +599,9 @@ function Test-ServerConnectivity {
     if (-not $Json) {
         _Format-ConnectivityResult -Result $result
     }
+
+    $logger.Info("Connectivity test for '$resolvedHost' completed: Available=$available " +
+        "(DNS=$($pingResult.DnsResolved), TCP=$($pingResult.TcpPortOpen), Auth=$($authResult.Connected))")
 
     return $result
 }
@@ -673,6 +682,7 @@ function _Format-ConnectivityResult {
 
 # ── Script-mode entry point ───────────────────────────────────────────────────
 if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
+    Initialize-Logging -LogFile 'connectivity.log'
     $connParams = @{ PingTimeoutMs = $PingTimeoutMs }
     if ($PSBoundParameters.ContainsKey('Environment'))    { $connParams['Environment'] = $Environment }
     if ($PSBoundParameters.ContainsKey('ManagementHost')) { $connParams['ManagementHost'] = $ManagementHost }
