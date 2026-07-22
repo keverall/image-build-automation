@@ -81,14 +81,18 @@ function Get-Logger {
         param([string]$msg)
         $ts  = Get-LogTimestamp
         $line = "$ts - $($this.Name) - WARNING - $msg"
-        Write-Warning $line
+        # -WarningAction Continue keeps log writes non-terminating regardless of
+        # the caller's $WarningPreference (e.g. when a command runs under -Stop).
+        Write-Warning -Message $line -WarningAction Continue
         if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Error' -Value {
         param([string]$msg)
         $ts  = Get-LogTimestamp
         $line = "$ts - $($this.Name) - ERROR - $msg"
-        Write-Error $line
+        # -ErrorAction Continue keeps log writes non-terminating regardless of
+        # the caller's $ErrorActionPreference (e.g. when a command runs under -Stop).
+        Write-Error -Message $line -ErrorAction Continue
         if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Debug' -Value {
