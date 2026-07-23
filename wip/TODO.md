@@ -186,3 +186,146 @@ WARNING: Parameter 'UserName' is obsolete.
 Password: *************
 Connect-OVMgmt: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '407'."
    image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01     
+
+
+
+
+
+
+
+
+
+
+ ping va-oneviewt-01                                                                           0  09:42:13 
+Pinging va-oneviewt-01.ad.aib.pri [10.239.124.79] with 32 bytes of data:
+Reply from 10.239.124.79: bytes=32 time=2ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+Reply from 10.239.124.79: bytes=32 time=1ms TTL=61
+
+Ping statistics for 10.239.124.79:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 1ms, Maximum = 2ms, Average = 1ms
+   image-build-automation  Get-Command -Module Automation                                                      0  3s 184ms  09:42:45 
+CommandType     Name                                               Version    Source     
+-----------     ----                                               -------    ------     
+Function        Convert-ToUtcIso8601                               1.0.0      Automation 
+Function        Disconnect-OneView                                 1.0.0      Automation 
+Function        Ensure-DirectoryExists                             1.0.0      Automation 
+Function        Get-EnvCredential                                  1.0.0      Automation 
+Function        Get-IloCredentials                                 1.0.0      Automation 
+Function        Get-LocalTimestamp                                 1.0.0      Automation
+Function        Get-Logger                                         1.0.0      Automation 
+Function        Get-OneViewConnectionStatus                        1.0.0      Automation
+Function        Get-OneViewServerList                              1.0.0      Automation
+Function        Get-OneViewServerTarget                            1.0.0      Automation
+Function        Get-OpenViewCredentials                            1.0.0      Automation
+Function        Get-ProjectRoot                                    1.0.0      Automation
+Function        Get-RouteMap                                       1.0.0      Automation
+Function        Get-ScomCredentials                                1.0.0      Automation
+Function        Get-SmtpCredentials                                1.0.0      Automation
+Function        Get-UtcApiTimestamp                                1.0.0      Automation
+Function        Get-UtcFileTimestamp                               1.0.0      Automation
+Function        Get-UtcTimestamp                                   1.0.0      Automation
+Function        Import-JsonConfig                                  1.0.0      Automation
+Function        Import-YamlConfig                                  1.0.0      Automation
+Function        Initialize-Logging                                 1.0.0      Automation
+Function        Invoke-IloRedfish                                  1.0.0      Automation
+Function        Invoke-IsoDeploy                                   1.0.0      Automation
+Function        Invoke-NativeCommand                               1.0.0      Automation 
+Function        Invoke-NativeCommandWithRetry                      1.0.0      Automation
+Function        Invoke-OpsRamp                                     1.0.0      Automation
+Function        Invoke-OpsRampClient                               1.0.0      Automation
+Function        Invoke-PowerShellScript                            1.0.0      Automation
+Function        Invoke-PowerShellWinRM                             1.0.0      Automation
+Function        Invoke-RoutedRequest                               1.0.0      Automation
+Function        Invoke-WindowsSecurityUpdate                       1.0.0      Automation
+Function        Load-ClusterCatalogue                              1.0.0      Automation
+Function        Load-Json                                          1.0.0      Automation
+Function        Load-ServerList                                    1.0.0      Automation
+Function        New-AuditLogger                                    1.0.0      Automation
+Function        New-AutomationBase                                 1.0.0      Automation 
+Function        New-CIPipelineCtrl                                 1.0.0      Automation
+Function        New-CommandResult                                  1.0.0      Automation
+Function        New-GitLabCtrl                                     1.0.0      Automation
+Function        New-IRequestCtrl                                   1.0.0      Automation
+Function        New-IsoBuild                                       1.0.0      Automation
+Function        New-OneViewMaintenanceScript                       1.0.0      Automation
+Function        New-SchedulerCtrl                                  1.0.0      Automation
+Function        New-ScomConnection                                 1.0.0      Automation 
+Function        New-ScomMaintenanceScript                          1.0.0      Automation
+Function        New-ServerInfo                                     1.0.0      Automation
+Function        New-Uuid                                           1.0.0      Automation
+Function        Publish-BootIso                                    1.0.0      Automation
+Function        Resolve-OneViewTarget                              1.0.0      Automation 
+Function        Run-CIPipeline                                     1.0.0      Automation
+Function        Run-GitLab                                         1.0.0      Automation
+Function        Run-IRequest                                       1.0.0      Automation
+Function        Run-Scheduler                                      1.0.0      Automation
+Function        Save-Json                                          1.0.0      Automation
+Function        Save-JsonResult                                    1.0.0      Automation
+Function        Set-MaintenanceMode                                1.0.0      Automation
+Function        Start-AutomationOrchestrator                       1.0.0      Automation
+Function        Start-InstallMonitor                               1.0.0      Automation
+Function        Start-PhysicalServerBuild                          1.0.0      Automation
+Function        Test-BuildParams                                   1.0.0      Automation
+Function        Test-ClusterDefinition                             1.0.0      Automation
+Function        Test-ClusterId                                     1.0.0      Automation
+Function        Test-PathEx                                        1.0.0      Automation 
+Function        Test-PostBuildValidation                           1.0.0      Automation
+Function        Test-PreBuildValidation                            1.0.0      Automation
+Function        Test-ScomMaintenanceConnectivity                   1.0.0      Automation
+Function        Test-ServerConnectivity                            1.0.0      Automation
+Function        Test-ServerList                                    1.0.0      Automation
+Function        Update-Firmware                                    1.0.0      Automation
+
+   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01                                        0  09:42:57 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-23 08:43:31 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-23 08:43:31 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 28ms) 
+2026-07-23 08:43:31 - Connectivity - INFO - Connecting directly to appliance 'va-oneviewt-01' 
+
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-07-23T08:43:54.0959486Z 
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 28ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded 
+    Connected: No
+    Session:   N/A
+    Error:     Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '504'."
+ 
+==============================================
+ 
+2026-07-23 08:43:54 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)
+
+Name                           Value
+----                           -----
+Mode                           oneview 
+Available                      False
+Timestamp                      2026-07-23T08:43:54.0959486Z
+Environment                    Prod
+NetworkPing                    {[LatencyMs, 28], [TcpPortOpen, True], [Error, ], [Port, 443]…}
+AuthConnect                    {[Error, Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with s… 
+ManagementHost                 va-oneviewt-01
+ 
+   image-build-automation  Connect-OVMgmt                                                                     0  49s 959ms  09:43:54  
+cmdlet Connect-OVMgmt at command pipeline position 1
+Supply values for the following parameters:
+Hostname: va-oneviewt-01
+UserName: adm_98253
+WARNING: Parameter 'UserName' is obsolete. 
+Password: ************************
+Connect-OVMgmt: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '504'."
