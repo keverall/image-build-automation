@@ -83,20 +83,19 @@ function Get-OneViewServerTarget {
     }
 
     if (-not $OneViewHost) {
-        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-        if (-not $isAutomated) {
-            Write-Host "Enter OneView appliance hostname/IP:" -ForegroundColor Yellow
-            $OneViewHost = Read-Host
+        $activeSession = Get-OneViewActiveSession
+        if ($activeSession) {
+            $OneViewHost = $activeSession.Name
+        } else {
+            $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+            if (-not $isAutomated) {
+                Write-Host "Enter OneView appliance hostname/IP:" -ForegroundColor Yellow
+                $OneViewHost = Read-Host
+            }
         }
         if (-not $OneViewHost) {
             return @{ Success = $false; Error = "OneViewHost parameter is required" }
         }
-    }
-
-    if (-not $OneViewUser -or -not $OneViewPassword) {
-        $cred = Get-OneViewCredentials
-        if (-not $OneViewUser)     { $OneViewUser     = $cred[0] }
-        if (-not $OneViewPassword) { $OneViewPassword = $cred[1] }
     }
 
     $baseUrl = "https://$OneViewHost`:$Port"
@@ -115,6 +114,29 @@ function Get-OneViewServerTarget {
             }
         }
 
+        $sessionToken = $null
+        $activeSession = Get-OneViewActiveSession
+        if ($activeSession -and $activeSession.Name -eq $OneViewHost) {
+            $sessionToken = $activeSession.SessionID
+        }
+
+        if (-not $sessionToken) {
+            if (-not $OneViewUser -or -not $OneViewPassword) {
+                $cred = Get-OneViewCredentials
+                if (-not $OneViewUser)     { $OneViewUser     = $cred[0] }
+                if (-not $OneViewPassword) { $OneViewPassword = $cred[1] }
+            }
+            $credObj = [System.Management.Automation.PSCredential]::new(
+                $OneViewUser,
+                (ConvertTo-SecureString $OneViewPassword -AsPlainText -Force))
+            $connResult = Connect-OneViewSession -Appliance $OneViewHost -Credential $credObj
+            if ($connResult.Connected) {
+                $sessionToken = $connResult.SessionId
+            } else {
+                return @{ Success = $false; Error = "OneView connection failed: $($connResult.Error)" }
+            }
+        }
+
         foreach ($t in $typesToTry) {
             $filter = switch ($t) {
                 'Name'         { "name='$ServerIdentifier'" }
@@ -125,9 +147,7 @@ function Get-OneViewServerTarget {
             }
             $url = "$apiBase/server-hardware?filter=`"$filter`""
             $resp = Invoke-RestMethod -Uri $url -Method Get `
-                -Credential (New-Object System.Management.Automation.PSCredential(
-                    $OneViewUser,
-                    (ConvertTo-SecureString $OneViewPassword -AsPlainText -Force))) `
+                -Headers @{ auth = $sessionToken } `
                 -SkipCertificateCheck:$SkipCertificateCheck `
                 -TimeoutSec $TimeoutSec -ErrorAction Stop
             if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {

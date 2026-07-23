@@ -1889,19 +1889,11 @@ function Test-OneViewConnection {
     )
     
     try {
-        $escapedPass = $Password -replace "'", "''"
-        $escapedUser = $Username -replace "'", "''"
-        $escapedAppliance = $Appliance -replace "'", "''"
-        $scriptContent = @"
-Import-Module $ModuleName -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
-Connect-OVMgmt -Hostname '$escapedAppliance' -Credential `$cred -ErrorAction Stop
-Write-Output "CONNECTED"
-Disconnect-OVMgmt -ErrorAction SilentlyContinue
-"@
-        $result = Invoke-PowerShellScript -Script $scriptContent
-        return $result.Success -and ($result.Output -match 'CONNECTED')
+        $cred = [System.Management.Automation.PSCredential]::new(
+            $Username,
+            (ConvertTo-SecureString $Password -AsPlainText -Force))
+        $connResult = Connect-OneViewSession -Appliance $Appliance -Credential $cred -ModuleName $ModuleName
+        return $connResult.Connected
     } catch {
         Write-Warning "OneView connection test failed: $($_.Exception.Message)"
         return $false
@@ -2892,9 +2884,12 @@ class OneViewClient {
         }
         $scriptContent = @"
 Import-Module $ovModule -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
-Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+if (-not `$existingSession) {
+    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+}
 `$objects = @()
 `$success = 0
 `$failed = 0
@@ -3016,9 +3011,12 @@ if ('$TargetType' -eq 'ServerHardware') {
         }
         $scriptContent = @"
 Import-Module $ovModule -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
-Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+if (-not `$existingSession) {
+    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+}
 `$objects = @()
 `$success = 0
 `$failed = 0
@@ -3140,9 +3138,12 @@ if ('$TargetType' -eq 'ServerHardware') {
         $ovAppliance = $this.Appliance
         $scriptContent = @"
 Import-Module $ovModule -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
-Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+if (-not `$existingSession) {
+    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+}
 `$server = Get-OVServer -Name '$TargetId' -ErrorAction SilentlyContinue
 if (`$server) {
     `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; SerialNumber = `$server.serialNumber; MaintenanceModeEnabled = [bool]`$server.MaintenanceModeEnabled; Model = `$server.model; State = `$server.state; Message = 'Found server' }
@@ -3203,9 +3204,12 @@ if (`$scope) {
         $ovAppliance = $this.Appliance
         $scriptContent = @"
 Import-Module $ovModule -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
-Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+if (-not `$existingSession) {
+    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+}
 `$objects = @()
 `$inMaintenance = 0
 `$notInMaintenance = 0
@@ -3300,9 +3304,12 @@ if ('$TargetType' -eq 'ServerHardware') {
         $ovAppliance = $this.Appliance
         $scriptContent = @"
 Import-Module $ovModule -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
-Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+if (-not `$existingSession) {
+    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+}
 
 `$server = `$null
 
