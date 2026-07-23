@@ -123,6 +123,8 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 | Run # | Date/Time | Command / Suite | Environment | Result | CI Job / Log Ref | Reason for full testing rerun |
 |-------|-----------|-----------------|-------------|--------|------------------|---------------|
 | 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | GitLab CI | Passed (68/68) | see run log below | Initial test run |
+| 2 | 23/07/2026 09:06:45 | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal | Passed (93/93) | see run log below | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. |
+
 
 > **Scenario vs. atomic-test count:** The 38 `AT-*` rows above are *logical test scenarios* (one per command/feature area). Each scenario expands into multiple Pester `It` blocks, giving **68 atomic tests** in total. Both numbers reconcile: 38 scenarios = 68 passing atomic tests, 0 failures.
 
