@@ -8,20 +8,6 @@
 # file owns the orchestration loop only.
 #
 
-param(
-    [Parameter(Mandatory = $false)][ValidateSet('redfish')][string] $Method = 'redfish',
-    [Parameter(Mandatory = $false)][string] $Server = $null,
-    [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
-    [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
-    [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
-    [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
-    [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
-    [Parameter(Mandatory = $false)][string] $ExternalIsoPath = $null,
-    [Parameter(Mandatory = $false)][string] $RepoBaseUrl = $null,
-    [Parameter(Mandatory = $false)][string] $RepoLocalPath = $null,
-    [Parameter(Mandatory = $false)][switch] $DryRun,
-    [Parameter(Mandatory = $false)][switch] $SkipConfirmation
-)
 
 function Invoke-IsoDeploy {
     <#
@@ -545,57 +531,4 @@ function Resolve-ExternalIsoPath {
     # Unknown format
     throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTTPS URL, NFS path, UNC/SMB path (\\server\share\file.iso), or local path with -RepoLocalPath/-RepoBaseUrl."
 }
-
-# ---- Main (script mode only) ----
-if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
-    try {
-        if ($SerialNumber) {
-            $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-            if (-not $resolved.Success) { Write-Error $resolved.Error; exit 1 }
-            $Server = $resolved.Identifier
-            Write-Output "Resolved serial '$SerialNumber' -> $Server"
-        }
-
-        # Handle External ISO Path in script mode
-        if ($ExternalIsoPath) {
-            Write-Host "`n========================================" -ForegroundColor Cyan
-            Write-Host "  External ISO Deployment Mode" -ForegroundColor Cyan
-            Write-Host "========================================" -ForegroundColor Cyan
-            Write-Host "ISO Source: $ExternalIsoPath" -ForegroundColor Yellow
-
-            $resolvedIsoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
-            if (-not $resolvedIsoUrl) {
-                Write-Error "Failed to resolve external ISO path to accessible URL"
-                exit 1
-            }
-
-            $IsoUrl = $resolvedIsoUrl
-            Write-Host "ISO URL for iLO: $IsoUrl" -ForegroundColor Green
-            Write-Host "========================================`n" -ForegroundColor Cyan
-        }
-
-        $serverInfo = $null
-        if ($Server -and $DryRun) {
-            $tempDeployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $null, $true)
-            $serverInfo = ($tempDeployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-            if (-not $serverInfo) { Write-Error "Server not found: $Server"; exit 1 }
-        } elseif ($Server) {
-            $serverInfo = [ServerInfo]::new($Server, '', '', 0)
-        }
-        $deployer = [ISODeployer]::new($ServerList, $IsoDir, $IsoUrl, $null, [bool]$DryRun, $serverInfo)
-        if ($Server) {
-            $ok = $deployer.Deploy($serverInfo, $Method, [bool]$DryRun)
-            exit (if ($ok) { 0 } else { 1 })
-        }
-        else {
-            $summary = $deployer.DeployAll($Method, [bool]$DryRun)
-            exit (if ($summary['successful'] -eq $summary['total']) { 0 } else { 1 })
-        }
-    }
-    catch {
-        Write-Error "Deployment failed: $($_.Exception.Message)"
-        exit 1
-    }
-}
-
 # vim: ts=4 sw=4 et
