@@ -221,9 +221,9 @@ function Test-ServerConnectivity {
           Timestamp        [string]   - UTC ISO 8601
 
     .NOTES
-        The OneView session established by this command persists in the current
-        PowerShell session. Use Disconnect-OneView to explicitly close the session
-        when finished.
+        The OneView connection is established inside a fresh -NoProfile child
+        process and is explicitly closed with Disconnect-OVMgmt at the end of
+        the test, so no session is left active afterwards.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -544,6 +544,7 @@ function Test-ServerConnectivity {
     # ══════════════════════════════════════════════════════════════════════════
     $authResult = @{
         Connected    = $false
+        Disconnected = $false
         ModuleLoaded = $false
         Error        = $null
     }
@@ -557,29 +558,48 @@ function Test-ServerConnectivity {
             $authResult.Error = "Skipped - credentials not supplied"
         }
     } else {
-        # Live OneView connection.
-        #
-        # NOTE: For a live run $useWinRM is always $false (set at line ~300), so the
-        # connection is established directly in the CURRENT session. This is deliberate:
-        # the OneView session must persist for subsequent commands (Get-OneViewServerList,
-        # Get-OneViewConnectionStatus, etc.) and a child process or a WinRM PSSession
-        # would tear the session down on exit - so neither can be used here.
         $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
         $ovAppliance = $resolvedHost
 
-        # Connect directly to the internal appliance, bypassing the corporate
-        # web proxy (which otherwise tunnels OneView REST traffic and fails).
-        $logger.Info("Connecting to appliance '$ovAppliance' (proxy bypass applied)")
+        $winrmServer = if ($useWinRM) {
+            ($modeCfg.Get_Item('winrm') ?? @{}).Get_Item('server') ?? $resolvedHost
+        } else { $null }
 
+        # Escape single quotes for safe interpolation into the child script
+        $escapedPass = $resolvedPass -replace "'", "''"
+        $escapedUser = $resolvedUser -replace "'", "''"
+        $escapedHost = $ovAppliance -replace "'", "''"
+
+        # Connect inside a fresh -NoProfile child process (via Invoke-PowerShellScript)
+        # and disconnect immediately afterwards. Running in a child process means the
+        # connection does not inherit the host/profile web-proxy configuration, and the
+        # explicit Disconnect-OVMgmt keeps the session clean. This is the approach that
+        # was in use before the disconnect handling was removed.
+        $scriptContent = @"
+Import-Module $moduleName -ErrorAction Stop
+Write-Output "MODULE_LOADED"
+`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
+Connect-OVMgmt -Hostname '$escapedHost' -Credential `$cred -ErrorAction Stop
+Write-Output "CONNECTED"
+Disconnect-OVMgmt -ErrorAction SilentlyContinue
+Write-Output "DISCONNECTED"
+"@
         try {
-            Import-Module $moduleName -ErrorAction Stop
-            $authResult.ModuleLoaded = $true
-
-            $secPass = ConvertTo-SecureString $resolvedPass -AsPlainText -Force
-            $cred = New-Object System.Management.Automation.PSCredential($resolvedUser, $secPass)
-            Connect-OneViewBypass -Appliance $ovAppliance -Credential $cred -ErrorAction Stop
-            $authResult.Connected = $true
-            $logger.Info("Authentication to '$ovAppliance' succeeded")
+            if ($useWinRM) {
+                $secPass = ConvertTo-SecureString $resolvedPass -AsPlainText -Force
+                $scriptResult = Invoke-PowerShellWinRM -Script $scriptContent `
+                    -Server $winrmServer -Username $resolvedUser -Password $secPass
+            } else {
+                $scriptResult = Invoke-PowerShellScript -Script $scriptContent
+            }
+            $output = $scriptResult.Output
+            if ($output -match 'MODULE_LOADED') { $authResult.ModuleLoaded = $true }
+            if ($output -match 'CONNECTED')     { $authResult.Connected = $true }
+            if ($output -match 'DISCONNECTED')  { $authResult.Disconnected = $true }
+            if (-not $scriptResult.Success -and -not $authResult.Connected) {
+                $authResult.Error = "Connection script failed: $output"
+            }
         } catch {
             $authResult.Error = "Auth error: $($_.Exception.Message)"
             $logger.Error("Authentication to '$ovAppliance' failed: $($_.Exception.Message)")
@@ -660,8 +680,10 @@ function _Format-ConnectivityResult {
     Write-Host "    Module:    $(if ($ac.ModuleLoaded) { 'Loaded' } else { 'Not loaded' })" `
         -ForegroundColor $(if ($ac.ModuleLoaded) { 'Green' } else { 'Red' })
     Write-Host "    Connected: $(if ($ac.Connected) { 'Yes' } else { 'No' })" -ForegroundColor $authColor
-    Write-Host "    Session:   $(if ($ac.Connected) { 'Active (use Disconnect-OneView to close)' } else { 'N/A' })" `
-        -ForegroundColor $(if ($ac.Connected) { 'Green' } else { 'Gray' })
+    if ($ac.Connected) {
+        Write-Host "    Clean up:  $(if ($ac.Disconnected) { 'Disconnected' } else { 'WARNING - still connected' })" `
+            -ForegroundColor $(if ($ac.Disconnected) { 'Green' } else { 'Yellow' })
+    }
     if ($ac.Error) {
         Write-Host "    Error:     $($ac.Error)" -ForegroundColor Red
     }
