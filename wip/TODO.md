@@ -329,3 +329,51 @@ UserName: adm_98253
 WARNING: Parameter 'UserName' is obsolete. 
 Password: ************************
 Connect-OVMgmt: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '504'."
+
+
+
+
+----------------
+
+
+
+Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                                        0  10:23:59 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-23 09:24:27 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-23 09:24:27 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 11ms) 
+2026-07-23 09:24:27 - Connectivity - INFO - Connecting directly to appliance 'va-oneviewt-01' 
+ 
+============================================== 
+  OneView Connectivity Test
+==============================================
+ 
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod 
+  Timestamp:  2026-07-23T09:24:49.5772997Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 11ms)
+ 
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: No
+    Session:   N/A
+    Error:     Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' failed with status code '504'."
+
+==============================================
+
+2026-07-23 09:24:49 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)
+
+Name                           Value
+----                           -----
+NetworkPing                    {[Port, 443], [TcpPortOpen, True], [IpAddress, 10.239.124.79], [DnsResolved, True]…}
+Timestamp                      2026-07-23T09:24:49.5772997Z
+Mode                           oneview
+ManagementHost                 va-oneviewt-01
+Available                      False
+AuthConnect                    {[ModuleLoaded, True], [Connected, False], [Error, Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' fai… 
+Environment                    Prod
