@@ -325,7 +325,8 @@ function Test-ServerConnectivity {
             $envConfig   = $hostsCfg.Get_Item('environments') ?? @{}
             $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
 
-            $resolvedHost = ($selectedEnv.Get_Item('oneview') ?? @{}).Get_Item('appliance')
+            $oneviewCfg  = $selectedEnv.Get_Item('oneview') ?? @{}
+            $resolvedHost = $oneviewCfg.Get_Item('appliance')
 
             if (-not $resolvedHost) {
                 $errorMsg = "OneView appliance not configured in connection_hosts.json for environment '$effectiveEnv'."
@@ -560,11 +561,10 @@ function Test-ServerConnectivity {
         }
     } else {
         $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
-        $ovAppliance = $resolvedHost
+            $ovAppliance = $resolvedHost
 
-        $winrmServer = if ($useWinRM) {
-            ($modeCfg.Get_Item('winrm') ?? @{}) .Get_Item('server') ?? $resolvedHost
-        } else { $null }
+            $winrmCfg    = $modeCfg.Get_Item('winrm') ?? @{}
+            $winrmServer = $winrmCfg.Get_Item('server') ?? $resolvedHost
 
         # Escape single quotes for safe interpolation into the child script
         $escapedPass = $resolvedPass -replace "'", "''"

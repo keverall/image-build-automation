@@ -98,3 +98,4 @@ Thumbs.db
 # === AI Workspace Configs ===
 .kilo/
 scripts/modules/OperationsManager/
+scripts/modules/
