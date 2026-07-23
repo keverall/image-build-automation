@@ -41,7 +41,7 @@ Describe 'Every automation command that should log is wired to Initialize-Loggin
 
 Describe 'Logging is functional: commands initialise and write logs' {
 
-    It 'Test-ServerConnectivity writes a real connectivity log file (script mode, DryRun)' {
+    It 'Test-ServerConnectivity writes a real connectivity log file (DryRun)' {
         $logDirs = @(
             (Join-Path $Script:RepoRoot 'generated/logs/testing'),
             (Join-Path $Script:RepoRoot 'generated/logs/production'),
@@ -50,8 +50,7 @@ Describe 'Logging is functional: commands initialise and write logs' {
         $before = foreach ($d in $logDirs) {
             if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
-        $scriptPath = Join-Path $Script:PublicDir 'Test-ServerConnectivity.ps1'
-        & $scriptPath -ManagementHost 'test-ov.local' -DryRun
+        Test-ServerConnectivity -ManagementHost 'test-ov.local' -DryRun
         $after = foreach ($d in $logDirs) {
             if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
