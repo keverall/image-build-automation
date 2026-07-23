@@ -230,23 +230,4 @@ class WindowsPatcher {
     }
 }
 
-# ---- Main (script mode only) ----
-if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
-    try {
-        $patcher = [WindowsPatcher]::new($PatchesConfig, $OutputDir)
-        $result = $patcher.Build($BaseIsoPath, $Server, $Method, [bool]$DryRun)
-
-        $resultsDir = Join-Path $OutputDir 'results'
-        Ensure-DirectoryExists -Path $resultsDir
-        Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
-
-        if ($result.success) { Write-Output "Patching succeeded for $Server"; exit 0 }
-        else { Write-Error "Patching failed for $Server : $($result.Get_Item('error'))"; exit 1 }
-    }
-    catch {
-        Write-Error "Patcher failed: $($_.Exception.Message)"
-        exit 1
-    }
-}
-
 # vim: ts=4 sw=4 et

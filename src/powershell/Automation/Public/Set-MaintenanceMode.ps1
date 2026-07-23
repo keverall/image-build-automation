@@ -5,6 +5,9 @@
 #           and a script-mode guard for direct pwsh invocation.
 #
 
+# TODO(refactor): convert to function-mode per the public_commands_function_mode_only
+# decision (remove this script-scope param block + bottom Main CLI entry; move
+# Initialize-Logging into the function body). Deferred - low priority.
 # ---- Script-mode param block (MUST be at top of script) ----
 # Supports two output modes:
 # 1. Human-readable (default): for direct command-line usage

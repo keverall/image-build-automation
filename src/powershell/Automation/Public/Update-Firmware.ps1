@@ -247,26 +247,4 @@ class FirmwareUpdater {
     }
 }
 
-# ── Main (script mode only) ───────────────────────────────────────────────────
-if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
-    try {
-        if ($SerialNumber) {
-            $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-            if (-not $resolved.Success) { Write-Error $resolved.Error; exit 1 }
-            $Server = $resolved.Identifier
-            Write-Output "Resolved serial '$SerialNumber' -> $Server"
-        }
-        $servers = if ($DryRun -and -not $Server) { Load-ServerList -Path $ServerList } else { @($Server) }
-        $updater = [FirmwareUpdater]::new($Config, $OutputDir)
-        $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
-        $okCount = ($results | Where-Object { $_.success }).Count
-        Write-Output "Firmware build: $okCount/$($servers.Count) succeeded"
-        $resDir  = Join-Path $OutputDir 'results'
-        Ensure-DirectoryExists -Path $resDir
-        foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }
-        exit (if ($okCount -eq $servers.Count) { 0 } else { 1 })
-    }
-    catch { Write-Error "Firmware build failed: $($_.Exception.Message)"; exit 1 }
-}
-
 # vim: ts=4 sw=4 et
