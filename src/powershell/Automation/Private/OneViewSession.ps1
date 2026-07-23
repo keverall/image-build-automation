@@ -63,9 +63,13 @@ function Test-OneViewSessionActive {
 # The corporate web proxy (e.g. webcorp.prd.aib.pri:8082) intercepts traffic to
 # the internal OneView appliance and breaks both Connect-OVMgmt (HPE module, which
 # uses WinHTTP) and the raw Invoke-RestMethod calls made by Get-OneViewServerList /
-# Get-OneViewConnectionStatus. To reach the appliance directly we:
-#   1. reset the WinHTTP proxy and add the appliance to its bypass list (netsh),
-#   2. set NO_PROXY / no_proxy so .NET / Invoke-RestMethod skip the proxy too.
+# Get-OneViewConnectionStatus. To reach the appliance directly we apply an
+# in-process bypass (no elevation required):
+#   1. WinHTTP default proxy config (WINHTTP_PROXY_INFO) via the WinHTTP API - this
+#      is what the HPEOneView module honours for Connect-OVMgmt. Set per-process, so
+#      it does not require admin and does not touch machine-wide settings.
+#   2. .NET WebRequest / HttpClient proxy bypass lists.
+#   3. NO_PROXY / no_proxy environment variables (extra safety for Invoke-RestMethod).
 # The session is left connected afterwards so other OneView commands can reuse it.
 # =============================================================================
 
@@ -75,17 +79,17 @@ function Set-OneViewProxyBypass {
         Route OneView appliance traffic directly, bypassing the corporate proxy.
 
     .DESCRIPTION
-        Applies a proxy bypass for the named appliance in the CURRENT process/session
-        so that both the HPEOneView module (WinHTTP) and raw Invoke-RestMethod calls
-        reach the appliance directly instead of through the corporate web proxy.
+        Applies a proxy bypass for the named appliance in the CURRENT process so that
+        both the HPEOneView module (WinHTTP) and raw Invoke-RestMethod calls reach the
+        appliance directly instead of through the corporate web proxy.
 
-        Steps:
-          - netsh winhttp reset proxy + a bypass list containing the appliance
-            (covers Connect-OVMgmt, which honours WinHTTP proxy settings).
-          - Set NO_PROXY / no_proxy environment variables (covers .NET /
-            Invoke-RestMethod used by Get-OneViewServerList / Get-OneViewConnectionStatus).
+        All changes are per-process and require NO elevation:
+          - WinHTTP default proxy configuration via the WinHTTP API (WINHTTP_PROXY_INFO),
+            which is what Connect-OVMgmt honours.
+          - .NET WebRequest / HttpClient proxy bypass lists.
+          - NO_PROXY / no_proxy environment variables.
 
-        Best-effort: failures (e.g. netsh needs elevation) are logged but non-fatal.
+        Best-effort: individual failures are logged via Write-Verbose and are non-fatal.
 
     .PARAMETER ApplianceHost
         The OneView appliance host (short name, FQDN or IP) to exclude from the proxy.
@@ -112,65 +116,83 @@ function Set-OneViewProxyBypass {
         # DNS failures are non-fatal - the raw host is still added.
     }
 
-        # 1. WinHTTP proxy + bypass list (used by the HPEOneView module / Connect-OVMgmt).
-        #    Best-effort: requires elevation on some hosts; failures are non-fatal.
-        try {
-            if (Get-Command 'netsh.exe' -ErrorAction SilentlyContinue) {
-                $bypassArg = '<local>;"' + ($hosts -join ';') + '"'
-                $null = & netsh.exe winhttp set proxy proxy-server="<local>" bypass-list=$bypassArg 2>$null
-                Write-Verbose "Set-OneViewProxyBypass: configured WinHTTP bypass for $($hosts -join ', ')"
+    # 1. WinHTTP default proxy configuration via the WinHTTP API. This is read by the
+    #    HPEOneView module for Connect-OVMgmt. Setting it per-process does NOT require
+    #    elevation (unlike a system-wide proxy change), and overrides any profile
+    #    proxy that is tunnelling the appliance through the corporate proxy.
+    try {
+        $winHttpType = Add-Type -Namespace 'OneView' -Name 'WinHttpBypass' -MemberDefinition @'
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct WINHTTP_PROXY_INFO {
+                public int dwAccessType;
+                public string lpszProxy;
+                public string lpszProxyBypass;
             }
-        } catch {
-            Write-Verbose "Set-OneViewProxyBypass: could not set WinHTTP proxy: $_"
+            [DllImport("winhttp.dll", SetLastError = true, CharSet = CharSet.Auto)]
+            public static extern bool WinHttpSetDefaultProxyConfiguration(ref WINHTTP_PROXY_INFO pInfo);
+'@ -PassThru -ErrorAction Stop
+
+        # dwAccessType 2 = WINHTTP_ACCESS_TYPE_NAMED_PROXY.
+        # lpszProxy "<local>" => no proxy; lpszProxyBypass forces the appliance direct.
+        $bypassList = '<local>;' + ($hosts -join ';')
+        $info = New-Object 'OneView.WinHttpBypass+WINHTTP_PROXY_INFO'
+        $info.dwAccessType = 2
+        $info.lpszProxy = '<local>'
+        $info.lpszProxyBypass = $bypassList
+        $ok = $winHttpType::WinHttpSetDefaultProxyConfiguration([ref] $info)
+        if ($ok) {
+            Write-Verbose "Set-OneViewProxyBypass: WinHTTP bypass applied (bypass=$bypassList)"
+        } else {
+            Write-Verbose "Set-OneViewProxyBypass: WinHttpSetDefaultProxyConfiguration returned false (last error $([System.Runtime.InteropServices.Marshal]::GetLastWin32Error()))"
         }
+    } catch {
+        Write-Verbose "Set-OneViewProxyBypass: could not configure WinHTTP via API: $_"
+    }
 
-        # 1b. .NET Framework / Windows PowerShell web proxy (also honoured by some
-        #     module code paths). Build an explicit proxy so the bypass applies even
-        #     when DefaultWebProxy is auto-detected (null).
-        try {
-            $proxyAddress = $null
-            $current = [System.Net.WebRequest]::DefaultWebProxy
-            if ($null -ne $current) {
-                $probe = $current.GetProxy([uri]'https://outlook.office365.com')
-                if ($probe -and $probe.AbsoluteUri -notmatch 'office365\.com') {
-                    $proxyAddress = $probe.AbsoluteUri
-                }
+    # 2. .NET Framework / Windows PowerShell web proxy and .NET Core HttpClient proxy.
+    try {
+        $proxyAddress = $null
+        $current = [System.Net.WebRequest]::DefaultWebProxy
+        if ($null -ne $current) {
+            $probe = $current.GetProxy([uri]'https://outlook.office365.com')
+            if ($probe -and $probe.AbsoluteUri -notmatch 'office365\.com') {
+                $proxyAddress = $probe.AbsoluteUri
             }
-            if (-not $proxyAddress) {
-                $envProxy = [System.Environment]::GetEnvironmentVariable('HTTPS_PROXY') ??
-                            [System.Environment]::GetEnvironmentVariable('https_proxy') ??
-                            [System.Environment]::GetEnvironmentVariable('HTTP_PROXY')  ??
-                            [System.Environment]::GetEnvironmentVariable('http_proxy')
-                $proxyAddress = $envProxy
-            }
-            if ($proxyAddress) {
-                $proxy = [System.Net.WebProxy]::new($proxyAddress, $true)
-            } else {
-                $proxy = [System.Net.WebProxy]::new()
-                $proxy.UseDefaultCredentials = $true
-            }
-            $proxy.BypassProxyOnLocal = $true
-            $proxy.BypassList = $hosts.ToArray()
-            [System.Net.WebRequest]::DefaultWebProxy = $proxy
-
-            # .NET Core / PowerShell 7 HttpClient proxy (used by raw Invoke-RestMethod).
-            if ($proxyAddress) {
-                $p7Address = if ($proxyAddress -match '^https?://') { $proxyAddress } else { "http://$proxyAddress" }
-                $p7 = [System.Net.WebProxy]::new($p7Address, $true)
-            } else {
-                $p7 = [System.Net.WebProxy]::new()
-                $p7.UseDefaultCredentials = $true
-            }
-            $p7.BypassProxyOnLocal = $true
-            foreach ($h in $hosts) {
-                if (-not $p7.BypassList.Contains($h)) { $p7.BypassList.Add($h) }
-            }
-            [System.Net.Http.HttpClient]::DefaultProxy = $p7
-        } catch {
-            Write-Verbose "Set-OneViewProxyBypass: could not configure .NET proxy: $_"
         }
+        if (-not $proxyAddress) {
+            $envProxy = [System.Environment]::GetEnvironmentVariable('HTTPS_PROXY') ??
+                        [System.Environment]::GetEnvironmentVariable('https_proxy') ??
+                        [System.Environment]::GetEnvironmentVariable('HTTP_PROXY')  ??
+                        [System.Environment]::GetEnvironmentVariable('http_proxy')
+            $proxyAddress = $envProxy
+        }
+        if ($proxyAddress) {
+            $proxy = [System.Net.WebProxy]::new($proxyAddress, $true)
+        } else {
+            $proxy = [System.Net.WebProxy]::new()
+            $proxy.UseDefaultCredentials = $true
+        }
+        $proxy.BypassProxyOnLocal = $true
+        $proxy.BypassList = $hosts.ToArray()
+        [System.Net.WebRequest]::DefaultWebProxy = $proxy
 
-    # 2. NO_PROXY / no_proxy (used by .NET / Invoke-RestMethod).
+        if ($proxyAddress) {
+            $p7Address = if ($proxyAddress -match '^https?://') { $proxyAddress } else { "http://$proxyAddress" }
+            $p7 = [System.Net.WebProxy]::new($p7Address, $true)
+        } else {
+            $p7 = [System.Net.WebProxy]::new()
+            $p7.UseDefaultCredentials = $true
+        }
+        $p7.BypassProxyOnLocal = $true
+        foreach ($h in $hosts) {
+            if (-not $p7.BypassList.Contains($h)) { $p7.BypassList.Add($h) }
+        }
+        [System.Net.Http.HttpClient]::DefaultProxy = $p7
+    } catch {
+        Write-Verbose "Set-OneViewProxyBypass: could not configure .NET proxy: $_"
+    }
+
+    # 3. NO_PROXY / no_proxy (extra safety for .NET / Invoke-RestMethod).
     try {
         $existing = [System.Environment]::GetEnvironmentVariable('no_proxy')
         $set = [System.Collections.Generic.List[string]]@()
@@ -195,9 +217,10 @@ function Connect-OneViewSession {
 
     .DESCRIPTION
         Applies the appliance proxy bypass (Set-OneViewProxyBypass) in the current
-        session, reuses an existing active session when present, otherwise performs
-        Connect-OVMgmt. The session is intentionally left connected afterwards so
-        that subsequent OneView commands (Get-OneViewServerList, etc.) can reuse it.
+        session, reuses an existing healthy active session when present, otherwise
+        clears any stale/broken session and performs Connect-OVMgmt. The session is
+        intentionally left connected afterwards so that subsequent OneView commands
+        (Get-OneViewServerList, etc.) can reuse it.
 
     .PARAMETER Appliance
         The OneView appliance host (short name, FQDN or IP).
@@ -212,8 +235,13 @@ function Connect-OneViewSession {
     )
 
     $active = Get-OneViewActiveSession
-    if ($null -ne $active) {
+    if ($null -ne $active -and $active.Connected -eq $true) {
         return $active
+    }
+
+    # Clear any stale/failed session so a fresh Connect-OVMgmt is attempted.
+    if ($global:ConnectedSessions) {
+        try { Disconnect-OVMgmt -ErrorAction SilentlyContinue } catch { }
     }
 
     Set-OneViewProxyBypass -ApplianceHost $Appliance
