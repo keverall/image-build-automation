@@ -1,6 +1,10 @@
 # HPE OneView 1000 — Live Integration Test Plan
 
+<!-- BEGIN:run-date -->
+<!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 22/07/2026 22:49</p>
+<!-- END:run-date -->
+<!-- END:run-date -->
 
 <a id="top"></a>
 ## Table of Contents
@@ -24,7 +28,11 @@
 
 ## Current OneView Connected Automation Command testing status and progress Summary
 
+<!-- BEGIN:oneview-status-summary -->
+<!-- BEGIN:oneview-status-summary -->
 - **Initial testing this morning but unable to test now as there is no CRQ active as advised by Marin. I cannot retest until the CRQ is approved, hopefully tomorrow 24/07/2026. Test-ServerConnectivity command worked this morning but it disconnected and should not. I have recoded but it was a large change and will need retesting. Automation tests all pass currently but I cannot test any server connected tests in this test plan due to lack of CRQ coverage.**
+<!-- END:oneview-status-summary -->
+<!-- END:oneview-status-summary -->
 
 **Module under test:** `Automation` PowerShell module (`src/powershell/Automation/Automation.psm1`)
 **OneView library:** `HPEOneView.1000` (OneView 10.x) via `Connect-OVMgmt` / `Disconnect-OVMgmt`
@@ -176,7 +184,11 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 
 | Run # | Date/Time | Phase(s) | Tester | Appliance | Result | Log/Job Ref | Signed off |
 |-------|-----------|----------|--------|-----------|--------|-------------|------------|
+<!-- BEGIN:phase11-rows -->
+<!-- BEGIN:phase11-rows -->
 | 1 | 22/07/2026 | Phases 1-10 (pending live execution) | <tester> | HPEOpenview.1000 | Pending | <log ref> | <delivery lead> |
+<!-- END:phase11-rows -->
+<!-- END:phase11-rows -->
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>
 ## Phase 12 — Notes for the Delivery Lead
