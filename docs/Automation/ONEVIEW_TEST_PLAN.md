@@ -66,8 +66,8 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
 |---------|-------|---------|-----------|-------|-----------------|------|-----------|-----------|--------|
-| OV-01 | Connect & authenticate to HPEOpenview.1000 | — | `Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -Credential $cred` | 1. Resolve creds as PSCredential. 2. Run. | `Success`, `Reachable`, `Authenticated`, `Connected` all `$true` | N | 23/07/2026 | | Planned |
-| OV-02 | Get appliance version | — | `Get-OneViewConnectionStatus` (reads `/rest/version`) | Inspect `Version`. | `Version` populated, consistent with OneView 10.x / `HPEOneView.1000` | N | 23/07/2026 | | Planned |
+| OV-01 | Connect & authenticate to HPEOpenview.1000 | — | `Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -Credential $cred` | 1. Resolve creds as PSCredential. 2. Run. | `Success`, `Reachable`, `Authenticated`, `Connected` all `$true` | N | 23/07/2026 | 23/07/2026 | Success |
+| OV-02 | Get appliance version | — | `Get-OneViewConnectionStatus` (reads `/rest/version`) | Inspect `Version`. | `Version` populated, consistent with OneView 10.x / `HPEOneView.1000` | N | 23/07/2026 | 23/07/2026 | Failed |
 | OV-03 | Connect via HPEOneView.1000 module & disconnect cleanly | — | `Connect-OVMgmt` / `Disconnect-OVMgmt` | 1. `Connect-OVMgmt -Hostname HPEOpenview.1000 -Credential $cred`. 2. Confirm. 3. `Disconnect-OVMgmt`. | Session established then released; no orphaned sessions | N | 23/07/2026 | | Planned |
 
 <a name="phase-2-get-server-list"></a>

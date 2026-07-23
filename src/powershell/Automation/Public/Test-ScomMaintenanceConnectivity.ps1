@@ -94,6 +94,7 @@ function Test-ScomMaintenanceConnectivity {
 
     $ErrorActionPreference = 'Continue'
     $Mode = 'scom'
+    Initialize-Logging -LogFile 'connectivity.log' -CommandName 'Test-ScomMaintenanceConnectivity' -LogName "Test-ScomMaintenanceConnectivity-ManagementHost-$ManagementHost"
 
     # ── Resolve config directory ──────────────────────────────────────────────
     $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
@@ -540,25 +541,4 @@ function _Format-ScomMaintenanceConnectivityResult {
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
-}
-
-# ── Script-mode entry point ───────────────────────────────────────────────────
-if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
-    $connParams = @{ PingTimeoutMs = $PingTimeoutMs }
-    if ($PSBoundParameters.ContainsKey('Environment'))    { $connParams['Environment'] = $Environment }
-    if ($PSBoundParameters.ContainsKey('ManagementHost')) { $connParams['ManagementHost'] = $ManagementHost }
-    if ($PSBoundParameters.ContainsKey('ConfigDir'))      { $connParams['ConfigDir'] = $ConfigDir }
-    if ($PSBoundParameters.ContainsKey('Credential'))     { $connParams['Credential'] = $Credential }
-    if ($JsonConfig)                                      { $connParams['JsonConfig'] = $true }
-
-    if ($DryRun) { $connParams['DryRun'] = $true }
-    if ($Json)   { $connParams['Json'] = $true }
-
-    $result = Test-ScomMaintenanceConnectivity @connParams
-
-    if ($Json) {
-        $result | ConvertTo-Json -Depth 10
-    }
-
-    if (-not $result.Available) { exit 1 }
 }
