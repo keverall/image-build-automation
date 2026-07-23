@@ -567,9 +567,9 @@ function Test-ServerConnectivity {
         $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
         $ovAppliance = $resolvedHost
 
-        # Direct connection - no proxy manipulation needed.
-        # The test server has firewall rules allowing direct access to OneView appliances.
-        $logger.Info("Connecting directly to appliance '$ovAppliance'")
+        # Connect directly to the internal appliance, bypassing the corporate
+        # web proxy (which otherwise tunnels OneView REST traffic and fails).
+        $logger.Info("Connecting to appliance '$ovAppliance' (proxy bypass applied)")
 
         try {
             Import-Module $moduleName -ErrorAction Stop
@@ -577,7 +577,7 @@ function Test-ServerConnectivity {
 
             $secPass = ConvertTo-SecureString $resolvedPass -AsPlainText -Force
             $cred = New-Object System.Management.Automation.PSCredential($resolvedUser, $secPass)
-            Connect-OVMgmt -Hostname $ovAppliance -Credential $cred -ErrorAction Stop
+            Connect-OneViewBypass -Appliance $ovAppliance -Credential $cred -ErrorAction Stop
             $authResult.Connected = $true
             $logger.Info("Authentication to '$ovAppliance' succeeded")
         } catch {
