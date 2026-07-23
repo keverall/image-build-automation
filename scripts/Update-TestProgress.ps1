@@ -18,6 +18,48 @@
 .PARAMETER OneViewTestPlanPath
     Path to ONEVIEW_TEST_PLAN.md. Defaults to docs/Automation/ONEVIEW_TEST_PLAN.md.
 
+.PARAMETER Reason
+    Reason for full testing rerun (Automation section 7).
+
+.PARAMETER CommandSuite
+    Command/Suite executed (Automation section 7).
+
+.PARAMETER Environment
+    Environment where tests ran (Automation section 7).
+
+.PARAMETER NonInteractive
+    Skip interactive prompts and use defaults/parameters only.
+
+.PARAMETER OneViewStatusSummary
+    New OneView status/progress summary bullet text (replaces existing).
+
+.PARAMETER AddOneViewRow
+    Add a new Phase 11 execution evidence row to OneView test plan.
+
+.PARAMETER OvPhases
+    Phase(s) for new OneView row (default: "Phases 1-10").
+
+.PARAMETER OvTester
+    Tester name for new OneView row (default: "<tester>").
+
+.PARAMETER OvAppliance
+    Appliance name for new OneView row (default: "HPEOpenview.1000").
+
+.PARAMETER OvResult
+    Result for new OneView row (default: "Pending").
+
+.PARAMETER OvLogRef
+    Log/Job reference for new OneView row (default: "<log ref>").
+
+.PARAMETER OvSignedOff
+    Signed off by for new OneView row (default: "<delivery lead>").
+
+.PARAMETER ReportsDir
+    Output directory for generated HTML reports (default: docs/Automation/Testing_Reports).
+
+.PARAMETER SkipHtml
+    Skip HTML regeneration (used by tests to keep runs hermetic).
+
 .EXAMPLE
     ./scripts/Update-TestProgress.ps1
     Prompts for test run details and updates both test plans.
@@ -25,6 +67,10 @@
 .EXAMPLE
     ./scripts/Update-TestProgress.ps1 -LogPath "generated/logs/automation/automated-mode-test_2026-07-22T22-04-27Z.log"
     Uses specific log file.
+
+.EXAMPLE
+    ./scripts/Update-TestProgress.ps1 -NonInteractive -Reason "CI run" -CommandSuite "make test" -Environment "GitLab CI"
+    Non-interactive mode with explicit parameters.
 #>
 
 [CmdletBinding()]
@@ -48,10 +94,43 @@ param(
     [string]$Environment,
 
     [Parameter()]
-    [switch]$NonInteractive
+    [switch]$NonInteractive,
+
+    [Parameter()]
+    [string]$OneViewStatusSummary,
+
+    [Parameter()]
+    [switch]$AddOneViewRow,
+
+    [Parameter()]
+    [string]$OvPhases,
+
+    [Parameter()]
+    [string]$OvTester,
+
+    [Parameter()]
+    [string]$OvAppliance,
+
+    [Parameter()]
+    [string]$OvResult,
+
+    [Parameter()]
+    [string]$OvLogRef,
+
+    [Parameter()]
+    [string]$OvSignedOff,
+
+    [Parameter()]
+    [string]$ReportsDir = "docs/Automation/Testing_Reports",
+
+    [Parameter()]
+    [switch]$SkipHtml
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Pure, testable string-transformation helpers.
+. (Join-Path $PSScriptRoot 'TestProgress.Common.ps1')
 
 # Find latest log if not specified
 if (-not $LogPath) {
@@ -66,7 +145,7 @@ if (-not $LogPath) {
         Select-Object -First 1
     
     if (-not $latestLog) {
-        Write-Error "No test logs found in $logDir"
+        Write-Error "No test log found in $logDir"
         exit 1
     }
     
@@ -84,33 +163,24 @@ Write-Host "[test-progress] Extracting test summary from log..." -ForegroundColo
 $logContent = Get-Content $LogPath -Raw
 
 # Parse the TEST SUMMARY BLOCK
-if ($logContent -match 'TEST SUMMARY BLOCK[\s\S]*?Total Tests\s*:\s*(\d+)[\s\S]*?Passed\s*:\s*(\d+)[\s\S]*?Failed\s*:\s*(\d+)[\s\S]*?Skipped\s*:\s*(\d+)[\s\S]*?Duration\s*:\s*([\d.]+s)') {
-    $totalTests = $Matches[1]
-    $passedTests = $Matches[2]
-    $failedTests = $Matches[3]
-    $skippedTests = $Matches[4]
-    $duration = $Matches[5]
-    
+$summary = Get-TestResultFromLog -LogContent $logContent
+$totalTests = $summary.Total
+$passedTests = $summary.Passed
+$failedTests = $summary.Failed
+$skippedTests = $summary.Skipped
+$duration = $summary.Duration
+$result = $summary.Result
+
+if ($summary.Parsed) {
     Write-Host "[test-progress] Test Summary:" -ForegroundColor Green
     Write-Host "  Total: $totalTests | Passed: $passedTests | Failed: $failedTests | Skipped: $skippedTests | Duration: $duration"
 } else {
     Write-Warning "Could not parse test summary from log. Using fallback values."
-    $totalTests = 0
-    $passedTests = 0
-    $failedTests = 0
-    $skippedTests = 0
-    $duration = "N/A"
-}
-
-# Determine result
-if ([int]$failedTests -eq 0 -and [int]$passedTests -eq [int]$totalTests) {
-    $result = "Passed ($passedTests/$totalTests)"
-} else {
-    $result = "Failed ($passedTests/$totalTests passed, $failedTests failed)"
 }
 
 # Get current date and time
 $testDate = Get-Date -Format "dd/MM/yyyy HH:mm:ss"
+$runDate = [DateTime]::UtcNow.ToString('dd/MM/yyyy HH:mm')
 
 # Prompt for test run details (or use parameters if provided)
 Write-Host "`n[test-progress] Please provide details for the test run record:" -ForegroundColor Yellow
@@ -153,83 +223,167 @@ if (-not $Environment) {
 
 $logRef = "see run log below"
 
+# OneView prompts
+if (-not $OneViewStatusSummary) {
+    if (-not $NonInteractive) {
+        Write-Host "`nNew OneView status/progress summary (leave blank to keep current): " -ForegroundColor Yellow -NoNewline
+        $OneViewStatusSummary = [System.Console]::ReadLine()
+    }
+}
+
+$addOvRow = $false
+if ($AddOneViewRow) {
+    $addOvRow = $true
+} elseif (-not $NonInteractive) {
+    Write-Host "Add a new OneView Phase 11 execution row? (y/N): " -ForegroundColor Yellow -NoNewline
+    $answer = [System.Console]::ReadLine()
+    $addOvRow = $answer -match '^[Yy]'
+}
+
+if ($addOvRow) {
+    if (-not $OvPhases) {
+        if ($NonInteractive) {
+            $OvPhases = "Phases 1-10"
+        } else {
+            Write-Host "Phase(s) (default: 'Phases 1-10'): " -ForegroundColor Yellow -NoNewline
+            $OvPhases = [System.Console]::ReadLine()
+            if ([string]::IsNullOrWhiteSpace($OvPhases)) {
+                $OvPhases = "Phases 1-10"
+            }
+        }
+    }
+    
+    if (-not $OvTester) {
+        if ($NonInteractive) {
+            $OvTester = "<tester>"
+        } else {
+            Write-Host "Tester (default: '<tester>'): " -ForegroundColor Yellow -NoNewline
+            $OvTester = [System.Console]::ReadLine()
+            if ([string]::IsNullOrWhiteSpace($OvTester)) {
+                $OvTester = "<tester>"
+            }
+        }
+    }
+    
+    if (-not $OvAppliance) {
+        if ($NonInteractive) {
+            $OvAppliance = "HPEOpenview.1000"
+        } else {
+            Write-Host "Appliance (default: 'HPEOpenview.1000'): " -ForegroundColor Yellow -NoNewline
+            $OvAppliance = [System.Console]::ReadLine()
+            if ([string]::IsNullOrWhiteSpace($OvAppliance)) {
+                $OvAppliance = "HPEOpenview.1000"
+            }
+        }
+    }
+    
+    if (-not $OvResult) {
+        if ($NonInteractive) {
+            $OvResult = "Pending"
+        } else {
+            Write-Host "Result (default: 'Pending'): " -ForegroundColor Yellow -NoNewline
+            $OvResult = [System.Console]::ReadLine()
+            if ([string]::IsNullOrWhiteSpace($OvResult)) {
+                $OvResult = "Pending"
+            }
+        }
+    }
+    
+    if (-not $OvLogRef) {
+        if ($NonInteractive) {
+            $OvLogRef = "<log ref>"
+        } else {
+            Write-Host "Log/Job Ref (default: '<log ref>'): " -ForegroundColor Yellow -NoNewline
+            $OvLogRef = [System.Console]::ReadLine()
+            if ([string]::IsNullOrWhiteSpace($OvLogRef)) {
+                $OvLogRef = "<log ref>"
+            }
+        }
+    }
+    
+    if (-not $OvSignedOff) {
+        if ($NonInteractive) {
+            $OvSignedOff = "<delivery lead>"
+        } else {
+            Write-Host "Signed off by (default: '<delivery lead>'): " -ForegroundColor Yellow -NoNewline
+            $OvSignedOff = [System.Console]::ReadLine()
+            if ([string]::IsNullOrWhiteSpace($OvSignedOff)) {
+                $OvSignedOff = "<delivery lead>"
+            }
+        }
+    }
+}
+
 # Read current test plan
 if (-not (Test-Path $TestPlanPath)) {
     Write-Error "Test plan not found: $TestPlanPath"
     exit 1
 }
 
-$testPlanContent = Get-Content $TestPlanPath -Raw
+$content = Get-Content $TestPlanPath -Raw
 
-# Find the Execution Evidence table
-# Pattern: | Run # | Date/Time | ... | Reason for full testing rerun |
-# Use flexible separator pattern that matches any number of dashes
-$pattern = '(?s)(\| Run # \| Date/Time \| Command / Suite \| Environment \| Result \| CI Job / Log Ref \| Reason for full testing rerun \|[\s\S]*?\|[-]+\|[-]+\|[-]+\|[-]+\|[-]+\|[-]+\|[-]+\|)([\s\S]*?)(\n\n|\n<a name="run-log">)'
+# Update run-date
+$content = Update-RunDateBlock -Content $content -RunDate $runDate
 
-if ($testPlanContent -match $pattern) {
-    $tableHeader = $Matches[1]
-    $existingRows = $Matches[2]
-    $afterTable = $Matches[3]
-    
-    # Count existing rows to determine next run number
-    $rowMatches = [regex]::Matches($existingRows, '\|\s*(\d+)\s*\|')
-    $nextRunNumber = 1
-    if ($rowMatches.Count -gt 0) {
-        $lastRunNumber = [int]($rowMatches | Select-Object -Last 1).Groups[1].Value
-        $nextRunNumber = $lastRunNumber + 1
-    }
-    
-    # Create new row
-    $newRow = "| $nextRunNumber | $testDate | $CommandSuite | $Environment | $result | $logRef | $Reason |`n"
-    
-    # Insert new row
-    $updatedRows = $existingRows.TrimEnd() + "`n$newRow"
-    $updatedContent = $testPlanContent -replace $pattern, "$tableHeader$updatedRows$afterTable"
-    
-    # Write updated test plan
-    Set-Content -Path $TestPlanPath -Value $updatedContent -NoNewline
-    Write-Host "[test-progress] Updated $TestPlanPath with run #$nextRunNumber" -ForegroundColor Green
+# Update section-7 rows
+if ($null -ne (Get-Block -Content $content -Key 'automation-evidence-rows')) {
+    $auto = Add-AutomationEvidenceRow -Content $content -DateTime $testDate `
+        -CommandSuite $CommandSuite -Environment $Environment -Result $result `
+        -LogRef $logRef -Reason $Reason
+    $content = $auto.Content
+
+    Set-Content -Path $TestPlanPath -Value $content -NoNewline
+    Write-Host "[test-progress] Updated $TestPlanPath with run #$($auto.RunNumber)" -ForegroundColor Green
 } else {
-    Write-Warning "Could not find Execution Evidence table in $TestPlanPath"
+    Write-Warning "Could not find automation-evidence-rows block in $TestPlanPath"
     Write-Host "Table pattern may have changed. Manual update required." -ForegroundColor Yellow
 }
 
 # Update ONEVIEW_TEST_PLAN.md (Phase 11 table)
 if (Test-Path $OneViewTestPlanPath) {
     Write-Host "[test-progress] Updating $OneViewTestPlanPath..." -ForegroundColor Cyan
-    
+
     $oneViewContent = Get-Content $OneViewTestPlanPath -Raw
-    
-    # Find Phase 11 table
-    $ovPattern = '(?s)(\| Run # \| Date/Time \| Phase\(s\) \| Tester \| Appliance \| Result \| Log/Job Ref \| Signed off \|[\s\S]*?\|---\|---\|---\|---\|---\|---\|---\|---\|)([\s\S]*?)(\n\n|\n<a name="phase-12)'
-    
-    if ($oneViewContent -match $ovPattern) {
-        $ovHeader = $Matches[1]
-        $ovExistingRows = $Matches[2]
-        $ovAfterTable = $Matches[3]
-        
-        # For OneView test plan, we'll add a placeholder row since live tests haven't run yet
-        # Only add if table is empty (just header)
-        if ($ovExistingRows.Trim() -eq '|' -or $ovExistingRows.Trim() -eq '') {
-            $ovNewRow = "| 1 | $testDate | Phases 1-10 (pending) | <tester> | HPEOpenview.1000 | Pending | <log ref> | <delivery lead> |`n"
-            $ovUpdatedRows = $ovNewRow
-            $ovUpdatedContent = $oneViewContent -replace $ovPattern, "$ovHeader$ovUpdatedRows$ovAfterTable"
-            
-            Set-Content -Path $OneViewTestPlanPath -Value $ovUpdatedContent -NoNewline
-            Write-Host "[test-progress] Updated $OneViewTestPlanPath" -ForegroundColor Green
-        } else {
-            Write-Host "[test-progress] OneView test plan already has execution evidence. Skipping update." -ForegroundColor Yellow
+
+    # Update run-date
+    $oneViewContent = Update-RunDateBlock -Content $oneViewContent -RunDate $runDate
+
+    # Update summary bullet (only when replacement text supplied)
+    if (-not [string]::IsNullOrWhiteSpace($OneViewStatusSummary)) {
+        $oneViewContent = Set-OneViewStatusSummary -Content $oneViewContent -SummaryText $OneViewStatusSummary
+        Write-Host "[test-progress] Updated OneView status summary" -ForegroundColor Green
+    }
+
+    # Update Phase 11 rows (always refresh last row's date; optionally add a row)
+    if ($null -ne (Get-Block -Content $oneViewContent -Key 'phase11-rows')) {
+        $phase11 = Update-Phase11Block -Content $oneViewContent -DateTime $runDate `
+            -AddRow:$addOvRow -Phases $OvPhases -Tester $OvTester -Appliance $OvAppliance `
+            -Result $OvResult -LogRef $OvLogRef -SignedOff $OvSignedOff
+        $oneViewContent = $phase11.Content
+
+        if ($phase11.Added) {
+            Write-Host "[test-progress] Added OneView Phase 11 row #$($phase11.RunNumber)" -ForegroundColor Green
         }
+
+        Set-Content -Path $OneViewTestPlanPath -Value $oneViewContent -NoNewline
+        Write-Host "[test-progress] Updated $OneViewTestPlanPath" -ForegroundColor Green
     } else {
-        Write-Warning "Could not find Phase 11 table in $OneViewTestPlanPath"
+        Write-Warning "Could not find phase11-rows block in $OneViewTestPlanPath"
     }
 }
 
 # Regenerate HTML files with timestamp suffix
+if ($SkipHtml) {
+    Write-Host "`n[test-progress] -SkipHtml supplied; skipping HTML regeneration." -ForegroundColor Yellow
+    Write-Host "`n[test-progress] Test progress update complete!" -ForegroundColor Green
+    Write-Host "Please review the updated test plans and commit the changes." -ForegroundColor Cyan
+    return
+}
+
 Write-Host "`n[test-progress] Regenerating HTML files..." -ForegroundColor Cyan
 
 $converterScript = "scripts/MD_to_HTML_Converter.py"
-$reportsDir = "docs/Automation/Testing_Reports"
+$reportsDir = $ReportsDir
 
 # Ensure reports directory exists
 if (-not (Test-Path $reportsDir)) {

@@ -1,6 +1,10 @@
 # Automation Test Plan — Physical Server Build & ISO Pipeline
 
+<!-- BEGIN:run-date -->
+<!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 23/07/2026 09:17</p>
+<!-- END:run-date -->
+<!-- END:run-date -->
 
 <a id="top"></a>
 ## Table of Contents
@@ -122,8 +126,12 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 | Run # | Date/Time | Command / Suite | Environment | Result | CI Job / Log Ref | Reason for full testing rerun |
 |-------|-----------|-----------------|-------------|--------|------------------|---------------|
+<!-- BEGIN:automation-evidence-rows -->
+<!-- BEGIN:automation-evidence-rows -->
 | 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | Ran manually on terminal  | Passed (68/68) |  | Initial test run |
 | 2 | 23/07/2026 09:31:16 | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal | Passed (93/93) | see run log below | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. |
+<!-- END:automation-evidence-rows -->
+<!-- END:automation-evidence-rows -->
 
 
 <a name="run-log"></a>

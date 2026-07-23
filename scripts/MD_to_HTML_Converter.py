@@ -103,6 +103,17 @@ def convert(md):
     Returns:
         str: An HTML fragment string.
     """
+    # Strip HTML comments (e.g. <!-- BEGIN:key --> / <!-- END:key --> marker
+    # blocks) before parsing. Two passes are required:
+    #   1. Remove standalone comment lines *including their newline* so that pipe
+    #      tables stay contiguous. If only the comment text were removed, the
+    #      leftover blank line would split a table (the row loop stops at the
+    #      blank line and orphans the data rows).
+    #   2. Remove any remaining inline / multi-line comments.
+    md = re.sub(r"(?m)^[ \t]*<!--.*?-->[ \t]*\r?\n", "", md)
+    md = re.sub(r"<!--.*?-->", "", md, flags=re.S)
+    md = re.sub(r"(?m)^[ \t]*<!--.*?-->[ \t]*\r?\n", "", md)
+    md = re.sub(r"<!--.*?-->", "", md, flags=re.S)
     lines = md.split("\n")
     out = []
     i = 0

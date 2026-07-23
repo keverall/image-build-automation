@@ -143,6 +143,10 @@ test-progress-update: ## Update test plans with today's test execution progress 
 	@echo "$(CYAN)[test-progress-update]$(NC) Updating test plans with execution progress..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Update-TestProgress.ps1
 
-test-progress-update-ci: ## Update test plans non-interactively (use REASON="..." COMMAND="..." ENV="...")
+test-progress-update-ci: ## Update test plans non-interactively (use REASON="..." COMMAND="..." ENV="..." OV_SUMMARY="..." OV_ADD_ROW=1 OV_PHASES="..." OV_TESTER="..." OV_APPLIANCE="..." OV_RESULT="..." OV_LOGREF="..." OV_SIGNOFF="...")
 	@echo "$(CYAN)[test-progress-update]$(NC) Updating test plans (non-interactive)..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Update-TestProgress.ps1 -NonInteractive -Reason "$(REASON)" -CommandSuite "$(COMMAND)" -Environment "$(ENV)"
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Update-TestProgress.ps1 -NonInteractive \
+		-Reason "$(REASON)" -CommandSuite "$(COMMAND)" -Environment "$(ENV)" \
+		-OneViewStatusSummary "$(OV_SUMMARY)" $(if $(OV_ADD_ROW),-AddOneViewRow,) \
+		-OvPhases "$(OV_PHASES)" -OvTester "$(OV_TESTER)" -OvAppliance "$(OV_APPLIANCE)" \
+		-OvResult "$(OV_RESULT)" -OvLogRef "$(OV_LOGREF)" -OvSignedOff "$(OV_SIGNOFF)"
