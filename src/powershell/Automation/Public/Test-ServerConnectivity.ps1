@@ -221,10 +221,10 @@ function Test-ServerConnectivity {
           Timestamp        [string]   - UTC ISO 8601
 
     .NOTES
-        The OneView session established by this command is disconnected at the
-        end of the test (the connection runs in a fresh -NoProfile child process
-        via Invoke-PowerShellScript, so no session is left active afterwards and
-        the command does not depend on any host/profile network configuration).
+        The OneView session established by this command persists in the current
+        session and can be reused by subsequent OneView commands (Get-OneViewServerList,
+        Get-OneViewConnectionStatus, etc.). Use Disconnect-OneView to explicitly
+        close the session when finished.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -561,44 +561,13 @@ function Test-ServerConnectivity {
         }
     } else {
         $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
-            $ovAppliance = $resolvedHost
 
-            $winrmCfg    = $modeCfg.Get_Item('winrm') ?? @{}
-            $winrmServer = $winrmCfg.Get_Item('server') ?? $resolvedHost
-
-        # Escape single quotes for safe interpolation into the child script
-        $escapedPass = $resolvedPass -replace "'", "''"
-        $escapedUser = $resolvedUser -replace "'", "''"
-        $escapedHost = $ovAppliance -replace "'", "''"
-
-        $scriptContent = @"
-Import-Module $moduleName -ErrorAction Stop
-Write-Output "MODULE_LOADED"
-`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
-Connect-OVMgmt -Hostname '$escapedHost' -Credential `$cred -ErrorAction Stop
-Write-Output "CONNECTED"
-Disconnect-OVMgmt -ErrorAction SilentlyContinue
-Write-Output "DISCONNECTED"
-"@
-        try {
-            if ($useWinRM) {
-                $secPass = ConvertTo-SecureString $resolvedPass -AsPlainText -Force
-                $scriptResult = Invoke-PowerShellWinRM -Script $scriptContent `
-                    -Server $winrmServer -Username $resolvedUser -Password $secPass
-            } else {
-                $scriptResult = Invoke-PowerShellScript -Script $scriptContent
-            }
-            $output = $scriptResult.Output
-            if ($output -match 'MODULE_LOADED') { $authResult.ModuleLoaded = $true }
-            if ($output -match 'CONNECTED')     { $authResult.Connected = $true }
-            if ($output -match 'DISCONNECTED')  { $authResult.Disconnected = $true }
-            if (-not $scriptResult.Success -and -not $authResult.Connected) {
-                $authResult.Error = "Connection script failed: $output"
-            }
-        } catch {
-            $authResult.Error = "Auth error: $($_.Exception.Message)"
-            $logger.Error("Authentication to '$ovAppliance' failed: $($_.Exception.Message)")
+        $connResult = Connect-OneViewSession -Appliance $resolvedHost -Credential $Credential -ModuleName $moduleName
+        $authResult.ModuleLoaded = $true
+        $authResult.Connected = $connResult.Connected
+        if ($connResult.Error) {
+            $authResult.Error = $connResult.Error
+            $logger.Error("Authentication to '$resolvedHost' failed: $($connResult.Error)")
         }
     }
 
@@ -675,11 +644,7 @@ function _Format-ConnectivityResult {
     $authColor = if ($ac.Connected) { 'Green' } elseif ($ac.Error -match 'Skipped') { 'Yellow' } else { 'Red' }
     Write-Host "    Module:    $(if ($ac.ModuleLoaded) { 'Loaded' } else { 'Not loaded' })" `
         -ForegroundColor $(if ($ac.ModuleLoaded) { 'Green' } else { 'Red' })
-    Write-Host "    Connected: $(if ($ac.Connected) { 'Yes' } else { 'No' })" -ForegroundColor $authColor
-    if ($ac.Connected) {
-        Write-Host "    Clean up:  $(if ($ac.Disconnected) { 'Disconnected' } else { 'WARNING - still connected' })" `
-            -ForegroundColor $(if ($ac.Disconnected) { 'Green' } else { 'Yellow' })
-    }
+    Write-Host "    Connected: $(if ($ac.Connected) { 'Yes (session active)' } else { 'No' })" -ForegroundColor $authColor
     if ($ac.Error) {
         Write-Host "    Error:     $($ac.Error)" -ForegroundColor Red
     }
