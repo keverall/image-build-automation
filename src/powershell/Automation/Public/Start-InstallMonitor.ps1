@@ -54,6 +54,7 @@ function Start-InstallMonitor {
         [Parameter(Mandatory = $false)][int]    $PollIntervalSeconds = 30,
         [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json'
     )
+    Initialize-Logging -LogFile 'monitoring.log' -CommandName 'Start-InstallMonitor'
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
         if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
@@ -101,7 +102,6 @@ if (-not $Script:MonitorLogDir -or $Script:MonitorLogDir -eq '') {
         $Script:MonitorLogDir = Join-Path $projectRoot 'generated/logs/production'
     }
 }
-Initialize-Logging -LogFile 'monitoring.log' -CommandName 'Start-InstallMonitor'
 
 # ---- Phase-name map ----
 $Script:PhaseMap = @{
@@ -324,34 +324,6 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         Write-Output "`nMonitoring Summary: Completed=$completed Failed=$failed Timeout=$timedOut Total=$($results.Count)"
         Write-Output "Saved: $summaryFile"
         return $summary
-    }
-}
-
-# --- Main (script mode only) ---
-if ($MyInvocation.InvocationName -ne '.' -and $null -ne $MyInvocation.PSScriptRoot) {
-    try {
-        if ($SerialNumber) {
-            $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-            if (-not $resolved.Success) { Write-Error $resolved.Error; exit 1 }
-            $Server = $resolved.Identifier
-            Write-Output "Resolved serial '$SerialNumber' -> $Server"
-        }
-        $serverInfo = if ($Server) { [ServerInfo]::new($Server, '', '', 0) } else { $null }
-        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig, [bool]$DryRun, $serverInfo)
-        if ($Server) {
-            $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-            if (-not $si) { Write-Error "Server not found: $Server"; exit 1 }
-            $r = $monitor.MonitorServer($si, $TimeoutSeconds, $PollIntervalSeconds)
-            exit (if ($r.status -eq 'completed') { 0 } else { 1 })
-        }
-        else {
-            $summary = $monitor.MonitorAll($TimeoutSeconds)
-            exit (if ($summary['completed'] -gt 0) { 0 } else { 1 })
-        }
-    }
-    catch {
-        Write-Error "Monitoring failed: $($_.Exception.Message)"
-        exit 1
     }
 }
 
