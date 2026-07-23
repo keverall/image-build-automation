@@ -3,153 +3,6 @@
 # connectivity test.  Safe to run during a change freeze (read-only).
 #
 
-# ---- Script-mode param block ----
-[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-    'PSAvoidUsingConvertToSecureStringWithPlainText', '',
-    Justification = 'Interactive prompt builds PSCredential from operator-entered password for Connect-OVMgmt; password is never persisted or logged.')]
-param(
-    [ValidateSet('Test', 'Prod')][string] $Environment,
-    [string] $ManagementHost,
-    [System.Management.Automation.PSCredential] $Credential,
-    [string] $ConfigDir = 'configs',
-    [int] $PingTimeoutMs = 3000,
-    [switch] $Json,
-    [switch] $JsonConfig,
-    [switch] $DryRun,
-    [Alias('h', 'help', '?')][switch] $ShowHelp
-)
-
-if ($ShowHelp) {
-    Write-Host ""
-    Write-Host "NAME"
-    Write-Host "    Test-ServerConnectivity"
-    Write-Host ""
-    Write-Host "SYNOPSIS"
-    Write-Host "    Combined network ping + authentication check for a OneView appliance."
-    Write-Host ""
-    Write-Host "SYNTAX"
-    Write-Host "    Test-ServerConnectivity"
-    Write-Host "        [-Environment <Test|Prod>] [-ManagementHost <string>]"
-    Write-Host "        [-Credential <PSCredential>] [-PingTimeoutMs <int>] [-Json]"
-    Write-Host "        [-JsonConfig] [-DryRun]"
-    Write-Host ""
-    Write-Host "DESCRIPTION"
-    Write-Host "    Performs read-only connectivity checks against a OneView appliance."
-    Write-Host "    Two phases are executed:"
-    Write-Host ""
-    Write-Host "      1. Network Ping  - DNS resolution + TCP port probe (no credentials needed)"
-    Write-Host "      2. Auth Connect  - full authentication using the HPE OneView module."
-    Write-Host "                         Session persists for subsequent commands."
-    Write-Host ""
-    Write-Host "    All operations are read-only.  No maintenance windows are created, no"
-    Write-Host "    objects are modified.  Safe to run during a change freeze."
-    Write-Host ""
-    Write-Host "    HOST RESOLUTION ORDER (LIVE run = config is NEVER read):"
-    Write-Host "      1. -ManagementHost parameter (REQUIRED for live tests, used verbatim)"
-    Write-Host "      2. Interactive credential prompt (username + password)"
-    Write-Host ""
-    Write-Host "    CONFIG IS ONLY FOR -DryRun:"
-    Write-Host "      On a live run this command does NOT read connection_hosts.json or"
-    Write-Host "      oneview_config.json. The host you pass with -ManagementHost is used"
-    Write-Host "      exactly as typed, so only that appliance is ever contacted."
-    Write-Host "      Credentials come from -Credential or an interactive prompt - never"
-    Write-Host "      from config. -JsonConfig / connection_hosts.json are honoured ONLY"
-    Write-Host "      with -DryRun."
-    Write-Host ""
-    Write-Host "PARAMETERS"
-    Write-Host ""
-    Write-Host "  -Environment <Test|Prod>"
-    Write-Host "    Labels the environment in output. Host resolution from"
-    Write-Host "    connection_hosts.json only happens with -JsonConfig AND -DryRun."
-    Write-Host "    Ignored on live runs (host must be given via -ManagementHost)."
-    Write-Host "    Default: Prod. Valid values: Test, Prod"
-    Write-Host ""
-    Write-Host "  -ManagementHost <string>  [REQUIRED for live tests]"
-    Write-Host "    OneView appliance to connect to (server name or serial)."
-    Write-Host "    Used VERBATIM - no config or environment-variable fallback. This"
-    Write-Host "    guarantees only the host you specify is ever contacted."
-    Write-Host ""
-    Write-Host "  -Credential <PSCredential>"
-    Write-Host "    Explicit username/password for the live connection (e.g."
-    Write-Host "    -Credential (Get-Credential)). If omitted on a live run, the"
-    Write-Host "    command prompts interactively for username and password."
-    Write-Host ""
-    Write-Host "  -JsonConfig"
-    Write-Host "    Use configs/connection_hosts.json to resolve the OneView appliance."
-    Write-Host "    ONLY honoured together with -DryRun (config is for dry-run testing"
-    Write-Host "    only, never for live user runs)."
-    Write-Host "    See CONFIGURATION section below for config file locations."
-    Write-Host ""
-    Write-Host "  -PingTimeoutMs <int>"
-    Write-Host "    TCP connect timeout in milliseconds (default: 3000)."
-    Write-Host ""
-    Write-Host "  -Json"
-    Write-Host "    Output as JSON for API integration."
-    Write-Host ""
-    Write-Host "  -DryRun"
-    Write-Host "    Simulate connectivity without actual network calls. Returns mock data"
-    Write-Host "    to verify configuration resolution."
-    Write-Host ""
-    Write-Host "CONFIGURATION"
-    Write-Host "  Management Host - configs/connection_hosts.json:"
-    Write-Host "    Location: configs/connection_hosts.json"
-    Write-Host "    Used when -JsonConfig is specified together with -DryRun."
-    Write-Host ""
-    Write-Host "    Structure (OneView only):"
-    Write-Host "    {"
-    Write-Host '      "environments": {'
-    Write-Host '        "Prod": {'
-    Write-Host '          "oneview": {'
-    Write-Host '            "appliance": "oneview.ad.example.com",'
-    Write-Host '            "scope_name": "Production_Cluster_01"'
-    Write-Host '          }'
-    Write-Host '        },'
-    Write-Host '        "Test": {'
-    Write-Host '          "oneview": {'
-    Write-Host '            "appliance": "oneview.ad.example.com",'
-    Write-Host '            "scope_name": "Test_Cluster_01"'
-    Write-Host '          }'
-    Write-Host '        }'
-    Write-Host "      }"
-    Write-Host "    }"
-    Write-Host ""
-    Write-Host "    To set the appliance: edit 'appliance' under the relevant environment."
-    Write-Host ""
-    Write-Host "  Server Names, Serial Numbers:"
-    Write-Host "    Location: configs/servers_catalogue.oneview.json"
-    Write-Host "      - OneView server definitions"
-    Write-Host "      - Serial numbers and OneView names"
-    Write-Host ""
-    Write-Host "  OneView Configuration: configs/oneview_config.json"
-    Write-Host ""
-    Write-Host "EXAMPLES"
-    Write-Host ""
-    Write-Host "    # LIVE test - explicit host, credentials prompted interactively"
-    Write-Host "    Test-ServerConnectivity -ManagementHost 'va-oneviewt-01'"
-    Write-Host ""
-    Write-Host "    # LIVE test - explicit host + supplied credential (no prompt)"
-    Write-Host "    Test-ServerConnectivity -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)"
-    Write-Host ""
-    Write-Host "    # DRY-RUN using connection_hosts.json config (no real connection)"
-    Write-Host "    Test-ServerConnectivity -Environment Test -JsonConfig -DryRun"
-    Write-Host ""
-    Write-Host "    # DRY-RUN with explicit host (validates resolution only)"
-    Write-Host "    Test-ServerConnectivity -ManagementHost 'va-oneviewt-01' -DryRun"
-    Write-Host ""
-    Write-Host "    # DRY-RUN with interactive host prompt"
-    Write-Host "    Test-ServerConnectivity -DryRun"
-    Write-Host ""
-    exit 0
-}
-
-# ---- Module import for script mode ----
-if (-not (Get-Module -Name 'Automation' -ErrorAction SilentlyContinue) -and $MyInvocation.InvocationName -ne '.') {
-    if ($MyInvocation.InvocationName -match '\.ps1$') {
-        $modulePath = Join-Path $PSScriptRoot '..\Automation.psd1'
-        Import-Module $modulePath -Force -WarningAction SilentlyContinue
-    }
-}
-
 function Test-ServerConnectivity {
     <#
     .SYNOPSIS
@@ -229,6 +82,9 @@ function Test-ServerConnectivity {
         Get-OneViewConnectionStatus, etc.). Use Disconnect-OneView to explicitly
         close the session when finished.
     #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSAvoidUsingConvertToSecureStringWithPlainText', '',
+        Justification = 'Interactive prompt builds PSCredential from operator-entered password for Connect-OVMgmt; password is never persisted or logged.')]
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
