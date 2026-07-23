@@ -1,6 +1,6 @@
 # Automation Test Plan — Physical Server Build & ISO Pipeline
 
-<p class="report-run-date"><strong>Run date:</strong> 22/07/2026 22:49</p>
+<p class="report-run-date"><strong>Run date:</strong> 23/07/2026 09:17</p>
 
 <a id="top"></a>
 ## Table of Contents
@@ -122,11 +122,9 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 | Run # | Date/Time | Command / Suite | Environment | Result | CI Job / Log Ref | Reason for full testing rerun |
 |-------|-----------|-----------------|-------------|--------|------------------|---------------|
-| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | GitLab CI | Passed (68/68) | see run log below | Initial test run |
-| 2 | 23/07/2026 09:06:45 | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal | Passed (93/93) | see run log below | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. |
+| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | Ran manually on terminal  | Passed (68/68) |  | Initial test run |
+| 2 | 23/07/2026 09:31:16 | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal | Passed (93/93) | see run log below | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. |
 
-
-> **Scenario vs. atomic-test count:** The 38 `AT-*` rows above are *logical test scenarios* (one per command/feature area). Each scenario expands into multiple Pester `It` blocks, giving **68 atomic tests** in total. Both numbers reconcile: 38 scenarios = 68 passing atomic tests, 0 failures.
 
 <a name="run-log"></a>
 ### Run log
@@ -137,157 +135,237 @@ Latest Full test run output (from `make test` / `make automation-mode-tests`):
 ================================================================================
                            TEST SUMMARY BLOCK
 ================================================================================
- Total Tests   : 68
- Passed        : 68
+ Total Tests   : 93
+ Passed        : 93 
 
 
-make automation-mode-tests                                                                    0  6s 800ms  16:33:55 
+Tests completed in 3.21s
+Tests Passed: 93, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0
+
+make automation-mode-tests                                                         0  5s 486ms  09:13:10 
 [prune-logs] Pruning old log files...
 [prune-logs] Pruning logs to keep maximum 10 per type...
-Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_<server>_2026-07-21T16-33-51Z.json
-Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784647614.json
-Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/audit/prebuild_TEST_1784648034.json
-Removed excess log: /home/keverall/repos/image-build-automation/generated/logs/automation/automated-mode-test_2026-07-21T16-33-51Z.log
-[prune-logs] Pruned 4 excess log files.
+[prune-logs] Pruned 0 excess log files.
 Running automation functionality tests...
-Detailed log: /home/keverall/repos/image-build-automation/generated/logs/automation/automated-mode-test_2026-07-21T16-36-21Z.log
+Detailed log: /home/keverall/repos/image-build-automation/generated/logs/automation/automated-mode-test_2026-07-23T09-13-15Z.log
 Pester v5.7.1
 
-Starting discovery in 13 files.
-Discovery found 68 tests in 146ms.
+Starting discovery in 15 files.
+Discovery found 93 tests in 154ms.
 Running tests.
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/New-IsoBuild.Unit.Tests.ps1'
 Describing New-IsoBuild - basic invocation and parameter validation
-  [+] Function is exported and has expected parameters 47ms (33ms|14ms)
-  [+] DryRun returns Success without ConfigMgr call 36ms (33ms|3ms)
-  [+] MockIsoPath copies placeholder ISO without ConfigMgr call 21ms (21ms|0ms)
+  [+] Function is exported and has expected parameters 48ms (33ms|15ms)
+  [+] DryRun returns Success without ConfigMgr call 22ms (22ms|0ms)
+  [+] MockIsoPath copies placeholder ISO without ConfigMgr call 31ms (30ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Publish-BootIso.Unit.Tests.ps1'
 Describing Publish-BootIso - basic invocation
-  [+] Function is exported 2ms (1ms|1ms)
-  [+] Has expected parameters 3ms (3ms|0ms)
-  [+] Fails when IsoPath does not exist 8ms (8ms|0ms)
+  [+] Function is exported 2ms (2ms|1ms)
+  [+] Has expected parameters 3ms (2ms|0ms)
+  [+] Fails when IsoPath does not exist 7ms (7ms|0ms)
   [+] Fails when RepoBaseUrl not provided and no env var 2ms (2ms|0ms)
-  [+] DryRun succeeds without copying 5ms (5ms|0ms)
+  [+] DryRun succeeds without copying 6ms (6ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1'
 Describing Get-OneViewServerTarget - basic invocation
   [+] Function is exported 2ms (1ms|1ms)
-  [+] Has expected parameters 3ms (2ms|0ms)
-  [+] Returns MockResult without network call 7ms (7ms|0ms)
-  [+] Fails when OneViewHost missing and no MockResult 3ms (2ms|0ms)
-  [+] DryRun succeeds 343ms (342ms|0ms)
-  [+] Rejects unknown IdentifierType 13ms (12ms|1ms)
+  [+] Has expected parameters 3ms (3ms|0ms)
+  [+] Returns MockResult without network call 9ms (9ms|0ms)
+  [+] Fails when OneViewHost missing and no MockResult 3ms (3ms|0ms)
+  [+] DryRun succeeds 368ms (367ms|0ms)
+  [+] Rejects unknown IdentifierType 37ms (30ms|7ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Get-OneViewConnectionStatus.Unit.Tests.ps1'
 Describing Get-OneViewConnectionStatus - basic invocation
   [+] Function is exported 2ms (1ms|1ms)
-  [+] Has expected parameters 6ms (5ms|0ms)
-  [+] Returns MockResult without network call 11ms (10ms|1ms)
-  [+] Fails when OneViewHost missing and no MockResult 12ms (10ms|2ms)
-  [+] DryRun succeeds 5ms (4ms|0ms)
+  [+] Has expected parameters 5ms (5ms|0ms)
+  [+] Returns MockResult without network call 9ms (9ms|0ms)
+  [+] Fails when OneViewHost missing and no MockResult 7ms (3ms|3ms)
+  [+] DryRun succeeds 11ms (10ms|1ms)
 
 Describing Get-OneViewConnectionStatus - parsing (mocked REST)
-  [+] Reports connected + version + server count from mocked probes 96ms (94ms|2ms)
-  [+] Resolves a server when -ServerIdentifier is supplied 18ms (17ms|1ms)
+  [+] Reports connected + version + server count from mocked probes 101ms (99ms|2ms)
+  [+] Resolves a server when -ServerIdentifier is supplied 18ms (17ms|0ms)
 
 Describing Get-OneViewConnectionStatus - HPEOneView module session (parameterless)
-  [+] Reports not-connected (no connect/disconnect) when no session and no -OneViewHost 5ms (4ms|1ms)
-  [+] Reuses the active HPEOneView session when -OneViewHost is omitted 30ms (29ms|1ms)
+  [+] Reports not-connected (no connect/disconnect) when no session and no -OneViewHost 9ms (8ms|1ms)
+  [+] Reuses the active HPEOneView session when -OneViewHost is omitted 14ms (14ms|1ms)
   [+] Reports SessionSource Explicit when -OneViewHost is supplied 7ms (7ms|0ms)
-  [+] Never invokes Connect-OVMgmt or Disconnect-OVMgmt (read-only check only) 628ms (627ms|0ms)
+  [+] Never invokes Connect-OVMgmt or Disconnect-OVMgmt (read-only check only) 849ms (848ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Get-OneViewServerList.Unit.Tests.ps1'
 Describing Get-OneViewServerList - basic invocation
-  [+] Function is exported 2ms (2ms|1ms)
-  [+] Has expected parameters 6ms (6ms|0ms)
-  [+] Returns MockResult without network call 5ms (5ms|0ms)
-  [+] Fails when OneViewHost missing and no MockResult 2ms (1ms|0ms)
-  [+] DryRun succeeds 3ms (2ms|1ms)
-  [+] Rejects an unsupported -Filter 2ms (1ms|0ms)
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 5ms (5ms|0ms)
+  [+] Returns MockResult without network call 6ms (6ms|0ms)
+  [+] Fails when OneViewHost missing and no MockResult 3ms (2ms|0ms)
+  [+] DryRun succeeds 2ms (2ms|0ms)
+  [+] Rejects an unsupported -Filter 2ms (2ms|1ms)
 
 Describing Get-OneViewServerList - pagination & filtering (mocked REST)
-  [+] Enumerates every page (Count = 3) 18ms (18ms|1ms)
-  [+] Filters by health:Critical 25ms (12ms|13ms)
-  [+] Filters by power:Off 6ms (6ms|0ms)
+  [+] Enumerates every page (Count = 3) 24ms (22ms|2ms)
+  [+] Filters by health:Critical 10ms (10ms|0ms)
+  [+] Filters by power:Off 15ms (14ms|0ms)
+
+Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Logging.Unit.Tests.ps1'
+Describing Initialize-Logging - file creation and path resolution
+2026-07-23 08:13:18 - Seed - INFO - seed entry
+  [+] Creates a timestamped log file in the testing directory when run under Pester 17ms (14ms|3ms)
+  [+] Sets the global log level used for Debug filtering 3ms (3ms|0ms)
+  [+] Normalises Information level to INFO in the file name 3ms (3ms|0ms)
+  [+] Normalises Verbose level to DEBUG in the file name 3ms (3ms|0ms)
+  [+] Does not create a file when LogFile is omitted but still configures logging 3ms (3ms|0ms)
+
+Describing Get-Logger - methods and level filtering
+  [+] Returns a logger exposing Info/Warning/Error/Debug script methods 9ms (9ms|1ms)
+2026-07-23 08:13:18 - Comp - INFO - hello world
+  [+] Info appends a correctly formatted INFO line to the log file 10ms (10ms|0ms)
+WARNING: 2026-07-23 08:13:18 - Comp - WARNING - careful
+  [+] Warning appends a WARNING line 11ms (9ms|1ms)
+  [+] Error appends an ERROR line 85ms (85ms|0ms)
+2026-07-23 08:13:18 - Comp - INFO - warmup
+  [+] Debug is suppressed when the level is Information 14ms (12ms|1ms)
+  [+] Debug is written when the level is Debug 4ms (4ms|0ms)
+  [+] Debug is written when the level is Verbose 4ms (3ms|0ms)
+2026-07-23 08:13:18 - A - INFO - from A
+2026-07-23 08:13:18 - B - INFO - from B
+  [+] Multiple named loggers append to the same file 5ms (5ms|0ms)
+
+Describing Get-Logger - graceful behaviour when no log path is configured
+2026-07-23 08:13:18 - Safe - INFO - no file yet
+  [+] Does not throw when no log file is configured 46ms (45ms|1ms)
+
+Describing Log file format validation
+2026-07-23 08:13:18 - Fmt - INFO - one
+WARNING: 2026-07-23 08:13:18 - Fmt - WARNING - two
+  [+] Every written line matches the canonical log format 48ms (46ms|2ms)
+
+Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/AutomationCommandLogging.Unit.Tests.ps1'
+Describing Every automation command that should log is wired to Initialize-Logging
+  [+] calls Initialize-Logging with a LogFile 5ms (2ms|2ms)
+  [+] calls Initialize-Logging with a LogFile 2ms (1ms|0ms)
+  [+] calls Initialize-Logging with a LogFile 2ms (1ms|0ms)
+  [+] calls Initialize-Logging with a LogFile 3ms (3ms|0ms)
+  [+] calls Initialize-Logging with a LogFile 1ms (1ms|0ms)
+  [+] calls Initialize-Logging with a LogFile 1ms (1ms|0ms)
+
+Describing Logging is functional: commands initialise and write logs
+
+==============================================
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE [DRY-RUN]
+  Mode:       oneview
+  Host:       test-ov.local
+  Environment:Prod
+  Timestamp:  2026-07-23T08:13:18.4190947Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.254.254.254
+    TCP:       Open (port 443, 1ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: Yes
+    Session:   Active (use Disconnect-OneView to close)
+
+  --- Dry-Run Configuration Summary ---
+    Module:       HPEOneView.1000
+    Target ports: 443
+    WinRM:        False
+    Cred user:    ONEVIEW_USER
+    Cred pass:    ONEVIEW_PASSWORD
+    Note:         Mock data - no actual connectivity test performed
+
+==============================================
+
+2026-07-23 08:13:18 - Connectivity - INFO - Connectivity test for 'test-ov.local' completed (DryRun): Available=True, Mode=oneview
+  [+] Test-ServerConnectivity writes a real connectivity log file (script mode, DryRun) 48ms (48ms|1ms)
+  [+] New-IsoBuild initialises logging with iso_build.log 26ms (25ms|0ms)
+  [+] Update-Firmware initialises logging with firmware_updater.log 36ms (36ms|0ms)
+  [+] Update-WindowsSecurity initialises logging with windows_patcher.log 24ms (23ms|1ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1'
 Describing Invoke-IloRedfish - basic invocation and parameter validation
-  [+] Function is exported 2ms (1ms|1ms)
-  [+] Has expected parameters 4ms (3ms|0ms)
-  [+] Accepts -DryRun switch without HTTP calls 5ms (5ms|0ms)
-  [+] Rejects unknown parameters 1ms (1ms|0ms)
-  [+] Destructive actions require -Force when not in DryRun 3ms (2ms|0ms)
-  [+] Destructive actions succeed in DryRun without -Force 3ms (3ms|0ms)
+  [+] Function is exported 4ms (3ms|2ms)
+  [+] Has expected parameters 21ms (20ms|1ms)
+  [+] Accepts -DryRun switch without HTTP calls 8ms (7ms|0ms)
+  [+] Rejects unknown parameters 3ms (2ms|1ms)
+  [+] Destructive actions require -Force when not in DryRun 5ms (4ms|1ms)
+  [+] Destructive actions succeed in DryRun without -Force 3ms (2ms|1ms)
 
 Describing Invoke-IloRedfish - IloRedfishSession class
-  [+] Class is declared inside Automation.psm1 3ms (1ms|1ms)
+  [+] Class is declared inside Automation.psm1 2ms (1ms|1ms)
 
 Describing Invoke-IloRedfish - Action validation
-  [+] Rejects invalid action 6ms (4ms|2ms)
-  [+] MountAndBoot without IsoUrl fails 4ms (3ms|1ms)
+  [+] Rejects invalid action 3ms (2ms|1ms)
+  [+] MountAndBoot without IsoUrl fails 1ms (1ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1'
 Describing Invoke-IsoDeploy - basic invocation and parameter validation
-  [+] Function is exported and has expected parameters 2ms (2ms|1ms)
-  [+] Accepts -DryRun switch without throwing 35ms (34ms|0ms)
-  [+] Rejects unknown parameters (strict mode) 2ms (1ms|0ms)
+  [+] Function is exported and has expected parameters 3ms (2ms|1ms)
+  [+] Accepts -DryRun switch without throwing 27ms (26ms|0ms)
+  [+] Rejects unknown parameters (strict mode) 1ms (1ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1'
 Describing Start-PhysicalServerBuild - basic invocation
-  [+] Function is exported 3ms (2ms|1ms)
-  [+] Has expected parameters 5ms (4ms|0ms)
-  [+] DryRun with everything skipped returns Success 17ms (16ms|0ms)
+  [+] Function is exported 2ms (1ms|1ms)
+  [+] Has expected parameters 5ms (5ms|0ms)
+  [+] DryRun with everything skipped returns Success 18ms (18ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1'
 Describing Test-PreBuildValidation - basic invocation
   [+] Function is exported 2ms (1ms|1ms)
-  [+] Has expected parameters 4ms (4ms|0ms)
-  [+] DryRun with all skips returns Success 23ms (22ms|0ms)
-  [+] Skips iso_url_check when IsoUrl empty 9ms (8ms|1ms)
-  [+] SkipIsoUrl suppresses the ISO URL check 4ms (4ms|0ms)
-  [+] Returns Checks dictionary even when nothing configured 7ms (7ms|0ms)
+  [+] Has expected parameters 5ms (4ms|0ms)
+  [+] DryRun with all skips returns Success 16ms (15ms|0ms)
+  [+] Skips iso_url_check when IsoUrl empty 14ms (13ms|1ms)
+  [+] SkipIsoUrl suppresses the ISO URL check 11ms (10ms|1ms)
+  [+] Returns Checks dictionary even when nothing configured 8ms (7ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1'
 Describing Test-PostBuildValidation - basic invocation
   [+] Function is exported 2ms (1ms|1ms)
-  [+] Has expected parameters 3ms (3ms|0ms)
+  [+] Has expected parameters 6ms (5ms|0ms)
   [+] SkipRemote returns Success 7ms (7ms|0ms)
-  [+] DryRun fails without SkipRemote (WinRM unreachable) 9ms (8ms|0ms)
+  [+] DryRun fails without SkipRemote (WinRM unreachable) 6ms (5ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Start-InstallMonitor.Unit.Tests.ps1'
 Describing Start-InstallMonitor - basic invocation and parameter validation
-  [+] Function is exported 11ms (11ms|1ms)
+  [+] Function is exported 2ms (1ms|1ms)
   [+] Accepts Server and TimeoutSeconds parameters 2ms (2ms|0ms)
-  [+] Rejects unknown parameters (strict mode) 1ms (1ms|0ms)
+  [+] Rejects unknown parameters (strict mode) 3ms (2ms|1ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Update-Firmware.Unit.Tests.ps1'
 Describing Update-Firmware - basic invocation and parameter validation
   [+] Function is exported and has expected parameters 2ms (2ms|1ms)
-  [+] Accepts -DryRun switch without throwing 30ms (30ms|0ms)
+  [+] Accepts -DryRun switch without throwing 14ms (13ms|1ms)
   [+] Rejects unknown parameters (strict mode) 1ms (1ms|0ms)
 
 Running tests from '/home/keverall/repos/image-build-automation/tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1'
 Describing Invoke-WindowsSecurityUpdate - basic invocation and parameter validation
   [+] Function is exported and has expected parameters 2ms (2ms|1ms)
-  [+] Accepts -DryRun switch without throwing 9ms (7ms|1ms)
+  [+] Accepts -DryRun switch without throwing 6ms (6ms|0ms)
   [+] Rejects unknown parameters (strict mode) 1ms (1ms|0ms)
-Tests completed in 2.38s
-Tests Passed: 68, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0
+
+Tests completed in 3.21s
+Tests Passed: 93, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0
 
 ================================================================================
                            TEST SUMMARY BLOCK                                   
 ================================================================================
- Total Tests   : 68
- Passed        : 68 
+ Total Tests   : 93
+ Passed        : 93 
 -NoNewline
 ✔
  Failed        : 0 
 -NoNewline
 ✔
  Skipped       : 0
- Duration      : 2.38s
+ Duration      : 3.21s
 ================================================================================
 ```
 
