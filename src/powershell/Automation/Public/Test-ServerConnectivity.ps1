@@ -4,6 +4,9 @@
 #
 
 # ---- Script-mode param block ----
+[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSAvoidUsingConvertToSecureStringWithPlainText', '',
+    Justification = 'Interactive prompt builds PSCredential from operator-entered password for Connect-OVMgmt; password is never persisted or logged.')]
 param(
     [ValidateSet('Test', 'Prod')][string] $Environment,
     [string] $ManagementHost,
@@ -540,6 +543,14 @@ function Test-ServerConnectivity {
     }
 
     $logger.Info("TCP probe for '$resolvedHost': $(if ($pingResult.TcpPortOpen) { "Open (port $($pingResult.Port), $($pingResult.LatencyMs)ms)" } else { "FAILED - $($pingResult.Error)" })")
+
+    # If credentials were resolved interactively (but -Credential was not supplied),
+    # build a PSCredential so Connect-OneViewSession receives them.
+    if (-not $Credential -and $resolvedUser -and $resolvedPass) {
+        $Credential = [System.Management.Automation.PSCredential]::new(
+            $resolvedUser,
+            (ConvertTo-SecureString $resolvedPass -AsPlainText -Force))
+    }
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 2: Authentication Connect (OneView)
