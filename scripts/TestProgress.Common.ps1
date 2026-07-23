@@ -121,11 +121,16 @@ function Set-LastRowDateTime {
         [AllowNull()][string[]]$Rows,
         [Parameter(Mandatory)][string]$DateTime
     )
+    if ($null -eq $Rows) { return @() }
     $list = @($Rows)
-    if ($list.Count -eq 0) { return $list }
-    $dt = $DateTime
-    $eval = { param($m) "$($m.Groups[1].Value) $dt $($m.Groups[3].Value)" }.GetNewClosure()
-    $list[-1] = [regex]::Replace($list[-1], '^(\s*\|[^|]*\|)([^|]*)(\|)', $eval)
+    if ($list.Count -eq 0) { return @() }
+    $last = $list[-1]
+    if ($null -eq $last -or $last -eq '') { return $list }
+    $cells = $last -split '\|'
+    if ($cells.Count -ge 3) {
+        $cells[2] = " $DateTime "
+        $list[-1] = $cells -join '|'
+    }
     return $list
 }
 
