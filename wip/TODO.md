@@ -377,3 +377,47 @@ ManagementHost                 va-oneviewt-01
 Available                      False
 AuthConnect                    {[ModuleLoaded, True], [Connected, False], [Error, Auth error: The proxy tunnel request to proxy 'http://webcorp.prd.aib.pri:8082/' fai… 
 Environment                    Prod
+
+
+
+
+==================================================================
+
+ Test-ServerConnectivity -ManagementHost va-oneviewt-01                                             0  26s 602ms  14:47:39 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-23 13:48:30 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-23 13:48:30 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 3ms) 
+
+============================================== 
+  OneView Connectivity Test
+============================================== 
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-07-23T13:48:32.6701187Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79 
+    TCP:       Open (port 443, 3ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: No
+    Error:     No credentials supplied and ONEVIEW_USER/ONEVIEW_PASSWORD not configured
+
+==============================================
+
+2026-07-23 13:48:32 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)
+
+Name                           Value
+----                           -----
+AuthConnect                    {[ModuleLoaded, True], [Disconnected, False], [Connected, False], [Error, No credentials supplied and ONEVIEW_USER/ONEV… 
+Environment                    Prod
+ManagementHost                 va-oneviewt-01 
+Available                      False
+NetworkPing                    {[Port, 443], [DnsResolved, True], [TcpPortOpen, True], [LatencyMs, 3]…}
+Timestamp                      2026-07-23T13:48:32.6701187Z
+Mode                           oneview
