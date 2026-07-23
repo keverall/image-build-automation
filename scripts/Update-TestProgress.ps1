@@ -178,9 +178,11 @@ if ($summary.Parsed) {
     Write-Warning "Could not parse test summary from log. Using fallback values."
 }
 
-# Get current date and time
-$testDate = Get-Date -Format "dd/MM/yyyy HH:mm:ss"
-$runDate = [DateTime]::UtcNow.ToString('dd/MM/yyyy HH:mm')
+# Get current date and time. All timestamps are UTC and marked as UTC so the
+# top run-date, the section-7 evidence rows, and the OneView phase-11 rows
+# stay consistent (no local/UTC drift).
+$testDate = [DateTime]::UtcNow.ToString('dd/MM/yyyy HH:mm:ss') + ' UTC'
+$runDate = [DateTime]::UtcNow.ToString('dd/MM/yyyy HH:mm') + ' UTC'
 
 # Prompt for test run details (or use parameters if provided)
 Write-Host "`n[test-progress] Please provide details for the test run record:" -ForegroundColor Yellow

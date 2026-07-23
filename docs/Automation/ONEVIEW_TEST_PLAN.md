@@ -1,8 +1,7 @@
 # HPE OneView 1000 — Live Integration Test Plan
 
 <!-- BEGIN:run-date -->
-<!-- BEGIN:run-date -->
-<p class="report-run-date"><strong>Run date:</strong> 22/07/2026 22:49</p>
+<p class="report-run-date"><strong>Run date:</strong> 23/07/2026 18:55 UTC</p>
 <!-- END:run-date -->
 <!-- END:run-date -->
 
@@ -29,8 +28,7 @@
 ## Current OneView Connected Automation Command testing status and progress Summary
 
 <!-- BEGIN:oneview-status-summary -->
-<!-- BEGIN:oneview-status-summary -->
-- **Initial testing this morning but unable to test now as there is no CRQ active as advised by Marin. I cannot retest until the CRQ is approved, hopefully tomorrow 24/07/2026. Test-ServerConnectivity command worked this morning but it disconnected and should not. I have recoded but it was a large change and will need retesting. Automation tests all pass currently but I cannot test any server connected tests in this test plan due to lack of CRQ coverage.**
+- **Could not test today because the CRE ran out last night at 5pm, I will continue testing on 24/07/2026 tomorrow.**
 <!-- END:oneview-status-summary -->
 <!-- END:oneview-status-summary -->
 
@@ -186,7 +184,8 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 |-------|-----------|----------|--------|-----------|--------|-------------|------------|
 <!-- BEGIN:phase11-rows -->
 <!-- BEGIN:phase11-rows -->
-| 1 | 22/07/2026 | Phases 1-10 (pending live execution) | <tester> | HPEOpenview.1000 | Pending | <log ref> | <delivery lead> |
+| 1 | 23/07/2026 18:55 UTC | Phases 1-10 (pending live execution) | <tester> | HPEOpenview.1000 | Pending | <log ref> | <delivery lead> |
+| 2 | 23/07/2026 18:55 UTC | 2 | K Everall | HPEOpenview.1000 | Failed | <log ref> | <delivery lead> |
 <!-- END:phase11-rows -->
 <!-- END:phase11-rows -->
 

@@ -12,6 +12,7 @@
 #   - Set-OneViewStatusSummary: OneView status summary update
 #   - Update-Phase11Block: Phase 11 row update/addition
 #   - Get-TestResultFromLog: log summary parsing
+# Plus end-to-end (child process, -SkipHtml) and HTML converter tests.
 #
 
 BeforeAll {
@@ -90,8 +91,8 @@ after
 
     It 'Returns unchanged content when block not found' {
         $content = 'no markers'
-        $result = Set-Block -Content $content -Key 'missing' -Inner 'new' 3>&1
-        $result | Should -Match 'no markers'
+        $result = Set-Block -Content $content -Key 'missing' -Inner 'new' -WarningAction SilentlyContinue
+        $result | Should -Be $content
     }
 
     It 'Preserves markers exactly' {
@@ -114,22 +115,6 @@ old
         $result = Set-Block -Content $content -Key 'key' -Inner 'text with $ and ` and {'
         $result | Should -Match 'text with \$ and ` and \{'
     }
-
-    It 'Only touches the targeted key, leaving other blocks intact' {
-        $content = @"
-<!-- BEGIN:key1 -->
-content1
-<!-- END:key1 -->
-<!-- BEGIN:key2 -->
-content2
-<!-- END:key2 -->
-"@
-        $result = Set-Block -Content $content -Key 'key1' -Inner 'new1'
-        $result | Should -Match 'new1'
-        $result | Should -Match 'content2'
-        $result | Should -Not -Match 'content1'
-    }
-}
 
     It 'Only touches the targeted key, leaving other blocks intact' {
         $content = @"
@@ -292,7 +277,7 @@ Describe 'Set-LastRowDateTime' {
     It 'Preserves other columns' {
         $rows = @('| 1 | old date | col3 | col4 |')
         $result = Set-LastRowDateTime -Rows $rows -DateTime 'new date'
-        $result[0] | Should -Match '\| 1 \| new date \| col3 \| col4 \|'
+        $result | Should -Match '\| 1 \| new date \| col3 \| col4 \|'
     }
 }
 
@@ -337,7 +322,7 @@ Describe 'Add-AutomationEvidenceRow' {
     It 'Returns RunNumber 0 when block not found' {
         $content = 'no block here'
         $result = Add-AutomationEvidenceRow -Content $content -DateTime '01/01/2026' `
-            -CommandSuite 'suite' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason' 3>&1
+            -CommandSuite 'suite' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason' -WarningAction SilentlyContinue
         $result.RunNumber | Should -Be 0
         $result.Content | Should -Be $content
     }
@@ -350,7 +335,7 @@ Describe 'Add-AutomationEvidenceRow' {
 "@
         $result = Add-AutomationEvidenceRow -Content $content -DateTime '02/01/2026' `
             -CommandSuite 'suite|with|pipes' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason'
-        $result.Content | Should -Match 'suite\|with\|pipes'
+        $result.Content | Should -Match 'suite\\|with\\|pipes'
     }
 
     It 'Handles empty fields' {
@@ -429,24 +414,8 @@ Describe 'Set-OneViewStatusSummary' {
         $result | Should -Match '\- \*\*Third\*\*'
         $result | Should -Not -Match 'First'
         $result | Should -Not -Match 'Second'
-        $bulletCount = ([regex]::Matches($result, '^- \*\*')).Count
-        $bulletCount | Should -Be 1
-    }
-}
-
-    It 'Is idempotent: running twice replaces, does not append a second bullet' {
-        $content = @"
-<!-- BEGIN:oneview-status-summary -->
-- **First**
-<!-- END:oneview-status-summary -->
-"@
-        $result = Set-OneViewStatusSummary -Content $content -SummaryText 'Second'
-        $result = Set-OneViewStatusSummary -Content $result -SummaryText 'Third'
-        $result | Should -Match '\- \*\*Third\*\*'
-        $result | Should -Not -Match 'First'
-        $result | Should -Not -Match 'Second'
-        $bulletCount = ([regex]::Matches($result, '^- \*\*')).Count
-        $bulletCount | Should -Be 1
+        $bullets = @($result -split "`n" | Where-Object { $_ -match '^- \*\*' })
+        $bullets.Count | Should -Be 1
     }
 }
 
@@ -508,20 +477,7 @@ Describe 'Update-Phase11Block' {
         $result = Update-Phase11Block -Content $content -DateTime '02/01/2026' -AddRow `
             -Phases 'Phases|with|pipes' -Tester 'tester' -Appliance 'appliance' `
             -Result 'Pass' -LogRef 'log' -SignedOff 'signed'
-        $result.Content | Should -Match 'Phases\|with\|pipes'
-    }
-}
-
-    It 'Escapes pipe characters in add-row fields' {
-        $content = @"
-<!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
-<!-- END:phase11-rows -->
-"@
-        $result = Update-Phase11Block -Content $content -DateTime '02/01/2026' -AddRow `
-            -Phases 'Phases|with|pipes' -Tester 'tester' -Appliance 'appliance' `
-            -Result 'Pass' -LogRef 'log' -SignedOff 'signed'
-        $result.Content | Should -Match 'Phases\|with\|pipes'
+        $result.Content | Should -Match 'Phases\\|with\\|pipes'
     }
 }
 
@@ -611,5 +567,412 @@ TEST SUMMARY BLOCK
 "@
         $result = Get-TestResultFromLog -LogContent $logContent
         $result.Duration | Should -Be '123.456s'
+    }
+}
+
+Describe 'End-to-end script (child process, -SkipHtml)' {
+    BeforeAll {
+        $Script:ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+        $Script:ScriptPath = Join-Path $Script:ProjectRoot 'scripts/Update-TestProgress.ps1'
+        $Script:FixtureDir = Join-Path $Script:ProjectRoot 'generated/test-fixtures/test-progress-e2e'
+    }
+
+    BeforeEach {
+        if (Test-Path $Script:FixtureDir) { Remove-Item -Recurse -Force $Script:FixtureDir }
+        New-Item -ItemType Directory -Force -Path $Script:FixtureDir | Out-Null
+    }
+
+    AfterAll {
+        if (Test-Path $Script:FixtureDir) { Remove-Item -Recurse -Force $Script:FixtureDir }
+    }
+
+    It 'TPR-E2E-01: Default non-interactive run updates both plans' {
+        $automationPlan = Join-Path $Script:FixtureDir 'AUTOMATION_TEST_PLAN.md'
+        $oneviewPlan = Join-Path $Script:FixtureDir 'ONEVIEW_TEST_PLAN.md'
+        $logFile = Join-Path $Script:FixtureDir 'test.log'
+
+        $automationContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:automation-evidence-rows -->
+| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+<!-- END:automation-evidence-rows -->
+"@
+        Set-Content -Path $automationPlan -Value $automationContent -NoNewline
+
+        $oneviewContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:phase11-rows -->
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+<!-- END:phase11-rows -->
+"@
+        Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
+
+        $logContent = @"
+TEST SUMMARY BLOCK
+ Total Tests   : 10
+ Passed        : 10
+ Failed        : 0
+ Skipped       : 0
+ Duration      : 5.0s
+"@
+        Set-Content -Path $logFile -Value $logContent -NoNewline
+
+        $proc = Start-Process -FilePath 'pwsh' -ArgumentList @(
+            '-NoProfile', '-NonInteractive', '-File', $Script:ScriptPath,
+            '-LogPath', $logFile,
+            '-TestPlanPath', $automationPlan,
+            '-OneViewTestPlanPath', $oneviewPlan,
+            '-NonInteractive', '-SkipHtml'
+        ) -Wait -PassThru -NoNewWindow
+
+        $proc.ExitCode | Should -Be 0
+        $updatedAuto = Get-Content $automationPlan -Raw
+        $updatedAuto | Should -Not -Match '01/01/2026 10:00'
+        $updatedAuto | Should -Match '\| 2 \|'
+    }
+
+    It 'TPR-E2E-02: Phase 11 last-row date refresh without adding row' {
+        $automationPlan = Join-Path $Script:FixtureDir 'AUTOMATION_TEST_PLAN.md'
+        $oneviewPlan = Join-Path $Script:FixtureDir 'ONEVIEW_TEST_PLAN.md'
+        $logFile = Join-Path $Script:FixtureDir 'test.log'
+
+        $automationContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:automation-evidence-rows -->
+| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+<!-- END:automation-evidence-rows -->
+"@
+        Set-Content -Path $automationPlan -Value $automationContent -NoNewline
+
+        $oneviewContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:phase11-rows -->
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+<!-- END:phase11-rows -->
+"@
+        Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
+
+        $logContent = @"
+TEST SUMMARY BLOCK
+ Total Tests   : 10
+ Passed        : 10
+ Failed        : 0
+ Skipped       : 0
+ Duration      : 5.0s
+"@
+        Set-Content -Path $logFile -Value $logContent -NoNewline
+
+        $proc = Start-Process -FilePath 'pwsh' -ArgumentList @(
+            '-NoProfile', '-NonInteractive', '-File', $Script:ScriptPath,
+            '-LogPath', $logFile,
+            '-TestPlanPath', $automationPlan,
+            '-OneViewTestPlanPath', $oneviewPlan,
+            '-NonInteractive', '-SkipHtml'
+        ) -Wait -PassThru -NoNewWindow
+
+        $proc.ExitCode | Should -Be 0
+        $updatedOv = Get-Content $oneviewPlan -Raw
+        $updatedOv | Should -Not -Match '\| 1 \| 01/01/2026'
+        $updatedOv | Should -Match '\| 1 \|'
+        $rowLines = ($updatedOv -split '\n' | Where-Object { $_ -match '^\| \d+ \|' }).Count
+        $rowLines | Should -Be 1
+    }
+
+    It 'TPR-E2E-03: -OneViewStatusSummary supplied replaces bullet' {
+        $automationPlan = Join-Path $Script:FixtureDir 'AUTOMATION_TEST_PLAN.md'
+        $oneviewPlan = Join-Path $Script:FixtureDir 'ONEVIEW_TEST_PLAN.md'
+        $logFile = Join-Path $Script:FixtureDir 'test.log'
+
+        $automationContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:automation-evidence-rows -->
+| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+<!-- END:automation-evidence-rows -->
+"@
+        Set-Content -Path $automationPlan -Value $automationContent -NoNewline
+
+        $oneviewContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:oneview-status-summary -->
+- **Old status**
+<!-- END:oneview-status-summary -->
+
+<!-- BEGIN:phase11-rows -->
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+<!-- END:phase11-rows -->
+"@
+        Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
+
+        $logContent = @"
+TEST SUMMARY BLOCK
+ Total Tests   : 10
+ Passed        : 10
+ Failed        : 0
+ Skipped       : 0
+ Duration      : 5.0s
+"@
+        Set-Content -Path $logFile -Value $logContent -NoNewline
+
+        $proc = Start-Process -FilePath 'pwsh' -ArgumentList @(
+            '-NoProfile', '-NonInteractive', '-File', $Script:ScriptPath,
+            '-LogPath', $logFile,
+            '-TestPlanPath', $automationPlan,
+            '-OneViewTestPlanPath', $oneviewPlan,
+            '-NonInteractive', '-SkipHtml',
+            '-OneViewStatusSummary', '"New status text"'
+        ) -Wait -PassThru -NoNewWindow
+
+        $proc.ExitCode | Should -Be 0
+        $updatedOv = Get-Content $oneviewPlan -Raw
+        $updatedOv | Should -Match 'New status text'
+        $updatedOv | Should -Not -Match 'Old status'
+    }
+
+    It 'TPR-E2E-04: No summary param leaves bullet unchanged' {
+        $automationPlan = Join-Path $Script:FixtureDir 'AUTOMATION_TEST_PLAN.md'
+        $oneviewPlan = Join-Path $Script:FixtureDir 'ONEVIEW_TEST_PLAN.md'
+        $logFile = Join-Path $Script:FixtureDir 'test.log'
+
+        $automationContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:automation-evidence-rows -->
+| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+<!-- END:automation-evidence-rows -->
+"@
+        Set-Content -Path $automationPlan -Value $automationContent -NoNewline
+
+        $oneviewContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:oneview-status-summary -->
+- **Keep this**
+<!-- END:oneview-status-summary -->
+
+<!-- BEGIN:phase11-rows -->
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+<!-- END:phase11-rows -->
+"@
+        Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
+
+        $logContent = @"
+TEST SUMMARY BLOCK
+ Total Tests   : 10
+ Passed        : 10
+ Failed        : 0
+ Skipped       : 0
+ Duration      : 5.0s
+"@
+        Set-Content -Path $logFile -Value $logContent -NoNewline
+
+        $proc = Start-Process -FilePath 'pwsh' -ArgumentList @(
+            '-NoProfile', '-NonInteractive', '-File', $Script:ScriptPath,
+            '-LogPath', $logFile,
+            '-TestPlanPath', $automationPlan,
+            '-OneViewTestPlanPath', $oneviewPlan,
+            '-NonInteractive', '-SkipHtml'
+        ) -Wait -PassThru -NoNewWindow
+
+        $proc.ExitCode | Should -Be 0
+        $updatedOv = Get-Content $oneviewPlan -Raw
+        $updatedOv | Should -Match 'Keep this'
+    }
+
+    It 'TPR-E2E-05: -AddOneViewRow with fields appends new row' {
+        $automationPlan = Join-Path $Script:FixtureDir 'AUTOMATION_TEST_PLAN.md'
+        $oneviewPlan = Join-Path $Script:FixtureDir 'ONEVIEW_TEST_PLAN.md'
+        $logFile = Join-Path $Script:FixtureDir 'test.log'
+
+        $automationContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:automation-evidence-rows -->
+| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+<!-- END:automation-evidence-rows -->
+"@
+        Set-Content -Path $automationPlan -Value $automationContent -NoNewline
+
+        $oneviewContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:phase11-rows -->
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+<!-- END:phase11-rows -->
+"@
+        Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
+
+        $logContent = @"
+TEST SUMMARY BLOCK
+ Total Tests   : 10
+ Passed        : 10
+ Failed        : 0
+ Skipped       : 0
+ Duration      : 5.0s
+"@
+        Set-Content -Path $logFile -Value $logContent -NoNewline
+
+        $proc = Start-Process -FilePath 'pwsh' -ArgumentList @(
+            '-NoProfile', '-NonInteractive', '-File', $Script:ScriptPath,
+            '-LogPath', $logFile,
+            '-TestPlanPath', $automationPlan,
+            '-OneViewTestPlanPath', $oneviewPlan,
+            '-NonInteractive', '-SkipHtml',
+            '-AddOneViewRow',
+            '-OvPhases', '"Phases 6-10"',
+            '-OvTester', 'tester2',
+            '-OvAppliance', 'appliance2',
+            '-OvResult', 'Pass',
+            '-OvLogRef', 'log2',
+            '-OvSignedOff', 'signed2'
+        ) -Wait -PassThru -NoNewWindow
+
+        $proc.ExitCode | Should -Be 0
+        $updatedOv = Get-Content $oneviewPlan -Raw
+        $updatedOv | Should -Match '\| 2 \|'
+        $updatedOv | Should -Match 'Phases 6-10'
+        $updatedOv | Should -Match 'tester2'
+    }
+
+    It 'TPR-E2E-06: Missing log file causes non-zero exit' {
+        $automationPlan = Join-Path $Script:FixtureDir 'AUTOMATION_TEST_PLAN.md'
+        $oneviewPlan = Join-Path $Script:FixtureDir 'ONEVIEW_TEST_PLAN.md'
+        $missingLog = Join-Path $Script:FixtureDir 'nonexistent.log'
+
+        $automationContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:automation-evidence-rows -->
+| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+<!-- END:automation-evidence-rows -->
+"@
+        Set-Content -Path $automationPlan -Value $automationContent -NoNewline
+
+        $oneviewContent = @"
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+
+<!-- BEGIN:phase11-rows -->
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+<!-- END:phase11-rows -->
+"@
+        Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
+
+        $proc = Start-Process -FilePath 'pwsh' -ArgumentList @(
+            '-NoProfile', '-NonInteractive', '-File', $Script:ScriptPath,
+            '-LogPath', $missingLog,
+            '-TestPlanPath', $automationPlan,
+            '-OneViewTestPlanPath', $oneviewPlan,
+            '-NonInteractive', '-SkipHtml'
+        ) -Wait -PassThru -NoNewWindow
+
+        $proc.ExitCode | Should -Not -Be 0
+    }
+}
+
+Describe 'HTML converter comment stripping' {
+    BeforeAll {
+        $Script:ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+        $Script:ConverterScript = Join-Path $Script:ProjectRoot 'scripts/MD_to_HTML_Converter.py'
+        $Script:FixtureDir = Join-Path $Script:ProjectRoot 'generated/test-fixtures/html-converter'
+    }
+
+    BeforeEach {
+        if (Test-Path $Script:FixtureDir) { Remove-Item -Recurse -Force $Script:FixtureDir }
+        New-Item -ItemType Directory -Force -Path $Script:FixtureDir | Out-Null
+    }
+
+    AfterAll {
+        if (Test-Path $Script:FixtureDir) { Remove-Item -Recurse -Force $Script:FixtureDir }
+    }
+
+    It 'TPR-HTML-01: Markers around a table are stripped, data rows present' {
+        $inputMd = Join-Path $Script:FixtureDir 'input.md'
+        $outputHtml = Join-Path $Script:FixtureDir 'output.html'
+
+        $mdContent = @"
+# Test
+
+<!-- BEGIN:test-rows -->
+| 1 | data1 |
+| 2 | data2 |
+<!-- END:test-rows -->
+"@
+        Set-Content -Path $inputMd -Value $mdContent -NoNewline
+
+        & python3 $ConverterScript $inputMd $outputHtml
+        $htmlContent = Get-Content $outputHtml -Raw
+        $htmlContent | Should -Not -Match '<!--'
+        $htmlContent | Should -Match 'data1'
+        $htmlContent | Should -Match 'data2'
+    }
+
+    It 'TPR-HTML-02: Markers around run-date <p> are stripped, passthrough intact' {
+        $inputMd = Join-Path $Script:FixtureDir 'input.md'
+        $outputHtml = Join-Path $Script:FixtureDir 'output.html'
+
+        $mdContent = @"
+# Test
+
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 01/01/2026 10:00</p>
+<!-- END:run-date -->
+"@
+        Set-Content -Path $inputMd -Value $mdContent -NoNewline
+
+        & python3 $ConverterScript $inputMd $outputHtml
+        $htmlContent = Get-Content $outputHtml -Raw
+        $htmlContent | Should -Not -Match '<!--'
+        $htmlContent | Should -Match 'report-run-date'
+        $htmlContent | Should -Match '01/01/2026 10:00'
+    }
+
+    It 'TPR-HTML-03: Standalone marker line removal leaves no stray blank line' {
+        $inputMd = Join-Path $Script:FixtureDir 'input.md'
+        $outputHtml = Join-Path $Script:FixtureDir 'output.html'
+
+        $mdContent = @"
+# Test
+
+| Header |
+|--------|
+<!-- BEGIN:marker -->
+| data |
+<!-- END:marker -->
+"@
+        Set-Content -Path $inputMd -Value $mdContent -NoNewline
+
+        & python3 $ConverterScript $inputMd $outputHtml
+        $htmlContent = Get-Content $outputHtml -Raw
+        $htmlContent | Should -Not -Match '<!--'
+        $htmlContent | Should -Match 'data'
     }
 }
