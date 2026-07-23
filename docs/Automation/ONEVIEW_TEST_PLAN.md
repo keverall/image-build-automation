@@ -7,6 +7,7 @@
 
 - [HPE OneView 1000 — Live Integration Test Plan](#hpe-oneview-1000--live-integration-test-plan)
   - [Table of Contents](#table-of-contents)
+  - [Current OneView Connected Automation Command testing status and progress Summary](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
   - [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0--environment-prerequisites-checklist-before-live-run)
   - [Phase 1 — Connectivity (must pass before anything else)](#phase-1--connectivity-must-pass-before-anything-else)
   - [Phase 2 — Get Server List](#phase-2--get-server-list)
@@ -20,6 +21,10 @@
   - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10--other-critical-tests-setup-automation-hpeoneview-package)
   - [Phase 11 — Execution Evidence (per cycle)](#phase-11--execution-evidence-per-cycle)
   - [Phase 12 — Notes for the Delivery Lead](#phase-12--notes-for-the-delivery-lead)
+
+## Current OneView Connected Automation Command testing status and progress Summary
+
+- **Initial testing this morning but unable to test now as there is no CRQ active as advised by Marin. I cannot retest until the CRQ is approved, hopefully tomorrow 24/07/2026. Test-ServerConnectivity command worked this morning but it disconnected and should not. I have recoded but it was a large change and will need retesting. Automation tests all pass currently but I cannot test any server connected tests in this test plan due to lack of CRQ coverage.**
 
 **Module under test:** `Automation` PowerShell module (`src/powershell/Automation/Automation.psm1`)
 **OneView library:** `HPEOneView.1000` (OneView 10.x) via `Connect-OVMgmt` / `Disconnect-OVMgmt`
