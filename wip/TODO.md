@@ -421,3 +421,43 @@ Available                      False
 NetworkPing                    {[Port, 443], [DnsResolved, True], [TcpPortOpen, True], [LatencyMs, 3]…}
 Timestamp                      2026-07-23T13:48:32.6701187Z
 Mode                           oneview
+
+
+Test-ServerConnectivity -ManagementHost va-oneviewt-01                                          0  1m 44s 266ms  09:26:21 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-24 08:31:16 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-24 08:31:16 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 28ms) 
+
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod 
+  Timestamp:  2026-07-24T08:31:39.0377483Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 28ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: No
+    Error:     Connect-OVMgmt failed: Exception calling "RestClient" with "3" argument(s): "The ServicePointManager does not support proxies with the https scheme."
+
+==============================================
+
+2026-07-24 08:31:39 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)
+
+Name                           Value
+----                           -----
+Available                      False
+Mode                           oneview
+NetworkPing                    {[IpAddress, 10.239.124.79], [Error, ], [Port, 443], [DnsResolved, True]…}
+Environment                    Prod
+Timestamp                      2026-07-24T08:31:39.0377483Z
+AuthConnect                    {[Error, Connect-OVMgmt failed: Exception calling "RestClient" with "3" argument(s): "The ServicePointManager does not … 
+ManagementHost                 va-oneviewt-01
