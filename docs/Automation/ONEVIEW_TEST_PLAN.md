@@ -3,43 +3,48 @@
 <a id="top"></a>
 ## Table of Contents
 
-- [Current OneView Connected Automation Command testing status and progress Summary](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
-- [Major Bugs fixed log](#major-bugs-fixed-log)
-  - [1. Phantom proxy configuration on EWISMGMT-19](#1-phantom-proxy-configuration-on-ewismgmt-19)
-  - [2. Test-ServerConnectivity was disconnecting the OneView session after connecting](#2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting)
-  - [3. Invoke-IsoDeploy Pester tests hanging on interactive prompts](#3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts)
-  - [4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts](#4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts)
-- [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0-environment-prerequisites-checklist-before-live-run)
-- [Phase 1 — Connectivity (must pass before anything else)](#phase-1-connectivity-must-pass-before-anything-else)
-- [Phase 2 — Get Server List](#phase-2-get-server-list)
-- [Phase 3 — Information on Servers Connected to this OneView](#phase-3-information-on-servers-connected-to-this-oneview)
-- [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4-information-on-a-specific-server-both-identifiers)
-- [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5-assign-iso-file-to-server-for-install-both-identifiers)
-- [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6-smb-name-generation-local-drive-and-network-drive)
-- [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7-reboot-server-both-identifiers)
-- [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8-post-reboot-verification-sleep-then-confirm-connected-correct-windows-image)
-- [Phase 9 — Negative, Edge & Boundary Tests](#phase-9-negative-edge-and-boundary-tests)
-- [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10-other-critical-tests-setup-automation-hpeoneview-package)
-- [Phase 11 — Execution Evidence (per cycle)](#phase-11-execution-evidence-per-cycle)
-- [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
+- [HPE OneView 1000 — Live Integration Test Plan](#hpe-oneview-1000--live-integration-test-plan)
+  - [Table of Contents](#table-of-contents)
+  - [**Current OneView Connected Automation Command testing status and progress Summary**](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
+  - [Major Bugs fixed log](#major-bugs-fixed-log)
+    - [1. Phantom proxy configuration on EWISMGMT-19](#1-phantom-proxy-configuration-on-ewismgmt-19)
+    - [2. Test-ServerConnectivity was disconnecting the OneView session after connecting](#2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting)
+    - [3. Invoke-IsoDeploy Pester tests hanging on interactive prompts](#3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts)
+    - [4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts](#4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts)
+  - [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0--environment-prerequisites-checklist-before-live-run)
+  - [Phase 1 — Connectivity (must pass before anything else)](#phase-1--connectivity-must-pass-before-anything-else)
+  - [Phase 2 — Get Server List](#phase-2--get-server-list)
+  - [Phase 3 — Information on Servers Connected to this OneView](#phase-3--information-on-servers-connected-to-this-oneview)
+  - [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4--information-on-a-specific-server-both-identifiers)
+  - [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5--assign-iso-file-to-server-for-install-both-identifiers)
+  - [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6--smb-name-generation-local-drive-and-network-drive)
+  - [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7--reboot-server-both-identifiers)
+  - [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8--post-reboot-verification-sleep-then-confirm-connected--correct-windows-image)
+  - [Phase 9 — Negative, Edge \& Boundary Tests](#phase-9--negative-edge--boundary-tests)
+  - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10--other-critical-tests-setup-automation-hpeoneview-package)
+  - [Phase 11 — Execution Evidence (per cycle)](#phase-11--execution-evidence-per-cycle)
+  - [Phase 12 — Notes for the Delivery Lead](#phase-12--notes-for-the-delivery-lead)
 
 
 <!-- BEGIN:run-date -->
-<p class="report-run-date"><strong>Run date:</strong> 24/07/2026 17:06 UTC</p>
+<p class="report-run-date"><strong>Run date:</strong> 24/07/2026 16:34 UTC</p>
 <!-- END:run-date -->
 <a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
-## Current OneView Connected Automation Command testing status and progress Summary
+
+## **Current OneView Connected Automation Command testing status and progress Summary**
 
 <!-- BEGIN:oneview-status-summary -->
-- **Could not test today because the CRE ran out last night at 5pm, I will continue testing on 24/07/2026 tomorrow.**
+- **Fixed major bugs and had to write script to remove proxy env vars from powershell/windows state, and refactor major sections of code to fix issues listed in detail below in major bugs fixed log**
 <!-- END:oneview-status-summary -->
 
 <a name="major-bugs-fixed-log"></a>
+
 ## Major Bugs fixed log
 
 **Date: 24/07/2026**
 
 <a name="1-phantom-proxy-configuration-on-ewismgmt-19"></a>
+
 ### 1. Phantom proxy configuration on EWISMGMT-19
 
 A proxy was mistakenly configured and assumed to be in use on the EWISMGMT-19 automation server.
@@ -51,6 +56,7 @@ variables are stored as Windows credentials and survived process restarts. A ded
 cleanup script was written to purge the stale proxy env vars from the system.
 
 <a name="2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting"></a>
+
 ### 2. Test-ServerConnectivity was disconnecting the OneView session after connecting
 
 **Severity: Critical — cascading design flaw across all automation commands.**
@@ -63,6 +69,7 @@ command set, requiring significant rework and retesting of Windows and HPEOneVie
 logic across all commands.
 
 <a name="3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts"></a>
+
 ### 3. Invoke-IsoDeploy Pester tests hanging on interactive prompts
 
 The 3 Pester tests for `Invoke-IsoDeploy` were hanging indefinitely because `Read-Host` prompts
@@ -239,10 +246,9 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 | Run # | Date/Time | Phase(s) | Tester | Appliance | Result | Log/Job Ref | Signed off |
 |-------|-----------|----------|--------|-----------|--------|-------------|------------|
 <!-- BEGIN:phase11-rows -->
-<!-- BEGIN:phase11-rows -->
 | 1 | 23/07/2026 18:55 UTC | Phases 1-10 (pending live execution) | <tester> | HPEOpenview.1000 | Pending | <log ref> | <delivery lead> |
-| 2 | 23/07/2026 18:55 UTC | 2 | K Everall | HPEOpenview.1000 | Failed | <log ref> | <delivery lead> |
-<!-- END:phase11-rows -->
+| 2 | 24/07/2026 16:34 UTC | 2 | K Everall | HPEOpenview.1000 | Failed | <log ref> | <delivery lead> |
+| 3 | 24/07/2026 16:34 UTC | Phase 1 | K Everall | HPEOpenview.1000 | (all 95 automated regression unit test scenarios above) \| Ran manually on terminal \| Passed (95/95) \| see run log below \| Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing. | 20260724 | n/a |
 <!-- END:phase11-rows -->
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>
