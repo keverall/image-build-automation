@@ -29,6 +29,64 @@ function Get-ProjectRoot {
     return $null
 }
 
+function Resolve-EffectiveConfigDir {
+    <#
+    .SYNOPSIS
+        Resolve the effective configuration directory for a command.
+
+    .DESCRIPTION
+        Shared resolution logic used by all Public commands that accept a
+        -ConfigDir parameter. Resolution order:
+          1. When -ConfigDir was explicitly bound: absolute paths are used
+             verbatim; relative paths are resolved against the current location.
+          2. Otherwise: <project-root>\configs.
+          3. Fallback: when the marker file is not found in the resolved
+             directory and -ConfigDir is relative, retry against the project
+             root (handles commands invoked from outside the repo root).
+
+    .PARAMETER ConfigDir
+        The -ConfigDir parameter value as supplied to the caller (default
+        'configs' when the caller did not bind it).
+
+    .PARAMETER MarkerFile
+        A file whose presence confirms the directory (e.g.
+        'connection_hosts.json', 'clusters_catalogue.json').
+
+    .PARAMETER ExplicitlyBound
+        Pass $PSBoundParameters.ContainsKey('ConfigDir') from the caller.
+
+    .RETURNS
+        [string] The resolved config directory path (not guaranteed to exist).
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string] $ConfigDir,
+        [Parameter(Mandatory)][string] $MarkerFile,
+        [switch] $ExplicitlyBound
+    )
+
+    $projRoot = Get-ProjectRoot
+    if (-not $projRoot) { $projRoot = (Get-Location).Path }
+
+    $effective = if ($ExplicitlyBound) {
+        if (Split-Path $ConfigDir -IsAbsolute) { $ConfigDir }
+        else { Join-Path (Get-Location) $ConfigDir }
+    } else {
+        Join-Path $projRoot 'configs'
+    }
+
+    if (-not (Test-Path (Join-Path $effective $MarkerFile))) {
+        if (-not (Split-Path $ConfigDir -IsAbsolute)) {
+            $fallback = Join-Path $projRoot $ConfigDir
+            if (Test-Path (Join-Path $fallback $MarkerFile)) {
+                $effective = $fallback
+            }
+        }
+    }
+    return $effective
+}
+
 function Get-LogDirectory {
     <#
     .SYNOPSIS

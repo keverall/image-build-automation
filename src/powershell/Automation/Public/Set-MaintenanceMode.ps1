@@ -344,26 +344,9 @@ function Set-MaintenanceMode {
     }
 
     # Use passed ConfigDir param or fall back to project-root configs
-    $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
-    $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) {
-        if (Split-Path $ConfigDir -IsAbsolute) {
-            $ConfigDir 
-        } else {
-            Join-Path (Get-Location) $ConfigDir 
-        }
-    } else {
-        Join-Path $projRoot 'configs'
-    }
-    
-    # If the user passed a relative path and it's not found from Get-Location, try from projRoot
-    if (-not (Test-Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json'))) {
-        if (-not (Split-Path $ConfigDir -IsAbsolute)) {
-            $fallback = Join-Path $projRoot $ConfigDir
-            if (Test-Path (Join-Path $fallback 'clusters_catalogue.json')) {
-                $EffectiveConfigDir = $fallback
-            }
-        }
-    }
+    $EffectiveConfigDir = Resolve-EffectiveConfigDir -ConfigDir $ConfigDir `
+        -MarkerFile 'clusters_catalogue.json' `
+        -ExplicitlyBound:$PSBoundParameters.ContainsKey('ConfigDir')
 
     # Load configs
     $clustersCfg = Import-JsonConfig -Path (Join-Path $EffectiveConfigDir 'clusters_catalogue.json') -Required:$false
@@ -1035,21 +1018,21 @@ function Set-MaintenanceMode {
             )
         }
         
-if (-not $resolvedUsername -or -not $resolvedPassword) {
-        if (-not $DryRun -and -not $isAutomated) {
-            $missingCreds = @()
-            if (-not $resolvedUsername) {
-                $missingCreds += "username" 
-            }
-            if (-not $resolvedPassword) {
-                $missingCreds += "password" 
-            }
-            return @{ 
-                Success = $false
-                Error   = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
+        if (-not $resolvedUsername -or -not $resolvedPassword) {
+            if (-not $DryRun -and -not $isAutomated) {
+                $missingCreds = @()
+                if (-not $resolvedUsername) {
+                    $missingCreds += "username"
+                }
+                if (-not $resolvedPassword) {
+                    $missingCreds += "password"
+                }
+                return @{
+                    Success = $false
+                    Error   = "Missing credentials: $($missingCreds -join ', '). Set environment variables, use parameters, or run interactively."
+                }
             }
         }
-    }
     }
 
     # configs (clustersCfg, scomCfg, oneviewCfg, emailCfg, opsrampCfg) already loaded above

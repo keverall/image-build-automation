@@ -30,6 +30,12 @@ function Invoke-PowerShellWinRM {
     .PARAMETER TimeoutSeconds
         Timeout per command in seconds (default: 300).
 
+    .PARAMETER ArgumentList
+        Optional arguments passed to the remote script block (which should
+        declare a param() block to receive them). Use this to pass secrets so
+        they travel over the encrypted remoting channel instead of being
+        embedded in the script text.
+
     .RETURNS
         [hashtable] with keys: Success (bool), Output (string).
 
@@ -44,14 +50,23 @@ function Invoke-PowerShellWinRM {
         [Parameter(Mandatory, Position = 2)][string] $Username,
         [Parameter(Mandatory, Position = 3)][SecureString] $Password,
         [Parameter(Mandatory = $false)][string]    $Transport  = 'NTLM',
-        [Parameter(Mandatory = $false)][int]       $TimeoutSeconds = 300
+        [Parameter(Mandatory = $false)][int]       $TimeoutSeconds = 300,
+        [Parameter(Mandatory = $false)][object[]]  $ArgumentList
     )
     try {
-        $secPass = ConvertTo-SecureString $Password -AsPlainText -Force
-        $cred    = New-Object System.Management.Automation.PSCredential($Username, $secPass)
+        $cred    = New-Object System.Management.Automation.PSCredential($Username, $Password)
         $session = New-PSSession -ComputerName $Server -Credential $cred -Authentication $Transport -ErrorAction Stop
-        $output  = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($Script)) -ErrorAction Stop
-        Remove-PSSession $session | Out-Null
+        try {
+            $invokeArgs = @{
+                Session     = $session
+                ScriptBlock = ([scriptblock]::Create($Script))
+                ErrorAction = 'Stop'
+            }
+            if ($ArgumentList) { $invokeArgs['ArgumentList'] = $ArgumentList }
+            $output = Invoke-Command @invokeArgs
+        } finally {
+            Remove-PSSession $session -ErrorAction SilentlyContinue | Out-Null
+        }
         return @{ Success = $true; Output = ($output | Out-String) }
     }
     catch {

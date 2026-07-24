@@ -674,7 +674,7 @@ Export-ModuleMember -Function @(
     'Load-Json'
     'Save-JsonResult'
     'Test-PathEx'
-    'Get-Project*'
+    'Get-ProjectRoot'
     # Inventory
     'Load-ServerList'
     'Load-ClusterCatalogue'

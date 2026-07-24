@@ -103,22 +103,9 @@ function Test-ServerConnectivity {
     Initialize-Logging -LogFile 'connectivity.log' -CommandName 'Test-ServerConnectivity' -LogName "Test-ServerConnectivity-ManagementHost-$ManagementHost"
     $logger = Get-Logger 'Connectivity'
     # ── Resolve config directory ──────────────────────────────────────────────
-    $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
-    $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) {
-        if (Split-Path $ConfigDir -IsAbsolute) { $ConfigDir }
-        else { Join-Path (Get-Location) $ConfigDir }
-    } else {
-        Join-Path $projRoot 'configs'
-    }
-
-    if (-not (Test-Path (Join-Path $EffectiveConfigDir 'connection_hosts.json'))) {
-        if (-not (Split-Path $ConfigDir -IsAbsolute)) {
-            $fallback = Join-Path $projRoot $ConfigDir
-            if (Test-Path (Join-Path $fallback 'connection_hosts.json')) {
-                $EffectiveConfigDir = $fallback
-            }
-        }
-    }
+    $EffectiveConfigDir = Resolve-EffectiveConfigDir -ConfigDir $ConfigDir `
+        -MarkerFile 'connection_hosts.json' `
+        -ExplicitlyBound:$PSBoundParameters.ContainsKey('ConfigDir')
 
     # ── Resolve environment ───────────────────────────────────────────────────
     # 'Environment' is informational for live tests. It is ONLY used to select a
@@ -374,8 +361,8 @@ function Test-ServerConnectivity {
     if ($pingResult.DnsResolved) {
         foreach ($port in $tcpPorts) {
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            $tcpClient = [System.Net.Sockets.TcpClient]::new()
             try {
-                $tcpClient = [System.Net.Sockets.TcpClient]::new()
                 $connectTask = $tcpClient.ConnectAsync($resolvedHost, $port)
                 $connected = $connectTask.Wait($PingTimeoutMs)
                 $sw.Stop()
@@ -383,13 +370,11 @@ function Test-ServerConnectivity {
                     $pingResult.TcpPortOpen = $true
                     $pingResult.Port = $port
                     $pingResult.LatencyMs = [int]$sw.ElapsedMilliseconds
-                    $tcpClient.Close()
                     break
-                } else {
-                    $tcpClient.Dispose()
                 }
             } catch {
                 $sw.Stop()
+            } finally {
                 $tcpClient.Dispose()
             }
         }

@@ -132,6 +132,27 @@ $ErrorActionPreference = 'Stop'
 # Pure, testable string-transformation helpers.
 . (Join-Path $PSScriptRoot 'TestProgress.Common.ps1')
 
+function _PromptOrDefault {
+    <#
+    .SYNOPSIS
+        Resolve a script parameter interactively: keep the supplied value when
+        set; otherwise prompt (or fall back to the default in NonInteractive
+        mode). Blank/whitespace input accepts the default.
+    #>
+    param(
+        [AllowNull()][AllowEmptyString()][string]$CurrentValue,
+        [Parameter(Mandatory)][string]$Prompt,
+        [Parameter(Mandatory)][string]$Default,
+        [switch]$NonInteractive
+    )
+    if (-not [string]::IsNullOrWhiteSpace($CurrentValue)) { return $CurrentValue }
+    if ($NonInteractive) { return $Default }
+    Write-Host "$Prompt (default: '$Default'): " -ForegroundColor Yellow -NoNewline
+    $val = [System.Console]::ReadLine()
+    if ([string]::IsNullOrWhiteSpace($val)) { return $Default }
+    return $val
+}
+
 # Find latest log if not specified
 if (-not $LogPath) {
     $logDir = "generated/logs/automation"
@@ -187,41 +208,16 @@ $runDate = [DateTime]::UtcNow.ToString('dd/MM/yyyy HH:mm') + ' UTC'
 # Prompt for test run details (or use parameters if provided)
 Write-Host "`n[test-progress] Please provide details for the test run record:" -ForegroundColor Yellow
 
-if (-not $Reason) {
-    if ($NonInteractive) {
-        $Reason = "Regular test execution"
-    } else {
-        Write-Host "Reason for full testing rerun (e.g., 'Fixed logging issues and OneView connectivity'): " -ForegroundColor Yellow -NoNewline
-        $Reason = [System.Console]::ReadLine()
-        if ([string]::IsNullOrWhiteSpace($Reason)) {
-            $Reason = "Regular test execution"
-        }
-    }
-}
+$Reason = _PromptOrDefault -CurrentValue $Reason `
+    -Prompt "Reason for full testing rerun (e.g., 'Fixed logging issues and OneView connectivity')" `
+    -Default 'Regular test execution' -NonInteractive:$NonInteractive
 
-if (-not $CommandSuite) {
-    if ($NonInteractive) {
-        $CommandSuite = "Full Automation suite — ``make test`` + ``make automation-mode-tests`` (all $totalTests automated regression unit test scenarios above)"
-    } else {
-        Write-Host "Command/Suite executed (default: 'Full Automation suite — make test + make automation-mode-tests'): " -ForegroundColor Yellow -NoNewline
-        $CommandSuite = [System.Console]::ReadLine()
-        if ([string]::IsNullOrWhiteSpace($CommandSuite)) {
-            $CommandSuite = "Full Automation suite — ``make test`` + ``make automation-mode-tests`` (all $totalTests automated regression unit test scenarios above)"
-        }
-    }
-}
+$defaultCommandSuite = "Full Automation suite — ``make test`` + ``make automation-mode-tests`` (all $totalTests automated regression unit test scenarios above)"
+$CommandSuite = _PromptOrDefault -CurrentValue $CommandSuite `
+    -Prompt 'Command/Suite executed' -Default $defaultCommandSuite -NonInteractive:$NonInteractive
 
-if (-not $Environment) {
-    if ($NonInteractive) {
-        $Environment = "Ran manually on terminal"
-    } else {
-        Write-Host "Environment (default: 'Ran manually on terminal'): " -ForegroundColor Yellow -NoNewline
-        $Environment = [System.Console]::ReadLine()
-        if ([string]::IsNullOrWhiteSpace($Environment)) {
-            $Environment = "Ran manually on terminal"
-        }
-    }
-}
+$Environment = _PromptOrDefault -CurrentValue $Environment `
+    -Prompt 'Environment' -Default 'Ran manually on terminal' -NonInteractive:$NonInteractive
 
 $logRef = "see run log below"
 
@@ -243,77 +239,23 @@ if ($AddOneViewRow) {
 }
 
 if ($addOvRow) {
-    if (-not $OvPhases) {
-        if ($NonInteractive) {
-            $OvPhases = "Phases 1-10"
-        } else {
-            Write-Host "Phase(s) (default: 'Phases 1-10'): " -ForegroundColor Yellow -NoNewline
-            $OvPhases = [System.Console]::ReadLine()
-            if ([string]::IsNullOrWhiteSpace($OvPhases)) {
-                $OvPhases = "Phases 1-10"
-            }
-        }
-    }
-    
-    if (-not $OvTester) {
-        if ($NonInteractive) {
-            $OvTester = "<tester>"
-        } else {
-            Write-Host "Tester (default: '<tester>'): " -ForegroundColor Yellow -NoNewline
-            $OvTester = [System.Console]::ReadLine()
-            if ([string]::IsNullOrWhiteSpace($OvTester)) {
-                $OvTester = "<tester>"
-            }
-        }
-    }
-    
-    if (-not $OvAppliance) {
-        if ($NonInteractive) {
-            $OvAppliance = "HPEOpenview.1000"
-        } else {
-            Write-Host "Appliance (default: 'HPEOpenview.1000'): " -ForegroundColor Yellow -NoNewline
-            $OvAppliance = [System.Console]::ReadLine()
-            if ([string]::IsNullOrWhiteSpace($OvAppliance)) {
-                $OvAppliance = "HPEOpenview.1000"
-            }
-        }
-    }
-    
-    if (-not $OvResult) {
-        if ($NonInteractive) {
-            $OvResult = "Pending"
-        } else {
-            Write-Host "Result (default: 'Pending'): " -ForegroundColor Yellow -NoNewline
-            $OvResult = [System.Console]::ReadLine()
-            if ([string]::IsNullOrWhiteSpace($OvResult)) {
-                $OvResult = "Pending"
-            }
-        }
-    }
-    
-    if (-not $OvLogRef) {
-        if ($NonInteractive) {
-            $OvLogRef = "<log ref>"
-        } else {
-            Write-Host "Log/Job Ref (default: '<log ref>'): " -ForegroundColor Yellow -NoNewline
-            $OvLogRef = [System.Console]::ReadLine()
-            if ([string]::IsNullOrWhiteSpace($OvLogRef)) {
-                $OvLogRef = "<log ref>"
-            }
-        }
-    }
-    
-    if (-not $OvSignedOff) {
-        if ($NonInteractive) {
-            $OvSignedOff = "<delivery lead>"
-        } else {
-            Write-Host "Signed off by (default: '<delivery lead>'): " -ForegroundColor Yellow -NoNewline
-            $OvSignedOff = [System.Console]::ReadLine()
-            if ([string]::IsNullOrWhiteSpace($OvSignedOff)) {
-                $OvSignedOff = "<delivery lead>"
-            }
-        }
-    }
+    $OvPhases = _PromptOrDefault -CurrentValue $OvPhases `
+        -Prompt 'Phase(s)' -Default 'Phases 1-10' -NonInteractive:$NonInteractive
+
+    $OvTester = _PromptOrDefault -CurrentValue $OvTester `
+        -Prompt 'Tester' -Default '<tester>' -NonInteractive:$NonInteractive
+
+    $OvAppliance = _PromptOrDefault -CurrentValue $OvAppliance `
+        -Prompt 'Appliance' -Default 'HPEOpenview.1000' -NonInteractive:$NonInteractive
+
+    $OvResult = _PromptOrDefault -CurrentValue $OvResult `
+        -Prompt 'Result' -Default 'Pending' -NonInteractive:$NonInteractive
+
+    $OvLogRef = _PromptOrDefault -CurrentValue $OvLogRef `
+        -Prompt 'Log/Job Ref' -Default '<log ref>' -NonInteractive:$NonInteractive
+
+    $OvSignedOff = _PromptOrDefault -CurrentValue $OvSignedOff `
+        -Prompt 'Signed off by' -Default '<delivery lead>' -NonInteractive:$NonInteractive
 }
 
 # Read current test plan

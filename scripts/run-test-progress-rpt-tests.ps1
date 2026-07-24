@@ -46,6 +46,14 @@ $config.Run.PassThru = $true
 $config.Output.Verbosity = 'Detailed'
 $config.Output.RenderMode = 'Auto'
 
+# Machine-readable test results for CI artifact collection (GitLab junit report).
+# JUnitXml requires Pester 5.2+; fall back to NUnitXml on older 5.x.
+$pesterVersion = (Get-Module Pester).Version
+$junitPath = Join-Path $logDir "test_progress_rpt_tests_junit_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').xml"
+$config.TestResult.Enabled = $true
+$config.TestResult.OutputFormat = if ($pesterVersion -ge [version]'5.2.0') { 'JUnitXml' } else { 'NUnitXml' }
+$config.TestResult.OutputPath = $junitPath
+
 if ($PSVersionTable.PSVersion.Major -ge 7) { $PSStyle.OutputRendering = 'Ansi' }
 
 Start-Transcript -Path $pesterLogPath -Append:$false | Out-Null
@@ -75,6 +83,7 @@ if ($results.FailedCount -gt 0) {
 Write-Host " Skipped       : $($results.SkippedCount)" -ForegroundColor Yellow
 Write-Host " Duration      : $($results.Duration.TotalSeconds.ToString('0.00'))s" -ForegroundColor White
 Write-Host "================================================================================" -ForegroundColor Cyan
+Write-Host " JUnit report  : $junitPath" -ForegroundColor Cyan
 
 # Persist the summary to the log file
 $summaryLines = @(
