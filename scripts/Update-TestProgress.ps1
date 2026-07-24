@@ -97,6 +97,9 @@ param(
     [switch]$NonInteractive,
 
     [Parameter()]
+    [switch]$AddAutomationRow,
+
+    [Parameter()]
     [string]$OneViewStatusSummary,
 
     [Parameter()]
@@ -162,7 +165,7 @@ if (-not $LogPath) {
     }
     
     $latestLog = Get-ChildItem -Path $logDir -Filter "automated-mode-test_*.log" |
-        Sort-Object LastWriteTime -Descending |
+        Sort-Object Name -Descending |
         Select-Object -First 1
     
     if (-not $latestLog) {
@@ -212,7 +215,7 @@ $Reason = _PromptOrDefault -CurrentValue $Reason `
     -Prompt "Reason for full testing rerun (e.g., 'Fixed logging issues and OneView connectivity')" `
     -Default 'Regular test execution' -NonInteractive:$NonInteractive
 
-$defaultCommandSuite = "Full Automation suite — ``make test`` + ``make automation-mode-tests`` (all $totalTests automated regression unit test scenarios above)"
+$defaultCommandSuite = "Full Automation suite — ``make automation-mode-tests`` (all $totalTests automated regression unit test scenarios above)"
 $CommandSuite = _PromptOrDefault -CurrentValue $CommandSuite `
     -Prompt 'Command/Suite executed' -Default $defaultCommandSuite -NonInteractive:$NonInteractive
 
@@ -220,6 +223,15 @@ $Environment = _PromptOrDefault -CurrentValue $Environment `
     -Prompt 'Environment' -Default 'Ran manually on terminal' -NonInteractive:$NonInteractive
 
 $logRef = "see run log below"
+
+$addAutoRow = $false
+if ($AddAutomationRow) {
+    $addAutoRow = $true
+} elseif (-not $NonInteractive) {
+    Write-Host "Add a new Automation section 7 execution row? (y/N): " -ForegroundColor Yellow -NoNewline
+    $answer = [System.Console]::ReadLine()
+    $addAutoRow = $answer -match '^[Yy]'
+}
 
 # OneView prompts
 if (-not $OneViewStatusSummary) {
@@ -274,13 +286,17 @@ $content = Update-RunDateBlock -Content $content -RunDate $runDate
 
 # Update section-7 rows
 if ($null -ne (Get-Block -Content $content -Key 'automation-evidence-rows')) {
-    $auto = Add-AutomationEvidenceRow -Content $content -DateTime $testDate `
-        -CommandSuite $CommandSuite -Environment $Environment -Result $result `
-        -LogRef $logRef -Reason $Reason
+    $auto = Update-AutomationEvidenceBlock -Content $content -DateTime $testDate `
+        -AddRow:$addAutoRow -CommandSuite $CommandSuite -Environment $Environment `
+        -Result $result -LogRef $logRef -Reason $Reason
     $content = $auto.Content
 
     Set-Content -Path $TestPlanPath -Value $content -NoNewline
-    Write-Host "[test-progress] Updated $TestPlanPath with run #$($auto.RunNumber)" -ForegroundColor Green
+    if ($auto.Added) {
+        Write-Host "[test-progress] Added Automation section 7 row #$($auto.RunNumber)" -ForegroundColor Green
+    } else {
+        Write-Host "[test-progress] Updated Automation section 7 last row date" -ForegroundColor Green
+    }
 } else {
     Write-Warning "Could not find automation-evidence-rows block in $TestPlanPath"
     Write-Host "Table pattern may have changed. Manual update required." -ForegroundColor Yellow

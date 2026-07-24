@@ -305,25 +305,42 @@ Describe 'Update-RunDateBlock' {
     }
 }
 
-Describe 'Add-AutomationEvidenceRow' {
-    It 'Adds new row with correct run number' {
+Describe 'Update-AutomationEvidenceBlock' {
+    It 'Adds new row with correct run number when -AddRow is specified' {
         $content = @"
 <!-- BEGIN:automation-evidence-rows -->
 | 1 | 01/01/2026 | suite1 | env1 | Pass | log1 | reason1 |
 | 2 | 02/01/2026 | suite2 | env2 | Fail | log2 | reason2 |
 <!-- END:automation-evidence-rows -->
 "@
-        $result = Add-AutomationEvidenceRow -Content $content -DateTime '03/01/2026' `
-            -CommandSuite 'suite3' -Environment 'env3' -Result 'Pass' -LogRef 'log3' -Reason 'reason3'
+        $result = Update-AutomationEvidenceBlock -Content $content -DateTime '03/01/2026' `
+            -AddRow -CommandSuite 'suite3' -Environment 'env3' -Result 'Pass' -LogRef 'log3' -Reason 'reason3'
         $result.RunNumber | Should -Be 3
+        $result.Added | Should -BeTrue
         $result.Content | Should -Match '\| 3 \| 03/01/2026 \| suite3 \| env3 \| Pass \| log3 \| reason3 \|'
     }
 
-    It 'Returns RunNumber 0 when block not found' {
-        $content = 'no block here'
-        $result = Add-AutomationEvidenceRow -Content $content -DateTime '01/01/2026' `
-            -CommandSuite 'suite' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason' -WarningAction SilentlyContinue
+    It 'Updates last row date without adding when -AddRow is not specified' {
+        $content = @"
+<!-- BEGIN:automation-evidence-rows -->
+| 1 | 01/01/2026 | suite1 | env1 | Pass | log1 | reason1 |
+| 2 | 02/01/2026 | suite2 | env2 | Fail | log2 | reason2 |
+<!-- END:automation-evidence-rows -->
+"@
+        $result = Update-AutomationEvidenceBlock -Content $content -DateTime '03/01/2026' `
+            -CommandSuite 'suite3' -Environment 'env3' -Result 'Pass' -LogRef 'log3' -Reason 'reason3'
         $result.RunNumber | Should -Be 0
+        $result.Added | Should -BeFalse
+        $result.Content | Should -Match '\| 2 \| 03/01/2026 \| suite2 \| env2 \| Fail \| log2 \| reason2 \|'
+        $result.Content | Should -Not -Match '\| 3 \|'
+    }
+
+    It 'Returns RunNumber 0 and Added false when block not found' {
+        $content = 'no block here'
+        $result = Update-AutomationEvidenceBlock -Content $content -DateTime '01/01/2026' `
+            -AddRow -CommandSuite 'suite' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason' -WarningAction SilentlyContinue
+        $result.RunNumber | Should -Be 0
+        $result.Added | Should -BeFalse
         $result.Content | Should -Be $content
     }
 
@@ -333,8 +350,8 @@ Describe 'Add-AutomationEvidenceRow' {
 | 1 | 01/01/2026 | suite | env | Pass | log | reason |
 <!-- END:automation-evidence-rows -->
 "@
-        $result = Add-AutomationEvidenceRow -Content $content -DateTime '02/01/2026' `
-            -CommandSuite 'suite|with|pipes' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason'
+        $result = Update-AutomationEvidenceBlock -Content $content -DateTime '02/01/2026' `
+            -AddRow -CommandSuite 'suite|with|pipes' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason'
         $result.Content | Should -Match 'suite\\|with\\|pipes'
     }
 
@@ -344,9 +361,10 @@ Describe 'Add-AutomationEvidenceRow' {
 | 1 | 01/01/2026 | suite | env | Pass | log | reason |
 <!-- END:automation-evidence-rows -->
 "@
-        $result = Add-AutomationEvidenceRow -Content $content -DateTime '02/01/2026' `
-            -CommandSuite '' -Environment '' -Result '' -LogRef '' -Reason ''
+        $result = Update-AutomationEvidenceBlock -Content $content -DateTime '02/01/2026' `
+            -AddRow -CommandSuite '' -Environment '' -Result '' -LogRef '' -Reason ''
         $result.RunNumber | Should -Be 2
+        $result.Added | Should -BeTrue
         $result.Content | Should -Match '\| 2 \| 02/01/2026 \|  \|  \|  \|  \|  \|'
     }
 }
@@ -634,7 +652,8 @@ TEST SUMMARY BLOCK
         $proc.ExitCode | Should -Be 0
         $updatedAuto = Get-Content $automationPlan -Raw
         $updatedAuto | Should -Not -Match '01/01/2026 10:00'
-        $updatedAuto | Should -Match '\| 2 \|'
+        $updatedAuto | Should -Match '\| 1 \|'
+        $updatedAuto | Should -Not -Match '\| 2 \|'
     }
 
     It 'TPR-E2E-02: Phase 11 last-row date refresh without adding row' {
