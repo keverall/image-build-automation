@@ -4,7 +4,7 @@ generated: 2026-07-24 16:33 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
-# Update-Phase11Block
+# Update-AutomationEvidenceBlock
 
 <a id="top"></a>
 ## Table of Contents
@@ -22,7 +22,7 @@ Always sets the last existing row's Date/Time cell to $DateTime. When -AddRow is
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Refresh the last Phase 11 row's date and optionally append a new row.
+        Refresh the last Automation section-7 row's date and optionally append a new row.
     .DESCRIPTION
         Always sets the last existing row's Date/Time cell to $DateTime. When
         -AddRow is supplied a new row is appended using the supplied field values.
