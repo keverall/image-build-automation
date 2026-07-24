@@ -1,9 +1,5 @@
 # Automation Test Plan — Physical Server Build & ISO Pipeline
 
-<!-- BEGIN:run-date -->
-<p class="report-run-date"><strong>Run date:</strong> 24/07/2026 17:06 UTC</p>
-<!-- END:run-date -->
-
 <a id="top"></a>
 ## Table of Contents
 
@@ -20,6 +16,10 @@
 - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
 - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
+
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 24/07/2026 17:06 UTC</p>
+<!-- END:run-date -->
 <a name="how-to-execute-runner-reference"></a>
 ## How to execute (runner reference):
 
