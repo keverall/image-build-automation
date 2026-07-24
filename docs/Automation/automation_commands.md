@@ -160,10 +160,10 @@ Disconnect-OneView -Force
 <a name="get-oneview-connection-status"></a>
 ### Get OneView connection status
 
-Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing HPEOneView module session (`Connect-OVMgmt`) and uses that appliance automatically - no connect/disconnect. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the session token or supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health.
+Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing OneView session (established via `Test-ServerConnectivity`) and uses that appliance automatically - no connect/disconnect. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the session token or supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health. If no session exists, the command returns an error telling you to connect first with `Test-ServerConnectivity -ManagementHost <oneview-appliance-host>`.
 
 ```powershell
-# Check current HPEOneView session (no params needed if connected via Connect-OVMgmt)
+# Check current OneView session (no params needed if connected via Test-ServerConnectivity)
 Get-OneViewConnectionStatus
 ```
 
@@ -207,7 +207,7 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 <a name="get-oneview-server-list"></a>
 ### Get OneView server list
 
-Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing HPEOneView module session (`Connect-OVMgmt`) and uses that appliance automatically.
+Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing OneView session (established via `Test-ServerConnectivity`) and uses that appliance automatically. If no session exists, the command returns an error telling you to connect first with `Test-ServerConnectivity -ManagementHost <oneview-appliance-host>`.
 
 ```powershell
 # Full list of servers from current HPEOneView session (no params needed if connected)

@@ -10,7 +10,7 @@
 
 # Standard message returned when no active OneView session exists and no
 # explicit -OneViewHost was supplied. Shared so callers stay consistent.
-$script:ONEVIEW_NO_SESSION_MSG = "No active OneView session. Use Connect-OVMgmt to connect, or supply -OneViewHost."
+$script:ONEVIEW_NO_SESSION_MSG = "No active OneView session. Use Test-ServerConnectivity -ManagementHost <oneview-appliance-host> to connect, or supply -OneViewHost."
 
 function Get-OneViewActiveSession {
     <#
