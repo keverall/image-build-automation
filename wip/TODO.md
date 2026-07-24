@@ -4,6 +4,12 @@
 - [The 3 Ways to Connect iRequest to Your PowerShell Code](#the-3-ways-to-connect-irequest-to-your-powershell-code)
 - [Option A: The CI Web API (The Easiest & Safest Way)](#option-a-the-ci-web-api-the-easiest-and-safest-way)
 
+NOTE: THIS IS AN ERROR REFERENCE AND LOG FILE AND NOT A REQUIREMENTS REFERENCE, IT IS A LIST OF BUGS TO BE FIXED.
+
+- [The Architecture: How They Interact](#the-architecture-how-they-interact)
+- [The 3 Ways to Connect iRequest to Your PowerShell Code](#the-3-ways-to-connect-irequest-to-your-powershell-code)
+- [Option A: The CI Web API (The Easiest & Safest Way)](#option-a-the-ci-web-api-the-easiest-and-safest-way)
+
 If your code isn't a live listening web server, iRequest cannot directly "call" your PowerShell file over the network without a middleman protocol.
 Since your target environment is a unified Windows Test Jumpbox containing CI, SCOM, HPE iLO, and iLO modules, you actually have the perfect infrastructure already in place. You do not need the two systems running on the same OS, nor do you need to configure complex low-level Windows Networking (like SMB or WinRM).
 Instead, you use the CI pipeline as your API Gateway.

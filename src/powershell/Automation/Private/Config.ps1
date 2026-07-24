@@ -31,8 +31,7 @@ function Import-JsonConfig {
     }
     try {
         $raw    = Get-Content -Path $Path -Raw -Encoding UTF8
-        $parsed = $raw | ConvertFrom-Json -Depth 64
-        $config = _PS_ConvertTo-Hashtable $parsed
+        $config = $raw | ConvertFrom-Json -Depth 64 -AsHashtable
         if ($AutoEnvVarReplace) { $config = _PS_ReplaceEnvVars $config }
         return $config
     }
@@ -59,35 +58,6 @@ function Import-YamlConfig {
         return @{}
     }
     return (Get-Content $Path -Raw -Encoding UTF8 | ConvertFrom-Yaml -Depth 64) ?? @{}
-}
-
-function _PS_ConvertTo-Hashtable {
-    <#
-    .SYNOPSIS
-        Internal helper that convert to hashtable.
-    #>
-
-    param([Parameter(ValueFromPipeline)] $InputObject)
-    process {
-        if ($null -eq $InputObject) { return $null }
-        if ($InputObject -is [System.Collections.IDictionary]) {
-            $ht = @{}
-            foreach ($k in $InputObject.Keys) { $ht[$k] = _PS_ConvertTo-Hashtable $InputObject[$k] }
-            return $ht
-        }
-        # PS7 ConvertFrom-Json returns PSCustomObject, not IDictionary - handle explicitly
-        if ($InputObject -is [System.Management.Automation.PSCustomObject]) {
-            $ht = @{}
-            foreach ($prop in $InputObject.PSObject.Properties) {
-                $ht[$prop.Name] = _PS_ConvertTo-Hashtable $prop.Value
-            }
-            return $ht
-        }
-        if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string]) {
-            return ,@($InputObject | ForEach-Object { _PS_ConvertTo-Hashtable $_ })
-        }
-        return $InputObject
-    }
 }
 
 function _PS_ReplaceEnvVars {

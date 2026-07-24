@@ -250,11 +250,11 @@ function Test-ServerConnectivity {
     # authorises the connection to the exact host they named.
     # DRYRUN: mock credentials - no real secret is required.
     $resolvedUser = $null
-    $resolvedPass = $null
+    $resolvedSecurePass = $null
     if (-not $DryRun) {
         if ($PSBoundParameters.ContainsKey('Credential') -and $Credential) {
             $resolvedUser = $Credential.UserName
-            $resolvedPass = $Credential.GetNetworkCredential().Password
+            $resolvedSecurePass = $Credential.Password
         } else {
             $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
             if ($isInteractive) {
@@ -275,7 +275,7 @@ function Test-ServerConnectivity {
                     return $result
                 }
                 $resolvedUser = $u
-                $resolvedPass = $securePass | ConvertFrom-SecureString -AsPlainText
+                $resolvedSecurePass = $securePass
             } else {
                 $result = @{
                     Available      = $false
@@ -403,10 +403,10 @@ function Test-ServerConnectivity {
 
     # If credentials were resolved interactively (but -Credential was not supplied),
     # build a PSCredential so Connect-OneViewSession receives them.
-    if (-not $Credential -and $resolvedUser -and $resolvedPass) {
+    if (-not $Credential -and $resolvedUser -and $resolvedSecurePass) {
         $Credential = [System.Management.Automation.PSCredential]::new(
             $resolvedUser,
-            (ConvertTo-SecureString $resolvedPass -AsPlainText -Force))
+            $resolvedSecurePass)
     }
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -421,7 +421,7 @@ function Test-ServerConnectivity {
 
     if (-not $pingResult.TcpPortOpen) {
         $authResult.Error = "Skipped - network ping failed"
-    } elseif (-not $resolvedUser -or -not $resolvedPass) {
+    } elseif (-not $resolvedUser -or -not $resolvedSecurePass) {
         if ($DryRun) {
             $authResult.Error = "Skipped - credentials not configured (set $userEnv / $passEnv)"
         } else {

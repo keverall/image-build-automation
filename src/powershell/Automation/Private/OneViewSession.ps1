@@ -65,7 +65,7 @@ function Connect-OneViewSession {
     .DESCRIPTION
         Shared connection helper used by all OneView automation commands.
         1. Reuses an existing active session (same appliance) when present.
-        2. Applies proxy bypass for the appliance (WinHTTP + .NET + NO_PROXY).
+        2. Connects directly to the appliance (no proxy handling).
         3. Imports the HPEOneView PowerShell module.
         4. Calls Connect-OVMgmt to establish a persistent session.
         The session remains active for subsequent commands.
@@ -80,9 +80,6 @@ function Connect-OneViewSession {
     .PARAMETER ModuleName
         HPEOneView module name (default: HPEOneView.1000).
 
-    .PARAMETER Port
-        HTTPS port (default: 443).
-
     .OUTPUTS
         [hashtable] Connected, ReusedSession, Appliance, SessionId, ModuleName, Error.
     #>
@@ -94,8 +91,7 @@ function Connect-OneViewSession {
     param(
         [Parameter(Mandatory)][string] $Appliance,
         [System.Management.Automation.PSCredential] $Credential,
-        [string] $ModuleName = 'HPEOneView.1000',
-        [int] $Port = 443
+        [string] $ModuleName = 'HPEOneView.1000'
     )
 
     $result = @{
@@ -127,19 +123,6 @@ function Connect-OneViewSession {
             $user,
             (ConvertTo-SecureString $pass -AsPlainText -Force))
     }
-
-    try {
-        [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy
-        [System.Net.WebRequest]::DefaultWebProxy.BypassProxyOnLocal = $true
-        $noProxy = [System.Environment]::GetEnvironmentVariable('NO_PROXY')
-        if ($noProxy) {
-            if ($noProxy -notmatch [regex]::Escape($Appliance)) {
-                [System.Environment]::SetEnvironmentVariable('NO_PROXY', "$noProxy,$Appliance")
-            }
-        } else {
-            [System.Environment]::SetEnvironmentVariable('NO_PROXY', $Appliance)
-        }
-    } catch { }
 
     try {
         Import-Module $ModuleName -ErrorAction Stop

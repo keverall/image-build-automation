@@ -1,10 +1,10 @@
 ---
-source:  ./src/powershell/Automation/Private/Config.ps1
-generated: 2026-07-22 22:20 UTC
+source:  ./scripts/TestProgress.Common.ps1
+generated: 2026-07-24 09:41 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
-# _PS_ConvertTo-Hashtable
+# Get-Block
 
 <a id="top"></a>
 ## Table of Contents
@@ -16,13 +16,15 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Internal helper that convert to hashtable.
+Return the inner text of a <!-- BEGIN:Key --> / <!-- END:Key --> block.
 
 <a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Internal helper that convert to hashtable.
+        Return the inner text of a <!-- BEGIN:Key --> / <!-- END:Key --> block.
+    .OUTPUTS
+        The inner text, or $null when the block is not present.
 ```
 
 ---
