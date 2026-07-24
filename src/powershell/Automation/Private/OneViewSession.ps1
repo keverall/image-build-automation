@@ -12,6 +12,13 @@
 # explicit -OneViewHost was supplied. Shared so callers stay consistent.
 $script:ONEVIEW_NO_SESSION_MSG = "No active OneView session. Use Test-ServerConnectivity -ManagementHost <oneview-appliance-host> to connect, or supply -OneViewHost."
 
+# Module-scoped mirror of the active OneView session. The HPEOneView module holds
+# the connection itself (and may report "already connected"), but its session object
+# does not always expose a $_.Connected flag our strict filter recognises (observed
+# with HPEOneView.1000). Capturing the object Connect-OVMgmt returns lets us detect
+# and reuse the session reliably regardless of how the module exposes its state.
+$script:ActiveOneViewSession = $null
+
 function Get-OneViewActiveSession {
     <#
     .SYNOPSIS
@@ -30,13 +37,34 @@ function Get-OneViewActiveSession {
     [CmdletBinding()]
     param()
 
-    if (-not $global:ConnectedSessions) {
+    $candidates = @()
+    if ($global:ConnectedSessions) {
+        $candidates += $global:ConnectedSessions
+    }
+    if ($script:ActiveOneViewSession) {
+        $candidates += $script:ActiveOneViewSession
+    }
+    if ($candidates.Count -eq 0) {
         return $null
     }
 
-    return $global:ConnectedSessions |
-        Where-Object { $_.Connected -eq $true } |
+    # Prefer a session the module reports as connected.
+    $connected = $candidates |
+        Where-Object { $_.Connected -eq $true -or $_.Connected -eq 'True' } |
         Select-Object -First 1
+    if ($connected) {
+        return $connected
+    }
+
+    # Fallback: a session we captured directly from Connect-OVMgmt that carries a
+    # SessionID, even when the module's Connected flag is not set the way we expect
+    # (e.g. HPEOneView.1000 holds the session but a strict $_.Connected -eq $true
+    # filter misses it). We still require a SessionID so we never return a stale,
+    # empty connection placeholder.
+    $bySessionId = $candidates |
+        Where-Object { $null -ne $_.SessionID } |
+        Select-Object -First 1
+    return $bySessionId
 }
 
 function Test-OneViewSessionActive {
@@ -108,6 +136,7 @@ function Connect-OneViewSession {
         $result.Connected = $true
         $result.ReusedSession = $true
         $result.SessionId = $existing.SessionID
+        $script:ActiveOneViewSession = $existing
         return $result
     }
 
@@ -132,11 +161,15 @@ function Connect-OneViewSession {
     }
 
     try {
-        Connect-OVMgmt -Appliance $Appliance -Credential $Credential -ErrorAction Stop
-        $session = Get-OneViewActiveSession
+        $ovSession = Connect-OVMgmt -Appliance $Appliance -Credential $Credential -ErrorAction Stop
+        # Capture the session object Connect-OVMgmt returns and fall back to the
+        # module's global collection. This is the reliable source of truth when the
+        # module's Connected flag is not set the way Get-OneViewActiveSession expects.
+        $session = if ($ovSession) { @($ovSession)[0] } else { Get-OneViewActiveSession }
         if ($session) {
             $result.Connected = $true
             $result.SessionId = $session.SessionID
+            $script:ActiveOneViewSession = $session
         } else {
             $result.Error = 'Connect-OVMgmt succeeded but no active session found'
         }
