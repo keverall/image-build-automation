@@ -1,24 +1,25 @@
 # HPE OneView 1000 — Live Integration Test Plan
 
+<a id="top"></a>
 ## Table of Contents
 
-- [Current OneView Connected Automation Command testing status and progress Summary](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
-- [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0-environment-prerequisites-checklist-before-live-run)
-- [Phase 1 — Connectivity (must pass before anything else)](#phase-1-connectivity-must-pass-before-anything-else)
-- [Phase 2 — Get Server List](#phase-2-get-server-list)
-- [Phase 3 — Information on Servers Connected to this OneView](#phase-3-information-on-servers-connected-to-this-oneview)
-- [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4-information-on-a-specific-server-both-identifiers)
-- [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5-assign-iso-file-to-server-for-install-both-identifiers)
-- [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6-smb-name-generation-local-drive-and-network-drive)
-- [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7-reboot-server-both-identifiers)
-- [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8-post-reboot-verification-sleep-then-confirm-connected-correct-windows-image)
-- [Phase 9 — Negative, Edge & Boundary Tests](#phase-9-negative-edge-and-boundary-tests)
-- [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10-other-critical-tests-setup-automation-hpeoneview-package)
-- [Phase 11 — Execution Evidence (per cycle)](#phase-11-execution-evidence-per-cycle)
-- [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
-
-
-<a id="top"></a>
+- [HPE OneView 1000 — Live Integration Test Plan](#hpe-oneview-1000--live-integration-test-plan)
+  - [Table of Contents](#table-of-contents)
+  - [Current OneView Connected Automation Command testing status and progress Summary](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
+  - [Major Bugs fixed log](#major-bugs-fixed-log)
+  - [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0--environment-prerequisites-checklist-before-live-run)
+  - [Phase 1 — Connectivity (must pass before anything else)](#phase-1--connectivity-must-pass-before-anything-else)
+  - [Phase 2 — Get Server List](#phase-2--get-server-list)
+  - [Phase 3 — Information on Servers Connected to this OneView](#phase-3--information-on-servers-connected-to-this-oneview)
+  - [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4--information-on-a-specific-server-both-identifiers)
+  - [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5--assign-iso-file-to-server-for-install-both-identifiers)
+  - [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6--smb-name-generation-local-drive-and-network-drive)
+  - [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7--reboot-server-both-identifiers)
+  - [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8--post-reboot-verification-sleep-then-confirm-connected--correct-windows-image)
+  - [Phase 9 — Negative, Edge \& Boundary Tests](#phase-9--negative-edge--boundary-tests)
+  - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10--other-critical-tests-setup-automation-hpeoneview-package)
+  - [Phase 11 — Execution Evidence (per cycle)](#phase-11--execution-evidence-per-cycle)
+  - [Phase 12 — Notes for the Delivery Lead](#phase-12--notes-for-the-delivery-lead)
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 23/07/2026 18:55 UTC</p>
 <!-- END:run-date -->
@@ -30,7 +31,18 @@
 - **Could not test today because the CRE ran out last night at 5pm, I will continue testing on 24/07/2026 tomorrow.**
 <!-- END:oneview-status-summary -->
 
+<a name="bugs-fixed"></a>
+## Major Bugs fixed log
 
+- Server connectivity  
+  - a proxy was mistakenly configured and assumed to be used on the EWISMGMT-19 server, it had no proxy server, I removed it
+  - the proxy env vars persisted because powershell env vars are windows credentials and i had to code a ps script to purge them
+  - grrr PS is a ...
+  - Fixed design flaw where test-serverconnectivity was disconnecting from HPEOneView Appliance after connecting which opened up a 
+  - cavenous mess of gaping significant other design issues on all automation commands, there is significantly more complexity to
+  - windows and HPeOneview connectivity than I previously realised and it took massive rework and retesting to fix this today 
+  - on 24/07/2026 phew.
+  - 
 
 **Module under test:** `Automation` PowerShell module (`src/powershell/Automation/Automation.psm1`)
 **OneView library:** `HPEOneView.1000` (OneView 10.x) via `Connect-OVMgmt` / `Disconnect-OVMgmt`

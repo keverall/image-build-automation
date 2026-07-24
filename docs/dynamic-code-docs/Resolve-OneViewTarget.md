@@ -1,11 +1,12 @@
 ---
 source:  ./src/powershell/Automation/Private/Inventory.ps1
-generated: 2026-07-24 14:50 UTC
+generated: 2026-07-24 15:19 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Resolve-OneViewTarget
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -18,7 +19,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Lets any OneView automation task accept EITHER a server name or a serial number. A serial is resolved to its OneView server record (hostname + iLO IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+Lets any OneView automation task accept EITHER a server name or a serial number. In BOTH cases the target is resolved to its OneView server record (hostname + iLO IP) via Get-OneViewServerTarget, so destructive operations always deploy to / reboot / build the confirmed OneView server and never a free-floating name.
 
 <a name="parameters"></a>
 ## Parameters
@@ -26,8 +27,8 @@ Lets any OneView automation task accept EITHER a server name or a serial number.
 | Parameter | Description |
 |-----------|-------------|
 | `-SerialNumber` | Hardware serial number. When supplied, -OneViewHost is required to resolve it. Takes precedence over -ServerName. |
-| `-ServerName` | Server hostname / OneView name. Used verbatim when no -SerialNumber. |
-| `-OneViewHost` | OneView appliance hostname or IP (required to resolve a serial). |
+| `-ServerName` | Server hostname / OneView name. Resolved against OneView (requires -OneViewHost) to confirm the target and obtain its iLO IP. |
+| `-OneViewHost` | OneView appliance hostname or IP. Required to resolve EITHER a serial or a server name, because both must be confirmed against OneView. |
 | `-DryRun` | Resolve without performing a real OneView query. |
 
 <a name="examples"></a>
@@ -47,18 +48,22 @@ Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.exampl
 
     .DESCRIPTION
         Lets any OneView automation task accept EITHER a server name or a serial
-        number. A serial is resolved to its OneView server record (hostname + iLO
-        IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+        number. In BOTH cases the target is resolved to its OneView server record
+        (hostname + iLO IP) via Get-OneViewServerTarget, so destructive operations
+        always deploy to / reboot / build the confirmed OneView server and never a
+        free-floating name.
 
     .PARAMETER SerialNumber
         Hardware serial number. When supplied, -OneViewHost is required to
         resolve it. Takes precedence over -ServerName.
 
     .PARAMETER ServerName
-        Server hostname / OneView name. Used verbatim when no -SerialNumber.
+        Server hostname / OneView name. Resolved against OneView (requires
+        -OneViewHost) to confirm the target and obtain its iLO IP.
 
     .PARAMETER OneViewHost
-        OneView appliance hostname or IP (required to resolve a serial).
+        OneView appliance hostname or IP. Required to resolve EITHER a serial or a
+        server name, because both must be confirmed against OneView.
 
     .PARAMETER DryRun
         Resolve without performing a real OneView query.

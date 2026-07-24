@@ -1,5 +1,6 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Test-ServerConnectivity](#test-serverconnectivity)
@@ -60,9 +61,6 @@
   - [Test Scripts](#test-scripts)
 - [14 Quick Navigation](#14-quick-navigation)
 - [15 Documentation References](#15-documentation-references)
-
-
-<a id="top"></a>
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 

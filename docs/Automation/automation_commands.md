@@ -1,5 +1,6 @@
 # Automation Command Reference
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
@@ -49,12 +50,9 @@
   - [Check module is loaded](#check-module-is-loaded)
   - [Force reimport](#force-reimport)
   - [Source links](#source-links)
-
-
-<a id="top"></a>
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
-> **Terminal command rules (see [`AGENTS.md`](../../AGENTS.md)):** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - supply `-Credential`/user+password parameters or enter them when prompted.
+> **Terminal command rules (see [`AGENTS.md`](../../AGENTS.md#top)):** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - supply `-Credential`/user+password parameters or enter them when prompted.
 
 ---
 
@@ -1007,3 +1005,4 @@ Import-Module (Get-ChildItem -Recurse -Filter 'Automation.psd1' -Path (Split-Pat
 ### Source links
 
 [Generated API reference](../dynamic-code-docs/INDEX.md#top) with per-command detail pages.
+

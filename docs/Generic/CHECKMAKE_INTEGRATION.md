@@ -1,5 +1,6 @@
 # Checkmake Integration
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -13,9 +14,6 @@
   - [Checkmake not found](#checkmake-not-found)
   - [Checkmake finds violations](#checkmake-finds-violations)
 - [Configuration](#configuration)
-
-
-<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 Checkmake has been integrated into the build system to validate Makefile syntax and best practices.
