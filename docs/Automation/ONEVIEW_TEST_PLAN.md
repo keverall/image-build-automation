@@ -1,5 +1,9 @@
 # HPE OneView 1000 — Live Integration Test Plan
 
+<!-- BEGIN:run-date -->
+<p class="report-run-date"><strong>Run date:</strong> 24/07/2026 17:06 UTC</p>
+<!-- END:run-date -->
+
 <a id="top"></a>
 ## Table of Contents
 
@@ -20,9 +24,7 @@
   - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10--other-critical-tests-setup-automation-hpeoneview-package)
   - [Phase 11 — Execution Evidence (per cycle)](#phase-11--execution-evidence-per-cycle)
   - [Phase 12 — Notes for the Delivery Lead](#phase-12--notes-for-the-delivery-lead)
-<!-- BEGIN:run-date -->
-<p class="report-run-date"><strong>Run date:</strong> 23/07/2026 18:55 UTC</p>
-<!-- END:run-date -->
+
 <a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
 ## Current OneView Connected Automation Command testing status and progress Summary
 
@@ -33,23 +35,52 @@
 <a name="major-bugs-fixed-log"></a>
 ## Major Bugs fixed log
 
-- Server connectivity  
-  - a proxy was mistakenly configured and assumed to be used on the EWISMGMT-19 server, it had no proxy server, I removed it
-  - the proxy env vars persisted because powershell env vars are windows credentials and i had to code a ps script to purge them
-  - grrr PS is a ...
-- Fixed design flaw where test-serverconnectivity was disconnecting from HPEOneView Appliance after connecting which opened up a 
-- cavenous mess of gaping significant other design issues on all automation commands, there is significantly more complexity to
-- windows and HPeOneview connectivity than I previously realised and it took massive rework and retesting to fix this today 
-- on 24/07/2026 phew.
-- Fixed. Added $env:AUTOMATED_MODE = 'true' to the test's BeforeAll block (with restoration in AfterAll), matching the pattern used by other test files. This suppresses the interactive Read-Host prompts in Invoke-IsoDeploy when no target is supplied, allowing the tests to run non-interactively. All 3 tests now pass in 309ms.
-- All 35 tests in Test-ServerConnectivity.Tests.ps1 pass in 880ms with no interactive prompts. Which can't happen its automated testing, there is noone to input anything.
-  - Added AUTOMATED_MODE check to the credential prompt's $isInteractive guard, so it falls through to the non-interactive error path instead of calling Read-Host.
-  - Added $env:AUTOMATED_MODE = 'true' in BeforeAll (with save/restore in AfterAll), matching the pattern used across all other test files.
+**Date: 24/07/2026**
 
-Summary of changes:
+### 1. Phantom proxy configuration on EWISMGMT-19
 
-src/powershell/Automation/Public/Test-ServerConnectivity.ps1:247 — Added AUTOMATED_MODE check to the credential prompt's $isInteractive guard, so it falls through to the non-interactive error path instead of calling Read-Host.
-tests/powershell/Test-ServerConnectivity.Tests.ps1 — Added $env:AUTOMATED_MODE = 'true' in BeforeAll (with save/restore in AfterAll), matching the pattern used across all other test files.
+A proxy was mistakenly configured and assumed to be in use on the EWISMGMT-19 automation server.
+The server has no proxy — it sits behind a corporate firewall with direct connectivity. The phantom
+proxy configuration was removed.
+
+The proxy environment variables (`HTTP_PROXY`, etc.) had persisted because PowerShell environment
+variables are stored as Windows credentials and survived process restarts. A dedicated PowerShell
+cleanup script was written to purge the stale proxy env vars from the system.
+
+### 2. Test-ServerConnectivity was disconnecting the OneView session after connecting
+
+**Severity: Critical — cascading design flaw across all automation commands.**
+
+`Test-ServerConnectivity` was disconnecting from the HPEOneView appliance immediately after
+successfully connecting. This masked a much deeper design issue: the session lifecycle management
+across all automation commands was fundamentally broken. Fixing this single defect exposed a
+cavernous mess of related connectivity and session-handling design flaws across the entire
+command set, requiring significant rework and retesting of Windows and HPEOneView connectivity
+logic across all commands.
+
+### 3. Invoke-IsoDeploy Pester tests hanging on interactive prompts
+
+The 3 Pester tests for `Invoke-IsoDeploy` were hanging indefinitely because `Read-Host` prompts
+fired when no target was supplied — acceptable for interactive use, fatal for automated testing
+where no operator is present.
+
+**Fix:** Added `$env:AUTOMATED_MODE = 'true'` to the test `BeforeAll` block (with save/restore in
+`AfterAll`), matching the pattern used by other test files. This suppresses the interactive
+`Read-Host` prompts, allowing the tests to run non-interactively. All 3 tests now pass in 309ms.
+
+### 4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts
+
+All 35 tests in `Test-ServerConnectivity.Tests.ps1` were hanging because the credential prompt's
+`$isInteractive` guard did not check for `AUTOMATED_MODE`, causing `Read-Host` to fire during
+automated test runs where no operator is present to provide input.
+
+**Fix:**
+- Added `AUTOMATED_MODE` check to the credential prompt's `$isInteractive` guard in
+  `Test-ServerConnectivity.ps1:247`, so it falls through to the non-interactive error path
+  instead of calling `Read-Host`.
+- Added `$env:AUTOMATED_MODE = 'true'` in `BeforeAll` (with save/restore in `AfterAll`) in
+  `Test-ServerConnectivity.Tests.ps1`, matching the pattern used across all other test files.
+- All 35 tests now pass in 880ms with no interactive prompts.
 
 **Module under test:** `Automation` PowerShell module (`src/powershell/Automation/Automation.psm1`)
 **OneView library:** `HPEOneView.1000` (OneView 10.x) via `Connect-OVMgmt` / `Disconnect-OVMgmt`

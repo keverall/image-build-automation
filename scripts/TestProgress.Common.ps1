@@ -176,17 +176,21 @@ function Update-RunDateBlock {
     return Set-Block -Content $Content -Key 'run-date' -Inner $inner
 }
 
-function Add-AutomationEvidenceRow {
+function Update-AutomationEvidenceBlock {
     <#
     .SYNOPSIS
-        Append a new row to the Automation section-7 evidence block.
+        Refresh the last Automation section-7 row's date and optionally append a new row.
+    .DESCRIPTION
+        Always sets the last existing row's Date/Time cell to $DateTime. When
+        -AddRow is supplied a new row is appended using the supplied field values.
     .OUTPUTS
-        [pscustomobject] with Content (updated document) and RunNumber (int).
-        When the block is missing, Content is returned unchanged and RunNumber 0.
+        [pscustomobject] with Content (updated document), RunNumber (int of the
+        row added, or 0 when no row was added), and Added (bool).
     #>
     param(
         [Parameter(Mandatory)][string]$Content,
         [Parameter(Mandatory)][string]$DateTime,
+        [switch]$AddRow,
         [AllowEmptyString()][string]$CommandSuite,
         [AllowEmptyString()][string]$Environment,
         [AllowEmptyString()][string]$Result,
@@ -196,14 +200,22 @@ function Add-AutomationEvidenceRow {
     $inner = Get-Block -Content $Content -Key 'automation-evidence-rows'
     if ($null -eq $inner) {
         Write-Warning "Block 'automation-evidence-rows' not found"
-        return [pscustomobject]@{ Content = $Content; RunNumber = 0 }
+        return [pscustomobject]@{ Content = $Content; RunNumber = 0; Added = $false }
     }
     $rows = @(Get-RowLine -Inner $inner)
-    $next = Get-NextRunNumber -Rows $rows
-    $row = "| $next | $DateTime | $(ConvertTo-TableCell $CommandSuite) | $(ConvertTo-TableCell $Environment) | $(ConvertTo-TableCell $Result) | $(ConvertTo-TableCell $LogRef) | $(ConvertTo-TableCell $Reason) |"
-    $rows += $row
+    $rows = @(Set-LastRowDateTime -Rows $rows -DateTime $DateTime)
+
+    $runNumber = 0
+    $added = $false
+    if ($AddRow) {
+        $runNumber = Get-NextRunNumber -Rows $rows
+        $row = "| $runNumber | $DateTime | $(ConvertTo-TableCell $CommandSuite) | $(ConvertTo-TableCell $Environment) | $(ConvertTo-TableCell $Result) | $(ConvertTo-TableCell $LogRef) | $(ConvertTo-TableCell $Reason) |"
+        $rows += $row
+        $added = $true
+    }
+
     $updated = Set-Block -Content $Content -Key 'automation-evidence-rows' -Inner ($rows -join "`n")
-    return [pscustomobject]@{ Content = $updated; RunNumber = $next }
+    return [pscustomobject]@{ Content = $updated; RunNumber = $runNumber; Added = $added }
 }
 
 function Set-OneViewStatusSummary {
