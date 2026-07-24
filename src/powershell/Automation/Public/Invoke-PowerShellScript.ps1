@@ -27,6 +27,11 @@ function Invoke-PowerShellScript {
     .PARAMETER ExecutionPolicy
         PowerShell execution-policy override (default: Bypass).
 
+    .PARAMETER Environment
+        Optional hashtable of environment variables to set on the child process
+        only (never interpolated into the script text). Use this to pass secrets
+        so they do not appear in the command line, transcripts, or error output.
+
     .RETURNS
         [hashtable] with keys: Success (bool), Output (string).
 
@@ -39,7 +44,8 @@ function Invoke-PowerShellScript {
         [Parameter(Mandatory, Position = 0)][string] $Script,
         [Parameter(Mandatory = $false)][bool]      $CaptureOutput  = $true,
         [Parameter(Mandatory = $false)][int]       $TimeoutSeconds = 300,
-        [Parameter(Mandatory = $false)][string]    $ExecutionPolicy = 'Bypass'
+        [Parameter(Mandatory = $false)][string]    $ExecutionPolicy = 'Bypass',
+        [Parameter(Mandatory = $false)][hashtable] $Environment
     )
     $psArgs = @(
         '-ExecutionPolicy', $ExecutionPolicy,
@@ -64,6 +70,11 @@ function Invoke-PowerShellScript {
         $psi.RedirectStandardError  = $CaptureOutput
         $psi.UseShellExecute        = $false
         $psi.CreateNoWindow         = $true
+        if ($Environment) {
+            foreach ($k in $Environment.Keys) {
+                $psi.EnvironmentVariables[$k] = [string]$Environment[$k]
+            }
+        }
         $p   = [System.Diagnostics.Process]::Start($psi)
         $p.WaitForExit($TimeoutSeconds * 1000) | Out-Null
         $out  = if ($CaptureOutput) { $p.StandardOutput.ReadToEnd().Trim() } else { '' }

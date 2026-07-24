@@ -243,21 +243,46 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
         }
     }
 
-    It 'Should construct PSCredential from resolved user/pass for Connect-OneViewSession' {
-        # This test verifies the fix for the credential flow bug: when credentials
-        # are resolved interactively (or from any source), a PSCredential must be
-        # constructed and passed to Connect-OneViewSession.
-        # We verify the pattern by constructing a PSCredential the same way the
-        # function does, and confirming it has the expected properties.
-        $resolvedUser = 'testuser'
-        $resolvedPass = 'testpassword'
-        $cred = [System.Management.Automation.PSCredential]::new(
-            $resolvedUser,
-            (ConvertTo-SecureString $resolvedPass -AsPlainText -Force))
-        $cred.UserName | Should -Be 'testuser'
-        $cred.GetNetworkCredential().Password | Should -Be 'testpassword'
-        $cred.Password | Should -Not -BeNullOrEmpty
-        $cred.Password | Should -BeOfType [System.Security.SecureString]
+    It 'Should pass the supplied -Credential to Connect-OneViewSession (integration, mocked session)' {
+        # Bind a loopback listener on 443 so Phase 1 (network ping) succeeds and
+        # the function reaches the Connect-OneViewSession call. Skip when the
+        # port cannot be bound (privileged port on some Linux hosts, or in use).
+        $listener = $null
+        try {
+            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 443)
+            $listener.Start()
+        } catch {
+            Set-ItResult -Skipped -Because "cannot bind TCP 443 on loopback: $($_.Exception.Message)"
+            return
+        }
+        try {
+            Mock -ModuleName Automation Connect-OneViewSession {
+                param($Appliance, $Credential, $ModuleName)
+                return @{
+                    Connected     = $true
+                    ReusedSession = $false
+                    Appliance     = $Appliance
+                    SessionId     = 'mock-session'
+                    ModuleName    = $ModuleName
+                    Error         = $null
+                }
+            }
+
+            $result = Test-ServerConnectivity -ManagementHost 'localhost' -PingTimeoutMs 2000 -Credential $script:cred
+
+            $result.NetworkPing.TcpPortOpen | Should -Be $true
+            $result.AuthConnect.Connected | Should -Be $true
+
+            # Assert the exact PSCredential supplied by the caller was passed through.
+            Should -Invoke -ModuleName Automation Connect-OneViewSession -Times 1 -Exactly -ParameterFilter {
+                $Appliance -eq 'localhost' -and
+                $Credential -is [System.Management.Automation.PSCredential] -and
+                $Credential.UserName -eq 'svc' -and
+                $Credential.GetNetworkCredential().Password -eq 'pw'
+            }
+        } finally {
+            if ($listener) { $listener.Stop() }
+        }
     }
 
     It 'Should accept PSCredential parameter without throwing' {

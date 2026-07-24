@@ -95,24 +95,12 @@ function Test-ScomMaintenanceConnectivity {
     $ErrorActionPreference = 'Continue'
     $Mode = 'scom'
     Initialize-Logging -LogFile 'connectivity.log' -CommandName 'Test-ScomMaintenanceConnectivity' -LogName "Test-ScomMaintenanceConnectivity-ManagementHost-$ManagementHost"
+    $logger = Get-Logger 'Connectivity'
 
     # ── Resolve config directory ──────────────────────────────────────────────
-    $projRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
-    $EffectiveConfigDir = if ($PSBoundParameters.ContainsKey('ConfigDir')) {
-        if (Split-Path $ConfigDir -IsAbsolute) { $ConfigDir }
-        else { Join-Path (Get-Location) $ConfigDir }
-    } else {
-        Join-Path $projRoot 'configs'
-    }
-
-    if (-not (Test-Path (Join-Path $EffectiveConfigDir 'connection_hosts.json'))) {
-        if (-not (Split-Path $ConfigDir -IsAbsolute)) {
-            $fallback = Join-Path $projRoot $ConfigDir
-            if (Test-Path (Join-Path $fallback 'connection_hosts.json')) {
-                $EffectiveConfigDir = $fallback
-            }
-        }
-    }
+    $EffectiveConfigDir = Resolve-EffectiveConfigDir -ConfigDir $ConfigDir `
+        -MarkerFile 'connection_hosts.json' `
+        -ExplicitlyBound:$PSBoundParameters.ContainsKey('ConfigDir')
 
     # ── Resolve environment ───────────────────────────────────────────────────
     # 'Environment' is informational for live tests. It is ONLY used to select a
@@ -362,13 +350,14 @@ function Test-ScomMaintenanceConnectivity {
     } catch {
         $pingResult.Error = "DNS resolution failed: $($_.Exception.Message)"
     }
+    $logger.Info("DNS resolution for '$resolvedHost': $(if ($pingResult.DnsResolved) { "Resolved -> $($pingResult.IpAddress)" } else { "FAILED - $($pingResult.Error)" })")
 
     # TCP port probe
     if ($pingResult.DnsResolved) {
         foreach ($port in $tcpPorts) {
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            $tcpClient = [System.Net.Sockets.TcpClient]::new()
             try {
-                $tcpClient = [System.Net.Sockets.TcpClient]::new()
                 $connectTask = $tcpClient.ConnectAsync($resolvedHost, $port)
                 $connected = $connectTask.Wait($PingTimeoutMs)
                 $sw.Stop()
@@ -376,13 +365,11 @@ function Test-ScomMaintenanceConnectivity {
                     $pingResult.TcpPortOpen = $true
                     $pingResult.Port = $port
                     $pingResult.LatencyMs = [int]$sw.ElapsedMilliseconds
-                    $tcpClient.Close()
                     break
-                } else {
-                    $tcpClient.Dispose()
                 }
             } catch {
                 $sw.Stop()
+            } finally {
                 $tcpClient.Dispose()
             }
         }
@@ -391,6 +378,8 @@ function Test-ScomMaintenanceConnectivity {
             $pingResult.Error = "TCP connection failed - no open port found ($portList) on '$resolvedHost' within ${PingTimeoutMs}ms"
         }
     }
+
+    $logger.Info("TCP probe for '$resolvedHost': $(if ($pingResult.TcpPortOpen) { "Open (port $($pingResult.Port), $($pingResult.LatencyMs)ms)" } else { "FAILED - $($pingResult.Error)" })")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 2: Authentication Connect (SCOM)
@@ -414,28 +403,37 @@ function Test-ScomMaintenanceConnectivity {
         $moduleName = $modeCfg.Get_Item('powershell_module') ?? 'OperationsManager'
         $winrmServer = if ($useWinRM) { $resolvedHost } else { $null }
 
-        # Escape single quotes for safe interpolation into the child script
-        $escapedPass = $resolvedPass -replace "'", "''"
-        $escapedUser = $resolvedUser -replace "'", "''"
-        $escapedHost = $resolvedHost -replace "'", "''"
-
+        # Credentials are NEVER embedded in the script text. The child script
+        # declares a param() block and receives them out-of-band:
+        #   - Local child process: via process-scoped environment variables
+        #     (Invoke-PowerShellScript -Environment)
+        #   - Remote WinRM: via Invoke-Command -ArgumentList over the encrypted
+        #     remoting channel (Invoke-PowerShellWinRM -ArgumentList)
+        # This keeps secrets out of command lines, transcripts, and error output.
         $scriptContent = @"
+param([string]`$ScomUser = `$env:SCOM_CONN_TEST_USER, [string]`$ScomPass = `$env:SCOM_CONN_TEST_PASS, [string]`$ScomHost = `$env:SCOM_CONN_TEST_HOST)
 Import-Module $moduleName -ErrorAction Stop
 Write-Output "MODULE_LOADED"
-`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
-`$conn = New-SCOMManagementGroupConnection -ComputerName '$escapedHost' -Credential `$cred -ErrorAction Stop
+`$securePass = ConvertTo-SecureString `$ScomPass -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential(`$ScomUser, `$securePass)
+`$conn = New-SCOMManagementGroupConnection -ComputerName `$ScomHost -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
-Remove-SCOMManagementGroupConnection -ComputerName '$escapedHost' -ErrorAction SilentlyContinue
+Remove-SCOMManagementGroupConnection -ComputerName `$ScomHost -ErrorAction SilentlyContinue
 Write-Output "DISCONNECTED"
 "@
         try {
             if ($useWinRM) {
                 $secPass = ConvertTo-SecureString $resolvedPass -AsPlainText -Force
                 $scriptResult = Invoke-PowerShellWinRM -Script $scriptContent `
-                    -Server $winrmServer -Username $resolvedUser -Password $secPass
+                    -Server $winrmServer -Username $resolvedUser -Password $secPass `
+                    -ArgumentList @($resolvedUser, $resolvedPass, $resolvedHost)
             } else {
-                $scriptResult = Invoke-PowerShellScript -Script $scriptContent
+                $childEnv = @{
+                    SCOM_CONN_TEST_USER = $resolvedUser
+                    SCOM_CONN_TEST_PASS = $resolvedPass
+                    SCOM_CONN_TEST_HOST = $resolvedHost
+                }
+                $scriptResult = Invoke-PowerShellScript -Script $scriptContent -Environment $childEnv
             }
             $output = $scriptResult.Output
             if ($output -match 'MODULE_LOADED') { $authResult.ModuleLoaded = $true }
@@ -446,6 +444,9 @@ Write-Output "DISCONNECTED"
             }
         } catch {
             $authResult.Error = "Auth error: $($_.Exception.Message)"
+        }
+        if ($authResult.Error -and $authResult.Error -notmatch '^Skipped') {
+            $logger.Error("Authentication to '$resolvedHost' failed: $($authResult.Error)")
         }
     }
 
@@ -465,6 +466,9 @@ Write-Output "DISCONNECTED"
     if (-not $Json) {
         _Format-ScomMaintenanceConnectivityResult -Result $result
     }
+
+    $logger.Info("Connectivity test for '$resolvedHost' completed: Available=$available " +
+        "(DNS=$($pingResult.DnsResolved), TCP=$($pingResult.TcpPortOpen), Auth=$($authResult.Connected))")
 
     return $result
 }
