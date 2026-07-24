@@ -23,7 +23,6 @@
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 23/07/2026 18:55 UTC</p>
 <!-- END:run-date -->
-<!-- END:run-date -->
 <a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
 ## Current OneView Connected Automation Command testing status and progress Summary
 
@@ -46,7 +45,6 @@
 - All 35 tests in Test-ServerConnectivity.Tests.ps1 pass in 880ms with no interactive prompts. Which can't happen its automated testing, there is noone to input anything.
   - Added AUTOMATED_MODE check to the credential prompt's $isInteractive guard, so it falls through to the non-interactive error path instead of calling Read-Host.
   - Added $env:AUTOMATED_MODE = 'true' in BeforeAll (with save/restore in AfterAll), matching the pattern used across all other test files.
-- 
 
 Summary of changes:
 

@@ -63,6 +63,35 @@ function Set-Block {
     return [regex]::Replace($Content, $rx, $eval)
 }
 
+function Repair-DuplicateBlockMarker {
+    <#
+    .SYNOPSIS
+        Collapse accidentally duplicated <!-- BEGIN:key --> / <!-- END:key --> marker lines.
+    .DESCRIPTION
+        Guards against a past regression where an END marker line was duplicated
+        (e.g. two consecutive '<!-- END:run-date -->' lines), which corrupts the
+        document structure for future edits. Consecutive identical marker lines
+        are collapsed to a single line. Handles both LF and CRLF line endings.
+    #>
+    param(
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Content
+    )
+    $rx = '(?m)^([ \t]*<!-- (?:BEGIN|END):\S+ -->)[ \t]*(?:\r?\n[ \t]*<!-- (?:BEGIN|END):\S+ -->[ \t]*)+(?=\r?\n|\z)'
+    $eval = {
+        param($m)
+        # Keep only the distinct marker lines in order, dropping consecutive repeats.
+        $nl = if ($m.Value -match "`r`n") { "`r`n" } else { "`n" }
+        $lines = $m.Value -split '\r?\n'
+        $kept = New-Object System.Collections.Generic.List[string]
+        foreach ($l in $lines) {
+            $t = $l.Trim()
+            if ($kept.Count -eq 0 -or $kept[$kept.Count - 1].Trim() -ne $t) { $kept.Add($l.TrimEnd()) }
+        }
+        return ($kept -join $nl)
+    }
+    return [regex]::Replace($Content, $rx, $eval)
+}
+
 function ConvertTo-TableCell {
     <#
     .SYNOPSIS

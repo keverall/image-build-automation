@@ -266,6 +266,9 @@ if (-not (Test-Path $TestPlanPath)) {
 
 $content = Get-Content $TestPlanPath -Raw
 
+# Repair any accidentally duplicated marker lines before editing blocks
+$content = Repair-DuplicateBlockMarker -Content $content
+
 # Update run-date
 $content = Update-RunDateBlock -Content $content -RunDate $runDate
 
@@ -288,6 +291,9 @@ if (Test-Path $OneViewTestPlanPath) {
     Write-Host "[test-progress] Updating $OneViewTestPlanPath..." -ForegroundColor Cyan
 
     $oneViewContent = Get-Content $OneViewTestPlanPath -Raw
+
+    # Repair any accidentally duplicated marker lines before editing blocks
+    $oneViewContent = Repair-DuplicateBlockMarker -Content $oneViewContent
 
     # Update run-date
     $oneViewContent = Update-RunDateBlock -Content $oneViewContent -RunDate $runDate
