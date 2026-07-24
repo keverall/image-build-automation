@@ -210,7 +210,7 @@ class OpsRamp_Client {
         try {
             $resp = $this.HttpClient.PostAsync($tokenUrl, $body).Result
             $resp.EnsureSuccessStatusCode() | Out-Null
-            $json = $resp.Content.ReadAsStringAsync().Result | ConvertFrom-Json | _PS_ConvertTo-Hashtable
+            $json = $resp.Content.ReadAsStringAsync().Result | ConvertFrom-Json -AsHashtable
             $this.AccessToken = $json.Get_Item('access_token')
             $expiresIn = ($json.Get_Item('expires_in')) ?? 3600
             $this.TokenExpiry = [DateTime]::UtcNow.AddSeconds($expiresIn * 0.9)
@@ -243,7 +243,7 @@ class OpsRamp_Client {
             if ($resp.IsSuccessStatusCode) {
                 if ($resp.Content.Headers.ContentLength -gt 0) {
                     $body = $resp.Content.ReadAsStringAsync().Result
-                    return ($body | ConvertFrom-Json | _PS_ConvertTo-Hashtable)
+                    return ($body | ConvertFrom-Json -AsHashtable)
                 }
                 return @{}
             } else {
@@ -258,7 +258,7 @@ class OpsRamp_Client {
     }
 
     [bool] SendMetric([string]$ResourceId, [string]$MetricName, [double]$Value,
-        [datetime]$Timestamp = [DateTime]::MinValue, [hashtable]$Tags = $null) {
+        [hashtable]$Tags = $null, [datetime]$Timestamp = [DateTime]::MinValue) {
         $metric = @{
             resourceId = $ResourceId
             metric     = @{
@@ -364,12 +364,7 @@ class OpsRamp_Client {
         $this.SendMetric($rid, 'security.vulnerabilities.total', $vulnCount, @{ server = $ServerName })
         $this.SendMetric($rid, 'security.vulnerabilities.critical', $critCount, @{ server = $ServerName })
         if ($critCount -gt 0) {
-            $sev = if ($critCount -gt 0) {
-                'CRITICAL' 
-            } else {
-                'WARNING' 
-            }
-            $this.SendAlert($rid, 'security.vulnerability', $sev,
+            $this.SendAlert($rid, 'security.vulnerability', 'CRITICAL',
                 "$critCount critical vulnerabilities found on $ServerName", $ScanResults)
         }
         return $true
@@ -648,7 +643,6 @@ Export-ModuleMember -Function @(
     'Test-PostBuildValidation'
     'New-Uuid'
     'Update-Firmware'
-    'Invoke-WindowsSecurityUpdate'
     # OpsRamp
     'Invoke-OpsRamp'
     'Invoke-OpsRampClient'
