@@ -42,9 +42,6 @@ if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $IsWindow
 # ─── Module Imports (safe — won't break profile if missing) ──────────────────
 
 
-$env:HTTP_PROXY  = "http://webcorp.prd.example.com:8082"
-$env:HTTPS_PROXY = "http://webcorp.prd.example.com:8082"
-
 # Path to Git SSH tools
 $gitSshPath = "$env:USERPROFILE\AppData\Local\Programs\Git\usr\bin"
 

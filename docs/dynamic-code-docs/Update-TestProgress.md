@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/Update-TestProgress.ps1
-generated: 2026-07-22 22:20 UTC
+generated: 2026-07-24 09:41 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,6 +14,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Examples](#examples)
   - [Example 1](#example-1)
   - [Example 2](#example-2)
+  - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
 
@@ -30,6 +31,20 @@ Extracts test summary from the latest automation test log, prompts for test run 
 | `-LogPath` | Path to the test log file. If not specified, uses the latest log. |
 | `-TestPlanPath` | Path to AUTOMATION_TEST_PLAN.md. Defaults to docs/Automation/AUTOMATION_TEST_PLAN.md. |
 | `-OneViewTestPlanPath` | Path to ONEVIEW_TEST_PLAN.md. Defaults to docs/Automation/ONEVIEW_TEST_PLAN.md. |
+| `-Reason` | Reason for full testing rerun (Automation section 7). |
+| `-CommandSuite` | Command/Suite executed (Automation section 7). |
+| `-Environment` | Environment where tests ran (Automation section 7). |
+| `-NonInteractive` | Skip interactive prompts and use defaults/parameters only. |
+| `-OneViewStatusSummary` | New OneView status/progress summary bullet text (replaces existing). |
+| `-AddOneViewRow` | Add a new Phase 11 execution evidence row to OneView test plan. |
+| `-OvPhases` | Phase(s) for new OneView row (default: "Phases 1-10"). |
+| `-OvTester` | Tester name for new OneView row (default: "<tester>"). |
+| `-OvAppliance` | Appliance name for new OneView row (default: "HPEOpenview.1000"). |
+| `-OvResult` | Result for new OneView row (default: "Pending"). |
+| `-OvLogRef` | Log/Job reference for new OneView row (default: "<log ref>"). |
+| `-OvSignedOff` | Signed off by for new OneView row (default: "<delivery lead>"). |
+| `-ReportsDir` | Output directory for generated HTML reports (default: docs/Automation/Testing_Reports). |
+| `-SkipHtml` | Skip HTML regeneration (used by tests to keep runs hermetic). |
 
 <a name="examples"></a>
 ## Examples
@@ -44,6 +59,12 @@ Prompts for test run details and updates both test plans.
 ### Example 2
 ```powershell
 Uses specific log file.
+```
+
+<a name="example-3"></a>
+### Example 3
+```powershell
+Non-interactive mode with explicit parameters.
 ```
 
 <a name="original-comment-based-help"></a>
@@ -66,6 +87,48 @@ Uses specific log file.
 .PARAMETER OneViewTestPlanPath
     Path to ONEVIEW_TEST_PLAN.md. Defaults to docs/Automation/ONEVIEW_TEST_PLAN.md.
 
+.PARAMETER Reason
+    Reason for full testing rerun (Automation section 7).
+
+.PARAMETER CommandSuite
+    Command/Suite executed (Automation section 7).
+
+.PARAMETER Environment
+    Environment where tests ran (Automation section 7).
+
+.PARAMETER NonInteractive
+    Skip interactive prompts and use defaults/parameters only.
+
+.PARAMETER OneViewStatusSummary
+    New OneView status/progress summary bullet text (replaces existing).
+
+.PARAMETER AddOneViewRow
+    Add a new Phase 11 execution evidence row to OneView test plan.
+
+.PARAMETER OvPhases
+    Phase(s) for new OneView row (default: "Phases 1-10").
+
+.PARAMETER OvTester
+    Tester name for new OneView row (default: "<tester>").
+
+.PARAMETER OvAppliance
+    Appliance name for new OneView row (default: "HPEOpenview.1000").
+
+.PARAMETER OvResult
+    Result for new OneView row (default: "Pending").
+
+.PARAMETER OvLogRef
+    Log/Job reference for new OneView row (default: "<log ref>").
+
+.PARAMETER OvSignedOff
+    Signed off by for new OneView row (default: "<delivery lead>").
+
+.PARAMETER ReportsDir
+    Output directory for generated HTML reports (default: docs/Automation/Testing_Reports).
+
+.PARAMETER SkipHtml
+    Skip HTML regeneration (used by tests to keep runs hermetic).
+
 .EXAMPLE
     ./scripts/Update-TestProgress.ps1
     Prompts for test run details and updates both test plans.
@@ -73,6 +136,10 @@ Uses specific log file.
 .EXAMPLE
     ./scripts/Update-TestProgress.ps1 -LogPath "generated/logs/automation/automated-mode-test_2026-07-22T22-04-27Z.log"
     Uses specific log file.
+
+.EXAMPLE
+    ./scripts/Update-TestProgress.ps1 -NonInteractive -Reason "CI run" -CommandSuite "make test" -Environment "GitLab CI"
+    Non-interactive mode with explicit parameters.
 ```
 
 ---

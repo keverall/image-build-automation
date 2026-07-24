@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-07-22 22:20 UTC
+generated: 2026-07-24 09:41 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -109,8 +109,9 @@ Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe
 
     .NOTES
         The OneView session established by this command persists in the current
-        PowerShell session. Use Disconnect-OneView to explicitly close the session
-        when finished.
+        session and can be reused by subsequent OneView commands (Get-OneViewServerList,
+        Get-OneViewConnectionStatus, etc.). Use Disconnect-OneView to explicitly
+        close the session when finished.
 ```
 
 ---
