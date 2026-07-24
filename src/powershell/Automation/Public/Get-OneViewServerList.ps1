@@ -24,10 +24,10 @@ function Get-OneViewServerList {
         session (Connect-OVMgmt) and uses that appliance automatically.
 
     .PARAMETER OneViewUser
-        OneView username. Defaults to $env:ONEVIEW_USER.
+        OneView username (used with -OneViewPassword). Never read from config or environment.
 
     .PARAMETER OneViewPassword
-        OneView password. Defaults to $env:ONEVIEW_PASSWORD.
+        OneView password (used with -OneViewUser). Never read from config or environment.
 
     .PARAMETER Port
         OneView HTTPS port (default 443).
@@ -98,40 +98,7 @@ function Get-OneViewServerList {
         return $MockResult
     }
 
-    $sessionToken = $null
-
-    if (-not $OneViewHost) {
-        $activeSession = Get-OneViewActiveSession
-        if ($activeSession) {
-            $OneViewHost = $activeSession.Name
-            $sessionToken = $activeSession.SessionID
-        }
-
-        if (-not $OneViewHost) {
-            return @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
-        }
-    }
-
-    if (-not $sessionToken -and -not $Credential) {
-        if (-not $OneViewUser -or -not $OneViewPassword) {
-            $ovCred = Get-OneViewCredentials
-            if (-not $OneViewUser)     { $OneViewUser     = $ovCred[0] }
-            if (-not $OneViewPassword) { $OneViewPassword = $ovCred[1] }
-        }
-        $Credential = [System.Management.Automation.PSCredential]::new(
-            $OneViewUser,
-            (ConvertTo-SecureString $OneViewPassword -AsPlainText -Force))
-    }
-
-    if ($DryRun) {
-        Write-Output "[DRY RUN] Get-OneViewServerList Host=$OneViewHost Filter=$Filter"
-        return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true }
-    }
-
-    $baseUrl = "https://$OneViewHost`:$Port"
-    $apiBase = "$baseUrl/rest"
-
-    # Parse -Filter into predicate components
+    # Parse -Filter into predicate components (validate before connecting)
     $healthFilter = $null; $powerFilter = $null; $nameFilter = $null
     if ($Filter) {
         if ($Filter -match '^health:(.+)$')     { $healthFilter = $Matches[1].Trim() }
@@ -141,6 +108,25 @@ function Get-OneViewServerList {
             return @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<substring>." }
         }
     }
+
+    if ($DryRun) {
+        Write-Output "[DRY RUN] Get-OneViewServerList Host=$OneViewHost Filter=$Filter"
+        return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true }
+    }
+
+    # Resolve (or establish) a persistent OneView session via the shared helper.
+    # Supplying -OneViewHost connects and prompts for credentials when needed;
+    # omitting it reuses the current session. This command never disconnects.
+    $sess = Resolve-OneViewSession -OneViewHost $OneViewHost -Credential $Credential `
+        -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
+    if (-not $sess.Success) {
+        return @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
+    }
+    $OneViewHost  = $sess.OneViewHost
+    $sessionToken = $sess.SessionToken
+
+    $baseUrl = "https://$OneViewHost`:$Port"
+    $apiBase = "$baseUrl/rest"
 
     try {
         $servers = [System.Collections.Generic.List[hashtable]]::new()

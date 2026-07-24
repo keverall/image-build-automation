@@ -146,3 +146,157 @@ function Connect-OneViewSession {
 
     return $result
 }
+
+function Resolve-OneViewSession {
+    <#
+    .SYNOPSIS
+        Shared entry point that guarantees an active HPE OneView session for the
+        OneView data commands, reusing one when present and otherwise connecting
+        via Connect-OneViewSession. Prompts interactively for the appliance host
+        and credentials, exactly like Test-ServerConnectivity, when they are not
+        supplied. NEVER disconnects - only Disconnect-OneView does that.
+
+    .DESCRIPTION
+        Resolution order:
+          0. Existing connection ALWAYS wins:
+             - If any OneView session is already connected it is reused and the
+               function NEVER reconnects - dropping a live session could cause
+               incidents. This takes priority even over an explicitly supplied
+               -OneViewHost; when the requested host differs from the connected
+               appliance the operator is warned to Disconnect-OneView first if they
+               want to switch. The connected appliance name is returned in Message.
+          1. Host resolution (only when nothing is connected):
+             - If -OneViewHost is supplied it is used verbatim; otherwise the
+               operator is prompted. If no host is supplied and nothing is
+               connected, a descriptive error is returned.
+          2. Credential resolution (only when connecting):
+             - -Credential, then -OneViewUser/-OneViewPassword, then an interactive
+               prompt, then the env/CyberArk resolver for non-interactive automation.
+          3. Connect:
+             - Connect-OneViewSession (the sole caller of Connect-OVMgmt)
+               establishes a persistent session that later commands reuse.
+
+        The session persists until it times out, the PowerShell session closes,
+        or Disconnect-OneView is called.
+
+    .PARAMETER OneViewHost
+        OneView appliance hostname or IP. Ignored while a session is already
+        connected. If omitted and nothing is connected, the operator is prompted.
+
+    .PARAMETER Credential
+        PSCredential for authentication. Preferred, non-interactive entry point.
+
+    .PARAMETER OneViewUser
+        OneView username (used with -OneViewPassword when -Credential is absent).
+
+    .PARAMETER OneViewPassword
+        OneView password (used with -OneViewUser when -Credential is absent).
+
+    .PARAMETER ModuleName
+        HPEOneView module name (default: HPEOneView.1000).
+
+    .OUTPUTS
+        [hashtable] Success, OneViewHost, SessionToken, ReusedSession, Message, Error.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSAvoidUsingConvertToSecureStringWithPlainText', '',
+        Justification = 'Builds a PSCredential from explicitly supplied user/password for Connect-OneViewSession; password is never persisted or logged.')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSAvoidUsingUsernameAndPasswordParams', '',
+        Justification = 'Backwards-compatible fallback shared with sibling OneView commands; -Credential is the preferred entry point.')]
+    param(
+        [string] $OneViewHost,
+        [System.Management.Automation.PSCredential] $Credential,
+        [string] $OneViewUser,
+        [string] $OneViewPassword,
+        [string] $ModuleName = 'HPEOneView.1000'
+    )
+
+    $result = @{
+        Success       = $false
+        OneViewHost   = $OneViewHost
+        SessionToken  = $null
+        ReusedSession = $false
+        Message       = $null
+        Error         = $null
+    }
+
+    $isAutomated   = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+    $canPrompt     = -not $isAutomated -and [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
+    $activeSession = Get-OneViewActiveSession
+
+    # ── 0. Existing connection ALWAYS wins ─────────────────────────────────────
+    # If a session is already connected, reuse it and NEVER reconnect - dropping a
+    # live OneView session could cause incidents. This takes priority even over an
+    # explicitly supplied -OneViewHost: we tell the operator which appliance they
+    # are on and that they must Disconnect-OneView before switching appliances.
+    if ($activeSession) {
+        $result.Success       = $true
+        $result.OneViewHost   = $activeSession.Name
+        $result.SessionToken  = $activeSession.SessionID
+        $result.ReusedSession = $true
+
+        if ($OneViewHost -and $OneViewHost -ne $activeSession.Name) {
+            $result.Message = "Already connected to OneView appliance '$($activeSession.Name)'. Reusing that session instead of connecting to '$OneViewHost' (not reconnecting, to avoid dropping the live session). Run Disconnect-OneView first if you need to switch to '$OneViewHost'."
+            Write-Warning $result.Message
+        } else {
+            $result.Message = "Reusing existing OneView session to '$($activeSession.Name)'. Use Disconnect-OneView to close it."
+            Write-Verbose $result.Message
+        }
+        return $result
+    }
+
+    # ── 1. No active session: resolve appliance host ───────────────────────────
+    if (-not $OneViewHost) {
+        if ($canPrompt) {
+            Write-Host "Enter OneView appliance host to connect to: " -ForegroundColor Yellow -NoNewline
+            $promptedHost = Read-Host
+            if ($promptedHost) { $OneViewHost = $promptedHost.Trim() }
+        }
+
+        if (-not $OneViewHost) {
+            $result.Error = "No OneViewHost supplied and no active OneView session to reuse. $script:ONEVIEW_NO_SESSION_MSG"
+            return $result
+        }
+    }
+
+    # ── 2. Resolve credentials ─────────────────────────────────────────────────
+    # TERMINAL COMMANDS: credentials come ONLY from -Credential, -OneViewUser/
+    # -OneViewPassword, or direct interactive input. They are NEVER read from
+    # config, environment variables, or CyberArk - that path is reserved for
+    # GitLab pipeline runs (out of scope for this release).
+    if (-not $Credential) {
+        if ($OneViewUser -and $OneViewPassword) {
+            $Credential = [System.Management.Automation.PSCredential]::new(
+                $OneViewUser,
+                (ConvertTo-SecureString $OneViewPassword -AsPlainText -Force))
+        } elseif ($canPrompt) {
+            Write-Host "Enter OneView username for '$OneViewHost': " -ForegroundColor Yellow -NoNewline
+            $u = Read-Host
+            if (-not $u) {
+                $result.Error = "No username supplied - aborting OneView connection to '$OneViewHost'."
+                return $result
+            }
+            $securePass = Read-Host "Enter OneView password for '$OneViewHost': " -AsSecureString
+            $Credential = [System.Management.Automation.PSCredential]::new($u, $securePass)
+        } else {
+            $result.Error = "OneView credentials required to connect to '$OneViewHost'. Supply -Credential (or -OneViewUser/-OneViewPassword), or run interactively. Terminal commands never read credentials from config, environment, or CyberArk."
+            return $result
+        }
+    }
+
+    # ── 3. Connect via the shared helper (persistent session) ──────────────────
+    $conn = Connect-OneViewSession -Appliance $OneViewHost -Credential $Credential -ModuleName $ModuleName
+    if (-not $conn.Connected) {
+        $result.Error = if ($conn.Error) { $conn.Error } else { "Failed to connect to OneView appliance '$OneViewHost'." }
+        return $result
+    }
+
+    $result.Success       = $true
+    $result.OneViewHost   = $OneViewHost
+    $result.SessionToken  = $conn.SessionId
+    $result.ReusedSession = $conn.ReusedSession
+    return $result
+}

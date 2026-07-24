@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-PowerShellScript.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-PowerShellScript
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -30,6 +29,7 @@ Executes PowerShell scripts locally by spawning a new PowerShell process with co
 | `-CaptureOutput` | Capture stdout / stderr (default: `$true`). |
 | `-TimeoutSeconds` | Per-script timeout in seconds (default: 300). |
 | `-ExecutionPolicy` | PowerShell execution-policy override (default: Bypass). |
+| `-Environment` | Optional hashtable of environment variables to set on the child process only (never interpolated into the script text). Use this to pass secrets so they do not appear in the command line, transcripts, or error output. |
 
 <a name="examples"></a>
 ## Examples
@@ -65,6 +65,11 @@ $r = Invoke-PowerShellScript -Script 'Get-Service | Select-Object -First 5 Name'
 
     .PARAMETER ExecutionPolicy
         PowerShell execution-policy override (default: Bypass).
+
+    .PARAMETER Environment
+        Optional hashtable of environment variables to set on the child process
+        only (never interpolated into the script text). Use this to pass secrets
+        so they do not appear in the command line, transcripts, or error output.
 
     .RETURNS
         [hashtable] with keys: Success (bool), Output (string).

@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerList.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-OneViewServerList
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -29,8 +28,8 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 | Parameter | Description |
 |-----------|-------------|
 | `-OneViewHost` | OneView appliance hostname or IP (e.g. oneview.ad.example.com). If omitted, the command checks for an existing HPEOneView module session (Connect-OVMgmt) and uses that appliance automatically. |
-| `-OneViewUser` | OneView username. Defaults to $env:ONEVIEW_USER. |
-| `-OneViewPassword` | OneView password. Defaults to $env:ONEVIEW_PASSWORD. |
+| `-OneViewUser` | OneView username (used with -OneViewPassword). Never read from config or environment. |
+| `-OneViewPassword` | OneView password (used with -OneViewUser). Never read from config or environment. |
 | `-Port` | OneView HTTPS port (default 443). |
 | `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
 | `-TimeoutSec` | Per-call timeout (default 30 s). |
@@ -77,10 +76,10 @@ Get-OneViewServerList Uses an existing HPEOneView module session if available.
         session (Connect-OVMgmt) and uses that appliance automatically.
 
     .PARAMETER OneViewUser
-        OneView username. Defaults to $env:ONEVIEW_USER.
+        OneView username (used with -OneViewPassword). Never read from config or environment.
 
     .PARAMETER OneViewPassword
-        OneView password. Defaults to $env:ONEVIEW_PASSWORD.
+        OneView password (used with -OneViewUser). Never read from config or environment.
 
     .PARAMETER Port
         OneView HTTPS port (default 443).

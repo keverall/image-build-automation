@@ -1,6 +1,5 @@
 # GitLab CI/CD Pipeline Trigger API - REST reference and integration guide
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -22,6 +21,9 @@
 - [Comparison with legacy CI systems](#comparison-with-legacy-ci-systems)
 - [Network requirements](#network-requirements)
 - [Error reference - callers](#error-reference---callers)
+
+
+<a id="top"></a>
 ---
 
 <a name="overview"></a>

@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Private/Logging.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-Logger
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)

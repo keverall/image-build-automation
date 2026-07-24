@@ -1,6 +1,5 @@
 # Automation Command Reference
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
@@ -50,7 +49,12 @@
   - [Check module is loaded](#check-module-is-loaded)
   - [Force reimport](#force-reimport)
   - [Source links](#source-links)
+
+
+<a id="top"></a>
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
+
+> **Terminal command rules (see [`AGENTS.md`](../../AGENTS.md)):** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - supply `-Credential`/user+password parameters or enter them when prompted.
 
 ---
 
@@ -189,9 +193,9 @@ Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier MXQ1
 | `-OneViewHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
 | `-ServerIdentifier` | No | Optional server name, serial, iLO IP or bay to look up | - |
 | `-IdentifierType` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
-| `-Credential` | No | `PSCredential` for the connection. Preferred over plaintext fallback. | env / CyberArk |
-| `-OneViewUser` | No | OneView username | `$env:ONEVIEW_USER` |
-| `-OneViewPassword` | No | OneView password | `$env:ONEVIEW_PASSWORD` |
+| `-Credential` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
+| `-OneViewUser` | No | OneView username (with `-OneViewPassword`) | prompt |
+| `-OneViewPassword` | No | OneView password (with `-OneViewUser`) | prompt |
 | `-Port` | No | OneView HTTPS port | `443` |
 | `-SkipCertificateCheck` | No | Skip SSL cert verification | `true` |
 | `-TimeoutSec` | No | Per-call timeout | `30` |
@@ -207,7 +211,9 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 <a name="get-oneview-server-list"></a>
 ### Get OneView server list
 
-Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing OneView session (established via `Test-ServerConnectivity`) and uses that appliance automatically. If no session exists, the command returns an error telling you to connect first with `Test-ServerConnectivity -ManagementHost <oneview-appliance-host>`.
+Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name.
+
+**Connection behaviour (shared helper):** An existing OneView connection always takes priority - if a session is already active, the command reuses it and never reconnects (reconnecting could drop the live session and cause incidents); if you supplied a different `-OneViewHost`, it warns you which appliance you are connected to and to run `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically - if you do not pass `-Credential`, you are prompted for username and password interactively (exactly like `Test-ServerConnectivity`). If there is no host and no active session, it returns an exception explaining there is none and how to connect. The session persists - this command never disconnects (only `Disconnect-OneView` does).
 
 ```powershell
 # Full list of servers from current HPEOneView session (no params needed if connected)
@@ -230,9 +236,9 @@ Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'power:On'
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
 | `-OneViewHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
-| `-Credential` | No | `PSCredential` for the connection. Preferred over plaintext fallback. | env / CyberArk |
-| `-OneViewUser` | No | OneView username | `$env:ONEVIEW_USER` |
-| `-OneViewPassword` | No | OneView password | `$env:ONEVIEW_PASSWORD` |
+| `-Credential` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
+| `-OneViewUser` | No | OneView username (with `-OneViewPassword`) | prompt |
+| `-OneViewPassword` | No | OneView password (with `-OneViewUser`) | prompt |
 | `-Port` | No | OneView HTTPS port | `443` |
 | `-SkipCertificateCheck` | No | Skip SSL cert verification | `true` |
 | `-TimeoutSec` | No | Per-call timeout | `30` |
@@ -501,8 +507,8 @@ Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
 | `-IsoPath` | Yes | Local path to the ISO file | - |
-| `-RepoBaseUrl` | No | HTTPS base URL of the repository | `$env:ISO_REPO_BASE_URL` |
-| `-RepoLocalPath` | No | Local path mirrored to the repository | `$env:ISO_REPO_LOCAL_PATH` |
+| `-RepoBaseUrl` | Yes (live) | HTTPS base URL of the repository. Env default only with `-DryRun`. | - |
+| `-RepoLocalPath` | No | Local path mirrored to the repository. Env default only with `-DryRun`. | - |
 | `-ForceOverwrite` | No | Overwrite existing ISO | - |
 | `-SkipVerify` | No | Skip HTTPS HEAD check | - |
 | `-DryRun` | No | Simulate only | - |
@@ -617,7 +623,7 @@ Start-InstallMonitor
 | `-ServerList` | No | Path to server list | auto-resolved |
 | `-TimeoutSeconds` | No | Max monitoring duration | `7200` |
 | `-PollIntervalSeconds` | No | Seconds between polls | `30` |
-| `-OpsRampConfig` | No | Path to OpsRamp config | auto-resolved |
+| `-OpsRampConfig` | No | Path to OpsRamp config - only read when explicitly passed | - |
 
 ```powershell
 # Target by serial number (resolved via OneView)
@@ -665,8 +671,8 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 |-----------|----------|-------------|---------|
 | `-Action` | Yes | `Mount`, `MountAndBoot`, `Boot`, `Reset`, `Eject`, `Status` | - |
 | `-IloIp` | Yes | iLO IPv4 address or hostname | - |
-| `-IloUser` | No | iLO username | `$env:ILO_USER` |
-| `-IloPassword` | No | iLO password | `$env:ILO_PASSWORD` |
+| `-IloUser` | No | iLO username. Never read from config/env. | prompt |
+| `-IloPassword` | No | iLO password. Never read from config/env. | prompt |
 | `-IsoUrl` | No | HTTPS URL of the ISO (for `Mount`/`MountAndBoot`) | - |
 | `-CdDeviceId` | No | Virtual media device ID | `1` |
 | `-Force` | No | Confirm destructive actions | - |
@@ -678,6 +684,8 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 
 <a name="resolve-server-target-via-oneview"></a>
 ### Resolve server target via OneView
+
+Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively when `-Credential` is not supplied. With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Invoke-IsoDeploy`, `Update-Firmware`, `Test-PostBuildValidation`, `Start-InstallMonitor`, `Start-PhysicalServerBuild`, etc.) all resolve through this module and inherit both behaviours.
 
 ```powershell
 Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local
@@ -702,8 +710,9 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-OneViewHost` | No | OneView appliance hostname or IP | - |
 | `-ServerIdentifier` | Yes | Server name, serial, iLO IP, or bay | - |
 | `-IdentifierType` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
-| `-OneViewUser` | No | OneView username | `$env:ONEVIEW_USER` |
-| `-OneViewPassword` | No | OneView password | `$env:ONEVIEW_PASSWORD` |
+| `-Credential` | No | `PSCredential` for the connection. If omitted, prompted interactively. | env / CyberArk |
+| `-OneViewUser` | No | OneView username (with `-OneViewPassword`) | prompt |
+| `-OneViewPassword` | No | OneView password (with `-OneViewUser`) | prompt |
 | `-Port` | No | OneView HTTPS port | `443` |
 | `-DryRun` | No | Print query without performing it | - |
 
@@ -816,7 +825,7 @@ Update-Firmware -DryRun
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-Config` | No | Firmware manifest path | auto-resolved |
+| `-Config` | Yes (live) | Firmware manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
 | `-Server` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
 | `-SerialNumber` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
 | `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
@@ -861,7 +870,7 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -DryRun
 | `-Server` | No | Server hostname for output naming. Mutually exclusive with `-SerialNumber`. | - |
 | `-SerialNumber` | No | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires `-OneViewHost`. | - |
 | `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-PatchesConfig` | No | Path to patch manifest | auto-resolved |
+| `-PatchesConfig` | Yes (live) | Patch manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
 | `-OutputDir` | No | Output directory | - |
 | `-Method` | No | Patching method: `dism` or `powershell` | `dism` |
 | `-DryRun` | No | Simulate only | - |

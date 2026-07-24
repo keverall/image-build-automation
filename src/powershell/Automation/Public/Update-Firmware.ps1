@@ -81,6 +81,12 @@ param(
     if (-not $DryRun -and -not $Server) {
         throw "Server or SerialNumber is required for non-dryrun firmware update"
     }
+    # TERMINAL COMMAND: config is only read when the operator explicitly passes
+    # -Config, or under -DryRun (config is a dry-run helper). A live run must not
+    # silently read the default manifest path (see AGENTS.md).
+    if (-not $DryRun -and -not $PSBoundParameters.ContainsKey('Config')) {
+        return @{ Success = $false; Error = "A firmware manifest is required for a live run. Supply -Config <path-to-manifest.json> explicitly. The default config path is only used with -DryRun." }
+    }
     Initialize-Logging -LogFile 'firmware_updater.log' -CommandName 'Update-Firmware'
     try {
         $servers = if ($DryRun -and -not $Server) { Load-ServerList -Path $ServerList } else { @($Server) }

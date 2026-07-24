@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PreBuildValidation.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-PreBuildValidation
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -29,6 +28,7 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 | `-ServerIdentifier` | Target server identifier (name, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` | OneView appliance hostname or IP. |
 | `-IloIp` | iLO IPv4 address / hostname for the target server. |
+| `-IloCredential` | PSCredential for the iLO Redfish check. If omitted on a live run, the operator is prompted interactively. Never read from config or environment. |
 | `-IsoUrl` | HTTPS URL of the bootable ISO. |
 | `-ManagementPoint` | FQDN of the ConfigMgr Management Point. |
 | `-DistributionPoint` | FQDN of the ConfigMgr Distribution Point. |
@@ -68,6 +68,10 @@ Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'onevi
 
     .PARAMETER IloIp
         iLO IPv4 address / hostname for the target server.
+
+    .PARAMETER IloCredential
+        PSCredential for the iLO Redfish check. If omitted on a live run, the
+        operator is prompted interactively. Never read from config or environment.
 
     .PARAMETER IsoUrl
         HTTPS URL of the bootable ISO.

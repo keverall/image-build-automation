@@ -1,5 +1,9 @@
 ## Table of Contents
 
+- [The Architecture: How They Interact](#the-architecture-how-they-interact)
+- [The 3 Ways to Connect iRequest to Your PowerShell Code](#the-3-ways-to-connect-irequest-to-your-powershell-code)
+- [Option A: The CI Web API (The Easiest & Safest Way)](#option-a-the-ci-web-api-the-easiest-and-safest-way)
+
 NOTE: THIS IS AN ERROR REFERENCE AND LOG FILE AND NOT A REQUIREMENTS REFERENCE, IT IS A LIST OF BUGS TO BE FIXED.
 
 - [The Architecture: How They Interact](#the-architecture-how-they-interact)

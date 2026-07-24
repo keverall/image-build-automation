@@ -67,6 +67,12 @@ function Invoke-WindowsSecurityUpdate {
         $Server = $resolved.Identifier
         Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
     }
+    # TERMINAL COMMAND: config is only read when the operator explicitly passes
+    # -PatchesConfig, or under -DryRun (config is a dry-run helper). A live run
+    # must not silently read the default patches path (see AGENTS.md).
+    if (-not $DryRun -and -not $PSBoundParameters.ContainsKey('PatchesConfig')) {
+        return @{ Success = $false; Error = "A patch manifest is required for a live run. Supply -PatchesConfig <path-to-windows_patches.json> explicitly. The default config path is only used with -DryRun." }
+    }
     if (-not $Script:WinSecLogDir -or $Script:WinSecLogDir -eq '') {
         $current = $PSScriptRoot
         if (-not $current) { $current = Get-Location }

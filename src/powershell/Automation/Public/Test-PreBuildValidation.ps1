@@ -31,6 +31,10 @@ function Test-PreBuildValidation {
     .PARAMETER IloIp
         iLO IPv4 address / hostname for the target server.
 
+    .PARAMETER IloCredential
+        PSCredential for the iLO Redfish check. If omitted on a live run, the
+        operator is prompted interactively. Never read from config or environment.
+
     .PARAMETER IsoUrl
         HTTPS URL of the bootable ISO.
 
@@ -77,6 +81,7 @@ function Test-PreBuildValidation {
         [Parameter(Mandatory)][string] $ServerIdentifier,
         [string] $OneViewHost,
         [string] $IloIp,
+        [System.Management.Automation.PSCredential] $IloCredential,
         [string] $IsoUrl,
         [string] $ManagementPoint,
         [string] $DistributionPoint,
@@ -128,13 +133,24 @@ function Test-PreBuildValidation {
             _Set 'ilo_credentials' $true 'DryRun - credentials assumed valid'
         } else {
             try {
-                $cred = Get-IloCredentials
-                $url = "https://$IloIp/redfish/v1/Systems/1"
-                $resp = Invoke-RestMethod -Uri $url -Method Get `
-                    -Credential (New-Object System.Management.Automation.PSCredential(
-                        $cred[0], (ConvertTo-SecureString $cred[1] -AsPlainText -Force))) `
-                    -SkipCertificateCheck -TimeoutSec 10 -ErrorAction Stop
-                _Set 'ilo_credentials' $true "Redfish OK (PowerState=$($resp.PowerState))"
+                # TERMINAL COMMAND: iLO credentials come ONLY from -IloCredential
+                # or a direct interactive prompt. Never from config/env (see AGENTS.md).
+                if (-not $IloCredential) {
+                    $canPrompt = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
+                        [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
+                    if ($canPrompt) {
+                        $IloCredential = Get-Credential -Message "iLO credentials for '$IloIp'"
+                    }
+                }
+                if (-not $IloCredential) {
+                    _Set 'ilo_credentials' $false "iLO credentials required. Supply -IloCredential or run interactively. Terminal commands never read credentials from config or environment."
+                } else {
+                    $url = "https://$IloIp/redfish/v1/Systems/1"
+                    $resp = Invoke-RestMethod -Uri $url -Method Get `
+                        -Credential $IloCredential `
+                        -SkipCertificateCheck -TimeoutSec 10 -ErrorAction Stop
+                    _Set 'ilo_credentials' $true "Redfish OK (PowerState=$($resp.PowerState))"
+                }
             } catch { _Set 'ilo_credentials' $false $_.Exception.Message }
         }
     } else { _Set 'ilo_credentials' $true 'skipped' }

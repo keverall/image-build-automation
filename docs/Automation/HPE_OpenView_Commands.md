@@ -1,6 +1,5 @@
 # HPE OpenView 1000 Useful Commands
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Version and Information](#version-and-information)
@@ -14,6 +13,9 @@
 - [Quick Health Check Script](#quick-health-check-script)
 - [Notes](#notes)
 - [Discover Available Commands](#discover-available-commands)
+
+
+<a id="top"></a>
 <a name="version-and-information"></a>
 ## Version and Information
 

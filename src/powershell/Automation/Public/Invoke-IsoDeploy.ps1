@@ -114,6 +114,13 @@ function Invoke-IsoDeploy {
         throw "Server or SerialNumber is required for non-dryrun ISO deployment"
     }
 
+    # TERMINAL COMMAND: a live run must be driven entirely by parameters.
+    # deployment_metadata.json / package-dir resolution is a -DryRun helper only
+    # (see AGENTS.md). Require an explicit ISO source for live deployments.
+    if (-not $DryRun -and -not $IsoUrl -and -not $ExternalIsoPath) {
+        return @{ Success = $false; Error = "An explicit ISO source is required for a live deployment. Supply -IsoUrl <https-url> or -ExternalIsoPath <path>. Config/metadata resolution (deployment_metadata.json) is only used with -DryRun." }
+    }
+
     # ── Handle External ISO Path ──────────────────────────────────────────────
     if ($ExternalIsoPath) {
         Write-Host "`n========================================" -ForegroundColor Cyan
@@ -256,10 +263,15 @@ class ISODeployer {
 
     [bool] Deploy([ServerInfo]$Server, [string]$Method, [bool]$DryRun, [bool]$Force = $false) {
         $hn  = $Server.Hostname
-        $pkg = $this._FindServerPackage($hn)
-        if (-not $pkg) {
-            $this._Log('deploy', $hn, 'FAILED', 'Package not found')
-            return $false
+        # With an explicit ISO URL (live runs), no package/metadata lookup is
+        # needed - package scanning is a -DryRun convenience only.
+        $pkg = $null
+        if (-not $this.DefaultIsoUrl) {
+            $pkg = $this._FindServerPackage($hn)
+            if (-not $pkg) {
+                $this._Log('deploy', $hn, 'FAILED', 'Package not found')
+                return $false
+            }
         }
         $result = switch ($Method.ToLowerInvariant()) {
             'redfish' { $this._DeployViaRedfish($Server, $pkg, $DryRun, $Force) }

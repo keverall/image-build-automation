@@ -51,3 +51,43 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
             Should -Throw
     }
 }
+
+Describe 'Get-OneViewServerTarget - strict single-server matching (mocked REST)' {
+    BeforeAll {
+        $Script:TargetCred = [System.Management.Automation.PSCredential]::new(
+            'admin', (ConvertTo-SecureString 'test-password' -AsPlainText -Force))
+        InModuleScope Automation {
+            # Reuse an active session so Resolve-OneViewSession does not attempt a real connect.
+            Mock Get-OneViewActiveSession {
+                [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true }
+            }
+        }
+    }
+
+    It 'Fails hard when a query matches more than one server' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ count = 2; members = @(
+                    [pscustomobject]@{ name = 's1'; serialNumber = 'DUP'; status = 'OK'; mpIpAddresses = @('10.0.0.1') },
+                    [pscustomobject]@{ name = 's2'; serialNumber = 'DUP'; status = 'OK'; mpIpAddresses = @('10.0.0.2') }
+                )}
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'DUP' -IdentifierType Serial -Credential $Script:TargetCred
+        $r.Success | Should -Be $false
+        $r.Error   | Should -Match 'Ambiguous'
+    }
+
+    It 'Succeeds when a query matches exactly one server' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 's1'; serialNumber = 'UNIQUE'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x' }
+                )}
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'UNIQUE' -IdentifierType Serial -Credential $Script:TargetCred
+        $r.Success              | Should -Be $true
+        $r.Details.serial_number | Should -Be 'UNIQUE'
+    }
+}

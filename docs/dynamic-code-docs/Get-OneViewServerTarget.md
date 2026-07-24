@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerTarget.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-OneViewServerTarget
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -20,7 +19,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Sends a query against the OneView /rest/server-hardware endpoint and returns a normalized hashtable describing the server.  Validates health (must be OK) and tolerates power state Off or On.
+Sends a query against the OneView /rest/server-hardware endpoint and returns a normalized hashtable describing the server.  Validates health (must be OK) and tolerates power state Off or On. STRICT SINGLE-SERVER: this command must resolve to exactly one server. A query that matches more than one server is a hard failure (Success=$false) rather than a warning - it never silently picks the first match, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). Connection to the appliance is handled by the shared Resolve-OneViewSession helper (prompts for the host/credentials when needed) and the session persists; this command never disconnects.
 
 <a name="parameters"></a>
 ## Parameters
@@ -30,8 +29,8 @@ Sends a query against the OneView /rest/server-hardware endpoint and returns a n
 | `-OneViewHost` | OneView appliance hostname or IP (e.g. oneview.ad.example.com). |
 | `-ServerIdentifier` | Server name, serial number, OneView resource name, iLO IP, or bay/enclosure positional id (e.g. "Enclosure1, Bay 3"). |
 | `-IdentifierType` | Hint for the search filter: Name, Serial, OneViewName, IloIp, EnclosureBay, Auto. Default Auto attempts each in turn. |
-| `-OneViewUser` | OneView username. Defaults to $env:ONEVIEW_USER. |
-| `-OneViewPassword` | OneView password. Defaults to $env:ONEVIEW_PASSWORD. |
+| `-OneViewUser` | OneView username (used with -OneViewPassword). Never read from config or environment. |
+| `-OneViewPassword` | OneView password (used with -OneViewUser). Never read from config or environment. |
 | `-Port` | OneView HTTPS port (default 443). |
 | `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
 | `-TimeoutSec` | Per-call timeout (default 30 s). |
@@ -65,6 +64,14 @@ Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 
         a normalized hashtable describing the server.  Validates health (must be OK)
         and tolerates power state Off or On.
 
+        STRICT SINGLE-SERVER: this command must resolve to exactly one server. A
+        query that matches more than one server is a hard failure (Success=$false)
+        rather than a warning - it never silently picks the first match, because it
+        underpins destructive operations (ISO attach/deploy, reboot, OS build).
+        Connection to the appliance is handled by the shared Resolve-OneViewSession
+        helper (prompts for the host/credentials when needed) and the session
+        persists; this command never disconnects.
+
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
 
@@ -77,10 +84,10 @@ Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 
         Default Auto attempts each in turn.
 
     .PARAMETER OneViewUser
-        OneView username. Defaults to $env:ONEVIEW_USER.
+        OneView username (used with -OneViewPassword). Never read from config or environment.
 
     .PARAMETER OneViewPassword
-        OneView password. Defaults to $env:ONEVIEW_PASSWORD.
+        OneView password (used with -OneViewUser). Never read from config or environment.
 
     .PARAMETER Port
         OneView HTTPS port (default 443).
