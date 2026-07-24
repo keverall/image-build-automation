@@ -244,7 +244,8 @@ function Test-ServerConnectivity {
             $resolvedUser = $Credential.UserName
             $resolvedSecurePass = $Credential.Password
         } else {
-            $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
+            $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+            $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
             if ($isInteractive) {
                 Write-Host "Enter OneView username for '$resolvedHost': " -ForegroundColor Yellow -NoNewline
                 $u = Read-Host

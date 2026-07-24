@@ -31,18 +31,27 @@
 - **Could not test today because the CRE ran out last night at 5pm, I will continue testing on 24/07/2026 tomorrow.**
 <!-- END:oneview-status-summary -->
 
-<a name="bugs-fixed"></a>
+<a name="major-bugs-fixed-log"></a>
 ## Major Bugs fixed log
 
 - Server connectivity  
   - a proxy was mistakenly configured and assumed to be used on the EWISMGMT-19 server, it had no proxy server, I removed it
   - the proxy env vars persisted because powershell env vars are windows credentials and i had to code a ps script to purge them
   - grrr PS is a ...
-  - Fixed design flaw where test-serverconnectivity was disconnecting from HPEOneView Appliance after connecting which opened up a 
-  - cavenous mess of gaping significant other design issues on all automation commands, there is significantly more complexity to
-  - windows and HPeOneview connectivity than I previously realised and it took massive rework and retesting to fix this today 
-  - on 24/07/2026 phew.
-  - 
+- Fixed design flaw where test-serverconnectivity was disconnecting from HPEOneView Appliance after connecting which opened up a 
+- cavenous mess of gaping significant other design issues on all automation commands, there is significantly more complexity to
+- windows and HPeOneview connectivity than I previously realised and it took massive rework and retesting to fix this today 
+- on 24/07/2026 phew.
+- Fixed. Added $env:AUTOMATED_MODE = 'true' to the test's BeforeAll block (with restoration in AfterAll), matching the pattern used by other test files. This suppresses the interactive Read-Host prompts in Invoke-IsoDeploy when no target is supplied, allowing the tests to run non-interactively. All 3 tests now pass in 309ms.
+- All 35 tests in Test-ServerConnectivity.Tests.ps1 pass in 880ms with no interactive prompts. Which can't happen its automated testing, there is noone to input anything.
+  - Added AUTOMATED_MODE check to the credential prompt's $isInteractive guard, so it falls through to the non-interactive error path instead of calling Read-Host.
+  - Added $env:AUTOMATED_MODE = 'true' in BeforeAll (with save/restore in AfterAll), matching the pattern used across all other test files.
+- 
+
+Summary of changes:
+
+src/powershell/Automation/Public/Test-ServerConnectivity.ps1:247 — Added AUTOMATED_MODE check to the credential prompt's $isInteractive guard, so it falls through to the non-interactive error path instead of calling Read-Host.
+tests/powershell/Test-ServerConnectivity.Tests.ps1 — Added $env:AUTOMATED_MODE = 'true' in BeforeAll (with save/restore in AfterAll), matching the pattern used across all other test files.
 
 **Module under test:** `Automation` PowerShell module (`src/powershell/Automation/Automation.psm1`)
 **OneView library:** `HPEOneView.1000` (OneView 10.x) via `Connect-OVMgmt` / `Disconnect-OVMgmt`

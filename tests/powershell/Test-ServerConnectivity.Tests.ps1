@@ -8,6 +8,12 @@ BeforeAll {
     Import-Module $modulePath -Force -WarningAction SilentlyContinue
     $testConfigDir = Join-Path $PSScriptRoot '../../configs'
     $script:cred = [System.Management.Automation.PSCredential]::new('svc', (ConvertTo-SecureString 'pw' -AsPlainText -Force))
+    $Script:prevAutomatedMode = $env:AUTOMATED_MODE
+    $env:AUTOMATED_MODE = 'true'
+}
+
+AfterAll {
+    if ($Script:prevAutomatedMode) { $env:AUTOMATED_MODE = $Script:prevAutomatedMode } else { $env:AUTOMATED_MODE = $null }
 }
 
 Describe 'Test-ServerConnectivity - Parameter Validation' {
