@@ -68,6 +68,7 @@ function Disconnect-OneView {
 
         $result.Success = $true
         $result.Message = "Successfully disconnected from OneView appliance."
+        $script:ActiveOneViewSession = $null
         Write-Host $result.Message -ForegroundColor Green
     }
     catch {
