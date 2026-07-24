@@ -15,8 +15,6 @@
   - [Run log](#run-log)
 - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
 - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
-
-
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 24/07/2026 16:34 UTC</p>
 <!-- END:run-date -->
