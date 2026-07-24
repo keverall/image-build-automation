@@ -463,3 +463,230 @@ Environment                    Prod
 Timestamp                      2026-07-24T08:31:39.0377483Z
 AuthConnect                    {[Error, Connect-OVMgmt failed: Exception calling "RestClient" with "3" argument(s): "The ServicePointManager does not … 
 ManagementHost                 va-oneviewt-01
+
+
+
+******************************************
+
+
+
+
+
+Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                                     0  3s 108ms  15:16:20 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-24 14:16:41 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-24 14:16:41 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 10ms) 
+This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective 
+action including termination, civil and/or criminal penalties.
+
+
+============================================== 
+  OneView Connectivity Test
+============================================== 
+ 
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod 
+  Timestamp:  2026-07-24T14:17:20.7297333Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 10ms)
+ 
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: No
+    Error:     Connect-OVMgmt succeeded but no active session found
+
+==============================================
+
+2026-07-24 14:17:20 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)
+
+Name                           Value
+----                           -----
+Environment                    Prod
+AuthConnect                    {[Disconnected, False], [Connected, False], [Error, Connect-OVMgmt succeeded but no active session found], [ModuleLoaded, True]}
+ManagementHost                 va-oneviewt-01
+Mode                           oneview
+Timestamp                      2026-07-24T14:17:20.7297333Z
+Available                      False
+NetworkPing                    {[LatencyMs, 10], [Port, 443], [TcpPortOpen, True], [Error, ]…}
+
+   image-build-automation  Get-OneViewServerList                                                                                                     0  55s 814ms  15:17:21 
+Name                           Value
+----                           -----
+Servers                        {}
+Success                        False
+Count                          0
+Error                          No active OneView session. Use Test-ServerConnectivity -ManagementHost <oneview-appliance-host> to connect, or supply -OneViewHost. 
+
+   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                                               0  15:17:54 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-24 14:18:25 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-24 14:18:25 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 6ms) 
+WARNING: You are already connected to va-oneviewt-01 
+
+==============================================
+  OneView Connectivity Test 
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-07-24T14:18:25.9214181Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 6ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: No
+    Error:     Connect-OVMgmt succeeded but no active session found 
+
+==============================================
+
+2026-07-24 14:18:25 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)
+
+Name                           Value
+----                           -----
+Environment                    Prod
+AuthConnect                    {[Disconnected, False], [Connected, False], [Error, Connect-OVMgmt succeeded but no active session found], [ModuleLoaded, True]}
+ManagementHost                 va-oneviewt-01
+Mode                           oneview 
+Timestamp                      2026-07-24T14:18:25.9214181Z
+Available                      False
+NetworkPing                    {[LatencyMs, 6], [Port, 443], [TcpPortOpen, True], [Error, ]…}
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+ pwsh -File Remove-ProxyConfig.ps1                                                                                                   0  15:14:20 The argument 'Remove-ProxyConfig.ps1' is not recognized as the name of a script file. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+
+Usage: pwsh[.exe] [-Login] [[-File] <filePath> [args]]
+                  [-Command { - | <script-block> [-args <arg-array>]
+                                | <string> [<CommandParameters>] } ]
+                  [-CommandWithArgs <string> [<CommandParameters>]
+                  [-ConfigurationName <string>] [-ConfigurationFile <filePath>]
+                  [-CustomPipeName <string>] [-EncodedCommand <Base64EncodedCommand>]      
+                  [-ExecutionPolicy <ExecutionPolicy>] [-InputFormat {Text | XML}]
+                  [-Interactive] [-MTA] [-NoExit] [-NoLogo] [-NonInteractive] [-NoProfile] 
+                  [-NoProfileLoadTime] [-OutputFormat {Text | XML}]
+                  [-SettingsFile <filePath>] [-SSHServerMode] [-STA]
+                  [-Version] [-WindowStyle <style>]
+                  [-WorkingDirectory <directoryPath>]
+
+       pwsh[.exe] -h | -Help | -? | /?
+
+PowerShell Online Help https://aka.ms/powershell-docs
+
+All parameters are case-insensitive.
+   image-build-automation   Remove-ProxyConfig.ps1                                                                                                       1  506ms  15:14:22 Remove-ProxyConfig.ps1: The term 'Remove-ProxyConfig.ps1' is not recognized as a name of a cmdlet, function, script file, or executable program. 
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again. 
+   image-build-automation  wip/Remove-ProxyConfig.ps1                                                                                                           1  15:14:34 
+=== 1. Process environment (current session) ===
+  [FOUND] process env : $env:HTTP_PROXY = http://webcorp.prd.aib.pri:8082
+  [FOUND] process env : $env:HTTPS_PROXY = http://webcorp.prd.aib.pri:8082
+ 
+=== 2. Persisted environment variables (User + Machine registry) ===
+  [clean] User scope
+  [clean] Machine scope
+
+=== 3. PowerShell profile files ===
+  [absent] C:\Program Files\PowerShell\7\profile.ps1
+  [absent] C:\Program Files\PowerShell\7\Microsoft.PowerShell_profile.ps1
+  [absent] C:\Users\adm_98253\Documents\PowerShell\profile.ps1
+  [FOUND] C:\Users\adm_98253\Documents\PowerShell\Microsoft.PowerShell_profile.ps1 : line 45: $env:HTTP_PROXY  = "http://webcorp.prd.aib.pri:8082"
+  [FOUND] C:\Users\adm_98253\Documents\PowerShell\Microsoft.PowerShell_profile.ps1 : line 46: $env:HTTPS_PROXY = "http://webcorp.prd.aib.pri:8082"
+
+=== 4. WinINet (Internet Options) proxy - HKCU ===
+  [clean] WinINet proxy disabled / not set
+
+=== 5. WinHTTP system proxy (netsh) ===
+  [clean] WinHTTP: direct access (no proxy)
+
+=== 6. .NET runtime proxy view (what Connect-OVMgmt will actually use) ===
+  [FOUND] .NET DefaultWebProxy : http://webcorp.prd.aib.pri:8082/ 
+
+==================================================================
+RESULT: 5 proxy setting(s) found. Re-run with -Apply to remove them:
+  pwsh -File Remove-ProxyConfig.ps1 -Apply
+ 
+   image-build-automation  wip/Remove-ProxyConfig.ps1 -Apply                                                                                             0  934ms  15:14:47 
+=== 1. Process environment (current session) ===
+  [FOUND] process env : $env:HTTP_PROXY = http://webcorp.prd.aib.pri:8082 
+    -> removed from this session
+  [FOUND] process env : $env:HTTPS_PROXY = http://webcorp.prd.aib.pri:8082
+    -> removed from this session
+
+=== 2. Persisted environment variables (User + Machine registry) ===
+  [clean] User scope
+  [clean] Machine scope
+
+=== 3. PowerShell profile files ===
+  [absent] C:\Program Files\PowerShell\7\profile.ps1
+  [absent] C:\Program Files\PowerShell\7\Microsoft.PowerShell_profile.ps1
+  [absent] C:\Users\adm_98253\Documents\PowerShell\profile.ps1
+  [FOUND] C:\Users\adm_98253\Documents\PowerShell\Microsoft.PowerShell_profile.ps1 : line 45: $env:HTTP_PROXY  = "http://webcorp.prd.aib.pri:8082"
+  [FOUND] C:\Users\adm_98253\Documents\PowerShell\Microsoft.PowerShell_profile.ps1 : line 46: $env:HTTPS_PROXY = "http://webcorp.prd.aib.pri:8082"
+    -> proxy lines stripped from C:\Users\adm_98253\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+ 
+=== 4. WinINet (Internet Options) proxy - HKCU ===
+  [clean] WinINet proxy disabled / not set
+
+=== 5. WinHTTP system proxy (netsh) ===
+  [clean] WinHTTP: direct access (no proxy)
+
+=== 6. .NET runtime proxy view (what Connect-OVMgmt will actually use) ===
+  [FOUND] .NET DefaultWebProxy : http://webcorp.prd.aib.pri:8082/
+    -> DefaultWebProxy set to $null for this session
+
+==================================================================
+RESULT: 5 proxy setting(s) found and removed.
+NEXT: open a NEW pwsh window, then run:
+  Test-ServerConnectivity -ManagementHost <oneview-appliance-host>
+
+   image-build-automation  wip/Remove-ProxyConfig.ps1                                                                                                           0  15:15:08 
+=== 1. Process environment (current session) ===
+  [clean] process env (no proxy variables in this session)
+
+=== 2. Persisted environment variables (User + Machine registry) ===
+  [clean] User scope
+  [clean] Machine scope
+ 
+=== 3. PowerShell profile files ===
+  [absent] C:\Program Files\PowerShell\7\profile.ps1
+  [absent] C:\Program Files\PowerShell\7\Microsoft.PowerShell_profile.ps1
+  [absent] C:\Users\adm_98253\Documents\PowerShell\profile.ps1
+  [clean] C:\Users\adm_98253\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+
+=== 4. WinINet (Internet Options) proxy - HKCU ===
+  [clean] WinINet proxy disabled / not set
+
+=== 5. WinHTTP system proxy (netsh) ===
+  [clean] WinHTTP: direct access (no proxy)
+
+=== 6. .NET runtime proxy view (what Connect-OVMgmt will actually use) ===
+  [info] could not probe DefaultWebProxy: You cannot call a method on a null-valued expression.
+
+==================================================================
+RESULT: No proxy configuration found anywhere on this host.
+If Connect-OVMgmt still fails, the HPEOneView module cache or a GPO is re-applying it - re-run this script in the exact session that fails.
+
+   image-build-automation                                                                                                                                       0  15:15:23 
