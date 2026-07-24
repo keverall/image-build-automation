@@ -1,6 +1,5 @@
 # HPE ProLiant Windows Server ISO Automation - PowerShell Module
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -22,6 +21,9 @@
   - [Request Flow](#request-flow)
 - [Running Tests](#running-tests)
 - [See Also](#see-also)
+
+
+<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 

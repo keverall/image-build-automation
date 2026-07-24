@@ -37,10 +37,10 @@ function Get-OneViewConnectionStatus {
         EnclosureBay, Auto. Default Auto attempts each in turn.
 
     .PARAMETER OneViewUser
-        OneView username. Defaults to $env:ONEVIEW_USER.
+        OneView username (used with -OneViewPassword). Never read from config or environment.
 
     .PARAMETER OneViewPassword
-        OneView password. Defaults to $env:ONEVIEW_PASSWORD.
+        OneView password (used with -OneViewUser). Never read from config or environment.
 
     .PARAMETER Port
         OneView HTTPS port (default 443).
@@ -123,12 +123,9 @@ function Get-OneViewConnectionStatus {
         }
     }
 
-    if (-not $sessionToken -and -not $Credential) {
-        if (-not $OneViewUser -or -not $OneViewPassword) {
-            $ovCred = Get-OneViewCredentials
-            if (-not $OneViewUser)     { $OneViewUser     = $ovCred[0] }
-            if (-not $OneViewPassword) { $OneViewPassword = $ovCred[1] }
-        }
+    # TERMINAL COMMAND: credentials come ONLY from -Credential or
+    # -OneViewUser/-OneViewPassword. Never from config, environment, or CyberArk.
+    if (-not $sessionToken -and -not $Credential -and $OneViewUser -and $OneViewPassword) {
         $Credential = [System.Management.Automation.PSCredential]::new(
             $OneViewUser,
             (ConvertTo-SecureString $OneViewPassword -AsPlainText -Force))

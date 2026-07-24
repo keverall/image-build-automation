@@ -1,6 +1,5 @@
 # Automation Code Map
 
-<a id="top"></a>
 ## Table of Contents
 
 - [1. Module Loading & Bootstrap](#1-module-loading-and-bootstrap)
@@ -99,6 +98,9 @@
   - [17.3 - Coverage & Lint](#173---coverage-and-lint)
   - [17.3 - Coverage & Lint](#173---coverage-and-lint-1)
 - [18. Quick Navigation](#18-quick-navigation)
+
+
+<a id="top"></a>
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, ISO builds, firmware/Windows patching, deployment, monitoring, and OpsRamp reporting.
 

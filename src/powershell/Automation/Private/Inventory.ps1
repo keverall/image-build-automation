@@ -99,12 +99,16 @@ function New-ServerInfo {
 }
 
 #
-# Resolve-OneViewTarget - Accept a server name OR serial number for any OneView task.
+# Resolve-OneViewTarget - THE central single-server resolver for OneView tasks.
 #
-# Normalises operator input so every OneView automation command can be targeted by
-# either identifier. When -SerialNumber is supplied, it is resolved to the server
-# via Get-OneViewServerTarget (-IdentifierType Serial); the resolved hostname (and
-# iLO IP when available) is returned for downstream use.
+# This is the common module every OneView automation command that acts on ONE
+# server (ISO attach/deploy, reboot, firmware, OS build, post-build validation)
+# must use to turn operator input into a single, unambiguous target. It accepts
+# EITHER a server name OR a serial number and resolves it - via the shared
+# Get-OneViewServerTarget query (which connects through Resolve-OneViewSession and
+# enforces exactly one match) - to the server hostname and iLO IP for downstream
+# use. Because Get-OneViewServerTarget fails hard on an ambiguous (multi-match)
+# result, this resolver inherits that strict single-server guarantee.
 #
 # Returns a hashtable:
 #   Success      [bool]

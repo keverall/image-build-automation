@@ -5,7 +5,7 @@
 # + system reset, replacing the iLO REST scaffold that lived in Invoke-IsoDeploy.
 #
 # All Redfish calls reuse:
-#   - Get-IloCredentials        (env / CyberArk resolution)
+#   - -IloUser/-IloPassword parameters or interactive prompt (never config/env)
 #   - Invoke-RestMethod -SkipCertificateCheck  (iLO ships with self-signed cert)
 #
 # Redfish vs iLO REST:
@@ -38,10 +38,12 @@ function Invoke-IloRedfish {
         iLO IPv4 address or hostname. Required.
 
     .PARAMETER IloUser
-        iLO username. Defaults to $env:ILO_USER or 'Administrator'.
+        iLO username. If omitted on a live run, prompted interactively. Never
+        read from config or environment.
 
     .PARAMETER IloPassword
-        iLO password. Defaults to $env:ILO_PASSWORD. Use [SecureString] in production.
+        iLO password. If omitted on a live run, prompted interactively (secure
+        input). Never read from config or environment.
 
     .PARAMETER IsoUrl
         HTTPS URL to the ISO file (required for Mount / MountAndBoot).
@@ -103,10 +105,28 @@ function Invoke-IloRedfish {
             }
         }
 
+        # TERMINAL COMMAND: iLO credentials come ONLY from -IloUser/-IloPassword
+        # or a direct interactive prompt. Never from config, environment, or
+        # CyberArk (pipeline-only; see AGENTS.md).
         if (-not $IloUser -or -not $IloPassword) {
-            $cred = Get-IloCredentials
-            if (-not $IloUser)   { $IloUser     = $cred[0] }
-            if (-not $IloPassword) { $IloPassword = $cred[1] }
+            $canPrompt = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
+                [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
+            if ($canPrompt) {
+                if (-not $IloUser) {
+                    Write-Host "Enter iLO username for '$IloIp': " -ForegroundColor Yellow -NoNewline
+                    $IloUser = Read-Host
+                }
+                if ($IloUser -and -not $IloPassword) {
+                    $securePass = Read-Host "Enter iLO password for '$IloIp': " -AsSecureString
+                    $IloPassword = [System.Net.NetworkCredential]::new('', $securePass).Password
+                }
+            }
+            if (-not $IloUser -or -not $IloPassword) {
+                return @{
+                    Success = $false; Action = $Action; IloIp = $IloIp
+                    Error   = "iLO credentials required. Supply -IloUser and -IloPassword, or run interactively to be prompted. Terminal commands never read credentials from config or environment."
+                }
+            }
         }
 
         $baseUrl = "https://$IloIp/redfish/v1"

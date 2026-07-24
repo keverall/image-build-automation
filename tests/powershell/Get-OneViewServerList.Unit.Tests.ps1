@@ -60,6 +60,11 @@ Describe 'Get-OneViewServerList - basic invocation' {
 Describe 'Get-OneViewServerList - pagination & filtering (mocked REST)' {
     BeforeAll {
         InModuleScope Automation {
+            # Present an active session so Resolve-OneViewSession reuses it (host 'h')
+            # instead of attempting a real Connect-OVMgmt during the test.
+            Mock Get-OneViewActiveSession {
+                [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true }
+            }
             Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
                 if ($Uri -match 'start=(\d+)') { $s = [int]$Matches[1] } else { $s = 0 }
                 if ($s -eq 0) {

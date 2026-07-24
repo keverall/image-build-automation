@@ -1,6 +1,5 @@
 # Maintenance Mode Command Reference
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Why Test First?](#why-test-first)
@@ -44,6 +43,9 @@
 - [Troubleshooting](#troubleshooting-1)
 - [Best Practices](#best-practices)
 - [Related](#related-1)
+
+
+<a id="top"></a>
 > Complete guide for maintenance mode commands. **Always test connectivity first** before running maintenance operations.
 
 <a name="table-of-contents"></a>

@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-PowerShellWinRM
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -32,6 +31,7 @@ Executes PowerShell scripts on remote Windows servers using WinRM (WS-Man). Crea
 | `-Password` | Password for WinRM authentication. |
 | `-Transport` | WinRM transport (default: NTLM). |
 | `-TimeoutSeconds` | Timeout per command in seconds (default: 300). |
+| `-ArgumentList` | Optional arguments passed to the remote script block (which should declare a param() block to receive them). Use this to pass secrets so they travel over the encrypted remoting channel instead of being embedded in the script text. |
 
 <a name="examples"></a>
 ## Examples
@@ -70,6 +70,12 @@ $r = Invoke-PowerShellWinRM -Script 'Get-Process' -Server 'srv01.corp.local' -Us
 
     .PARAMETER TimeoutSeconds
         Timeout per command in seconds (default: 300).
+
+    .PARAMETER ArgumentList
+        Optional arguments passed to the remote script block (which should
+        declare a param() block to receive them). Use this to pass secrets so
+        they travel over the encrypted remoting channel instead of being
+        embedded in the script text.
 
     .RETURNS
         [hashtable] with keys: Success (bool), Output (string).

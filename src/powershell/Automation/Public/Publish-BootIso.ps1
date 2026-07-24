@@ -58,15 +58,20 @@ function Publish-BootIso {
         [switch] $DryRun
     )
 
-    if (-not $RepoBaseUrl)  { $RepoBaseUrl   = [System.Environment]::GetEnvironmentVariable('ISO_REPO_BASE_URL') }
-    if (-not $RepoLocalPath) { $RepoLocalPath = [System.Environment]::GetEnvironmentVariable('ISO_REPO_LOCAL_PATH') }
+    # TERMINAL COMMAND: live runs take repo settings ONLY from parameters -
+    # never from environment variables. Env defaults apply only under -DryRun
+    # (dry-run helper; see AGENTS.md).
+    if ($DryRun) {
+        if (-not $RepoBaseUrl)  { $RepoBaseUrl   = [System.Environment]::GetEnvironmentVariable('ISO_REPO_BASE_URL') }
+        if (-not $RepoLocalPath) { $RepoLocalPath = [System.Environment]::GetEnvironmentVariable('ISO_REPO_LOCAL_PATH') }
+    }
 
     if (-not (Test-Path $IsoPath -PathType Leaf)) {
         return @{ Success = $false; Error = "ISO not found: $IsoPath" }
     }
 
     if (-not $RepoBaseUrl) {
-        return @{ Success = $false; Error = "RepoBaseUrl not provided and \$env:ISO_REPO_BASE_URL is empty" }
+        return @{ Success = $false; Error = "RepoBaseUrl is required. Supply -RepoBaseUrl <https-base-url> explicitly (env defaults are only used with -DryRun)." }
     }
 
     $isoName = Split-Path $IsoPath -Leaf

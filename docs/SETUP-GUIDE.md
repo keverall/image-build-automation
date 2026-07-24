@@ -1,6 +1,5 @@
 # Setup Guide - PowerShell Profile & Maintenance Mode
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Quick Setup (5 Minutes)](#quick-setup-5-minutes)
@@ -23,6 +22,9 @@
   - [Set-MaintenanceMode Command Not Available](#set-maintenancemode-command-not-available)
   - [Wrong Terminal Type](#wrong-terminal-type)
 - [Next Steps](#next-steps)
+
+
+<a id="top"></a>
 <a name="quick-setup-5-minutes"></a>
 ## Quick Setup (5 Minutes)
 

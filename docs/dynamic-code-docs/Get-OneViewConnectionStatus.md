@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewConnectionStatus.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-OneViewConnectionStatus
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -31,8 +30,8 @@ Performs two read-only checks against the OneView REST API: 1. Reachability - GE
 | `-OneViewHost` | OneView appliance hostname or IP (e.g. oneview.ad.example.com). If omitted, the command checks for an existing HPEOneView module session (Connect-OVMgmt) and uses that appliance automatically. |
 | `-ServerIdentifier` | Optional server name, serial number, iLO IP or bay position to look up. |
 | `-IdentifierType` | Hint for the server search filter: Name, Serial, OneViewName, IloIp, EnclosureBay, Auto. Default Auto attempts each in turn. |
-| `-OneViewUser` | OneView username. Defaults to $env:ONEVIEW_USER. |
-| `-OneViewPassword` | OneView password. Defaults to $env:ONEVIEW_PASSWORD. |
+| `-OneViewUser` | OneView username (used with -OneViewPassword). Never read from config or environment. |
+| `-OneViewPassword` | OneView password (used with -OneViewUser). Never read from config or environment. |
 | `-Port` | OneView HTTPS port (default 443). |
 | `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
 | `-TimeoutSec` | Per-call timeout (default 30 s). |
@@ -90,10 +89,10 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
         EnclosureBay, Auto. Default Auto attempts each in turn.
 
     .PARAMETER OneViewUser
-        OneView username. Defaults to $env:ONEVIEW_USER.
+        OneView username (used with -OneViewPassword). Never read from config or environment.
 
     .PARAMETER OneViewPassword
-        OneView password. Defaults to $env:ONEVIEW_PASSWORD.
+        OneView password (used with -OneViewUser). Never read from config or environment.
 
     .PARAMETER Port
         OneView HTTPS port (default 443).

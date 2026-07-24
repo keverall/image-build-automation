@@ -50,6 +50,7 @@ function Start-InstallMonitor {
         [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
         [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
         [Parameter(Mandatory = $false)][string] $ServerList  = 'configs\server_list.txt',
+        [Parameter(Mandatory = $false)][System.Management.Automation.PSCredential] $IloCredential,
         [Parameter(Mandatory = $false)][int]    $TimeoutSeconds  = 7200,
         [Parameter(Mandatory = $false)][int]    $PollIntervalSeconds = 30,
         [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json'
@@ -64,9 +65,25 @@ function Start-InstallMonitor {
     if (-not $Server) {
         throw "Server or SerialNumber is required for install monitoring"
     }
+
+    # TERMINAL COMMAND: iLO credentials come ONLY from -IloCredential or a
+    # direct interactive prompt - never from config/env (see AGENTS.md).
+    if (-not $IloCredential) {
+        $canPrompt = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
+            [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
+        if ($canPrompt) {
+            $IloCredential = Get-Credential -Message "iLO credentials for monitoring '$Server'"
+        }
+    }
+
+    # OpsRamp config is a silent default; only honour it when explicitly passed
+    # by the operator (a parameter is a parameter) - otherwise skip OpsRamp.
+    $effectiveOpsRampConfig = if ($PSBoundParameters.ContainsKey('OpsRampConfig')) { $OpsRampConfig } else { $null }
+
     try {
         $serverInfo = if ($Server) { [ServerInfo]::new($Server, '', '', 0) } else { $null }
-        $monitor = [InstallationMonitor]::new($ServerList, $OpsRampConfig, [bool]$DryRun, $serverInfo)
+        $monitor = [InstallationMonitor]::new($ServerList, $effectiveOpsRampConfig, [bool]$DryRun, $serverInfo)
+        $monitor.IloCredential = $IloCredential
         if ($Server) {
             $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
             if (-not $si) { return @{ Success=$false; Error="Server not found: $Server" } }
@@ -117,6 +134,7 @@ class InstallationMonitor {
     [hashtable]           $Sessions
     [System.Collections.ArrayList] $MonitorLog
     [OpsRamp_Client]      $OpsRampClient
+    [System.Management.Automation.PSCredential] $IloCredential
 
     # Constants
     [int] $CheckInterval    = 30
@@ -138,6 +156,7 @@ class InstallationMonitor {
     }
 
     [OpsRamp_Client] _InitOpsRampClient() {
+        if (-not $this.OpsRampConfigPath) { return $null }
         if (-not (Test-Path $this.OpsRampConfigPath)) { Write-Warning 'OpsRamp config not found'; return $null }
         try { return [OpsRamp_Client]::new($this.OpsRampConfigPath) }
         catch { Write-Warning "OpsRamp init failed: $($_.Exception.Message)"; return $null }
@@ -154,14 +173,16 @@ class InstallationMonitor {
         # Ping
         $r = Invoke-Command -Command @('ping','-n','1','-w','2000',$ip) -TimeoutSeconds 10
         if (-not $r.Success) { return @{ status='offline'; power_state='unknown'; boot_source='unknown' } }
-        # Redfish query
+        # Redfish query - credentials only from the operator (-IloCredential /
+        # interactive prompt); never from config or environment.
+        if (-not $this.IloCredential) {
+            return @{ status='unknown'; reason='No iLO credential supplied (use -IloCredential or run interactively)' }
+        }
         $rfUrl  = "https://$ip/redfish/v1/Systems/1"
-        $cred   = Get-IloCredentials
         try {
             $resp = Invoke-RestMethod -Uri $rfUrl -Method Get `
                 -TimeoutSec 5 `
-                -Credential (New-Object System.Management.Automation.PSCredential($cred[0],
-                    (ConvertTo-SecureString $cred[1] -AsPlainText -Force))) `
+                -Credential $this.IloCredential `
                 -ErrorAction Stop
             return @{ status='online'; power_state=$resp.PowerState; boot_source=($resp.Boot.BootSourceOverrideTarget); ilo_reachable=$true }
         } catch {

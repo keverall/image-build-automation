@@ -1,6 +1,5 @@
 # HPE OneView 1000 — Live Integration Test Plan
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Current OneView Connected Automation Command testing status and progress Summary](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
@@ -17,6 +16,9 @@
 - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10-other-critical-tests-setup-automation-hpeoneview-package)
 - [Phase 11 — Execution Evidence (per cycle)](#phase-11-execution-evidence-per-cycle)
 - [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
+
+
+<a id="top"></a>
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 23/07/2026 18:55 UTC</p>
 <!-- END:run-date -->
@@ -27,7 +29,8 @@
 <!-- BEGIN:oneview-status-summary -->
 - **Could not test today because the CRE ran out last night at 5pm, I will continue testing on 24/07/2026 tomorrow.**
 <!-- END:oneview-status-summary -->
-<!-- END:oneview-status-summary -->
+
+
 
 **Module under test:** `Automation` PowerShell module (`src/powershell/Automation/Automation.psm1`)
 **OneView library:** `HPEOneView.1000` (OneView 10.x) via `Connect-OVMgmt` / `Disconnect-OVMgmt`

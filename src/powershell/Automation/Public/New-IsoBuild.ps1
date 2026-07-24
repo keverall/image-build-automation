@@ -51,10 +51,12 @@ function New-IsoBuild {
         FQDN of the ConfigMgr site server for PSRemoting fallback (e.g. cm01.ad.example.com).
 
     .PARAMETER SiteServerUser
-        Site server admin username for PSRemoting. Defaults to $env:CM_SITE_USER.
+        Site server admin username for PSRemoting. If omitted (with password),
+        prompted interactively. Never read from environment.
 
     .PARAMETER SiteServerPassword
-        Site server admin password. Defaults to $env:CM_SITE_PASSWORD.
+        Site server admin password. If omitted, prompted interactively. Never
+        read from environment.
 
     .PARAMETER MediaPassword
         Optional boot media password (env: CM_MEDIA_PASSWORD).
@@ -269,12 +271,18 @@ function Resolve-ConfigMgrContext {
         $r.Error = "ConfigurationManager module not available locally and -SiteServer not provided"
         return $r
     }
-    if (-not $SiteServerUser)     { $SiteServerUser     = [System.Environment]::GetEnvironmentVariable('CM_SITE_USER') }
-    if (-not $SiteServerPassword) { $SiteServerPassword = [System.Environment]::GetEnvironmentVariable('CM_SITE_PASSWORD') }
+    # TERMINAL COMMAND: site-server credentials come ONLY from parameters or an
+    # interactive prompt - never from environment variables (see AGENTS.md).
     $cred = $null
     if ($SiteServerUser -and $SiteServerPassword) {
         $cred = New-Object System.Management.Automation.PSCredential(
             $SiteServerUser, (ConvertTo-SecureString $SiteServerPassword -AsPlainText -Force))
+    } else {
+        $canPrompt = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
+            [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
+        if ($canPrompt) {
+            $cred = Get-Credential -Message "Site server credentials for '$SiteServer'"
+        }
     }
     try {
         $opts = New-PSSessionOption -SkipCACheck -SkipCNCheck:$SkipCertificateCheck -OpenTimeout 30000

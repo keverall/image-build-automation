@@ -1,6 +1,5 @@
 # Maintenance Mode Orchestration
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Flow](#flow)
@@ -20,6 +19,9 @@
 - [Testing](#testing)
   - [Maintenance Mode Test Runner](#maintenance-mode-test-runner)
 - [Change History](#change-history)
+
+
+<a id="top"></a>
 Maintenance mode manages scheduled maintenance windows for clusters across two monitoring systems:
 
 - **SCOM 2015** (System Center Operations Manager) - maintenance mode on groups

@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/New-IsoBuild.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-IsoBuild
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -35,8 +34,8 @@ Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting to the s
 | `-BootImageName` | Name of the boot image to embed (e.g. 'WinPE x64 - HPE'). |
 | `-TaskSequenceName` | Optional task sequence name (informational; TS selection happens at boot). |
 | `-SiteServer` | FQDN of the ConfigMgr site server for PSRemoting fallback (e.g. cm01.ad.example.com). |
-| `-SiteServerUser` | Site server admin username for PSRemoting. Defaults to $env:CM_SITE_USER. |
-| `-SiteServerPassword` | Site server admin password. Defaults to $env:CM_SITE_PASSWORD. |
+| `-SiteServerUser` | Site server admin username for PSRemoting. If omitted (with password), prompted interactively. Never read from environment. |
+| `-SiteServerPassword` | Site server admin password. If omitted, prompted interactively. Never read from environment. |
 | `-MediaPassword` | Optional boot media password (env: CM_MEDIA_PASSWORD). |
 | `-AllowUnknownMachine` | Pass -AllowUnknownMachine to New-CMBootableMedia (default true). |
 | `-AllowUnattended` | Pass -AllowUnattended to New-CMBootableMedia (default true). |
@@ -95,10 +94,12 @@ New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' ` -Distribut
         FQDN of the ConfigMgr site server for PSRemoting fallback (e.g. cm01.ad.example.com).
 
     .PARAMETER SiteServerUser
-        Site server admin username for PSRemoting. Defaults to $env:CM_SITE_USER.
+        Site server admin username for PSRemoting. If omitted (with password),
+        prompted interactively. Never read from environment.
 
     .PARAMETER SiteServerPassword
-        Site server admin password. Defaults to $env:CM_SITE_PASSWORD.
+        Site server admin password. If omitted, prompted interactively. Never
+        read from environment.
 
     .PARAMETER MediaPassword
         Optional boot media password (env: CM_MEDIA_PASSWORD).

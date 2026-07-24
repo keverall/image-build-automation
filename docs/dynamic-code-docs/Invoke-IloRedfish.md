@@ -1,12 +1,11 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IloRedfish.ps1
-generated: 2026-07-24 09:41 UTC
+generated: 2026-07-24 14:50 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-IloRedfish
 
-<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)
@@ -28,8 +27,8 @@ Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â
 |-----------|-------------|
 | `-Action` | Operation to perform. One of: Mount, MountAndBoot, Boot, Reset, Eject, Status. |
 | `-IloIp` | iLO IPv4 address or hostname. Required. |
-| `-IloUser` | iLO username. Defaults to $env:ILO_USER or 'Administrator'. |
-| `-IloPassword` | iLO password. Defaults to $env:ILO_PASSWORD. Use [SecureString] in production. |
+| `-IloUser` | iLO username. If omitted on a live run, prompted interactively. Never read from config or environment. |
+| `-IloPassword` | iLO password. If omitted on a live run, prompted interactively (secure input). Never read from config or environment. |
 | `-IsoUrl` | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
 | `-CdDeviceId` | VirtualMedia device id (default 1). Enumerate via /redfish/v1/Managers/1/VirtualMedia. |
 | `-Force` | Required for destructive actions (MountAndBoot, Boot, Reset) to confirm intent. Read-only actions (Status, Eject without -Force) do not require this switch. |
@@ -69,10 +68,12 @@ Invoke-IloRedfish -Action MountAndBoot -IloIp 192.168.1.101 ` -IsoUrl 'https://a
         iLO IPv4 address or hostname. Required.
 
     .PARAMETER IloUser
-        iLO username. Defaults to $env:ILO_USER or 'Administrator'.
+        iLO username. If omitted on a live run, prompted interactively. Never
+        read from config or environment.
 
     .PARAMETER IloPassword
-        iLO password. Defaults to $env:ILO_PASSWORD. Use [SecureString] in production.
+        iLO password. If omitted on a live run, prompted interactively (secure
+        input). Never read from config or environment.
 
     .PARAMETER IsoUrl
         HTTPS URL to the ISO file (required for Mount / MountAndBoot).

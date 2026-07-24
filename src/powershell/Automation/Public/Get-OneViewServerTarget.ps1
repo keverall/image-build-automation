@@ -22,6 +22,14 @@ function Get-OneViewServerTarget {
         a normalized hashtable describing the server.  Validates health (must be OK)
         and tolerates power state Off or On.
 
+        STRICT SINGLE-SERVER: this command must resolve to exactly one server. A
+        query that matches more than one server is a hard failure (Success=$false)
+        rather than a warning - it never silently picks the first match, because it
+        underpins destructive operations (ISO attach/deploy, reboot, OS build).
+        Connection to the appliance is handled by the shared Resolve-OneViewSession
+        helper (prompts for the host/credentials when needed) and the session
+        persists; this command never disconnects.
+
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
 
@@ -34,10 +42,10 @@ function Get-OneViewServerTarget {
         Default Auto attempts each in turn.
 
     .PARAMETER OneViewUser
-        OneView username. Defaults to $env:ONEVIEW_USER.
+        OneView username (used with -OneViewPassword). Never read from config or environment.
 
     .PARAMETER OneViewPassword
-        OneView password. Defaults to $env:ONEVIEW_PASSWORD.
+        OneView password (used with -OneViewUser). Never read from config or environment.
 
     .PARAMETER Port
         OneView HTTPS port (default 443).
@@ -69,6 +77,7 @@ function Get-OneViewServerTarget {
         [string] $OneViewHost,
         [Parameter(Mandatory)][string] $ServerIdentifier,
         [ValidateSet('Auto','Name','Serial','OneViewName','IloIp','EnclosureBay')][string] $IdentifierType = 'Auto',
+        [System.Management.Automation.PSCredential] $Credential,
         [string] $OneViewUser = $null,
         [string] $OneViewPassword = $null,
         [int]    $Port = 443,
@@ -82,21 +91,24 @@ function Get-OneViewServerTarget {
         return $MockResult
     }
 
-    if (-not $OneViewHost) {
-        $activeSession = Get-OneViewActiveSession
-        if ($activeSession) {
-            $OneViewHost = $activeSession.Name
-        } else {
-            $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-            if (-not $isAutomated) {
-                Write-Host "Enter OneView appliance hostname/IP:" -ForegroundColor Yellow
-                $OneViewHost = Read-Host
-            }
-        }
-        if (-not $OneViewHost) {
-            return @{ Success = $false; Error = "OneViewHost parameter is required" }
+    if ($DryRun) {
+        Write-Output "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
+        return @{
+            Success = $true; Server = $ServerIdentifier; DryRun = $true
+            Details = @{ oneview_host = $OneViewHost; identifier = $ServerIdentifier; type = $IdentifierType }
         }
     }
+
+    # Resolve (or establish) a persistent OneView session via the shared helper.
+    # Supplying -OneViewHost connects and prompts for credentials when needed;
+    # omitting it reuses the current session. This command never disconnects.
+    $sess = Resolve-OneViewSession -OneViewHost $OneViewHost -Credential $Credential `
+        -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
+    if (-not $sess.Success) {
+        return @{ Success = $false; Server = $ServerIdentifier; Error = $sess.Error }
+    }
+    $OneViewHost  = $sess.OneViewHost
+    $sessionToken = $sess.SessionToken
 
     $baseUrl = "https://$OneViewHost`:$Port"
     $apiBase = "$baseUrl/rest"
@@ -106,37 +118,6 @@ function Get-OneViewServerTarget {
     } else { @($IdentifierType) }
 
     try {
-        if ($DryRun) {
-            Write-Output "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
-            return @{
-                Success = $true; Server = $ServerIdentifier; DryRun = $true
-                Details = @{ oneview_host = $OneViewHost; identifier = $ServerIdentifier; type = $IdentifierType }
-            }
-        }
-
-        $sessionToken = $null
-        $activeSession = Get-OneViewActiveSession
-        if ($activeSession -and $activeSession.Name -eq $OneViewHost) {
-            $sessionToken = $activeSession.SessionID
-        }
-
-        if (-not $sessionToken) {
-            if (-not $OneViewUser -or -not $OneViewPassword) {
-                $cred = Get-OneViewCredentials
-                if (-not $OneViewUser)     { $OneViewUser     = $cred[0] }
-                if (-not $OneViewPassword) { $OneViewPassword = $cred[1] }
-            }
-            $credObj = [System.Management.Automation.PSCredential]::new(
-                $OneViewUser,
-                (ConvertTo-SecureString $OneViewPassword -AsPlainText -Force))
-            $connResult = Connect-OneViewSession -Appliance $OneViewHost -Credential $credObj
-            if ($connResult.Connected) {
-                $sessionToken = $connResult.SessionId
-            } else {
-                return @{ Success = $false; Error = "OneView connection failed: $($connResult.Error)" }
-            }
-        }
-
         foreach ($t in $typesToTry) {
             $filter = switch ($t) {
                 'Name'         { "name='$ServerIdentifier'" }
@@ -151,8 +132,16 @@ function Get-OneViewServerTarget {
                 -SkipCertificateCheck:$SkipCertificateCheck `
                 -TimeoutSec $TimeoutSec -ErrorAction Stop
             if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
+                # Single-server operations (attach/deploy/reboot/build) MUST target
+                # exactly one server. An ambiguous match is a hard failure - never
+                # silently pick the first, which could build the wrong machine.
                 if ($resp.members.Count -gt 1) {
-                    Write-Warning "Multiple servers match '$ServerIdentifier' via $t ($($resp.members.Count) matches). Using first; supply a more specific identifier to disambiguate."
+                    $matchedNames = ($resp.members | ForEach-Object { $_.name }) -join ', '
+                    return @{
+                        Success = $false
+                        Server  = $ServerIdentifier
+                        Error   = "Ambiguous target: '$ServerIdentifier' matched $($resp.members.Count) servers via $t ($matchedNames). Refusing to proceed - single-server operations require exactly one match. Supply a more specific identifier (e.g. serial number)."
+                    }
                 }
                 $srv = $resp.members[0]
                 $details = @{
