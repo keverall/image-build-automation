@@ -244,16 +244,16 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
     }
 
     It 'Should pass the supplied -Credential to Connect-OneViewSession (integration, mocked session)' {
-        # Bind a loopback listener on 443 so Phase 1 (network ping) succeeds and
-        # the function reaches the Connect-OneViewSession call. Skip when the
-        # port cannot be bound (privileged port on some Linux hosts, or in use).
+        # Bind a loopback listener on an unprivileged port so Phase 1 (network ping)
+        # succeeds and the function reaches the Connect-OneViewSession call. Using a
+        # high port (not 443) avoids needing root to bind a privileged port.
         $listener = $null
+        $probePort = 18443
         try {
-            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 443)
+            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $probePort)
             $listener.Start()
         } catch {
-            Set-ItResult -Skipped -Because "cannot bind TCP 443 on loopback: $($_.Exception.Message)"
-            return
+            throw "Unable to bind loopback port $probePort for integration test: $($_.Exception.Message)"
         }
         try {
             Mock -ModuleName Automation Connect-OneViewSession {
@@ -268,7 +268,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
                 }
             }
 
-            $result = Test-ServerConnectivity -ManagementHost 'localhost' -PingTimeoutMs 2000 -Credential $script:cred
+            $result = Test-ServerConnectivity -ManagementHost 'localhost' -Port $probePort -PingTimeoutMs 2000 -Credential $script:cred
 
             $result.NetworkPing.TcpPortOpen | Should -Be $true
             $result.AuthConnect.Connected | Should -Be $true

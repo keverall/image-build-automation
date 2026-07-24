@@ -1,5 +1,6 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
+<a id="top"></a>
 ## Table of Contents
 
 - [1. Entry Points & User Interface](#1-entry-points-and-user-interface)
@@ -26,9 +27,6 @@
 - [11. Documentation References](#11-documentation-references)
 - [10. Execution Flow Summary](#10-execution-flow-summary)
 - [Quick Navigation for Clients](#quick-navigation-for-clients)
-
-
-<a id="top"></a>
 This document provides a complete map of all code locations hit by the `Set-MaintenanceMode` command, with direct links to source files for client review.
 
 ---

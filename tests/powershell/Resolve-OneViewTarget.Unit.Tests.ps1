@@ -12,14 +12,22 @@ Describe 'Resolve-OneViewTarget - accepts server name or serial number' {
         $cmd = Get-Command Resolve-OneViewTarget -ErrorAction SilentlyContinue
         $cmd | Should -Not -Be $null
         $cmd.Parameters.Keys | Should -Contain 'SerialNumber'
+        $cmd.Parameters.Keys | Should -Contain 'ServerName'
         $cmd.Parameters.Keys | Should -Contain 'OneViewHost'
     }
 
-    It 'Passes a server name through unchanged' {
+    It 'Confirms a server name against OneView and requires OneViewHost' {
+        # A server name is NOT passed through blindly - it must be confirmed
+        # against OneView (and its iLO IP obtained) so destructive operations
+        # always target the confirmed OneView server.
         $r = Resolve-OneViewTarget -ServerName 'srv01.corp.local'
+        $r.Success | Should -Be $false
+        $r.Error   | Should -Match 'OneViewHost'
+
+        $r = Resolve-OneViewTarget -ServerName 'srv01.corp.local' -OneViewHost 'oneview.ad.example.com' -DryRun
         $r.Success    | Should -Be $true
-        $r.Identifier | Should -Be 'srv01.corp.local'
         $r.ResolvedBy | Should -Be 'Name'
+        $r.Identifier | Should -Be 'srv01.corp.local'
     }
 
     It 'Resolves a serial number to a target via OneView (DryRun)' {

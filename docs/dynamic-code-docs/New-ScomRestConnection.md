@@ -1,11 +1,12 @@
 ---
 source:  ./src/powershell/Automation/Public/New-ScomConnection.ps1
-generated: 2026-07-24 14:50 UTC
+generated: 2026-07-24 15:19 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # New-ScomRestConnection
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Description](#description)

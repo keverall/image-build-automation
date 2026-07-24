@@ -1,5 +1,6 @@
 # Test Progress Report Generator — Test Plan
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Column legend](#column-legend)
@@ -12,9 +13,6 @@
 - [7. Log summary parsing](#7-log-summary-parsing)
 - [8. End-to-end script (child process, `-SkipHtml`)](#8-end-to-end-script-child-process--skiphtml)
 - [9. HTML converter comment stripping](#9-html-converter-comment-stripping)
-
-
-<a id="top"></a>
 This plan documents the automated test coverage for the test-plan progress
 generator, i.e. the pipeline behind `make test-progress-update`:
 

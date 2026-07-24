@@ -1,5 +1,6 @@
 # GDPR Compliance Statement
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Overview](#overview)
@@ -19,9 +20,6 @@
 - [Records of Processing Activities (ROPA)](#records-of-processing-activities-ropa)
 - [Compliance Checklist](#compliance-checklist)
 - [Contact](#contact)
-
-
-<a id="top"></a>
 <a name="overview"></a>
 ## Overview
 

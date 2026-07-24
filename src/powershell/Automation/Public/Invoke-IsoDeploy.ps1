@@ -94,6 +94,7 @@ function Invoke-IsoDeploy {
         [Parameter(Mandatory = $false)][string] $Server = $null,
         [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
         [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
+        [Parameter(Mandatory = $false)][string] $IloIp = $null,
         [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
         [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
         [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
@@ -103,15 +104,45 @@ function Invoke-IsoDeploy {
         [Parameter(Mandatory = $false)][switch] $DryRun,
         [Parameter(Mandatory = $false)][switch] $SkipConfirmation
     )
+    # TERMINAL COMMAND: when the target is not supplied, prompt for it (interactive
+    # runs only - suppressed under AUTOMATED_MODE, see AGENTS.md). The documented
+    # behaviour for every command in automation_commands.md is to prompt for host
+    # and credential inputs that were not provided.
+    if (-not $Server -and -not $SerialNumber) {
+        if ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true') {
+            return @{ Success = $false; Error = "Server or SerialNumber is required (neither was supplied and AUTOMATED_MODE is set)." }
+        }
+        Write-Host "No target supplied. Identify the server by:" -ForegroundColor Cyan
+        $choice = Read-Host "Enter '1' for server name/FQDN, '2' for serial number"
+        if ($choice -eq '2') {
+            $SerialNumber = Read-Host "Serial number"
+        } else {
+            $Server = Read-Host "Server name or FQDN"
+        }
+    }
+
+    # TERMINAL COMMAND: resolve the target through OneView. A name or serial must
+    # be confirmed against OneView (so destructive deploys hit the CORRECT server),
+    # which requires the OneView host. Prompt for the host when it was not supplied
+    # on an interactive run (suppressed under AUTOMATED_MODE).
+    if (-not $OneViewHost -and [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') {
+        $OneViewHost = Read-Host "OneView appliance host (used to confirm the target server)"
+    }
+
     if ($SerialNumber) {
+        if (-not $OneViewHost -and [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') {
+            $OneViewHost = Read-Host "OneView appliance host (used to resolve serial '$SerialNumber')"
+        }
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
         if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
         $Server = $resolved.Identifier
+        # Carry the OneView-resolved iLO IP so the live Redfish deploy can reach iLO.
+        if ($resolved.IloIp) { $IloIp = $resolved.IloIp }
         if ($resolved.IloIp) { Write-Verbose "Resolved serial '$SerialNumber' -> $Server (iLO $($resolved.IloIp))" }
         else { Write-Verbose "Resolved serial '$SerialNumber' -> $Server" }
     }
     if (-not $DryRun -and -not $Server) {
-        throw "Server or SerialNumber is required for non-dryrun ISO deployment"
+        return @{ Success = $false; Error = "Server or SerialNumber is required for non-dryrun ISO deployment" }
     }
 
     # TERMINAL COMMAND: a live run must be driven entirely by parameters.
@@ -147,7 +178,9 @@ function Invoke-IsoDeploy {
                 $serverInfo = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
                 if (-not $serverInfo) { return @{ Success = $false; Error = "Server not found: $Server" } }
             } else {
-                $serverInfo = [ServerInfo]::new($Server, '', '', 0)
+                # Live run: carry the iLO IP (from -IloIp, or OneView-resolved via serial)
+                # so Redfish deployment can reach the iLO.
+                $serverInfo = [ServerInfo]::new($Server, '', $IloIp, 0)
             }
             $ok = $deployer.Deploy($serverInfo, $Method, [bool]$DryRun)
             return @{ Success = $ok; Server = $Server; Method = $Method }

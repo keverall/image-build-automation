@@ -93,6 +93,7 @@ function Test-ServerConnectivity {
         [System.Management.Automation.PSCredential] $Credential,
         [string] $ConfigDir = 'configs',
         [int] $PingTimeoutMs = 3000,
+        [int] $Port = 443,
         [switch] $Json,
         [switch] $JsonConfig,
         [switch] $DryRun
@@ -279,8 +280,8 @@ function Test-ServerConnectivity {
         }
     }
 
-    # ── Determine TCP ports to probe (OneView = HTTPS 443) ────────────────────
-    $tcpPorts = @(443)
+    # ── Determine TCP ports to probe (OneView = HTTPS port, default 443) ─────────
+    $tcpPorts = @($Port)
 
     # ══════════════════════════════════════════════════════════════════════════
     # DRYRUN MODE: Return mock data without real network calls

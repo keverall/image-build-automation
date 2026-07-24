@@ -125,18 +125,22 @@ function Resolve-OneViewTarget {
 
     .DESCRIPTION
         Lets any OneView automation task accept EITHER a server name or a serial
-        number. A serial is resolved to its OneView server record (hostname + iLO
-        IP) via Get-OneViewServerTarget. A name is passed through unchanged.
+        number. In BOTH cases the target is resolved to its OneView server record
+        (hostname + iLO IP) via Get-OneViewServerTarget, so destructive operations
+        always deploy to / reboot / build the confirmed OneView server and never a
+        free-floating name.
 
     .PARAMETER SerialNumber
         Hardware serial number. When supplied, -OneViewHost is required to
         resolve it. Takes precedence over -ServerName.
 
     .PARAMETER ServerName
-        Server hostname / OneView name. Used verbatim when no -SerialNumber.
+        Server hostname / OneView name. Resolved against OneView (requires
+        -OneViewHost) to confirm the target and obtain its iLO IP.
 
     .PARAMETER OneViewHost
-        OneView appliance hostname or IP (required to resolve a serial).
+        OneView appliance hostname or IP. Required to resolve EITHER a serial or a
+        server name, because both must be confirmed against OneView.
 
     .PARAMETER DryRun
         Resolve without performing a real OneView query.
@@ -167,7 +171,16 @@ function Resolve-OneViewTarget {
     }
 
     if ($ServerName) {
-        return @{ Success = $true; Identifier = $ServerName; IloIp = ''; SerialNumber = $null; ResolvedBy = 'Name'; Error = $null }
+        if (-not $OneViewHost) {
+            return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $null; ResolvedBy = $null; Error = "OneViewHost is required to confirm -ServerName '$ServerName' against OneView." }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
+            -ServerIdentifier $ServerName -IdentifierType Name -DryRun:$DryRun
+        if (-not $r.Success) {
+            return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $null; ResolvedBy = $null; Error = "Server name '$ServerName' not confirmed in OneView: $($r.Error)" }
+        }
+        $ilo = if ($r.Details -and $r.Details.ilo_ip) { $r.Details.ilo_ip } else { '' }
+        return @{ Success = $true; Identifier = $r.Server; IloIp = $ilo; SerialNumber = $null; ResolvedBy = 'Name'; Error = $null }
     }
 
     return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $null; ResolvedBy = $null; Error = "Either -SerialNumber or -ServerName must be supplied." }

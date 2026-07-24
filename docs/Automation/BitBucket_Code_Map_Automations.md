@@ -1,5 +1,6 @@
 # Automation Code Map
 
+<a id="top"></a>
 ## Table of Contents
 
 - [1. Module Loading & Bootstrap](#1-module-loading-and-bootstrap)
@@ -67,9 +68,6 @@
   - [19.2 - Test Execution Scripts](#192---test-execution-scripts)
   - [19.3 - Coverage & Lint](#193---coverage-and-lint)
 - [20. Quick Navigation](#20-quick-navigation)
-
-
-<a id="top"></a>
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`BitBucket_Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/BitBucket_Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, physical server builds, firmware/Windows patching, deployment, monitoring, validation, and OpsRamp reporting.
 
 > **Source root**: [`src/powershell/Automation/`](../../src/powershell/Automation/)

@@ -1,5 +1,6 @@
 # SCOM Maintenance Mode - Authentication & Configuration
 
+<a id="top"></a>
 ## Table of Contents
 
 - [Required Secrets (CyberArk Safe: `SCOM-2015`)](#required-secrets-cyberark-safe-scom-2015)
@@ -11,9 +12,6 @@
   - [How it works](#how-it-works)
   - [Manual Testing](#manual-testing)
 - [Setup Script](#setup-script)
-
-
-<a id="top"></a>
 Configure `Set-MaintenanceMode.ps1` for SCOM cluster-level maintenance mode. SCOM manages Microsoft Windows cluster objects - all servers and resources nested under the group are put into maintenance mode. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the relationship between SCOM, OneView, and iLO.
 
 <a name="required-secrets-cyberark-safe-scom-2015"></a>
