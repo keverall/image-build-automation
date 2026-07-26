@@ -96,6 +96,34 @@ Thumbs.db
 
 
 # === AI Workspace Configs ===
-.kilo/
+# .kilo/
 scripts/modules/OperationsManager/
 scripts/modules/
+
+# ---- POWERSHELL RUNTIME & LOGGING ----
+# Block interactive history and transcripts
+.ps_history
+*_transcript.*
+*.log
+
+# ---- TESTING & COVERAGE ----
+# Block Pester testing framework artifacts
+**/TestResults/
+*TestResults.xml
+
+# ---- MODULES & VENDOR DEPENDENCIES ----
+# Block modules installed locally during development
+/Modules/
+/packages/
+
+# ---- SECRETS & SCRIPTS ----
+# Block private configurations or local profiles
+secret.*
+config.private.*
+*.ps1xml
+
+# ---- IDE WORKSPACES & SYSTEM ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
