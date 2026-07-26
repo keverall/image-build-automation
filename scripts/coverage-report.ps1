@@ -40,7 +40,7 @@ if (-not (Get-Module Pester -ListAvailable)) {
     exit 1
 }
 
-Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
+Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $sourcePath = Join-Path $PROJECT_ROOT 'src/powershell'

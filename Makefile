@@ -82,7 +82,7 @@ test-integration: prune-logs ## Run Pester integration tests only
 	@echo "$(CYAN)[test-integration]$(NC) Running Pester integration tests..."
 	@pwsh -NoProfile -Command "\
 		$$pwd = '$(CURDIR)'; \
-		Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop; \
+		Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop; \
 		Invoke-Pester -Path \"$$pwd\$(PSTESTS)/Pester.Integration.ps1\" -PassThru"
 
 maint-mode-tests: prune-logs ## Run high-priority Set-MaintenanceMode tests

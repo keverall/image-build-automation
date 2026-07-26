@@ -65,20 +65,40 @@ SECTIONS AND OPTIONS
         Type: bool
         Default value: $false
 
+        Parallel: EXPERIMENTAL: Run test files in parallel, each file in its own runspace, using PowerShell 7+ 'ForEach-Object -Parallel'. Files that contain the '#pester:no-parallel' directive run sequentially after the parallel batch. Falls back to a sequential run on Windows PowerShell 5.1, when non-file containers (ScriptBlock) are used, when CodeCoverage is enabled, or when Run.SkipRemainingOnFailure is set to 'Run'.
+        Type: bool
+        Default value: $false
+
+        BeforeContainer: EXPERIMENTAL: One or more ScriptBlocks run before each test file is discovered and run, in both sequential and parallel runs. Use it to import helper modules or dot-source setup that the parent session would normally provide, e.g. { . './setup.ps1' } - this is especially useful in parallel runs, where each worker starts from a clean runspace. One scriptblock is usually enough and can dot-source as many files as needed. When set, the convention file is ignored; when not set, Pester dot-sources a 'Pester.BeforeContainer.ps1' from the repository root (Run.RepoRoot) if one is present.
+        Type: scriptblock[]
+        Default value: @()
+
+        ParallelThrottleLimit: EXPERIMENTAL: Maximum number of test files to run at the same time when Run.Parallel is enabled, passed through to 'ForEach-Object -Parallel -ThrottleLimit'. The default 0 uses all available processors ([Environment]::ProcessorCount). Set a lower number to cap how many runspaces run concurrently. Only used when Run.Parallel is enabled.
+        Type: int
+        Default value: 0
+
         SkipRemainingOnFailure: Skips remaining tests after failure for selected scope, options are None, Run, Container and Block.
         Type: string
         Default value: 'None'
 
+        FailOnNullOrEmptyForEach: Fails discovery when -ForEach is provided $null or @() in a block or test. Can be overridden for a specific Describe/Context/It using -AllowNullOrEmptyForEach.
+        Type: bool
+        Default value: $true
+
+        RepoRoot: Root directory of the repository. Found by searching for the .git directory recursively. When not found, the current working directory is used.
+        Type: string
+        Default value: '<path of .git>'
+
     Filter:
-        Tag: Tags of Describe, Context or It to be run.
+        Tag: Tags of Describe, Context or It to be run. Use 'None' to run only tests that have no tags.
         Type: string[]
         Default value: @()
 
-        ExcludeTag: Tags of Describe, Context or It to be excluded from the run.
+        ExcludeTag: Tags of Describe, Context or It to be excluded from the run. Use 'None' to exclude tests that have no tags.
         Type: string[]
         Default value: @()
 
-        Line: Filter by file and scriptblock start line, useful to run parsed tests programmatically to avoid problems with expanded names. Example: 'C:\tests\file1.Tests.ps1:37'
+        Line: Filter by file and scriptblock start line, useful to run parsed tests programmatically to avoid problems with expanded names. Explicit filter that overrides -Skip. Example: 'C:\tests\file1.Tests.ps1:37'
         Type: string[]
         Default value: @()
 
@@ -95,7 +115,7 @@ SECTIONS AND OPTIONS
         Type: bool
         Default value: $false
 
-        OutputFormat: Format to use for code coverage report. Possible values: JaCoCo, CoverageGutters, Cobertura
+        OutputFormat: Format to use for code coverage report. Possible values: JaCoCo, Cobertura
         Type: string
         Default value: 'JaCoCo'
 
@@ -123,13 +143,17 @@ SECTIONS AND OPTIONS
         Type: decimal
         Default value: 75
 
-        UseBreakpoints: EXPERIMENTAL: When false, use Profiler based tracer to do CodeCoverage instead of using breakpoints.
+        UseBreakpoints: When false, use Profiler based tracer to do CodeCoverage instead of using breakpoints.
+        Type: bool
+        Default value: $false
+
+        SingleHitBreakpoints: Remove breakpoint when it is hit. This increases performance of breakpoint based CodeCoverage.
         Type: bool
         Default value: $true
 
-        SingleHitBreakpoints: Remove breakpoint when it is hit.
-        Type: bool
-        Default value: $true
+        ReportRoot: Root path for the code coverage report. Uses Run.RepoRoot by default.
+        Type: string
+        Default value: $null
 
     TestResult:
         Enabled: Enable TestResult.
@@ -157,6 +181,10 @@ SECTIONS AND OPTIONS
         Type: string
         Default value: 'Stop'
 
+        DisableV5: Disables usage of Should -Be assertions, that are replaced by Should-Be in version 6.
+        Type: bool
+        Default value: $false
+
     Debug:
         ShowFullErrors: Show full errors including Pester internal stack. This property is deprecated, and if set to true it will override Output.StackTraceVerbosity to 'Full'.
         Type: bool
@@ -171,6 +199,10 @@ SECTIONS AND OPTIONS
         Default value: @('Discovery', 'Skip', 'Mock', 'CodeCoverage')
 
         ShowNavigationMarkers: Write paths after every block and test, for easy navigation in VSCode.
+        Type: bool
+        Default value: $false
+
+        ShowStartMarkers: Write an indication when each test starts.
         Type: bool
         Default value: $false
 

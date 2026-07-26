@@ -3,7 +3,7 @@
 
 BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-    Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
+    Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
     Import-Module (Join-Path $Script:ModuleRoot 'src/powershell/Automation/Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 
     # Prevent interactive prompts during tests

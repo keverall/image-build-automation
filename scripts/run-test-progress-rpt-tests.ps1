@@ -27,7 +27,7 @@
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 
-Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
+Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
