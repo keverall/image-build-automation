@@ -70,7 +70,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 | [📗 Automation Command Reference](docs/Automation/automation_commands.md#top) | **All automation commands with full parameter tables** - functional reference linking to source |
 | [📘 PowerShell Function Reference](docs/dynamic-code-docs/INDEX.md#top) | **Complete coverage of ALL PowerShell functions and cmdlets** - comprehensive parameter documentation, examples, and usage for every function in src/powershell/Automation/. Auto-generated from source code. |
 | [🔌 CI Run Requirements](docs/Generic/powershell_ci.md#top) | Prerequisites, CyberArk bootstrap, GitLab/Jenkins examples |
-| [🧪 PowerShell Testing (Pester)](docs/Generic/testing.md#top) | Pester v5 BDD testing guide, test commands, mocking |
+| [🧪 PowerShell Testing (Pester)](docs/Generic/testing.md#top) | Pester v6 BDD testing guide, test commands, mocking |
 | [⚙️ Code Quality & Security](docs/Generic/code_quality.md#top) | PSScriptAnalyzer, gitleaks configuration |
 | [🔗 GitLab CI/CD Integration](docs/Generic/gitlab.md#top) | REST API pipeline triggers, webhook configuration |
 
@@ -206,7 +206,7 @@ hpe-windows-iso-automation/
 │   │       ├── PathResolver.ps1
 │   │       ├── Router.ps1
 │   │       └── Automation.psd1          # Module manifest
-├── tests/powershell/                  # Pester v5 test suite
+├── tests/powershell/                  # Pester v6 test suite
 │   ├── Tests.Tests.ps1
 │   ├── Config.Unit.Tests.ps1
 │   ├── Credentials.Unit.Tests.ps1

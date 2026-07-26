@@ -152,7 +152,7 @@ make automation-mode-tests                                                      
 [prune-logs] Pruned 0 excess log files.
 Running automation functionality tests...
 Detailed log: /home/keverall/repos/image-build-automation/generated/logs/automation/automated-mode-test_2026-07-23T09-13-15Z.log
-Pester v5.7.1
+Pester v6.0.1
 
 Starting discovery in 15 files.
 Discovery found 93 tests in 154ms.
