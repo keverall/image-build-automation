@@ -127,3 +127,17 @@ config.private.*
 .idea/
 .DS_Store
 Thumbs.db
+
+# ---- BUILD OUT, LOGS & GENERATED CORES ----
+/generated/
+# /wip/
+.env
+
+# ---- UNIVERSAL LOCAL DATA STACKS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- AGENT ENGINES (Re-add this before push) ----
+.kilo/
