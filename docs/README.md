@@ -55,7 +55,7 @@ hpe-windows-iso-automation/
 | [PowerShell API Reference](Generic/powershell_api_reference.md#top) | Module overview, requirements, quick-start, cmdlet usage, orchestrator API |
 | [Automation Command Reference](Automation/automation_commands.md#top) | Concise functional reference with every parameter for all automation commands |
 | [📘 Auto-Generated Function Reference](dynamic-code-docs/INDEX.md#top) | **Comprehensive coverage of ALL PowerShell functions and cmdlets** - complete parameter documentation, examples, and usage for every function in the codebase. Auto-generated from source code. |
-| [Testing Guide](Generic/testing.md#top) | Comprehensive Pester v5 guide, runner commands, mocking, CI integration, maintenance mode testing |
+| [Testing Guide](Generic/testing.md#top) | Comprehensive Pester v6 guide, runner commands, mocking, CI integration, maintenance mode testing |
 | [CI Run Requirements](Generic/powershell_ci.md#top) | Prerequisites, CyberArk bootstrap, CI examples for GitLab/Jenkins |
 | [Code Quality & Security](Generic/code_quality.md#top) | PSScriptAnalyzer, gitleaks - configuration, usage, CI pipeline integration |
 | [GitLab CI/CD Integration](Generic/gitlab.md#top) | REST API pipeline triggers, webhook configuration, polling |

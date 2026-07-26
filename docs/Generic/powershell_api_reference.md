@@ -41,7 +41,7 @@
 
 Optional modules:
 - `powershell-yaml` (`Install-Module powershell-yaml`) - for YAML config support
-- `Pester` (v5.7.1, bundled) - for testing
+- `Pester` (v6.0.1, bundled) - for testing
 - Posh-SSH - for SSH-based integrations (not yet implemented)
 
 ---
@@ -55,7 +55,7 @@ hpe-windows-iso-automation/
 │   ├── Public/                    # Exported cmdlets
 │   ├── Private/                   # Internal helpers
 │   └── Automation.psd1            # Module manifest
-└── tests/powershell/              # Pester test suite (Pester 5+)
+└── tests/powershell/              # Pester test suite (Pester 6+)
     ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
     └── *.Unit.Tests.ps1           # Test files per module
 ```
@@ -255,9 +255,9 @@ Result envelope  ──► Orchestrator stamps RequestType + Timestamp  ──�
 
 ```powershell
 # Install Pester if necessary
-# Note: Pester 5.7.1 is bundled under vendor/modules/Pester/5.7.1/
+# Note: Pester 6.0.1 is bundled under vendor/modules/Pester/6.0.1/
 # The setup script (make setup) installs it automatically
-Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -SkipPublisherCheck -Force
+Install-Module Pester -RequiredVersion 6.0.1 -Scope CurrentUser -SkipPublisherCheck -Force
 
 # Run all tests
 pwsh -File scripts/run-tests.ps1

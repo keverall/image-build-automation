@@ -71,13 +71,13 @@ For a Jenkins pipeline excerpt showing the bootstrap implementation, see [Jenkin
 ### Minimal Prerequisites
 
 - PowerShell 7.2+ (cross-platform) or Windows PowerShell 5.1
-- Pester 5.7.1 (bundled offline under `vendor/modules/Pester/5.7.1/`):
+- Pester 6.0.1 (bundled offline under `vendor/modules/Pester/6.0.1/`):
   ```powershell
   # Setup script installs from bundled copy automatically
   pwsh -File scripts/setup-runner.ps1
   
   # Or install manually (offline-capable via vendor copy)
-  Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -SkipPublisherCheck -Force -AllowClobber
+  Install-Module Pester -RequiredVersion 6.0.1 -Scope CurrentUser -SkipPublisherCheck -Force -AllowClobber
   ```
 
 - `powershell-yaml` module only if YAML configs are used:
