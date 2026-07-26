@@ -80,7 +80,7 @@ lint-powershell:
   image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   before_script:
     - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
-    - pwsh -Command "Install-Module Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force"
+    - pwsh -Command "Install-Module Pester -MinimumVersion 6.0.0 -Scope CurrentUser -Force"
     - pwsh -File ./scripts/prune-logs.ps1
   script:
     # Run tests with coverage
@@ -103,7 +103,7 @@ lint-powershell:
 test-unit:
   <<: *test_template
   script:
-    - pwsh -Command "Install-Module Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force"
+    - pwsh -Command "Install-Module Pester -MinimumVersion 6.0.0 -Scope CurrentUser -Force"
     - pwsh -File ./scripts/run-tests.ps1
     - pwsh -File ./scripts/CoverageSummary.ps1 -InputFile generated/output/coverage/coverage-results.xml -OutputFile generated/output/coverage/coverage-report.txt
 

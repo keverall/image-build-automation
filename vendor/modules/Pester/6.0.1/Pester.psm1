@@ -73,7 +73,7 @@ $script:SafeCommands = @{
     'Update-TypeData'      = & $Get_Command -Name Update-TypeData      -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Where-Object'         = & $Get_Command -Name Where-Object         -Module Microsoft.PowerShell.Core       @safeCommandLookupParameters
     'Write-Error'          = & $Get_Command -Name Write-Error          -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
-    'Write-Output'           = & $Get_Command -Name Write-Output           -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
+    'Write-Host'           = & $Get_Command -Name Write-Host           -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Write-Progress'       = & $Get_Command -Name Write-Progress       -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Write-Verbose'        = & $Get_Command -Name Write-Verbose        -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
     'Write-Warning'        = & $Get_Command -Name Write-Warning        -Module Microsoft.PowerShell.Utility    @safeCommandLookupParameters
@@ -127,18 +127,18 @@ if ($null -ne $configurationType) {
     }
 }
 
-if ($PSVersionTable.PSVersion.Major -ge 6) {
-    $path = "$PSScriptRoot/bin/netstandard2.0/Pester.dll"
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+    $path = "$PSScriptRoot/bin/net8.0/Pester.dll"
     & $SafeCommands['Add-Type'] -Path $path
 }
 else {
-    $path = "$PSScriptRoot/bin/net452/Pester.dll"
+    $path = "$PSScriptRoot/bin/net462/Pester.dll"
     & $SafeCommands['Add-Type'] -Path $path
 }
 # file src\Pester.State.ps1
 $script:AssertionOperators = [Collections.Generic.Dictionary[string, object]]([StringComparer]::InvariantCultureIgnoreCase)
 $script:AssertionAliases = [Collections.Generic.Dictionary[string, object]]([StringComparer]::InvariantCultureIgnoreCase)
-$script:AssertionDynamicParams = [Pester.Factory]::CreateRuntimeDefinedParameterDictionary()
+$script:AssertionDynamicParams = [System.Management.Automation.RuntimeDefinedParameterDictionary]::new()
 $script:DisableScopeHints = $true
 # file src\Pester.Utility.ps1
 function or {
@@ -538,6 +538,67 @@ function Get-StringOptionErrorMessage {
     $supportedValuesString = Join-Or ($SupportedValues -replace '^|$', "'")
     return "$OptionPath must be $supportedValuesString, but it was '$Value'. Please review your configuration."
 }
+
+function Get-DictionaryValueFromFirstKeyFound {
+    param ([System.Collections.IDictionary] $Dictionary, [object[]] $Key)
+
+    foreach ($keyToTry in $Key) {
+        if ($Dictionary.Contains($keyToTry)) {
+            return $Dictionary[$keyToTry]
+        }
+    }
+}
+
+function Contain-AnyStringLike ($Filter, $Collection) {
+    foreach ($item in $Collection) {
+        foreach ($value in $Filter) {
+            if ($item -like $value) {
+                return $true
+            }
+        }
+    }
+    return $false
+}
+
+# TODO: Remove?
+function Recurse-Up {
+    param(
+        [Parameter(Mandatory)]
+        $InputObject,
+        [ScriptBlock] $Action
+    )
+
+    $i = $InputObject
+    $level = 0
+    while ($null -ne $i) {
+        &$Action $i
+
+        $level--
+        $i = $i.Parent
+    }
+}
+
+function View-Flat {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        $Block
+    )
+
+    begin {
+        $tests = [System.Collections.Generic.List[Object]]@()
+    }
+    process {
+        # TODO: normally I would output to pipeline but in fold there is accumulator and so it does not output
+        foreach ($b in $Block) {
+            Fold-Container $b -OnTest { param($t) $tests.Add($t) }
+        }
+    }
+
+    end {
+        $tests
+    }
+}
 # file src\Pester.Runtime.ps1
 
 # interesting commands
@@ -555,8 +616,6 @@ function Get-StringOptionErrorMessage {
 # 'New-EachBlockTeardown'
 # 'New-OneTimeBlockSetup'
 # 'New-OneTimeBlockTeardown'
-# 'Add-FrameworkDependency'
-# 'Anywhere'
 # 'Invoke-Test',
 # 'Find-Test',
 # 'Invoke-PluginStep'
@@ -564,12 +623,7 @@ function Get-StringOptionErrorMessage {
 # # here I have doubts if that is too much to expose
 # 'Get-CurrentTest'
 # 'Get-CurrentBlock'
-# 'Recurse-Up',
 # 'Is-Discovery'
-
-# # those are quickly implemented to be useful for demo
-# 'Where-Failed'
-# 'View-Flat'
 
 # # those need to be refined and probably wrapped to something
 # # that is like an object builder
@@ -611,6 +665,13 @@ function New-PesterState {
         FrameworkStopWatch  = [Diagnostics.Stopwatch]::StartNew()
 
         Stack               = [Collections.Stack]@()
+
+        # Captured here so the <> template expansion (which runs in the user's session state) can
+        # invoke it via "& $____Pester.FormatNicelyForTemplate" while the function itself stays bound
+        # to the Pester module session state, where Format-Nicely2 is available (#2744).
+        # Format-NicelyForTemplate lives in Format2.ps1, which is not loaded when the runtime is
+        # tested in isolation (Pester.Runtime.ts.ps1); fall back to plain interpolation there.
+        FormatNicelyForTemplate = $(if ($null -ne ${function:Format-NicelyForTemplate}) { ${function:Format-NicelyForTemplate} } else { { param($____PesterFallbackValue) "$($____PesterFallbackValue)" } })
     }
 
     $o.TotalStopWatch.Restart()
@@ -635,6 +696,7 @@ function Reset-PerContainerState {
 }
 
 function Find-Test {
+    [OutputType([Pester.Container])]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -663,6 +725,7 @@ function Find-Test {
 }
 
 function ConvertTo-DiscoveredBlockContainer {
+    [OutputType([Pester.Container])]
     param (
         [Parameter(Mandatory = $true)]
         $Block
@@ -673,6 +736,7 @@ function ConvertTo-DiscoveredBlockContainer {
 }
 
 function ConvertTo-ExecutedBlockContainer {
+    [OutputType([Pester.Container])]
     param (
         [Parameter(Mandatory = $true)]
         $Block
@@ -681,8 +745,6 @@ function ConvertTo-ExecutedBlockContainer {
     foreach ($b in $Block) {
         [Pester.Container]::CreateFromBlock($b)
     }
-
-
 }
 
 function New-ParametrizedBlock {
@@ -695,7 +757,6 @@ function New-ParametrizedBlock {
         [int] $StartColumn = $MyInvocation.OffsetInLine,
         [String[]] $Tag = @(),
         [HashTable] $FrameworkData = @{ },
-        [Switch] $Focus,
         [Switch] $Skip,
         $Data
     )
@@ -707,7 +768,7 @@ function New-ParametrizedBlock {
     foreach ($d in @($Data)) {
         # shallow clone to give every block it's own copy
         $fmwData = $FrameworkData.Clone()
-        New-Block -GroupId $groupId -Name $Name -ScriptBlock $ScriptBlock -StartLine $StartLine -Tag $Tag -FrameworkData $fmwData -Focus:$Focus -Skip:$Skip -Data $d
+        New-Block -GroupId $groupId -Name $Name -ScriptBlock $ScriptBlock -StartLine $StartLine -Tag $Tag -FrameworkData $fmwData -Skip:$Skip -Data $d
     }
 }
 
@@ -722,7 +783,6 @@ function New-Block {
         [int] $StartLine = $MyInvocation.ScriptLineNumber,
         [String[]] $Tag = @(),
         [HashTable] $FrameworkData = @{ },
-        [Switch] $Focus,
         [String] $GroupId,
         [Switch] $Skip,
         $Data
@@ -760,7 +820,6 @@ function New-Block {
     $block.ScriptBlock = $ScriptBlock
     $block.StartLine = $StartLine
     $block.FrameworkData = $FrameworkData
-    $block.Focus = $Focus
     $block.GroupId = $GroupId
     $block.Skip = $Skip
     $block.Data = $Data
@@ -778,7 +837,10 @@ function New-Block {
             Write-PesterDebugMessage -Scope DiscoveryCore "Discovering in body of block $Name"
         }
 
-        if ($null -ne $block.Data) {
+        # Bind the data even when it is $null, as long as this is a data-driven block
+        # (it has a GroupId); otherwise -ForEach @($null) would leave $_ at the parent
+        # value instead of $null (#2320).
+        if ($null -ne $block.Data -or -not [string]::IsNullOrEmpty($block.GroupId)) {
             $context = @{}
             Add-DataToContext -Destination $context -Data $block.Data
 
@@ -901,7 +963,10 @@ function Invoke-Block ($previousBlock) {
                         ____Pester                           = $State
                     }
 
-                    if ($null -ne $block.Data) {
+                    # Bind the data even when it is $null, as long as this is a data-driven block
+                    # (it has a GroupId); otherwise -ForEach @($null) would leave $_ at the parent
+                    # value instead of $null (#2320).
+                    if ($null -ne $block.Data -or -not [string]::IsNullOrEmpty($block.GroupId)) {
                         Add-DataToContext -Destination $context -Data $block.Data
                     }
 
@@ -916,10 +981,22 @@ function Invoke-Block ($previousBlock) {
                             })
                         $(if (-not $Block.IsRoot) {
                                 # expand block name by evaluating the <> templates, only match templates that have at least 1 character and are not escaped by `<abc`>
-                                # avoid using variables so we don't run into conflicts
+                                # the $private:____PesterExpanded* locals below neither leak into nor inherit from the user scope
                                 $sb = {
 
-                                    $____Pester.CurrentBlock.ExpandedName = if ($____Pester.CurrentBlock.Name -like "*<*") { & ([ScriptBlock]::Create(('"' + ($____Pester.CurrentBlock.Name -replace '\$', '`$' -replace '"', '`"' -replace '(?<!`)<([^>^`]+)>', '$$($$$1)') + '"'))) } else { $____Pester.CurrentBlock.Name }
+                                    $____Pester.CurrentBlock.ExpandedName = if ($____Pester.CurrentBlock.Name -like "*<*") {
+                                        $private:____PesterExpandedName = [System.Text.StringBuilder]::new($____Pester.CurrentBlock.Name.Length)
+                                        $private:____PesterExpandedPos = 0
+                                        foreach ($private:____PesterExpandedMatch in [regex]::Matches($____Pester.CurrentBlock.Name, '(?<!`)<([^>`]+)>|`([<>])|([`"$])')) {
+                                            $null = $private:____PesterExpandedName.Append($____Pester.CurrentBlock.Name.Substring($private:____PesterExpandedPos, $private:____PesterExpandedMatch.Index - $private:____PesterExpandedPos))
+                                            if ($private:____PesterExpandedMatch.Groups[1].Success) { $null = $private:____PesterExpandedName.Append('$(& $____Pester.FormatNicelyForTemplate ($').Append($private:____PesterExpandedMatch.Groups[1].Value).Append('))') }
+                                            elseif ($private:____PesterExpandedMatch.Groups[2].Success) { $null = $private:____PesterExpandedName.Append($private:____PesterExpandedMatch.Groups[2].Value) }
+                                            else { $null = $private:____PesterExpandedName.Append('`').Append($private:____PesterExpandedMatch.Groups[3].Value) }
+                                            $private:____PesterExpandedPos = $private:____PesterExpandedMatch.Index + $private:____PesterExpandedMatch.Length
+                                        }
+                                        $null = $private:____PesterExpandedName.Append($____Pester.CurrentBlock.Name.Substring($private:____PesterExpandedPos))
+                                        & ([ScriptBlock]::Create('"' + $private:____PesterExpandedName.ToString() + '"'))
+                                    } else { $____Pester.CurrentBlock.Name }
 
                                     $____Pester.CurrentBlock.ExpandedPath = if ($____Pester.CurrentBlock.Parent.IsRoot) {
                                         # to avoid including Root name in the path
@@ -1009,7 +1086,6 @@ function New-Test {
         [String[]] $Tag = @(),
         $Data,
         [String] $GroupId,
-        [Switch] $Focus,
         [Switch] $Skip
     )
 
@@ -1042,7 +1118,6 @@ function New-Test {
     $test.ExpandedPath = $path -join '.'
     $test.StartLine = $StartLine
     $test.Tag = $Tag
-    $test.Focus = $Focus
     $test.Skip = $Skip
     $test.Data = $Data
     $test.FrameworkData.Runtime.Phase = 'Discovery'
@@ -1137,7 +1212,10 @@ function Invoke-TestItem {
                     ____Pester = $State
                 }
 
-                if ($null -ne $test.Data) {
+                # Bind the data even when it is $null, as long as this is a data-driven test
+                # (it has a GroupId); otherwise -ForEach @($null) would leave $_ at the parent
+                # value instead of $null (#2320).
+                if ($null -ne $test.Data -or -not [string]::IsNullOrEmpty($test.GroupId)) {
                     Add-DataToContext -Destination $context -Data $test.Data
                 }
 
@@ -1173,13 +1251,27 @@ function Invoke-TestItem {
                     }
                     $(
                         # expand block name by evaluating the <> templates, only match templates that have at least 1 character and are not escaped by `<abc`>
-                        # avoid using any variables to avoid running into conflict with user variables
+                        # the $private:____PesterExpanded* locals below neither leak into nor inherit from the user scope
                         # $ExecutionContext.SessionState.InvokeCommand.ExpandString() has some weird bug in PowerShell 4 and 3, that makes hashtable resolve to null
                         # instead I create a expandable string in a scriptblock and evaluate
                         $sb = {
 
                             $____Pester.CurrentTest.ExpandedName = if ($____Pester.CurrentTest.Name -like "*<*") {
-                                & ([ScriptBlock]::Create(('"' + ($____Pester.CurrentTest.Name -replace '\$', '`$' -replace '"', '`"' -replace '(?<!`)<([^>^`]+)>', '$$($$$1)') + '"')))
+                                # Expand only the <template> items; escape every other character so literal
+                                # backticks, $ and " stay inert and cannot break parsing or inject code (#2044).
+                                # `< and `> escape a literal angle bracket. Locals are $private: and $____Pester-prefixed
+                                # so they don't leak into the user scope and a <template> referencing a user variable is not shadowed.
+                                $private:____PesterExpandedName = [System.Text.StringBuilder]::new($____Pester.CurrentTest.Name.Length)
+                                $private:____PesterExpandedPos = 0
+                                foreach ($private:____PesterExpandedMatch in [regex]::Matches($____Pester.CurrentTest.Name, '(?<!`)<([^>`]+)>|`([<>])|([`"$])')) {
+                                    $null = $private:____PesterExpandedName.Append($____Pester.CurrentTest.Name.Substring($private:____PesterExpandedPos, $private:____PesterExpandedMatch.Index - $private:____PesterExpandedPos))
+                                    if ($private:____PesterExpandedMatch.Groups[1].Success) { $null = $private:____PesterExpandedName.Append('$(& $____Pester.FormatNicelyForTemplate ($').Append($private:____PesterExpandedMatch.Groups[1].Value).Append('))') }
+                                    elseif ($private:____PesterExpandedMatch.Groups[2].Success) { $null = $private:____PesterExpandedName.Append($private:____PesterExpandedMatch.Groups[2].Value) }
+                                    else { $null = $private:____PesterExpandedName.Append('`').Append($private:____PesterExpandedMatch.Groups[3].Value) }
+                                    $private:____PesterExpandedPos = $private:____PesterExpandedMatch.Index + $private:____PesterExpandedMatch.Length
+                                }
+                                $null = $private:____PesterExpandedName.Append($____Pester.CurrentTest.Name.Substring($private:____PesterExpandedPos))
+                                & ([ScriptBlock]::Create('"' + $private:____PesterExpandedName.ToString() + '"'))
                             }
                             else {
                                 $____Pester.CurrentTest.Name
@@ -1206,7 +1298,7 @@ function Invoke-TestItem {
 
                 $Test.FrameworkData.Runtime.ExecutionStep = 'Finished'
 
-                if (@('PesterTestSkipped', 'PesterTestInconclusive', 'PesterTestPending') -contains $Result.ErrorRecord.FullyQualifiedErrorId) {
+                if (@('PesterTestSkipped', 'PesterTestInconclusive') -contains $Result.ErrorRecord.FullyQualifiedErrorId) {
                     #Same logic as when setting a test block to skip
                     if ($PesterPreference.Debug.WriteDebugMessages.Value) {
                         $path = $Test.Path -join '.'
@@ -1218,12 +1310,6 @@ function Invoke-TestItem {
                     }
                     else {
                         $Test.Skipped = $true
-
-                        # Pending test is still considered a skipped, we don't have a special category for it.
-                        # Mark the run to show deprecation message.
-                        if ('PesterTestPending' -eq $Result.ErrorRecord.FullyQualifiedErrorId) {
-                            $test.Block.Root.FrameworkData['ShowPendingDeprecation'] = $true
-                        }
                     }
                 }
                 else {
@@ -1292,6 +1378,9 @@ function New-EachTestSetup {
     )
 
     if (Is-Discovery) {
+        if ($null -ne $state.CurrentBlock.EachTestSetup) {
+            throw "BeforeEach is already defined in this block. Each block can only have one BeforeEach. Combine the code into a single BeforeEach block."
+        }
         $state.CurrentBlock.EachTestSetup = $ScriptBlock
     }
 }
@@ -1304,6 +1393,9 @@ function New-EachTestTeardown {
     )
 
     if (Is-Discovery) {
+        if ($null -ne $state.CurrentBlock.EachTestTeardown) {
+            throw "AfterEach is already defined in this block. Each block can only have one AfterEach. Combine the code into a single AfterEach block."
+        }
         $state.CurrentBlock.EachTestTeardown = $ScriptBlock
     }
 }
@@ -1317,6 +1409,9 @@ function New-OneTimeTestSetup {
     )
 
     if (Is-Discovery) {
+        if ($null -ne $state.CurrentBlock.OneTimeTestSetup) {
+            throw "BeforeAll is already defined in this block. Each block can only have one BeforeAll. Combine the code into a single BeforeAll block."
+        }
         $state.CurrentBlock.OneTimeTestSetup = $ScriptBlock
     }
 }
@@ -1329,6 +1424,9 @@ function New-OneTimeTestTeardown {
         [ScriptBlock] $ScriptBlock
     )
     if (Is-Discovery) {
+        if ($null -ne $state.CurrentBlock.OneTimeTestTeardown) {
+            throw "AfterAll is already defined in this block. Each block can only have one AfterAll. Combine the code into a single AfterAll block."
+        }
         $state.CurrentBlock.OneTimeTestTeardown = $ScriptBlock
     }
 }
@@ -1419,6 +1517,233 @@ function Is-Discovery {
     $state.Discovery
 }
 
+function Invoke-ContainerDiscovery {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [PSObject] $Container,
+        $Filter,
+        [Parameter(Mandatory = $true)]
+        [Management.Automation.SessionState] $SessionState
+    )
+
+    # Discovers the tests in a single container and returns its root block, ready to
+    # run. The caller is responsible for setting $state.Discovery = $true before
+    # calling. This fires the per-container ContainerDiscoveryStart/ContainerDiscoveryEnd
+    # steps and runs PostProcess-DiscoveredBlock; the global DiscoveryStart/DiscoveryEnd
+    # steps are fired by the caller (so they fire once for the whole run).
+    $perContainerDiscoveryDuration = [Diagnostics.Stopwatch]::StartNew()
+
+    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+        Write-PesterDebugMessage -Scope Discovery "Discovering tests in $($Container.Item)"
+    }
+
+    # this is a block object that we add so we can capture
+    # OneTime* and Each* setups, and capture multiple blocks in a
+    # container
+    $root = [Pester.Block]::Create()
+    $root.ExpandedName = $root.Name = "Root"
+
+    $root.IsRoot = $true
+    $root.ExpandedPath = $root.Path = "Path"
+
+    $root.First = $true
+    $root.Last = $true
+
+    # set the data from the container to get them
+    # set correctly as if we provided -Data to New-Block
+    $root.Data = $Container.Data
+
+    Reset-PerContainerState -RootBlock $root
+
+    $steps = $state.Plugin.ContainerDiscoveryStart
+    if ($null -ne $steps -and 0 -lt @($steps).Count) {
+        Invoke-PluginStep -Plugins $state.Plugin -Step ContainerDiscoveryStart -Context @{
+            BlockContainer = $Container
+            Configuration  = $state.PluginConfiguration
+        } -ThrowOnFailure
+    }
+
+    try {
+        $null = Invoke-BlockContainer -BlockContainer $Container -SessionState $SessionState
+    }
+    catch {
+        $root.Passed = $false
+        $root.Result = "Failed"
+        $root.ErrorRecord.Add($_)
+    }
+
+    $steps = $state.Plugin.ContainerDiscoveryEnd
+    if ($null -ne $steps -and 0 -lt @($steps).Count) {
+        Invoke-PluginStep -Plugins $state.Plugin -Step ContainerDiscoveryEnd -Context @{
+            BlockContainer = $Container
+            Block          = $root
+            Duration       = $perContainerDiscoveryDuration.Elapsed
+            Configuration  = $state.PluginConfiguration
+        } -ThrowOnFailure
+    }
+
+    $root.DiscoveryDuration = $perContainerDiscoveryDuration.Elapsed
+    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+        Write-PesterDebugMessage -Scope Discovery -LazyMessage { "Found $(@(View-Flat -Block $root).Count) tests in $([int]$root.DiscoveryDuration.TotalMilliseconds) ms" }
+        Write-PesterDebugMessage -Scope DiscoveryCore "Discovery done in this container."
+    }
+
+    # link children to parents, filter blocks and tests to determine which should
+    # run, etc. This takes non-trivial time, so measure it and add it to the discovery
+    # duration to get a more accurate total time.
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    PostProcess-DiscoveredBlock -Block $root -Filter $Filter -BlockContainer $Container -RootBlock $root
+    $root.DiscoveryDuration += $sw.Elapsed
+
+    $root
+}
+
+function Invoke-ContainerRun {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [PSObject] $RootBlock,
+        [Parameter(Mandatory = $true)]
+        [Management.Automation.SessionState] $SessionState
+    )
+
+    # Runs a single, already-discovered container (root block) and returns the
+    # executed [Pester.Container]. The caller is responsible for setting
+    # $state.Discovery = $false before calling. This fires the per-container
+    # ContainerRunStart/ContainerRunEnd steps; the global RunStart/RunEnd steps are
+    # fired by the caller (so they fire once for the whole run).
+    $blockStartTime = $state.UserCodeStopWatch.Elapsed
+    $overheadStartTime = $state.FrameworkStopWatch.Elapsed
+    Switch-Timer -Scope Framework
+
+    if (-not $RootBlock.ShouldRun) {
+        ConvertTo-ExecutedBlockContainer -Block $RootBlock
+        return
+    }
+    # this resets the timers so keep that before measuring the time
+    Reset-PerContainerState -RootBlock $RootBlock
+
+    $RootBlock.Executed = $true
+    $RootBlock.ExecutedAt = [DateTime]::now
+
+    $steps = $state.Plugin.ContainerRunStart
+    if ($null -ne $steps -and 0 -lt @($steps).Count) {
+        Invoke-PluginStep -Plugins $state.Plugin -Step ContainerRunStart -Context @{
+            Block         = $RootBlock
+            Configuration = $state.PluginConfiguration
+        } -ThrowOnFailure
+    }
+
+    try {
+        # if ($null -ne $rootBlock.OneTimeBlockSetup) {
+        #    throw "One time block setup is not supported in root (directly in the block container)."
+        #}
+
+        # if ($null -ne $rootBlock.EachBlockSetup) {
+        #     throw "Each block setup is not supported in root (directly in the block container)."
+        # }
+
+        if ($null -ne $RootBlock.EachTestSetup) {
+            throw "Each test setup is not supported in root (directly in the block container)."
+        }
+
+        if (
+            $null -ne $RootBlock.EachTestTeardown
+            #-or $null -ne $rootBlock.OneTimeBlockTeardown `
+            #-or $null -ne $rootBlock.EachBlockTeardown `
+        ) {
+            throw "Each test Teardown is not supported in root (directly in the block container)."
+        }
+
+        # add OneTimeTestSetup to set variables, by having $setVariables script that will invoke in the user scope
+        # and $setVariablesWithContext that carries the data as is closure, this way we avoid having to provide parameters to
+        # before all script, but it might be better to make this a plugin, because there we can pass data.
+        $setVariables = {
+            param($private:____parameters)
+
+            if ($null -eq $____parameters.Data) {
+                return
+            }
+
+            foreach ($private:____d in $____parameters.Data.GetEnumerator()) {
+                & $____parameters.Set_Variable -Name $private:____d.Key -Value $private:____d.Value
+            }
+        }
+
+        $SessionStateInternal = $script:SessionStateInternalProperty.GetValue($SessionState, $null)
+        $script:ScriptBlockSessionStateInternalProperty.SetValue($setVariables, $SessionStateInternal, $null)
+
+        $setVariablesAndThenRunOneTimeSetupIfAny = & {
+            $action = $setVariables
+            $setup = $RootBlock.OneTimeTestSetup
+            $parameters = @{
+                Data         = $RootBlock.BlockContainer.Data
+                Set_Variable = $SafeCommands["Set-Variable"]
+            }
+
+            {
+                . $action $parameters
+                if ($null -ne $setup) {
+                    . $setup
+                }
+            }.GetNewClosure()
+        }
+
+        $RootBlock.OneTimeTestSetup = $setVariablesAndThenRunOneTimeSetupIfAny
+
+        $RootBlock.ScriptBlock = {}
+        $SessionStateInternal = $script:SessionStateInternalProperty.GetValue($SessionState, $null)
+        $script:ScriptBlockSessionStateInternalProperty.SetValue($RootBlock.ScriptBlock, $SessionStateInternal, $null)
+
+        # we add one more artificial block so the root can run
+        # all of it's setups and teardowns
+        $Pester___parent = [Pester.Block]::Create()
+        $Pester___parent.Name = "ParentBlock"
+        $Pester___parent.Path = "Path"
+
+        $Pester___parent.First = $false
+        $Pester___parent.Last = $false
+
+        $Pester___parent.Order.Add($RootBlock)
+
+        $wrapper = {
+            $null = Invoke-Block -previousBlock $Pester___parent
+        }
+
+        Invoke-InNewScriptScope -ScriptBlock $wrapper -SessionState $SessionState
+    }
+    catch {
+        $RootBlock.ErrorRecord.Add($_)
+    }
+
+    PostProcess-ExecutedBlock -Block $RootBlock
+    $result = ConvertTo-ExecutedBlockContainer -Block $RootBlock
+    $result.FrameworkDuration = $state.FrameworkStopWatch.Elapsed - $overheadStartTime
+    $result.UserDuration = $state.UserCodeStopWatch.Elapsed - $blockStartTime
+
+    $steps = $state.Plugin.ContainerRunEnd
+    if ($null -ne $steps -and 0 -lt @($steps).Count) {
+        Invoke-PluginStep -Plugins $state.Plugin -Step ContainerRunEnd -Context @{
+            Result        = $result
+            Block         = $RootBlock
+            Configuration = $state.PluginConfiguration
+        } -ThrowOnFailure
+    }
+
+    # set this again so the plugins have some data but that we also include the plugin invocation to the
+    # overall time to keep the actual timing correct
+    $result.FrameworkDuration = $state.FrameworkStopWatch.Elapsed - $overheadStartTime
+    $result.UserDuration = $state.UserCodeStopWatch.Elapsed - $blockStartTime
+    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+        Write-PesterDebugMessage -Scope Timing "Container duration $($result.UserDuration.TotalMilliseconds)ms"
+        Write-PesterDebugMessage -Scope Timing "Container framework duration $($result.FrameworkDuration.TotalMilliseconds)ms"
+    }
+
+    $result
+}
+
+
 function Discover-Test {
     [CmdletBinding()]
     param (
@@ -1444,121 +1769,13 @@ function Discover-Test {
 
     $state.Discovery = $true
     $found = foreach ($container in $BlockContainer) {
-        $perContainerDiscoveryDuration = [Diagnostics.Stopwatch]::StartNew()
-
-        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-            Write-PesterDebugMessage -Scope Discovery "Discovering tests in $($container.Item)"
-        }
-
-        # this is a block object that we add so we can capture
-        # OneTime* and Each* setups, and capture multiple blocks in a
-        # container
-        $root = [Pester.Block]::Create()
-        $root.ExpandedName = $root.Name = "Root"
-
-        $root.IsRoot = $true
-        $root.ExpandedPath = $root.Path = "Path"
-
-        $root.First = $true
-        $root.Last = $true
-
-        # set the data from the container to get them
-        # set correctly as if we provided -Data to New-Block
-        $root.Data = $container.Data
-
-        Reset-PerContainerState -RootBlock $root
-
-        $steps = $state.Plugin.ContainerDiscoveryStart
-        if ($null -ne $steps -and 0 -lt @($steps).Count) {
-            Invoke-PluginStep -Plugins $state.Plugin -Step ContainerDiscoveryStart -Context @{
-                BlockContainer = $container
-                Configuration  = $state.PluginConfiguration
-            } -ThrowOnFailure
-        }
-
-        try {
-            $null = Invoke-BlockContainer -BlockContainer $container -SessionState $SessionState
-        }
-        catch {
-            $root.Passed = $false
-            $root.Result = "Failed"
-            $root.ErrorRecord.Add($_)
-        }
-
-        [PSCustomObject] @{
-            Container = $container
-            Block     = $root
-        }
-
-        $steps = $state.Plugin.ContainerDiscoveryEnd
-        if ($null -ne $steps -and 0 -lt @($steps).Count) {
-            Invoke-PluginStep -Plugins $state.Plugin -Step ContainerDiscoveryEnd -Context @{
-                BlockContainer = $container
-                Block          = $root
-                Duration       = $perContainerDiscoveryDuration.Elapsed
-                Configuration  = $state.PluginConfiguration
-            } -ThrowOnFailure
-        }
-
-        $root.DiscoveryDuration = $perContainerDiscoveryDuration.Elapsed
-        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-            Write-PesterDebugMessage -Scope Discovery -LazyMessage { "Found $(@(View-Flat -Block $root).Count) tests in $([int]$root.DiscoveryDuration.TotalMilliseconds) ms" }
-            Write-PesterDebugMessage -Scope DiscoveryCore "Discovery done in this container."
-        }
-    }
-
-    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-        Write-PesterDebugMessage -Scope Discovery "Processing discovery result objects, to set root, parents, filters etc."
-    }
-
-    # focusing is removed from the public api
-    # # if any tests / block in the suite have -Focus parameter then all filters are disregarded
-    # # and only those tests / blocks should run
-    # $focusedTests = [System.Collections.Generic.List[Object]]@()
-    # foreach ($f in $found) {
-    #     Fold-Container -Container $f.Block `
-    #         -OnTest {
-    #             # add all focused tests
-    #             param($t)
-    #             if ($t.Focus) {
-    #                 $focusedTests.Add("$(if($null -ne $t.ScriptBlock.File) { $t.ScriptBlock.File } else { $t.ScriptBlock.Id }):$($t.ScriptBlock.StartPosition.StartLine)")
-    #             }
-    #         } `
-    #         -OnBlock {
-    #             param($b) if ($b.Focus) {
-    #                 # add all tests in the current block, no matter if they are focused or not
-    #                 Fold-Block -Block $b -OnTest {
-    #                     param ($t)
-    #                     $focusedTests.Add("$(if($null -ne $t.ScriptBlock.File) { $t.ScriptBlock.File } else { $t.ScriptBlock.Id }):$($t.ScriptBlock.StartPosition.StartLine)")
-    #                 }
-    #             }
-    #         }
-    # }
-
-    # if ($focusedTests.Count -gt 0) {
-    #     if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-    #         Write-PesterDebugMessage -Scope Discovery  -LazyMessage { "There are some ($($focusedTests.Count)) focused tests '$($(foreach ($p in $focusedTests) { $p -join "." }) -join ",")' running just them." }
-    #     }
-    #     $Filter =  New-FilterObject -Line $focusedTests
-    # }
-
-    foreach ($f in $found) {
-        # this takes non-trivial time, measure how long it takes and add it to the discovery
-        # so we get more accurate total time
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
-        PostProcess-DiscoveredBlock -Block $f.Block -Filter $Filter -BlockContainer $f.Container -RootBlock $f.Block
-        $overhead = $sw.Elapsed
-        $f.Block.DiscoveryDuration += $overhead
-        # Write-Output "disc $($f.Block.DiscoveryDuration.totalmilliseconds) $($overhead.totalmilliseconds) ms" #TODO
-        $f.Block
+        Invoke-ContainerDiscovery -Container $container -Filter $Filter -SessionState $SessionState
     }
 
     $steps = $state.Plugin.DiscoveryEnd
     if ($null -ne $steps -and 0 -lt @($steps).Count) {
         Invoke-PluginStep -Plugins $state.Plugin -Step DiscoveryEnd -Context @{
-            BlockContainers = $found.Block
-            AnyFocusedTests = $focusedTests.Count -gt 0
-            FocusedTests    = $focusedTests
+            BlockContainers = $found
             Duration        = $totalDiscoveryDuration.Elapsed
             Configuration   = $state.PluginConfiguration
             Filter          = $Filter
@@ -1568,6 +1785,8 @@ function Discover-Test {
     if ($PesterPreference.Debug.WriteDebugMessages.Value) {
         Write-PesterDebugMessage -Scope Discovery "Test discovery finished."
     }
+
+    $found
 }
 
 function Run-Test {
@@ -1590,134 +1809,7 @@ function Run-Test {
         } -ThrowOnFailure
     }
     foreach ($rootBlock in $Block) {
-        $blockStartTime = $state.UserCodeStopWatch.Elapsed
-        $overheadStartTime = $state.FrameworkStopWatch.Elapsed
-        Switch-Timer -Scope Framework
-
-        if (-not $rootBlock.ShouldRun) {
-            ConvertTo-ExecutedBlockContainer -Block $rootBlock
-            continue
-        }
-        # this resets the timers so keep that before measuring the time
-        Reset-PerContainerState -RootBlock $rootBlock
-
-        $rootBlock.Executed = $true
-        $rootBlock.ExecutedAt = [DateTime]::now
-
-        $steps = $state.Plugin.ContainerRunStart
-        if ($null -ne $steps -and 0 -lt @($steps).Count) {
-            Invoke-PluginStep -Plugins $state.Plugin -Step ContainerRunStart -Context @{
-                Block         = $rootBlock
-                Configuration = $state.PluginConfiguration
-            } -ThrowOnFailure
-        }
-
-        try {
-            # if ($null -ne $rootBlock.OneTimeBlockSetup) {
-            #    throw "One time block setup is not supported in root (directly in the block container)."
-            #}
-
-            # if ($null -ne $rootBlock.EachBlockSetup) {
-            #     throw "Each block setup is not supported in root (directly in the block container)."
-            # }
-
-            if ($null -ne $rootBlock.EachTestSetup) {
-                throw "Each test setup is not supported in root (directly in the block container)."
-            }
-
-            if (
-                $null -ne $rootBlock.EachTestTeardown
-                #-or $null -ne $rootBlock.OneTimeBlockTeardown `
-                #-or $null -ne $rootBlock.EachBlockTeardown `
-            ) {
-                throw "Each test Teardown is not supported in root (directly in the block container)."
-            }
-
-            # add OneTimeTestSetup to set variables, by having $setVariables script that will invoke in the user scope
-            # and $setVariablesWithContext that carries the data as is closure, this way we avoid having to provide parameters to
-            # before all script, but it might be better to make this a plugin, because there we can pass data.
-            $setVariables = {
-                param($private:____parameters)
-
-                if ($null -eq $____parameters.Data) {
-                    return
-                }
-
-                foreach ($private:____d in $____parameters.Data.GetEnumerator()) {
-                    & $____parameters.Set_Variable -Name $private:____d.Key -Value $private:____d.Value
-                }
-            }
-
-            $SessionStateInternal = $script:SessionStateInternalProperty.GetValue($SessionState, $null)
-            $script:ScriptBlockSessionStateInternalProperty.SetValue($setVariables, $SessionStateInternal, $null)
-
-            $setVariablesAndThenRunOneTimeSetupIfAny = & {
-                $action = $setVariables
-                $setup = $rootBlock.OneTimeTestSetup
-                $parameters = @{
-                    Data         = $rootBlock.BlockContainer.Data
-                    Set_Variable = $SafeCommands["Set-Variable"]
-                }
-
-                {
-                    . $action $parameters
-                    if ($null -ne $setup) {
-                        . $setup
-                    }
-                }.GetNewClosure()
-            }
-
-            $rootBlock.OneTimeTestSetup = $setVariablesAndThenRunOneTimeSetupIfAny
-
-            $rootBlock.ScriptBlock = {}
-            $SessionStateInternal = $script:SessionStateInternalProperty.GetValue($SessionState, $null)
-            $script:ScriptBlockSessionStateInternalProperty.SetValue($rootBlock.ScriptBlock, $SessionStateInternal, $null)
-
-            # we add one more artificial block so the root can run
-            # all of it's setups and teardowns
-            $Pester___parent = [Pester.Block]::Create()
-            $Pester___parent.Name = "ParentBlock"
-            $Pester___parent.Path = "Path"
-
-            $Pester___parent.First = $false
-            $Pester___parent.Last = $false
-
-            $Pester___parent.Order.Add($rootBlock)
-
-            $wrapper = {
-                $null = Invoke-Block -previousBlock $Pester___parent
-            }
-
-            Invoke-InNewScriptScope -ScriptBlock $wrapper -SessionState $SessionState
-        }
-        catch {
-            $rootBlock.ErrorRecord.Add($_)
-        }
-
-        PostProcess-ExecutedBlock -Block $rootBlock
-        $result = ConvertTo-ExecutedBlockContainer -Block $rootBlock
-        $result.FrameworkDuration = $state.FrameworkStopWatch.Elapsed - $overheadStartTime
-        $result.UserDuration = $state.UserCodeStopWatch.Elapsed - $blockStartTime
-
-        $steps = $state.Plugin.ContainerRunEnd
-        if ($null -ne $steps -and 0 -lt @($steps).Count) {
-            Invoke-PluginStep -Plugins $state.Plugin -Step ContainerRunEnd -Context @{
-                Result        = $result
-                Block         = $rootBlock
-                Configuration = $state.PluginConfiguration
-            } -ThrowOnFailure
-        }
-
-        # set this again so the plugins have some data but that we also include the plugin invocation to the
-        # overall time to keep the actual timing correct
-        $result.FrameworkDuration = $state.FrameworkStopWatch.Elapsed - $overheadStartTime
-        $result.UserDuration = $state.UserCodeStopWatch.Elapsed - $blockStartTime
-        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-            Write-PesterDebugMessage -Scope Timing "Container duration $($result.UserDuration.TotalMilliseconds)ms"
-            Write-PesterDebugMessage -Scope Timing "Container framework duration $($result.FrameworkDuration.TotalMilliseconds)ms"
-        }
-
-        $result
+        Invoke-ContainerRun -RootBlock $rootBlock -SessionState $SessionState
     }
 
     $steps = $state.Plugin.RunEnd
@@ -2226,6 +2318,29 @@ function Switch-Timer {
     }
 }
 
+function Test-HasNoEffectiveTag {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        $Item
+    )
+
+    # An item has no effective tag when neither the item itself nor any of its
+    # parent blocks has a tag. Tags inherit downwards in Pester (a tag on a block
+    # applies to everything inside it), so we walk from the item up to the root
+    # block and stop as soon as we find any tag.
+    $node = $Item
+    while ($null -ne $node -and -not $node.IsRoot) {
+        if ($null -ne $node.Tag -and 0 -ne $node.Tag.Count) {
+            return $false
+        }
+
+        $node = if ('Test' -eq $node.ItemType) { $node.Block } else { $node.Parent }
+    }
+
+    return $true
+}
+
 function Test-ShouldRun {
     [CmdletBinding()]
     param (
@@ -2272,6 +2387,17 @@ function Test-ShouldRun {
     # item is excluded when any of the exclude tags match
     $tagFilter = $Filter.ExcludeTag
     if ($tagFilter -and 0 -ne $tagFilter.Count) {
+        # the special 'None' filter excludes tests that have no tags on themselves
+        # or on any of their parent blocks. It only applies to tests (leaf items),
+        # so that a tagged test inside an otherwise untagged block is kept.
+        if (('Test' -eq $Item.ItemType) -and ($tagFilter -contains 'None') -and (Test-HasNoEffectiveTag -Item $Item)) {
+            if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+                Write-PesterDebugMessage -Scope Filter "($fullDottedPath) $($Item.ItemType) is excluded, because it has no tags and the exclude tag filter contains 'None'."
+            }
+            $result.Exclude = $true
+            return $result
+        }
+
         foreach ($f in $tagFilter) {
             foreach ($t in $Item.Tag) {
                 if ($t -like $f) {
@@ -2296,7 +2422,6 @@ function Test-ShouldRun {
             if ($l -eq $line) {
                 if ($PesterPreference.Debug.WriteDebugMessages.Value) {
                     Write-PesterDebugMessage -Scope Filter "($fullDottedPath) $($Item.ItemType) is excluded, because its path:line '$line' matches line filter '$excludeLineFilter'."
-                    Write-PesterDebugMessage -Scope Filter "($fullDottedPath) $($Item.ItemType) is explicitly excluded, because it matched line filter, and will run even if -Skip is specified on it. Any skipped children will still be skipped."
                 }
                 $result.Exclude = $true
                 $result.Explicit = $true
@@ -2321,16 +2446,10 @@ function Test-ShouldRun {
             if ($l -eq $line) {
                 if ($PesterPreference.Debug.WriteDebugMessages.Value) {
                     Write-PesterDebugMessage -Scope Filter "($fullDottedPath) $($Item.ItemType) is included, because its path:line '$line' matches line filter '$lineFilter'."
-                }
-
-                # if ('Test' -eq $Item.ItemType ) {
-                if ($PesterPreference.Debug.WriteDebugMessages.Value) {
                     Write-PesterDebugMessage -Scope Filter "($fullDottedPath) $($Item.ItemType) is explicitly included, because it matched line filter, and will run even if -Skip is specified on it. Any skipped children will still be skipped."
                 }
 
                 $result.Explicit = $true
-                # }
-
                 $result.Include = $true
                 return $result
             }
@@ -2346,11 +2465,25 @@ function Test-ShouldRun {
         return $result
     }
 
-    # test is included when it has tags and the any of the tags match
+    # test is included when it has tags and any of the tags match,
+    # or when the filter contains the special 'None' value and the test has no
+    # tags on itself or on any of its parent blocks
     $tagFilter = $Filter.Tag
     if ($tagFilter -and 0 -ne $tagFilter.Count) {
         $anyIncludeFilters = $true
-        if ($null -eq $Item.Tag -or 0 -eq $Item.Tag) {
+
+        # the special 'None' filter includes tests that have no tags on themselves
+        # or on any of their parent blocks. It only applies to tests (leaf items),
+        # so that an untagged block does not force-include its tagged children.
+        if (('Test' -eq $Item.ItemType) -and ($tagFilter -contains 'None') -and (Test-HasNoEffectiveTag -Item $Item)) {
+            if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+                Write-PesterDebugMessage -Scope Filter "($fullDottedPath) $($Item.ItemType) is included, because it has no tags and the tag filter contains 'None'."
+            }
+            $result.Include = $true
+            return $result
+        }
+
+        if ($null -eq $Item.Tag -or 0 -eq $Item.Tag.Count) {
             if ($PesterPreference.Debug.WriteDebugMessages.Value) {
                 Write-PesterDebugMessage -Scope Filter "($fullDottedPath) $($Item.ItemType) has no tags, moving to next include filter."
             }
@@ -2444,7 +2577,16 @@ function Invoke-Test {
         $Plugin,
         $PluginConfiguration,
         $PluginData,
-        $Configuration
+        $Configuration,
+        # When set, the global framework steps (DiscoveryStart/DiscoveryEnd/RunStart/RunEnd)
+        # are not fired. The parallel orchestrator uses this so the parent fires those
+        # global steps once for the whole run while this call handles only the
+        # non-parallel containers' per-container/per-test steps.
+        [switch] $SkipFrameworkGlobalSteps,
+        # Initialization text (resolved from Run.BeforeContainer or the repo-root
+        # Pester.BeforeContainer.ps1) dot-sourced into the run session state before each container
+        # is discovered and run, so the same setup is available in sequential and parallel runs.
+        [string] $BeforeContainerInit
     )
 
     # set the incoming value for all the child scopes
@@ -2471,45 +2613,116 @@ function Invoke-Test {
     # $originalLastError = $originalErrors[0]
     # $originalErrorCount = $originalErrors.Count
 
-    $found = Discover-Test -BlockContainer $BlockContainer -Filter $Filter -SessionState $SessionState
-
     if ($PesterPreference.Run.SkipRun.Value) {
+        # Discovery-only mode (e.g. populating the VS Code Test Explorer). Run a full
+        # batch discovery over all containers and return the discovered tree without
+        # executing anything.
+        $found = Discover-Test -BlockContainer $BlockContainer -Filter $Filter -SessionState $SessionState
+
         foreach ($f in $found) {
             ConvertTo-DiscoveredBlockContainer -Block $f
         }
 
         return
     }
-    # $errs = $SessionState.PSVariable.Get("Error").Value
-    # $errsCount = $errs.Count
-    # if ($errsCount -lt $originalErrorCount) {
-    #     # it would be possible to detect that there are 0 errors, in the array and continue,
-    #     # but this still indicates the user code is running where it should not, so let's throw anyway
-    #     throw "Test discovery failed. The error count ($errsCount) after running discovery is lower than the error count before discovery ($originalErrorCount). Is some of your code running outside Pester controlled blocks and it clears the `$error array by calling `$error.Clear()?"
 
-    # }
+    # Interleaved discover -> run. Each container is discovered and then immediately
+    # run before moving on to the next one (instead of discovering all containers and
+    # only then running them). This is the single run model for both sequential and
+    # parallel runs; only the concurrency differs, so the emitted plugin events are
+    # identical in both modes. The global Discovery/Run steps still fire exactly once
+    # each, but at interleaved times:
+    #   DiscoveryStart - once, up front.
+    #   per container  - ContainerDiscoveryStart/End then ContainerRunStart/End.
+    #   RunStart       - once, right before the first container runs.
+    #   DiscoveryEnd   - once, right after the last container finishes discovery (this
+    #                    fires late compared to Pester v5, by which time the earlier
+    #                    containers have already run).
+    #   RunEnd         - once, at the very end.
+    $totalDiscoveryDuration = [Diagnostics.Stopwatch]::StartNew()
 
+    $steps = $state.Plugin.DiscoveryStart
+    if (-not $SkipFrameworkGlobalSteps -and $null -ne $steps -and 0 -lt @($steps).Count) {
+        Invoke-PluginStep -Plugins $state.Plugin -Step DiscoveryStart -Context @{
+            BlockContainers = $BlockContainer
+            Configuration   = $state.PluginConfiguration
+        } -ThrowOnFailure
+    }
 
-    # if ($originalErrorCount -lt $errsCount) {
-    #     # probably the most usual case,  there are more errors then there were before,
-    #     # so some were written to the screen, this also runs when the user cleared the
-    #     # array and wrote more errors than there originally were
-    #     $i = $errsCount - $originalErrorCount
-    # }
-    # else {
-    #     # there is equal amount of errors, the array was probably full and so the original
-    #     # error shifted towards the end of the array, we try to find it and see how many new
-    #     # errors are there
-    #     for ($i = 0 ; $i -lt $errsLength; $i++) {
-    #         if ([object]::referenceEquals($errs[$i], $lastError)) {
-    #             break
-    #         }
-    #     }
-    # }
-    # if (0 -ne $i) {
-    #     throw "Test discovery failed. There were $i non-terminating errors during test discovery. This indicates that some of your code is invoked outside of Pester controlled blocks and fails. No tests will be run."
-    # }
-    Run-Test -Block $found -SessionState $SessionState
+    $containerCount = @($BlockContainer).Count
+    $containerIndex = 0
+    $discoveredBlocks = [System.Collections.Generic.List[object]]@()
+
+    # Prepare the BeforeContainer initialization once. It is dot-sourced into the run session
+    # state before each container so helper modules / functions the parent session would normally
+    # provide are available to both discovery and run. This is the same in sequential and parallel
+    # runs (in parallel each worker dot-sources the same text), so the two modes stay consistent.
+    $beforeContainerScriptBlock = $null
+    if (-not [string]::IsNullOrWhiteSpace($BeforeContainerInit)) {
+        $beforeContainerScriptBlock = [ScriptBlock]::Create($BeforeContainerInit)
+        $beforeContainerSessionStateInternal = $script:SessionStateInternalProperty.GetValue($SessionState, $null)
+        $script:ScriptBlockSessionStateInternalProperty.SetValue($beforeContainerScriptBlock, $beforeContainerSessionStateInternal, $null)
+    }
+
+    $executedContainers = foreach ($container in $BlockContainer) {
+        $containerIndex++
+
+        if ($null -ne $beforeContainerScriptBlock) {
+            # Dot-source so definitions land at the run session-state scope, visible to both the
+            # discovery and the run of this container (and the containers after it).
+            . $beforeContainerScriptBlock
+        }
+
+        # --- discover this container ---
+        $state.Discovery = $true
+        $rootBlock = Invoke-ContainerDiscovery -Container $container -Filter $Filter -SessionState $SessionState
+        $discoveredBlocks.Add($rootBlock)
+
+        if ($containerIndex -eq $containerCount) {
+            # the last container just finished discovery, so global discovery is now
+            # complete - fire the global DiscoveryEnd once.
+            $steps = $state.Plugin.DiscoveryEnd
+            if (-not $SkipFrameworkGlobalSteps -and $null -ne $steps -and 0 -lt @($steps).Count) {
+                Invoke-PluginStep -Plugins $state.Plugin -Step DiscoveryEnd -Context @{
+                    BlockContainers = $discoveredBlocks
+                    Duration        = $totalDiscoveryDuration.Elapsed
+                    Configuration   = $state.PluginConfiguration
+                    Filter          = $Filter
+                } -ThrowOnFailure
+            }
+        }
+
+        if ($containerIndex -eq 1) {
+            # about to run the first container - fire the global RunStart once.
+            $steps = $state.Plugin.RunStart
+            if (-not $SkipFrameworkGlobalSteps -and $null -ne $steps -and 0 -lt @($steps).Count) {
+                Invoke-PluginStep -Plugins $state.Plugin -Step RunStart -Context @{
+                    Blocks                   = $discoveredBlocks
+                    Configuration            = $state.PluginConfiguration
+                    Data                     = $state.PluginData
+                    WriteDebugMessages       = $PesterPreference.Debug.WriteDebugMessages.Value
+                    Write_PesterDebugMessage = if ($PesterPreference.Debug.WriteDebugMessages.Value) { $script:SafeCommands['Write-PesterDebugMessage'] }
+                } -ThrowOnFailure
+            }
+        }
+
+        # --- run this container ---
+        $state.Discovery = $false
+        Invoke-ContainerRun -RootBlock $rootBlock -SessionState $SessionState
+    }
+
+    $steps = $state.Plugin.RunEnd
+    if (-not $SkipFrameworkGlobalSteps -and $null -ne $steps -and 0 -lt @($steps).Count) {
+        Invoke-PluginStep -Plugins $state.Plugin -Step RunEnd -Context @{
+            Blocks                   = $discoveredBlocks
+            Configuration            = $state.PluginConfiguration
+            Data                     = $state.PluginData
+            WriteDebugMessages       = $PesterPreference.Debug.WriteDebugMessages.Value
+            Write_PesterDebugMessage = if ($PesterPreference.Debug.WriteDebugMessages.Value) { $script:SafeCommands['Write-PesterDebugMessage'] }
+        } -ThrowOnFailure
+    }
+
+    $executedContainers
 }
 
 function PostProcess-DiscoveredBlock {
@@ -2530,7 +2743,7 @@ function PostProcess-DiscoveredBlock {
         }
 
         # traverses the block structure after a block was found and
-        # link childs to their parents, filter blocks and tests to
+        # link children to their parents, filter blocks and tests to
         # determine which should run, and mark blocks and tests
         # as first or last to know when one time setups & teardowns should run
         $b.IsRoot = $b -eq $RootBlock
@@ -2869,40 +3082,6 @@ function Where-Failed {
     $Block | View-Flat | & $SafeCommands['Where-Object'] { $_.ShouldRun -and (-not $_.Executed -or -not $_.Passed) }
 }
 
-function View-Flat {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        $Block
-    )
-
-    begin {
-        $tests = [System.Collections.Generic.List[Object]]@()
-    }
-    process {
-        # TODO: normally I would output to pipeline but in fold there is accumulator and so it does not output
-        foreach ($b in $Block) {
-            Fold-Container $b -OnTest { param($t) $tests.Add($t) }
-        }
-    }
-
-    end {
-        $tests
-    }
-}
-
-function flattenBlock ($Block, $Accumulator) {
-    $Accumulator.Add($Block)
-    if ($Block.Blocks.Count -eq 0) {
-        return $Accumulator
-    }
-
-    foreach ($bl in $Block.Blocks) {
-        flattenBlock -Block $bl -Accumulator $Accumulator
-    }
-    $Accumulator
-}
-
 function New-FilterObject {
     [CmdletBinding()]
     param (
@@ -3012,6 +3191,7 @@ function Invoke-BlockContainer {
 }
 
 function New-BlockContainerObject {
+    [OutputType([Pester.ContainerInfo])]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory, ParameterSetName = 'ScriptBlock')]
@@ -3044,6 +3224,10 @@ function New-BlockContainerObject {
         'File' { 'File', $File }
         'Container' { $Container.Type, $Container.Item }
         default { throw [System.ArgumentOutOfRangeException]'' }
+    }
+
+    if ($item -is [scriptblock]) {
+        Assert-BoundScriptBlockInput -ScriptBlock $item
     }
 
     $c = [Pester.ContainerInfo]::Create()
@@ -3099,102 +3283,6 @@ function Invoke-File {
     & $sb $Path $Data
 }
 
-function Import-Dependency {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        $Dependency,
-        # [Parameter(Mandatory=$true)]
-        [Management.Automation.SessionState] $SessionState
-    )
-
-    if ($Dependency -is [ScriptBlock]) {
-        . $Dependency
-    }
-    else {
-
-        # when importing a file we need to
-        # dot source it into the user scope, the path has
-        # no bound session state, so simply dot sourcing it would
-        # import it into module scope
-        # instead we wrap it into a scriptblock that we attach to user
-        # scope, and dot source the file, that will import the functions into
-        # that script block, and then we dot source it again to import it
-        # into the caller scope, effectively defining the functions there
-        $sb = {
-            param ($p, $private:Remove_Variable)
-
-            . $($p; & $private:Remove_Variable -Scope Local -Name p)
-        }
-
-        $flags = [System.Reflection.BindingFlags]'Instance,NonPublic'
-        $SessionStateInternal = $SessionState.GetType().GetProperty('Internal', $flags).GetValue($SessionState, $null)
-
-        # attach the original session state to the wrapper scriptblock
-        # making it invoke in the caller session state
-        $sb.GetType().GetProperty('SessionStateInternal', $flags).SetValue($sb, $SessionStateInternal, $null)
-
-        # dot source the caller bound scriptblock which imports it into user scope
-        . $sb $Dependency $SafeCommands['Remove-Variable']
-    }
-}
-
-function Add-FrameworkDependency {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        $Dependency
-    )
-
-    # adds dependency that is dotsourced during discovery & execution
-    # this should be rarely needed, but is useful when you wrap Pester pieces
-    # into your own functions, and want to have them available during both
-    # discovery and execution
-    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-        Write-PesterDebugMessage -Scope Runtime "Adding framework dependency '$Dependency'"
-    }
-    Import-Dependency -Dependency $Dependency -SessionState $SessionState
-}
-
-function Add-Dependency {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        $Dependency,
-        [Parameter(Mandatory = $true)]
-        [Management.Automation.SessionState] $SessionState
-    )
-
-
-    # adds dependency that is dotsourced after discovery and before execution
-    if (-not (Is-Discovery)) {
-        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-            Write-PesterDebugMessage -Scope Runtime "Adding run-time dependency '$Dependency'"
-        }
-        Import-Dependency -Dependency $Dependency -SessionState $SessionState
-    }
-}
-
-function Anywhere {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [ScriptBlock] $ScriptBlock
-    )
-
-    # runs piece of code during execution, useful for backwards compatibility
-    # when you have stuff laying around inbetween describes and want to run it
-    # only during execution and not twice. works the same as Add-Dependency, but I name
-    # it differently because this is a bad-practice mitigation tool and should probably
-    # write a warning to make you use Before* blocks instead
-    if (-not (Is-Discovery)) {
-        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-            Write-PesterDebugMessage -Scope Runtime "Invoking free floating piece of code"
-        }
-        Import-Dependency $ScriptBlock
-    }
-}
-
 function New-ParametrizedTest () {
     [CmdletBinding()]
     param (
@@ -3207,7 +3295,6 @@ function New-ParametrizedTest () {
         [String[]] $Tag = @(),
         # do not use [hashtable[]] because that throws away the order if user uses [ordered] hashtable
         [object[]] $Data,
-        [Switch] $Focus,
         [Switch] $Skip
     )
 
@@ -3215,34 +3302,7 @@ function New-ParametrizedTest () {
     # TODO: Id is used by NUnit2.5 and 3 testresults to group. A better way to solve this?
     $groupId = "${StartLine}:${StartColumn}"
     foreach ($d in $Data) {
-        New-Test -GroupId $groupId -Name $Name -Tag $Tag -ScriptBlock $ScriptBlock -StartLine $StartLine -Data $d -Focus:$Focus -Skip:$Skip
-    }
-}
-
-function Recurse-Up {
-    param(
-        [Parameter(Mandatory)]
-        $InputObject,
-        [ScriptBlock] $Action
-    )
-
-    $i = $InputObject
-    $level = 0
-    while ($null -ne $i) {
-        &$Action $i
-
-        $level--
-        $i = $i.Parent
-    }
-}
-
-function ConvertTo-HumanTime {
-    param ([TimeSpan]$TimeSpan)
-    if ($TimeSpan.Ticks -lt [timespan]::TicksPerSecond) {
-        "$([int]($TimeSpan.TotalMilliseconds))ms"
-    }
-    else {
-        "$([int]($TimeSpan.TotalSeconds))s"
+        New-Test -GroupId $groupId -Name $Name -Tag $Tag -ScriptBlock $ScriptBlock -StartLine $StartLine -Data $d -Skip:$Skip
     }
 }
 
@@ -3252,7 +3312,8 @@ function Invoke-InNewScriptScope ([ScriptBlock] $ScriptBlock, $SessionState) {
     # correct session state, and then invoke the file. We can also pass a script block tied
     # to the current module to invoke internal function in the newly pushed script scope.
 
-    $Path = "$PSScriptRoot/Pester.ps1"
+    # Invoked as a standalone script file (not Pester.ps1; see Pester.ScriptScope.ps1 for why).
+    $Path = "$PSScriptRoot/Pester.ScriptScope.ps1"
     $Data = @{ ScriptBlock = $ScriptBlock }
 
     $wrapper = {
@@ -3299,6 +3360,23 @@ function Add-MissingContainerParameters ($RootBlock, $Container, $CallingFunctio
 
     $RootBlock.FrameworkData.MissingParametersProcessed = $true
 }
+
+function Assert-BoundScriptBlockInput {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ScriptBlock] $ScriptBlock
+    )
+    $internalSessionState = $script:ScriptBlockSessionStateInternalProperty.GetValue($ScriptBlock, $null)
+    if ($null -eq $internalSessionState) {
+        $maxLength = 250
+        $prettySb = (Format-Nicely2 $ScriptBlock) -replace '\s{2,}', ' '
+        if ($prettySb.Length -gt $maxLength) {
+            $prettySb = "$($prettySb.Remove($maxLength))..."
+        }
+
+        throw [System.ArgumentException]::new("Unbound scriptblock is not allowed, because it would run inside of Pester session state and produce unexpected results. See https://github.com/pester/Pester/issues/2411 for more details and workarounds. ScriptBlock: '$prettySb'")
+    }
+}
 # file src\TypeClass.ps1
 function Is-Value ($Value) {
     $Value = $($Value)
@@ -3306,15 +3384,12 @@ function Is-Value ($Value) {
 }
 
 function Is-Collection ($Value) {
-    # check for value types and strings explicitly
-    # because otherwise it does not work for decimal
-    # so let's skip all values we definitely know
-    # are not collections
-    if ($Value -is [ValueType] -or $Value -is [string]) {
-        return $false
-    }
-
-    -not [object]::ReferenceEquals($Value, $($Value))
+    # Use PowerShell's own enumeration logic to decide whether a value is a collection.
+    # This is the same check the pipeline and foreach use, so strings and dictionaries
+    # are correctly treated as single items and not collections. Unlike comparing $Value
+    # to $($Value), it does not copy the collection, does not consume lazy enumerators,
+    # and needs no special-casing for value types such as decimal.
+    $null -ne [System.Management.Automation.LanguagePrimitives]::GetEnumerator($Value)
 }
 
 function Is-ScriptBlock ($Value) {
@@ -3340,6 +3415,14 @@ function Is-Object ($Value) {
     # need to be added
 
     -not ($null -eq $Value -or (Is-Value -Value $Value) -or (Is-Collection -Value $Value))
+}
+
+function Is-DataRow ($Value) {
+    $Value -is [Data.DataRow] -or $Value.Psobject.TypeNames[0] -like '*System.Data.DataRow'
+}
+
+function Is-DataTable ($Value) {
+    $Value -is [Data.DataTable] -or $Value.Psobject.TypeNames[0] -like '*System.Data.DataTable'
 }
 # file src\Format.ps1
 
@@ -3563,6 +3646,240 @@ function Add-SpaceToNonEmptyString ([string]$Value) {
         " $Value"
     }
 }
+# file src\Format2.ps1
+function Format-Collection2 ($Value, [switch]$Pretty, [int]$Depth = 0) {
+    $length = 0
+    $o = foreach ($v in $Value) {
+        $formatted = Format-Nicely2 -Value $v -Pretty:$Pretty -Depth ($Depth + 1)
+        $length += $formatted.Length + 1 # 1 is for the separator
+        $formatted
+    }
+
+    $prettyLimit = 50
+    if ($Pretty -and ($length + 3) -gt $prettyLimit) {
+        # 3 is for the '@()'
+        # Indent each item's own line breaks as well, so nested collections and
+        # objects are shown at increasing depth instead of all at one level.
+        $indented = foreach ($formatted in $o) { $formatted -replace "`n", "`n    " }
+        "@(`n    $($indented -join ",`n    ")`n)"
+    }
+    else {
+        "@($($o -join ', '))"
+    }
+}
+
+function Format-Object2 ($Value, $Property, [switch]$Pretty, [int]$Depth = 0) {
+    if ($null -eq $Property) {
+        $Property = foreach ($p in $Value.PSObject.Properties) { $p.Name }
+    }
+    $orderedProperty = foreach ($p in $Property | & $SafeCommands['Sort-Object']) {
+        # force the values to be strings for powershell v2
+        "$p"
+    }
+
+    $valueType = Get-ShortType $Value
+    $items = foreach ($p in $orderedProperty) {
+        $v = ([PSObject]$Value.$p)
+        $f = Format-Nicely2 -Value $v -Pretty:$Pretty -Depth ($Depth + 1)
+        "$p=$f"
+    }
+
+    if (0 -eq $Property.Length ) {
+        $o = "$valueType{}"
+    }
+    elseif ($Pretty) {
+        # Indent each item's own line breaks as well, so nested objects are shown at
+        # increasing depth instead of all at one level.
+        $indented = foreach ($i in $items) { $i -replace "`n", "`n    " }
+        $o = "$valueType{`n    $($indented -join ";`n    ");`n}"
+    }
+    else {
+        $o = "$valueType{$($items -join '; ')}"
+    }
+
+    $o
+}
+
+function Format-String2 ($Value) {
+    # Use .Length instead of '' -eq $Value because PowerShell's -eq operator
+    # considers some control characters (NUL, BEL, BS, ESC) equal to empty string.
+    if ($null -eq $Value -or $Value.Length -eq 0) {
+        return '<empty>'
+    }
+
+    # Escape ASCII control characters (0x00..0x1F) to the Unicode "Control
+    # Pictures" block (U+2400..U+241F) so they remain visible in error messages.
+    # See https://github.com/pester/Pester/issues/2561. Hot loop lives in C#
+    # (Pester.Formatter) for speed.
+    "'" + [Pester.Formatter]::EscapeControlChars($Value) + "'"
+}
+
+function Format-Null2 {
+    '$null'
+}
+
+function Format-Boolean2 ($Value) {
+    '$' + $Value.ToString().ToLower()
+}
+
+function Format-ScriptBlock2 ($Value) {
+    '{' + $Value + '}'
+}
+
+function Format-Number2 ($Value) {
+    [string]$Value
+}
+
+function Format-Hashtable2 ($Value, [int]$Depth = 0) {
+    $head = '@{'
+    $tail = '}'
+
+    $entries = foreach ($v in $Value.Keys | & $SafeCommands['Sort-Object']) {
+        $formattedValue = Format-Nicely2 -Value $Value.$v -Depth ($Depth + 1)
+        "$v=$formattedValue"
+    }
+
+    $head + ( $entries -join '; ') + $tail
+}
+
+function Format-Dictionary2 ($Value, [int]$Depth = 0) {
+    $head = 'Dictionary{'
+    $tail = '}'
+
+    $entries = foreach ($v in $Value.Keys | & $SafeCommands['Sort-Object'] ) {
+        $formattedValue = Format-Nicely2 -Value $Value.$v -Depth ($Depth + 1)
+        "$v=$formattedValue"
+    }
+
+    $head + ( $entries -join '; ') + $tail
+}
+
+function Format-Nicely2 ($Value, [switch]$Pretty, [int]$Depth = 0) {
+    if ($null -eq $Value) {
+        return Format-Null2 -Value $Value
+    }
+
+    if ($Value -is [bool]) {
+        return Format-Boolean2 -Value $Value
+    }
+
+    if ($Value -is [string]) {
+        return Format-String2 -Value $Value
+    }
+
+    if ($value -is [type]) {
+        return Format-Type2 -Value $Value
+    }
+
+    if (Is-DecimalNumber -Value $Value) {
+        return Format-Number2 -Value $Value
+    }
+
+    if (Is-ScriptBlock -Value $Value) {
+        return Format-ScriptBlock2 -Value $Value
+    }
+
+    # Deeply nested or self-referential objects (e.g. SMO stubs or DirectoryInfo, whose
+    # Parent/Root point back up the tree) would otherwise recurse until PowerShell throws
+    # "The script failed due to call depth overflow" (#2828, #2474). Once we are past a sane
+    # nesting depth stop expanding and just print the value's type, which is enough for a
+    # diagnostic message and cannot recurse further. Scalars above are always fully formatted;
+    # only the container/object branches below recurse, so the guard sits in front of them.
+    # A depth of 10 is never useful in an assertion message and is well below PowerShell's own
+    # call-depth limit, so it is fixed here rather than exposed as a configurable variable.
+    if ($Depth -ge 10) {
+        return Get-ShortType2 -Value $Value
+    }
+
+    if (Is-Collection -Value $Value) {
+        return Format-Collection2 -Value $Value -Pretty:$Pretty -Depth $Depth
+    }
+
+    if (Is-Value -Value $Value) {
+        return $Value
+    }
+
+    if (Is-Hashtable -Value $Value) {
+        return Format-Hashtable2 -Value $Value -Depth $Depth
+    }
+
+    if (Is-Dictionary -Value $Value) {
+        return Format-Dictionary2 -Value $Value -Depth $Depth
+    }
+
+    if ((Is-DataTable -Value $Value) -or (Is-DataRow -Value $Value)) {
+        return Format-DataTable2 -Value $Value -Pretty:$Pretty
+    }
+
+    Format-Object2 -Value $Value -Property (Get-DisplayProperty2 $Value.GetType()) -Pretty:$Pretty -Depth $Depth
+}
+
+function Format-NicelyForTemplate ($Value) {
+    # Used to render a <> template value into an expanded test or block name (#2744). Everything
+    # goes through Format-Nicely2 so $null, booleans, arrays and hashtables read nicely (e.g.
+    # '$null', '@(1, 2, 3)', "@{Name='x'}") instead of PowerShell's bare interpolation. A top-level
+    # string is passed through unquoted though, so the common '<user.name>' case stays clean ('Jakub'
+    # rather than "'Jakub'"). Nested strings still get their quotes from Format-Nicely2.
+    if ($Value -is [string]) {
+        return $Value
+    }
+
+    Format-Nicely2 -Value $Value
+}
+
+function Get-DisplayProperty2 ([Type]$Type) {
+    # rename to Get-DisplayProperty?
+
+    <# some objects are simply too big to show all of their properties,
+    so we can create a list of properties to show from an object
+    maybe the default info from Get-FormatData could be utilized here somehow
+    so we show only stuff that would normally show in format-table view
+    leveraging the work PS team already did #>
+
+    # this will become more advanced, basically something along the lines of:
+    # foreach type, try constructing the type, and if it exists then check if the
+    # incoming type is assignable to the current type, if so then return the properties,
+    # this way I can specify the map from the most concrete type to the least concrete type
+    # and for types that do not exist
+
+    $propertyMap = @{
+        'System.Diagnostics.Process'  = 'Id', 'Name'
+        # DirectoryInfo and FileInfo have circular references (Root, Directory) that cause infinite recursion
+        'System.IO.DirectoryInfo'     = 'Name', 'FullName'
+        'System.IO.FileInfo'          = 'Name', 'FullName', 'Length'
+    }
+
+    $propertyMap[$Type.FullName]
+}
+
+function Get-ShortType2 ($Value) {
+    if ($null -ne $value) {
+        Format-Type2 $Value.GetType()
+    }
+    else {
+        Format-Type2 $null
+    }
+}
+
+function Format-Type2 ([Type]$Value) {
+    if ($null -eq $Value) {
+        return '[null]'
+    }
+
+    $type = [string]$Value
+
+    $typeFormatted = $type `
+        -replace "^System\." `
+        -replace "^Management\.Automation\.PSCustomObject$", "PSObject" `
+        -replace "^PSCustomObject$", "PSObject"
+
+    "[$($typeFormatted)]"
+}
+
+function Format-DataTable2 ($Value) {
+    return "$Value"
+}
+
 # file src\Pester.RSpec.ps1
 function Find-File {
     [CmdletBinding()]
@@ -3573,6 +3890,12 @@ function Find-File {
         [Parameter(Mandatory = $true)]
         [string] $Extension
     )
+
+    # Folders we never want to descend into during discovery. .git in particular can
+    # hold hundreds of thousands of small files on a real repo; enumerating them only
+    # to filter the results out later wastes a lot of time, so the recursive walk
+    # below stops as soon as it sees one of these names.
+    $skipFolders = @('.git', '.svn', '.hg')
 
     $files = foreach ($p in $Path) {
         if ([String]::IsNullOrWhiteSpace($p)) {
@@ -3595,8 +3918,11 @@ function Find-File {
 
             foreach ($item in $items) {
                 if ($item.PSIsContainer) {
-                    # this is an existing directory search it for tests file
-                    & $SafeCommands['Get-ChildItem'] -Recurse -Path $item -Filter "*$Extension" -File
+                    # Walk the directory tree ourselves so we never open the contents of
+                    # VCS folders. Get-ChildItem -Force returns hidden items so this works
+                    # both for dot-prefixed folders on Linux and for folders with the
+                    # Hidden file attribute on Windows.
+                    Find-FileInDirectory -Directory $item -Extension $Extension -SkipFolders $skipFolders
                 }
                 elseif ("FileSystem" -ne $item.PSProvider.Name) {
                     # item is not a directory and exists but is not a file so we are not interested
@@ -3624,16 +3950,50 @@ function Find-File {
             }
         }
         else {
-            # this is a path that does not exist so let's hope it is
-            # a wildcarded path that will resolve to some files
-            & $SafeCommands['Get-ChildItem'] -Recurse -Path $p -Filter "*$Extension" -File
+            # The path didn't resolve to anything, so let Get-ChildItem try to expand
+            # whatever shape it is (typically a wildcard pattern that currently has no
+            # matches). Use -Force so hidden folders are still considered, and strip any
+            # results that landed inside a VCS metadata directory.
+            foreach ($f in (& $SafeCommands['Get-ChildItem'] -Recurse -Path $p -Filter "*$Extension" -File -Force)) {
+                $inSkipFolder = $false
+                $parent = $f.Directory
+                while ($null -ne $parent) {
+                    if ($skipFolders -contains $parent.Name) {
+                        $inSkipFolder = $true
+                        break
+                    }
+                    $parent = $parent.Parent
+                }
+                if (-not $inSkipFolder) { $f }
+            }
         }
     }
 
     # Deduplicate files if overlapping -Path values
-    $uniquePaths = & $SafeCommands['New-Object'] -TypeName 'System.Collections.Generic.HashSet[string]' -ArgumentList (,@($files).Count)
+    $uniquePaths = [System.Collections.Generic.HashSet[string]]::new(@($files).Count)
     $uniqueFiles = foreach ($f in $files) { if ($uniquePaths.Add($f.FullName)) { $f } }
     Filter-Excluded -Files $uniqueFiles -ExcludePath $ExcludePath | & $SafeCommands['Where-Object'] { $_ }
+}
+
+function Find-FileInDirectory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.IO.DirectoryInfo] $Directory,
+        [Parameter(Mandatory = $true)]
+        [string] $Extension,
+        [string[]] $SkipFolders
+    )
+
+    # Files in this directory first, then descend into each subdirectory that we are
+    # allowed to enter. The set returned is equivalent to
+    # `Get-ChildItem -Recurse -Filter "*$Extension" -File -Force` rooted at $Directory,
+    # minus anything under one of $SkipFolders.
+    & $SafeCommands['Get-ChildItem'] -LiteralPath $Directory.FullName -Filter "*$Extension" -File -Force
+
+    foreach ($d in (& $SafeCommands['Get-ChildItem'] -LiteralPath $Directory.FullName -Directory -Force)) {
+        if ($SkipFolders -contains $d.Name) { continue }
+        Find-FileInDirectory -Directory $d -Extension $Extension -SkipFolders $SkipFolders
+    }
 }
 
 function Filter-Excluded ($Files, $ExcludePath) {
@@ -3701,7 +4061,7 @@ function Add-RSpecBlockObjectProperties ($BlockObject) {
     }
 }
 
-function PostProcess-RspecTestRun ($TestRun) {
+function PostProcess-RspecTestRun ($TestRun, [switch] $Parallel, [TimeSpan] $RunDuration) {
     $discoveryOnly = $PesterPreference.Run.SkipRun.Value
 
     Fold-Run $Run -OnTest {
@@ -3742,6 +4102,9 @@ function PostProcess-RspecTestRun ($TestRun) {
         $b.Result = if ($b.Skip) {
             "Skipped"
         }
+        elseif (0 -lt $b.ErrorRecord.Count) {
+            "Failed"
+        }
         elseif ($b.Passed) {
             "Passed"
         }
@@ -3772,11 +4135,11 @@ function PostProcess-RspecTestRun ($TestRun) {
         $b.result = if ($b.Skip) {
             "Skipped"
         }
-        elseif ($b.Passed) {
-            "Passed"
-        }
         elseif (0 -lt $b.ErrorRecord.Count) {
             "Failed"
+        }
+        elseif ($b.Passed) {
+            "Passed"
         }
         elseif (-not $discoveryOnly -and $b.ShouldRun -and (-not $b.Executed -or -not $b.Passed)) {
             "Failed"
@@ -3800,6 +4163,19 @@ function PostProcess-RspecTestRun ($TestRun) {
         $TestRun.UserDuration += $b.UserDuration
         $TestRun.FrameworkDuration += $b.FrameworkDuration
         $TestRun.DiscoveryDuration += $b.DiscoveryDuration
+    }
+
+    if ($Parallel) {
+        # In a file-parallel run the containers overlap in wall-clock time, so the summed
+        # container durations above overstate the run. Use the orchestrator's measured
+        # wall-clock as the total instead, and blank the per-phase run totals - a single
+        # wall-clock figure for user, framework or discovery time is not meaningful once the
+        # files overlap. The per-phase breakdown is still available on each container, because
+        # parallelism is file-level. (#2794)
+        $TestRun.Duration = $RunDuration
+        $TestRun.UserDuration = [TimeSpan]::Zero
+        $TestRun.FrameworkDuration = [TimeSpan]::Zero
+        $TestRun.DiscoveryDuration = [TimeSpan]::Zero
     }
 
     $TestRun.PassedCount = $TestRun.Passed.Count
@@ -3851,7 +4227,7 @@ function New-PesterConfiguration {
 
     Calling New-PesterConfiguration is equivalent to calling [PesterConfiguration]::Default which was used in early versions of Pester 5.
 
-    For a complete list of options, see `Get-Help about_PesterConfiguration` or https://pester.dev/docs/v5/usage/configuration
+    For a complete list of options, see `Get-Help about_PesterConfiguration` or https://pester.dev/docs/usage/configuration
 
     .PARAMETER Hashtable
     Override the default values for the options defined in the provided dictionary/hashtable.
@@ -3892,18 +4268,16 @@ function New-PesterConfiguration {
     the new configuration.
 
     .LINK
-    https://pester.dev/docs/v5/commands/New-PesterConfiguration
+    https://pester.dev/docs/commands/New-PesterConfiguration
 
     .LINK
-    https://pester.dev/docs/v5/usage/Configuration
+    https://pester.dev/docs/usage/Configuration
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
-
-    .LINK
-    about_PesterConfiguration
+    https://pester.dev/docs/commands/Invoke-Pester
     #>
     [CmdletBinding()]
+    [OutputType([PesterConfiguration])]
     param(
         [System.Collections.IDictionary] $Hashtable
     )
@@ -4097,15 +4471,16 @@ function New-PesterContainer {
     the required ContainerInfo-object that enables us to do this directly.
 
     .LINK
-    https://pester.dev/docs/v5/commands/New-PesterContainer
+    https://pester.dev/docs/commands/New-PesterContainer
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
+    https://pester.dev/docs/commands/Invoke-Pester
 
     .LINK
-    https://pester.dev/docs/v5/usage/data-driven-tests
+    https://pester.dev/docs/usage/data-driven-tests
     #>
     [CmdletBinding(DefaultParameterSetName = "Path")]
+    [OutputType([Pester.ContainerInfo])]
     param(
         [Parameter(Mandatory, ParameterSetName = "Path")]
         [String[]] $Path,
@@ -4190,7 +4565,7 @@ function Add-ShouldOperator {
             }
         }
 
-        return New-Object psobject -Property @{
+        return [PSCustomObject]@{
             Succeeded      = $succeeded
             FailureMessage = $failureMessage
         }
@@ -4206,7 +4581,7 @@ function Add-ShouldOperator {
 
     Example of how to create a simple custom assertion that checks if the input string is 'Awesome'
     .LINK
-    https://pester.dev/docs/v5/commands/Add-ShouldOperator
+    https://pester.dev/docs/commands/Add-ShouldOperator
     #>
     [CmdletBinding()]
     param (
@@ -4226,17 +4601,14 @@ function Add-ShouldOperator {
         [switch] $SupportsArrayInput
     )
 
-    $entry = & $SafeCommands['New-Object'] psobject -Property @{
+    Assert-BoundScriptBlockInput -ScriptBlock $Test
+
+    $entry = [PSCustomObject]@{
         Test               = $Test
         SupportsArrayInput = [bool]$SupportsArrayInput
         Name               = $Name
         Alias              = $Alias
-        InternalName       = If ($InternalName) {
-            $InternalName
-        }
-        Else {
-            $Name
-        }
+        InternalName       = If ($InternalName) { $InternalName } else { $Name }
     }
     if (Test-AssertionOperatorIsDuplicate -Operator $entry) {
         # This is an exact duplicate of an existing assertion operator.
@@ -4275,7 +4647,7 @@ function Set-ShouldOperatorHelpMessage {
     Help message for switch-parameter for the operator in Should.
     .NOTES
     Internal function as it's only useful for built-in Should operators/assertion atm. to improve online docs.
-    Can be merged into Add-ShouldOperator later if we'd like to make it pulic and include value in Get-ShouldOperator
+    Can be merged into Add-ShouldOperator later if we'd like to make it public and include value in Get-ShouldOperator
 
     https://github.com/pester/Pester/issues/2335
     #>
@@ -4343,20 +4715,20 @@ function Add-AssertionDynamicParameterSet {
     $commandInfo = & $SafeCommands['Get-Command'] __AssertionTest__ -CommandType Function
     $metadata = [System.Management.Automation.CommandMetadata]$commandInfo
 
-    $attribute = & $SafeCommands['New-Object'] Management.Automation.ParameterAttribute
+    $attribute = [Management.Automation.ParameterAttribute]::new()
     $attribute.ParameterSetName = $AssertionEntry.Name
 
 
-    $attributeCollection = & $SafeCommands['New-Object'] Collections.ObjectModel.Collection[Attribute]
+    $attributeCollection = [Collections.ObjectModel.Collection[Attribute]]::new()
     $null = $attributeCollection.Add($attribute)
     if (-not ([string]::IsNullOrWhiteSpace($AssertionEntry.Alias))) {
         Assert-ValidAssertionAlias -Alias $AssertionEntry.Alias
-        $attribute = & $SafeCommands['New-Object'] System.Management.Automation.AliasAttribute($AssertionEntry.Alias)
+        $attribute = [System.Management.Automation.AliasAttribute]::new($AssertionEntry.Alias)
         $attributeCollection.Add($attribute)
     }
 
     # Register assertion
-    $dynamic = & $SafeCommands['New-Object'] System.Management.Automation.RuntimeDefinedParameter($AssertionEntry.Name, [switch], $attributeCollection)
+    $dynamic = [System.Management.Automation.RuntimeDefinedParameter]::new($AssertionEntry.Name, [switch], $attributeCollection)
     $null = $script:AssertionDynamicParams.Add($AssertionEntry.Name, $dynamic)
 
     # Register -Not in the assertion's parameter set. Create parameter if not already present (first assertion).
@@ -4364,11 +4736,11 @@ function Add-AssertionDynamicParameterSet {
         $dynamic = $script:AssertionDynamicParams['Not']
     }
     else {
-        $dynamic = & $SafeCommands['New-Object'] System.Management.Automation.RuntimeDefinedParameter('Not', [switch], (& $SafeCommands['New-Object'] System.Collections.ObjectModel.Collection[Attribute]))
+        $dynamic = [System.Management.Automation.RuntimeDefinedParameter]::new('Not', [switch], ([System.Collections.ObjectModel.Collection[Attribute]]::new()))
         $null = $script:AssertionDynamicParams.Add('Not', $dynamic)
     }
 
-    $attribute = & $SafeCommands['New-Object'] System.Management.Automation.ParameterAttribute
+    $attribute = [System.Management.Automation.ParameterAttribute]::new()
     $attribute.ParameterSetName = $AssertionEntry.Name
     $attribute.Mandatory = $false
     $attribute.HelpMessage = 'Reverse the assertion'
@@ -4410,16 +4782,16 @@ function Add-AssertionDynamicParameterSet {
                 $type = [object]
             }
 
-            $dynamic = & $SafeCommands['New-Object'] System.Management.Automation.RuntimeDefinedParameter($parameter.Name, $type, (& $SafeCommands['New-Object'] System.Collections.ObjectModel.Collection[Attribute]))
+            $dynamic = [System.Management.Automation.RuntimeDefinedParameter]::new($parameter.Name, $type, ([System.Collections.ObjectModel.Collection[Attribute]]::new()))
             $null = $script:AssertionDynamicParams.Add($parameter.Name, $dynamic)
         }
 
-        $attribute = & $SafeCommands['New-Object'] Management.Automation.ParameterAttribute
+        $attribute = [Management.Automation.ParameterAttribute]::new()
         $attribute.ParameterSetName = $AssertionEntry.Name
         $attribute.Mandatory = $false
         $attribute.Position = ($i++)
         # Only visible in command reference on https://pester.dev. Remove if/when migrated to external help (markdown as source).
-        $attribute.HelpMessage = 'Depends on operator being used. See `Get-ShouldOperator -Name <Operator>` or https://pester.dev/docs/v5/assertions/ for help.'
+        $attribute.HelpMessage = 'Depends on operator being used. See `Get-ShouldOperator -Name <Operator>` or https://pester.dev/docs/assertions/ for help.'
 
         $null = $dynamic.Attributes.Add($attribute)
     }
@@ -4433,20 +4805,6 @@ function Get-AssertionDynamicParams {
     return $script:AssertionDynamicParams
 }
 
-function Has-Flag {
-    param
-    (
-        [Parameter(Mandatory = $true)]
-        [Pester.OutputTypes]
-        $Setting,
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [Pester.OutputTypes]
-        $Value
-    )
-
-    0 -ne ($Setting -band $Value)
-}
-
 function Invoke-Pester {
     <#
     .SYNOPSIS
@@ -4457,112 +4815,40 @@ function Invoke-Pester {
     Pester tests in PowerShell scripts.
 
     You can run scripts that include Pester tests just as you would any other
-    Windows PowerShell script, including typing the full path at the command line
+    PowerShell script, including typing the full path at the command line
     and running in a script editing program. Typically, you use Invoke-Pester to run
     all Pester tests in a directory, or to use its many helpful parameters,
-    including parameters that generate custom objects or XML files.
+    including parameters that generate custom objects or test result files.
 
     By default, Invoke-Pester runs all *.Tests.ps1 files in the current directory
     and all subdirectories recursively. You can use its parameters to select tests
     by file name, test name, or tag.
 
-    To run Pester tests in scripts that take parameter values, use the Script
-    parameter with a hash table value.
+    To run parameterized tests, or to mix files and script blocks, use
+    New-PesterContainer or the Configuration parameter.
 
-    Also, by default, Pester tests write test results to the console host, much like
-    Write-Output does, but you can use the Show parameter set to None to suppress the host
-    messages, use the PassThru parameter to generate a custom object
-    (PSCustomObject) that contains the test results, use the OutputXml and
-    OutputFormat parameters to write the test results to an XML file, and use the
-    EnableExit parameter to return an exit code that contains the number of failed
-    tests.
+    By default, Pester tests write test results to the console host, much like
+    Write-Host does, but you can use the Output parameter with value None to suppress
+    host messages, use the PassThru parameter to generate a [Pester.Run] object that
+    contains the test results, or use the Configuration parameter to write test results
+    or code coverage output to files.
 
-    You can also use the Strict parameter to fail all pending and skipped tests.
-    This feature is ideal for build systems and other processes that require success
-    on every test.
-
-    To help with test design, Invoke-Pester includes a CodeCoverage parameter that
-    lists commands, classes, functions, and lines of code that did not run during test
-    execution and returns the code that ran as a percentage of all tested code.
+    For build systems, use the CI parameter to enable test result output and fail the
+    process when tests fail.
 
     Invoke-Pester, and the Pester module that exports it, are products of an
     open-source project hosted on GitHub. To view, comment, or contribute to the
     repository, see https://github.com/Pester.
 
     .PARAMETER CI
-    (Introduced v5)
     Enable Test Results and Exit after Run.
 
-    Replace with ConfigurationProperty
+    Equivalent to setting:
         TestResult.Enabled = $true
         Run.Exit = $true
 
-    Since 5.2.0, this option no longer enables CodeCoverage.
     To also enable CodeCoverage use this configuration option:
         CodeCoverage.Enabled = $true
-
-    .PARAMETER CodeCoverage
-    (Deprecated v4)
-    Replace with ConfigurationProperty CodeCoverage.Enabled = $true
-    Adds a code coverage report to the Pester tests. Takes strings or hash table values.
-    A code coverage report lists the lines of code that did and did not run during
-    a Pester test. This report does not tell whether code was tested; only whether
-    the code ran during the test.
-    By default, the code coverage report is written to the host program
-    (like Write-Output). When you use the PassThru parameter, the custom object
-    that Invoke-Pester returns has an additional CodeCoverage property that contains
-    a custom object with detailed results of the code coverage test, including lines
-    hit, lines missed, and helpful statistics.
-    However, NUnitXml and JUnitXml output (OutputXML, OutputFormat) do not include
-    any code coverage information, because it's not supported by the schema.
-    Enter the path to the files of code under test (not the test file).
-    Wildcard characters are supported. If you omit the path, the default is local
-    directory, not the directory specified by the Script parameter. Pester test files
-    are by default excluded from code coverage when a directory is provided. When you
-    provide a test file directly using string, code coverage will be measured. To include
-    tests in code coverage of a directory, use the dictionary syntax and provide
-    IncludeTests = $true option, as shown below.
-    To run a code coverage test only on selected classes, functions or lines in a script,
-    enter a hash table value with the following keys:
-    -- Path (P)(mandatory) <string>: Enter one path to the files. Wildcard characters
-    are supported, but only one string is permitted.
-    -- IncludeTests <bool>: Includes code coverage for Pester test files (*.tests.ps1).
-    Default is false.
-    One of the following: Class/Function or StartLine/EndLine
-    -- Class (C) <string>: Enter the class name. Wildcard characters are
-    supported, but only one string is permitted. Default is *.
-    -- Function (F) <string>: Enter the function name. Wildcard characters are
-    supported, but only one string is permitted. Default is *.
-    -or-
-    -- StartLine (S): Performs code coverage analysis beginning with the specified
-    line. Default is line 1.
-    -- EndLine (E): Performs code coverage analysis ending with the specified line.
-    Default is the last line of the script.
-
-    .PARAMETER CodeCoverageOutputFile
-    (Deprecated v4)
-    Replace with ConfigurationProperty CodeCoverage.OutputPath
-    The path where Invoke-Pester will save formatted code coverage results file.
-    The path must include the location and name of the folder and file name with
-    a required extension (usually the xml).
-    If this path is not provided, no file will be generated.
-
-    .PARAMETER CodeCoverageOutputFileEncoding
-    (Deprecated v4)
-    Replace with ConfigurationProperty CodeCoverage.OutputEncoding
-    Sets the output encoding of CodeCoverageOutputFileFormat
-    Default is utf8
-
-    .PARAMETER CodeCoverageOutputFileFormat
-    (Deprecated v4)
-    Replace with ConfigurationProperty CodeCoverage.OutputFormat
-    The name of a code coverage report file format.
-    Default value is: JaCoCo.
-    Currently supported formats are:
-    - JaCoCo - this XML file format is compatible with Azure Devops, VSTS/TFS
-
-    The ReportGenerator tool can be used to consolidate multiple reports and provide code coverage reporting.
-    https://github.com/danielpalme/ReportGenerator
 
     .PARAMETER Configuration
     [PesterConfiguration] object for Advanced Configuration created using `New-PesterConfiguration`.
@@ -4573,113 +4859,40 @@ function Invoke-Pester {
     ContainerInfo-objects are generated using New-PesterContainer. Useful for
     scenarios where data-driven test are generated, e.g. parametrized test files.
 
-    .PARAMETER EnableExit
-    (Deprecated v4)
-    Replace with ConfigurationProperty Run.Exit
-    Will cause Invoke-Pester to exit with a exit code equal to the number of failed
-    tests once all tests have been run. Use this to "fail" a build when any tests fail.
-
     .PARAMETER ExcludePath
-    (Deprecated v4)
-    Replace with ConfigurationProperty Run.ExcludePath
+    Specifies one or more paths to exclude from the test run.
+    Equivalent to ConfigurationProperty Run.ExcludePath.
 
     .PARAMETER ExcludeTagFilter
-    (Deprecated v4)
-    Replace with ConfigurationProperty Filter.ExcludeTag
+    Specifies tags to exclude from the test run.
+    Equivalent to ConfigurationProperty Filter.ExcludeTag.
 
     .PARAMETER FullNameFilter
-    (Deprecated v4)
-    Replace with ConfigurationProperty Filter.FullName
+    Specifies test full names (including Describe/Context/It path) to run.
+    Equivalent to ConfigurationProperty Filter.FullName.
 
     .PARAMETER Output
-    (Deprecated v4)
-    Replace with ConfigurationProperty Output.Verbosity
-    Supports Diagnostic, Detailed, Normal, Minimal, None
+    Specifies the verbosity of the test output.
+    Supports Diagnostic, Detailed, Normal, Minimal, None.
+    Equivalent to ConfigurationProperty Output.Verbosity.
 
     Default value is: Normal
 
-    .PARAMETER OutputFile
-    (Deprecated v4)
-    Replace with ConfigurationProperty TestResult.OutputPath
-    The path where Invoke-Pester will save formatted test results log file.
-    The path must include the location and name of the folder and file name with
-    the xml extension.
-    If this path is not provided, no log will be generated.
-
-    .PARAMETER OutputFormat
-    (Deprecated v4)
-    Replace with ConfigurationProperty TestResult.OutputFormat
-    The format of output. Currently NUnitXml and JUnitXml is supported.
-
     .PARAMETER PassThru
-    Replace with ConfigurationProperty Run.PassThru
-    Returns a custom object (PSCustomObject) that contains the test results.
+    Returns a [Pester.Run] object that contains the test results.
     By default, Invoke-Pester writes to the host program, not to the output stream (stdout).
     If you try to save the result in a variable, the variable is empty unless you
     use the PassThru parameter.
-    To suppress the host output, use the Show parameter set to None.
+    Equivalent to ConfigurationProperty Run.PassThru.
+    To suppress the host output, use the Output parameter with value None.
 
     .PARAMETER Path
-    Aliases Script
     Specifies one or more paths to files containing tests. The value is a path\file
     name or name pattern. Wildcards are permitted.
 
-    .PARAMETER PesterOption
-    (Deprecated v4)
-    This parameter is ignored in v5, and is only present for backwards compatibility
-    when migrating from v4.
-
-    Sets advanced options for the test execution. Enter a PesterOption object,
-    such as one that you create by using the New-PesterOption cmdlet, or a hash table
-    in which the keys are option names and the values are option values.
-    For more information on the options available, see the help for New-PesterOption.
-
-    .PARAMETER Quiet
-    (Deprecated v4)
-    The parameter Quiet is deprecated since Pester v4.0 and will be deleted
-    in the next major version of Pester. Please use the parameter Show
-    with value 'None' instead.
-    The parameter Quiet suppresses the output that Pester writes to the host program,
-    including the result summary and CodeCoverage output.
-    This parameter does not affect the PassThru custom object or the XML output that
-    is written when you use the Output parameters.
-
-    .PARAMETER Show
-    (Deprecated v4)
-    Replace with ConfigurationProperty Output.Verbosity
-    Customizes the output Pester writes to the screen. Available options are None, Default,
-    Passed, Failed, Pending, Skipped, Inconclusive, Describe, Context, Summary, Header, All, Fails.
-    The options can be combined to define presets.
-    ConfigurationProperty Output.Verbosity supports the following values:
-    None
-    Minimal
-    Normal
-    Detailed
-    Diagnostic
-
-    Show parameter supports the following parameter values:
-    None - (None) to write no output to the screen.
-    All - (Detailed) to write all available information (this is default option).
-    Default - (Detailed)
-    Detailed - (Detailed)
-    Fails - (Normal) to write everything except Passed (but including Describes etc.).
-    Diagnostic - (Diagnostic)
-    Normal - (Normal)
-    Minimal - (Minimal)
-
-    A common setting is also Failed, Summary, to write only failed tests and test summary.
-    This parameter does not affect the PassThru custom object or the XML output that
-    is written when you use the Output parameters.
-
-    .PARAMETER Strict
-    (Deprecated v4)
-    Makes Pending and Skipped tests to Failed tests. Useful for continuous
-    integration where you need to make sure all tests passed.
-
     .PARAMETER TagFilter
-    (Deprecated v4)
-    Aliases Tag, Tags
-    Replace with ConfigurationProperty Filter.Tag
+    Specifies tags to include in the test run. Only tests with matching tags will run.
+    Equivalent to ConfigurationProperty Filter.Tag.
 
     .EXAMPLE
     Invoke-Pester
@@ -4718,36 +4931,29 @@ function Invoke-Pester {
     to see other testresult options like  output path and format and their default values.
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
+    https://pester.dev/docs/commands/Invoke-Pester
 
     .LINK
-    https://pester.dev/docs/v5/quick-start
+    https://pester.dev/docs/quick-start
     #>
 
     # Currently doesn't work. $IgnoreUnsafeCommands filter used in rule as workaround
     # [Diagnostics.CodeAnalysis.SuppressMessageAttribute('Pester.BuildAnalyzerRules\Measure-SafeCommands', 'Remove-Variable', Justification = 'Remove-Variable can't remove "optimized variables" when using "alias" for Remove-Variable.')]
     [CmdletBinding(DefaultParameterSetName = 'Simple')]
+    [OutputType([Pester.Run])]
     param(
         [Parameter(Position = 0, Mandatory = 0, ParameterSetName = "Simple")]
-        [Parameter(Position = 0, Mandatory = 0, ParameterSetName = "Legacy")]  # Legacy set for v4 compatibility during migration - deprecated
-        [Alias("Script")] # Legacy set for v4 compatibility during migration - deprecated
         [String[]] $Path = '.',
         [Parameter(ParameterSetName = "Simple")]
         [String[]] $ExcludePath = @(),
 
         [Parameter(ParameterSetName = "Simple")]
-        [Parameter(Position = 4, Mandatory = 0, ParameterSetName = "Legacy")]  # Legacy set for v4 compatibility during migration - deprecated
-        [Alias("Tag")] # Legacy set for v4 compatibility during migration - deprecated
-        [Alias("Tags")] # Legacy set for v4 compatibility during migration - deprecated
         [string[]] $TagFilter,
 
         [Parameter(ParameterSetName = "Simple")]
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
         [string[]] $ExcludeTagFilter,
 
-        [Parameter(Position = 1, Mandatory = 0, ParameterSetName = "Legacy")]  # Legacy set for v4 compatibility during migration - deprecated
         [Parameter(ParameterSetName = "Simple")]
-        [Alias("Name")]  # Legacy set for v4 compatibility during migration - deprecated
         [string[]] $FullNameFilter,
 
         [Parameter(ParameterSetName = "Simple")]
@@ -4758,52 +4964,19 @@ function Invoke-Pester {
         [String] $Output = "Normal",
 
         [Parameter(ParameterSetName = "Simple")]
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
         [Switch] $PassThru,
 
         [Parameter(ParameterSetName = "Simple")]
         [Pester.ContainerInfo[]] $Container,
 
         [Parameter(ParameterSetName = "Advanced")]
-        [PesterConfiguration] $Configuration,
-
-        # rest of the Legacy set
-        [Parameter(Position = 2, Mandatory = 0, ParameterSetName = "Legacy")]  # Legacy set for v4 compatibility during migration - deprecated
-        [switch]$EnableExit,
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [object[]] $CodeCoverage = @(),
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [string] $CodeCoverageOutputFile,
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [string] $CodeCoverageOutputFileEncoding = 'utf8',
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [ValidateSet('JaCoCo')]
-        [String]$CodeCoverageOutputFileFormat = "JaCoCo",
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [Switch]$Strict,
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [string] $OutputFile,
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [ValidateSet('NUnitXml', 'NUnit2.5', 'JUnitXml')]
-        [string] $OutputFormat = 'NUnitXml',
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [Switch]$Quiet,
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [object]$PesterOption,
-
-        [Parameter(ParameterSetName = "Legacy")] # Legacy set for v4 compatibility during migration - deprecated
-        [Pester.OutputTypes]$Show = 'All'
+        [PesterConfiguration] $Configuration
     )
     begin {
+        # Prevent $WhatIfPreference from leaking into Pester internals (#2585).
+        # When the caller sets $WhatIfPreference = $true, it propagates to child
+        # scopes and breaks commands that Pester relies on (New-Item, Remove-Item, etc.).
+        $WhatIfPreference = $false
         $start = [DateTime]::Now
         # this will inherit to child scopes and allow Describe / Context to run directly from a file or command line
         $invokedViaInvokePester = $true
@@ -4835,12 +5008,6 @@ function Invoke-Pester {
                 # dot-sourcing the function to allow removing local variables
                 $Configuration = . Convert-PesterSimpleParameterSet -BoundParameters $PSBoundParameters
             }
-            elseif ('Legacy' -eq $PSCmdlet.ParameterSetName) {
-                & $SafeCommands['Write-Warning'] 'You are using Legacy parameter set that adapts Pester 5 syntax to Pester 4 syntax. This parameter set is deprecated, and does not work 100%. The -Strict and -PesterOption parameters are ignored, and providing advanced configuration to -Path (-Script), and -CodeCoverage via a hash table does not work. Please refer to https://github.com/pester/Pester/releases/tag/5.0.1#legacy-parameter-set for more information.'
-
-                # dot-sourcing the function to allow removing local variables
-                $Configuration = . Convert-PesterLegacyParameterSet -BoundParameters $PSBoundParameters
-            }
 
             # maybe -IgnorePesterPreference to avoid using $PesterPreference from the context
 
@@ -4868,6 +5035,8 @@ function Invoke-Pester {
             }
 
             & $SafeCommands['Get-Variable'] 'Configuration' -Scope Local | Remove-Variable
+
+            Resolve-AutoEnabledConfiguration -PesterPreference $PesterPreference
 
             # $sessionState = Set-SessionStateHint -PassThru  -Hint "Caller - Captured in Invoke-Pester" -SessionState $PSCmdlet.SessionState
             $sessionState = $PSCmdlet.SessionState
@@ -4957,11 +5126,247 @@ function Invoke-Pester {
                 return
             }
 
-            $r = Invoke-Test -BlockContainer $containers -Plugin $plugins -PluginConfiguration $pluginConfiguration -PluginData $pluginData -SessionState $sessionState -Filter $filter -Configuration $PesterPreference
+            # Parallel mode runs each file in its own runspace and merges the executed
+            # containers back. It only applies to file-based runs on PowerShell 7+ and is not
+            # supported together with CodeCoverage yet; other cases fall back to the normal
+            # sequential path with a warning.
+            $useParallel = $PesterPreference.Run.Parallel.Value
+            $parallelSupported = $PSVersionTable.PSVersion.Major -ge 7
+            $allFileContainers = 0 -eq @($containers | & $SafeCommands['Where-Object'] { 'File' -ne $_.Type }).Count
+            $coverageEnabled = $PesterPreference.CodeCoverage.Enabled.Value
+            # Run.SkipRemainingOnFailure = 'Run' stops the whole run after the first failed
+            # test by carrying a flag from one container to the next. That flag lives on the
+            # per-run configuration, which workers do not share, so it cannot span runspaces -
+            # fall back to sequential so the 'stop on first failure' intent is honored. The
+            # 'Block'/'Container' scopes only skip within a single file, so they are unaffected.
+            $skipRemainingRunScope = 'Run' -eq $PesterPreference.Run.SkipRemainingOnFailure.Value
 
-            foreach ($c in $r) {
-                Fold-Container -Container $c  -OnTest { param($t) Add-RSpecTestObjectProperties $t }
+            # Partition files by the #pester:no-parallel directive. Files that opt out run in this
+            # (non-isolated) session via the normal interleaved path, exactly like a sequential run
+            # - so files that depend on shared session state (declaration order, global setup,
+            # cross-file mocks) keep working and produce live output. The rest run concurrently,
+            # each in its own runspace.
+            # NOTE: avoid the variable names $Container and $CI here - they are parameters of
+            # Invoke-Pester ([Pester.ContainerInfo[]] $Container and [Switch] $CI), and reusing
+            # them inherits those type constraints, which silently corrupts the loop variable.
+            $parallelContainers = [System.Collections.Generic.List[object]]@()
+            $nonParallelContainers = [System.Collections.Generic.List[object]]@()
+            if ($useParallel -and $parallelSupported -and $allFileContainers -and -not $coverageEnabled -and -not $skipRemainingRunScope) {
+                foreach ($fileContainer in $containers) {
+                    if (Test-PesterFileIsNonParallel -Path $fileContainer.Item.FullName) {
+                        $nonParallelContainers.Add($fileContainer)
+                    }
+                    else {
+                        $parallelContainers.Add($fileContainer)
+                    }
+                }
             }
+
+            if ($useParallel -and -not $parallelSupported) {
+                & $SafeCommands['Write-Warning'] "Run.Parallel requires PowerShell 7 or later for 'ForEach-Object -Parallel'. Running the tests sequentially instead."
+            }
+            elseif ($useParallel -and -not $allFileContainers) {
+                & $SafeCommands['Write-Warning'] "Run.Parallel currently parallelizes only file-based runs (Run.Path). The provided ScriptBlock/Container test(s) will run sequentially instead."
+            }
+            elseif ($useParallel -and $coverageEnabled) {
+                & $SafeCommands['Write-Warning'] "Run.Parallel does not support CodeCoverage yet. Running the tests sequentially instead."
+            }
+            elseif ($useParallel -and $skipRemainingRunScope) {
+                & $SafeCommands['Write-Warning'] "Run.Parallel does not support Run.SkipRemainingOnFailure = 'Run' because skipping after the first failure cannot span the isolated worker runspaces. Running the tests sequentially instead."
+            }
+
+            # Resolve the BeforeContainer initialization once for the whole run. It is the same for
+            # every file (from Run.BeforeContainer or the repo-root Pester.BeforeContainer.ps1) and
+            # runs before each container in both the parallel and sequential paths below.
+            $beforeContainerInit = Resolve-PesterBeforeContainer -Configuration $PesterPreference
+
+            # Engage the parallel path only when at least one file can actually run in parallel.
+            # If every file opted out with #pester:no-parallel, the run is effectively sequential,
+            # so fall through to the sequential path - which fires the framework's own global
+            # plugin steps at the correct interleaved points.
+            $ranInParallel = $useParallel -and $parallelSupported -and $allFileContainers -and -not $coverageEnabled -and -not $skipRemainingRunScope -and 0 -lt $parallelContainers.Count
+            if ($ranInParallel) {
+                $foldedContainers = [System.Collections.Generic.List[object]]@()
+                $hasNonParallel = 0 -lt $nonParallelContainers.Count
+
+                # The parent owns ALL framing for a parallel run. It fires the global and
+                # per-container/per-test plugin steps to a REPORTING-only plugin subset (screen
+                # output + IDE adapters) so the emitted events match a sequential run, while the
+                # execution-critical plugins (Mock/TestDrive/TestRegistry/Coverage) already ran
+                # inside the workers. WriteScreen and the additional (e.g. VSCode) plugins are the
+                # only ones replayed; TestResult is produced once from the merged tree by the End step.
+                $reportingPlugins = [System.Collections.Generic.List[object]]@()
+                foreach ($pl in $plugins) {
+                    if ('WriteScreen' -eq $pl.Name) { $reportingPlugins.Add($pl) }
+                }
+                if (defined additionalPlugins) { $reportingPlugins.AddRange(@($script:additionalPlugins)) }
+
+                # Replays one segment of a worker's recorded event tape to the reporting plugins.
+                # The recorded context carries the worker's PluginConfiguration; swap in the parent's
+                # so any plugin that reads $Context.Configuration sees this run's configuration.
+                $replaySegment = {
+                    param($entries)
+                    foreach ($entry in $entries) {
+                        if ($entry.Context -is [System.Collections.IDictionary] -and $entry.Context.Contains('Configuration')) {
+                            $entry.Context['Configuration'] = $pluginConfiguration
+                        }
+                        $null = Invoke-PluginStep -Plugins $reportingPlugins -Step $entry.Step -Context $entry.Context
+                    }
+                }
+
+                # Global DiscoveryStart once, up front, for the whole run (drives the banner).
+                # Parallel = $true tells WriteScreen to mark the banner as a parallel run.
+                Invoke-PluginStep -Plugins $reportingPlugins -Step DiscoveryStart -Context @{
+                    BlockContainers = $containers
+                    Configuration   = $pluginConfiguration
+                    Parallel        = $true
+                } -ThrowOnFailure
+
+                $runStartFired = $false
+                $discoveryEndFired = $false
+                $totalDiscoveryWatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+                # Parallel files: each worker runs a full (silent) Invoke-Pester on its single file
+                # and returns the executed containers plus the recorded event tape. Replay each
+                # file's discovery segment then run segment, in discovery order, firing the global
+                # RunStart/DiscoveryEnd steps at the interleaved points a sequential run would.
+                if (0 -lt $parallelContainers.Count) {
+                    $parallelResults = @(Invoke-TestInParallel -BlockContainer $parallelContainers -Configuration $PesterPreference)
+                    for ($pri = 0; $pri -lt $parallelResults.Count; $pri++) {
+                        $parallelResult = $parallelResults[$pri]
+                        $segments = Split-PesterEventTape -Tape $parallelResult.Tape
+
+                        & $replaySegment $segments.Discovery
+
+                        # Worker containers come from a full Invoke-Pester run, so they are already
+                        # RSpec-folded - collect them straight away (do not re-fold).
+                        foreach ($c in $parallelResult.Containers) { $foldedContainers.Add($c) }
+
+                        # All-parallel: the last file just finished discovery, so global discovery
+                        # is complete - fire DiscoveryEnd before replaying that file's run segment,
+                        # exactly as the interleaved sequential path does.
+                        if ((-not $hasNonParallel) -and (-not $discoveryEndFired) -and ($pri -eq ($parallelResults.Count - 1))) {
+                            Invoke-PluginStep -Plugins $reportingPlugins -Step DiscoveryEnd -Context @{
+                                BlockContainers = $foldedContainers
+                                Duration        = $totalDiscoveryWatch.Elapsed
+                                Configuration   = $pluginConfiguration
+                                Filter          = $filter
+                            } -ThrowOnFailure
+                            $discoveryEndFired = $true
+                        }
+
+                        if (-not $runStartFired) {
+                            Invoke-PluginStep -Plugins $reportingPlugins -Step RunStart -Context @{
+                                Blocks                   = $foldedContainers
+                                Configuration            = $pluginConfiguration
+                                Data                     = $pluginData
+                                WriteDebugMessages       = $PesterPreference.Debug.WriteDebugMessages.Value
+                                Write_PesterDebugMessage = if ($PesterPreference.Debug.WriteDebugMessages.Value) { $script:SafeCommands['Write-PesterDebugMessage'] }
+                            } -ThrowOnFailure
+                            $runStartFired = $true
+                        }
+
+                        & $replaySegment $segments.Run
+                    }
+                }
+
+                # Non-parallel files: run in this session via the normal interleaved path so they
+                # behave exactly like a sequential run (shared session, live output, full plugin
+                # events to every plugin). The parent owns the global framing, so suppress this
+                # call's global steps (-SkipFrameworkGlobalSteps) to keep one banner/summary.
+                if ($hasNonParallel) {
+                    if (-not $runStartFired) {
+                        Invoke-PluginStep -Plugins $reportingPlugins -Step RunStart -Context @{
+                            Blocks                   = $foldedContainers
+                            Configuration            = $pluginConfiguration
+                            Data                     = $pluginData
+                            WriteDebugMessages       = $PesterPreference.Debug.WriteDebugMessages.Value
+                            Write_PesterDebugMessage = if ($PesterPreference.Debug.WriteDebugMessages.Value) { $script:SafeCommands['Write-PesterDebugMessage'] }
+                        } -ThrowOnFailure
+                        $runStartFired = $true
+                    }
+
+                    $r = Invoke-Test -BlockContainer $nonParallelContainers -Plugin $plugins -PluginConfiguration $pluginConfiguration -PluginData $pluginData -SessionState $sessionState -Filter $filter -Configuration $PesterPreference -BeforeContainerInit $beforeContainerInit -SkipFrameworkGlobalSteps
+
+                    $rspecResult = Split-RSpecResult -Result $r
+                    if (0 -lt $rspecResult.StrayOutput.Count) {
+                        $strayDescription = @(foreach ($strayItem in $rspecResult.StrayOutput) { "'$strayItem'" }) -join ', '
+                        & $SafeCommands['Write-Warning'] "Pester received unexpected output while running tests and ignored it: $strayDescription. This is usually caused by a native command writing to the success stream in a setup block such as BeforeAll. Redirect the output to `$null, for example: `$null = my-command 2>`&1."
+                    }
+
+                    foreach ($c in $rspecResult.Containers) {
+                        Fold-Container -Container $c  -OnTest { param($t) Add-RSpecTestObjectProperties $t }
+                        $foldedContainers.Add($c)
+                    }
+                }
+
+                # Global DiscoveryEnd (if not already fired), RunStart (defensive), then RunEnd -
+                # once each, at the very end.
+                if (-not $discoveryEndFired) {
+                    Invoke-PluginStep -Plugins $reportingPlugins -Step DiscoveryEnd -Context @{
+                        BlockContainers = $foldedContainers
+                        Duration        = $totalDiscoveryWatch.Elapsed
+                        Configuration   = $pluginConfiguration
+                        Filter          = $filter
+                    } -ThrowOnFailure
+                    $discoveryEndFired = $true
+                }
+
+                if (-not $runStartFired) {
+                    Invoke-PluginStep -Plugins $reportingPlugins -Step RunStart -Context @{
+                        Blocks                   = $foldedContainers
+                        Configuration            = $pluginConfiguration
+                        Data                     = $pluginData
+                        WriteDebugMessages       = $PesterPreference.Debug.WriteDebugMessages.Value
+                        Write_PesterDebugMessage = if ($PesterPreference.Debug.WriteDebugMessages.Value) { $script:SafeCommands['Write-PesterDebugMessage'] }
+                    } -ThrowOnFailure
+                    $runStartFired = $true
+                }
+
+                Invoke-PluginStep -Plugins $reportingPlugins -Step RunEnd -Context @{
+                    Blocks                   = $foldedContainers
+                    Configuration            = $pluginConfiguration
+                    Data                     = $pluginData
+                    WriteDebugMessages       = $PesterPreference.Debug.WriteDebugMessages.Value
+                    Write_PesterDebugMessage = if ($PesterPreference.Debug.WriteDebugMessages.Value) { $script:SafeCommands['Write-PesterDebugMessage'] }
+                } -ThrowOnFailure
+
+                # Restore the original discovery order across both batches so the merged run is
+                # deterministic regardless of which files ran where or which worker finished first.
+                $order = @{}
+                for ($i = 0; $i -lt $containers.Count; $i++) {
+                    $order[$containers[$i].Item.FullName] = $i
+                }
+                $rspecContainers = @($foldedContainers | & $SafeCommands['Sort-Object'] -Property @{ Expression = {
+                            $key = if ($_.Item -is [System.IO.FileInfo]) { $_.Item.FullName } else { [string]$_.Item }
+                            if ($order.ContainsKey($key)) { $order[$key] } else { [int]::MaxValue }
+                        }
+                    })
+            }
+            else {
+                $r = Invoke-Test -BlockContainer $containers -Plugin $plugins -PluginConfiguration $pluginConfiguration -PluginData $pluginData -SessionState $sessionState -Filter $filter -Configuration $PesterPreference -BeforeContainerInit $beforeContainerInit
+
+                # Invoke-Test should only return [Pester.Container] objects, but stray output produced during the
+                # run - most often a native command writing to the success stream in a setup block (e.g. BeforeAll)
+                # without being redirected to $null - can leak into the pipeline. Adding it to the strongly-typed
+                # Run.Containers list throws an opaque "Cannot find an overload for Add" error that fails the whole
+                # run. Separate it out and warn instead of crashing. (#2655)
+                $rspecResult = Split-RSpecResult -Result $r
+                $rspecContainers = $rspecResult.Containers
+                if (0 -lt $rspecResult.StrayOutput.Count) {
+                    $strayDescription = @(foreach ($strayItem in $rspecResult.StrayOutput) { "'$strayItem'" }) -join ', '
+                    & $SafeCommands['Write-Warning'] "Pester received unexpected output while running tests and ignored it: $strayDescription. This is usually caused by a native command writing to the success stream in a setup block such as BeforeAll. Redirect the output to `$null, for example: `$null = my-command 2>`&1."
+                }
+
+                foreach ($c in $rspecContainers) {
+                    Fold-Container -Container $c  -OnTest { param($t) Add-RSpecTestObjectProperties $t }
+                }
+            }
+
+            # Wall-clock end of test execution, captured before building and post-processing the
+            # run object. For parallel runs this is used as Run.Duration, because summing the
+            # overlapping container durations would overstate the actual elapsed time. (#2794)
+            $end = [DateTime]::Now
 
             $run = [Pester.Run]::Create()
             $run.Executed = $true
@@ -4980,11 +5385,11 @@ function Invoke-Pester {
             }
 
             $run.PSVersion = $PSVersionTable.PSVersion
-            foreach ($i in @($r)) {
+            foreach ($i in $rspecContainers) {
                 $run.Containers.Add($i)
             }
 
-            PostProcess-RSpecTestRun -TestRun $run
+            PostProcess-RSpecTestRun -TestRun $run -Parallel:$ranInParallel -RunDuration ($end - $start)
 
             $steps = $Plugins.End
             if ($null -ne $steps -and 0 -lt @($steps).Count) {
@@ -4999,7 +5404,8 @@ function Invoke-Pester {
                 Remove-RSPecNonPublicProperties $run
             }
 
-            if ($PesterPreference.Run.PassThru.Value) {
+            $failedCount = $run.FailedCount + $run.FailedBlocksCount + $run.FailedContainersCount
+            if ($PesterPreference.Run.PassThru.Value -and -not ($PesterPreference.Run.Exit.Value -and 0 -ne $failedCount)) {
                 $run
             }
 
@@ -5026,12 +5432,10 @@ function Invoke-Pester {
         # go back to original CWD
         if ($null -ne $initialPWD) { & $SafeCommands['Set-Location'] -Path $initialPWD }
 
-        # exit with exit code if we fail and even if we succeed, otherwise we could inherit
-        # exit code of some other app end exit with it's exit code instead with ours
-        $failedCount = $run.FailedCount + $run.FailedBlocksCount + $run.FailedContainersCount
         # always set exit code. This both to:
-        # - prevent previous commands failing with non-zero exit code from failing the run
+        # - avoid inheriting a previous commands non-zero exit code
         # - setting the exit code when there were some failed tests, blocks, or containers
+        $failedCount = $run.FailedCount + $run.FailedBlocksCount + $run.FailedContainersCount
         $global:LASTEXITCODE = $failedCount
 
         if ($PesterPreference.Run.Throw.Value -and 0 -ne $failedCount) {
@@ -5059,7 +5463,7 @@ function Convert-PesterSimpleParameterSet ($BoundParameters) {
         'Path'             = {
             if ($null -ne $Path) {
                 if (@($Path)[0] -is [System.Collections.IDictionary]) {
-                    throw 'Passing hashtable configuration to -Path / -Script is currently not supported in Pester 5.0. Please provide just paths, as an array of strings.'
+                    throw 'Passing hashtable configuration to -Path is currently not supported in Pester 5.0. Please provide just paths, as an array of strings.'
                 }
 
                 $Configuration.Run.Path = $Path
@@ -5127,362 +5531,37 @@ function Convert-PesterSimpleParameterSet ($BoundParameters) {
     return $Configuration
 }
 
-function Convert-PesterLegacyParameterSet ($BoundParameters) {
-    $Configuration = [PesterConfiguration]::Default
+function Split-RSpecResult {
+    # Invoke-Test should only return [Pester.Container] objects. Stray output produced during the run - most
+    # commonly a native command writing to the success stream in a setup block (e.g. BeforeAll) that was not
+    # redirected to $null - can leak into the pipeline. Adding it to the strongly-typed Run.Containers list
+    # throws an opaque "Cannot find an overload for Add" error and fails the whole run. Separate the containers
+    # from any stray output so the caller can keep the results and warn instead of crashing. (#2655)
+    param ($Result)
 
-    $migrations = @{
-        'Path'                           = {
-            if ($null -ne $Path) {
-                $Configuration.Run.Path = $Path
-            }
+    $containers = [System.Collections.Generic.List[Pester.Container]]@()
+    $strayOutput = [System.Collections.Generic.List[object]]@()
+
+    foreach ($i in $Result) {
+        if ($i -is [Pester.Container]) {
+            $containers.Add($i)
         }
-
-        'FullNameFilter'                 = {
-            if ($null -ne $FullNameFilter -and 0 -lt @($FullNameFilter).Count) {
-                $Configuration.Filter.FullName = $FullNameFilter
-            }
-        }
-
-        'EnableExit'                     = {
-            if ($EnableExit) {
-                $Configuration.Run.Exit = $true
-            }
-        }
-
-        'TagFilter'                      = {
-            if ($null -ne $TagFilter -and 0 -lt @($TagFilter).Count) {
-                $Configuration.Filter.Tag = $TagFilter
-            }
-        }
-
-        'ExcludeTagFilter'               = {
-            if ($null -ne $ExcludeTagFilter -and 0 -lt @($ExcludeTagFilter).Count) {
-                $Configuration.Filter.ExcludeTag = $ExcludeTagFilter
-            }
-        }
-
-        'PassThru'                       = {
-            if ($null -ne $PassThru) {
-                $Configuration.Run.PassThru = [bool] $PassThru
-            }
-        }
-
-        'CodeCoverage'                   = {
-            # advanced CC options won't work (hashtable)
-            if ($null -ne $CodeCoverage) {
-                $Configuration.CodeCoverage.Enabled = $true
-                $Configuration.CodeCoverage.Path = $CodeCoverage
-            }
-        }
-
-        'CodeCoverageOutputFile'         = {
-            if ($null -ne $CodeCoverageOutputFile) {
-                $Configuration.CodeCoverage.Enabled = $true
-                $Configuration.CodeCoverage.OutputPath = $CodeCoverageOutputFile
-            }
-        }
-
-        'CodeCoverageOutputFileEncoding' = {
-            if ($null -ne $CodeCoverageOutputFileEncoding) {
-                $Configuration.CodeCoverage.Enabled = $true
-                $Configuration.CodeCoverage.OutputEncoding = $CodeCoverageOutputFileEncoding
-            }
-        }
-
-        'CodeCoverageOutputFileFormat'   = {
-            if ($null -ne $CodeCoverageOutputFileFormat) {
-                $Configuration.CodeCoverage.Enabled = $true
-                $Configuration.CodeCoverage.OutputFormat = $CodeCoverageOutputFileFormat
-            }
-        }
-
-        'OutputFile'                     = {
-            if ($null -ne $OutputFile -and 0 -lt @($OutputFile).Count) {
-                $Configuration.TestResult.Enabled = $true
-                $Configuration.TestResult.OutputPath = $OutputFile
-            }
-        }
-
-        'OutputFormat'                   = {
-            if ($null -ne $OutputFormat -and 0 -lt @($OutputFormat).Count) {
-                $Configuration.TestResult.OutputFormat = $OutputFormat
-            }
-        }
-
-        'Show'                           = {
-            if ($null -ne $Show) {
-                # most used v4 options are adapted, and it also takes v5 options to be able to migrate gradually
-                # without switching the whole param set just to get Diagnostic output
-                # {None | Default | Passed | Failed | Pending | Skipped | Inconclusive | Describe | Context | Summary | Header | Fails | All}
-                $verbosity = switch ($Show) {
-                    'All' { 'Detailed' }
-                    'Default' { 'Detailed' }
-                    'Fails' { 'Normal' }
-                    'Diagnostic' { 'Diagnostic' }
-                    'Detailed' { 'Detailed' }
-                    'Normal' { 'Normal' }
-                    'Minimal' { 'Minimal' }
-                    'None' { 'None' }
-                    default { 'Detailed' }
-                }
-
-                $Configuration.Output.Verbosity = $verbosity
-            }
-        }
-
-        'Quiet'                          = {
-            if ($null -ne $Quiet) {
-                if ($Quiet) {
-                    $Configuration.Output.Verbosity = 'None'
-                }
-            }
+        elseif ($null -ne $i) {
+            $strayOutput.Add($i)
         }
     }
 
-    # Run all applicable migrations and remove variable to avoid leaking into child scopes
-    foreach ($key in $migrations.Keys) {
-        if ($BoundParameters.ContainsKey($key)) {
-            . $migrations[$key]
-            & $SafeCommands['Get-Variable'] -Name $key -Scope Local | Remove-Variable
-        }
-    }
-
-    # Remove auto null-variables for undefined parameters in set
-    # TODO: Why are these special? Only removed when not defined, but they're never used. Other are only removed when expliclity set
-    if (-not $BoundParameters.ContainsKey('Strict')) {
-        & $SafeCommands['Get-Variable'] 'Strict' -Scope Local | Remove-Variable
-    }
-
-    if (-not $BoundParameters.ContainsKey('PesterOption')) {
-        & $SafeCommands['Get-Variable'] 'PesterOption' -Scope Local | Remove-Variable
-    }
-
-    return $Configuration
-}
-
-function New-PesterOption {
-    #TODO: move those options, right now I am just not exposing this function and added the testSuiteName
-    <#
-    .SYNOPSIS
-    Creates an object that contains advanced options for Invoke-Pester
-    .DESCRIPTION
-    By using New-PesterOption you can set options what allow easier integration with external applications or
-    modifies output generated by Invoke-Pester.
-    The result of New-PesterOption need to be assigned to the parameter 'PesterOption' of the Invoke-Pester function.
-    .PARAMETER IncludeVSCodeMarker
-    When this switch is set, an extra line of output will be written to the console for test failures, making it easier
-    for VSCode's parser to provide highlighting / tooltips on the line where the error occurred.
-    .PARAMETER TestSuiteName
-    When generating NUnit XML output, this controls the name assigned to the root "test-suite" element.  Defaults to "Pester".
-    .PARAMETER ScriptBlockFilter
-    Filters scriptblock based on the path and line number. This is intended for integration with external tools so we don't rely on names (strings) that can have expandable variables in them.
-    .PARAMETER Experimental
-    Enables experimental features of Pester to be enabled.
-    .PARAMETER ShowScopeHints
-    EXPERIMENTAL: Enables debugging output for debugging transitions among scopes. (Experimental flag needs to be used to enable this.)
-
-    .INPUTS
-    None
-    You cannot pipe input to this command.
-    .OUTPUTS
-    System.Management.Automation.PSObject
-    .EXAMPLE
-        PS > $Options = New-PesterOption -TestSuiteName "Tests - Set A"
-
-        PS > Invoke-Pester -PesterOption $Options -Outputfile ".\Results-Set-A.xml" -OutputFormat NUnitXML
-
-        The result of commands will be execution of tests and saving results of them in a NUnitMXL file where the root "test-suite"
-        will be named "Tests - Set A".
-    .LINK
-    https://github.com/pester/Pester/wiki/New-PesterOption
-
-    .LINK
-    Invoke-Pester
-    #>
-    [CmdletBinding()]
-    param (
-        [switch] $IncludeVSCodeMarker,
-
-        [ValidateNotNullOrEmpty()]
-        [string] $TestSuiteName = 'Pester',
-
-        [switch] $Experimental,
-
-        [switch] $ShowScopeHints,
-
-        [hashtable[]] $ScriptBlockFilter
-    )
-
-    # in PowerShell 2 Add-Member can attach properties only to
-    # PSObjects, I could work around this by capturing all instances
-    # in checking them during runtime, but that would bring a lot of
-    # object management problems - so let's just not allow this in PowerShell 2
-    if ($Experimental -and $ShowScopeHints) {
-        if ($PSVersionTable.PSVersion.Major -lt 3) {
-            throw "Scope hints cannot be used on PowerShell 2 due to limitations of Add-Member."
-        }
-
-        $script:DisableScopeHints = $false
-    }
-    else {
-        $script:DisableScopeHints = $true
-    }
-
-    return & $script:SafeCommands['New-Object'] psobject -Property @{
-        ReadMe              = "New-PesterOption is deprecated and kept only for backwards compatibility when executing Pester v5 using the " +
-        "legacy parameter set. When the object is used with Invoke-Pester -PesterOption it will be ignored."
-        IncludeVSCodeMarker = [bool] $IncludeVSCodeMarker
-        TestSuiteName       = $TestSuiteName
-        ShowScopeHints      = $ShowScopeHints
-        Experimental        = $Experimental
-        ScriptBlockFilter   = $ScriptBlockFilter
+    return [PSCustomObject]@{
+        Containers  = $containers
+        StrayOutput = $strayOutput
     }
 }
 
-function ResolveTestScripts {
-    param ([object[]] $Path)
+function Resolve-AutoEnabledConfiguration {
+    param ([PesterConfiguration] $PesterPreference)
 
-    $resolvedScriptInfo = @(
-        foreach ($object in $Path) {
-            if ($object -is [System.Collections.IDictionary]) {
-                $unresolvedPath = Get-DictionaryValueFromFirstKeyFound -Dictionary $object -Key 'Path', 'p'
-                $script = Get-DictionaryValueFromFirstKeyFound -Dictionary $object -Key 'Script'
-                $arguments = @(Get-DictionaryValueFromFirstKeyFound -Dictionary $object -Key 'Arguments', 'args', 'a')
-                $parameters = Get-DictionaryValueFromFirstKeyFound -Dictionary $object -Key 'Parameters', 'params'
-
-                if ($null -eq $Parameters) {
-                    $Parameters = @{}
-                }
-
-                if ($unresolvedPath -isnot [string] -or $unresolvedPath -notmatch '\S' -and ($script -isnot [string] -or $script -notmatch '\S')) {
-                    throw 'When passing hashtables to the -Path parameter, the Path key is mandatory, and must contain a single string.'
-                }
-
-                if ($null -ne $parameters -and $parameters -isnot [System.Collections.IDictionary]) {
-                    throw 'When passing hashtables to the -Path parameter, the Parameters key (if present) must be assigned an IDictionary object.'
-                }
-            }
-            else {
-                $unresolvedPath = [string] $object
-                $script = [string] $object
-                $arguments = @()
-                $parameters = @{}
-            }
-
-            if (-not [string]::IsNullOrEmpty($unresolvedPath)) {
-                if ($unresolvedPath -notmatch '[\*\?\[\]]' -and
-                    (& $script:SafeCommands['Test-Path'] -LiteralPath $unresolvedPath -PathType Leaf) -and
-                    (& $script:SafeCommands['Get-Item'] -LiteralPath $unresolvedPath) -is [System.IO.FileInfo]) {
-                    $extension = [System.IO.Path]::GetExtension($unresolvedPath)
-                    if ($extension -ne '.ps1') {
-                        & $script:SafeCommands['Write-Error'] "Script path '$unresolvedPath' is not a ps1 file."
-                    }
-                    else {
-                        & $script:SafeCommands['New-Object'] psobject -Property @{
-                            Path       = $unresolvedPath
-                            Script     = $null
-                            Arguments  = $arguments
-                            Parameters = $parameters
-                        }
-                    }
-                }
-                else {
-                    # World's longest pipeline?
-
-                    & $script:SafeCommands['Resolve-Path'] -Path $unresolvedPath |
-                        & $script:SafeCommands['Where-Object'] { $_.Provider.Name -eq 'FileSystem' } |
-                        & $script:SafeCommands['Select-Object'] -ExpandProperty ProviderPath |
-                        & $script:SafeCommands['Get-ChildItem'] -Include *.Tests.ps1 -Recurse |
-                        & $script:SafeCommands['Where-Object'] { -not $_.PSIsContainer } |
-                        & $script:SafeCommands['Select-Object'] -ExpandProperty FullName -Unique |
-                        & $script:SafeCommands['ForEach-Object'] {
-                            & $script:SafeCommands['New-Object'] psobject -Property @{
-                                Path       = $_
-                                Script     = $null
-                                Arguments  = $arguments
-                                Parameters = $parameters
-                            }
-                        }
-                }
-            }
-            elseif (-not [string]::IsNullOrEmpty($script)) {
-                & $script:SafeCommands['New-Object'] psobject -Property @{
-                    Path       = $null
-                    Script     = $script
-                    Arguments  = $arguments
-                    Parameters = $parameters
-                }
-            }
-        }
-    )
-
-    # Here, we have the option of trying to weed out duplicate file paths that also contain identical
-    # Parameters / Arguments.  However, we already make sure that each object in $Path didn't produce
-    # any duplicate file paths, and if the caller happens to pass in a set of parameters that produce
-    # dupes, maybe that's not our problem.  For now, just return what we found.
-
-    $resolvedScriptInfo
-}
-
-function Get-DictionaryValueFromFirstKeyFound {
-    param ([System.Collections.IDictionary] $Dictionary, [object[]] $Key)
-
-    foreach ($keyToTry in $Key) {
-        if ($Dictionary.Contains($keyToTry)) {
-            return $Dictionary[$keyToTry]
-        }
-    }
-}
-
-function Set-PesterStatistics($Node) {
-    if ($null -eq $Node) {
-        $Node = $pester.TestActions
-    }
-
-    foreach ($action in $Node.Actions) {
-        if ($action.Type -eq 'TestGroup') {
-            Set-PesterStatistics -Node $action
-
-            $Node.TotalCount += $action.TotalCount
-            $Node.PassedCount += $action.PassedCount
-            $Node.FailedCount += $action.FailedCount
-            $Node.SkippedCount += $action.SkippedCount
-            $Node.PendingCount += $action.PendingCount
-            $Node.InconclusiveCount += $action.InconclusiveCount
-        }
-        elseif ($action.Type -eq 'TestCase') {
-            $node.TotalCount++
-
-            switch ($action.Result) {
-                Passed {
-                    $Node.PassedCount++; break;
-                }
-                Failed {
-                    $Node.FailedCount++; break;
-                }
-                Skipped {
-                    $Node.SkippedCount++; break;
-                }
-                Pending {
-                    $Node.PendingCount++; break;
-                }
-                Inconclusive {
-                    $Node.InconclusiveCount++; break;
-                }
-            }
-        }
-    }
-}
-
-function Contain-AnyStringLike ($Filter, $Collection) {
-    foreach ($item in $Collection) {
-        foreach ($value in $Filter) {
-            if ($item -like $value) {
-                return $true
-            }
-        }
-    }
-    return $false
+    $PesterPreference.CodeCoverage.ResolveEnabled()
+    $PesterPreference.TestResult.ResolveEnabled()
 }
 
 function ConvertTo-Pester4Result {
@@ -5511,10 +5590,10 @@ function ConvertTo-Pester4Result {
     in the Pester 5 format and converts it to a new Pester 4-compatible result-object.
 
     .LINK
-    https://pester.dev/docs/v5/commands/ConvertTo-Pester4Result
+    https://pester.dev/docs/commands/ConvertTo-Pester4Result
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
+    https://pester.dev/docs/commands/Invoke-Pester
     #>
     [CmdletBinding()]
     param(
@@ -5532,7 +5611,6 @@ function ConvertTo-Pester4Result {
             PassedCount       = 0
             FailedCount       = 0
             SkippedCount      = 0
-            PendingCount      = 0
             InconclusiveCount = 0
             Time              = [TimeSpan]::Zero
             TestResult        = [System.Collections.Generic.List[object]]@()
@@ -5602,7 +5680,6 @@ function ConvertTo-Pester4Result {
             }
         }
         $legacyResult.TotalCount = $legacyResult.TestResult.Count
-        $legacyResult.PendingCount = 0
         $legacyResult.Time = $PesterResult.Duration
 
         $legacyResult
@@ -5645,16 +5722,18 @@ function BeforeDiscovery {
     dynamically create a Describe-block and tests for each file found.
 
     .LINK
-    https://pester.dev/docs/v5/commands/BeforeDiscovery
+    https://pester.dev/docs/commands/BeforeDiscovery
 
     .LINK
-    https://pester.dev/docs/v5/usage/data-driven-tests
+    https://pester.dev/docs/usage/data-driven-tests
     #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
         [ScriptBlock]$ScriptBlock
     )
+
+    Assert-BoundScriptBlockInput -ScriptBlock $ScriptBlock
 
     if ($ExecutionContext.SessionState.PSVariable.Get('invokedViaInvokePester')) {
         if ($state.CurrentBlock.IsRoot -and -not $state.CurrentBlock.FrameworkData.MissingParametersProcessed) {
@@ -5672,9 +5751,5168 @@ function BeforeDiscovery {
 # Adding Add-ShouldOperator because it used to be an alias in v4, and so when we now import it will take precedence over
 # our internal function in v5, so we need a safe way to refer to it
 $script:SafeCommands['Add-ShouldOperator'] = & $SafeCommands['Get-Command'] -CommandType Function -Name 'Add-ShouldOperator'
+# file src\functions\assert\Boolean\Should-BeFalse.ps1
+function Should-BeFalse {
+    <#
+    .SYNOPSIS
+    Compares the actual value to a boolean $false. It does not convert input values to boolean, and will fail for any value that is not $false.
+
+    .DESCRIPTION
+    This assertion only passes for the Boolean value `$false. It does not coerce input, so `$null, 0, or other falsy values still fail.
+
+    .PARAMETER Actual
+    The actual value to compare to $false.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $false | Should-BeFalse
+    ```
+
+    This assertion will pass.
+
+    .EXAMPLE
+    ```powershell
+    $true | Should-BeFalse
+    Get-Process | Should-BeFalse
+    $null | Should-BeFalse
+    $() | Should-BeFalse
+    @() | Should-BeFalse
+    0 | Should-BeFalse
+    ```
+
+    All of these assertions will fail, because the actual value is not $false.
+
+    .NOTES
+    The `Should-BeFalse` assertion is the opposite of the `Should-BeTrue` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeFalse
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ($Actual -isnot [bool] -or $Actual) {
+        $Message = Get-AssertionMessage -Expected $false -Actual $Actual -Because $Because  -DefaultMessage "Expected <expectedType> <expected>,<because> but got: <actualType> <actual>."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Boolean\Should-BeFalsy.ps1
+function Should-BeFalsy {
+    <#
+    .SYNOPSIS
+    Compares the actual value to a boolean $false or a falsy value: 0, "", $null or @(). It converts the input value to a boolean.
+
+    .DESCRIPTION
+    This assertion evaluates the input using PowerShell truthiness rules. It passes for values such as `$false, 0, `""`, `$null, and empty collections.
+
+    .PARAMETER Actual
+    The actual value to compare to $false.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $false | Should-BeFalsy
+    $null | Should-BeFalsy
+    $() | Should-BeFalsy
+    @() | Should-BeFalsy
+    0 | Should-BeFalsy
+    ```
+
+    These assertion will pass.
+
+    .EXAMPLE
+    ```powershell
+    $true | Should-BeFalsy
+    Get-Process | Should-BeFalsy
+    ```
+
+    These assertions will fail, because the actual value is not $false or falsy.
+
+    .NOTES
+    The `Should-BeFalsy` assertion is the opposite of the `Should-BeTruthy` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeFalsy
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ($Actual) {
+        $Message = Get-AssertionMessage -Expected $false -Actual $Actual -Because $Because -DefaultMessage 'Expected <expectedType> <expected> or a falsy value: 0, "", $null or @(),<because> but got: <actualType> <actual>.'
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Boolean\Should-BeTrue.ps1
+function Should-BeTrue {
+    <#
+    .SYNOPSIS
+    Compares the actual value to a boolean $true. It does not convert input values to boolean, and will fail for any value is not $true.
+
+    .DESCRIPTION
+    This assertion only passes for the Boolean value `$true. It does not coerce input, so truthy non-Boolean values still fail.
+
+    .PARAMETER Actual
+    The actual value to compare to $true.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $true | Should-BeTrue
+    ```
+
+    This assertion will pass.
+
+    .EXAMPLE
+    ```powershell
+    $false | Should-BeTrue
+    Get-Process | Should-BeTrue
+    $null | Should-BeTrue
+    $() | Should-BeTrue
+    @() | Should-BeTrue
+    0 | Should-BeTrue
+    ```
+
+    All of these assertions will fail, because the actual value is not $true.
+
+    .NOTES
+    The `Should-BeTrue` assertion is the opposite of the `Should-BeFalse` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeTrue
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ($Actual -isnot [bool] -or -not $Actual) {
+        $Message = Get-AssertionMessage -Expected $true -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected>,<because> but got: <actualType> <actual>."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Boolean\Should-BeTruthy.ps1
+function Should-BeTruthy {
+    <#
+    .SYNOPSIS
+    Compares the actual value to a boolean $true. It converts input values to boolean, and will fail for any value is not $true, or truthy.
+
+    .DESCRIPTION
+    This assertion evaluates the input using PowerShell truthiness rules. It passes for values that PowerShell treats as true, not just the Boolean `$true.
+
+    .PARAMETER Actual
+    The actual value to compare to $true.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $true | Should-BeTruthy
+    1 | Should-BeTruthy
+    Get-Process | Should-BeTruthy
+    ```
+
+    This assertion will pass.
+
+    .EXAMPLE
+    ```powershell
+    $false | Should-BeTruthy
+    $null | Should-BeTruthy
+    $() | Should-BeTruthy
+    @() | Should-BeTruthy
+    0 | Should-BeTruthy
+    ```
+
+    All of these assertions will fail, because the actual value is not $true or truthy.
+
+    .NOTES
+    The `Should-BeTruthy` assertion is the opposite of the `Should-BeFalsy` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeTruthy
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if (-not $Actual) {
+        $Message = Get-AssertionMessage -Expected $true -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected> or a truthy value,<because> but got: <actualType> <actual>."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Collection\Should-All.ps1
+function Should-All {
+    <#
+    .SYNOPSIS
+    Compares all items in a collection to a filter script. If the filter returns true, or does not throw for all the items in the collection, the assertion passes.
+
+    .DESCRIPTION
+    This assertion runs the filter script against every item in the collection. Nested Should-* failures are treated as filter failures and included in the reported reasons.
+
+    .PARAMETER FilterScript
+    A script block that filters the input collection. The script block can use Should-* assertions or throw exceptions to indicate failure.
+
+    .PARAMETER Actual
+    A collection of items to filter.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-All { $_ -gt 0 }
+    1, 2, 3 | Should-All { $_ | Should-BeGreaterThan 0 }
+    ```
+
+    This assertion will pass, because all items pass the filter.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-All { $_ -gt 1 }
+    1, 2, 3 | Should-All { $_ | Should-BeGreaterThan 1 }
+    ```
+
+    The assertions will fail because not all items in the array are greater than 1.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-All
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true, Position = 1)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        [scriptblock]$FilterScript,
+        [String]$Because
+    )
+
+    Assert-BoundScriptBlockInput -ScriptBlock $FilterScript
+
+    $Expected = $FilterScript
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput
+    $Actual = $collectedInput.Actual
+
+    # Captured up-front (cheap reference grabs); the diagnostic hint itself is only computed inside
+    # a failure branch, via & $reportFailure, so there is no cost on the passing path.
+    $pipelineBuffer = $local:Input
+    $isPipelineInput = $collectedInput.IsPipelineInput
+    $reportFailure = {
+        param($Message)
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $pipelineBuffer -CollectedActual $Actual -IsPipelineInput $isPipelineInput -Expecting CollectionItems
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if ($null -eq $Actual -or 0 -eq @($Actual).Count) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected all items in collection to pass filter <expected>, but <actualType> <actual> contains no items to compare."
+        & $reportFailure $Message
+    }
+
+    $failReasons = $null
+    $appendMore = $false
+    # we are jumping between modules so I need to explicitly pass the _ variable
+    # simply using '&' won't work
+    # see: https://blogs.msdn.microsoft.com/sergey_babkins_blog/2014/10/30/calling-the-script-blocks-in-powershell/
+    $actualFiltered = foreach ($item in $Actual) {
+        $underscore = [PSVariable]::new('_', $item)
+        try {
+            $pass = $FilterScript.InvokeWithContext($null, $underscore, $null)
+        }
+        catch {
+            if ($null -eq $failReasons) {
+                $failReasons = [System.Collections.Generic.List[string]]::new(10)
+            }
+            if ($failReasons.Count -lt 10) {
+                $failReasons.Add($_.Exception.InnerException.Message)
+            }
+            else {
+                $appendMore = $true
+            }
+
+            $pass = @($false)
+        }
+
+        # The API returns a collection and user can return anything from their script
+        # or there can be no output when assertion is used, so we are checking if the first item
+        # in the output is a boolean $false. The scriptblock should not fail in $null for example,
+        # hence the explicit type check
+        if (($pass.Count -ge 1) -and ($pass[0] -is [bool]) -and ($false -eq $pass[0])) {
+            $item
+        }
+    }
+
+    # Make sure are checking the count of the filtered items, not just truthiness of a single item.
+    $actualFiltered = @($actualFiltered)
+    if (0 -lt $actualFiltered.Count) {
+        $data = @{
+            actualFiltered      = if (1 -eq $actualFiltered.Count) { $actualFiltered[0] } else { $actualFiltered }
+            actualFilteredCount = $actualFiltered.Count
+        }
+
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Data $data -Because $Because -DefaultMessage "Expected all items in collection <actual> to pass filter <expected>, but <actualFilteredCount> of them <actualFiltered> did not pass the filter."
+        if ($null -ne $failReasons) {
+            $failReasons = $failReasons -join "`n"
+            if ($appendMore) {
+                $failReasons += "`nand more..."
+            }
+            $Message += "`nReasons :`n$failReasons"
+        }
+        & $reportFailure $Message
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Collection\Should-Any.ps1
+function Should-Any {
+    <#
+    .SYNOPSIS
+    Compares all items in a collection to a filter script. If the filter returns true, or does not throw for any of the items in the collection, the assertion passes.
+
+    .DESCRIPTION
+    This assertion runs the filter script against each item until one passes. Nested Should-* failures are treated as filter failures and included in the reported reasons when nothing matches.
+
+    .PARAMETER FilterScript
+    A script block that filters the input collection. The script block can use Should-* assertions or throw exceptions to indicate failure.
+
+    .PARAMETER Actual
+    A collection of items to filter.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-Any { $_ -gt 2 }
+    1, 2, 3 | Should-Any { $_ | Should-BeGreaterThan 2 }
+    ```
+
+    This assertion will pass, because at least one item in the collection passed the filter. 3 is greater than 2.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-Any { $_ -gt 4 }
+    1, 2, 3 | Should-Any { $_ | Should-BeGreaterThan 4 }
+    ```
+
+    The assertions will fail because none of theitems in the array are greater than 4.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-Any
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true, Position = 1)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        [scriptblock]$FilterScript,
+        [String]$Because
+    )
+
+    Assert-BoundScriptBlockInput -ScriptBlock $FilterScript
+
+    $Expected = $FilterScript
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput
+    $Actual = $collectedInput.Actual
+
+    # Captured up-front (cheap reference grabs); the diagnostic hint itself is only computed inside
+    # a failure branch, via & $reportFailure, so there is no cost on the passing path.
+    $pipelineBuffer = $local:Input
+    $isPipelineInput = $collectedInput.IsPipelineInput
+    $reportFailure = {
+        param($Message)
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $pipelineBuffer -CollectedActual $Actual -IsPipelineInput $isPipelineInput -Expecting CollectionItems
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if ($null -eq $Actual -or 0 -eq @($Actual).Count) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected at least one item in collection to pass filter <expected>, but <actualType> <actual> contains no items to compare."
+        & $reportFailure $Message
+    }
+
+    $failReasons = $null
+    $appendMore = $false
+    foreach ($item in $Actual) {
+        $underscore = [PSVariable]::new('_', $item)
+        try {
+            $pass = $FilterScript.InvokeWithContext($null, $underscore, $null)
+        }
+        catch {
+            if ($null -eq $failReasons) {
+                $failReasons = [System.Collections.Generic.List[string]]::new(10)
+            }
+            if ($failReasons.Count -lt 10) {
+                $failReasons.Add($_.Exception.InnerException.Message)
+            }
+            else {
+                $appendMore = $true
+            }
+
+            # InvokeWithContext returns collection. This makes it easier to check the value if we throw and don't assign the value.
+            $pass = @($false)
+        }
+
+        # The API returns a collection and user can return anything from their script
+        # or there can be no output when assertion is used, so we are checking if the first item
+        # in the output is a boolean $false. The scriptblock should not fail in $null for example,
+        # hence the explicit type check
+        if (-not (($pass.Count -ge 1) -and ($pass[0] -is [bool]) -and ($false -eq $pass[0]))) {
+            $pass = $true
+            break
+        }
+    }
+
+    if (-not $pass) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected at least one item in collection <actual> to pass filter <expected>, but none of the items passed the filter."
+        if ($null -ne $failReasons) {
+            $failReasons = $failReasons -join "`n"
+            if ($appendMore) {
+                $failReasons += "`nand more..."
+            }
+            $Message += "`nReasons :`n$failReasons"
+        }
+        & $reportFailure $Message
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Collection\Should-BeCollection.ps1
+function Should-BeCollection {
+    <#
+    .SYNOPSIS
+    Compares collections for equality, by comparing their sizes and each item in them. It does not compare the types of the input collections.
+
+    .DESCRIPTION
+    This assertion verifies that both values are collections and compares their contents rather than their collection types. When you use `-Count`, it only checks the number of items.
+
+    .PARAMETER Expected
+    A collection of items.
+
+    .PARAMETER Actual
+    A collection of items.
+
+    .PARAMETER Count
+    Checks if the collection has the expected number of items.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-BeCollection @(1, 2, 3)
+    @(1) | Should-BeCollection @(1)
+    1 | Should-BeCollection 1
+    ```
+
+    This assertion will pass, because the collections have the same size and the items are equal.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3, 4 | Should-BeCollection @(1, 2, 3)
+    1, 2, 3, 4 | Should-BeCollection @(5, 6, 7, 8)
+    @(1) | Should-BeCollection @(2)
+    1 | Should-BeCollection @(2)
+    ```
+
+    The assertions will fail because the collections are not equal.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeCollection
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory, ParameterSetName = 'Expected')]
+        $Expected,
+        [String]$Because,
+        [Parameter(ParameterSetName = 'Count')]
+        [int] $Count
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput
+    $Actual = $collectedInput.Actual
+
+    # Captured up-front (cheap reference grabs); the diagnostic hint itself is only computed inside
+    # a failure branch, via & $reportFailure, so there is no cost on the passing path.
+    $pipelineBuffer = $local:Input
+    $isPipelineInput = $collectedInput.IsPipelineInput
+    $reportFailure = {
+        param($Message)
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $pipelineBuffer -CollectedActual $Actual -IsPipelineInput $isPipelineInput -Expecting Collection
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if (-not (Is-Collection -Value $Actual)) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Actual <actualType> <actual> is not a collection."
+        & $reportFailure $Message
+    }
+
+    if ($PSCmdlet.ParameterSetName -eq 'Count') {
+        if ($Count -ne $Actual.Count) {
+            $Message = Get-AssertionMessage -Expected $Count -Actual $Actual -Because $Because -Data @{ actualCount = $Actual.Count } -DefaultMessage "Expected <expected> items in <actualType> <actual>,<because> but it has <actualCount> items."
+            & $reportFailure $Message
+        }
+        Set-AssertionPassResult
+        return
+    }
+
+    if (-not (Is-Collection -Value $Expected)) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected> is not a collection."
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if (-not (Is-CollectionSize -Expected $Expected -Actual $Actual)) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected> to be present in <actualType> <actual>,<because> but they don't have the same number of items."
+        & $reportFailure $Message
+    }
+
+    if (-Not $InOrder) {
+
+        $actualCopy = [System.Collections.Generic.List[Object]]::new($Actual)
+        $expectedCopy = [System.Collections.Generic.List[Object]]::new($Expected)
+
+        $actualLength = $actualCopy.Count
+        $expectedLength = $expectedCopy.Count
+
+        # If the arrays below have both size 0 we won't go over them,
+        # but they are not different. If one of them has size 0 and the other does not
+        # we already failed the assertion above.
+        #
+        # This marks the items that were the same in both arrays, so user can put anything
+        # in the array, including $null, and we don't have a conflict, because they can never get
+        # reference to the object in $same.
+        $same = [Object]::new()
+        # go over each item in the array and when found overwrite it in the array
+        for ($a = 0; $a -lt $actualLength; $a++) {
+            if ($same -eq $actualCopy[$a]) {
+                continue
+            }
+            for ($e = 0; $e -lt $expectedLength; $e++) {
+                if ($same -eq $expectedCopy[$e]) {
+                    continue
+                }
+                if ($actualCopy[$a] -eq $expectedCopy[$e]) {
+                    $expectedCopy[$e] = $same
+                    $actualCopy[$a] = $same
+                }
+            }
+        }
+
+        $different = $false
+        for ($a = 0; $a -lt $actualLength; $a++) {
+            if ($same -ne $actualCopy[$a]) {
+                $different = $true
+                break
+            }
+        }
+
+        if ($different) {
+            $actualDifference = $(for ($a = 0; $a -lt $actualLength; $a++) { if ($same -ne $actualCopy[$a]) { "$(Format-Nicely2 $actualCopy[$a]) (index $a)" } }) -join ", "
+            $expectedDifference = $(for ($e = 0; $e -lt $actualLength; $e++) { if ($same -ne $expectedCopy[$e]) { "$(Format-Nicely2 $expectedCopy[$e]) (index $e)" } }) -join ", "
+
+            $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -Data @{ expectedDifference = $expectedDifference; actualDifference = $actualDifference } -DefaultMessage "Expected <expectedType> <expected> to be present in <actualType> <actual> in any order, but some values were not.`nMissing in actual: <expectedDifference>`nExtra in actual: <actualDifference>"
+            & $reportFailure $Message
+        }
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Collection\Should-ContainCollection.ps1
+function Should-ContainCollection {
+    <#
+    .SYNOPSIS
+    Checks that the expected collection is present in the actual collection as an ordered subsequence. It does not compare the types of the input collections.
+
+    .DESCRIPTION
+    The items of the expected collection must appear in the actual collection in the same order. Gaps between the matched items are allowed, but each actual item is used at most once, so repeated expected items need at least as many matching items in the actual collection. A single value is treated as a one-item collection. Items are compared using PowerShell equality, the same as the `-contains` operator.
+
+    .PARAMETER Expected
+    One or more items to look for as an ordered subsequence. A single value is treated as a one-item collection.
+
+    .PARAMETER Actual
+    The collection to search in.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-ContainCollection @(1, 2)
+    1, 2, 3 | Should-ContainCollection @(1, 3)
+    @(1) | Should-ContainCollection @(1)
+    1, 2, 3 | Should-ContainCollection 2
+    ```
+
+    These assertions pass, because the expected items are present in the same order. Gaps between them, as in `@(1, 3)`, are allowed, and a single value is treated as a one-item collection.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-ContainCollection @(3, 4)
+    1, 2, 3 | Should-ContainCollection @(3, 2, 1)
+    1, 2 | Should-ContainCollection @(1, 1)
+    @(1) | Should-ContainCollection @(2)
+    ```
+
+    These assertions fail, because an expected item is missing (`@(3, 4)`), the items are not in the right order (`@(3, 2, 1)`), or the actual collection does not have enough matching items (`@(1, 1)` needs two 1s).
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-ContainCollection
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput
+    $Actual = $collectedInput.Actual
+
+    # Captured up-front (cheap reference grabs); the diagnostic hint itself is only computed inside
+    # a failure branch, via & $reportFailure, so there is no cost on the passing path.
+    $pipelineBuffer = $local:Input
+    $isPipelineInput = $collectedInput.IsPipelineInput
+    $reportFailure = {
+        param($Message)
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $pipelineBuffer -CollectedActual $Actual -IsPipelineInput $isPipelineInput -Expecting CollectionItems
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if (-not (Is-CollectionSubsequence -Expected $Expected -Actual $Actual)) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected> to be present in <actualType> <actual>,<because> but it was not there."
+        & $reportFailure $Message
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Collection\Should-NotContainCollection.ps1
+function Should-NotContainCollection {
+    <#
+    .SYNOPSIS
+    Checks that the expected collection is not present in the actual collection as an ordered subsequence. It does not compare the types of the input collections.
+
+    .DESCRIPTION
+    Passes when the items of the expected collection do not appear in the actual collection in the same order. The subsequence is matched the same way as `Should-ContainCollection`: gaps between matched items are allowed, but each actual item is used at most once. A single value is treated as a one-item collection. Items are compared using PowerShell equality, the same as the `-contains` operator.
+
+    .PARAMETER Expected
+    One or more items to look for as an ordered subsequence. A single value is treated as a one-item collection.
+
+    .PARAMETER Actual
+    The collection to search in.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-NotContainCollection @(3, 4)
+    1, 2, 3 | Should-NotContainCollection @(3, 2, 1)
+    @(1) | Should-NotContainCollection @(2)
+    ```
+
+    These assertions pass, because the expected items are not present as an ordered subsequence.
+
+    .EXAMPLE
+    ```powershell
+    1, 2, 3 | Should-NotContainCollection @(1, 2)
+    1, 2, 3 | Should-NotContainCollection @(1, 3)
+    @(1) | Should-NotContainCollection @(1)
+    ```
+
+    These assertions fail, because the expected items are present in the same order. Gaps between them, as in `@(1, 3)`, are allowed.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotContainCollection
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput
+    $Actual = $collectedInput.Actual
+
+    # Captured up-front (cheap reference grabs); the diagnostic hint itself is only computed inside
+    # a failure branch, via & $reportFailure, so there is no cost on the passing path.
+    $pipelineBuffer = $local:Input
+    $isPipelineInput = $collectedInput.IsPipelineInput
+    $reportFailure = {
+        param($Message)
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $pipelineBuffer -CollectedActual $Actual -IsPipelineInput $isPipelineInput -Expecting CollectionItems
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if (Is-CollectionSubsequence -Expected $Expected -Actual $Actual) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected> to not be present in <actualType> <actual>,<because> but it was there."
+        & $reportFailure $Message
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Common\Collect-Input.ps1
+function Collect-Input {
+    param (
+        # This is input when called without pipeline syntax e.g. Should-Be -Actual 1
+        # In that case -ParameterInput $Actual will be 1
+        $ParameterInput,
+        # This is $local:input, which is the input that powershell collected from pipeline.
+        # It is always $null or object[] containing all the received items.
+        $PipelineInput,
+        # This tell us if we were called by | syntax or not. Caller needs to pass in $MyInvocation.ExpectingInput.
+        [Parameter(Mandatory)]
+        [bool] $IsPipelineInput,
+        # This unwraps input provided by |. The effect of this is that we get single item input directly,
+        # and not wrapped in array. E.g. 1 | Should-Be  -> 1, and not 1 | Should-Be -> @(1).
+        #
+        # Single item assertions should always provide this parameter. Collection assertions should never
+        # provide this parameter, because they should handle collections consistently.
+        #
+        # This parameter does not apply to input provided by parameter syntax Should-Be -Actual 1
+        [switch] $UnrollInput
+    )
+
+    if ($IsPipelineInput) {
+        # We are called like this: 1 | Assert-Equal -Expected 1, we will get $local:Input in $PipelineInput and $true in $IsPipelineInput (coming from $MyInvocation.ExpectingInput).
+
+        if ($UnrollInput) {
+            # Single-item assertions handle empty pipeline the same as $null,
+            # because there is no scalar that @() can unwrap to.
+            if ($PipelineInput.Count -eq 0) {
+                $collectedInput = $null
+            }
+            else {
+                # This is array of all the input, unwrap it.
+                $collectedInput = foreach ($item in $PipelineInput) { $item }
+            }
+        }
+        else {
+            # Collection assertions keep the input as a collection. Empty pipeline stays @().
+            if ($PipelineInput.Count -eq 0) {
+                # When calling @() | Assert-Equal -Expected 1, the engine will special case it, and we will get empty array in $local:Input
+                $collectedInput = @()
+            }
+            else {
+                # This is array of all the input.
+                $collectedInput = $PipelineInput
+            }
+        }
+    }
+    else {
+        # This is exactly what was provided to the ActualParameter.
+        $collectedInput = $ParameterInput
+    }
+
+    @{
+        Actual          = $collectedInput
+        # We can use this to determine if collections are comparable. Pipeline input will unwind the collection, so pipeline input collection type is not comparable.
+        IsPipelineInput = $IsPipelineInput
+    }
+}
+# file src\functions\assert\Common\Ensure-ExpectedIsNotCollection.ps1
+function Ensure-ExpectedIsNotCollection {
+    param(
+        $InputObject
+    )
+
+    if (Is-Collection $InputObject)
+    {
+        throw [ArgumentException]'You provided a collection to the -Expected parameter. Using a collection on the -Expected side is not allowed by this assertion, because it leads to unexpected behavior. To compare collections use Should-BeCollection, or a more specialized collection assertion such as Should-Any or Should-All.'
+    }
+
+    $InputObject
+}
+# file src\functions\assert\Common\Get-AssertionGotcha.ps1
+function Get-AssertionGotcha {
+    # Best-effort diagnostic hint shown when an assertion is *already failing* because the user
+    # most likely piped the wrong shape into it (e.g. a single hashtable into a collection
+    # assertion). It NEVER changes pass/fail and is only ever called from a failure branch, so it
+    # has zero cost on the happy path. Returns a short hint string, or $null when there is nothing
+    # useful to say or the underlying inspection is unavailable.
+    #
+    # This is the single home for input-shape "gotcha" wording. Add new cases here.
+    param (
+        # The calling assertion's $PSCmdlet. Used to recover the real left-hand side of the pipeline.
+        [System.Management.Automation.PSCmdlet] $Cmdlet,
+        # The calling assertion's $local:Input (object[] or $null).
+        $Buffer,
+        # The value the assertion actually compared ($collectedInput.Actual).
+        $CollectedActual,
+        # $collectedInput.IsPipelineInput.
+        [bool] $IsPipelineInput,
+        # What the failing assertion wanted the input to be. This selects the wording, because the
+        # same wrong shape is a problem for different reasons depending on the assertion:
+        #   Collection      - the whole input is compared as one collection (e.g. Should-BeCollection).
+        #                     A lone scalar, $null, or dictionary is the wrong container, so all three
+        #                     are worth a hint.
+        #   CollectionItems - the input is iterated or searched item by item (e.g. Should-All,
+        #                     Should-Any, Should-ContainCollection, Should-NotContainCollection). A
+        #                     lone scalar or $null is a perfectly valid one-item collection here, so
+        #                     only a dictionary -- which PowerShell silently passes through as a
+        #                     single, non-iterated object -- is a genuine gotcha.
+        #   ExactType       - the input is checked as a single value against a type (e.g.
+        #                     Should-HaveType, Should-NotHaveType). Piping a collection unwraps it
+        #                     (one item becomes a scalar, several become [object[]]), so the original
+        #                     collection type is lost. Here a piped collection is the gotcha; a piped
+        #                     scalar is fine.
+        #   Scalar          - the input is inspected as a single value, but not for its type (e.g.
+        #                     Should-Be, the string/boolean/comparison/null/hashtable assertions).
+        #                     Piping a collection unwraps it the same way, so the assertion silently
+        #                     inspects the collapsed value instead of the collection. Unlike
+        #                     ExactType the wording is about the collection being flattened, not its
+        #                     type changing, so even an [object[]] that stays an [object[]] is worth
+        #                     pointing out.
+        [ValidateSet('Collection', 'CollectionItems', 'ExactType', 'Scalar')]
+        [string] $Expecting = 'Collection'
+    )
+
+    try {
+        if ($Expecting -eq 'ExactType') {
+            # Only piped input can be a gotcha here: a collection passed with -Actual keeps its real
+            # type and asserts correctly. The PipelineSource trick recovers the *original* left-hand
+            # side, so even though the assertion only ever sees the unwrapped remains we can tell:
+            #   scalar     - a genuine single value was piped; it keeps its type, so nothing to say.
+            #   collection - a real collection was piped and the pipeline unwrapped it (the gotcha).
+            #   range/etc. - nothing we can name with confidence, so stay quiet.
+            if (-not $IsPipelineInput) { return $null }
+            $info = [Pester.PipelineSource]::Resolve($Cmdlet, @($Buffer))
+            if ($info.Source -ne 'collection') { return $null }
+
+            # An empty collection is sent through the pipeline as no items at all, so nothing was
+            # unwrapped in the #2801 sense -- there is no surprising type change to explain.
+            if ($info.Count -eq 0) { return $null }
+
+            # The trick recovers the genuine piped type (e.g. [string[]]) and item count, neither of
+            # which the failure message can show because the pipeline already unwrapped the value.
+            # $CollectedActual is what the assertion actually compared, i.e. what the collection was
+            # unwrapped into. The recovered count tells us which unwrapping happened:
+            #   one item   -> the pipeline yields that single element, so a scalar reaches the assertion.
+            #   many items -> the elements are streamed and re-collected into an [Object[]].
+            $pipedType = Get-ShortType2 -Value $info.Value
+            $seenType = Get-ShortType2 -Value $CollectedActual
+
+            # If the pipeline did not change the observable type (e.g. an [Object[]] is streamed and
+            # re-collected straight back into an [Object[]]), then the type was never lost and the
+            # failure is a genuine mismatch. Saying "saw [Object[]], not the [Object[]] you piped"
+            # would be nonsense, so there is nothing useful to hint.
+            if ($seenType -eq $pipedType) { return $null }
+
+            $advice = "To assert the type of a collection, pass it as the -Actual argument instead of piping it, e.g. -Actual `$value."
+
+            if ($info.Count -eq 1) {
+                return "You piped a $pipedType into a type assertion, but the pipeline unwraps a single-item collection to its one element, so the assertion saw a single $seenType, not the $pipedType you piped. $advice"
+            }
+
+            return "You piped a $pipedType into a type assertion, but the pipeline streams a multi-item collection and re-collects it as $seenType, so the assertion saw $seenType, not the $pipedType you piped. $advice"
+        }
+
+        if ($Expecting -eq 'Scalar') {
+            # Same gotcha as ExactType -- a piped collection is unwrapped before the assertion sees
+            # it -- but here the assertion does not care about the type, only the single value. So the
+            # story is "your collection was collapsed into one value and inspected as a whole", which
+            # is worth telling even when the collapsed value is still an [Object[]] (e.g. a piped
+            # [Object[]] re-collected as [Object[]]). That is why this branch has no "type did not
+            # change" guard, unlike ExactType.
+            if (-not $IsPipelineInput) { return $null }
+            $info = [Pester.PipelineSource]::Resolve($Cmdlet, @($Buffer))
+            if ($info.Source -ne 'collection') { return $null }
+
+            # An empty collection sends no items through the pipeline, so there is nothing that was
+            # collapsed and nothing surprising to explain.
+            if ($info.Count -eq 0) { return $null }
+
+            $pipedType = Get-ShortType2 -Value $info.Value
+            $seenType = Get-ShortType2 -Value $CollectedActual
+            $advice = "To assert on a collection use Should-BeCollection or Should-BeEquivalent; to assert on a single value pass it as the -Actual argument instead of piping it, e.g. -Actual `$value."
+
+            if ($info.Count -eq 1) {
+                return "You piped a $pipedType into a single-value assertion, but the pipeline unwraps a single-item collection to its one element, so the assertion inspected that single $seenType instead of the collection. $advice"
+            }
+
+            return "You piped a $pipedType into a single-value assertion, but the pipeline streams a multi-item collection and re-collects it into a single $seenType, so the whole collection was inspected as one value. $advice"
+        }
+        if ($IsPipelineInput) {
+            # Recover the original left-hand side, undoing the engine's single-item wrapping, so we
+            # can tell "a single hashtable was piped" (scalar) from "a real 1-item collection".
+            $info = [Pester.PipelineSource]::Resolve($Cmdlet, @($Buffer))
+            # A genuine collection/range/stream is exactly what the assertion wants; stay quiet and
+            # let the assertion's own size/content message do the talking. Only a non-collection
+            # left-hand side (scalar) is worth a hint.
+            if ($info.Source -ne 'scalar') { return $null }
+            $value = $info.Value
+            $piped = $true
+        }
+        else {
+            # Parameter syntax (-Actual ...): we already hold the real value, nothing to recover.
+            if (Is-Collection -Value $CollectedActual) { return $null }
+            $value = $CollectedActual
+            $piped = $false
+        }
+
+        # Classify the wrong shape once, then pick wording that fits the failing assertion.
+        if ($null -eq $value) {
+            $shape = 'null'
+        }
+        elseif ($value -is [System.Collections.IDictionary]) {
+            $shape = 'dictionary'
+        }
+        else {
+            $shape = 'scalar'
+        }
+
+        $detail = switch ($Expecting) {
+            'Collection' {
+                switch ($shape) {
+                    'null' { 'It is treated as a single $null item, not an empty collection. Use @() to represent an empty collection.' }
+                    'dictionary' { 'PowerShell treats a dictionary as a single object, not a collection. To assert on it as a hashtable use Should-BeHashtable, or compare its contents with Should-BeEquivalent.' }
+                    'scalar' { 'It is treated as a single item. To assert on a one-item collection wrap it as ,$actual, or use Should-Be for a scalar value.' }
+                }
+            }
+            'CollectionItems' {
+                switch ($shape) {
+                    # A lone scalar or $null is a valid one-item collection for an item-wise
+                    # assertion, so there is nothing surprising to point out. Only a dictionary is.
+                    'dictionary' { 'PowerShell treats a dictionary as a single object, so it is passed through as one item instead of being iterated. Enumerate it first, e.g. with $actual.GetEnumerator(), or its .Keys or .Values, or assert on it directly with Should-BeHashtable.' }
+                    default { $null }
+                }
+            }
+        }
+
+        if (-not $detail) { return $null }
+
+        $what = if ($shape -eq 'null') { '$null' } else { 'a single ' + (Get-ShortType2 -Value $value) }
+
+        if ($piped) {
+            "You piped $what into a collection assertion. $detail"
+        }
+        else {
+            "-Actual is $what, which is not a collection. $detail"
+        }
+    }
+    catch {
+        # The hint is best-effort. If inspection fails (e.g. PowerShell internals change on a future
+        # version) say nothing, so the assertion behaves exactly as it would without the hint.
+        $null
+    }
+}
+# file src\functions\assert\Common\Get-AssertionMessage.ps1
+function New-ShouldExpectResult {
+    param (
+        $Expected,
+        $Actual,
+        [string]$Because,
+        [switch]$Pretty
+    )
+
+    [Pester.ShouldResult]@{
+        Succeeded    = $false
+        ExpectResult = [Pester.ShouldExpectResult]@{
+            Actual   = Format-Nicely2 -Value $Actual -Pretty:$Pretty
+            Expected = Format-Nicely2 -Value $Expected -Pretty:$Pretty
+            Because  = $Because
+        }
+    }
+}
+
+function New-ShouldErrorRecord {
+    param (
+        [Parameter(Mandatory)]
+        [string] $Message,
+        [Parameter(Mandatory)]
+        [Management.Automation.InvocationInfo] $Invocation,
+        [bool] $Terminating = $true,
+        $Expected,
+        $Actual,
+        [string] $Because,
+        [switch] $Pretty
+    )
+
+    $hasExplicitExpectation = $PSBoundParameters.ContainsKey('Expected') -or
+        $PSBoundParameters.ContainsKey('Actual') -or
+        $PSBoundParameters.ContainsKey('Because')
+
+    $shouldResult = if ($hasExplicitExpectation) {
+        New-ShouldExpectResult -Expected $Expected -Actual $Actual -Because $Because -Pretty:$Pretty
+    }
+    else {
+        $script:AssertionShouldResult
+    }
+
+    if ($null -ne $shouldResult) {
+        $shouldResult.FailureMessage = $Message
+    }
+
+    try {
+        [Pester.Factory]::CreateShouldErrorRecord(
+            $Message,
+            $Invocation.ScriptName,
+            $Invocation.ScriptLineNumber,
+            $Invocation.Line.TrimEnd([System.Environment]::NewLine),
+            $Terminating,
+            $shouldResult)
+    }
+    finally {
+        $script:AssertionShouldResult = $null
+    }
+}
+
+function Get-AssertionMessage ($Expected, $Actual, $Because, $Option, [hashtable]$Data = @{}, $CustomMessage, $DefaultMessage, [switch]$Pretty) {
+    if (-not $CustomMessage) {
+        $CustomMessage = $DefaultMessage
+    }
+
+    $expectedFormatted = Format-Nicely2 -Value $Expected -Pretty:$Pretty
+    $actualFormatted = Format-Nicely2 -Value $Actual -Pretty:$Pretty
+    $becauseFormatted = Format-Because -Because $Because
+    $script:AssertionShouldResult = New-ShouldExpectResult -Expected $Expected -Actual $Actual -Because $Because -Pretty:$Pretty
+
+    $optionMessage = $null;
+    if ($null -ne $Option -and $option.Length -gt 0) {
+        if (-not $Pretty) {
+            $optionMessage = "Used options: $($Option -join ", ")."
+        }
+        else {
+            if ($Pretty) {
+                $optionMessage = "Used options:$(foreach ($o in $Option) { "`n$o" })."
+            }
+        }
+    }
+
+
+    $CustomMessage = $CustomMessage.Replace('<expected>', $expectedFormatted)
+    $CustomMessage = $CustomMessage.Replace('<actual>', $actualFormatted)
+    $CustomMessage = $CustomMessage.Replace('<expectedType>', (Get-ShortType2 -Value $Expected))
+    $CustomMessage = $CustomMessage.Replace('<actualType>', (Get-ShortType2 -Value $Actual))
+    $CustomMessage = $CustomMessage.Replace('<options>', $optionMessage)
+    $CustomMessage = $CustomMessage.Replace('<because>', $becauseFormatted)
+
+    foreach ($pair in $Data.GetEnumerator()) {
+        $CustomMessage = $CustomMessage.Replace("<$($pair.Key)>", (Format-Nicely2 -Value $pair.Value))
+    }
+
+    if (-not $Pretty) {
+        $CustomMessage
+    }
+    else {
+        $CustomMessage + "`n`n"
+    }
+}
+# file src\functions\assert\Common\Get-CustomFailureMessage.ps1
+function Get-CustomFailureMessage ($CustomMessage, $Expected, $Actual)
+{
+    $formatted = $CustomMessage -f $Expected, $Actual
+    $tokensReplaced = $formatted -replace '<expected>', $Expected -replace '<actual>', $Actual
+    $tokensReplaced -replace '<e>', $Expected -replace '<a>', $Actual
+}
+# file src\functions\assert\Common\Invoke-AssertionFailed.ps1
+function Invoke-AssertionFailed {
+    param (
+        [Parameter(Mandatory)]
+        [string] $Message,
+
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PSCmdlet] $CallerCmdlet,
+
+        $Expected,
+        $Actual,
+        [string] $Because,
+        [switch] $Pretty
+    )
+
+    $newShouldErrorRecordParameters = @{}
+    if ($PSBoundParameters.ContainsKey('Expected')) { $newShouldErrorRecordParameters.Expected = $Expected }
+    if ($PSBoundParameters.ContainsKey('Actual')) { $newShouldErrorRecordParameters.Actual = $Actual }
+    if ($PSBoundParameters.ContainsKey('Because')) { $newShouldErrorRecordParameters.Because = $Because }
+    if ($PSBoundParameters.ContainsKey('Pretty')) { $newShouldErrorRecordParameters.Pretty = $Pretty }
+
+    $pesterRuntimeInvocationContext = $CallerCmdlet.SessionState.PSVariable.GetValue('______parameters')
+    $isInsidePesterRuntime = $null -ne $pesterRuntimeInvocationContext
+
+    $shouldThrow = $null
+    $errorActionIsDefined = $CallerCmdlet.MyInvocation.BoundParameters.ContainsKey('ErrorAction')
+    if ($errorActionIsDefined) {
+        $shouldThrow = 'Stop' -eq $CallerCmdlet.MyInvocation.BoundParameters['ErrorAction']
+    }
+
+    $addErrorCallback = $null
+
+    if ($null -eq $shouldThrow -or -not $shouldThrow) {
+        if (-not $isInsidePesterRuntime) {
+            $shouldThrow = $true
+        }
+        else {
+            if ($null -eq $shouldThrow) {
+                if ($null -ne $CallerCmdlet.SessionState.PSVariable.GetValue('______isInMockParameterFilter')) {
+                    $shouldThrow = $true
+                }
+                else {
+                    $shouldThrow = 'Stop' -eq $pesterRuntimeInvocationContext.Configuration.Should.ErrorAction.Value
+                }
+            }
+
+            if (-not $shouldThrow) {
+                $addErrorCallback = {
+                    param($err)
+                    $null = $pesterRuntimeInvocationContext.ErrorRecord.Add($err)
+                }
+            }
+        }
+    }
+
+    $errorRecord = New-ShouldErrorRecord -Message $Message -Invocation $CallerCmdlet.MyInvocation -Terminating:$shouldThrow @newShouldErrorRecordParameters
+
+    if ($shouldThrow) {
+        throw $errorRecord
+    }
+
+    try { throw $errorRecord } catch { $errorRecord = $_ }
+    & $addErrorCallback $errorRecord
+}
+# file src\functions\assert\Common\Is-CollectionSubsequence.ps1
+function Is-CollectionSubsequence ($Expected, $Actual) {
+    # Returns $true when every item of $Expected appears within $Actual in the same
+    # relative order. Gaps between the matched items are allowed, but each $Actual item is
+    # consumed at most once, so repeated items in $Expected need at least as many matching
+    # items in $Actual (e.g. @(1, 1) needs two 1s in $Actual, not one reused twice).
+    #
+    # A single, non-collection value is treated as a one-item collection, which keeps the
+    # original single-item containment behaviour as the one-item special case.
+
+    # Materialise the expected items so we can index them by position. Adding them one by
+    # one preserves each item as a single element, even when it is itself a collection,
+    # which @(...) would otherwise flatten.
+    $expectedItems = [System.Collections.Generic.List[object]]::new()
+    foreach ($item in $Expected) { $expectedItems.Add($item) }
+
+    $expectedCount = $expectedItems.Count
+    # An empty expected collection is vacuously present in any collection.
+    if (0 -eq $expectedCount) { return $true }
+
+    # Greedy two-pointer subsequence match: walk $Actual once and advance through the
+    # expected items whenever the current actual item matches the next one we need. Matching
+    # the earliest occurrence is always safe for a subsequence, so a single pass is enough.
+    $matchIndex = 0
+    foreach ($actualItem in $Actual) {
+        # Compare with -eq, actual item on the left, to match the equality semantics of
+        # PowerShell's -contains operator. Cast to [bool] so an actual item that is itself a
+        # collection collapses to a single truthy/falsy result instead of a filtered array.
+        if ([bool]($actualItem -eq $expectedItems[$matchIndex])) {
+            $matchIndex++
+            if ($matchIndex -eq $expectedCount) { return $true }
+        }
+    }
+
+    return $false
+}
+# file src\functions\assert\Common\Set-AssertionPassResult.ps1
+function Set-AssertionPassResult {
+    if (& $SafeCommands['Get-Variable'] -Name '______isInMockParameterFilter' -Scope Script -ValueOnly -ErrorAction Ignore) {
+        $true
+    }
+}
+# file src\functions\assert\Equivalence\Should-BeEquivalent.ps1
+function Test-Same ($Expected, $Actual) {
+    [object]::ReferenceEquals($Expected, $Actual)
+}
+
+function Is-CollectionSize ($Expected, $Actual) {
+    if ($Expected.Length -is [Int] -and $Actual.Length -is [Int]) {
+        return $Expected.Length -eq $Actual.Length
+    }
+    else {
+        return $Expected.Count -eq $Actual.Count
+    }
+}
+
+function Is-DataTableSize ($Expected, $Actual) {
+    return $Expected.Rows.Count -eq $Actual.Rows.Count
+}
+
+function Get-ValueNotEquivalentMessage ($Expected, $Actual, $Property, $Options) {
+    $Expected = Format-Nicely2 -Value $Expected
+    $Actual = Format-Nicely2 -Value $Actual
+    $propertyInfo = if ($Property) { " property $Property with value" }
+    $comparison = if ("Equality" -eq $Options.Comparator) { 'equal' } else { 'equivalent' }
+    "Expected$propertyInfo $Expected to be $comparison to the actual value, but got $Actual."
+}
+
+
+function Get-CollectionSizeNotTheSameMessage ($Actual, $Expected, $Property) {
+    $expectedLength = if ($Expected.Length -is [int]) { $Expected.Length } else { $Expected.Count }
+    $actualLength = if ($Actual.Length -is [int]) { $Actual.Length } else { $Actual.Count }
+    $Expected = Format-Collection2 -Value $Expected
+    $Actual = Format-Collection2 -Value $Actual
+
+    $propertyMessage = $null
+    if ($property) {
+        $propertyMessage = " in property $Property with values"
+    }
+    "Expected collection$propertyMessage $Expected with length $expectedLength to be the same size as the actual collection, but got $Actual with length $actualLength."
+}
+
+function Get-DataTableSizeNotTheSameMessage ($Actual, $Expected, $Property) {
+    $expectedLength = $Expected.Rows.Count
+    $actualLength = $Actual.Rows.Count
+    $Expected = Format-Collection2 -Value $Expected
+    $Actual = Format-Collection2 -Value $Actual
+
+    $propertyMessage = $null
+    if ($property) {
+        $propertyMessage = " in property $Property with values"
+    }
+    "Expected DataTable$propertyMessage $Expected with length $expectedLength to be the same size as the actual DataTable, but got $Actual with length $actualLength."
+}
+
+function Compare-CollectionEquivalent ($Expected, $Actual, $Property, $Options) {
+    if (-not (Is-Collection -Value $Expected)) {
+        throw [ArgumentException]"Expected must be a collection."
+    }
+
+    if (-not (Is-Collection -Value $Actual)) {
+        Write-EquivalenceResult -Difference "`$Actual is not a collection it is a $(Format-Nicely2 $Actual.GetType()), so they are not equivalent."
+        $expectedFormatted = Format-Collection2 -Value $Expected
+        # Use .Count for collections (List, etc.) that don't expose a scalar .Length,
+        # otherwise .Length enumerates the items and yields a bogus value like "1 1 1".
+        $expectedLength = if ($Expected.Length -is [int]) { $Expected.Length } else { $Expected.Count }
+        $actualFormatted = Format-Nicely2 -Value $actual
+        return "Expected collection $expectedFormatted with length $expectedLength, but got $actualFormatted."
+    }
+
+    if (-not (Is-CollectionSize -Expected $Expected -Actual $Actual)) {
+        Write-EquivalenceResult -Difference "`$Actual does not have the same size ($($Actual.Length)) as `$Expected ($($Expected.Length)) so they are not equivalent."
+        return Get-CollectionSizeNotTheSameMessage -Expected $Expected -Actual $Actual -Property $Property
+    }
+
+    $eEnd = if ($Expected.Length -is [int]) { $Expected.Length } else { $Expected.Count }
+    $aEnd = if ($Actual.Length -is [int]) { $Actual.Length } else { $Actual.Count }
+    Write-EquivalenceResult "Comparing items in collection, `$Expected has length $eEnd, `$Actual has length $aEnd."
+    $taken = @()
+    $notFound = @()
+    $anyDifferent = $false
+    for ($e = 0; $e -lt $eEnd; $e++) {
+        # todo: retest strict order
+        Write-EquivalenceResult "`nSearching for `$Expected[$e]:"
+        $currentExpected = $Expected[$e]
+        $found = $false
+        if ($StrictOrder) {
+            $currentActual = $Actual[$e]
+            if ($taken -notcontains $e -and (-not (Compare-Equivalent -Expected $currentExpected -Actual $currentActual -Path $Property -Options $Options))) {
+                $taken += $e
+                $found = $true
+                Write-EquivalenceResult -Equivalence "`Found `$Expected[$e]."
+            }
+        }
+        else {
+            for ($a = 0; $a -lt $aEnd; $a++) {
+                # we already took this item as equivalent to an item
+                # in the expected collection, skip it
+                if ($taken -contains $a) {
+                    Write-EquivalenceResult "Skipping `$Actual[$a] because it is already taken."
+                    continue
+                }
+                $currentActual = $Actual[$a]
+                # -not, because $null means no differences, and some strings means there are differences
+                Write-EquivalenceResult "Comparing `$Actual[$a] to `$Expected[$e] to see if they are equivalent."
+                if (-not (Compare-Equivalent -Expected $currentExpected -Actual $currentActual -Path $Property -Options $Options)) {
+                    # add the index to the list of taken items so we can skip it
+                    # in the search, this way we can compare collections with
+                    # arrays multiple same items
+                    $taken += $a
+                    $found = $true
+                    Write-EquivalenceResult -Equivalence "`Found equivalent item for `$Expected[$e] at `$Actual[$a]."
+                    # we already found the item we
+                    # can move on to the next item in Expected array
+                    break
+                }
+            }
+        }
+        if (-not $found) {
+            Write-EquivalenceResult -Difference "`$Actual does not contain `$Expected[$e]."
+            $anyDifferent = $true
+            $notFound += $currentExpected
+        }
+    }
+
+    # do not depend on $notFound collection here
+    # failing to find a single $null, will return
+    # @($null) which evaluates to false, even though
+    # there was a single item that we did not find
+    if ($anyDifferent) {
+        Write-EquivalenceResult -Difference "`$Actual and `$Expected arrays are not equivalent."
+        $Expected = Format-Nicely2 -Value $Expected
+        $Actual = Format-Nicely2 -Value $Actual
+        $notFoundFormatted = Format-Nicely2 -Value $notFound
+
+        $propertyMessage = if ($Property) { " in property $Property which is" }
+        return "Expected collection$propertyMessage $Expected to be equivalent to $Actual but some values were missing: $notFoundFormatted."
+    }
+    Write-EquivalenceResult -Equivalence "`$Actual and `$Expected arrays are equivalent."
+}
+
+function Compare-DataTableEquivalent ($Expected, $Actual, $Property, $Options) {
+    if (-not (Is-DataTable -Value $Expected)) {
+        throw [ArgumentException]"Expected must be a DataTable."
+    }
+
+    if (-not (Is-DataTable -Value $Actual)) {
+        $expectedFormatted = Format-Collection2 -Value $Expected
+        $expectedLength = $expected.Rows.Count
+        $actualFormatted = Format-Nicely2 -Value $actual
+        return "Expected DataTable $expectedFormatted with length $expectedLength, but got $actualFormatted."
+    }
+
+    if (-not (Is-DataTableSize -Expected $Expected -Actual $Actual)) {
+        return Get-DataTableSizeNotTheSameMessage -Expected $Expected -Actual $Actual -Property $Property
+    }
+
+    $eEnd = $Expected.Rows.Count
+    $aEnd = $Actual.Rows.Count
+    $taken = @()
+    $notFound = @()
+    for ($e = 0; $e -lt $eEnd; $e++) {
+        $currentExpected = $Expected.Rows[$e]
+        $found = $false
+        if ($StrictOrder) {
+            $currentActual = $Actual.Rows[$e]
+            if ((-not (Compare-Equivalent -Expected $currentExpected -Actual $currentActual -Path $Property -Options $Options)) -and $taken -notcontains $e) {
+                $taken += $e
+                $found = $true
+            }
+        }
+        else {
+            for ($a = 0; $a -lt $aEnd; $a++) {
+                $currentActual = $Actual.Rows[$a]
+                if ((-not (Compare-Equivalent -Expected $currentExpected -Actual $currentActual -Path $Property -Options $Options)) -and $taken -notcontains $a) {
+                    $taken += $a
+                    $found = $true
+                }
+            }
+        }
+        if (-not $found) {
+            $notFound += $currentExpected
+        }
+    }
+    $Expected = Format-Nicely2 -Value $Expected
+    $Actual = Format-Nicely2 -Value $Actual
+    $notFoundFormatted = Format-Nicely2 -Value ( $notFound | & $SafeCommands['ForEach-Object'] { Format-Nicely2 -Value $_ } )
+
+    if ($notFound) {
+        $propertyMessage = if ($Property) { " in property $Property which is" }
+        return "Expected DataTable$propertyMessage $Expected to be equivalent to $Actual but some values were missing: $notFoundFormatted."
+    }
+}
+
+function Compare-ValueEquivalent ($Actual, $Expected, $Property, $Options) {
+    $Expected = $($Expected)
+    if (-not (Is-Value -Value $Expected)) {
+        throw [ArgumentException]"Expected must be a Value."
+    }
+
+    # we don't specify the options in some tests so here we make
+    # sure that equivalency is used as the default
+    # not ideal but better than rewriting 100 tests
+    if (($null -eq $Options) -or
+        ($null -eq $Options.Comparator) -or
+        ("Equivalency" -eq $Options.Comparator)) {
+        Write-EquivalenceResult "Equivalency comparator is used, values will be compared for equivalency."
+        # fix that string 'false' becomes $true boolean
+        if ($Actual -is [Bool] -and $Expected -is [string] -and "$Expected" -eq 'False') {
+            Write-EquivalenceResult "`$Actual is a boolean, and `$Expected is a 'False' string, which we consider equivalent to boolean `$false. Setting `$Expected to `$false."
+            $Expected = $false
+            if ($Expected -ne $Actual) {
+                Write-EquivalenceResult -Difference "`$Actual is not equivalent to $(Format-Nicely2 $Expected) because it is $(Format-Nicely2 $Actual)."
+                return Get-ValueNotEquivalentMessage -Expected $Expected -Actual $Actual -Property $Property -Options $Options
+            }
+            Write-EquivalenceResult -Equivalence "`$Actual is equivalent to $(Format-Nicely2 $Expected) because it is $(Format-Nicely2 $Actual)."
+            return
+        }
+
+        if ($Expected -is [Bool] -and $Actual -is [string] -and "$Actual" -eq 'False') {
+            Write-EquivalenceResult "`$Actual is a 'False' string, which we consider equivalent to boolean `$false. `$Expected is a boolean. Setting `$Actual to `$false."
+            $Actual = $false
+            if ($Expected -ne $Actual) {
+                Write-EquivalenceResult -Difference "`$Actual is not equivalent to $(Format-Nicely2 $Expected) because it is $(Format-Nicely2 $Actual)."
+                return Get-ValueNotEquivalentMessage -Expected $Expected -Actual $Actual -Property $Property -Options $Options
+            }
+            Write-EquivalenceResult -Equivalence "`$Actual is equivalent to $(Format-Nicely2 $Expected) because it is $(Format-Nicely2 $Actual)."
+            return
+        }
+
+        # fix that scriptblocks are compared by reference
+        if (Is-ScriptBlock -Value $Expected) {
+            Write-EquivalenceResult "`$Expected is a ScriptBlock, scriptblocks are considered equivalent when their content is equal. Converting `$Expected to string."
+            # forcing scriptblock to serialize to string and then comparing that
+            if ("$Expected" -ne $Actual) {
+                # todo: difference on index?
+                Write-EquivalenceResult -Difference "`$Actual is not equivalent to `$Expected because their contents differ."
+                return Get-ValueNotEquivalentMessage -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+            }
+            Write-EquivalenceResult -Equivalence "`$Actual is equivalent to `$Expected because their contents are equal."
+            return
+        }
+    }
+    else {
+        Write-EquivalenceResult "Equality comparator is used, values will be compared for equality."
+    }
+
+    Write-EquivalenceResult "Comparing values as $(Format-Nicely2 $Expected.GetType()) because `$Expected has that type."
+    # todo: shorter messages when both sides have the same type (do not compare by using -is, instead query the type and compare it) because -is is true even for parent types
+    $type = $Expected.GetType()
+    $coalescedActual = $Actual -as $type
+    if ($Expected -ne $Actual) {
+        Write-EquivalenceResult -Difference "`$Actual is not equivalent to $(Format-Nicely2 $Expected) because it is $(Format-Nicely2 $Actual), and $(Format-Nicely2 $Actual) coalesced to $(Format-Nicely2 $type) is $(Format-Nicely2 $coalescedActual)."
+        return Get-ValueNotEquivalentMessage -Expected $Expected -Actual $Actual -Property $Property -Options $Options
+    }
+    Write-EquivalenceResult -Equivalence "`$Actual is equivalent to $(Format-Nicely2 $Expected) because it is $(Format-Nicely2 $Actual), and $(Format-Nicely2 $Actual) coalesced to $(Format-Nicely2 $type) is $(Format-Nicely2 $coalescedActual)."
+}
+
+function Compare-HashtableEquivalent ($Actual, $Expected, $Property, $Options) {
+    if (-not (Is-Hashtable -Value $Expected)) {
+        throw [ArgumentException]"Expected must be a hashtable."
+    }
+
+    if (-not (Is-Hashtable -Value $Actual)) {
+        Write-EquivalenceResult -Difference "`$Actual is not a hashtable it is a $(Format-Nicely2 $Actual.GetType()), so they are not equivalent."
+        $expectedFormatted = Format-Nicely2 -Value $Expected
+        $actualFormatted = Format-Nicely2 -Value $Actual
+        return "Expected hashtable $expectedFormatted, but got $actualFormatted."
+    }
+
+    # todo: if either side or both sides are empty hashtable make the verbose output shorter and nicer
+
+    $actualKeys = $Actual.Keys
+    $expectedKeys = $Expected.Keys
+
+    Write-EquivalenceResult "`Comparing all ($($expectedKeys.Count)) keys from `$Expected to keys in `$Actual."
+    $result = @()
+    foreach ($k in $expectedKeys) {
+        if (-not (Test-IncludedPath -PathSelector Hashtable -Path $Property -Options $Options -InputObject $k)) {
+            continue
+        }
+
+        $actualHasKey = $actualKeys -contains $k
+        if (-not $actualHasKey) {
+            Write-EquivalenceResult -Difference "`$Actual is missing key '$k'."
+            $result += "Expected has key '$k' that the actual object does not have."
+            continue
+        }
+
+        $expectedValue = $Expected[$k]
+        $actualValue = $Actual[$k]
+        Write-EquivalenceResult "Both `$Actual and `$Expected have key '$k', comparing their contents."
+        $result += Compare-Equivalent -Expected $expectedValue -Actual $actualValue -Path "$Property.$k" -Options $Options
+    }
+
+    if (!$Options.ExcludePathsNotOnExpected) {
+        # fix for powershell 2 where the array needs to be explicit
+        $keysNotInExpected = @( $actualKeys | & $SafeCommands['Where-Object'] { $expectedKeys -notcontains $_ })
+
+        $filteredKeysNotInExpected = @( $keysNotInExpected | Test-IncludedPath -PathSelector Hashtable -Path $Property -Options $Options)
+
+        # fix for powershell v2 where foreach goes once over null
+        if ($filteredKeysNotInExpected | & $SafeCommands['Where-Object'] { $_ }) {
+            Write-EquivalenceResult -Difference "`$Actual has $($filteredKeysNotInExpected.Count) keys that were not found on `$Expected: $(Format-Nicely2 @($filteredKeysNotInExpected))."
+        }
+        else {
+            Write-EquivalenceResult "`$Actual has no keys that we did not find on `$Expected."
+        }
+
+        foreach ($k in $filteredKeysNotInExpected | & $SafeCommands['Where-Object'] { $_ }) {
+            $result += "Expected is missing key '$k' that the actual object has."
+        }
+    }
+
+    if ($result | & $SafeCommands['Where-Object'] { $_ }) {
+        Write-EquivalenceResult -Difference "Hashtables `$Actual and `$Expected are not equivalent."
+        $expectedFormatted = Format-Nicely2 -Value $Expected
+        $actualFormatted = Format-Nicely2 -Value $Actual
+        return "Expected hashtable $expectedFormatted, but got $actualFormatted.`n$($result -join "`n")"
+    }
+
+    Write-EquivalenceResult -Equivalence "Hashtables `$Actual and `$Expected are equivalent."
+}
+
+function Compare-DictionaryEquivalent ($Actual, $Expected, $Property, $Options) {
+    if (-not (Is-Dictionary -Value $Expected)) {
+        throw [ArgumentException]"Expected must be a dictionary."
+    }
+
+    if (-not (Is-Dictionary -Value $Actual)) {
+        Write-EquivalenceResult -Difference "`$Actual is not a dictionary it is a $(Format-Nicely2 $Actual.GetType()), so they are not equivalent."
+        $expectedFormatted = Format-Nicely2 -Value $Expected
+        $actualFormatted = Format-Nicely2 -Value $Actual
+        return "Expected dictionary $expectedFormatted, but got $actualFormatted."
+    }
+
+    # todo: if either side or both sides are empty dictionary make the verbose output shorter and nicer
+
+    $actualKeys = $Actual.Keys
+    $expectedKeys = $Expected.Keys
+
+    Write-EquivalenceResult "`Comparing all ($($expectedKeys.Count)) keys from `$Expected to keys in `$Actual."
+    $result = @()
+    foreach ($k in $expectedKeys) {
+        if (-not (Test-IncludedPath -PathSelector Hashtable -Path $Property -Options $Options -InputObject $k)) {
+            continue
+        }
+
+        $actualHasKey = $actualKeys -contains $k
+        if (-not $actualHasKey) {
+            Write-EquivalenceResult -Difference "`$Actual is missing key '$k'."
+            $result += "Expected has key '$k' that the actual object does not have."
+            continue
+        }
+
+        $expectedValue = $Expected[$k]
+        $actualValue = $Actual[$k]
+        Write-EquivalenceResult "Both `$Actual and `$Expected have key '$k', comparing their contents."
+        $result += Compare-Equivalent -Expected $expectedValue -Actual $actualValue -Path "$Property.$k" -Options $Options
+    }
+    if (!$Options.ExcludePathsNotOnExpected) {
+        # fix for powershell 2 where the array needs to be explicit
+        $keysNotInExpected = @( $actualKeys | & $SafeCommands['Where-Object'] { $expectedKeys -notcontains $_ } )
+        $filteredKeysNotInExpected = @( $keysNotInExpected | Test-IncludedPath -PathSelector Hashtable -Path $Property -Options $Options )
+
+        # fix for powershell v2 where foreach goes once over null
+        if ($filteredKeysNotInExpected | & $SafeCommands['Where-Object'] { $_ }) {
+            Write-EquivalenceResult -Difference "`$Actual has $($filteredKeysNotInExpected.Count) keys that were not found on `$Expected: $(Format-Nicely2 @($filteredKeysNotInExpected))."
+        }
+        else {
+            Write-EquivalenceResult "`$Actual has no keys that we did not find on `$Expected."
+        }
+
+        foreach ($k in $filteredKeysNotInExpected | & $SafeCommands['Where-Object'] { $_ }) {
+            $result += "Expected is missing key '$k' that the actual object has."
+        }
+    }
+
+    if ($result) {
+        Write-EquivalenceResult -Difference "Dictionaries `$Actual and `$Expected are not equivalent."
+        $expectedFormatted = Format-Nicely2 -Value $Expected
+        $actualFormatted = Format-Nicely2 -Value $Actual
+        return "Expected dictionary $expectedFormatted, but got $actualFormatted.`n$($result -join "`n")"
+    }
+    Write-EquivalenceResult -Equivalence "Dictionaries `$Actual and `$Expected are equivalent."
+}
+
+function Compare-ObjectEquivalent ($Actual, $Expected, $Property, $Options) {
+
+    if (-not (Is-Object -Value $Expected)) {
+        throw [ArgumentException]"Expected must be an object."
+    }
+
+    if (-not (Is-Object -Value $Actual)) {
+        Write-EquivalenceResult -Difference "`$Actual is not an object it is a $(Format-Nicely2 $Actual.GetType()), so they are not equivalent."
+        $expectedFormatted = Format-Nicely2 -Value $Expected
+        $actualFormatted = Format-Nicely2 -Value $Actual
+        return "Expected object $expectedFormatted, but got $actualFormatted."
+    }
+
+    $actualProperties = $Actual.PsObject.Properties
+    $expectedProperties = $Expected.PsObject.Properties
+
+    Write-EquivalenceResult "Comparing ($(@($expectedProperties).Count)) properties of `$Expected to `$Actual."
+    foreach ($p in $expectedProperties) {
+        if (-not (Test-IncludedPath -PathSelector Property -InputObject $p -Options $Options -Path $Property)) {
+            continue
+        }
+
+        $propertyName = $p.Name
+        $actualProperty = $actualProperties | & $SafeCommands['Where-Object'] { $_.Name -eq $propertyName }
+        if (-not $actualProperty) {
+            Write-EquivalenceResult -Difference "Property '$propertyName' was not found on `$Actual."
+            "Expected has property '$PropertyName' that the actual object does not have."
+            continue
+        }
+        Write-EquivalenceResult "Property '$propertyName` was found on `$Actual, comparing them for equivalence."
+        $differences = Compare-Equivalent -Expected $p.Value -Actual $actualProperty.Value -Path "$Property.$propertyName" -Options $Options
+        if (-not $differences) {
+            Write-EquivalenceResult -Equivalence "Property '$propertyName` is equivalent."
+        }
+        else {
+            Write-EquivalenceResult -Difference "Property '$propertyName` is not equivalent."
+        }
+        $differences
+    }
+
+    if (!$Options.ExcludePathsNotOnExpected) {
+        #check if there are any extra actual object props
+        $expectedPropertyNames = $expectedProperties | Select-Object -ExpandProperty Name
+
+        $propertiesNotInExpected = @( $actualProperties | & $SafeCommands['Where-Object'] { $expectedPropertyNames -notcontains $_.name })
+
+        # fix for powershell v2 we need to make the array explicit
+        $filteredPropertiesNotInExpected = $propertiesNotInExpected |
+            Test-IncludedPath -PathSelector Property -Options $Options -Path $Property
+
+        if ($filteredPropertiesNotInExpected) {
+            Write-EquivalenceResult -Difference "`$Actual has ($(@($filteredPropertiesNotInExpected).Count)) properties that `$Expected does not have: $(Format-Nicely2 @($filteredPropertiesNotInExpected))."
+        }
+        else {
+            Write-EquivalenceResult -Equivalence "`$Actual has no extra properties that `$Expected does not have."
+        }
+
+        # fix for powershell v2 where foreach goes once over null
+        foreach ($p in $filteredPropertiesNotInExpected | & $SafeCommands['Where-Object'] { $_ }) {
+            "Expected is missing property '$($p.Name)' that the actual object has."
+        }
+    }
+}
+
+function Compare-DataRowEquivalent ($Actual, $Expected, $Property, $Options) {
+
+    if (-not (Is-DataRow -Value $Expected)) {
+        throw [ArgumentException]"Expected must be a DataRow."
+    }
+
+    if (-not (Is-DataRow -Value $Actual)) {
+        $expectedFormatted = Format-Nicely2 -Value $Expected
+        $actualFormatted = Format-Nicely2 -Value $Actual
+        return "Expected DataRow '$expectedFormatted', but got '$actualFormatted'."
+    }
+
+    $actualProperties = $Actual.PsObject.Properties | & $SafeCommands['Where-Object'] { 'RowError', 'RowState', 'Table', 'ItemArray', 'HasErrors' -notcontains $_.Name }
+    $expectedProperties = $Expected.PsObject.Properties | & $SafeCommands['Where-Object'] { 'RowError', 'RowState', 'Table', 'ItemArray', 'HasErrors' -notcontains $_.Name }
+
+    foreach ($p in $expectedProperties) {
+        $propertyName = $p.Name
+        $actualProperty = $actualProperties | & $SafeCommands['Where-Object'] { $_.Name -eq $propertyName }
+        if (-not $actualProperty) {
+            "Expected has property '$PropertyName' that the actual object does not have."
+            continue
+        }
+
+        Compare-Equivalent -Expected $p.Value -Actual $actualProperty.Value -Path "$Property.$propertyName" -Options $Options
+    }
+
+    #check if there are any extra actual object props
+    $expectedPropertyNames = $expectedProperties | Select-Object -ExpandProperty Name
+
+    $propertiesNotInExpected = @($actualProperties | & $SafeCommands['Where-Object'] { $expectedPropertyNames -notcontains $_.name })
+
+    # fix for powershell v2 where foreach goes once over null
+    foreach ($p in $propertiesNotInExpected | & $SafeCommands['Where-Object'] { $_ }) {
+        "Expected is missing property '$($p.Name)' that the actual object has."
+    }
+}
+
+function Write-EquivalenceResult {
+    [CmdletBinding()]
+    param(
+        [String] $String,
+        [Switch] $Difference,
+        [Switch] $Equivalence,
+        [Switch] $Skip
+    )
+
+    # we are using implicit variable $Path
+    # from the parent scope, this is ugly
+    # and bad practice, but saves us ton of
+    # coding and boilerplate code
+
+    $p = ""
+    $p += if ($null -ne $Path) {
+        "($Path)"
+    }
+
+    $p += if ($Difference) {
+        " DIFFERENCE"
+    }
+
+    $p += if ($Equivalence) {
+        " EQUIVALENCE"
+    }
+
+    $p += if ($Skip) {
+        " SKIP"
+    }
+
+    $p += if ("" -ne $p) {
+        " - "
+    }
+
+    & $SafeCommands['Write-Verbose'] ("$p$String".Trim() + " ")
+}
+
+# compares two objects for equivalency and returns $null when they are equivalent
+# or a string message when they are not
+function Compare-Equivalent {
+    [CmdletBinding()]
+    param(
+        $Actual,
+        $Expected,
+        $Path,
+        $Options
+    )
+
+    if (-not $PSBoundParameters.ContainsKey('Options')) {
+        throw [System.ArgumentException]::new('-Options must be provided. If you see this and you are not developing Pester, please file issue at https://github.com/pester/Pester/issues', 'Options')
+    }
+
+    if ($null -ne $Options.ExcludedPaths -and $Options.ExcludedPaths -contains $Path) {
+        Write-EquivalenceResult -Skip "Current path '$Path' is excluded from the comparison."
+        return
+    }
+
+    # start by null checks to avoid implementing null handling
+    # logic in the functions that follow
+    if ($null -eq $Expected) {
+        Write-EquivalenceResult "`$Expected is `$null, so we are expecting `$null."
+        if ($Expected -ne $Actual) {
+            Write-EquivalenceResult -Difference "`$Actual is not equivalent to $(Format-Nicely2 $Expected), because it has a value of type $(Format-Nicely2 $Actual.GetType())."
+            return Get-ValueNotEquivalentMessage -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+        }
+        # we terminate here, either we passed the test and return nothing, or we did not
+        # and the previous statement returned message
+        Write-EquivalenceResult -Equivalence "`$Actual is equivalent to `$null, because it is `$null."
+        return
+    }
+
+    if ($null -eq $Actual) {
+        Write-EquivalenceResult -Difference "`$Actual is $(Format-Nicely2), but `$Expected has value of type $(Format-Nicely2 $Expected.GetType()), so they are not equivalent."
+        return Get-ValueNotEquivalentMessage -Expected $Expected -Actual $Actual -Property $Path
+    }
+
+    Write-EquivalenceResult "`$Expected has type $(Format-Nicely2 $Expected.GetType()), `$Actual has type $(Format-Nicely2 $Actual.GetType()), they are both non-null."
+
+    # test value types, strings, and single item arrays with values in them as values
+    # expand the single item array to get to the value in it
+    if (Is-Value -Value $Expected) {
+        Write-EquivalenceResult "`$Expected is a value (value type, string, single value array, or a scriptblock), we will be comparing `$Actual to value types."
+        Compare-ValueEquivalent -Actual $Actual -Expected $Expected -Property $Path -Options $Options
+        return
+    }
+
+    # are the same instance
+    if (Test-Same -Expected $Expected -Actual $Actual) {
+        Write-EquivalenceResult -Equivalence "`$Expected and `$Actual are equivalent because they are the same object (by reference)."
+        return
+    }
+
+    if (Is-Hashtable -Value $Expected) {
+        Write-EquivalenceResult "`$Expected is a hashtable, we will be comparing `$Actual to hashtables."
+        Compare-HashtableEquivalent -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+        return
+    }
+
+    # dictionaries? (they are IEnumerable so they must go before collections)
+    if (Is-Dictionary -Value $Expected) {
+        Write-EquivalenceResult "`$Expected is a dictionary, we will be comparing `$Actual to dictionaries."
+        Compare-DictionaryEquivalent -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+        return
+    }
+
+    #compare DataTable
+    if (Is-DataTable -Value $Expected) {
+        # todo add verbose output to data table
+        Write-EquivalenceResult "`$Expected is a datatable, we will be comparing `$Actual to datatables."
+        Compare-DataTableEquivalent -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+        return
+    }
+
+    #compare collection
+    if (Is-Collection -Value $Expected) {
+        Write-EquivalenceResult "`$Expected is a collection, we will be comparing `$Actual to collections."
+        Compare-CollectionEquivalent -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+        return
+    }
+
+    #compare DataRow
+    if (Is-DataRow -Value $Expected) {
+        # todo add verbose output to data row
+        Write-EquivalenceResult "`$Expected is a datarow, we will be comparing `$Actual to datarows."
+        Compare-DataRowEquivalent -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+        return
+    }
+
+    Write-EquivalenceResult "`$Expected is an object of type $(Format-Nicely2 $Expected.GetType()), we will be comparing `$Actual to objects."
+    Compare-ObjectEquivalent -Expected $Expected -Actual $Actual -Property $Path -Options $Options
+}
+
+function Should-BeEquivalent {
+    <#
+    .SYNOPSIS
+    Compares two objects for equivalency, by recursively comparing their properties for equivalency.
+
+    .DESCRIPTION
+    This assertion performs a deep comparison of the actual and expected objects, recursing through nested properties and collections. Use `-ExcludePath`, `-ExcludePathsNotOnExpected`, or `-Comparator Equality` to narrow what counts as equivalent.
+
+    .PARAMETER Actual
+    The actual object to compare.
+
+    .PARAMETER Expected
+    The expected object to compare.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .PARAMETER ExcludePath
+    An array of strings specifying the paths to exclude from the comparison. Each path should correspond to a property name or a chain of property names separated by dots for nested properties. The paths use dot notation to navigate to a child property, such as "user.name".
+
+    .PARAMETER ExcludePathsNotOnExpected
+    A switch parameter that, when set, excludes any paths from the comparison that are not present on the expected object. This is useful for ignoring extra properties on the actual object that are not relevant to the comparison.
+
+    .PARAMETER Comparator
+    Specifies the comparison strategy to use. The options are 'Equivalency' for a deep comparison that considers the structure and values of objects, and 'Equality' for a simple equality comparison. The default is 'Equivalency'.
+
+    .EXAMPLE
+    ```powershell
+    Should-BeEquivalent ...  -ExcludePath 'Id', 'Timestamp' -Comparator 'Equality'
+    ```
+
+    This example generates an equivalency option object that excludes the 'Id' and 'Timestamp' properties from the comparison and uses a simple equality comparison strategy.
+
+    .EXAMPLE
+    ```powereshell
+    Should-BeEquivalent ... -ExcludePathsNotOnExpected
+    ```
+
+    This example generates an equivalency option object that excludes any paths not present on the expected object from the comparison, using the default deep comparison strategy.
+
+    .EXAMPLE
+    ```powershell
+    $expected = [PSCustomObject] @{
+        Name = "Thomas"
+    }
+
+    $actual = [PSCustomObject] @{
+        Name = "Jakub"
+        Age = 30
+    }
+
+    $actual | Should-BeEquivalent $expected
+    ```
+
+    This will throw an error because the actual object has an additional property Age and the Name values are not equivalent.
+
+    .EXAMPLE
+    ```powershell
+    $expected = [PSCustomObject] @{
+        Name = "Thomas"
+    }
+
+    $actual = [PSCustomObject] @{
+        Name = "Thomas"
+    }
+
+    $actual | Should-BeEquivalent $expected
+    ```
+
+    This will pass because the actual object has the same properties as the expected object and the Name values are equivalent.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeEquivalent
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because,
+        [string[]] $ExcludePath = @(),
+        [switch] $ExcludePathsNotOnExpected,
+        [ValidateSet('Equivalency', 'Equality')]
+        [string] $Comparator = 'Equivalency'
+        # TODO: I am not sure this works.
+        # [Switch] $StrictOrder
+    )
+
+    $options = Get-EquivalencyOption -ExcludePath:$ExcludePath -ExcludePathsNotOnExpected:$ExcludePathsNotOnExpected -Comparator:$Comparator
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    $areDifferent = Compare-Equivalent -Actual $Actual -Expected $Expected -Options $Options | & $SafeCommands['Out-String']
+
+    if ($areDifferent) {
+        $optionsFormatted = Format-EquivalencyOptions -Options $Options
+        # the parameter is -Option not -Options
+        $message = Get-AssertionMessage -Actual $actual -Expected $Expected -Option $optionsFormatted -Pretty -CustomMessage "Expected and actual are not equivalent!`nExpected:`n<expected>`n`nActual:`n<actual>`n`nSummary:`n$areDifferent`n<options>"
+        Invoke-AssertionFailed -Message $message -CallerCmdlet $PSCmdlet
+    }
+
+    Write-EquivalenceResult -Equivalence "`$Actual and `$Expected are equivalent."
+    Set-AssertionPassResult
+}
+
+function Get-EquivalencyOption {
+    <#
+    .SYNOPSIS
+    Generates an object containing options for checking equivalency.
+
+    .DESCRIPTION
+    The `Get-EquivalencyOption` function creates a custom object with options that determine how equivalency between two objects is assessed. This can be used in scenarios where a deep comparison of objects is required, with the ability to exclude specific paths from the comparison and to choose between different comparison strategies.
+
+    .PARAMETER ExcludePath
+    An array of strings specifying the paths to exclude from the comparison. Each path should correspond to a property name or a chain of property names separated by dots for nested properties.
+
+    .PARAMETER ExcludePathsNotOnExpected
+    A switch parameter that, when set, excludes any paths from the comparison that are not present on the expected object. This is useful for ignoring extra properties on the actual object that are not relevant to the comparison.
+
+    .PARAMETER Comparator
+    Specifies the comparison strategy to use. The options are 'Equivalency' for a deep comparison that considers the structure and values of objects, and 'Equality' for a simple equality comparison. The default is 'Equivalency'.
+
+    .EXAMPLE
+    $option = Get-EquivalencyOption -ExcludePath 'Id', 'Timestamp' -Comparator 'Equality'
+
+    This example generates an equivalency option object that excludes the 'Id' and 'Timestamp' properties from the comparison and uses a simple equality comparison strategy.
+
+    .EXAMPLE
+    $option = Get-EquivalencyOption -ExcludePathsNotOnExpected
+
+    This example generates an equivalency option object that excludes any paths not present on the expected object from the comparison, using the default deep comparison strategy.
+
+    .LINK
+    https://pester.dev/docs/commands/Get-EquivalencyOption
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+
+    [CmdletBinding()]
+    param(
+        [string[]] $ExcludePath = @(),
+        [switch] $ExcludePathsNotOnExpected,
+        [ValidateSet('Equivalency', 'Equality')]
+        [string] $Comparator = 'Equivalency'
+    )
+
+    [PSCustomObject]@{
+        ExcludedPaths             = [string[]] $ExcludePath
+        ExcludePathsNotOnExpected = [bool] $ExcludePathsNotOnExpected
+        Comparator                = [string] $Comparator
+    }
+}
+
+function Test-IncludedPath {
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        $InputObject,
+        [String]
+        $Path,
+        $Options,
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("Property", "Hashtable")]
+        $PathSelector
+    )
+
+    begin {
+        $selector = switch ($PathSelector) {
+            "Property" { { param($InputObject) $InputObject.Name } }
+            "Hashtable" { { param($InputObject) $InputObject } }
+            Default { throw "Unsupported path selector." }
+        }
+    }
+
+    process {
+        if ($null -eq $Options.ExcludedPaths) {
+            return $InputObject
+        }
+
+        $subPath = &$selector $InputObject
+        $fullPath = "$Path.$subPath".Trim('.')
+
+
+        if ($fullPath | Like-Any $Options.ExcludedPaths) {
+            Write-EquivalenceResult -Skip "Current path $fullPath is excluded from the comparison."
+        }
+        else {
+            $InputObject
+        }
+    }
+}
+
+function Format-EquivalencyOptions ($Options) {
+    $Options.ExcludedPaths | & $SafeCommands['ForEach-Object'] { "Exclude path '$_'" }
+    if ($Options.ExcludePathsNotOnExpected) { "Excluding all paths not found on Expected" }
+}
+
+function Like-Any {
+    param(
+        [String[]] $PathFilters,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [String] $Path
+    )
+    process {
+        foreach ($pathFilter in $PathFilters | & $SafeCommands['Where-Object'] { $_ }) {
+            $r = $Path -like $pathFilter
+            if ($r) {
+                Write-EquivalenceResult -Skip "Path '$Path' matches filter '$pathFilter'."
+                return $true
+            }
+        }
+
+        return $false
+    }
+}
+# file src\functions\assert\Exception\Should-Throw.ps1
+function Should-Throw {
+    <#
+    .SYNOPSIS
+    Asserts that a script block throws an exception.
+
+    .DESCRIPTION
+    This assertion executes the script block and expects it to throw. Optional filters let you match the exception type, message, or FullyQualifiedErrorId, and `-AllowNonTerminatingError` accepts non-terminating errors.
+
+    .PARAMETER ScriptBlock
+    The script block that should throw an exception.
+
+    .PARAMETER ExceptionType
+    The type of exception that should be thrown.
+
+    .PARAMETER ExceptionMessage
+    The message that the exception should contain. `-like` wildcards are supported.
+
+    .PARAMETER FullyQualifiedErrorId
+    The FullyQualifiedErrorId that the exception should contain. `-like` wildcards are supported.
+
+    .PARAMETER AllowNonTerminatingError
+    If set, the assertion will pass if a non-terminating error is thrown.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    { throw 'error' } | Should-Throw
+    { throw 'error' } | Should-Throw -ExceptionMessage 'error'
+    { throw 'wildcard character []' } | Should-Throw -ExceptionMessage '*character `[`]'
+    { throw 'error' } | Should-Throw -ExceptionType 'System.Management.Automation.RuntimeException'
+    { throw 'error' } | Should-Throw -FullyQualifiedErrorId 'RuntimeException'
+    { throw 'error' } | Should-Throw -FullyQualifiedErrorId '*Exception'
+    { throw 'error' } | Should-Throw -AllowNonTerminatingError
+    ```
+
+    All of these assertions will pass.
+
+    .EXAMPLE
+    ```powershell
+    $err = { throw 'error' } | Should-Throw
+    $err.Exception.Message | Should-BeLike '*err*'
+    ```
+
+    The error record is returned from the assertion and can be used in further assertions.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-Throw
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+        [ScriptBlock]$ScriptBlock,
+        [Parameter(Position = 0)]
+        [String]$ExceptionMessage,
+        [Parameter(Position = 1)]
+        [String]$FullyQualifiedErrorId,
+        [Parameter(Position = 2)]
+        [Type]$ExceptionType,
+        [Parameter(Position = 3)]
+        [String]$Because,
+        [Switch]$AllowNonTerminatingError
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $ScriptBlock -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $ScriptBlock = $collectedInput.Actual
+
+    Assert-BoundScriptBlockInput -ScriptBlock $ScriptBlock
+
+    $errorThrown = $false
+    $err = $null
+    try {
+        $p = 'stop'
+        if ($AllowNonTerminatingError) {
+            $p = 'continue'
+        }
+
+        $eap = [PSVariable]::new("erroractionpreference", $p)
+        $null = $ScriptBlock.InvokeWithContext($null, $eap, $null) 2>&1
+    }
+    catch {
+        $errorThrown = $true
+        $err = Get-ErrorObject $_
+    }
+
+    $buts = @()
+    $filters = @()
+
+    $filterOnExceptionType = $null -ne $ExceptionType
+    if ($filterOnExceptionType) {
+        $exceptionFilterTypeFormatted = Format-Type2 $ExceptionType
+
+        $filters += "of type $exceptionFilterTypeFormatted"
+
+        $exceptionTypeFilterMatches = $err.Exception -is $ExceptionType
+        if (-not $exceptionTypeFilterMatches) {
+            $exceptionTypeFormatted = Get-ShortType2 $err.Exception
+            $buts += "the exception type was $exceptionTypeFormatted"
+        }
+    }
+
+    $filterOnMessage = -not ([string]::IsNullOrWhiteSpace($ExceptionMessage))
+    if ($filterOnMessage) {
+        $filters += "with message like '$([System.Management.Automation.WildcardPattern]::Unescape($ExceptionMessage))'"
+        if ($err.ExceptionMessage -notlike $ExceptionMessage) {
+            $buts += "the message was '$($err.ExceptionMessage)'"
+        }
+    }
+
+    $filterOnId = -not ([string]::IsNullOrWhiteSpace($FullyQualifiedErrorId))
+    if ($filterOnId) {
+        $filters += "with FullyQualifiedErrorId '$FullyQualifiedErrorId'"
+        if ($err.FullyQualifiedErrorId -notlike $FullyQualifiedErrorId) {
+            $buts += "the FullyQualifiedErrorId was '$($err.FullyQualifiedErrorId)'"
+        }
+    }
+
+    if (-not $errorThrown) {
+        $buts += "no exception was thrown"
+    }
+
+    if ($buts.Count -ne 0) {
+        $filter = Add-SpaceToNonEmptyString ( Join-And $filters -Threshold 3 )
+        $but = Join-And $buts
+        $defaultMessage = "Expected an exception,$filter to be thrown, but $but."
+
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $ScriptBlock -Because $Because `
+            -DefaultMessage $defaultMessage
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    $err.ErrorRecord
+    Set-AssertionPassResult
+}
+
+function Get-ErrorObject ($ErrorRecord) {
+
+    if ($ErrorRecord.Exception -like '*"InvokeWithContext"*') {
+        $e = $ErrorRecord.Exception.InnerException.ErrorRecord
+    }
+    else {
+        $e = $ErrorRecord
+    }
+    [PSCustomObject] @{
+        ErrorRecord           = $e
+        ExceptionMessage      = $e.Exception.Message
+        Exception             = $e.Exception
+        ExceptionType         = $e.Exception.GetType()
+        FullyQualifiedErrorId = $e.FullyQualifiedErrorId
+    }
+}
+
+function Join-And ($Items, $Threshold = 2) {
+
+    if ($null -eq $items -or $items.count -lt $Threshold) {
+        $items -join ', '
+    }
+    else {
+        $c = $items.count
+        ($items[0..($c - 2)] -join ', ') + ' and ' + $items[-1]
+    }
+}
+
+function Add-SpaceToNonEmptyString ([string]$Value) {
+    if ($Value) {
+        " $Value"
+    }
+}
+# file src\functions\assert\General\Should-Be.ps1
+function Should-Be {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if they are equal.
+
+    .DESCRIPTION
+    This assertion compares values using PowerShell equality semantics. Use the collection-specific assertions when you need to compare arrays or other collections.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1 | Should-Be 1
+    "hello" | Should-Be "hello"
+    ```
+
+    These assertions will pass, because the expected value is equal to the actual value.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-Be
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [AllowNull()]
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ((Ensure-ExpectedIsNotCollection $Expected) -ne $Actual) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected>,<because> but got <actualType> <actual>."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-BeGreaterThan.ps1
+function Should-BeGreaterThan {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if the actual value is greater than the expected value.
+
+    .DESCRIPTION
+    This assertion uses PowerShell comparison semantics and passes only when the actual value is strictly greater than the expected value.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    2 | Should-BeGreaterThan 1
+    2 | Should-BeGreaterThan 2
+    ```
+
+    These assertions will pass, because the actual value is greater than the expected value.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeGreaterThan
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    $expectedValue = Ensure-ExpectedIsNotCollection $Expected
+    # The comparison operators throw a native conversion error when $Actual is not a comparable
+    # scalar, which is exactly what happens when a collection is piped in and unwrapped to [object[]].
+    # Catch it so we can show the input hint instead of a cryptic "Could not compare" error. When it
+    # is not a piped-collection gotcha we have nothing to add, so the original error is rethrown.
+    $failed = $false
+    $comparisonError = $null
+    try {
+        $failed = $expectedValue -ge $Actual
+    }
+    catch {
+        $comparisonError = $_
+    }
+    if ($comparisonError -or $failed) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected the actual value to be greater than <expectedType> <expected>,<because> but it was not. Actual: <actualType> <actual>"
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($comparisonError -and -not $hint) { throw $comparisonError }
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-BeGreaterThanOrEqual.ps1
+function Should-BeGreaterThanOrEqual {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if the actual value is greater than or equal to the expected value.
+
+    .DESCRIPTION
+    This assertion uses PowerShell comparison semantics and passes when the actual value is greater than or equal to the expected value.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    2 | Should-BeGreaterThanOrEqual 1
+    2 | Should-BeGreaterThanOrEqual 2
+    ```
+
+    These assertions will pass, because the actual value is greater than or equal to the expected value.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeGreaterThanOrEqual
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    $expectedValue = Ensure-ExpectedIsNotCollection $Expected
+    # The comparison operators throw a native conversion error when $Actual is not a comparable
+    # scalar, which is exactly what happens when a collection is piped in and unwrapped to [object[]].
+    # Catch it so we can show the input hint instead of a cryptic "Could not compare" error. When it
+    # is not a piped-collection gotcha we have nothing to add, so the original error is rethrown.
+    $failed = $false
+    $comparisonError = $null
+    try {
+        $failed = $expectedValue -gt $Actual
+    }
+    catch {
+        $comparisonError = $_
+    }
+    if ($comparisonError -or $failed) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected the actual value to be greater than or equal to <expectedType> <expected>,<because> but it was not. Actual: <actualType> <actual>"
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($comparisonError -and -not $hint) { throw $comparisonError }
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-BeLessThan.ps1
+function Should-BeLessThan {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if the actual value is less than the expected value.
+
+    .DESCRIPTION
+    This assertion uses PowerShell comparison semantics and passes only when the actual value is strictly less than the expected value.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1 | Should-BeLessThan 2
+    0 | Should-BeLessThan 1
+    ```
+
+    These assertions will pass, because the actual value is less than the expected value.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeLessThan
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    $expectedValue = Ensure-ExpectedIsNotCollection $Expected
+    # The comparison operators throw a native conversion error when $Actual is not a comparable
+    # scalar, which is exactly what happens when a collection is piped in and unwrapped to [object[]].
+    # Catch it so we can show the input hint instead of a cryptic "Could not compare" error. When it
+    # is not a piped-collection gotcha we have nothing to add, so the original error is rethrown.
+    $failed = $false
+    $comparisonError = $null
+    try {
+        $failed = $expectedValue -le $Actual
+    }
+    catch {
+        $comparisonError = $_
+    }
+    if ($comparisonError -or $failed) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected the actual value to be less than <expectedType> <expected>,<because> but it was not. Actual: <actualType> <actual>"
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($comparisonError -and -not $hint) { throw $comparisonError }
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-BeLessThanOrEqual.ps1
+function Should-BeLessThanOrEqual {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if the actual value is less than or equal to the expected value.
+
+    .DESCRIPTION
+    This assertion uses PowerShell comparison semantics and passes when the actual value is less than or equal to the expected value.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1 | Should-BeLessThanOrEqual 2
+    1 | Should-BeLessThanOrEqual 1
+    ```
+
+    These assertions will pass, because the actual value is less than or equal to the expected value.
+
+    .EXAMPLE
+    ```powershell
+    2 | Should-BeLessThanOrEqual 1
+    ```
+
+    This assertion will fail, because the actual value is not less than or equal to the expected value.
+
+    .NOTES
+    The `Should-BeLessThanOrEqual` assertion is the opposite of the `Should-BeGreaterThan` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeLessThanOrEqual
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    $expectedValue = Ensure-ExpectedIsNotCollection $Expected
+    # The comparison operators throw a native conversion error when $Actual is not a comparable
+    # scalar, which is exactly what happens when a collection is piped in and unwrapped to [object[]].
+    # Catch it so we can show the input hint instead of a cryptic "Could not compare" error. When it
+    # is not a piped-collection gotcha we have nothing to add, so the original error is rethrown.
+    $failed = $false
+    $comparisonError = $null
+    try {
+        $failed = $expectedValue -lt $Actual
+    }
+    catch {
+        $comparisonError = $_
+    }
+    if ($comparisonError -or $failed) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected the actual value to be less than or equal to <expectedType> <expected>,<because> but it was not. Actual: <actualType> <actual>"
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($comparisonError -and -not $hint) { throw $comparisonError }
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-BeNull.ps1
+function Should-BeNull {
+    <#
+    .SYNOPSIS
+    Asserts that the input is `$null`.
+
+    .DESCRIPTION
+    This assertion passes only when the actual value is exactly `$null. Empty strings, empty collections, and other falsy values do not count as null.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be `$null`.
+
+    .EXAMPLE
+    ```powershell
+    $null | Should-BeNull
+    ```
+
+    This assertion will pass, because the actual value is `$null`.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeNull
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ($null -ne $Actual) {
+        $Message = Get-AssertionMessage -Expected $null -Actual $Actual -Because $Because -DefaultMessage "Expected `$null,<because> but got <actualType> '<actual>'."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-BeSame.ps1
+function Should-BeSame {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if they are the same instance.
+
+    .DESCRIPTION
+    This assertion checks reference equality rather than value equality. Use it with reference types when you need to verify that both variables point to the same instance.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $a = New-Object Object
+    $a | Should-BeSame $a
+    ```
+
+    This assertion will pass, because the actual value is the same instance as the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $a = New-Object Object
+    $b = New-Object Object
+    $a | Should-BeSame $b
+    ```
+
+    This assertion will fail, because the actual value is not the same instance as the expected value.
+
+    .NOTES
+    The `Should-BeSame` assertion is the opposite of the `Should-NotBeSame` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeSame
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $null = Ensure-ExpectedIsNotCollection $Expected
+
+    if ($Expected -is [ValueType] -or $Expected -is [string]) {
+        throw [ArgumentException]"Should-BeSame compares objects by reference. You provided a value type or a string, those are not reference types and you most likely don't need to compare them by reference, see https://github.com/nohwnd/Assert/issues/6.`n`nAre you trying to compare two values to see if they are equal? Use Should-BeEqual instead."
+    }
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if (-not ([object]::ReferenceEquals($Expected, $Actual))) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected>,<because> to be the same instance but it was not. Actual: <actualType> <actual>"
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-HaveType.ps1
+function Should-HaveType {
+    <#
+    .SYNOPSIS
+    Asserts that the input is of the expected type.
+
+    .DESCRIPTION
+    This assertion uses `-is` to verify that the actual value is assignable to the expected type. Derived types and implemented interfaces also satisfy the check.
+
+    .PARAMETER Expected
+    The expected type.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should be the expected type.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-HaveType ([String])
+    1 | Should-HaveType ([Int32])
+    ```
+
+    These assertions will pass, because the actual value is of the expected type.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-HaveType
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        [Type]$Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    # Captured up-front (cheap reference grabs); the diagnostic hint itself is only computed inside
+    # the failure branch, so there is no cost on the passing path.
+    $pipelineBuffer = $local:Input
+    $isPipelineInput = $collectedInput.IsPipelineInput
+
+    if ($Actual -isnot $Expected) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected value to have type <expected>,<because> but got <actualType> <actual>."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $pipelineBuffer -CollectedActual $Actual -IsPipelineInput $isPipelineInput -Expecting ExactType
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-NotBe.ps1
+function Should-NotBe {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if they are not equal.
+
+    .DESCRIPTION
+    This assertion compares values using PowerShell equality semantics and passes only when they are different. Use the collection-specific assertions when you need to compare arrays or other collections.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should not be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    1 | Should-NotBe 2
+    "hello" | Should-NotBe "world"
+    ```
+
+    These assertions will pass, because the actual value is not equal to the expected value.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotBe
+
+    .LINK
+    https://pester.dev/docs/assertions
+
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [AllowNull()]
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ((Ensure-ExpectedIsNotCollection $Expected) -eq $Actual) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected>, to be different than the actual value,<because> but they were equal."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-NotBeNull.ps1
+function Should-NotBeNull {
+    <#
+    .SYNOPSIS
+    Asserts that the input is not `$null`.
+
+    .DESCRIPTION
+    This assertion passes for any value other than exactly `$null. Empty strings, empty collections, and other falsy values are not treated as null.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should not be `$null`.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-NotBeNull
+    1 | Should-NotBeNull
+    ```
+
+    These assertions will pass, because the actual value is not `$null.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotBeNull
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ($null -eq $Actual) {
+        $Message = Get-AssertionMessage -Expected $null -Actual $Actual -Because $Because -DefaultMessage "Expected not `$null,<because> but got `$null."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-NotBeSame.ps1
+function Should-NotBeSame {
+    <#
+    .SYNOPSIS
+    Compares the expected value to actual value, to see if the actual value is not the same instance as the expected value.
+
+    .DESCRIPTION
+    This assertion checks reference inequality rather than value inequality. It passes when the two values are different instances, even if their contents are equal.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should not be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $object = New-Object -TypeName PSObject
+    $object | Should-NotBeSame $object
+    ```
+
+    This assertion will pass, because the actual value is not the same instance as the expected value.
+
+    .EXAMPLE
+    ```powershell
+    $object = New-Object -TypeName PSObject
+    $object | Should-NotBeSame $object
+    ```
+
+    This assertion will fail, because the actual value is the same instance as the expected value.
+
+    .NOTES
+    The `Should-NotBeSame` assertion is the opposite of the `Should-BeSame` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotBeSame
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        $Expected,
+        [String]$Because
+    )
+
+    $null = Ensure-ExpectedIsNotCollection $Expected
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ([object]::ReferenceEquals($Expected, $Actual)) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected>, to not be the same instance,<because> but they were the same instance."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\General\Should-NotHaveType.ps1
+function Should-NotHaveType {
+    <#
+    .SYNOPSIS
+    Asserts that the input is not of the expected type.
+
+    .DESCRIPTION
+    This assertion uses `-is` to verify that the actual value is not assignable to the expected type. Derived types and implemented interfaces still count as the expected type.
+
+    .PARAMETER Expected
+    The expected type.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER Because
+    The reason why the input should not be the expected type.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-NotHaveType ([Int32])
+    1 | Should-NotHaveType ([String])
+    ```
+
+    These assertions will pass, because the actual value is not of the expected type.
+
+    .NOTES
+    This assertion is the opposite of `Should-HaveType`.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotHaveType
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        [Type]$Expected,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+    if ($Actual -is $Expected) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected value to be of different type than <expected>,<because> but got <actualType> <actual>."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting ExactType
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Hashtable\Should-BeHashtable.ps1
+function Should-BeHashtable {
+    <#
+    .SYNOPSIS
+    Asserts that the input is a hashtable or dictionary, and optionally checks the number of
+    entries, whether it is ordered, and that it contains specific keys.
+
+    .DESCRIPTION
+    `Should-BeHashtable` is a shape assertion. It verifies that `$Actual` is a hashtable or
+    dictionary (anything implementing `System.Collections.IDictionary`, such as `@{}`,
+    `[ordered]@{}` or a generic `Dictionary[,]`).
+
+    It does not compare the contents of the dictionary. Use the optional parameters to assert on
+    the shape of the dictionary:
+
+    - `-Count` checks the number of entries.
+    - `-Ordered` checks that the value is an ordered dictionary (`[ordered]@{}`).
+    - `-Key` checks that the given keys are present, ignoring their values. When combined with
+      `-Ordered`, the keys must also appear in the given relative order.
+
+    To compare the keys *and values* of a dictionary against an expected dictionary use
+    `Should-BeEquivalent` instead, which performs a deep, order-insensitive comparison.
+
+    .PARAMETER Actual
+    The value to test. It is expected to be a hashtable or dictionary.
+
+    .PARAMETER Count
+    Checks that the dictionary has the expected number of entries.
+
+    .PARAMETER Ordered
+    Checks that the dictionary is an ordered dictionary (`System.Collections.Specialized.OrderedDictionary`),
+    as produced by `[ordered]@{}`. A plain `[hashtable]` is unordered and fails this check.
+
+    .PARAMETER Key
+    Checks that the dictionary contains the given keys. Only the presence of the keys is checked,
+    not their values. When `-Ordered` is also specified, the keys must appear in the dictionary in
+    the same relative order as they are listed here.
+
+    .PARAMETER Because
+    The reason why the input should be a hashtable with the expected shape.
+
+    .EXAMPLE
+    ```powershell
+    @{ Name = 'Jakub'; Age = 30 } | Should-BeHashtable
+    [ordered]@{ a = 1; b = 2 } | Should-BeHashtable
+    ```
+
+    These assertions pass, because the actual value is a hashtable or dictionary.
+
+    .EXAMPLE
+    ```powershell
+    @{ Name = 'Jakub'; Age = 30 } | Should-BeHashtable -Count 2
+    @{ Name = 'Jakub'; Age = 30 } | Should-BeHashtable -Key Name, Age
+    [ordered]@{ a = 1; b = 2 } | Should-BeHashtable -Ordered -Key a, b
+    ```
+
+    These assertions pass. The dictionary has two entries, it contains the keys `Name` and `Age`,
+    and the ordered dictionary contains the keys `a` and `b` in that order.
+
+    .EXAMPLE
+    ```powershell
+    @{ Name = 'Jakub' } | Should-BeHashtable -Ordered
+    @(1, 2, 3) | Should-BeHashtable
+    ```
+
+    These assertions fail. The first value is a plain (unordered) hashtable, and the second value
+    is a collection, not a hashtable.
+
+    .NOTES
+    `Should-BeHashtable` only asserts on the shape of the dictionary. To compare its keys and
+    values against an expected dictionary, use `Should-BeEquivalent`.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeHashtable
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [int] $Count,
+        [string[]] $Key,
+        [switch] $Ordered,
+        [String] $Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if (-not (Is-Dictionary -Value $Actual)) {
+        $Message = Get-AssertionMessage -Expected $null -Actual $Actual -Because $Because -DefaultMessage "Expected a hashtable,<because> but got <actualType> <actual>."
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if ($Ordered -and ($Actual -isnot [System.Collections.Specialized.OrderedDictionary])) {
+        $Message = Get-AssertionMessage -Expected $null -Actual $Actual -Because $Because -DefaultMessage "Expected an ordered hashtable ([ordered]@{}),<because> but got unordered <actualType> <actual>."
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if ($PSBoundParameters.ContainsKey('Count') -and ($Count -ne $Actual.Count)) {
+        $Message = Get-AssertionMessage -Expected $Count -Actual $Actual -Because $Because -Data @{ actualCount = $Actual.Count } -DefaultMessage "Expected <expected> entries in hashtable <actual>,<because> but it has <actualCount> entries."
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if ($PSBoundParameters.ContainsKey('Key')) {
+        $dictionary = [System.Collections.IDictionary]$Actual
+
+        $missingKeys = @(foreach ($k in $Key) { if (-not $dictionary.Contains($k)) { $k } })
+        if ($missingKeys.Count -gt 0) {
+            $missingFormatted = @(foreach ($k in $missingKeys) { Format-Nicely2 -Value $k }) -join ', '
+            $keyWord = if ($missingKeys.Count -eq 1) { 'key' } else { 'keys' }
+            $Message = Get-AssertionMessage -Expected $Key -Actual $Actual -Because $Because -DefaultMessage "Expected hashtable <actual> to contain $keyWord $missingFormatted,<because> but it does not."
+            Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+        }
+
+        # When the dictionary is asserted to be ordered, the requested keys must also appear in the
+        # given relative order. Only OrderedDictionary reaches this point (the -Ordered check above
+        # rejects anything else), and it compares keys case-insensitively, matching -eq below.
+        if ($Ordered) {
+            $actualKeys = @($Actual.Keys)
+            $positions = foreach ($k in $Key) {
+                $found = -1
+                for ($i = 0; $i -lt $actualKeys.Count; $i++) {
+                    if ($actualKeys[$i] -eq $k) { $found = $i; break }
+                }
+                $found
+            }
+
+            $inOrder = $true
+            for ($i = 1; $i -lt $positions.Count; $i++) {
+                if ($positions[$i] -le $positions[$i - 1]) { $inOrder = $false; break }
+            }
+
+            if (-not $inOrder) {
+                $keysFormatted = @(foreach ($k in $Key) { Format-Nicely2 -Value $k }) -join ', '
+                $actualOrderFormatted = @(foreach ($k in $actualKeys) { Format-Nicely2 -Value $k }) -join ', '
+                $Message = Get-AssertionMessage -Expected $Key -Actual $Actual -Because $Because -DefaultMessage "Expected keys $keysFormatted to appear in this order in hashtable <actual>,<because> but the actual key order is $actualOrderFormatted."
+                Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+            }
+        }
+    }
+
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Mock\Should-Invoke.ps1
+function Should-Invoke {
+    <#
+    .SYNOPSIS
+    Checks if a Mocked command has been called a certain number of times
+    and throws an exception if it has not.
+
+    .DESCRIPTION
+    This command verifies that a mocked command has been called a certain number
+    of times.  If the call history of the mocked command does not match the parameters
+    passed to Should-Invoke, Should-Invoke will throw an exception.
+
+    .PARAMETER CommandName
+    The mocked command whose call history should be checked.
+
+    .PARAMETER ModuleName
+    The module where the mock being checked was injected. This is optional,
+    and must match the ModuleName that was used when setting up the Mock.
+
+    .PARAMETER Times
+    The number of times that the mock must be called to avoid an exception
+    from throwing.
+
+    .PARAMETER Exactly
+    If this switch is present, the number specified in Times must match
+    exactly the number of times the mock has been called. Otherwise it
+    must match "at least" the number of times specified.  If the value
+    passed to the Times parameter is zero, the Exactly switch is implied.
+
+    .PARAMETER ParameterFilter
+    An optional filter to qualify which calls should be counted. Only those
+    calls to the mock whose parameters cause this filter to return true
+    will be counted.
+
+    .PARAMETER ExclusiveFilter
+    Like ParameterFilter, except when you use ExclusiveFilter, and there
+    were any calls to the mocked command which do not match the filter,
+    an exception will be thrown.  This is a convenient way to avoid needing
+    to have two calls to Should-Invoke like this:
+
+    Should-Invoke SomeCommand -Times 1 -ParameterFilter { $something -eq $true }
+    Should-Invoke SomeCommand -Times 0 -ParameterFilter { $something -ne $true }
+
+    .PARAMETER Scope
+    An optional parameter specifying the Pester scope in which to check for
+    calls to the mocked command. For RSpec style tests, Should-Invoke will find
+    all calls to the mocked command in the current Context block (if present),
+    or the current Describe block (if there is no active Context), by default. Valid
+    values are Describe, Context and It. If you use a scope of Describe or
+    Context, the command will identify all calls to the mocked command in the
+    current Describe / Context block, as well as all child scopes of that block.
+
+    .PARAMETER Because
+    The reason why the mock should be called.
+
+    .PARAMETER Verifiable
+    Makes sure that all verifiable mocks were called.
+
+    .EXAMPLE
+    ```powershell
+    function Save-Report ($Path, $Content) {
+        Set-Content -Path $Path -Value $Content
+    }
+
+    Describe 'Save-Report' {
+        It 'writes the report to disk' {
+            Mock Set-Content
+
+            Save-Report -Path 'report.txt' -Content 'All systems green'
+
+            Should-Invoke Set-Content -Times 1 -Exactly
+        }
+    }
+    ```
+
+    Asserts that `Save-Report` wrote to disk by calling the mocked `Set-Content` exactly once. The test fails if `Set-Content` was not called, or was called more than once.
+
+    .EXAMPLE
+    ```powershell
+    Mock Set-Content
+
+    Save-Report -Path 'report.txt' -Content 'All systems green'
+
+    Should-Invoke Set-Content -ParameterFilter { $Path -eq 'report.txt' }
+    ```
+
+    Only the calls where `-Path` was `report.txt` are counted. The assertion passes, because `Save-Report` wrote to that path.
+
+    .EXAMPLE
+    ```powershell
+    function Get-Weather ($City) {
+        Invoke-RestMethod -Uri "https://api.example.com/weather?city=$City"
+    }
+
+    Mock Invoke-RestMethod
+
+    Get-Weather -City 'Oslo'
+
+    Should-Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter { $Uri -match 'city=Oslo' }
+    ```
+
+    Asserts that the weather API was queried exactly once, and that the request was made for the city of Oslo.
+
+    .EXAMPLE
+    ```powershell
+    Describe 'Save-Report' {
+        BeforeAll { Mock Set-Content }
+
+        It 'writes exactly once per call' {
+            Save-Report -Path 'a.txt' -Content 'x'
+
+            Should-Invoke Set-Content -Times 1 -Exactly -Scope It
+        }
+    }
+    ```
+
+    `-Scope It` counts only the calls made in the current `It` block, even though the mock is shared by the whole `Describe`.
+
+    .EXAMPLE
+    ```powershell
+    Describe 'Publish-Thing' {
+        It 'writes from inside the module' {
+            Mock -ModuleName Toolbox Set-Content
+
+            Publish-Thing
+
+            Should-Invoke -ModuleName Toolbox Set-Content -Times 1 -Exactly
+        }
+    }
+    ```
+
+    When the command under test lives in a module, both `Mock` and `Should-Invoke` must use the same `-ModuleName` so the recorded call is found.
+
+    .EXAMPLE
+    ```powershell
+    Mock Remove-Item
+
+    Remove-TempFile -Path "$env:TEMP/old.log"
+
+    Should-Invoke Remove-Item -ExclusiveFilter { $Path -like "$env:TEMP*" }
+    ```
+
+    `-ExclusiveFilter` passes only if *every* recorded call matches the filter. Here it asserts that `Remove-Item` was called at least once, and only ever for paths inside the temp folder. It is a shorthand for pairing a `Should-Invoke` and a `Should-NotInvoke`.
+
+    .NOTES
+    The parameter filter passed to Should-Invoke does not necessarily have to match the parameter filter
+    (if any) which was used to create the Mock.  Should-Invoke will find any entry in the command history
+    which matches its parameter filter, regardless of how the Mock was created.  However, if any calls to the
+    mocked command are made which did not match any mock's parameter filter (resulting in the original command
+    being executed instead of a mock), these calls to the original command are not tracked in the call history.
+    In other words, Should-Invoke can only be used to check for calls to the mocked implementation, not
+    to the original.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-Invoke
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'Default')]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Default')]
+        [string]$CommandName,
+
+        [Parameter(Position = 1, ParameterSetName = 'Default')]
+        [int]$Times = 1,
+
+        [parameter(ParameterSetName = 'Default')]
+        [ScriptBlock]$ParameterFilter = { $True },
+
+        [Parameter(ParameterSetName = 'Default')]
+        [Parameter(ParameterSetName = 'ExclusiveFilter', Mandatory = $true)]
+        [scriptblock] $ExclusiveFilter,
+
+        [Parameter(ParameterSetName = 'Default')]
+        [string] $ModuleName,
+        [Parameter(ParameterSetName = 'Default')]
+        [string] $Scope = 0,
+        [Parameter(ParameterSetName = 'Default')]
+        [switch] $Exactly,
+        [Parameter(ParameterSetName = 'Default')]
+        [Parameter(ParameterSetName = 'Verifiable')]
+        [string] $Because,
+
+        [Parameter(ParameterSetName = 'Verifiable')]
+        [switch] $Verifiable
+    )
+
+    if ($PSBoundParameters.ContainsKey('Verifiable')) {
+        $PSBoundParameters.Remove('Verifiable')
+        $testResult = Should-InvokeVerifiable @PSBoundParameters
+        Test-AssertionResult $testResult
+        Set-AssertionPassResult
+        return
+    }
+
+    # Maps the parameters so we can internally use functions that is
+    # possible to register as Should operator.
+    $PSBoundParameters["ActualValue"] = $null
+    $PSBoundParameters["Negate"] = $false
+    $PSBoundParameters["CallerSessionState"] = $PSCmdlet.SessionState
+    $PSBoundParameters["CommandDisplayName"] = 'Should-Invoke'
+    $testResult = Should-InvokeAssertion @PSBoundParameters
+
+    Test-AssertionResult $testResult
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Mock\Should-NotInvoke.ps1
+function Should-NotInvoke {
+    <#
+    .SYNOPSIS
+    Checks that mocked command was not called and throws exception if it was.
+
+    .DESCRIPTION
+    This command verifies that a mocked command has not been called a certain number
+    of times.  If the call history of the mocked command does not match the parameters
+    passed to Should-NotInvoke, Should-NotInvoke will throw an exception.
+
+    .PARAMETER CommandName
+    The mocked command whose call history should be checked.
+
+    .PARAMETER ModuleName
+    The module where the mock being checked was injected.  This is optional,
+    and must match the ModuleName that was used when setting up the Mock.
+
+    .PARAMETER Times
+    The number of times that the mock must be called to avoid an exception
+    from throwing.
+
+    .PARAMETER Exactly
+    If this switch is present, the number specified in Times must match
+    exactly the number of times the mock has been called. Otherwise it
+    must match "at least" the number of times specified.  If the value
+    passed to the Times parameter is zero, the Exactly switch is implied.
+
+    .PARAMETER ParameterFilter
+    An optional filter to qualify which calls should be counted. Only those
+    calls to the mock whose parameters cause this filter to return true
+    will be counted.
+
+    .PARAMETER ExclusiveFilter
+    Like ParameterFilter, except when you use ExclusiveFilter, and there
+    were any calls to the mocked command which do not match the filter,
+    an exception will be thrown.  This is a convenient way to avoid needing
+    to have two calls to Should-NotInvoke like this:
+
+    Should-NotInvoke SomeCommand -Times 1 -ParameterFilter { $something -eq $true }
+    Should-NotInvoke SomeCommand -Times 0 -ParameterFilter { $something -ne $true }
+
+    .PARAMETER Scope
+    An optional parameter specifying the Pester scope in which to check for
+    calls to the mocked command. For RSpec style tests, Should-NotInvoke will find
+    all calls to the mocked command in the current Context block (if present),
+    or the current Describe block (if there is no active Context), by default. Valid
+    values are Describe, Context and It. If you use a scope of Describe or
+    Context, the command will identify all calls to the mocked command in the
+    current Describe / Context block, as well as all child scopes of that block.
+
+    .PARAMETER Because
+    The reason why the mock should be called.
+
+    .PARAMETER Verifiable
+    Makes sure that all verifiable mocks were called.
+
+    .EXAMPLE
+    ```powershell
+    function Remove-TempFile ($Path, [switch] $WhatIf) {
+        if (-not $WhatIf) { Remove-Item -Path $Path }
+    }
+
+    Describe 'Remove-TempFile' {
+        It 'does not delete anything in -WhatIf mode' {
+            Mock Remove-Item
+
+            Remove-TempFile -Path 'temp.txt' -WhatIf
+
+            Should-NotInvoke Remove-Item
+        }
+    }
+    ```
+
+    Because `-WhatIf` was passed, `Remove-TempFile` must not delete anything. The assertion passes when the mocked `Remove-Item` was never called, and throws (failing the test) if it was called.
+
+    .EXAMPLE
+    ```powershell
+    Mock Remove-Item
+
+    Remove-TempFile -Path "$env:TEMP/old.log"
+
+    Should-NotInvoke Remove-Item -ParameterFilter { $Path -notlike "$env:TEMP*" }
+    ```
+
+    Only the calls whose `-Path` is outside the temp folder are counted. The assertion passes, because `Remove-TempFile` only ever deletes inside `$env:TEMP`.
+
+    .EXAMPLE
+    ```powershell
+    Describe 'Remove-TempFile' {
+        BeforeAll { Mock Remove-Item }
+
+        It 'is a no-op in -WhatIf mode' {
+            Remove-TempFile -Path 'temp.txt' -WhatIf
+
+            Should-NotInvoke Remove-Item -Scope It
+        }
+    }
+    ```
+
+    `-Scope It` limits the check to calls made in the current `It` block, even when the mock is shared across the whole `Describe`.
+
+    .NOTES
+    The parameter filter passed to Should-NotInvoke does not necessarily have to match the parameter filter
+    (if any) which was used to create the Mock.  Should-NotInvoke will find any entry in the command history
+    which matches its parameter filter, regardless of how the Mock was created.  However, if any calls to the
+    mocked command are made which did not match any mock's parameter filter (resulting in the original command
+    being executed instead of a mock), these calls to the original command are not tracked in the call history.
+    In other words, Should-NotInvoke can only be used to check for calls to the mocked implementation, not
+    to the original.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotInvoke
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'Default')]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Default')]
+        [string]$CommandName,
+
+        [Parameter(Position = 1, ParameterSetName = 'Default')]
+        [int]$Times = 1,
+
+        [parameter(ParameterSetName = 'Default')]
+        [ScriptBlock]$ParameterFilter = { $True },
+
+        [Parameter(ParameterSetName = 'Default')]
+        [Parameter(ParameterSetName = 'ExclusiveFilter', Mandatory = $true)]
+        [scriptblock] $ExclusiveFilter,
+
+        [Parameter(ParameterSetName = 'Default')]
+        [string] $ModuleName,
+        [Parameter(ParameterSetName = 'Default')]
+        [string] $Scope = 0,
+        [Parameter(ParameterSetName = 'Default')]
+        [switch] $Exactly,
+        [Parameter(ParameterSetName = 'Default')]
+        [Parameter(ParameterSetName = 'Verifiable')]
+        [string] $Because,
+
+        [Parameter(ParameterSetName = 'Verifiable')]
+        [switch] $Verifiable
+    )
+
+    $PSBoundParameters["Negate"] = $true
+
+    if ($PSBoundParameters.ContainsKey('Verifiable')) {
+        $PSBoundParameters.Remove('Verifiable')
+        $testResult = Should-InvokeVerifiable @PSBoundParameters
+        Test-AssertionResult $testResult
+        Set-AssertionPassResult
+        return
+    }
+
+    # Maps the parameters so we can internally use functions that is
+    # possible to register as Should operator.
+    $PSBoundParameters["ActualValue"] = $null
+    $PSBoundParameters["CallerSessionState"] = $PSCmdlet.SessionState
+    $PSBoundParameters["CommandDisplayName"] = 'Should-NotInvoke'
+    $testResult = Should-InvokeAssertion @PSBoundParameters
+
+    Test-AssertionResult $testResult
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Parameter\Should-HaveParameter.ps1
+function Should-HaveParameter {
+    <#
+    .SYNOPSIS
+    Asserts that a command has the expected parameter.
+
+    .DESCRIPTION
+    This assertion inspects command metadata and can also verify parameter details such as type, default value, aliases, parameter set membership, mandatory status, and argument completers.
+
+    .PARAMETER ParameterName
+    The name of the parameter to check. E.g. Uri
+
+    .PARAMETER Type
+    The type of the parameter to check. E.g. [string]
+
+    .PARAMETER DefaultValue
+    The default value of the parameter to check. E.g. "https://example.com"
+
+    .PARAMETER Mandatory
+    Whether the parameter is mandatory or not.
+
+    .PARAMETER InParameterSet
+    The parameter set that the parameter belongs to.
+
+    .PARAMETER HasArgumentCompleter
+    Whether the parameter has an argument completer or not.
+
+    .PARAMETER Alias
+    The alias of the parameter to check.
+
+    .PARAMETER Actual
+    The actual command to check. E.g. Get-Command "Invoke-WebRequest"
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    Get-Command Invoke-WebRequest | Should-HaveParameter Uri -Type ([uri]) -Mandatory
+    ```
+
+    This assertion passes, because `Invoke-WebRequest` has a mandatory `-Uri` parameter of type `[uri]`.
+
+    .EXAMPLE
+    ```powershell
+    function Get-Cat {
+        [CmdletBinding(DefaultParameterSetName = 'ByName')]
+        param(
+            [Parameter(ParameterSetName = 'ByName', Mandatory)]
+            [Alias('Id')]
+            [string] $Name,
+
+            [Parameter(ParameterSetName = 'ByIndex', Mandatory)]
+            [int] $Index,
+
+            [ValidateSet('Json', 'Xml')]
+            [string] $Format = 'Json'
+        )
+    }
+
+    Describe 'Get-Cat public contract' {
+        It 'requires a Name' {
+            Get-Command Get-Cat | Should-HaveParameter Name -Type ([string]) -Mandatory -Alias 'Id'
+        }
+
+        It 'defaults Format to Json' {
+            Get-Command Get-Cat | Should-HaveParameter Format -Type ([string]) -DefaultValue 'Json'
+        }
+    }
+    ```
+
+    A typical real-life use is locking down the public API of your own command. These assertions pass, because `-Name` is a mandatory `[string]` with the alias `Id`, and `-Format` is an optional `[string]` that defaults to `Json`.
+
+    .EXAMPLE
+    ```powershell
+    Get-Command Get-Cat | Should-HaveParameter Index -InParameterSet 'ByIndex'
+    ```
+
+    This assertion passes, because the `-Index` parameter (from the `Get-Cat` function above) belongs to the `ByIndex` parameter set.
+
+    .NOTES
+    The attribute [ArgumentCompleter] was added with PSv5. Previously this
+    assertion will not be able to use the -HasArgumentCompleter parameter
+    if the attribute does not exist.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-HaveParameter
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [String] $ParameterName,
+        $Type,
+        [String] $DefaultValue,
+        [Switch] $Mandatory,
+        [String] $InParameterSet,
+        [Switch] $HasArgumentCompleter,
+        [String[]] $Alias,
+        [Parameter(ValueFromPipeline = $true)]
+        $Actual,
+        [String] $Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    $PSBoundParameters["ActualValue"] = $Actual
+    $PSBoundParameters.Remove("Actual")
+
+    $testResult = Should-HaveParameterAssertion @PSBoundParameters
+
+    Test-AssertionResult $testResult
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Parameter\Should-NotHaveParameter.ps1
+function Should-NotHaveParameter {
+    <#
+    .SYNOPSIS
+    Asserts that a command has does not have the parameter.
+
+    .DESCRIPTION
+    This assertion inspects command metadata to verify that a parameter is absent. It only checks the parameter name, unlike `Should-HaveParameter`, which can also validate parameter details.
+
+    .PARAMETER ParameterName
+    The name of the parameter to check. E.g. Uri
+
+    .PARAMETER Actual
+    The actual command to check. E.g. Get-Command "Invoke-WebRequest"
+
+    .PARAMETER Because
+    The reason why the input should be the expected value.
+
+    .EXAMPLE
+    ```powershell
+    Get-Command Get-Date | Should-NotHaveParameter Uri
+    ```
+
+    This assertion passes, because `Get-Date` has no `-Uri` parameter.
+
+    .EXAMPLE
+    ```powershell
+    function Get-PublicReport {
+        param([string] $Name)
+    }
+
+    Get-Command Get-PublicReport | Should-NotHaveParameter Credential
+    ```
+
+    This assertion passes, because `Get-PublicReport` does not expose a `-Credential` parameter. This is useful for guarding against accidentally adding parameters you want to keep off a command's public surface.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotHaveParameter
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [String] $ParameterName,
+        [Parameter(ValueFromPipeline = $true)]
+        $Actual,
+        [String] $Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    $PSBoundParameters["ActualValue"] = $Actual
+    $PSBoundParameters.Remove("Actual")
+    $PSBoundParameters["Negate"] = $true
+
+    $testResult = Should-HaveParameterAssertion @PSBoundParameters
+
+    Test-AssertionResult $testResult
+    Set-AssertionPassResult
+}
+# file src\functions\assert\String\Should-BeEmptyString.ps1
+function Should-BeEmptyString {
+    <#
+    .SYNOPSIS
+    Ensures that input is an empty string.
+
+    .DESCRIPTION
+    This assertion requires the actual value to be a string and uses `[string]::IsNullOrEmpty()` for the check. `$null` and non-string values still fail the assertion.
+
+    .PARAMETER Actual
+    The actual value that will be compared to an empty string.
+
+    .PARAMETER Because
+    The reason why the input should be an empty string.
+
+    .EXAMPLE
+    ```powershell
+    $actual = ""
+    $actual | Should-BeEmptyString
+    ```
+
+    This test will pass.
+
+    .EXAMPLE
+    ```powershell
+    $actual = "hello"
+    $actual | Should-BeEmptyString
+    ```
+
+    This test will fail, the input is not an empty string.
+
+    .EXAMPLE
+    ```
+    $null | Should-BeEmptyString
+    @() | Should-BeEmptyString
+    $() | Should-BeEmptyString
+    $false | Should-BeEmptyString
+    ```
+
+    All the tests above will fail, the input is not a string.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeEmptyString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [String] -or -not [String]::IsNullOrEmpty( $Actual)) {
+        $formattedMessage = Get-AssertionMessage -Actual $Actual -Because $Because -DefaultMessage "Expected a [string] that is empty,<because> but got <actualType>: <actual>" -Pretty
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $formattedMessage = "$formattedMessage`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $formattedMessage -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\String\Should-BeLikeString.ps1
+function Test-Like {
+    param (
+        [String]$Expected,
+        $Actual,
+        [switch]$CaseSensitive
+    )
+
+    if (-not $CaseSensitive) {
+        $Actual -like $Expected
+    }
+    else {
+        $Actual -clike $Expected
+    }
+}
+
+function Should-BeLikeString {
+    <#
+    .SYNOPSIS
+    Asserts that the actual value is like the expected value.
+
+    .DESCRIPTION
+    The `Should-BeLikeString` assertion compares the actual value to the expected value using the `-like` operator. The `-like` operator is case-insensitive by default, but you can make it case-sensitive by using the `-CaseSensitive` switch.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER CaseSensitive
+    Indicates that the comparison should be case-sensitive.
+
+    .PARAMETER Because
+    The reason why the actual value should be like the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-BeLikeString "h*"
+    ```
+
+    This assertion will pass, because the actual value is like the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-BeLikeString "H*" -CaseSensitive
+    ```
+
+    This assertion will fail, because the actual value is not like the expected value.
+
+    .NOTES
+    The `Should-BeLikeString` assertion is the opposite of the `Should-NotBeLikeString` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeLikeString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory = $true)]
+        [String]$Expected,
+        [Switch]$CaseSensitive,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [string]) {
+        throw [ArgumentException]"Actual is expected to be string, to avoid confusing behavior that -like operator exhibits with collections. To assert on collections use Should-Any, Should-All or some other collection assertion."
+    }
+
+    $stringsAreAlike = Test-Like -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive -IgnoreWhitespace:$IgnoreWhiteSpace
+    if (-not ($stringsAreAlike)) {
+        $caseSensitiveMessage = ""
+        if ($CaseSensitive) {
+            $caseSensitiveMessage = " case sensitively"
+        }
+
+        $Message = Get-AssertionMessage -Expected $null -Actual $Actual -Because $Because -DefaultMessage "Expected the string '$Actual' to$caseSensitiveMessage be like '$Expected',<because> but it did not."
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\String\Should-BeString.ps1
+function Test-StringEqual {
+    param (
+        [String]$Expected,
+        $Actual,
+        [switch]$CaseSensitive,
+        [switch]$IgnoreWhitespace,
+        [switch]$TrimWhitespace
+    )
+
+    if ($Actual -isnot [string]) {
+        return $false
+    }
+
+    if ($IgnoreWhitespace) {
+        $Expected = $Expected -replace '\s'
+        $Actual = $Actual -replace '\s'
+    }
+
+    if ($TrimWhitespace) {
+        $Expected = $Expected -replace '^\s+|\s+$'
+        $Actual = $Actual -replace '^\s+|\s+$'
+    }
+
+    if (-not $CaseSensitive) {
+        $Expected -eq $Actual
+    }
+    else {
+        $Expected -ceq $Actual
+    }
+}
+
+function Should-BeString {
+    <#
+    .SYNOPSIS
+    Asserts that the actual value is equal to the expected value.
+
+    .DESCRIPTION
+    The `Should-BeString` assertion compares the actual value to the expected value using the `-eq` operator. The `-eq` operator is case-insensitive by default, but you can make it case-sensitive by using the `-CaseSensitive` switch.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER CaseSensitive
+    Indicates that the comparison should be case-sensitive.
+
+    .PARAMETER IgnoreWhitespace
+    Indicates that the comparison should ignore whitespace.
+
+    .PARAMETER TrimWhitespace
+    Trims whitespace at the start and end of the string.
+
+    .PARAMETER Because
+    The reason why the actual value should be equal to the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-BeString "hello"
+    ```
+
+    This assertion will pass, because the actual value is equal to the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-BeString "HELLO" -CaseSensitive
+    ```
+
+    This assertion will fail, because the actual value is not equal to the expected value.
+
+    .NOTES
+    The `Should-BeString` assertion is the opposite of the `Should-NotBeString` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory)]
+        [String]$Expected,
+        [String]$Because,
+        [switch]$CaseSensitive,
+        [switch]$IgnoreWhitespace,
+        [switch]$TrimWhitespace
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    $stringsAreEqual = Test-StringEqual -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive -IgnoreWhitespace:$IgnoreWhiteSpace -TrimWhitespace:$TrimWhitespace
+    if (-not ($stringsAreEqual)) {
+        if ($Actual -is [string]) {
+            $Message = Get-StringDifferenceMessage -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive -Because $Because
+        }
+        else {
+            $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected <expectedType> <expected>, but got <actualType> <actual>."
+        }
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+
+function Get-StringDifferenceMessage {
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string] $Expected,
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string] $Actual,
+        [switch] $CaseSensitive,
+        [string] $Because
+    )
+
+    $maxLength = [Math]::Max($Expected.Length, $Actual.Length)
+
+    $differenceIndex = $null
+    for ($i = 0; $i -lt $maxLength -and ($null -eq $differenceIndex); ++$i) {
+        if ($CaseSensitive) {
+            if ($Expected[$i] -cne $Actual[$i]) { $differenceIndex = $i }
+        }
+        else {
+            if ($Expected[$i] -ne $Actual[$i]) { $differenceIndex = $i }
+        }
+    }
+
+    $because = if ($Because) { " because $Because," } else { "" }
+
+    $lines = @(
+        "Expected strings to be the same,$because but they were different."
+    )
+
+    if ($Expected.Length -ne $Actual.Length) {
+        $lines += "Expected length: $($Expected.Length)"
+        $lines += "Actual length:   $($Actual.Length)"
+    }
+    else {
+        $lines += "String lengths are both $($Expected.Length)."
+    }
+    $lines += "Strings differ at index $differenceIndex."
+
+    $expectedExpanded = Expand-SpecialCharacters -InputObject $Expected
+    $actualExpanded = Expand-SpecialCharacters -InputObject $Actual
+
+    $prefix = "Expected: '"
+    $lines += "$prefix$expectedExpanded'"
+    $lines += "But was:  '$actualExpanded'"
+    $lines += (' ' * ($prefix.Length - 1)) + ('-' * $differenceIndex) + '^'
+
+    $lines -join "`n"
+}
+# file src\functions\assert\String\Should-MatchString.ps1
+function Test-MatchString {
+    param (
+        [String]$Expected,
+        $Actual,
+        [switch]$CaseSensitive
+    )
+
+    if (-not $CaseSensitive) {
+        $Actual -match $Expected
+    }
+    else {
+        $Actual -cmatch $Expected
+    }
+}
+
+function Should-MatchString {
+    <#
+    .SYNOPSIS
+    Tests whether a string matches a regular expression pattern.
+
+    .DESCRIPTION
+    The `Should-MatchString` assertion compares the actual string to the expected regular expression pattern using the `-match` operator. The `-match` operator is case-insensitive by default, but you can make it case-sensitive by using the `-CaseSensitive` switch.
+
+    .PARAMETER Expected
+    The expected regular expression pattern.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER CaseSensitive
+    Indicates that the comparison should be case-sensitive.
+
+    .PARAMETER Because
+    The reason why the actual value should match the regular expression pattern.
+
+    .EXAMPLE
+    ```powershell
+    (New-Guid).Guid | Should-MatchString '^[0-9a-f-]{36}$'
+    ```
+
+    This assertion passes, because a GUID is made up of 36 lowercase hexadecimal and dash characters.
+
+    .EXAMPLE
+    ```powershell
+    'user-4f2a' | Should-MatchString '^user-[0-9a-f]{4}$'
+    ```
+
+    This assertion passes, because the generated id matches the expected `user-` prefix followed by four hexadecimal characters. This is handy for checking that a function returns ids, tokens or file names in the format you expect.
+
+    .EXAMPLE
+    ```powershell
+    'Pester 6.0.0' | Should-MatchString 'pester \d+\.\d+\.\d+' -CaseSensitive
+    ```
+
+    This assertion fails, because with `-CaseSensitive` the lowercase `pester` in the pattern does not match the capitalized `Pester` in the actual value.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-MatchString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory = $true)]
+        $Expected,
+        [Switch]$CaseSensitive,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [string]) {
+        throw [ArgumentException]"Actual is expected to be string, to avoid confusing behavior that -match operator exhibits with collections. To assert on collections use Should-Any, Should-All or some other collection assertion."
+    }
+
+    if ($Expected -isnot [string]) {
+        throw [ArgumentException]"Expected is expected to be string, to avoid confusing behavior that -match operator exhibits with collections."
+    }
+
+    $stringsMatch = Test-MatchString -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive
+    if (-not $stringsMatch) {
+        $caseSensitiveMessage = ""
+        if ($CaseSensitive) {
+            $caseSensitiveMessage = " case sensitively"
+        }
+
+        $Message = Get-AssertionMessage -Expected $null -Actual $Actual -Because $Because -DefaultMessage "Expected the string '$Actual' to$caseSensitiveMessage match pattern '$Expected',<because> but it did not."
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if ($script:______isInMockParameterFilter) { return $true }
+}
+# file src\functions\assert\String\Should-NotBeEmptyString.ps1
+function Should-NotBeEmptyString {
+    <#
+    .SYNOPSIS
+    Ensures that the input is a string, and that the input is not $null or empty string.
+
+    .DESCRIPTION
+    This assertion requires the actual value to be a string and fails for `$null, `""`, and non-string values. Use it when empty should not be accepted as a valid string value.
+
+    .PARAMETER Actual
+    The actual value that will be compared.
+
+    .PARAMETER Because
+    The reason why the input should be a string that is not $null or empty.
+
+    .EXAMPLE
+    ```powershell
+    $actual = "hello"
+    $actual | Should-NotBeEmptyString
+    ```
+
+    This test will pass.
+
+    .EXAMPLE
+    ```powershell
+    $actual = ""
+    $actual | Should-NotBeEmptyString
+    ```
+
+    This test will fail, the input is an empty string.
+
+    .EXAMPLE
+    ```powershell
+    $null | Should-NotBeEmptyString
+    $() | Should-NotBeEmptyString
+    $false | Should-NotBeEmptyString
+    1 | Should-NotBeEmptyString
+    ```
+
+    All the tests above will fail, the input is not a string.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotBeEmptyString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [String] -or [String]::IsNullOrEmpty($Actual)) {
+        $formattedMessage = Get-AssertionMessage -Actual $Actual -Because $Because -DefaultMessage "Expected a [string] that is not `$null or empty,<because> but got <actualType>: <actual>" -Pretty
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $formattedMessage = "$formattedMessage`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $formattedMessage -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\String\Should-NotBeLikeString.ps1
+function Test-NotLike {
+    param (
+        [String]$Expected,
+        $Actual,
+        [switch]$CaseSensitive
+    )
+
+    if (-not $CaseSensitive) {
+        $Actual -NotLike $Expected
+    }
+    else {
+        $actual -cNotLike $Expected
+    }
+}
+
+function Get-NotLikeDefaultFailureMessage ([String]$Expected, $Actual, [switch]$CaseSensitive) {
+    $caseSensitiveMessage = ""
+    if ($CaseSensitive) {
+        $caseSensitiveMessage = " case sensitively"
+    }
+    "Expected the string '$Actual' to$caseSensitiveMessage not match '$Expected' but it matched it."
+}
+
+function Should-NotBeLikeString {
+    <#
+    .SYNOPSIS
+    Asserts that the actual value is not like the expected value.
+
+    .DESCRIPTION
+    The `Should-NotBeLikeString` assertion compares the actual value to the expected value using the `-notlike` operator. The `-notlike` operator is case-insensitive by default, but you can make it case-sensitive by using the `-CaseSensitive` switch.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER CaseSensitive
+    Indicates that the comparison should be case-sensitive.
+
+    .PARAMETER Because
+    The reason why the actual value should not be like the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-NotBeLikeString "H*"
+    ```
+
+    This assertion will pass, because the actual value is not like the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-NotBeLikeString "h*" -CaseSensitive
+    ```
+
+    This assertion will fail, because the actual value is like the expected value.
+
+    .NOTES
+    The `Should-NotBeLikeString` assertion is the opposite of the `Should-BeLikeString` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotBeLikeString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory = $true)]
+        [String]$Expected,
+        [Switch]$CaseSensitive,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [string]) {
+        throw [ArgumentException]"Actual is expected to be string, to avoid confusing behavior that -like operator exhibits with collections. To assert on collections use Should-Any, Should-All or some other collection assertion."
+    }
+
+    $stringsAreANotLike = Test-NotLike -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive -IgnoreWhitespace:$IgnoreWhiteSpace
+    if (-not ($stringsAreANotLike)) {
+        if (-not $CustomMessage) {
+            $formattedMessage = Get-NotLikeDefaultFailureMessage -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive
+        }
+        else {
+            $formattedMessage = Get-CustomFailureMessage -Expected $Expected -Actual $Actual -Because $Because -CaseSensitive:$CaseSensitive
+        }
+
+        Invoke-AssertionFailed -Message $formattedMessage -CallerCmdlet $PSCmdlet -Expected $Expected -Actual $Actual -Because $Because
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\String\Should-NotBeString.ps1
+function Get-StringNotEqualDefaultFailureMessage ([String]$Expected, $Actual) {
+    "Expected the strings to be different but they were the same '$Expected'."
+}
+
+function Should-NotBeString {
+    <#
+    .SYNOPSIS
+    Asserts that the actual value is not equal to the expected value.
+
+    .DESCRIPTION
+    The `Should-NotBeString` assertion compares the actual value to the expected value using the `-ne` operator. The `-ne` operator is case-insensitive by default, but you can make it case-sensitive by using the `-CaseSensitive` switch.
+
+    .PARAMETER Expected
+    The expected value.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER CaseSensitive
+    Indicates that the comparison should be case-sensitive.
+
+    .PARAMETER IgnoreWhitespace
+    Indicates that the comparison should ignore whitespace.
+
+    .PARAMETER Because
+    The reason why the actual value should not be equal to the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-NotBeString "HELLO"
+    ```
+
+    This assertion will pass, because the actual value is not equal to the expected value.
+
+    .EXAMPLE
+    ```powershell
+    "hello" | Should-NotBeString "hello" -CaseSensitive
+    ```
+
+    This assertion will fail, because the actual value is equal to the expected value.
+
+    .NOTES
+    The `Should-NotBeString` assertion is the opposite of the `Should-BeString` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotBeString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0)]
+        [String]$Expected,
+        [String]$Because,
+        [switch]$CaseSensitive,
+        [switch]$IgnoreWhitespace
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [string]) {
+        throw [ArgumentException]"Actual is expected to be string, to avoid confusing behavior that -ne operator exhibits with collections. To assert on collections use Should-Any, Should-All or some other collection assertion."
+    }
+
+    if (Test-StringEqual -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive -IgnoreWhitespace:$IgnoreWhiteSpace) {
+        if (-not $CustomMessage) {
+            $formattedMessage = Get-StringNotEqualDefaultFailureMessage -Expected $Expected -Actual $Actual
+        }
+        else {
+            $formattedMessage = Get-CustomFailureMessage -Expected $Expected -Actual $Actual -Because $Because
+        }
+
+        Invoke-AssertionFailed -Message $formattedMessage -CallerCmdlet $PSCmdlet -Expected $Expected -Actual $Actual -Because $Because
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\String\Should-NotBeWhiteSpaceString.ps1
+function Should-NotBeWhiteSpaceString {
+    <#
+    .SYNOPSIS
+    Ensures that the input is a string, and that the input is not $null, empty, or whitespace only string.
+
+    .DESCRIPTION
+    This assertion requires a string that contains at least one non-whitespace character. It fails for `$null, `""`, whitespace-only strings, and non-string values.
+
+    .PARAMETER Actual
+    The actual value that will be compared.
+
+    .PARAMETER Because
+    The reason why the input should be a string that is not $null, empty, or whitespace only string.
+
+    .EXAMPLE
+    ```powershell
+    $actual = "hello"
+    $actual | Should-NotBeWhiteSpaceString
+    ```
+
+    This test will pass.
+
+    .EXAMPLE
+    ```powershell
+    $actual = "  "
+    $actual | Should-NotBeWhiteSpaceString
+    ```
+
+    This test will fail, the input is a whitespace only string.
+
+    .EXAMPLE
+    ```
+    $null | Should-NotBeWhiteSpaceString
+    "" | Should-NotBeWhiteSpaceString
+    $() | Should-NotBeWhiteSpaceString
+    $false | Should-NotBeWhiteSpaceString
+    1 | Should-NotBeWhiteSpaceString
+    ```
+
+    All the tests above will fail, the input is not a string.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotBeWhiteSpaceString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        $Actual,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [string] -or [string]::IsNullOrWhiteSpace($Actual)) {
+        $formattedMessage = Get-AssertionMessage -Actual $Actual -Because $Because -DefaultMessage "Expected a [string] that is not `$null, empty or whitespace,<because> but got <actualType>: <actual>" -Pretty
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($hint) { $formattedMessage = "$formattedMessage`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $formattedMessage -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\String\Should-NotMatchString.ps1
+function Test-NotMatchString {
+    param (
+        [String]$Expected,
+        $Actual,
+        [switch]$CaseSensitive
+    )
+
+    if (-not $CaseSensitive) {
+        $Actual -notmatch $Expected
+    }
+    else {
+        $Actual -cnotmatch $Expected
+    }
+}
+
+function Should-NotMatchString {
+    <#
+    .SYNOPSIS
+    Tests whether a string does not match a regular expression pattern.
+
+    .DESCRIPTION
+    The `Should-NotMatchString` assertion compares the actual string to the expected regular expression pattern using the `-notmatch` operator. The `-notmatch` operator is case-insensitive by default, but you can make it case-sensitive by using the `-CaseSensitive` switch.
+
+    .PARAMETER Expected
+    The expected regular expression pattern.
+
+    .PARAMETER Actual
+    The actual value.
+
+    .PARAMETER CaseSensitive
+    Indicates that the comparison should be case-sensitive.
+
+    .PARAMETER Because
+    The reason why the actual value should not match the regular expression pattern.
+
+    .EXAMPLE
+    ```powershell
+    'Hello Jakub, your order #4821 shipped.' | Should-NotMatchString '\{\{.*?\}\}'
+    ```
+
+    This assertion passes, because the rendered text contains no leftover `{{ ... }}` template placeholders. This is a common check after expanding a template to make sure every token was replaced.
+
+    .EXAMPLE
+    ```powershell
+    'level=info msg="started"' | Should-NotMatchString 'password='
+    ```
+
+    This assertion passes, because the log line does not leak a `password=` value.
+
+    .EXAMPLE
+    ```powershell
+    'Build failed' | Should-NotMatchString 'failed' -CaseSensitive
+    ```
+
+    This assertion fails, because the actual value case-sensitively contains `failed`.
+
+    .NOTES
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-NotMatchString
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0, Mandatory = $true)]
+        $Expected,
+        [Switch]$CaseSensitive,
+        [String]$Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -isnot [string]) {
+        throw [ArgumentException]"Actual is expected to be string, to avoid confusing behavior that -match operator exhibits with collections. To assert on collections use Should-Any, Should-All or some other collection assertion."
+    }
+
+    if ($Expected -isnot [string]) {
+        throw [ArgumentException]"Expected is expected to be string, to avoid confusing behavior that -match operator exhibits with collections."
+    }
+
+    $stringsDoNotMatch = Test-NotMatchString -Expected $Expected -Actual $Actual -CaseSensitive:$CaseSensitive
+    if (-not $stringsDoNotMatch) {
+        $caseSensitiveMessage = ""
+        if ($CaseSensitive) {
+            $caseSensitiveMessage = " case sensitively"
+        }
+
+        $Message = Get-AssertionMessage -Expected $null -Actual $Actual -Because $Because -DefaultMessage "Expected the string '$Actual' to$caseSensitiveMessage not match pattern '$Expected',<because> but it matched it."
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+
+    if ($script:______isInMockParameterFilter) { return $true }
+}
+# file src\functions\assert\Time\Get-TimeSpanFromStringWithUnit.ps1
+function Get-TimeSpanFromStringWithUnit ([string] $Value) {
+    if ($Value -notmatch "(?<value>^\d+(?:\.\d+)?)\s*(?<suffix>ms|mil|m|h|d|s|w)") {
+        throw "String '$Value' is not a valid timespan string. It should be a number followed by a unit in short or long format (e.g. '1ms', '1s', '1m', '1h', '1d', '1w', '1sec', '1second', '1.5hours' etc.)."
+    }
+
+    $suffix = $Matches['suffix']
+    $valueFromRegex = $Matches['value']
+    switch ($suffix) {
+        ms { [timespan]::FromMilliseconds($valueFromRegex) }
+        mil { [timespan]::FromMilliseconds($valueFromRegex) }
+        s { [timespan]::FromSeconds($valueFromRegex) }
+        m { [timespan]::FromMinutes($valueFromRegex) }
+        h { [timespan]::FromHours($valueFromRegex) }
+        d { [timespan]::FromDays($valueFromRegex) }
+        w { [timespan]::FromDays([double]$valueFromRegex * 7) }
+        default { throw "Time unit '$suffix' in '$Value' is not supported." }
+    }
+}
+# file src\functions\assert\Time\Should-BeAfter.ps1
+function Should-BeAfter {
+    <#
+    .SYNOPSIS
+    Asserts that the provided [datetime] is after the expected [datetime].
+
+    .DESCRIPTION
+    This assertion accepts either an expected `[datetime]` or a fluent relative time expression. Use `-Now`, `-Ago`, or `-FromNow` to compare against the current local time.
+
+    .PARAMETER Actual
+    The actual [datetime] value.
+
+    .PARAMETER Expected
+    The expected [datetime] value.
+
+    .PARAMETER Time
+    The time to add or subtract from the current time. This parameter uses fluent time syntax e.g. 1minute.
+
+    .PARAMETER Ago
+    Indicates that the -Time should be subtracted from the current time.
+
+    .PARAMETER FromNow
+    Indicates that the -Time should be added to the current time.
+
+    .PARAMETER Now
+    Indicates that the current time should be used as the expected time.
+
+    .PARAMETER Because
+    The reason why the actual value should be after the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddDays(1) | Should-BeAfter (Get-Date)
+    ```
+
+    This assertion will pass, because the actual value is after the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddDays(-1) | Should-BeAfter (Get-Date)
+    ```
+
+    This assertion will fail, because the actual value is not after the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddDays(1) | Should-BeAfter 10minutes -FromNow
+    ```
+
+    This assertion will pass, because the actual value is after the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddDays(-1) | Should-BeAfter -Time 3days -Ago
+    ```
+
+    This assertion will pass, because the actual value is after the expected value.
+
+    .NOTES
+    The `Should-BeAfter` assertion is the opposite of the `Should-BeBefore` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeAfter
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding(DefaultParameterSetName = "Now")]
+    param (
+        [Parameter(Position = 2, ValueFromPipeline = $true)]
+        $Actual,
+
+        [Parameter(ParameterSetName = "Now")]
+        [switch] $Now,
+
+        [Parameter(Position = 0, ParameterSetName = "FluentAgo")]
+        [Parameter(Position = 0, ParameterSetName = "FluentFromNow")]
+        [String] $Time,
+
+        [Parameter(Mandatory, ParameterSetName = "FluentAgo")]
+        [switch] $Ago,
+
+        [Parameter(Mandatory, ParameterSetName = "FluentFromNow")]
+        [switch] $FromNow,
+
+        [Parameter(Position = 0, ParameterSetName = "Expected")]
+        [DateTime] $Expected,
+
+        [String] $Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    # Now is just a syntax marker, we don't need to do anything with it.
+    $Now = $Now
+
+    $currentTime = [datetime]::UtcNow.ToLocalTime()
+    switch ($PSCmdlet.ParameterSetName) {
+        "Expected" {
+            # do nothing we already have expected value
+        }
+        "Now" {
+            $Expected = $currentTime
+        }
+        "FluentAgo" {
+            $Expected = $currentTime - (Get-TimeSpanFromStringWithUnit -Value $Time)
+        }
+        "FluentFromNow" {
+            $Expected = $currentTime + (Get-TimeSpanFromStringWithUnit -Value $Time)
+        }
+    }
+
+    # A relational operator throws a native conversion error when $Actual is not a comparable single
+    # value, which is what happens when a multi-item collection is piped in and unwrapped to [object[]].
+    # Catch it so we can show the input hint instead of a cryptic "Could not compare" error; when it is
+    # not a piped-collection gotcha we have nothing to add, so the original error is rethrown.
+    $failed = $false
+    $comparisonError = $null
+    try {
+        $failed = $Actual -le $Expected
+    }
+    catch {
+        $comparisonError = $_
+    }
+    if ($comparisonError -or $failed) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected the provided [datetime] to be after <expectedType> <expected>,<because> but it was before: <actual>"
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($comparisonError -and -not $hint) { throw $comparisonError }
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Time\Should-BeBefore.ps1
+function Should-BeBefore {
+    <#
+    .SYNOPSIS
+    Asserts that the provided [datetime] is before the expected [datetime].
+
+    .DESCRIPTION
+    This assertion accepts either an expected `[datetime]` or a fluent relative time expression. Use `-Now`, `-Ago`, or `-FromNow` to compare against the current local time.
+
+    .PARAMETER Actual
+    The actual [datetime] value.
+
+    .PARAMETER Expected
+    The expected [datetime] value.
+
+    .PARAMETER Time
+    The time to add or subtract from the current time. This parameter uses fluent time syntax e.g. 1minute.
+
+    .PARAMETER Ago
+    Indicates that the -Time should be subtracted from the current time.
+
+    .PARAMETER FromNow
+    Indicates that the -Time should be added to the current time.
+
+    .PARAMETER Now
+    Indicates that the current time should be used as the expected time.
+
+    .PARAMETER Because
+    The reason why the actual value should be before the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddDays(-1) | Should-BeBefore (Get-Date)
+    ```
+
+    This assertion will pass, because the actual value is before the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddDays(1) | Should-BeBefore (Get-Date)
+    ```
+
+    This assertion will fail, because the actual value is not before the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddMinutes(1) | Should-BeBefore 10minutes -FromNow
+    ```
+
+    This assertion will pass, because the actual value is before the expected value.
+
+    .EXAMPLE
+    ```powershell
+    (Get-Date).AddDays(-2) | Should-BeBefore -Time 3days -Ago
+    ```
+
+    This assertion will pass, because the actual value is before the expected value.
+
+    .NOTES
+    The `Should-BeBefore` assertion is the opposite of the `Should-BeAfter` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeBefore
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding(DefaultParameterSetName = "Now")]
+    param (
+        [Parameter(Position = 2, ValueFromPipeline = $true)]
+        $Actual,
+
+        [Parameter(ParameterSetName = "Now")]
+        [switch] $Now,
+
+        [Parameter(Position = 0, ParameterSetName = "FluentAgo")]
+        [Parameter(Position = 0, ParameterSetName = "FluentFromNow")]
+        [String] $Time,
+
+        [Parameter(Mandatory, ParameterSetName = "FluentAgo")]
+        [switch] $Ago,
+
+        [Parameter(Mandatory, ParameterSetName = "FluentFromNow")]
+        [switch] $FromNow,
+
+        [Parameter(Position = 0, ParameterSetName = "Expected")]
+        [DateTime] $Expected,
+
+        [String] $Because
+    )
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    # Now is just a syntax marker, we don't need to do anything with it.
+    $Now = $Now
+
+    $currentTime = [datetime]::UtcNow.ToLocalTime()
+    switch ($PSCmdlet.ParameterSetName) {
+        "Expected" {
+            # do nothing we already have expected value
+        }
+        "Now" {
+            $Expected = $currentTime
+        }
+        "FluentAgo" {
+            $Expected = $currentTime - (Get-TimeSpanFromStringWithUnit -Value $Time)
+        }
+        "FluentFromNow" {
+            $Expected = $currentTime + (Get-TimeSpanFromStringWithUnit -Value $Time)
+        }
+    }
+
+    # A relational operator throws a native conversion error when $Actual is not a comparable single
+    # value, which is what happens when a multi-item collection is piped in and unwrapped to [object[]].
+    # Catch it so we can show the input hint instead of a cryptic "Could not compare" error; when it is
+    # not a piped-collection gotcha we have nothing to add, so the original error is rethrown.
+    $failed = $false
+    $comparisonError = $null
+    try {
+        $failed = $Actual -ge $Expected
+    }
+    catch {
+        $comparisonError = $_
+    }
+    if ($comparisonError -or $failed) {
+        $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "Expected the provided [datetime] to be before <expectedType> <expected>,<because> but it was after: <actual>"
+        $hint = Get-AssertionGotcha -Cmdlet $PSCmdlet -Buffer $local:Input -CollectedActual $Actual -IsPipelineInput $collectedInput.IsPipelineInput -Expecting Scalar
+        if ($comparisonError -and -not $hint) { throw $comparisonError }
+        if ($hint) { $Message = "$Message`n`nHint: $hint" }
+        Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Time\Should-BeFasterThan.ps1
+function Should-BeFasterThan {
+    <#
+    .SYNOPSIS
+    Asserts that the provided [timespan] or [scriptblock] is faster than the expected [timespan].
+
+    .DESCRIPTION
+    This assertion accepts either a `[timespan]` or a script block to measure. Fluent time values such as `1s` are converted to a `[timespan]` before the comparison.
+
+    .PARAMETER Actual
+    The actual [timespan] or [scriptblock] value.
+
+    .PARAMETER Expected
+    The expected [timespan] or fluent time value.
+
+    .PARAMETER Because
+    The reason why the actual value should be faster than the expected value.
+
+    .EXAMPLE
+    ```powershell
+    Measure-Command { Start-Sleep -Milliseconds 100 } | Should-BeFasterThan 1s
+    ```
+
+    This assertion will pass, because the actual value is faster than the expected value.
+
+    .EXAMPLE
+    ```powershell
+    { Start-Sleep -Milliseconds 100 } | Should-BeFasterThan 50ms
+    ```
+
+    This assertion will fail, because the actual value is not faster than the expected value.
+
+    .NOTES
+    The `Should-BeFasterThan` assertion is the opposite of the `Should-BeSlowerThan` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeFasterThan
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0)]
+        $Expected,
+        [string] $Because
+    )
+
+    if ($Expected -isnot [timespan]) {
+        $Expected = Get-TimeSpanFromStringWithUnit -Value $Expected
+    }
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -is [scriptblock]) {
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        & $Actual
+        $sw.Stop()
+
+        if ($sw.Elapsed -ge $Expected) {
+            $Message = Get-AssertionMessage -Expected $Expected -Actual $sw.Elapsed -Because $Because -Data @{ scriptblock = $Actual } -DefaultMessage "Expected the provided [scriptblock] to execute faster than <expectedType> <expected>,<because> but it took <actual> to run.`nScriptBlock: <scriptblock>"
+            Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+        }
+        Set-AssertionPassResult
+        return
+    }
+
+    if ($Actual -is [timespan]) {
+        if ($Actual -ge $Expected) {
+            $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "The provided [timespan] should be shorter than <expectedType> <expected>,<because> but it was longer: <actual>"
+            Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+        }
+        Set-AssertionPassResult
+        return
+    }
+    Set-AssertionPassResult
+}
+# file src\functions\assert\Time\Should-BeSlowerThan.ps1
+function Should-BeSlowerThan {
+    <#
+    .SYNOPSIS
+    Asserts that the provided [timespan] is slower than the expected [timespan].
+
+    .DESCRIPTION
+    This assertion accepts either a `[timespan]` or a script block to measure. Fluent time values such as `1s` are converted to a `[timespan]` before the comparison.
+
+    .PARAMETER Actual
+    The actual [timespan] or [scriptblock] value.
+
+    .PARAMETER Expected
+    The expected [timespan] or fluent time value.
+
+    .PARAMETER Because
+    The reason why the actual value should be slower than the expected value.
+
+    .EXAMPLE
+    ```powershell
+    { Start-Sleep -Seconds 10 } | Should-BeSlowerThan 2seconds
+    ```
+
+    This assertion will pass, because the actual value is slower than the expected value.
+
+     .EXAMPLE
+    ```powershell
+    [Timespan]::fromSeconds(10) | Should-BeSlowerThan 2seconds
+    ```
+
+    This assertion will pass, because the actual value is slower than the expected value.
+
+    .EXAMPLE
+    ```powershell
+    { Start-Sleep -Seconds 1 } | Should-BeSlowerThan 10seconds
+    ```
+
+    This assertion will fail, because the actual value is not slower than the expected value.
+
+    .NOTES
+    The `Should-BeSlowerThan` assertion is the opposite of the `Should-BeFasterThan` assertion.
+
+    Use the `-ErrorAction` parameter to control soft-assertion behavior for this assertion. `-ErrorAction Continue` records the failure and lets the rest of the test run (a soft assertion), while `-ErrorAction Stop` fails the test immediately, for example to guard a precondition before continuing.
+
+    When `-ErrorAction` is not specified, the behavior comes from `Should.ErrorAction` in the configuration, which defaults to `Stop`. See https://pester.dev/docs/assertions/soft-assertions for more about soft assertions.
+
+    .LINK
+    https://pester.dev/docs/commands/Should-BeSlowerThan
+
+    .LINK
+    https://pester.dev/docs/assertions
+    #>
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '')]
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
+        $Actual,
+        [Parameter(Position = 0)]
+        $Expected,
+        [string] $Because
+    )
+
+    if ($Expected -isnot [timespan]) {
+        $Expected = Get-TimeSpanFromStringWithUnit -Value $Expected
+    }
+
+    $collectedInput = Collect-Input -ParameterInput $Actual -PipelineInput $local:Input -IsPipelineInput $MyInvocation.ExpectingInput -UnrollInput
+    $Actual = $collectedInput.Actual
+
+    if ($Actual -is [scriptblock]) {
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        & $Actual
+        $sw.Stop()
+
+        if ($sw.Elapsed -le $Expected) {
+            $Message = Get-AssertionMessage -Expected $Expected -Actual $sw.Elapsed -Because $Because -Data @{ scriptblock = $Actual } -DefaultMessage "The provided [scriptblock] should execute slower than <expectedType> <expected>,<because> but it took <actual> to run.`nScriptBlock: <scriptblock>"
+            Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+        }
+        Set-AssertionPassResult
+        return
+    }
+
+    if ($Actual -is [timespan]) {
+        if ($Actual -le $Expected) {
+            $Message = Get-AssertionMessage -Expected $Expected -Actual $Actual -Because $Because -DefaultMessage "The provided [timespan] should be longer than <expectedType> <expected>,<because> but it was shorter: <actual>"
+            Invoke-AssertionFailed -Message $Message -CallerCmdlet $PSCmdlet
+        }
+        Set-AssertionPassResult
+        return
+    }
+    Set-AssertionPassResult
+}
 # file src\functions\assertions\Be.ps1
 #Be
-function Should-Be ($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
+function Should-BeAssertion ($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Compares one object with another for equality
@@ -5720,8 +10958,28 @@ function Should-Be ($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Be
         }
     }
 }
-
 function ShouldBeFailureMessage($ActualValue, $ExpectedValue, $Because) {
+    # Two collections of different lengths can still render the same once single-element
+    # arrays are unrolled (e.g. ',$a | Should -Be $a' wraps the array), which makes the
+    # plain "Expected @(1, 2, 3), but got @(1, 2, 3)." message look nonsensical. Spell out
+    # the lengths instead so the difference is visible. (#1154)
+    $actualIsCollection = $ActualValue -is [System.Collections.IEnumerable] -and $ActualValue -isnot [string]
+    $expectedIsCollection = $ExpectedValue -is [System.Collections.IEnumerable] -and $ExpectedValue -isnot [string]
+
+    if ($actualIsCollection -and $expectedIsCollection) {
+        $actualLength = @($ActualValue).Count
+        $expectedLength = @($ExpectedValue).Count
+
+        if ($actualLength -ne $expectedLength) {
+            return "Expected a collection $(Format-Nicely $ExpectedValue) with length $expectedLength,$(if ($null -ne $Because) { Format-Because $Because }) but got a collection $(Format-Nicely $ActualValue) with length $actualLength."
+        }
+
+        $differenceIndex = Get-CollectionDifferenceIndex -ActualValue @($ActualValue) -ExpectedValue @($ExpectedValue)
+        if ($null -ne $differenceIndex) {
+            return (Get-CompareCollectionMessage -ActualValue @($ActualValue) -ExpectedValue @($ExpectedValue) -DifferenceIndex $differenceIndex -Because $Because) -join "`n"
+        }
+    }
+
     # This looks odd; it's to unroll single-element arrays so the "-is [string]" expression works properly.
     $ActualValue = $($ActualValue)
     $ExpectedValue = $($ExpectedValue)
@@ -5739,21 +10997,22 @@ function ShouldBeFailureMessage($ActualValue, $ExpectedValue, $Because) {
     (Get-CompareStringMessage -Expected $ExpectedValue -Actual $ActualValue -Because $Because) -join "`n"
 }
 
+
 function NotShouldBeFailureMessage($ActualValue, $ExpectedValue, $Because) {
     return "Expected $(Format-Nicely $ExpectedValue) to be different from the actual value,$(if ($null -ne $Because) { Format-Because $Because }) but got the same value."
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name Be `
-    -InternalName Should-Be `
-    -Test ${function:Should-Be} `
-    -Alias 'EQ' `
+    -InternalName       Should-BeAssertion `
+    -Test               ${function:Should-BeAssertion} `
+    -Alias              'EQ' `
     -SupportsArrayInput
 
 Set-ShouldOperatorHelpMessage -OperatorName Be `
     -HelpMessage 'Compares one object with another for equality and throws if the two objects are not the same.'
 
 #BeExactly
-function Should-BeExactly($ActualValue, $ExpectedValue, $Because) {
+function Should-BeAssertionExactly($ActualValue, $ExpectedValue, $Because) {
     <#
     .SYNOPSIS
     Compares one object with another for equality and throws if the
@@ -5800,6 +11059,21 @@ function Should-BeExactly($ActualValue, $ExpectedValue, $Because) {
 }
 
 function ShouldBeExactlyFailureMessage($ActualValue, $ExpectedValue, $Because) {
+    $actualIsCollection = $ActualValue -is [System.Collections.IEnumerable] -and $ActualValue -isnot [string]
+    $expectedIsCollection = $ExpectedValue -is [System.Collections.IEnumerable] -and $ExpectedValue -isnot [string]
+
+    if ($actualIsCollection -and $expectedIsCollection) {
+        $actualLength = @($ActualValue).Count
+        $expectedLength = @($ExpectedValue).Count
+
+        if ($actualLength -eq $expectedLength) {
+            $differenceIndex = Get-CollectionDifferenceIndex -ActualValue @($ActualValue) -ExpectedValue @($ExpectedValue) -CaseSensitive
+            if ($null -ne $differenceIndex) {
+                return (Get-CompareCollectionMessage -ActualValue @($ActualValue) -ExpectedValue @($ExpectedValue) -DifferenceIndex $differenceIndex -Because $Because) -join "`n"
+            }
+        }
+    }
+
     # This looks odd; it's to unroll single-element arrays so the "-is [string]" expression works properly.
     $ActualValue = $($ActualValue)
     $ExpectedValue = $($ExpectedValue)
@@ -5822,8 +11096,8 @@ function NotShouldBeExactlyFailureMessage($ActualValue, $ExpectedValue, $Because
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeExactly `
-    -InternalName       Should-BeExactly `
-    -Test               ${function:Should-BeExactly} `
+    -InternalName       Should-BeAssertionExactly `
+    -Test               ${function:Should-BeAssertionExactly} `
     -Alias              'CEQ' `
     -SupportsArrayInput
 
@@ -5882,33 +11156,17 @@ function Get-CompareStringMessage {
             "Strings differ at index $differenceIndex."
         }
 
-        # find the difference in the string with expanded characters, this is the fastest and most foolproof way of
-        # getting the updated difference index. we could also inspect the new string and try to find every occurrence
-        # of special character before the difference index, but '\n' is valid piece of string
-        # or inspect the original string, but then we need to make sure that we look for all the special characters.
-        # instead we just compare it again.
-
         $actualExpanded = Expand-SpecialCharacters -InputObject $actual
         $expectedExpanded = Expand-SpecialCharacters -InputObject $ExpectedValue
-        $maxLength = if ($expectedExpanded.Length -gt $actualExpanded.Length) { $expectedExpanded.Length } else { $actualExpanded.Length }
-        $differenceIndex = $null
-        for ($i = 0; $i -lt $maxLength -and ($null -eq $differenceIndex); ++$i) {
-            $differenceIndex = if ($CaseSensitive -and ($expectedExpanded[$i] -cne $actualExpanded[$i])) {
-                $i
-            }
-            elseif ($expectedExpanded[$i] -ne $actualExpanded[$i]) {
-                $i
-            }
-        }
 
         $ellipsis = "..."
-        # we will sorround the output with Expected: '' and But was: '', from which the Expected: '' is longer
+        # we will surround the output with Expected: '' and But was: '', from which the Expected: '' is longer
         # so subtract that from the maximum line length, to get how much of the line we actually have available
-        $sorroundLength = "Expected: ''".Length
+        $surroundLength = "Expected: ''".Length
         # the deeper we are in the test structure the less space we have on screen because we are adding margin
         # before the output each describe level adds one space + 3 spaces for the test output margin
         $sideOffset = @((Get-CurrentTest).Path).Length + 3
-        $availableLineLength = $maximumLineLength - $sorroundLength - $sideOffset
+        $availableLineLength = $maximumLineLength - $surroundLength - $sideOffset
 
         $expectedExcerpt = Format-AsExcerpt -InputObject $expectedExpanded -DifferenceIndex $differenceIndex -LineLength $availableLineLength -ExcerptMarker $ellipsis -ContextLength $ContextLength
 
@@ -5916,8 +11174,51 @@ function Get-CompareStringMessage {
 
         "Expected: '{0}'" -f $expectedExcerpt.Line
         "But was:  '{0}'" -f $actualExcerpt.Line
-        " " * ($sorroundLength - 1) + '-' * $actualExcerpt.DifferenceIndex + '^'
+        " " * ($surroundLength - 1) + '-' * $actualExcerpt.DifferenceIndex + '^'
     }
+}
+
+function Get-CollectionDifferenceIndex {
+    param(
+        [object[]] $ActualValue,
+        [object[]] $ExpectedValue,
+        [switch] $CaseSensitive
+    )
+
+    for ($i = 0; $i -lt $ExpectedValue.Count; $i++) {
+        if ((IsArray $ActualValue[$i]) -or (IsArray $ExpectedValue[$i])) {
+            if (-not (ArraysAreEqual -First $ActualValue[$i] -Second $ExpectedValue[$i] -CaseSensitive:$CaseSensitive)) {
+                return $i
+            }
+        }
+        else {
+            if ($CaseSensitive) {
+                $comparer = { param($Actual, $Expected) $Expected -ceq $Actual }
+            }
+            else {
+                $comparer = { param($Actual, $Expected) $Expected -eq $Actual }
+            }
+
+            if (-not (& $comparer $ActualValue[$i] $ExpectedValue[$i])) {
+                return $i
+            }
+        }
+    }
+}
+
+function Get-CompareCollectionMessage {
+    param(
+        [object[]] $ExpectedValue,
+        [object[]] $ActualValue,
+        [int] $DifferenceIndex,
+        $Because
+    )
+
+    "Expected collections to be the same,$(if ($null -ne $Because) { Format-Because $Because }) but they were different."
+    "Collection lengths are both $($ExpectedValue.Count)."
+    "Collections differ at index $DifferenceIndex."
+    "Expected: $(Format-Nicely $ExpectedValue)"
+    "But was:  $(Format-Nicely $ActualValue)"
 }
 
 function Format-AsExcerpt {
@@ -5987,14 +11288,14 @@ function Expand-SpecialCharacters {
         [AllowEmptyString()]
         [string[]]$InputObject)
     process {
-        $InputObject -replace "`n", "\n" -replace "`r", "\r" -replace "`t", "\t" -replace "`0", "\0" -replace "`b", "\b"
+        [Pester.Formatter]::EscapeControlChars($InputObject)
     }
 }
 
 function ArraysAreEqual {
     param (
-        [object[]] $First,
-        [object[]] $Second,
+        [object] $First,
+        [object] $Second,
         [switch] $CaseSensitive,
         [int] $RecursionDepth = 0,
         [int] $RecursionLimit = 100
@@ -6004,6 +11305,14 @@ function ArraysAreEqual {
     if ($RecursionDepth -gt $RecursionLimit) {
         throw "Reached the recursion depth limit of $RecursionLimit when comparing arrays $First and $Second. Is one of your arrays cyclic?"
     }
+
+    # Enumerate the inputs ourselves with @(). PowerShell's [object[]] parameter binding wraps a non-IList
+    # enumerable - such as the collection returned by [hashtable].Keys/.Values - into a single element instead
+    # of enumerating it, which made Should -Be report two equal collections as different (#1200). @() uses the
+    # same enumeration the pipeline does (LanguagePrimitives.GetEnumerator), so it expands those collections
+    # while leaving strings, hashtables, scriptblocks and scalars as single values.
+    $First = @($First)
+    $Second = @($Second)
 
     # Do not remove the subexpression @() operators in the following two lines; doing so can cause a
     # silly error in PowerShell v3.  (Null Reference exception from the PowerShell engine in a
@@ -6076,7 +11385,7 @@ function ReplaceValueInArray {
     }
 }
 # file src\functions\assertions\BeGreaterThan.ps1
-function Should-BeGreaterThan($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
+function Should-BeGreaterThanAssertion($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Asserts that a number (or other comparable value) is greater than an expected value.
@@ -6126,7 +11435,7 @@ function Should-BeLessOrEqual($ActualValue, $ExpectedValue, [switch] $Negate, [s
     This test also passes, as PowerShell evaluates `10 -le 10` as true.
     #>
     if ($Negate) {
-        return Should-BeGreaterThan -ActualValue $ActualValue -ExpectedValue $ExpectedValue -Negate:$false -Because $Because
+        return Should-BeGreaterThanAssertion -ActualValue $ActualValue -ExpectedValue $ExpectedValue -Negate:$false -Because $Because
     }
 
     if ($ActualValue -gt $ExpectedValue) {
@@ -6147,8 +11456,8 @@ function Should-BeLessOrEqual($ActualValue, $ExpectedValue, [switch] $Negate, [s
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeGreaterThan `
-    -InternalName Should-BeGreaterThan `
-    -Test         ${function:Should-BeGreaterThan} `
+    -InternalName Should-BeGreaterThanAssertion `
+    -Test         ${function:Should-BeGreaterThanAssertion} `
     -Alias        'GT'
 
 Set-ShouldOperatorHelpMessage -OperatorName BeGreaterThan `
@@ -6173,7 +11482,7 @@ function ShouldBeLessOrEqualFailureMessage() {
 function NotShouldBeLessOrEqualFailureMessage() {
 }
 # file src\functions\assertions\BeIn.ps1
-function Should-BeIn($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
+function Should-BeInAssertion($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Asserts that a collection of values contain a specific value.
@@ -6220,8 +11529,8 @@ function Should-BeIn($ActualValue, $ExpectedValue, [switch] $Negate, [string] $B
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeIn `
-    -InternalName Should-BeIn `
-    -Test         ${function:Should-BeIn}
+    -InternalName Should-BeInAssertion `
+    -Test         ${function:Should-BeInAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName BeIn `
     -HelpMessage "Asserts that a collection of values contain a specific value. Uses PowerShell's -contains operator to confirm."
@@ -6231,7 +11540,7 @@ function ShouldBeInFailureMessage() {
 function NotShouldBeInFailureMessage() {
 }
 # file src\functions\assertions\BeLessThan.ps1
-function Should-BeLessThan($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
+function Should-BeLessThanAssertion($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Asserts that a number (or other comparable value) is lower than an expected value.
@@ -6281,7 +11590,7 @@ function Should-BeGreaterOrEqual($ActualValue, $ExpectedValue, [switch] $Negate,
     This test also passes, as PowerShell evaluates `2 -ge 2` as true.
     #>
     if ($Negate) {
-        return Should-BeLessThan -ActualValue $ActualValue -ExpectedValue $ExpectedValue -Negate:$false -Because $Because
+        return Should-BeLessThanAssertion -ActualValue $ActualValue -ExpectedValue $ExpectedValue -Negate:$false -Because $Because
     }
 
     if ($ActualValue -lt $ExpectedValue) {
@@ -6302,8 +11611,8 @@ function Should-BeGreaterOrEqual($ActualValue, $ExpectedValue, [switch] $Negate,
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeLessThan `
-    -InternalName Should-BeLessThan `
-    -Test         ${function:Should-BeLessThan} `
+    -InternalName Should-BeLessThanAssertion `
+    -Test         ${function:Should-BeLessThanAssertion} `
     -Alias        'LT'
 
 Set-ShouldOperatorHelpMessage -OperatorName BeLessThan `
@@ -6328,7 +11637,7 @@ function ShouldBeGreaterOrEqualFailureMessage() {
 function NotShouldBeGreaterOrEqualFailureMessage() {
 }
 # file src\functions\assertions\BeLike.ps1
-function Should-BeLike($ActualValue, $ExpectedValue, [switch] $Negate, [String] $Because) {
+function Should-BeLikeAssertion($ActualValue, $ExpectedValue, [switch] $Negate, [String] $Because) {
     <#
     .SYNOPSIS
     Asserts that the actual value matches a wildcard pattern using PowerShell's -like operator.
@@ -6383,8 +11692,8 @@ function Should-BeLike($ActualValue, $ExpectedValue, [switch] $Negate, [String] 
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeLike `
-    -InternalName Should-BeLike `
-    -Test         ${function:Should-BeLike}
+    -InternalName Should-BeLikeAssertion `
+    -Test         ${function:Should-BeLikeAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName BeLike `
     -HelpMessage "Asserts that the actual value matches a wildcard pattern using PowerShell's -like operator. This comparison is not case-sensitive."
@@ -6394,7 +11703,7 @@ function ShouldBeLikeFailureMessage() {
 function NotShouldBeLikeFailureMessage() {
 }
 # file src\functions\assertions\BeLikeExactly.ps1
-function Should-BeLikeExactly($ActualValue, $ExpectedValue, [switch] $Negate, [String] $Because) {
+function Should-BeLikeExactlyAssertion($ActualValue, $ExpectedValue, [switch] $Negate, [String] $Because) {
     <#
     .SYNOPSIS
     Asserts that the actual value matches a wildcard pattern using PowerShell's -like operator.
@@ -6448,8 +11757,8 @@ function Should-BeLikeExactly($ActualValue, $ExpectedValue, [switch] $Negate, [S
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeLikeExactly `
-    -InternalName Should-BeLikeExactly `
-    -Test         ${function:Should-BeLikeExactly}
+    -InternalName Should-BeLikeExactlyAssertion `
+    -Test         ${function:Should-BeLikeExactlyAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName BeLikeExactly `
     -HelpMessage "Asserts that the actual value matches a wildcard pattern using PowerShell's -like operator. This comparison is case-sensitive."
@@ -6460,7 +11769,7 @@ function NotShouldBeLikeExactlyFailureMessage() {
 }
 # file src\functions\assertions\BeNullOrEmpty.ps1
 
-function Should-BeNullOrEmpty($ActualValue, [switch] $Negate, [string] $Because) {
+function Should-BeNullOrEmptyAssertion($ActualValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Checks values for null or empty (strings).
@@ -6541,19 +11850,20 @@ function NotShouldBeNullOrEmptyFailureMessage ($Because) {
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeNullOrEmpty `
-    -InternalName       Should-BeNullOrEmpty `
-    -Test               ${function:Should-BeNullOrEmpty} `
+    -InternalName       Should-BeNullOrEmptyAssertion `
+    -Test               ${function:Should-BeNullOrEmptyAssertion} `
     -SupportsArrayInput
 
 Set-ShouldOperatorHelpMessage -OperatorName BeNullOrEmpty `
     -HelpMessage "Checks values for null or empty (strings). The static [String]::IsNullOrEmpty() method is used to do the comparison."
 # file src\functions\assertions\BeOfType.ps1
 
-function Should-BeOfType($ActualValue, $ExpectedType, [switch] $Negate, [string]$Because) {
+function Should-BeOfTypeAssertion($ActualValue, $ExpectedType, [switch] $Negate, [string]$Because) {
     <#
     .SYNOPSIS
     Asserts that the actual value should be an object of a specified type
     (or a subclass of the specified type) using PowerShell's -is operator.
+    Expected type can be provided using full type name strings or a type wrapped in parentheses.
 
     .EXAMPLE
     $actual = Get-Item $env:SystemRoot
@@ -6575,21 +11885,43 @@ function Should-BeOfType($ActualValue, $ExpectedType, [switch] $Negate, [string]
     $actual | Should -BeOfType System.IO.FileInfo
 
     This test will fail, as FileInfo is not a base class of DirectoryInfo.
+
+    .EXAMPLE
+    $actual | Should -BeOfType ([System.IO.DirectoryInfo])
+
+    Test using a type-object. Remember to use parentheses for consistent behavior with PowerShell classes.
     #>
     if ($ExpectedType -is [string]) {
         # parses type that is provided as a string in brackets (such as [int])
         $trimmedType = $ExpectedType -replace '^\[(.*)\]$', '$1'
         $parsedType = $trimmedType -as [Type]
         if ($null -eq $parsedType) {
-            throw [ArgumentException]"Could not find type [$trimmedType]. Make sure that the assembly that contains that type is loaded."
+            # PowerShell classes loaded via dot-sourcing may not be visible to
+            # the module scope. Try to resolve from the actual value's type (#2701).
+            if ($null -ne $ActualValue) {
+                $actualType = $ActualValue.GetType()
+                # Walk the inheritance chain to find a matching type name
+                $t = $actualType
+                while ($null -ne $t) {
+                    if ($t.Name -eq $trimmedType -or $t.FullName -eq $trimmedType) {
+                        $parsedType = $t
+                        break
+                    }
+                    $t = $t.BaseType
+                }
+            }
+
+            if ($null -eq $parsedType) {
+                throw [ArgumentException]"Could not find type [$trimmedType]. Make sure that the assembly that contains that type is loaded."
+            }
         }
 
         $ExpectedType = $parsedType
     }
 
-    $succeded = $ActualValue -is $ExpectedType
+    $succeeded = $ActualValue -is $ExpectedType
     if ($Negate) {
-        $succeded = -not $succeded
+        $succeeded = -not $succeeded
     }
 
     $failureMessage = ''
@@ -6614,7 +11946,7 @@ function Should-BeOfType($ActualValue, $ExpectedType, [switch] $Negate, [string]
     $ExpectedValue = if ($Negate) { "not $(Format-Nicely $ExpectedType) or any of its subtypes" } else { "a $(Format-Nicely $ExpectedType) or any of its subtypes" }
 
     return [Pester.ShouldResult] @{
-        Succeeded      = $succeded
+        Succeeded      = $succeeded
         FailureMessage = $failureMessage
         ExpectResult   = @{
             Actual   = Format-Nicely $ActualValue
@@ -6626,8 +11958,8 @@ function Should-BeOfType($ActualValue, $ExpectedType, [switch] $Negate, [string]
 
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeOfType `
-    -InternalName Should-BeOfType `
-    -Test         ${function:Should-BeOfType} `
+    -InternalName Should-BeOfTypeAssertion `
+    -Test         ${function:Should-BeOfTypeAssertion} `
     -Alias        'HaveType'
 
 Set-ShouldOperatorHelpMessage -OperatorName BeOfType `
@@ -6639,7 +11971,7 @@ function ShouldBeOfTypeFailureMessage() {
 function NotShouldBeOfTypeFailureMessage() {
 }
 # file src\functions\assertions\BeTrueOrFalse.ps1
-function Should-BeTrue($ActualValue, [switch] $Negate, [string] $Because) {
+function Should-BeTrueAssertion($ActualValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Asserts that the value is true, or truthy.
@@ -6661,7 +11993,7 @@ function Should-BeTrue($ActualValue, [switch] $Negate, [string] $Because) {
     This test passes as a "truthy" result.
     #>
     if ($Negate) {
-        return Should-BeFalse -ActualValue $ActualValue -Negate:$false -Because $Because
+        return Should-BeFalseAssertion -ActualValue $ActualValue -Negate:$false -Because $Because
     }
 
     if (-not $ActualValue) {
@@ -6683,7 +12015,7 @@ function Should-BeTrue($ActualValue, [switch] $Negate, [string] $Because) {
     }
 }
 
-function Should-BeFalse($ActualValue, [switch] $Negate, $Because) {
+function Should-BeFalseAssertion($ActualValue, [switch] $Negate, $Because) {
     <#
     .SYNOPSIS
     Asserts that the value is false, or falsy.
@@ -6705,7 +12037,7 @@ function Should-BeFalse($ActualValue, [switch] $Negate, $Because) {
     This test passes as a "falsy" result.
     #>
     if ($Negate) {
-        return Should-BeTrue -ActualValue $ActualValue -Negate:$false -Because $Because
+        return Should-BeTrueAssertion -ActualValue $ActualValue -Negate:$false -Because $Because
     }
 
     if ($ActualValue) {
@@ -6729,15 +12061,15 @@ function Should-BeFalse($ActualValue, [switch] $Negate, $Because) {
 
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeTrue `
-    -InternalName Should-BeTrue `
-    -Test         ${function:Should-BeTrue}
+    -InternalName Should-BeTrueAssertion `
+    -Test         ${function:Should-BeTrueAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName BeTrue `
     -HelpMessage "Asserts that the value is true, or truthy."
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name BeFalse `
-    -InternalName Should-BeFalse `
-    -Test         ${function:Should-BeFalse}
+    -InternalName Should-BeFalseAssertion `
+    -Test         ${function:Should-BeFalseAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName BeFalse `
     -HelpMessage "Asserts that the value is false, or falsy."
@@ -6752,7 +12084,7 @@ function ShouldBeFalseFailureMessage($ActualValue) {
 function NotShouldBeFalseFailureMessage($ActualValue) {
 }
 # file src\functions\assertions\Contain.ps1
-function Should-Contain($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
+function Should-ContainAssertion($ActualValue, $ExpectedValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Asserts that collection contains a specific value.
@@ -6799,8 +12131,8 @@ function Should-Contain($ActualValue, $ExpectedValue, [switch] $Negate, [string]
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name Contain `
-    -InternalName Should-Contain `
-    -Test         ${function:Should-Contain} `
+    -InternalName Should-ContainAssertion `
+    -Test         ${function:Should-ContainAssertion} `
     -SupportsArrayInput
 
 Set-ShouldOperatorHelpMessage -OperatorName Contain `
@@ -6811,7 +12143,7 @@ function ShouldContainFailureMessage() {
 function NotShouldContainFailureMessage() {
 }
 # file src\functions\assertions\Exist.ps1
-function Should-Exist($ActualValue, [switch] $Negate, [string] $Because) {
+function Should-ExistAssertion($ActualValue, [switch] $Negate, [string] $Because, [switch] $LiteralPath) {
     <#
     .SYNOPSIS
     Does not perform any comparison, but checks if the object calling Exist is present in a PS Provider.
@@ -6825,7 +12157,12 @@ function Should-Exist($ActualValue, [switch] $Negate, [string] $Because) {
     `Should -Exist` calls Test-Path. Test-Path expects a file,
     returns $false because the file was removed, and fails the test.
     #>
-    [bool] $succeeded = & $SafeCommands['Test-Path'] $ActualValue
+    if ($LiteralPath) {
+        [bool] $succeeded = & $SafeCommands['Test-Path'] -LiteralPath $ActualValue
+    }
+    else {
+        [bool] $succeeded = & $SafeCommands['Test-Path'] $ActualValue
+    }
 
     if ($Negate) {
         $succeeded = -not $succeeded
@@ -6854,8 +12191,8 @@ function Should-Exist($ActualValue, [switch] $Negate, [string] $Because) {
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name Exist `
-    -InternalName Should-Exist `
-    -Test         ${function:Should-Exist}
+    -InternalName Should-ExistAssertion `
+    -Test         ${function:Should-ExistAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName Exist `
     -HelpMessage "Does not perform any comparison, but checks if the object calling Exist is present in a PS Provider. The object must have valid path syntax. It essentially must pass a Test-Path call."
@@ -6865,7 +12202,7 @@ function ShouldExistFailureMessage() {
 function NotShouldExistFailureMessage() {
 }
 # file src\functions\assertions\FileContentMatch.ps1
-function Should-FileContentMatch($ActualValue, $ExpectedContent, [switch] $Negate, $Because) {
+function Should-FileContentMatchAssertion($ActualValue, $ExpectedContent, [switch] $Negate, $Because) {
     <#
     .SYNOPSIS
     Checks to see if a file contains the specified text.
@@ -6940,8 +12277,8 @@ function NotShouldFileContentMatchFailureMessage($ActualValue, $ExpectedContent,
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name FileContentMatch `
-    -InternalName Should-FileContentMatch `
-    -Test         ${function:Should-FileContentMatch}
+    -InternalName Should-FileContentMatchAssertion `
+    -Test         ${function:Should-FileContentMatchAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName FileContentMatch `
     -HelpMessage 'Checks to see if a file contains the specified text. This search is not case sensitive and uses regular expressions.'
@@ -7010,7 +12347,7 @@ function NotShouldFileContentMatchExactlyFailureMessage($ActualValue, $ExpectedC
 Set-ShouldOperatorHelpMessage -OperatorName FileContentMatchExactly `
     -HelpMessage 'Checks to see if a file contains the specified text. This search is case sensitive and uses regular expressions to match the text.'
 # file src\functions\assertions\FileContentMatchMultiline.ps1
-function Should-FileContentMatchMultiline($ActualValue, $ExpectedContent, [switch] $Negate, [String] $Because) {
+function Should-FileContentMatchMultilineAssertion($ActualValue, $ExpectedContent, [switch] $Negate, [String] $Because) {
     <#
     .SYNOPSIS
     As opposed to FileContentMatch and FileContentMatchExactly operators,
@@ -7077,13 +12414,13 @@ function NotShouldFileContentMatchMultilineFailureMessage($ActualValue, $Expecte
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name FileContentMatchMultiline `
-    -InternalName Should-FileContentMatchMultiline `
-    -Test         ${function:Should-FileContentMatchMultiline}
+    -InternalName Should-FileContentMatchMultilineAssertion `
+    -Test         ${function:Should-FileContentMatchMultilineAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName FileContentMatchMultiline `
     -HelpMessage "As opposed to FileContentMatch and FileContentMatchExactly operators, FileContentMatchMultiline presents content of the file being tested as one string object, so that the expression you are comparing it to can consist of several lines.`n`nWhen using FileContentMatchMultiline operator, '^' and '$' represent the beginning and end of the whole file, instead of the beginning and end of a line"
 # file src\functions\assertions\FileContentMatchMultilineExactly.ps1
-function Should-FileContentMatchMultilineExactly($ActualValue, $ExpectedContent, [switch] $Negate, [String] $Because) {
+function Should-FileContentMatchMultilineExactlyAssertion($ActualValue, $ExpectedContent, [switch] $Negate, [String] $Because) {
     <#
     .SYNOPSIS
     As opposed to FileContentMatch and FileContentMatchExactly operators,
@@ -7167,13 +12504,13 @@ function NotShouldFileContentMatchMultilineExactlyFailureMessage($ActualValue, $
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name FileContentMatchMultilineExactly `
-    -InternalName Should-FileContentMatchMultilineExactly `
-    -Test         ${function:Should-FileContentMatchMultilineExactly}
+    -InternalName Should-FileContentMatchMultilineExactlyAssertion `
+    -Test         ${function:Should-FileContentMatchMultilineExactlyAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName FileContentMatchMultilineExactly `
     -HelpMessage "As opposed to FileContentMatch and FileContentMatchExactly operators, FileContentMatchMultilineExactly presents content of the file being tested as one string object, so that the case sensitive expression you are comparing it to can consist of several lines.`n`nWhen using FileContentMatchMultilineExactly operator, '^' and '$' represent the beginning and end of the whole file, instead of the beginning and end of a line."
 # file src\functions\assertions\HaveCount.ps1
-function Should-HaveCount($ActualValue, [int] $ExpectedValue, [switch] $Negate, [string] $Because) {
+function Should-HaveCountAssertion($ActualValue, [int] $ExpectedValue, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Asserts that a collection has the expected amount of items.
@@ -7185,7 +12522,7 @@ function Should-HaveCount($ActualValue, [int] $ExpectedValue, [switch] $Negate, 
     This is like running `@(1,2,3).Count` in PowerShell.
     #>
     if ($ExpectedValue -lt 0) {
-        throw [ArgumentException]"Excpected collection size must be greater than or equal to 0."
+        throw [ArgumentException]"Expected collection size must be greater than or equal to 0."
     }
     $count = if ($null -eq $ActualValue) {
         0
@@ -7262,8 +12599,8 @@ function Should-HaveCount($ActualValue, [int] $ExpectedValue, [switch] $Negate, 
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name HaveCount `
-    -InternalName Should-HaveCount `
-    -Test         ${function:Should-HaveCount} `
+    -InternalName Should-HaveCountAssertion `
+    -Test         ${function:Should-HaveCountAssertion} `
     -SupportsArrayInput
 
 Set-ShouldOperatorHelpMessage -OperatorName HaveCount `
@@ -7274,7 +12611,7 @@ function ShouldHaveCountFailureMessage() {
 function NotShouldHaveCountFailureMessage() {
 }
 # file src\functions\assertions\HaveParameter.ps1
-function Should-HaveParameter (
+function Should-HaveParameterAssertion (
     $ActualValue,
     [String] $ParameterName,
     $Type,
@@ -7295,7 +12632,7 @@ function Should-HaveParameter (
         This test passes, because it expected the parameter URI to exist and to
         be mandatory.
     .NOTES
-        The attribute [ArgumentCompleter] was added with PSv5. Previouse this
+        The attribute [ArgumentCompleter] was added with PSv5. Previous this
         assertion will not be able to use the -HasArgumentCompleter parameter
         if the attribute does not exist.
     #>
@@ -7385,7 +12722,7 @@ function Should-HaveParameter (
     function Get-DefaultValue {
         param($DefaultValue)
 
-        # This is a value like 1, or 0, return it direcly.
+        # This is a value like 1, or 0, return it directly.
         if ($DefaultValue.PSObject.Properties["Value"]) {
             return $DefaultValue.Value
         }
@@ -7538,15 +12875,26 @@ function Should-HaveParameter (
     if ($buts.Count -eq 0) {
         # Parameter exists (in set if specified), assert remaining requirements
 
-        if ($Mandatory) {
+        if ($PSBoundParameters.ContainsKey('Mandatory')) {
             $testMandatory = $parameterAttributes | & $SafeCommands['Where-Object'] { $_.Mandatory }
-            $filters += "which is$(if ($Negate) {' not'}) mandatory"
 
-            if (-not $Negate -and -not $testMandatory) {
-                $buts += "it wasn't mandatory"
+            if ($Mandatory) {
+                $filters += "which is$(if ($Negate) {' not'}) mandatory"
+
+                if (-not $Negate -and -not $testMandatory) {
+                    $buts += "it wasn't mandatory"
+                }
+                elseif ($Negate -and $testMandatory) {
+                    $buts += 'it was mandatory'
+                }
             }
-            elseif ($Negate -and $testMandatory) {
-                $buts += 'it was mandatory'
+            else {
+                # Explicit -Mandatory:$false means "parameter must NOT be mandatory"
+                $filters += "which is not mandatory"
+
+                if ($testMandatory) {
+                    $buts += 'it was mandatory'
+                }
             }
         }
 
@@ -7594,19 +12942,35 @@ function Should-HaveParameter (
             }
         }
 
-        if ($HasArgumentCompleter) {
+        if ($PSBoundParameters.ContainsKey('HasArgumentCompleter')) {
             $testArgumentCompleter = $attributes | & $SafeCommands['Where-Object'] { $_ -is [ArgumentCompleter] }
 
             if (-not $testArgumentCompleter) {
-                $testArgumentCompleter = Get-ArgumentCompleter -CommandName $ActualValue.Name -ParameterName $ParameterName
+                try {
+                    $testArgumentCompleter = Get-ArgumentCompleter -CommandName $ActualValue.Name -ParameterName $ParameterName
+                }
+                catch {
+                    # Get-ArgumentCompleter uses reflection that may fail on some PS versions
+                }
             }
-            $filters += 'has ArgumentCompletion'
 
-            if (-not $Negate -and -not $testArgumentCompleter) {
-                $buts += 'has no ArgumentCompletion'
+            if ($HasArgumentCompleter) {
+                $filters += 'has ArgumentCompletion'
+
+                if (-not $Negate -and -not $testArgumentCompleter) {
+                    $buts += 'has no ArgumentCompletion'
+                }
+                elseif ($Negate -and $testArgumentCompleter) {
+                    $buts += 'has ArgumentCompletion'
+                }
             }
-            elseif ($Negate -and $testArgumentCompleter) {
-                $buts += 'has ArgumentCompletion'
+            else {
+                # Explicit -HasArgumentCompleter:$false means "parameter must NOT have argument completer"
+                $filters += 'has no ArgumentCompletion'
+
+                if ($testArgumentCompleter) {
+                    $buts += 'has ArgumentCompletion'
+                }
             }
         }
 
@@ -7659,13 +13023,13 @@ function Should-HaveParameter (
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name HaveParameter `
-    -InternalName Should-HaveParameter `
-    -Test         ${function:Should-HaveParameter}
+    -InternalName Should-HaveParameterAssertion `
+    -Test         ${function:Should-HaveParameterAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName HaveParameter `
     -HelpMessage 'Asserts that a command has the expected parameter.'
 # file src\functions\assertions\Match.ps1
-function Should-Match($ActualValue, $RegularExpression, [switch] $Negate, [string] $Because) {
+function Should-MatchAssertion($ActualValue, $RegularExpression, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Uses a regular expression to compare two objects.
@@ -7729,13 +13093,13 @@ function NotShouldMatchFailureMessage($ActualValue, $RegularExpression, $Because
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name Match `
-    -InternalName Should-Match `
-    -Test         ${function:Should-Match}
+    -InternalName Should-MatchAssertion `
+    -Test         ${function:Should-MatchAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName Match `
     -HelpMessage 'Uses a regular expression to compare two objects. This comparison is not case sensitive.'
 # file src\functions\assertions\MatchExactly.ps1
-function Should-MatchExactly($ActualValue, $RegularExpression, [switch] $Negate, [string] $Because) {
+function Should-MatchExactlyAssertion($ActualValue, $RegularExpression, [switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
     Uses a regular expression to compare two objects.
@@ -7792,14 +13156,14 @@ function NotShouldMatchExactlyFailureMessage($ActualValue, $RegularExpression) {
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name MatchExactly `
-    -InternalName Should-MatchExactly `
-    -Test         ${function:Should-MatchExactly} `
+    -InternalName Should-MatchExactlyAssertion `
+    -Test         ${function:Should-MatchExactlyAssertion} `
     -Alias        'CMATCH'
 
 Set-ShouldOperatorHelpMessage -OperatorName MatchExactly `
     -HelpMessage 'Uses a regular expression to compare two objects. This comparison is case sensitive.'
 # file src\functions\assertions\PesterThrow.ps1
-function Should-Throw {
+function Should-ThrowAssertion {
     <#
     .SYNOPSIS
     Checks if an exception was thrown. Enclose input in a script block.
@@ -7977,8 +13341,8 @@ function NotShouldThrowFailureMessage {
 }
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name Throw `
-    -InternalName Should-Throw `
-    -Test         ${function:Should-Throw}
+    -InternalName Should-ThrowAssertion `
+    -Test         ${function:Should-ThrowAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName Throw `
     -HelpMessage 'Checks if an exception was thrown. Enclose input in a scriptblock.'
@@ -7992,16 +13356,6 @@ function Get-FailureMessage($assertionEntry, $negate, $value, $expected) {
     }
 
     return (& $failureMessageFunction $value $expected)
-}
-
-function New-ShouldErrorRecord ([string] $Message, [string] $File, [string] $Line, [string] $LineText, $Terminating) {
-    $exception = [Exception] $Message
-    $errorID = 'PesterAssertionFailed'
-    $errorCategory = [Management.Automation.ErrorCategory]::InvalidResult
-    # we use ErrorRecord.TargetObject to pass structured information about the error to a reporting system.
-    $targetObject = @{ Message = $Message; File = $File; Line = $Line; LineText = $LineText; Terminating = $Terminating }
-    $errorRecord = & $SafeCommands['New-Object'] Management.Automation.ErrorRecord $exception, $errorID, $errorCategory, $targetObject
-    return $errorRecord
 }
 
 function Should {
@@ -8072,10 +13426,10 @@ function Should {
     Asserting that `Get-Application -Name Blarg` will throw an exception with a specific message.
 
     .LINK
-    https://pester.dev/docs/v5/commands/Should
+    https://pester.dev/docs/commands/Should
 
     .LINK
-    https://pester.dev/docs/v5/assertions
+    https://pester.dev/docs/assertions
     #>
     [CmdletBinding()]
     param (
@@ -8084,20 +13438,7 @@ function Should {
     )
 
     dynamicparam {
-        # Figuring out if we are using the old syntax is 'easy'
-        # we can use $myInvocation.Line to get the surrounding context
-        $myLine = if ($null -ne $MyInvocation -and 0 -le ($MyInvocation.OffsetInLine - 1)) {
-            $MyInvocation.Line.Substring($MyInvocation.OffsetInLine - 1)
-        }
-
-        # A bit of Regex lets us know if the line used the old form
-        if ($myLine -match '^\s{0,}should\s{1,}(?<Operator>[^\-\@\s]+)') {
-            $shouldErrorMsg = "Legacy Should syntax (without dashes) is not supported in Pester 5. Please refer to migration guide at: https://pester.dev/docs/v5/migrations/v3-to-v4"
-            throw $shouldErrorMsg
-        }
-        else {
-            Get-AssertionDynamicParams
-        }
+        Get-AssertionDynamicParams
     }
 
     begin {
@@ -8130,18 +13471,22 @@ function Should {
             $shouldThrow = 'Stop' -eq $PSBoundParameters["ErrorAction"]
         }
 
+        # first check if we are in the context of Pester, if not we will always throw, and won't disable Should:
+        # This check is slightly hacky, here we are reaching out the caller session state and
+        # look for $______parameters which we know we are using inside of the Pester runtime to
+        # keep the current invocation context, when we find it, we are able to add non-terminating
+        # errors without throwing and terminating the test.
+        $pesterRuntimeInvocationContext = $PSCmdlet.SessionState.PSVariable.GetValue('______parameters')
+        $isInsidePesterRuntime = $null -ne $pesterRuntimeInvocationContext
+
+        if ($isInsidePesterRuntime -and $pesterRuntimeInvocationContext.Configuration.Should.DisableV5.Value) {
+            throw "Pester Should -Be syntax is disabled. Use Should-Be (without space), or enable it by setting: `$PesterPreference.Should.DisableV5 = `$false"
+        }
+
         if ($null -eq $shouldThrow -or -not $shouldThrow) {
             # we are sure that we either:
             #    - should not throw because of explicit ErrorAction, and need to figure out a place where to collect the error
             #    - or we don't know what to do yet and need to figure out what to do based on the context and settings
-
-            # first check if we are in the context of Pester, if not we will always throw:
-            # this is slightly hacky, here we are reaching out the the caller session state and
-            # look for $______parameters which we know we are using inside of the Pester runtime to
-            # keep the current invocation context, when we find it, we are able to add non-terminating
-            # errors without throwing and terminating the test
-            $pesterRuntimeInvocationContext = $PSCmdlet.SessionState.PSVariable.GetValue('______parameters')
-            $isInsidePesterRuntime = $null -ne $pesterRuntimeInvocationContext
             if (-not $isInsidePesterRuntime) {
                 $shouldThrow = $true
             }
@@ -8186,7 +13531,17 @@ function Should {
             Invoke-Assertion @assertionParams -ValueToTest $null
         }
         elseif ($entry.SupportsArrayInput) {
-            Invoke-Assertion @assertionParams -ValueToTest $inputArray.ToArray()
+            if ($MyInvocation.ExpectingInput) {
+                # Pipeline input is collected item-by-item in the process block, so pass the collected array.
+                Invoke-Assertion @assertionParams -ValueToTest $inputArray.ToArray()
+            }
+            else {
+                # The value was supplied by parameter instead (Should -ActualValue @(1,2,3), which is also what
+                # splatting does). The process block ran once and $inputArray wrapped the whole value into a
+                # single element; enumerate the original $ActualValue with @() so it matches what the pipeline
+                # would have produced, rather than being wrapped one level too deep. (#2314)
+                Invoke-Assertion @assertionParams -ValueToTest @($ActualValue)
+            }
         }
         else {
             foreach ($object in $inputArray) {
@@ -8242,10 +13597,64 @@ function Invoke-Assertion {
 
     $testResult = & $AssertionEntry.Test -ActualValue $ValueToTest -Negate:$Negate -CallerSessionState $CallerSessionState @BoundParameters
 
-    if (-not $testResult.Succeeded) {
-        $errorRecord = [Pester.Factory]::CreateShouldErrorRecord($testResult.FailureMessage, $file, $lineNumber, $lineText, $shouldThrow, $testResult)
+    Test-AssertionResult $testResult
+}
 
-        if ($null -eq $AddErrorCallback -or $ShouldThrow) {
+function Test-AssertionResult {
+    param (
+        $TestResult
+    )
+
+    if (-not $TestResult.Succeeded) {
+        $currentFile = $file
+        $currentLineNumber = $lineNumber
+        $currentLineText = $lineText
+        $currentShouldThrow = $ShouldThrow
+        $currentAddErrorCallback = $AddErrorCallback
+
+        if ($null -eq $currentFile -and $null -ne $PSCmdlet) {
+            $pesterRuntimeInvocationContext = $PSCmdlet.SessionState.PSVariable.GetValue('______parameters')
+            $isInsidePesterRuntime = $null -ne $pesterRuntimeInvocationContext
+
+            $errorActionIsDefined = $PSCmdlet.MyInvocation.BoundParameters.ContainsKey('ErrorAction')
+            if ($errorActionIsDefined) {
+                $currentShouldThrow = 'Stop' -eq $PSCmdlet.MyInvocation.BoundParameters['ErrorAction']
+            }
+
+            if ($null -eq $currentShouldThrow -or -not $currentShouldThrow) {
+                if (-not $isInsidePesterRuntime) {
+                    $currentShouldThrow = $true
+                }
+                else {
+                    if ($null -eq $currentShouldThrow) {
+                        if ($null -ne $PSCmdlet.SessionState.PSVariable.GetValue('______isInMockParameterFilter')) {
+                            $currentShouldThrow = $true
+                        }
+                        else {
+                            $currentShouldThrow = 'Stop' -eq $pesterRuntimeInvocationContext.Configuration.Should.ErrorAction.Value
+                        }
+                    }
+
+                    if (-not $currentShouldThrow) {
+                        $currentAddErrorCallback = {
+                            param($err)
+                            $null = $pesterRuntimeInvocationContext.ErrorRecord.Add($err)
+                        }
+                    }
+                }
+            }
+
+            $currentFile = $PSCmdlet.MyInvocation.ScriptName
+            $currentLineNumber = $PSCmdlet.MyInvocation.ScriptLineNumber
+            $currentLineText = $PSCmdlet.MyInvocation.Line
+            if ($null -ne $currentLineText) {
+                $currentLineText = $currentLineText.TrimEnd([System.Environment]::NewLine)
+            }
+        }
+
+        $errorRecord = [Pester.Factory]::CreateShouldErrorRecord($TestResult.FailureMessage, $currentFile, $currentLineNumber, $currentLineText, $currentShouldThrow, $TestResult)
+
+        if ($null -eq $currentAddErrorCallback -or $currentShouldThrow) {
             # throw this error to fail the test immediately
             throw $errorRecord
         }
@@ -8261,15 +13670,16 @@ function Invoke-Assertion {
         }
 
         # collect the error via the provided callback
-        & $AddErrorCallback $err
+        & $currentAddErrorCallback $err
     }
     else {
         #extract data to return if there are any on the object
-        $data = $testResult.psObject.Properties.Item('Data')
+        $data = $TestResult.psObject.Properties.Item('Data')
         if ($data) {
             $data.Value
         }
     }
+
 }
 
 function Format-Because ([string] $Because) {
@@ -8313,6 +13723,10 @@ function Context {
     Use this parameter to explicitly mark the block to be skipped. This is preferable to temporarily
     commenting out a block, because it remains listed in the output.
 
+    .PARAMETER AllowNullOrEmptyForEach
+    Allows empty or null values for -ForEach when Run.FailOnNullOrEmptyForEach is enabled.
+    This might be excepted in certain scenarios like using external data.
+
     .PARAMETER ForEach
     Allows data driven tests to be written.
     Takes an array of data and generates one block for each item in the array, and makes the item
@@ -8348,16 +13762,16 @@ function Context {
     Example of how to use Context for grouping different tests
 
     .LINK
-    https://pester.dev/docs/v5/commands/Context
+    https://pester.dev/docs/commands/Context
 
     .LINK
-    https://pester.dev/docs/v5/usage/test-file-structure
+    https://pester.dev/docs/usage/test-file-structure
 
     .LINK
-    https://pester.dev/docs/v5/usage/mocking
+    https://pester.dev/docs/usage/mocking
 
     .LINK
-    https://pester.dev/docs/v5/usage/testdrive
+    https://pester.dev/docs/usage/testdrive
     #>
     param(
         [Parameter(Mandatory = $true, Position = 0)]
@@ -8370,14 +13784,13 @@ function Context {
         [ValidateNotNull()]
         [ScriptBlock] $Fixture,
 
-        # [Switch] $Focus,
         [Switch] $Skip,
+        [Switch] $AllowNullOrEmptyForEach,
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidAssignmentToAutomaticVariable', '', Justification = 'ForEach is not used in Foreach-Object loop')]
         $ForEach
     )
 
-    $Focus = $false
     if ($Fixture -eq $null) {
         if ($Name.Contains("`n")) {
             throw "Test fixture name has multiple lines and no test fixture is provided. (Have you provided a name for the test group?)"
@@ -8387,6 +13800,8 @@ function Context {
         }
     }
 
+    Assert-BoundScriptBlockInput -ScriptBlock $Fixture
+
     if ($ExecutionContext.SessionState.PSVariable.Get('invokedViaInvokePester')) {
         if ($state.CurrentBlock.IsRoot -and -not $state.CurrentBlock.FrameworkData.MissingParametersProcessed) {
             # For undefined parameters in container, add parameter's default value to Data
@@ -8394,16 +13809,18 @@ function Context {
         }
 
         if ($PSBoundParameters.ContainsKey('ForEach')) {
-            if ($null -ne $ForEach -and 0 -lt @($ForEach).Count) {
-                New-ParametrizedBlock -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -StartColumn $MyInvocation.OffsetInLine -Tag $Tag -FrameworkData @{ CommandUsed = 'Context'; WrittenToScreen = $false } -Focus:$Focus -Skip:$Skip -Data $ForEach
+            if ($null -eq $ForEach -or 0 -eq @($ForEach).Count) {
+                if ($PesterPreference.Run.FailOnNullOrEmptyForEach.Value -and -not $AllowNullOrEmptyForEach) {
+                    throw [System.ArgumentException]::new('Value can not be null or empty array. If this is expected, use -AllowNullOrEmptyForEach on this Context, or set the Run.FailOnNullOrEmptyForEach configuration option to $false to allow it for the whole run.', 'ForEach')
+                }
+                # @() or $null is provided and allowed, do nothing
+                return
             }
-            else {
-                # @() or $null is provided do nothing
 
-            }
+            New-ParametrizedBlock -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -StartColumn $MyInvocation.OffsetInLine -Tag $Tag -FrameworkData @{ CommandUsed = 'Context'; WrittenToScreen = $false } -Skip:$Skip -Data $ForEach
         }
         else {
-            New-Block -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -Tag $Tag -FrameworkData @{ CommandUsed = 'Context'; WrittenToScreen = $false } -Focus:$Focus -Skip:$Skip
+            New-Block -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -Tag $Tag -FrameworkData @{ CommandUsed = 'Context'; WrittenToScreen = $false } -Skip:$Skip
         }
     }
     else {
@@ -8559,27 +13976,43 @@ function Get-CoveragePlugin {
         $configuration = $run.PluginConfiguration.Coverage
 
         $coverageXmlReport = switch ($configuration.OutputFormat) {
-            'JaCoCo' { [xml](Get-JaCoCoReportXml -CommandCoverage $breakpoints -TotalMilliseconds $totalMilliseconds -CoverageReport $coverageReport -Format 'JaCoCo') }
-            'CoverageGutters' { [xml](Get-JaCoCoReportXml -CommandCoverage $breakpoints -TotalMilliseconds $totalMilliseconds -CoverageReport $coverageReport -Format 'CoverageGutters') }
-            'Cobertura' { [xml](Get-CoberturaReportXml -CoverageReport $coverageReport  -TotalMilliseconds $totalMilliseconds) }
+            'JaCoCo' { [xml](Get-JaCoCoReportXml -CommandCoverage $breakpoints -TotalMilliseconds $totalMilliseconds -CoverageReport $coverageReport -ReportRoot (Get-ReportRoot)) }
+            'Cobertura' { [xml](Get-CoberturaReportXml -CoverageReport $coverageReport  -TotalMilliseconds $totalMilliseconds -ReportRoot (Get-ReportRoot)) }
             default { throw "CodeCoverage.CoverageFormat '$($configuration.OutputFormat)' is not valid, please review your configuration." }
+        }
+
+        $resolvedPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PesterPreference.CodeCoverage.OutputPath.Value)
+        if (-not (& $SafeCommands['Test-Path'] $resolvedPath)) {
+            $dir = & $SafeCommands['Split-Path'] $resolvedPath
+            $null = & $SafeCommands['New-Item'] $dir -Force -ItemType Container
+        }
+
+        # Write the report straight to the file using the configured encoding, and make the xml
+        # encoding-declaration match it. The report templates hard-code encoding="UTF-8", so without this the
+        # declaration does not reflect CodeCoverage.OutputEncoding nor the bytes actually on disk (#2450).
+        # Get-OutputEncodingFromName falls back to utf8 and warns for an invalid encoding, so an unusable value
+        # no longer throws at the very end of the run (#2451).
+        $encoding = Get-OutputEncodingFromName -Encoding $PesterPreference.CodeCoverage.OutputEncoding.Value -OptionName 'CodeCoverage.OutputEncoding'
+        if ($coverageXmlReport.FirstChild -is [System.Xml.XmlDeclaration]) {
+            $coverageXmlReport.FirstChild.Encoding = $encoding.WebName
         }
 
         $settings = [Xml.XmlWriterSettings] @{
             Indent              = $true
             NewLineOnAttributes = $false
+            Encoding            = $encoding
         }
 
-        $stringWriter = $null
+        $xmlFile = $null
         $xmlWriter = $null
         try {
-            $stringWriter = [Pester.Factory]::CreateStringWriter()
-            $xmlWriter = [Xml.XmlWriter]::Create($stringWriter, $settings)
+            $xmlFile = [IO.File]::Create($resolvedPath)
+            $xmlWriter = [Xml.XmlWriter]::Create($xmlFile, $settings)
 
             $coverageXmlReport.WriteContentTo($xmlWriter)
 
             $xmlWriter.Flush()
-            $stringWriter.Flush()
+            $xmlFile.Flush()
         }
         finally {
             if ($null -ne $xmlWriter) {
@@ -8589,22 +14022,14 @@ function Get-CoveragePlugin {
                 catch {
                 }
             }
-            if ($null -ne $stringWriter) {
+            if ($null -ne $xmlFile) {
                 try {
-                    $stringWriter.Close()
+                    $xmlFile.Close()
                 }
                 catch {
                 }
             }
         }
-
-        $resolvedPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PesterPreference.CodeCoverage.OutputPath.Value)
-        if (-not (& $SafeCommands['Test-Path'] $resolvedPath)) {
-            $dir = & $SafeCommands['Split-Path'] $resolvedPath
-            $null = & $SafeCommands['New-Item'] $dir -Force -ItemType Container
-        }
-
-        $stringWriter.ToString() | & $SafeCommands['Out-File'] $resolvedPath -Encoding $PesterPreference.CodeCoverage.OutputEncoding.Value -Force
         if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
             Write-PesterHostMessage -ForegroundColor Magenta "Code Coverage result processed in $($sw.ElapsedMilliseconds) ms."
         }
@@ -8629,7 +14054,7 @@ function Get-CoveragePlugin {
 }
 
 function Resolve-CodeCoverageConfiguration {
-    $supportedFormats = 'JaCoCo', 'CoverageGutters', 'Cobertura'
+    $supportedFormats = 'JaCoCo', 'Cobertura'
     if ($PesterPreference.CodeCoverage.OutputFormat.Value -notin $supportedFormats) {
         throw (Get-StringOptionErrorMessage -OptionPath 'CodeCoverage.OutputFormat' -SupportedValues $supportedFormats -Value $PesterPreference.CodeCoverage.OutputFormat.Value)
     }
@@ -8641,7 +14066,7 @@ function Enter-CoverageAnalysis {
         [object[]] $CodeCoverage,
         [ScriptBlock] $Logger,
         [bool] $UseSingleHitBreakpoints = $true,
-        [bool] $UseBreakpoints = $true
+        [bool] $UseBreakpoints = $false
     )
 
     if ($null -ne $logger) {
@@ -8788,6 +14213,7 @@ function New-CoverageInfo {
     }
 }
 
+# TODO: Remove this and other code related to hashtable syntax?
 function Get-CoverageInfoFromDictionary {
     param ([System.Collections.IDictionary] $Dictionary)
 
@@ -8815,6 +14241,7 @@ function Get-CoverageInfoFromDictionary {
     return New-CoverageInfo -Path $path -StartLine $startLine -EndLine $endLine -Class $class -Function $function -IncludeTests $includeTests -RecursePaths $recursePaths
 }
 
+# TODO: Remove or move til Utility?
 function Convert-UnknownValueToInt {
     param ([object] $Value, [int] $DefaultValue = 0)
 
@@ -8873,7 +14300,7 @@ function Get-CodeCoverageFilePaths {
             }
         })
 
-    $uniqueFiles = & $SafeCommands['New-Object'] -TypeName 'System.Collections.Generic.HashSet[string]' -ArgumentList (, $filteredFiles)
+    $uniqueFiles = [System.Collections.Generic.HashSet[string]]::new($filteredFiles)
     return $uniqueFiles
 }
 
@@ -8884,7 +14311,8 @@ function Get-CoverageBreakpoints {
         [ScriptBlock]$Logger
     )
 
-    $fileGroups = @($CoverageInfo | & $SafeCommands['Group-Object'] -Property Path)
+    # PowerShell 6.1+ sorts by default in Group-Object. We need to sort for consistent output in Windows PowerShell
+    $fileGroups = @($CoverageInfo | & $SafeCommands['Group-Object'] -Property Path | & $SafeCommands['Sort-Object'] -Property Name)
     foreach ($fileGroup in $fileGroups) {
         if ($null -ne $Logger) {
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -8918,21 +14346,9 @@ function Get-CommandsInFile {
     $tokens = $null
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref] $tokens, [ref] $errors)
 
-    if ($PSVersionTable.PSVersion.Major -ge 5) {
-        # In PowerShell 5.0, dynamic keywords for DSC configurations are represented by the DynamicKeywordStatementAst
-        # class.  They still trigger breakpoints, but are not a child class of CommandBaseAst anymore.
-
-        $predicate = {
-            $args[0] -is [System.Management.Automation.Language.DynamicKeywordStatementAst] -or
-            $args[0] -is [System.Management.Automation.Language.CommandBaseAst]
-        }
-    }
-    else {
-        $predicate = { $args[0] -is [System.Management.Automation.Language.CommandBaseAst] }
-    }
-
-    $searchNestedScriptBlocks = $true
-    $ast.FindAll($predicate, $searchNestedScriptBlocks)
+    $visitor = [Pester.CoverageLocationVisitor]::new()
+    $ast.Visit($visitor)
+    return $visitor.CoverageLocations
 }
 
 function Test-CoverageOverlapsCommand {
@@ -8953,8 +14369,7 @@ function Test-CommandInScope {
     $classResult = !$Class
     $functionResult = !$Function
     for ($ast = $Command; $null -ne $ast; $ast = $ast.Parent) {
-        if (!$classResult -and $PSVersionTable.PSVersion.Major -ge 5) {
-            # Classes have been introduced in PowerShell 5.0
+        if (!$classResult) {
             $classAst = $ast -as [System.Management.Automation.Language.TypeDefinitionAst]
             if ($null -ne $classAst -and $classAst.Name -like $Class) {
                 $classResult = $true
@@ -9058,20 +14473,18 @@ function IsIgnoredCommand {
         return $true
     }
 
-    if ($PSVersionTable.PSVersion.Major -ge 4) {
-        if ($Command.Extent.Text -eq 'Configuration') {
-            # More DSC voodoo.  Calls to "configuration" generate breakpoints, but their HitCount
-            # stays zero (even though they are executed.)  For now, ignore them, unless we can come
-            # up with a better solution.
-            return $true
-        }
+    if ($Command.Extent.Text -eq 'Configuration') {
+        # More DSC voodoo.  Calls to "configuration" generate breakpoints, but their HitCount
+        # stays zero (even though they are executed.)  For now, ignore them, unless we can come
+        # up with a better solution.
+        return $true
+    }
 
-        if (IsChildOfHashtableDynamicKeyword -Command $Command) {
-            # The lines inside DSC resource declarations don't trigger their breakpoints when executed,
-            # just like the "configuration" keyword itself.  I don't know why, at this point, but just like
-            # configuration, we'll ignore it so it doesn't clutter up the coverage analysis with useless junk.
-            return $true
-        }
+    if (IsChildOfHashtableDynamicKeyword -Command $Command) {
+        # The lines inside DSC resource declarations don't trigger their breakpoints when executed,
+        # just like the "configuration" keyword itself.  I don't know why, at this point, but just like
+        # configuration, we'll ignore it so it doesn't clutter up the coverage analysis with useless junk.
+        return $true
     }
 
     if ($Command.Extent.Text -match '^{?& \$wrappedCmd @PSBoundParameters ?}?$' -and
@@ -9089,12 +14502,10 @@ function IsIgnoredCommand {
         return $true
     }
 
-    if ($PSVersionTable.PSVersion.Major -ge 5) {
-        if ($Command -is [System.Management.Automation.Language.CommandExpressionAst] -and
-            $Command.Expression[0] -is [System.Management.Automation.Language.BaseCtorInvokeMemberExpressionAst]) {
-            # Calls to inherited "base(...)" constructor does not trigger breakpoint or tracer hit, ignore.
-            return $true
-        }
+    if ($Command -is [System.Management.Automation.Language.CommandExpressionAst] -and
+        $Command.Expression[0] -is [System.Management.Automation.Language.BaseCtorInvokeMemberExpressionAst]) {
+        # Calls to inherited "base(...)" constructor does not trigger breakpoint or tracer hit, ignore.
+        return $true
     }
 
     return $false
@@ -9104,21 +14515,9 @@ function IsChildOfHashtableDynamicKeyword {
     param ([System.Management.Automation.Language.Ast] $Command)
 
     for ($ast = $Command.Parent; $null -ne $ast; $ast = $ast.Parent) {
-        if ($PSVersionTable.PSVersion.Major -ge 5) {
-            # The ast behaves differently for DSC resources with version 5+.  There's a new DynamicKeywordStatementAst class,
-            # and they no longer are represented by CommandAst objects.
-
-            if ($ast -is [System.Management.Automation.Language.DynamicKeywordStatementAst] -and
-                $ast.CommandElements[-1] -is [System.Management.Automation.Language.HashtableAst]) {
-                return $true
-            }
-        }
-        else {
-            if ($ast -is [System.Management.Automation.Language.CommandAst] -and
-                $null -ne $ast.DefiningKeyword -and
-                $ast.DefiningKeyword.BodyMode -eq [System.Management.Automation.Language.DynamicKeywordBodyMode]::Hashtable) {
-                return $true
-            }
+        if ($ast -is [System.Management.Automation.Language.DynamicKeywordStatementAst] -and
+            $ast.CommandElements[-1] -is [System.Management.Automation.Language.HashtableAst]) {
+            return $true
         }
     }
 
@@ -9146,14 +14545,10 @@ function IsClosingLoopCondition {
 function Get-ParentClassName {
     param ([System.Management.Automation.Language.Ast] $Ast)
 
-    if ($PSVersionTable.PSVersion.Major -ge 5) {
-        # Classes have been introduced in PowerShell 5.0
+    $parent = $Ast.Parent
 
-        $parent = $Ast.Parent
-
-        while ($null -ne $parent -and $parent -isnot [System.Management.Automation.Language.TypeDefinitionAst]) {
-            $parent = $parent.Parent
-        }
+    while ($null -ne $parent -and $parent -isnot [System.Management.Automation.Language.TypeDefinitionAst]) {
+        $parent = $parent.Parent
     }
 
     if ($null -eq $parent) {
@@ -9186,6 +14581,7 @@ function Get-CoverageCommandText {
 
     $reportParentExtentTypes = @(
         [System.Management.Automation.Language.ReturnStatementAst]
+        [System.Management.Automation.Language.ExitStatementAst]
         [System.Management.Automation.Language.ThrowStatementAst]
         [System.Management.Automation.Language.AssignmentStatementAst]
         [System.Management.Automation.Language.IfStatementAst]
@@ -9321,7 +14717,7 @@ function Get-CoverageReport {
         # adapting the data to the breakpoint like api we use for breakpoint based CC
         # so the rest of our code just works
         foreach ($i in $CommandCoverage) {
-            # Write-Output "CC: $($i.File), $($i.StartLine), $($i.StartColumn)"
+            # Write-Host "CC: $($i.File), $($i.StartLine), $($i.StartColumn)"
             $bp = @{ HitCount = 0 }
             if ($bpm.ContainsKey($i.File)) {
                 $f = $bpm[$i.File]
@@ -9366,70 +14762,24 @@ function Get-CoverageReport {
     }
 }
 
-function Get-CommonParentPath {
-    param ([string[]] $Path)
-
-    if ("CoverageGutters" -eq $PesterPreference.CodeCoverage.OutputFormat.Value) {
-        # for coverage gutters the root path is relative to the coverage.xml
-        $fullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PesterPreference.CodeCoverage.OutputPath.Value)
-        return (& $SafeCommands['Split-Path'] -Path $fullPath | Normalize-Path )
+function Get-ReportRoot {
+    if ($null -ne $PesterPreference.CodeCoverage.ReportRoot.Value) {
+        return $PesterPreference.CodeCoverage.ReportRoot.Value
     }
 
-    $pathsToTest = @(
-        $Path |
-            Normalize-Path |
-            & $SafeCommands['Select-Object'] -Unique
-    )
-
-    if ($pathsToTest.Count -gt 0) {
-        $parentPath = & $SafeCommands['Split-Path'] -Path $pathsToTest[0] -Parent
-
-        while ($parentPath.Length -gt 0) {
-            $nonMatches = $pathsToTest -notmatch "^$([regex]::Escape($parentPath))"
-
-            if ($nonMatches.Count -eq 0) {
-                return $parentPath
-            }
-            else {
-                $parentPath = & $SafeCommands['Split-Path'] -Path $parentPath -Parent
-            }
-        }
-    }
-
-    return [string]::Empty
+    $PesterPreference.Run.RepoRoot.Value
 }
 
 function Get-RelativePath {
     param ( [string] $Path, [string] $RelativeTo )
-    return $Path -replace "^$([regex]::Escape("$RelativeTo$([System.IO.Path]::DirectorySeparatorChar)"))?"
-}
-
-function Normalize-Path {
-    [CmdletBinding()]
-    param (
-        [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-        [Alias('PSPath', 'FullName')]
-        [string[]] $Path
-    )
-
-    # Split-Path and Join-Path will replace any AltDirectorySeparatorChar instances with the DirectorySeparatorChar
-    # (Even if it's not the one that the split / join happens on.)  So splitting / rejoining a path will give us
-    # consistent separators for later string comparison.
-
-    process {
-        if ($null -ne $Path) {
-            foreach ($p in $Path) {
-                $normalizedPath = & $SafeCommands['Split-Path'] $p -Leaf
-
-                if ($normalizedPath -ne $p) {
-                    $parent = & $SafeCommands['Split-Path'] $p -Parent
-                    $normalizedPath = & $SafeCommands['Join-Path'] $parent $normalizedPath
-                }
-
-                $normalizedPath
-            }
-        }
+    if ([System.IO.Path]::DirectorySeparatorChar -eq '/') {
+        $RelativeTo = $RelativeTo.Replace('\', '/').TrimEnd('/')
     }
+    else {
+        $RelativeTo = $RelativeTo.Replace('/', '\').TrimEnd('\')
+    }
+
+    return $Path -replace "^$([regex]::Escape("$RelativeTo$([System.IO.Path]::DirectorySeparatorChar)"))?"
 }
 
 function Get-JaCoCoReportXml {
@@ -9440,24 +14790,22 @@ function Get-JaCoCoReportXml {
         [object] $CoverageReport,
         [parameter(Mandatory = $true)]
         [long] $TotalMilliseconds,
-        [string] $Format
+        [parameter(Mandatory = $true)]
+        [string] $ReportRoot
     )
 
-    $isGutters = "CoverageGutters" -eq $Format
-
-    if ($null -eq $CoverageReport -or ($pester.Show -eq [Pester.OutputTypes]::None) -or $CoverageReport.NumberOfCommandsAnalyzed -eq 0) {
+    if ($null -eq $CoverageReport -or $CoverageReport.NumberOfCommandsAnalyzed -eq 0) {
         return [string]::Empty
     }
 
     # Report uses unix epoch time format (milliseconds since midnight 1/1/1970 UTC)
-    $nineteenSeventy = & $SafeCommands['New-Object'] 'System.DateTime' -ArgumentList @(1970, 1, 1, 0, 0, 0, [System.DateTimeKind]::Utc)
-    $now = [DateTime]::Now.ToUniversalTime()
-    [long] $endTime = [math]::Floor(($now - $nineteenSeventy).TotalMilliseconds)
+    [long] $endTime = [System.DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     [long] $startTime = [math]::Floor($endTime - $TotalMilliseconds)
 
+    # PowerShell 6.1+ sorts by default in Group-Object. We need to sort for consistent output in Windows PowerShell
     $folderGroups = $CommandCoverage | & $SafeCommands["Group-Object"] -Property {
         & $SafeCommands["Split-Path"] $_.File -Parent
-    }
+    } | & $SafeCommands["Sort-Object"] -Property Name
 
     $packageList = [System.Collections.Generic.List[psobject]]@()
 
@@ -9548,9 +14896,6 @@ function Get-JaCoCoReportXml {
         $packageList.Add($package)
     }
 
-    $commonParent = Get-CommonParentPath -Path $CoverageReport.AnalyzedFiles
-    $commonParentLeaf = & $SafeCommands["Split-Path"] $commonParent -Leaf
-
     # the JaCoCo xml format without the doctype, as the XML stuff does not like DTD's.
     $jaCoCoReport = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
     $jaCoCoReport += '<report name="">'
@@ -9564,26 +14909,15 @@ function Get-JaCoCoReportXml {
     $reportElement.sessioninfo.dump = $endTime.ToString()
 
     foreach ($package in $packageList) {
-        $packageRelativePath = Get-RelativePath -Path $package.Name -RelativeTo $commonParent
+        $packageRelativePath = Get-RelativePath -Path $package.Name -RelativeTo $ReportRoot
 
-        # e.g. "." for gutters, and "package" for non gutters in root
-        # and "sub-dir" for gutters, and "package/sub-dir" for non-gutters
+        # "." for root and "sub-dir" for non-root, e.g. "." or "src", "src/myCode"
         $packageName = if ($null -eq $packageRelativePath -or "" -eq $packageRelativePath) {
-            if ($isGutters) {
-                "."
-            }
-            else {
-                $commonParentLeaf
-            }
+            "."
         }
         else {
             $packageRelativePathFormatted = $packageRelativePath.Replace("\", "/")
-            if ($isGutters) {
-                $packageRelativePathFormatted
-            }
-            else {
-                "$commonParentLeaf/$packageRelativePathFormatted"
-            }
+            $packageRelativePathFormatted
         }
 
         $packageElement = Add-XmlElement -Parent $reportElement -Name 'package' -Attributes @{
@@ -9592,22 +14926,12 @@ function Get-JaCoCoReportXml {
 
         foreach ($file in $package.Classes.Keys) {
             $class = $package.Classes.$file
-            $classElementRelativePath = (Get-RelativePath -Path $file -RelativeTo $commonParent).Replace("\", "/")
-            $classElementName = if ($isGutters) {
-                $classElementRelativePath
-            }
-            else {
-                "$commonParentLeaf/$classElementRelativePath"
-            }
+            $classElementRelativePath = (Get-RelativePath -Path $file -RelativeTo $ReportRoot).Replace("\", "/")
+            $classElementName = $classElementRelativePath
             $classElementName = $classElementName.Substring(0, $($classElementName.LastIndexOf(".")))
             $classElement = Add-XmlElement -Parent $packageElement -Name 'class' -Attributes ([ordered] @{
                     name           = $classElementName
-                    sourcefilename = if ($isGutters) {
-                        & $SafeCommands["Split-Path"] $classElementRelativePath -Leaf
-                    }
-                    else {
-                        $classElementRelativePath
-                    }
+                    sourcefilename = & $SafeCommands["Split-Path"] $classElementRelativePath -Leaf
                 })
 
             foreach ($function in $class.Methods.Keys) {
@@ -9630,14 +14954,9 @@ function Get-JaCoCoReportXml {
 
         foreach ($file in $package.Classes.Keys) {
             $class = $package.Classes.$file
-            $classElementRelativePath = (Get-RelativePath -Path $file -RelativeTo $commonParent).Replace("\", "/")
+            $classElementRelativePath = (Get-RelativePath -Path $file -RelativeTo $ReportRoot).Replace("\", "/")
             $sourceFileElement = Add-XmlElement -Parent $packageElement -Name 'sourcefile' -Attributes ([ordered] @{
-                    name = if ($isGutters) {
-                        & $SafeCommands["Split-Path"] $classElementRelativePath -Leaf
-                    }
-                    else {
-                        $classElementRelativePath
-                    }
+                    name = & $SafeCommands["Split-Path"] $classElementRelativePath -Leaf
                 })
 
             foreach ($line in $class.Lines.Keys) {
@@ -9679,7 +14998,9 @@ function Get-CoberturaReportXml {
         [parameter(Mandatory = $true)]
         [object] $CoverageReport,
         [parameter(Mandatory = $true)]
-        [long] $TotalMilliseconds
+        [long] $TotalMilliseconds,
+        [parameter(Mandatory = $true)]
+        [string] $ReportRoot
     )
 
     if ($null -eq $CoverageReport -or $CoverageReport.NumberOfCommandsAnalyzed -eq 0) {
@@ -9687,12 +15008,8 @@ function Get-CoberturaReportXml {
     }
 
     # Report uses unix epoch time format (milliseconds since midnight 1/1/1970 UTC)
-    $nineteenSeventy = & $SafeCommands['New-Object'] 'System.DateTime' -ArgumentList @(1970, 1, 1, 0, 0, 0, [System.DateTimeKind]::Utc)
-    $now = [DateTime]::Now.ToUniversalTime()
-    [long] $endTime = [math]::Floor(($now - $nineteenSeventy).TotalMilliseconds)
+    [long] $endTime = [System.DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     [long] $startTime = [math]::Floor($endTime - $TotalMilliseconds)
-
-    $commonRoot = Get-CommonParentPath -Path $CoverageReport.AnalyzedFiles
 
     $allLines = [System.Collections.Generic.List[object]]@()
     $allLines.AddRange($CoverageReport.MissedCommands)
@@ -9762,7 +15079,7 @@ function Get-CoberturaReportXml {
             $coveredLines = foreach ($line in $lines) { if (0 -lt $line.attributes.hits) { $line } }
 
             $lineRate = Get-LineRate -CoveredLines $coveredLines.Length -TotalLines $lines.Length
-            $filename = $classGroup.Name.Substring($commonRoot.Length).Replace('\', '/').TrimStart('/')
+            $filename = $classGroup.Name.Substring($ReportRoot.Length).Replace('\', '/').TrimStart('/')
 
             $class = [ordered]@{
                 name         = 'class'
@@ -9786,7 +15103,7 @@ function Get-CoberturaReportXml {
         $totalLines = ($classes.totalLines | & $SafeCommands["Measure-Object"] -Sum).Sum
         $coveredLines = ($classes.coveredLines | & $SafeCommands["Measure-Object"] -Sum).Sum
         $lineRate = Get-LineRate -CoveredLines $coveredLines -TotalLines $totalLines
-        $packageName = $packageGroup.Name.Substring($commonRoot.Length).Replace('\', '/').TrimStart('/')
+        $packageName = $packageGroup.Name.Substring($ReportRoot.Length).Replace('\', '/').TrimStart('/')
 
         $package = [ordered]@{
             name         = 'package'
@@ -9824,7 +15141,7 @@ function Get-CoberturaReportXml {
         children   = [ordered]@{
             sources  = [ordered]@{
                 name  = 'source'
-                value = $commonRoot.Replace('\', '/')
+                value = $ReportRoot.Replace('\', '/')
             }
             packages = $packages | & $SafeCommands["Sort-Object"] { $_.attributes.name }
         }
@@ -9982,9 +15299,18 @@ function Start-TraceScript ($Breakpoints) {
     }
 
     if (-not $registered) {
-        $patched = $true
-        [Pester.Tracing.Tracer]::Patch($PSVersionTable.PSVersion.Major, $ExecutionContext, $host.UI, $tracer)
-        Set-PSDebug -Trace 1
+
+        # detect if code coverage is enabled through Pester tracer, and in that case just add us as a second tracer
+        if (1 -eq $env:PESTER_CC_IN_CC -and [Pester.Tracing.Tracer]::ShouldRegisterTracer($tracer, <# overwrite: #> $false)) {
+            $patched = $false
+            $registered = $true
+            [Pester.Tracing.Tracer]::Register($tracer)
+        }
+        else {
+            $patched = $true
+            [Pester.Tracing.Tracer]::Patch($PSVersionTable.PSVersion.Major, $ExecutionContext, $host.UI, $tracer)
+            Set-PSDebug -Trace 1
+        }
     }
 
     # true if we patched powershell and have to unpatch it later,
@@ -9995,34 +15321,47 @@ function Start-TraceScript ($Breakpoints) {
 function Stop-TraceScript {
     param ([bool] $Patched)
 
-    # if profiler is imported and running and in that case just remove us as a second tracer
-    # to not disturb the profiling session
+    # if we patched powershell we need to unpatch it, if we did not patch it, then we need to unregister ourselves because we are the second tracer.
     if ($Patched) {
-        Set-PSDebug -Trace 0
+        $corruptionAutodetectionVariable = Set-PSDebug -Trace 0
         [Pester.Tracing.Tracer]::Unpatch()
     }
     else {
+        # Stop tracing so we don't record Unregister
+        $corruptionAutodetectionVariable = Set-PSDebug -Trace 0
+        # This variable name is used to detect if the tracer was broken, we cannot use comments because they are not part of the ast Extent.Text
+        # Assigning it here to null, because otherwise it gives warning about not being used.
+        $null = $corruptionAutodetectionVariable
+        # detect if profiler is imported, if yes, unregister us from Profiler (because we are profiling Pester)
         $profilerType = "Profiler.Tracer" -as [Type]
-        $profilerType::Unregister()
+        if ($null -ne $profilerType) {
+            $profilerType::Unregister()
+        }
+        elseif (1 -eq $env:PESTER_CC_IN_CC) {
+            # we are not profiling we are running code coverage in code coverage
+            [Pester.Tracing.Tracer]::Unregister()
+        }
+        # start tracing again so the other tracer can continue
+        Set-PSDebug -Trace 1
     }
 }
 
 function Get-TracerHitLocation ($command) {
 
     if (-not $env:PESTER_CC_DEBUG) {
-        function Write-Output { }
+        function Write-Host { }
     }
-    # function Write-Output { }
+    # function Write-Host { }
     function Show-ParentList ($command) {
         $c = $command
-        "`n`nCommand: $c" | Write-Output
+        "`n`nCommand: $c" | Write-Host
         $(for ($ast = $c; $null -ne $ast; $ast = $ast.Parent) {
                 $ast | Select-Object @{n = 'type'; e = { $_.GetType().Name } } , @{n = 'extent'; e = { $_.extent } }
-            } ) | Format-Table type, extent | Out-String | Write-Output
+            } ) | Format-Table type, extent | Out-String | Write-Host
     }
 
     if ($env:PESTER_CC_DEBUG -eq 1) {
-        Write-Output "Processing '$command' at $($command.Extent.StartLineNumber):$($command.Extent.StartColumnNumber) which is $($command.GetType().Name)."
+        Write-Host "Processing '$command' at $($command.Extent.StartLineNumber):$($command.Extent.StartColumnNumber) which is $($command.GetType().Name)."
     }
 
     #    Show-ParentList $command
@@ -10081,7 +15420,7 @@ function Get-TracerHitLocation ($command) {
         }
     }
     if ($env:PESTER_CC_DEBUG -eq 1) {
-        Write-Output "It became: '$last' at $($last.Extent.StartLineNumber):$($last.Extent.StartColumnNumber) which is $($last.GetType().Name)."
+        Write-Host "It became: '$last' at $($last.Extent.StartLineNumber):$($last.Extent.StartColumnNumber) which is $($last.GetType().Name)."
     }
     return $last
 }
@@ -10115,6 +15454,10 @@ function Describe {
     .PARAMETER Skip
     Use this parameter to explicitly mark the block to be skipped. This is preferable to temporarily
     commenting out a block, because it remains listed in the output.
+
+    .PARAMETER AllowNullOrEmptyForEach
+    Allows empty or null values for -ForEach when Run.FailOnNullOrEmptyForEach is enabled.
+    This might be excepted in certain scenarios like using external data.
 
     .PARAMETER ForEach
     Allows data driven tests to be written.
@@ -10156,16 +15499,16 @@ function Describe {
     Using Describe to group tests logically at the root of the script/container
 
     .LINK
-    https://pester.dev/docs/v5/commands/Describe
+    https://pester.dev/docs/commands/Describe
 
     .LINK
-    https://pester.dev/docs/v5/usage/test-file-structure
+    https://pester.dev/docs/usage/test-file-structure
 
     .LINK
-    https://pester.dev/docs/v5/usage/mocking
+    https://pester.dev/docs/usage/mocking
 
     .LINK
-    https://pester.dev/docs/v5/usage/testdrive
+    https://pester.dev/docs/usage/testdrive
     #>
 
     param(
@@ -10179,14 +15522,13 @@ function Describe {
         [ValidateNotNull()]
         [ScriptBlock] $Fixture,
 
-        # [Switch] $Focus,
         [Switch] $Skip,
+        [Switch] $AllowNullOrEmptyForEach,
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidAssignmentToAutomaticVariable', '', Justification = 'ForEach is not used in Foreach-Object loop')]
         $ForEach
     )
 
-    $Focus = $false
     if ($null -eq $Fixture) {
         if ($Name.Contains("`n")) {
             throw "Test fixture name has multiple lines and no test fixture is provided. (Have you provided a name for the test group?)"
@@ -10196,6 +15538,8 @@ function Describe {
         }
     }
 
+    Assert-BoundScriptBlockInput -ScriptBlock $Fixture
+
     if ($ExecutionContext.SessionState.PSVariable.Get('invokedViaInvokePester')) {
         if ($state.CurrentBlock.IsRoot -and -not $state.CurrentBlock.FrameworkData.MissingParametersProcessed) {
             # For undefined parameters in container, add parameter's default value to Data
@@ -10203,15 +15547,18 @@ function Describe {
         }
 
         if ($PSBoundParameters.ContainsKey('ForEach')) {
-            if ($null -ne $ForEach -and 0 -lt @($ForEach).Count) {
-                New-ParametrizedBlock -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -StartColumn $MyInvocation.OffsetInLine -Tag $Tag -FrameworkData @{ CommandUsed = 'Describe'; WrittenToScreen = $false } -Focus:$Focus -Skip:$Skip -Data $ForEach
+            if ($null -eq $ForEach -or 0 -eq @($ForEach).Count) {
+                if ($PesterPreference.Run.FailOnNullOrEmptyForEach.Value -and -not $AllowNullOrEmptyForEach) {
+                    throw [System.ArgumentException]::new('Value can not be null or empty array. If this is expected, use -AllowNullOrEmptyForEach on this Describe, or set the Run.FailOnNullOrEmptyForEach configuration option to $false to allow it for the whole run.', 'ForEach')
+                }
+                # @() or $null is provided and allowed, do nothing
+                return
             }
-            else {
-                # @() or $null is provided do nothing
-            }
+
+            New-ParametrizedBlock -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -StartColumn $MyInvocation.OffsetInLine -Tag $Tag -FrameworkData @{ CommandUsed = 'Describe'; WrittenToScreen = $false } -Skip:$Skip -Data $ForEach
         }
         else {
-            New-Block -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -Tag $Tag -FrameworkData @{ CommandUsed = 'Describe'; WrittenToScreen = $false } -Focus:$Focus -Skip:$Skip
+            New-Block -Name $Name -ScriptBlock $Fixture -StartLine $MyInvocation.ScriptLineNumber -Tag $Tag -FrameworkData @{ CommandUsed = 'Describe'; WrittenToScreen = $false } -Skip:$Skip
         }
     }
     else {
@@ -10279,8 +15626,8 @@ function GetPesterPsVersion {
 }
 
 function GetPesterOs {
-    # Prior to v6, PowerShell was solely on Windows. In v6, the $IsWindows variable was introduced.
-    if ((GetPesterPsVersion) -lt 6) {
+    # Prior to v7, PowerShell was solely on Windows. In v6, the $IsWindows variable was introduced.
+    if ((GetPesterPsVersion) -lt 7) {
         'Windows'
     }
     elseif (& $SafeCommands['Get-Variable'] -Name 'IsWindows' -ErrorAction 'Ignore' -ValueOnly ) {
@@ -10310,7 +15657,7 @@ function Get-TempDirectory {
 function Get-TempRegistry {
     # The Pester root key is created once and then stays in place.
     # In TestDrive we use system Temp folder, but such key exists for registry so we create our own.
-    # Removing it would cleanup remaining keys from cancelled runs, but could break parallell or nested runs, so leaving it
+    # Removing it would cleanup remaining keys from cancelled runs, but could break parallel or nested runs, so leaving it
 
     $pesterTempRegistryRoot = 'Microsoft.PowerShell.Core\Registry::HKEY_CURRENT_USER\Software\Pester'
     try {
@@ -10357,10 +15704,10 @@ function Get-ShouldOperator {
     -Name is a dynamic parameter that tab completes all available options.
 
     .LINK
-    https://pester.dev/docs/v5/commands/Get-ShouldOperator
+    https://pester.dev/docs/commands/Get-ShouldOperator
 
     .LINK
-    https://pester.dev/docs/v5/commands/Should
+    https://pester.dev/docs/commands/Should
     #>
     [CmdletBinding()]
     param ()
@@ -10372,9 +15719,9 @@ function Get-ShouldOperator {
     DynamicParam {
         $ParameterName = 'Name'
 
-        $RuntimeParameterDictionary = & $SafeCommands['New-Object'] System.Management.Automation.RuntimeDefinedParameterDictionary
-        $AttributeCollection = & $SafeCommands['New-Object'] System.Collections.ObjectModel.Collection[System.Attribute]
-        $ParameterAttribute = & $SafeCommands['New-Object'] System.Management.Automation.ParameterAttribute
+        $RuntimeParameterDictionary = [System.Management.Automation.RuntimeDefinedParameterDictionary]::new()
+        $AttributeCollection = [System.Collections.ObjectModel.Collection[System.Attribute]]::new()
+        $ParameterAttribute = [System.Management.Automation.ParameterAttribute]::new()
         $ParameterAttribute.Position = 0
         $ParameterAttribute.HelpMessage = 'Name or alias of operator'
 
@@ -10384,11 +15731,10 @@ function Get-ShouldOperator {
             & $SafeCommands['Select-Object'] -Property Name, Alias |
             & $SafeCommands['ForEach-Object'] { $_.Name; $_.Alias }
 
-        $ValidateSetAttribute = & $SafeCommands['New-Object']System.Management.Automation.ValidateSetAttribute($arrSet)
-
+        $ValidateSetAttribute = [System.Management.Automation.ValidateSetAttribute]::new([string[]]$arrSet)
         $AttributeCollection.Add($ValidateSetAttribute)
 
-        $RuntimeParameter = & $SafeCommands['New-Object'] System.Management.Automation.RuntimeDefinedParameter($ParameterName, [string], $AttributeCollection)
+        $RuntimeParameter = [System.Management.Automation.RuntimeDefinedParameter]::new($ParameterName, [string], $AttributeCollection)
         $RuntimeParameterDictionary.Add($ParameterName, $RuntimeParameter)
         return $RuntimeParameterDictionary
     }
@@ -10447,8 +15793,8 @@ function Resolve-SkipRemainingOnFailureConfiguration {
 function Set-RemainingAsSkipped {
     param(
         [Parameter(Mandatory)]
-        [Pester.Test]
-        $FailedTest,
+        [string]
+        $FailedPath,
 
         [Parameter(Mandatory)]
         [Pester.Block]
@@ -10457,7 +15803,7 @@ function Set-RemainingAsSkipped {
 
     $errorRecord = [Pester.Factory]::CreateErrorRecord(
         'PesterTestSkipped',
-        "Skipped due to previous failure at '$($FailedTest.ExpandedPath)' and Run.SkipRemainingOnFailure set to '$($PesterPreference.Run.SkipRemainingOnFailure.Value)'",
+        "Skipped due to previous failure at '$FailedPath' and Run.SkipRemainingOnFailure set to '$($PesterPreference.Run.SkipRemainingOnFailure.Value)'",
         $null,
         $null,
         $null,
@@ -10497,6 +15843,11 @@ function Get-SkipRemainingOnFailurePlugin {
         $Context.Configuration.SkipRemainingOnFailureCount = 0
     }
 
+    # A failing *test* is handled in EachTestTeardownEnd. A failing *block* (its BeforeAll or
+    # AfterAll threw) never runs a test teardown, so without an EachBlockTeardownEnd hook the
+    # remaining tests/blocks keep running (#2454). Block.OwnPassed is $false only when the block's
+    # own setup/teardown failed - a failing child test leaves it $true - so the two hooks never
+    # double-fire for the same failure.
     if ($PesterPreference.Run.SkipRemainingOnFailure.Value -eq 'Block') {
         $p.EachTestTeardownEnd = {
             param($Context)
@@ -10504,7 +15855,17 @@ function Get-SkipRemainingOnFailurePlugin {
             # If test was not skipped and failed
             if (-not $Context.Test.Skipped -and -not $Context.Test.Passed) {
                 # Skip all remaining tests in the block recursively
-                Set-RemainingAsSkipped -FailedTest $Context.Test -Block $Context.Block
+                Set-RemainingAsSkipped -FailedPath $Context.Test.ExpandedPath -Block $Context.Block
+            }
+        }
+
+        $p.EachBlockTeardownEnd = {
+            param($Context)
+
+            # If the block's own setup/teardown failed and it was not skipped
+            if (-not $Context.Block.OwnPassed -and -not $Context.Block.Skip) {
+                # Skip all remaining tests in the block recursively
+                Set-RemainingAsSkipped -FailedPath $Context.Block.ExpandedPath -Block $Context.Block
             }
         }
     }
@@ -10516,7 +15877,17 @@ function Get-SkipRemainingOnFailurePlugin {
             # If test was not skipped and failed
             if (-not $Context.Test.Skipped -and -not $Context.Test.Passed) {
                 # Skip all remaining tests in the container recursively
-                Set-RemainingAsSkipped -FailedTest $Context.Test -Block $Context.Block.Root
+                Set-RemainingAsSkipped -FailedPath $Context.Test.ExpandedPath -Block $Context.Block.Root
+            }
+        }
+
+        $p.EachBlockTeardownEnd = {
+            param($Context)
+
+            # If the block's own setup/teardown failed and it was not skipped
+            if (-not $Context.Block.OwnPassed -and -not $Context.Block.Skip) {
+                # Skip all remaining tests in the container recursively
+                Set-RemainingAsSkipped -FailedPath $Context.Block.ExpandedPath -Block $Context.Block.Root
             }
         }
     }
@@ -10525,12 +15896,12 @@ function Get-SkipRemainingOnFailurePlugin {
         $p.ContainerRunStart = {
             param($Context)
 
-            # If a test failed in a previous container, skip all tests
-            if ($Context.Configuration.SkipRemainingFailedTest) {
+            # If a failure happened in a previous container, skip all tests
+            if ($Context.Configuration.SkipRemainingFailedPath) {
                 # Skip container root block to avoid root-level BeforeAll/AfterAll from running. Only applicable in this mode
                 $Context.Block.Root.Skip = $true
                 # Skip all remaining tests in current container
-                Set-RemainingAsSkipped -FailedTest $Context.Configuration.SkipRemainingFailedTest -Block $Context.Block
+                Set-RemainingAsSkipped -FailedPath $Context.Configuration.SkipRemainingFailedPath -Block $Context.Block
             }
         }
 
@@ -10540,11 +15911,24 @@ function Get-SkipRemainingOnFailurePlugin {
             # If test was not skipped but failed
             if (-not $Context.Test.Skipped -and -not $Context.Test.Passed) {
                 # Skip all remaining tests in current container
-                Set-RemainingAsSkipped -FailedTest $Context.Test -Block $Context.Block.Root
+                Set-RemainingAsSkipped -FailedPath $Context.Test.ExpandedPath -Block $Context.Block.Root
 
-                # Store failed test so we can skip remaining containers in ContainerRunStart-step
-                # TODO: Use $Context.GlobalPluginData.SkipRemainingOnFailure.FailedTest when exposed in $Context
-                $Context.Configuration.SkipRemainingFailedTest = $Context.Test
+                # Store failed path so we can skip remaining containers in ContainerRunStart-step
+                # TODO: Use $Context.GlobalPluginData.SkipRemainingOnFailure.FailedPath when exposed in $Context
+                $Context.Configuration.SkipRemainingFailedPath = $Context.Test.ExpandedPath
+            }
+        }
+
+        $p.EachBlockTeardownEnd = {
+            param($Context)
+
+            # If the block's own setup/teardown failed and it was not skipped
+            if (-not $Context.Block.OwnPassed -and -not $Context.Block.Skip) {
+                # Skip all remaining tests in current container
+                Set-RemainingAsSkipped -FailedPath $Context.Block.ExpandedPath -Block $Context.Block.Root
+
+                # Store failed path so we can skip remaining containers in ContainerRunStart-step
+                $Context.Configuration.SkipRemainingFailedPath = $Context.Block.ExpandedPath
             }
         }
     }
@@ -10560,67 +15944,6 @@ function Get-SkipRemainingOnFailurePlugin {
     }
 
     New-PluginObject @p
-}
-# file src\functions\In.ps1
-function In {
-    <#
-    .SYNOPSIS
-    A convenience function that executes a script from a specified path.
-
-    .DESCRIPTION
-    Before the script block passed to the execute parameter is invoked,
-    the current location is set to the path specified. Once the script
-    block has been executed, the location will be reset to the location
-    the script was in prior to calling In.
-
-    .PARAMETER Path
-    The path that the execute block will be executed in.
-
-    .PARAMETER ScriptBlock
-    The script to be executed in the path provided.
-
-    .LINK
-    https://github.com/pester/Pester/wiki/In
-    #>
-    [CmdletBinding(DefaultParameterSetName = "Default")]
-    param(
-        [Parameter(Mandatory, ParameterSetName = "Default", Position = 0)]
-        [String] $Path,
-        [Parameter(Mandatory, ParameterSetName = "TestDrive", Position = 0)]
-        [Switch] $TestDrive,
-        [Parameter(Mandatory, Position = 1)]
-        [Alias("Execute")]
-        [ScriptBlock] $ScriptBlock
-    )
-
-    # test drive is not available during discovery, ideally no code should
-    # depend on location during discovery, but I cannot rely on that, so unless
-    # the path is TestDrive the path is changed in discovery as well as during
-    # the run phase
-    $doNothing = $false
-    if ($TestDrive) {
-        if (Is-Discovery) {
-            $doNothing = $true
-        }
-        else {
-            $Path = (& $SafeCommands['Get-PSDrive'] 'TestDrive').Root
-        }
-    }
-
-    $originalPath = $pwd
-    if (-not $doNothing) {
-        & $SafeCommands['Set-Location'] $Path
-        $pwd = $Path
-    }
-    try {
-        & $ScriptBlock
-    }
-    finally {
-        if (-not $doNothing) {
-            & $SafeCommands['Set-Location'] $originalPath
-            $pwd = $originalPath
-        }
-    }
 }
 # file src\functions\InModuleScope.ps1
 function InModuleScope {
@@ -10662,12 +15985,13 @@ function InModuleScope {
     Export-ModuleMember -Function PublicFunction
 
     # The test script:
+    BeforeAll {
+        Import-Module MyModule
+    }
 
-    Import-Module MyModule
-
-    InModuleScope MyModule {
-        Describe 'Testing MyModule' {
-            It 'Tests the Private function' {
+    Describe 'Testing MyModule' {
+        It 'Tests the Private function' {
+            InModuleScope MyModule {
                 PrivateFunction | Should -Be $true
             }
         }
@@ -10676,7 +16000,7 @@ function InModuleScope {
 
     Normally you would not be able to access "PrivateFunction" from
     the PowerShell session, because the module only exported
-    "PublicFunction".  Using InModuleScope allowed this call to
+    "PublicFunction". Using InModuleScope allowed this call to
     "PrivateFunction" to work successfully.
 
     .EXAMPLE
@@ -10724,7 +16048,7 @@ function InModuleScope {
     them in using `-Parameters` or `-ArgumentList`.
 
     .LINK
-    https://pester.dev/docs/v5/commands/InModuleScope
+    https://pester.dev/docs/commands/InModuleScope
     #>
     [CmdletBinding()]
     param (
@@ -10780,10 +16104,10 @@ function InModuleScope {
     Set-ScriptBlockScope -ScriptBlock $ScriptBlock -SessionState $sessionState
     Set-ScriptBlockScope -ScriptBlock $wrapper -SessionState $sessionState
     $splat = @{
-        ScriptBlock    = $ScriptBlock
-        Parameters     = $Parameters
-        ArgumentList   = $ArgumentList
-        SessionState   = $sessionState
+        ScriptBlock  = $ScriptBlock
+        Parameters   = $Parameters
+        ArgumentList = $ArgumentList
+        SessionState = $sessionState
     }
 
     Write-ScriptBlockInvocationHint -Hint "InModuleScope" -ScriptBlock $ScriptBlock
@@ -10796,6 +16120,84 @@ function Get-CompatibleModule {
         [Parameter(Mandatory = $true)]
         [string] $ModuleName
     )
+
+    # Slash/backslash notation: RootModule/NestedModule[/DeeperNestedModule...]
+    # Resolves the full nested path from left to right so deeply nested modules can be targeted.
+    if ($ModuleName -match '[/\\]') {
+        # Split on / or \ and trim whitespace from each segment.
+        $modulePathSegments = @($ModuleName -split '[/\\]')
+        $modulePathSegments = @($modulePathSegments | & $SafeCommands['ForEach-Object'] { $_.Trim() })
+        $hasEmptySegment = @($modulePathSegments | & $SafeCommands['Where-Object'] { [string]::IsNullOrEmpty($_) }).Count -gt 0
+
+        # Require at least two non-empty segments (root + one nested level).
+        if ($modulePathSegments.Count -lt 2 -or $hasEmptySegment) {
+            throw "Invalid ModuleName format '$ModuleName'. Expected format: 'RootModuleName/NestedModuleName[/DeeperNestedModuleName...]'."
+        }
+
+        # Seed the search with all copies of the root module (Get-Module -All covers reimports).
+        $rootModuleName = $modulePathSegments[0]
+        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+            Write-PesterDebugMessage -Scope Runtime "Nested path notation detected in ModuleName '$ModuleName'. Resolving from root module '$rootModuleName'."
+        }
+
+        $currentModules = @(& $SafeCommands['Get-Module'] -Name $rootModuleName -All -ErrorAction SilentlyContinue)
+        if ($currentModules.Count -eq 0) {
+            throw "No modules named '$rootModuleName' are currently loaded."
+        }
+
+        # Walk each path segment after the root, narrowing $currentModules to the matched nested module at each level.
+        $resolvedPath = $rootModuleName
+        for ($index = 1; $index -lt $modulePathSegments.Count; $index++) {
+            $nestedModuleName = $modulePathSegments[$index]
+            $nextModules = [System.Collections.Generic.List[object]]@()      # matches for this segment
+            $availableNested = [System.Collections.Generic.List[string]]@()  # all sibling names, for error messages
+
+            if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+                Write-PesterDebugMessage -Scope Runtime "Resolving nested module segment '$nestedModuleName' under '$resolvedPath'."
+            }
+
+            # Scan NestedModules of every candidate at the current level.
+            foreach ($parentModule in $currentModules) {
+                foreach ($nestedModule in @($parentModule.NestedModules)) {
+                    # Collect unique sibling names so the error message can list available options.
+                    if (-not [string]::IsNullOrEmpty($nestedModule.Name) -and -not $availableNested.Contains($nestedModule.Name)) {
+                        $availableNested.Add($nestedModule.Name)
+                    }
+
+                    if ($nestedModule.Name -eq $nestedModuleName) {
+                        $nextModules.Add($nestedModule)
+                    }
+                }
+            }
+
+            # No match: segment name is wrong or the nested module is not loaded.
+            if ($nextModules.Count -eq 0) {
+                $availableList = if ($availableNested.Count -gt 0) { $availableNested -join ', ' } else { '(none)' }
+                throw "No nested module named '$nestedModuleName' was found under '$resolvedPath'. Available nested modules: $availableList."
+            }
+
+            # More than one match: ambiguous — multiple loaded copies of the same module exist.
+            if ($nextModules.Count -gt 1) {
+                throw "Multiple nested modules named '$nestedModuleName' were found under '$resolvedPath' across loaded module copies. Make sure to remove any extra copies of the module from your session before testing."
+            }
+
+            $resolvedNested = $nextModules[0]
+            # Only Script/Manifest modules expose a usable session state for InModuleScope.
+            if ($resolvedNested.ModuleType -notin 'Script', 'Manifest') {
+                throw "Nested module '$nestedModuleName' in path '$resolvedPath/$nestedModuleName' is not a Script or Manifest module. Detected module type: '$($resolvedNested.ModuleType)'."
+            }
+
+            # Narrow to the single resolved module and advance the path tracker for the next iteration.
+            $currentModules = @($resolvedNested)
+            $resolvedPath = "$resolvedPath/$nestedModuleName"
+        }
+
+        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+            Write-PesterDebugMessage -Scope Runtime "Found nested module $($currentModules[0].Name) version $($currentModules[0].Version) in path $resolvedPath."
+        }
+
+        return $currentModules[0]
+    }
 
     try {
         if ($PesterPreference.Debug.WriteDebugMessages.Value) {
@@ -10862,15 +16264,13 @@ function It {
     AAA pattern (Arrange-Act-Assert), this typically holds the
     Assert.
 
-    .PARAMETER Pending
-    Use this parameter to explicitly mark the test as work-in-progress/not implemented/pending when you
-    need to distinguish a test that fails because it is not finished yet from a tests
-    that fail as a result of changes being made in the code base. An empty test, that is a
-    test that contains nothing except whitespace or comments is marked as Pending by default.
-
     .PARAMETER Skip
     Use this parameter to explicitly mark the test to be skipped. This is preferable to temporarily
     commenting out a test, because the test remains listed in the output.
+
+    .PARAMETER AllowNullOrEmptyForEach
+    Allows empty or null values for -ForEach when Run.FailOnNullOrEmptyForEach is enabled.
+    This might be excepted in certain scenarios like using external data.
 
     .PARAMETER ForEach
     (Formerly called TestCases.) Optional array of hashtable (or any IDictionary) objects.
@@ -10943,16 +16343,16 @@ function It {
     current hashtable are made available as variables inside It.
 
     .LINK
-    https://pester.dev/docs/v5/commands/It
+    https://pester.dev/docs/commands/It
 
     .LINK
-    https://pester.dev/docs/v5/commands/Describe
+    https://pester.dev/docs/commands/Describe
 
     .LINK
-    https://pester.dev/docs/v5/commands/Context
+    https://pester.dev/docs/commands/Context
 
     .LINK
-    https://pester.dev/docs/v5/commands/Set-ItResult
+    https://pester.dev/docs/commands/Set-ItResult
     #>
     [CmdletBinding(DefaultParameterSetName = 'Normal')]
     param(
@@ -10968,25 +16368,13 @@ function It {
 
         [String[]] $Tag,
 
-        [Parameter(ParameterSetName = 'Pending')]
-        [Switch] $Pending,
-
         [Parameter(ParameterSetName = 'Skip')]
-        [Switch] $Skip
+        [Switch] $Skip,
+        [Switch] $AllowNullOrEmptyForEach
 
         # [Parameter(ParameterSetName = 'Skip')]
         # [String] $SkipBecause,
-
-        # [Switch]$Focus
     )
-
-    $Focus = $false
-    if ($PSBoundParameters.ContainsKey('Pending')) {
-        $PSBoundParameters.Remove('Pending')
-
-        $Skip = $Pending
-        # $SkipBecause = "This test is pending."
-    }
 
     if ($null -eq $Test) {
         if ($Name.Contains("`n")) {
@@ -10997,16 +16385,21 @@ function It {
         }
     }
 
+    Assert-BoundScriptBlockInput -ScriptBlock $Test
+
     if ($PSBoundParameters.ContainsKey('ForEach')) {
-        if ($null -ne $ForEach -and 0 -lt @($ForEach).Count) {
-            New-ParametrizedTest -Name $Name -ScriptBlock $Test -StartLine $MyInvocation.ScriptLineNumber -StartColumn $MyInvocation.OffsetInLine -Data $ForEach -Tag $Tag -Focus:$Focus -Skip:$Skip
+        if ($null -eq $ForEach -or 0 -eq @($ForEach).Count) {
+            if ($PesterPreference.Run.FailOnNullOrEmptyForEach.Value -and -not $AllowNullOrEmptyForEach) {
+                throw [System.ArgumentException]::new('Value can not be null or empty array. If this is expected, use -AllowNullOrEmptyForEach on this It, or set the Run.FailOnNullOrEmptyForEach configuration option to $false to allow it for the whole run.', 'ForEach')
+            }
+            # @() or $null is provided and allowed, do nothing
+            return
         }
-        else {
-            # @() or $null is provided do nothing
-        }
+
+        New-ParametrizedTest -Name $Name -ScriptBlock $Test -StartLine $MyInvocation.ScriptLineNumber -StartColumn $MyInvocation.OffsetInLine -Data $ForEach -Tag $Tag -Skip:$Skip
     }
     else {
-        New-Test -Name $Name -ScriptBlock $Test -StartLine $MyInvocation.ScriptLineNumber -Tag $Tag -Focus:$Focus -Skip:$Skip
+        New-Test -Name $Name -ScriptBlock $Test -StartLine $MyInvocation.ScriptLineNumber -Tag $Tag -Skip:$Skip
     }
 }
 # file src\functions\Mock.ps1
@@ -11058,12 +16451,7 @@ function New-MockBehavior {
 }
 
 function EscapeSingleQuotedStringContent ($Content) {
-    if ($global:PSVersionTable.PSVersion.Major -ge 5) {
-        [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($Content)
-    }
-    else {
-        $Content -replace "['‘’‚‛]", '$&$&'
-    }
+    [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($Content)
 }
 
 function Create-MockHook ($contextInfo, $InvokeMockCallback) {
@@ -11091,11 +16479,11 @@ function Create-MockHook ($contextInfo, $InvokeMockCallback) {
         $dynamicParams = foreach ($m in $metadata.Parameters.Values) { if ($m.IsDynamic) { $m } }
         if ($null -ne $dynamicParams) {
             foreach ($p in $dynamicParams) {
-                $null = $metadata.Parameters.Remove($d.name)
+                $null = $metadata.Parameters.Remove($p.Name)
             }
         }
         $cmdletBinding = [Management.Automation.ProxyCommand]::GetCmdletBindingAttribute($metadata)
-        if ($global:PSVersionTable.PSVersion.Major -ge 3 -and $contextInfo.Command.CommandType -eq 'Cmdlet') {
+        if ($contextInfo.Command.CommandType -eq 'Cmdlet') {
             if ($cmdletBinding -ne '[CmdletBinding()]') {
                 $cmdletBinding = $cmdletBinding.Insert($cmdletBinding.Length - 2, ',')
             }
@@ -11106,8 +16494,19 @@ function Create-MockHook ($contextInfo, $InvokeMockCallback) {
         $paramBlock = [Management.Automation.ProxyCommand]::GetParamBlock($metadata)
         $paramBlock = Repair-EnumParameters -ParamBlock $paramBlock -Metadata $metadata
 
+        # Repair-ConflictingParameters above strips validation from the static parameters, but it skips
+        # dynamic parameters because they are not part of the static param block. To make
+        # -RemoveParameterValidation reach a dynamic parameter (e.g. a dynamic -Name with a ValidateSet)
+        # we forward the names to Get-MockDynamicParameter, which removes the validation attributes from
+        # the dynamic parameters as they are produced for each call. (#1557)
+        $removeValidationArg = ''
+        if ($RemoveParameterValidation) {
+            $escapedValidationNames = foreach ($n in $RemoveParameterValidation) { "'$(EscapeSingleQuotedStringContent $n)'" }
+            $removeValidationArg = " -RemoveParameterValidation @($($escapedValidationNames -join ','))"
+        }
+
         if ($contextInfo.Command.CommandType -eq 'Cmdlet') {
-            $dynamicParamBlock = "dynamicparam { & `$MyInvocation.MyCommand.Mock.Get_MockDynamicParameter -CmdletName '$($contextInfo.Command.Name)' -Parameters `$PSBoundParameters }"
+            $dynamicParamBlock = "dynamicparam { & `$MyInvocation.MyCommand.Mock.Get_MockDynamicParameter -CmdletName '$($contextInfo.Command.Name)' -Parameters `$PSBoundParameters$removeValidationArg }"
         }
         else {
             $dynamicParamStatements = Get-DynamicParamBlock -ScriptBlock $contextInfo.Command.ScriptBlock
@@ -11125,7 +16524,7 @@ function Create-MockHook ($contextInfo, $InvokeMockCallback) {
                 else {
                     ''
                 }
-                $dynamicParamBlock = "dynamicparam { & `$MyInvocation.MyCommand.Mock.Get_MockDynamicParameter -ModuleName '$moduleName' -FunctionName '$commandName' -Parameters `$PSBoundParameters -Cmdlet `$PSCmdlet -DynamicParamScriptBlock `$MyInvocation.MyCommand.Mock.Hook.DynamicParamScriptBlock }"
+                $dynamicParamBlock = "dynamicparam { & `$MyInvocation.MyCommand.Mock.Get_MockDynamicParameter -ModuleName '$moduleName' -FunctionName '$commandName' -Parameters `$PSBoundParameters -Cmdlet `$PSCmdlet -DynamicParamScriptBlock `$MyInvocation.MyCommand.Mock.Hook.DynamicParamScriptBlock$removeValidationArg }"
 
                 $code = @"
                     $cmdletBinding
@@ -11175,6 +16574,7 @@ function Create-MockHook ($contextInfo, $InvokeMockCallback) {
         -CallerSessionState `$MyInvocation.MyCommand.Mock.SessionState ```
         -MockCallState `$_____MockCallState ```
         -FromBlock '#BLOCK#' ```
+        -MockPSCmdlet `$MyInvocation.MyCommand.Mock.PSCmdlet ```
         -Hook `$MyInvocation.MyCommand.Mock.Hook #INPUT#
 "@
     $newContent = $mockPrototype
@@ -11360,7 +16760,7 @@ function Should-InvokeVerifiableInternal {
     }
 
     return [Pester.ShouldResult] @{
-        Succeeded      = $true
+        Succeeded = $true
     }
 }
 
@@ -11458,21 +16858,24 @@ function Should-InvokeInternal {
     foreach ($historyEntry in $callHistory) {
 
         $params = @{
-            ScriptBlock     = $filter
-            BoundParameters = $historyEntry.BoundParams
-            ArgumentList    = $historyEntry.Args
-            Metadata        = $ContextInfo.Hook.Metadata
-            # do not use the callser session state from the hook, the parameter filter
+            ScriptBlock         = $filter
+            BoundParameters     = $historyEntry.BoundParams
+            ArgumentList        = $historyEntry.Args
+            Metadata            = $ContextInfo.Hook.Metadata
+            # do not use the caller session state from the hook, the parameter filter
             # on Should -Invoke can come from a different session state if inModuleScope is used to
             # wrap it. Use the caller session state to which the scriptblock is bound
-            SessionState    = $SessionState
+            SessionState        = $SessionState
+            DynamicParamAliases = $historyEntry.DynamicParamAliases
         }
 
         # if ($null -ne $ContextInfo.Hook.Metadata -and $null -ne $params.ScriptBlock) {
-        #     $params.ScriptBlock = New-BlockWithoutParameterAliasesNew-BlockWithoutParameterAliases -Metadata $ContextInfo.Hook.Metadata -Block $params.ScriptBlock
+        #     $params.ScriptBlock = New-BlockWithoutParameterAliases -Metadata $ContextInfo.Hook.Metadata -Block $params.ScriptBlock
         # }
 
-        if (Test-ParameterFilter @params) {
+        $filterResult = Test-ParameterFilter @params
+        $passed = $filterResult[0]
+        if ($passed) {
             $null = $matchingCalls.Add($historyEntry)
         }
         else {
@@ -11485,7 +16888,7 @@ function Should-InvokeInternal {
         if ($matchingCalls.Count -eq $Times -and ($Exactly -or !$PSBoundParameters.ContainsKey('Times'))) {
             return [Pester.ShouldResult] @{
                 Succeeded      = $false
-                FailureMessage = "Expected ${commandName}${moduleMessage} not to be called exactly $Times times,$(Format-Because $Because) but it was"
+                FailureMessage = "Expected ${commandName}${moduleMessage} not to be called exactly $Times times,$(Format-Because $Because) but it was`n$(Format-MockCallHistoryMessage $callHistory $matchingCalls $nonMatchingCalls)"
                 ExpectResult   = [Pester.ShouldExpectResult]@{
                     Expected = "${commandName}${moduleMessage} not to be called exactly $Times times"
                     Actual   = "${commandName}${moduleMessage} was called $($matchingCalls.count) times"
@@ -11496,7 +16899,7 @@ function Should-InvokeInternal {
         elseif ($matchingCalls.Count -ge $Times -and !$Exactly) {
             return [Pester.ShouldResult] @{
                 Succeeded      = $false
-                FailureMessage = "Expected ${commandName}${moduleMessage} to be called less than $Times times,$(Format-Because $Because) but was called $($matchingCalls.Count) times"
+                FailureMessage = "Expected ${commandName}${moduleMessage} to be called less than $Times times,$(Format-Because $Because) but was called $($matchingCalls.Count) times`n$(Format-MockCallHistoryMessage $callHistory $matchingCalls $nonMatchingCalls)"
                 ExpectResult   = [Pester.ShouldExpectResult]@{
                     Expected = "${commandName}${moduleMessage} to be called less than $Times times"
                     Actual   = "${commandName}${moduleMessage} was called $($matchingCalls.count) times"
@@ -11509,7 +16912,7 @@ function Should-InvokeInternal {
         if ($matchingCalls.Count -ne $Times -and ($Exactly -or ($Times -eq 0))) {
             return [Pester.ShouldResult] @{
                 Succeeded      = $false
-                FailureMessage = "Expected ${commandName}${moduleMessage} to be called $Times times exactly,$(Format-Because $Because) but was called $($matchingCalls.Count) times"
+                FailureMessage = "Expected ${commandName}${moduleMessage} to be called $Times times exactly,$(Format-Because $Because) but was called $($matchingCalls.Count) times`n$(Format-MockCallHistoryMessage $callHistory $matchingCalls $nonMatchingCalls)"
                 ExpectResult   = [Pester.ShouldExpectResult]@{
                     Expected = "${commandName}${moduleMessage} to be called $Times times exactly"
                     Actual   = "${commandName}${moduleMessage} was called $($matchingCalls.count) times"
@@ -11520,7 +16923,7 @@ function Should-InvokeInternal {
         elseif ($matchingCalls.Count -lt $Times) {
             return [Pester.ShouldResult] @{
                 Succeeded      = $false
-                FailureMessage = "Expected ${commandName}${moduleMessage} to be called at least $Times times,$(Format-Because $Because) but was called $($matchingCalls.Count) times"
+                FailureMessage = "Expected ${commandName}${moduleMessage} to be called at least $Times times,$(Format-Because $Because) but was called $($matchingCalls.Count) times`n$(Format-MockCallHistoryMessage $callHistory $matchingCalls $nonMatchingCalls)"
                 ExpectResult   = [Pester.ShouldExpectResult]@{
                     Expected = "${commandName}${moduleMessage} to be called at least $Times times"
                     Actual   = "${commandName}${moduleMessage} was called $($matchingCalls.count) times"
@@ -11531,7 +16934,7 @@ function Should-InvokeInternal {
         elseif ($filterIsExclusive -and $nonMatchingCalls.Count -gt 0) {
             return [Pester.ShouldResult] @{
                 Succeeded      = $false
-                FailureMessage = "Expected ${commandName}${moduleMessage} to only be called with with parameters matching the specified filter,$(Format-Because $Because) but $($nonMatchingCalls.Count) non-matching calls were made"
+                FailureMessage = "Expected ${commandName}${moduleMessage} to only be called with with parameters matching the specified filter,$(Format-Because $Because) but $($nonMatchingCalls.Count) non-matching calls were made`n$(Format-MockCallHistoryMessage $callHistory $matchingCalls $nonMatchingCalls)"
                 ExpectResult   = [Pester.ShouldExpectResult]@{
                     Expected = "${commandName}${moduleMessage} to only be called with with parameters matching the specified filter"
                     Actual   = "${commandName}${moduleMessage} was called $($nonMatchingCalls.Count) times with non-matching parameters"
@@ -11542,7 +16945,7 @@ function Should-InvokeInternal {
     }
 
     return [Pester.ShouldResult] @{
-        Succeeded      = $true
+        Succeeded = $true
     }
 }
 
@@ -11674,6 +17077,11 @@ function Resolve-Command {
                 Write-PesterDebugMessage -Scope Mock "Found module $($module.Name) version $($module.Version)."
             }
 
+            # Normalize $ModuleName to the plain module name in case slash notation ('Root/Nested')
+            # was used. All downstream uses (TargetModule, mock-table keys, IsFromTargetModule) must
+            # use the plain name, not the slash string.
+            $ModuleName = $module.Name
+
             # this is the target session state in which we will insert the mock
             $SessionState = $module.SessionState
         }
@@ -11796,6 +17204,8 @@ function Invoke-MockInternal {
 
         [object] $InputObject,
 
+        [object] $MockPSCmdlet,
+
         [Parameter(Mandatory)]
         $Behaviors,
 
@@ -11810,8 +17220,13 @@ function Invoke-MockInternal {
     switch ($FromBlock) {
         Begin {
             $MockCallState['InputObjects'] = [System.Collections.Generic.List[object]]@()
-            $MockCallState['ShouldExecuteOriginalCommand'] = $false
+            $MockCallState['MatchedNoBehavior'] = $false
             $MockCallState['BeginBoundParameters'] = $BoundParameters.Clone()
+            # Capture the aliases of dynamic parameters now, while the mocked command's runtime
+            # metadata is still reachable via its $PSCmdlet. Dynamic parameters are not part of the
+            # static command metadata, so without this the parameter filter cannot match on their
+            # aliases (#1275).
+            $MockCallState['DynamicParamAliases'] = Get-DynamicParameterAlias -Cmdlet $MockPSCmdlet
             # argument list must not be null, if the bootstrap functions has no parameters
             # we get null and need to replace it with empty array to make the splatting work
             # later on.
@@ -11828,14 +17243,15 @@ function Invoke-MockInternal {
             $SessionState = if ($CallerSessionState) { $CallerSessionState } else { $Hook.SessionState }
 
             # the @() are needed for powerShell3 otherwise it throws CheckAutomationNullInCommandArgumentArray (unless there is any breakpoint defined anywhere, then it works just fine :DDD)
-            $behavior = FindMatchingBehavior -Behaviors @($Behaviors) -BoundParameters $BoundParameters -ArgumentList @($ArgumentList) -SessionState $SessionState -Hook $Hook
+            $behavior, $failedFilterInvocations = FindMatchingBehavior -Behaviors @($Behaviors) -BoundParameters $BoundParameters -ArgumentList @($ArgumentList) -SessionState $SessionState -Hook $Hook -DynamicParamAliases $MockCallState['DynamicParamAliases']
 
             if ($null -ne $behavior) {
                 $call = @{
-                    BoundParams = $BoundParameters
-                    Args        = $ArgumentList
-                    Hook        = $Hook
-                    Behavior    = $behavior
+                    BoundParams         = $BoundParameters
+                    Args                = $ArgumentList
+                    Hook                = $Hook
+                    Behavior            = $behavior
+                    DynamicParamAliases = $MockCallState['DynamicParamAliases']
                 }
                 $key = "$($behavior.ModuleName)||$($behavior.CommandName)"
                 if (-not $CallHistory.ContainsKey($key)) {
@@ -11853,7 +17269,8 @@ function Invoke-MockInternal {
                 return
             }
             else {
-                $MockCallState['ShouldExecuteOriginalCommand'] = $true
+                $MockCallState['MatchedNoBehavior'] = $true
+                $MockCallState['FailedFilterInvocations'] = $failedFilterInvocations
                 if ($null -ne $InputObject) {
                     $null = $MockCallState['InputObjects'].AddRange(@($InputObject))
                 }
@@ -11863,69 +17280,21 @@ function Invoke-MockInternal {
         }
 
         End {
-            if ($MockCallState['ShouldExecuteOriginalCommand']) {
+            if ($MockCallState['MatchedNoBehavior']) {
                 if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-                    Write-PesterDebugMessage -Scope Mock "Invoking the original command."
+                    Write-PesterDebugMessage -Scope Mock "The mock did not match any filtered behavior, and there was no default behavior. Failing."
                 }
 
-                $MockCallState['BeginBoundParameters'] = Reset-ConflictingParameters -BoundParameters $MockCallState['BeginBoundParameters']
-
-                if ($MockCallState['InputObjects'].Count -gt 0) {
-                    $scriptBlock = {
-                        param ($Command, $ArgumentList, $BoundParameters, $InputObjects)
-                        $InputObjects | & $Command @ArgumentList @BoundParameters
-                    }
-                }
-                else {
-                    $scriptBlock = {
-                        param ($Command, $ArgumentList, $BoundParameters, $InputObjects)
-                        & $Command @ArgumentList @BoundParameters
-                    }
+                $failedFilterInvocations = $MockCallState['FailedFilterInvocations']
+                if ($null -eq $failedFilterInvocations -or $failedFilterInvocations.Count -eq 0) {
+                    # No behaviors in this scope, but the bootstrap function is installed —
+                    # an outer Mock leaked into a nested Invoke-Pester run.
+                    throw "No mock for command '$($Hook.CommandName)' is defined in this scope, but the bootstrap is active (typically a Mock from an outer scope leaked into a nested Invoke-Pester run). Add a Mock for '$($Hook.CommandName)' in this scope, or restructure the test so the outer Mock does not leak."
                 }
 
-                $SessionState = if ($CallerSessionState) {
-                    $CallerSessionState
-                }
-                else {
-                    $Hook.SessionState
-                }
+                $filterList = ($failedFilterInvocations | & $SafeCommands['ForEach-Object'] { "    $_" }) -join [System.Environment]::NewLine
 
-                Set-ScriptBlockScope -ScriptBlock $scriptBlock -SessionState $SessionState
-
-                # In order to mock Set-Variable correctly we need to write the variable
-                # two scopes above
-                if ("Set-Variable" -eq $Hook.OriginalCommand.Name) {
-                    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-                        Write-PesterDebugMessage -Scope Mock "Original command is Set-Variable, patching the call."
-                    }
-                    if ($MockCallState['BeginBoundParameters'].Keys -notcontains "Scope") {
-                        $MockCallState['BeginBoundParameters'].Add( "Scope", 2)
-                    }
-                    # local is the same as scope 0, in that case we also write to scope 2
-                    elseif ("Local", "0" -contains $MockCallState['BeginBoundParameters'].Scope) {
-                        $MockCallState['BeginBoundParameters'].Scope = 2
-                    }
-                    elseif ($MockCallState['BeginBoundParameters'].Scope -match "\d+") {
-                        $MockCallState['BeginBoundParameters'].Scope = 2 + $matches[0]
-                    }
-                    else {
-                        # not sure what the user did, but we won't change it
-                    }
-                }
-
-                if ($null -eq ($MockCallState['BeginArgumentList'])) {
-                    $arguments = @()
-                }
-                else {
-                    $arguments = $MockCallState['BeginArgumentList']
-                }
-                if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-                    Write-ScriptBlockInvocationHint -Hint "Mock - Original Command" -ScriptBlock $scriptBlock
-                }
-                & $scriptBlock -Command $Hook.OriginalCommand `
-                    -ArgumentList $arguments `
-                    -BoundParameters $MockCallState['BeginBoundParameters'] `
-                    -InputObjects $MockCallState['InputObjects']
+                throw "No mock for command '$($Hook.CommandName)' matched the call: none of the parameter filters matched, and there is no default mock to fall back to. Add a default mock (e.g. ``Mock $($Hook.CommandName) { ... }``) or adjust an existing -ParameterFilter.$([System.Environment]::NewLine)$([System.Environment]::NewLine)The following parameter filters were evaluated and did not match:$([System.Environment]::NewLine)$filterList"
             }
         }
     }
@@ -11985,13 +17354,15 @@ function FindMatchingBehavior {
         [object[]] $ArgumentList = @(),
         [Parameter(Mandatory)]
         [Management.Automation.SessionState] $SessionState,
-        $Hook
+        $Hook,
+        [hashtable] $DynamicParamAliases = @{ }
     )
 
     if ($PesterPreference.Debug.WriteDebugMessages.Value) {
         Write-PesterDebugMessage -Scope Mock "Finding behavior to use, one that passes filter or a default:"
     }
 
+    $failedFilterInvocations = [System.Collections.Generic.List[String]]@()
     $foundDefaultBehavior = $false
     $defaultBehavior = $null
     foreach ($b in $Behaviors) {
@@ -12004,18 +17375,25 @@ function FindMatchingBehavior {
 
         if (-not $b.IsDefault) {
             $params = @{
-                ScriptBlock     = $b.Filter
-                BoundParameters = $BoundParameters
-                ArgumentList    = $ArgumentList
-                Metadata        = $Hook.Metadata
-                SessionState    = $Hook.CallerSessionState
+                ScriptBlock         = $b.Filter
+                BoundParameters     = $BoundParameters
+                ArgumentList        = $ArgumentList
+                Metadata            = $Hook.Metadata
+                SessionState        = $Hook.CallerSessionState
+                DynamicParamAliases = $DynamicParamAliases
             }
 
-            if (Test-ParameterFilter @params) {
+            $filterResult = Test-ParameterFilter @params
+            $passed = $filterResult[0]
+            $filterInvocations = $filterResult[1]
+            if ($passed) {
                 if ($PesterPreference.Debug.WriteDebugMessages.Value) {
                     Write-PesterDebugMessage -Scope Mock "{ $($b.ScriptBlock) } passed parameter filter and will be used for the mock call."
                 }
-                return $b
+                return $b, $null
+            }
+            else {
+                $failedFilterInvocations.AddRange($filterInvocations)
             }
         }
     }
@@ -12024,13 +17402,13 @@ function FindMatchingBehavior {
         if ($PesterPreference.Debug.WriteDebugMessages.Value) {
             Write-PesterDebugMessage -Scope Mock "{ $($defaultBehavior.ScriptBlock) } is a default behavior and will be used for the mock call."
         }
-        return $defaultBehavior
+        return $defaultBehavior, $null
     }
 
     if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-        Write-PesterDebugMessage -Scope Mock "No parametrized or default behaviors were found filter."
+        Write-PesterDebugMessage -Scope Mock "No parametrized or default behaviors were found."
     }
-    return $null
+    return $null, $failedFilterInvocations
 }
 
 function LastThat {
@@ -12191,7 +17569,10 @@ function Test-ParameterFilter {
 
         [Parameter(Mandatory)]
         [Management.Automation.SessionState]
-        $SessionState
+        $SessionState,
+
+        [System.Collections.IDictionary]
+        $DynamicParamAliases
     )
 
     if ($null -eq $BoundParameters) {
@@ -12204,7 +17585,7 @@ function Test-ParameterFilter {
         $arguments = @()
     }
 
-    $context = Get-ContextToDefine -BoundParameters $BoundParameters -Metadata $Metadata
+    $context = Get-ContextToDefine -BoundParameters $BoundParameters -Metadata $Metadata -DynamicParamAliases $DynamicParamAliases
 
     $wrapper = {
         param ($private:______mock_parameters)
@@ -12253,8 +17634,23 @@ function Test-ParameterFilter {
         else { $null }
     }
 
-    $result = & $wrapper $parameters
-    if ($result) {
+    $parameterFilterInvocations = [Collections.Generic.List[string]]@()
+
+    $previousIsInMockParameterFilter = & $SafeCommands['Get-Variable'] -Name '______isInMockParameterFilter' -Scope Script -ValueOnly -ErrorAction Ignore
+    $script:______isInMockParameterFilter = $true
+    try {
+        $result = & $wrapper $parameters
+    }
+    finally {
+        if ($null -eq $previousIsInMockParameterFilter) {
+            & $SafeCommands['Remove-Variable'] -Name '______isInMockParameterFilter' -Scope Script -ErrorAction Ignore
+        }
+        else {
+            $script:______isInMockParameterFilter = $previousIsInMockParameterFilter
+        }
+    }
+    $passed = [bool]$result
+    if ($passed) {
         if ($PesterPreference.Debug.WriteDebugMessages.Value) {
             Write-PesterDebugMessage -Scope Mock -Message "Mock filter returned value '$result', which is truthy. Filter passed."
         }
@@ -12263,14 +17659,56 @@ function Test-ParameterFilter {
         if ($PesterPreference.Debug.WriteDebugMessages.Value) {
             Write-PesterDebugMessage -Scope Mock -Message "Mock filter returned value '$result', which is falsy. Filter did not pass."
         }
+
+        # Filter did not pass, serialize the values and store them for future reference in case we don't find any behavior.
+        $filterText = $scriptBlock.ToString().Trim()
+        $hasContext = 0 -lt $Context.Count
+        $contextText = if ($hasContext) {
+            'bound parameters: ' + (($Context.GetEnumerator() | & $SafeCommands['ForEach-Object'] { "$($_.Key) = $($_.Value)" }) -join ', ')
+        }
+        else {
+            'no bound parameters'
+        }
+        $filterCall = "{ $filterText }  $contextText"
+        $parameterFilterInvocations.Add($filterCall)
     }
-    $result
+    # Return as a single 2-element array so multi-assignment works even when $result is empty/$null/array.
+    , @($passed, $parameterFilterInvocations)
+}
+
+function Get-DynamicParameterAlias {
+    param (
+        [object] $Cmdlet
+    )
+
+    # Build a map of dynamic-parameter name -> aliases from the mocked command's runtime metadata.
+    # Only dynamic parameters are included; aliases of static parameters are already resolved from
+    # the static command metadata in Get-ContextToDefine (#1275).
+    $aliases = @{ }
+    if ($null -eq $Cmdlet) {
+        return $aliases
+    }
+
+    $parameters = $Cmdlet.MyInvocation.MyCommand.Parameters
+    if ($null -eq $parameters) {
+        return $aliases
+    }
+
+    foreach ($parameter in $parameters.GetEnumerator()) {
+        $parameterMetadata = $parameter.Value
+        if ($parameterMetadata.IsDynamic -and $null -ne $parameterMetadata.Aliases -and 0 -lt @($parameterMetadata.Aliases).Count) {
+            $aliases[$parameter.Key] = @($parameterMetadata.Aliases)
+        }
+    }
+
+    $aliases
 }
 
 function Get-ContextToDefine {
     param (
         [System.Collections.IDictionary] $BoundParameters,
-        [System.Management.Automation.CommandMetadata] $Metadata
+        [System.Management.Automation.CommandMetadata] $Metadata,
+        [System.Collections.IDictionary] $DynamicParamAliases
     )
 
     $conflictingParameterNames = Get-ConflictingParameterNames
@@ -12351,21 +17789,41 @@ function Get-ContextToDefine {
         }
         else {
             # the parameter is not defined in the parameter set,
-            # it is probably dynamic, let's see if I can get away with just adding
-            # it to the list of stuff to define
+            # it is probably dynamic, try remove "_" since the conflicting names
+            # are already handled to properly print the debug message
 
-            $name = if ($param.Key -in $script:ConflictingParameterNames) {
-                if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-                    Write-PesterDebugMessage -Scope Mock -Message "! Variable `$$($param.Key) is a built-in variable, rewriting it to `$_$($param.Key). Use the version with _ in your -ParameterFilter."
+            if ($param.Key.StartsWith('_')) {
+                $originalName = $param.Key.TrimStart('_')
+                if ($originalName -in $script:ConflictingParameterNames) {
+                    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+                        Write-PesterDebugMessage -Scope Mock -Message "! Variable `$$($originalName) is a built-in variable, rewriting it to `$_$($originalName). Use the version with _ in your -ParameterFilter."
+                    }
                 }
-                "_$($param.Key)"
-            }
-            else {
-                $param.Key
             }
 
-            if (-not $r.ContainsKey($name)) {
-                $r.Add($name, $param.Value)
+            if (-not $r.ContainsKey($param.Key)) {
+                $r.Add($param.Key, $param.Value)
+            }
+
+            # dynamic parameters are not part of the static command metadata, so their aliases
+            # were captured separately at call time. Define them as well, so the parameter filter
+            # can match on a dynamic parameter's alias and not just its name (#1275).
+            if ($null -ne $DynamicParamAliases -and $DynamicParamAliases.Contains($param.Key)) {
+                foreach ($a in $DynamicParamAliases[$param.Key]) {
+                    $name = if ($a -in $conflictingParameterNames) {
+                        if ($PesterPreference.Debug.WriteDebugMessages.Value) {
+                            Write-PesterDebugMessage -Scope Mock -Message "! Variable `$$($a) is a built-in variable, rewriting it to `$_$($a). Use the version with _ in your -ParameterFilter."
+                        }
+                        "_$($a)"
+                    }
+                    else {
+                        $a
+                    }
+
+                    if (-not $r.ContainsKey($name)) {
+                        $r.Add($name, $param.Value)
+                    }
+                }
             }
         }
     }
@@ -12464,18 +17922,97 @@ function Get-MockDynamicParameter {
         [object] $Cmdlet,
 
         [Parameter(ParameterSetName = "Function")]
-        $DynamicParamScriptBlock
+        $DynamicParamScriptBlock,
+
+        [string[]] $RemoveParameterValidation
     )
 
     switch ($PSCmdlet.ParameterSetName) {
         'Cmdlet' {
-            Get-DynamicParametersForCmdlet -CmdletName $CmdletName -Parameters $Parameters
+            $dynamicParams = Get-DynamicParametersForCmdlet -CmdletName $CmdletName -Parameters $Parameters
         }
 
         'Function' {
-            Get-DynamicParametersForMockedFunction -DynamicParamScriptBlock $DynamicParamScriptBlock -Parameters $Parameters -Cmdlet $Cmdlet
+            $dynamicParams = Get-DynamicParametersForMockedFunction -DynamicParamScriptBlock $DynamicParamScriptBlock -Parameters $Parameters -Cmdlet $Cmdlet
         }
     }
+
+    if ($null -eq $dynamicParams) {
+        return
+    }
+
+    if ($RemoveParameterValidation) {
+        Remove-DynamicParameterValidation -DynamicParams $dynamicParams -ParameterName $RemoveParameterValidation
+    }
+
+    Repair-ConflictingDynamicParameters -DynamicParams $dynamicParams
+}
+
+function Remove-DynamicParameterValidation {
+    [OutputType([void])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.RuntimeDefinedParameterDictionary]
+        $DynamicParams,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]
+        $ParameterName
+    )
+
+    # Mirror the static-parameter handling in Repair-ConflictingParameters: a validation attribute is any
+    # ValidateArgumentsAttribute (ValidateSet, ValidateRange, ValidatePattern, ValidateScript, ...), so
+    # removing those from the dynamic parameter disables the validation while keeping the parameter itself.
+    foreach ($name in $ParameterName) {
+        if (-not $DynamicParams.ContainsKey($name)) {
+            continue
+        }
+
+        $dynamicParam = $DynamicParams[$name]
+        $attrIndexesToRemove = [System.Collections.Generic.List[int]]@()
+        for ($i = 0; $i -lt $dynamicParam.Attributes.Count; $i++) {
+            if ($dynamicParam.Attributes[$i] -is [System.Management.Automation.ValidateArgumentsAttribute]) {
+                $null = $attrIndexesToRemove.Add($i)
+            }
+        }
+
+        # remove attributes in reverse order to avoid index shifting
+        $attrIndexesToRemove.Reverse()
+        foreach ($index in $attrIndexesToRemove) {
+            $null = $dynamicParam.Attributes.RemoveAt($index)
+        }
+    }
+}
+
+function Repair-ConflictingDynamicParameters {
+    [OutputType([System.Management.Automation.RuntimeDefinedParameterDictionary])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.RuntimeDefinedParameterDictionary]
+        $DynamicParams
+    )
+
+    $repairedDynamicParams = [System.Management.Automation.RuntimeDefinedParameterDictionary]::new()
+    $conflictingParams = Get-ConflictingParameterNames
+
+    foreach ($paramName in $DynamicParams.Keys) {
+        $dynamicParam = $DynamicParams[$paramName]
+
+        if ($conflictingParams -contains $paramName) {
+            $newName = "_$paramName"
+            $dynamicParam.Name = $newName
+
+            $aliasAttribute = [System.Management.Automation.AliasAttribute]::new($paramName)
+            $dynamicParam.Attributes.Add($aliasAttribute)
+
+            $repairedDynamicParams[$newName] = $dynamicParam
+        }
+        else {
+            $repairedDynamicParams[$paramName] = $dynamicParam
+        }
+    }
+
+    return $repairedDynamicParams
 }
 
 function Get-DynamicParametersForCmdlet {
@@ -12485,8 +18022,7 @@ function Get-DynamicParametersForCmdlet {
         [string] $CmdletName,
 
         [ValidateScript( {
-                if ($PSVersionTable.PSVersion.Major -ge 3 -and
-                    $null -ne $_ -and
+                if ($null -ne $_ -and
                     $_.GetType().FullName -ne 'System.Management.Automation.PSBoundParametersDictionary') {
                     throw 'The -Parameters argument must be a PSBoundParametersDictionary object ($PSBoundParameters).'
                 }
@@ -12511,77 +18047,37 @@ function Get-DynamicParametersForCmdlet {
         return
     }
 
-    if ('5.0.10586.122' -lt $PSVersionTable.PSVersion) {
-        # Older version of PS required Reflection to do this.  It has run into problems on occasion with certain cmdlets,
-        # such as ActiveDirectory and AzureRM, so we'll take advantage of the newer PSv5 engine features if at all possible.
-
-        if ($null -eq $Parameters) {
-            $paramsArg = @()
-        }
-        else {
-            $paramsArg = @($Parameters)
-        }
-
-        $command = $ExecutionContext.InvokeCommand.GetCommand($CmdletName, [System.Management.Automation.CommandTypes]::Cmdlet, $paramsArg)
-        $paramDictionary = [System.Management.Automation.RuntimeDefinedParameterDictionary]::new()
-
-        foreach ($param in $command.Parameters.Values) {
-            if (-not $param.IsDynamic) {
-                continue
-            }
-            if ($Parameters.ContainsKey($param.Name)) {
-                continue
-            }
-
-            $dynParam = [System.Management.Automation.RuntimeDefinedParameter]::new($param.Name, $param.ParameterType, $param.Attributes)
-            $paramDictionary.Add($param.Name, $dynParam)
-        }
-
-        return $paramDictionary
+    if ($null -eq $Parameters) {
+        $paramsArg = @()
     }
     else {
-        if ($null -eq $Parameters) {
-            $Parameters = @{ }
-        }
-
-        $cmdlet = & $SafeCommands['New-Object'] $command.ImplementingType.FullName
-
-        $flags = [System.Reflection.BindingFlags]'Instance, Nonpublic'
-        $context = $ExecutionContext.GetType().GetField('_context', $flags).GetValue($ExecutionContext)
-        [System.Management.Automation.Cmdlet].GetProperty('Context', $flags).SetValue($cmdlet, $context, $null)
-
-        foreach ($keyValuePair in $Parameters.GetEnumerator()) {
-            $property = $cmdlet.GetType().GetProperty($keyValuePair.Key)
-            if ($null -eq $property -or -not $property.CanWrite) {
-                continue
-            }
-
-            $isParameter = [bool]($property.GetCustomAttributes([System.Management.Automation.ParameterAttribute], $true))
-            if (-not $isParameter) {
-                continue
-            }
-
-            $property.SetValue($cmdlet, $keyValuePair.Value, $null)
-        }
-
-        try {
-            # This unary comma is important in some cases.  On Windows 7 systems, the ActiveDirectory module cmdlets
-            # return objects from this method which implement IEnumerable for some reason, and even cause PowerShell
-            # to throw an exception when it tries to cast the object to that interface.
-
-            # We avoid that problem by wrapping the result of GetDynamicParameters() in a one-element array with the
-            # unary comma.  PowerShell enumerates that array instead of trying to enumerate the goofy object, and
-            # everyone's happy.
-
-            # Love the comma.  Don't delete it.  We don't have a test for this yet, unless we can get the AD module
-            # on a Server 2008 R2 build server, or until we write some C# code to reproduce its goofy behavior.
-
-            , $cmdlet.GetDynamicParameters()
-        }
-        catch [System.NotImplementedException] {
-            # Some cmdlets implement IDynamicParameters but then throw a NotImplementedException.  I have no idea why.  Ignore them.
-        }
+        $paramsArg = @($Parameters)
     }
+
+    try {
+        $command = $ExecutionContext.InvokeCommand.GetCommand($CmdletName, [System.Management.Automation.CommandTypes]::Cmdlet, $paramsArg)
+    }
+    catch {
+        # Resolving a cmdlet's dynamic parameters can fail when they are built from external state that isn't
+        # available while the command is mocked - e.g. Set-PSRepository's -Location comes from the package
+        # provider and validates while resolving. Fall back to no dynamic parameters instead of failing. (#619)
+        return
+    }
+    $paramDictionary = [System.Management.Automation.RuntimeDefinedParameterDictionary]::new()
+
+    foreach ($param in $command.Parameters.Values) {
+        if (-not $param.IsDynamic) {
+            continue
+        }
+        if ($Parameters.ContainsKey($param.Name)) {
+            continue
+        }
+
+        $dynParam = [System.Management.Automation.RuntimeDefinedParameter]::new($param.Name, $param.ParameterType, $param.Attributes)
+        $paramDictionary.Add($param.Name, $dynParam)
+    }
+
+    return $paramDictionary
 }
 
 function Get-DynamicParametersForMockedFunction {
@@ -12599,7 +18095,15 @@ function Get-DynamicParametersForMockedFunction {
 
     if ($DynamicParamScriptBlock) {
         $splat = @{ 'P S Cmdlet' = $Cmdlet }
-        return & $DynamicParamScriptBlock @Parameters @splat
+        try {
+            return & $DynamicParamScriptBlock @Parameters @splat
+        }
+        catch {
+            # The mocked command's own dynamicparam block failed to produce its dynamic parameters - e.g. it
+            # validates against state that isn't available while it is being mocked. We only need the metadata
+            # to forward the call, so fall back to no dynamic parameters instead of failing the whole mock. (#619)
+            return
+        }
     }
 }
 
@@ -12804,6 +18308,7 @@ function Get-ConflictingParameterNames {
     $script:ConflictingParameterNames
 }
 
+# TODO: Remove?
 function Get-ScriptBlockAST {
     param (
         [scriptblock]
@@ -12823,6 +18328,7 @@ function Get-ScriptBlockAST {
     return $ast
 }
 
+# TODO: Remove?
 function New-BlockWithoutParameterAliases {
     [OutputType([scriptblock])]
     param(
@@ -12836,30 +18342,28 @@ function New-BlockWithoutParameterAliases {
         $Block
     )
     try {
-        if ($PSVersionTable.PSVersion.Major -ge 3) {
-            $params = $Metadata.Parameters.Values
-            $ast = Get-ScriptBlockAST $Block
-            $blockText = $ast.Extent.Text
-            $variables = [array]($Ast.FindAll( { param($ast) $ast -is [System.Management.Automation.Language.VariableExpressionAst] }, $true))
-            [array]::Reverse($variables)
+        $params = $Metadata.Parameters.Values
+        $ast = Get-ScriptBlockAST $Block
+        $blockText = $ast.Extent.Text
+        $variables = [array]($Ast.FindAll( { param($ast) $ast -is [System.Management.Automation.Language.VariableExpressionAst] }, $true))
+        [array]::Reverse($variables)
 
-            foreach ($var in $variables) {
-                $varName = $var.VariablePath.UserPath
-                $length = $varName.Length
+        foreach ($var in $variables) {
+            $varName = $var.VariablePath.UserPath
+            $length = $varName.Length
 
-                foreach ($param in $params) {
-                    if ($param.Aliases -contains $varName) {
-                        $startIndex = $var.Extent.StartOffset - $ast.Extent.StartOffset + 1 # move one position after the dollar sign
+            foreach ($param in $params) {
+                if ($param.Aliases -contains $varName) {
+                    $startIndex = $var.Extent.StartOffset - $ast.Extent.StartOffset + 1 # move one position after the dollar sign
 
-                        $blockText = $blockText.Remove($startIndex, $length).Insert($startIndex, $param.Name)
+                    $blockText = $blockText.Remove($startIndex, $length).Insert($startIndex, $param.Name)
 
-                        break # It is safe to stop checking for further params here, since aliases cannot be shared by parameters
-                    }
+                    break # It is safe to stop checking for further params here, since aliases cannot be shared by parameters
                 }
             }
-
-            $Block = [scriptblock]::Create($blockText)
         }
+
+        $Block = [scriptblock]::Create($blockText)
 
         $Block
     }
@@ -12895,7 +18399,7 @@ function Repair-EnumParameters {
         return $ParamBlock
     }
 
-    $sb = & $SafeCommands['New-Object'] System.Text.StringBuilder($ParamBlock)
+    $sb = [System.Text.StringBuilder]::new($ParamBlock)
 
     foreach ($attr in $brokenValidateRange) {
         $paramName = $attr.Parent.Name.VariablePath.UserPath
@@ -12918,6 +18422,44 @@ function Repair-EnumParameters {
     }
 
     $sb.ToString()
+}
+
+function Format-MockCallHistoryMessage ($callHistory, $matchingCalls, $nonMatchingCalls) {
+    if ($null -eq $callHistory -or $callHistory.Count -eq 0) {
+        return "Performed invocations:`n  <none>"
+    }
+
+    $result = "Performed invocations:"
+    foreach ($historyEntry in $callHistory) {
+        $params = $historyEntry.BoundParams
+        if ($null -ne $params -and $params.Count -gt 0) {
+            $parts = foreach ($p in $params.GetEnumerator()) { "-$($p.Key) $(Format-Nicely2 $p.Value)" }
+            $paramText = $parts -join " "
+        }
+        else {
+            $paramText = ""
+        }
+
+        $marker = if ($historyEntry -in $matchingCalls) { "[*]" } else { "[ ]" }
+        $cmd = $historyEntry.Behavior.CommandName
+
+        $location = ""
+        $sb = $historyEntry.Behavior.ScriptBlock
+        if ($null -ne $sb -and $sb.File) {
+            $file = $sb.File
+            $line = $sb.StartPosition.StartLine
+            $location = " from ${file}:${line}"
+        }
+
+        if ($paramText) {
+            $result += "`n  $marker $cmd $paramText$location"
+        }
+        else {
+            $result += "`n  $marker $cmd$location"
+        }
+    }
+
+    $result
 }
 # file src\functions\New-Fixture.ps1
 function New-Fixture {
@@ -12977,20 +18519,21 @@ function New-Fixture {
     Creates a new folder named Cleaner in the current directory and creates the scripts in it.
 
     .LINK
-    https://pester.dev/docs/v5/commands/New-Fixture
+    https://pester.dev/docs/commands/New-Fixture
 
     .LINK
-    https://pester.dev/docs/v5/commands/Describe
+    https://pester.dev/docs/commands/Describe
 
     .LINK
-    https://pester.dev/docs/v5/commands/Context
+    https://pester.dev/docs/commands/Context
 
     .LINK
-    https://pester.dev/docs/v5/commands/It
+    https://pester.dev/docs/commands/It
 
     .LINK
-    https://pester.dev/docs/v5/commands/Should
+    https://pester.dev/docs/commands/Should
     #>
+    [OutputType([System.IO.FileInfo])]
     param (
         [Parameter(Mandatory = $true)]
         [String]$Name,
@@ -13000,7 +18543,7 @@ function New-Fixture {
     $Name = $Name -replace '.ps(m?)1', ''
 
     if ($Name -notmatch '^\S+$') {
-        throw "Name is not valid. Whitespace are not allowed in a function name."
+        throw 'Name is not valid. Whitespace are not allowed in a function name.'
     }
 
     #keep this formatted as is. the format is output to the file as is, including indentation
@@ -13016,7 +18559,7 @@ Describe "#name#" {
     It "Returns expected output" {
         #name# | Should -Be "YOUR_EXPECTED_VALUE"
     }
-}' -replace "#name#", $Name
+}' -replace '#name#', $Name
 
     $Path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
 
@@ -13026,6 +18569,7 @@ Describe "#name#" {
 
 function Create-File {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('Pester.BuildAnalyzerRules\Measure-SafeCommands', 'Write-Warning', Justification = 'Mocked in unit test for New-Fixture.')]
+    [OutputType([System.IO.FileInfo])]
     param($Path, $Name, $Content)
     if (-not (& $SafeCommands['Test-Path'] -Path $Path)) {
         & $SafeCommands['New-Item'] -ItemType Directory -Path $Path | & $SafeCommands['Out-Null']
@@ -13080,6 +18624,10 @@ function New-MockObject {
     $obj = New-MockObject -Type 'System.Diagnostics.Process'
     $obj.GetType().FullName
         System.Diagnostics.Process
+
+    $obj = New-MockObject -Type ([System.Diagnostics.Process])
+    $obj.GetType().FullName
+        System.Diagnostics.Process
     ```
 
     Creates a mock of a process-object with default property-values.
@@ -13110,11 +18658,21 @@ function New-MockObject {
     Create a mock of a process-object and mocks the object's `Kill()`-method. The mocked method will keep a history
     of any call and the associated arguments in a property named `_Kill`
 
-    .LINK
-    https://pester.dev/docs/v5/commands/New-MockObject
+    .EXAMPLE
+    ```powershell
+    $someObj = Get-ObjectFromModule
+    $mock = New-MockObject -Type $someObj.GetType()
+    $mock.GetType().FullName
+        <c2510c5c>.MyInternalClass
+    ```
+
+    Create a mock by providing a TypeInfo, e.g. to mock output using an internal module class.
 
     .LINK
-    https://pester.dev/docs/v5/usage/mocking
+    https://pester.dev/docs/commands/New-MockObject
+
+    .LINK
+    https://pester.dev/docs/usage/mocking
     #>
     [CmdletBinding(DefaultParameterSetName = "Type")]
     param (
@@ -13201,11 +18759,7 @@ function New-MockObject {
 $script:ReportStrings = DATA {
     @{
         VersionMessage    = "Pester v{0}"
-        FilterMessage     = ' matching test name {0}'
-        TagMessage        = ' with Tags {0}'
-        MessageOfs        = "', '"
 
-        CoverageTitle     = 'Code Coverage report:'
         CoverageMessage   = 'Covered {2:0.##}% / {5:0.##}%. {3:N0} analyzed {0} in {4:N0} {1}.'
         MissedSingular    = 'Missed command:'
         MissedPlural      = 'Missed commands:'
@@ -13215,19 +18769,13 @@ $script:ReportStrings = DATA {
         FilePlural        = 'Files'
 
         Describe          = 'Describing {0}'
-        Script            = 'Executing script {0}'
         Context           = 'Context {0}'
         Margin            = ' '
         Timing            = 'Tests completed in {0}'
 
-        # If this is set to an empty string, the count won't be printed
-        ContextsPassed    = ''
-        ContextsFailed    = ''
-
         TestsPassed       = 'Tests Passed: {0}, '
         TestsFailed       = 'Failed: {0}, '
         TestsSkipped      = 'Skipped: {0}, '
-        TestsPending      = 'Pending: {0}, '
         TestsInconclusive = 'Inconclusive: {0}, '
         TestsNotRun       = 'NotRun: {0}'
     }
@@ -13235,10 +18783,11 @@ $script:ReportStrings = DATA {
 
 $script:ReportTheme = DATA {
     @{
+        Container        = 'Magenta'
         Describe         = 'Green'
-        DescribeDetail   = 'DarkYellow'
         Context          = 'Cyan'
-        ContextDetail    = 'DarkCyan'
+
+        BlockFail        = 'Red'
         Pass             = 'DarkGreen'
         PassTime         = 'DarkGray'
         Fail             = 'Red'
@@ -13246,22 +18795,16 @@ $script:ReportTheme = DATA {
         FailDetail       = 'Red'
         Skipped          = 'Yellow'
         SkippedTime      = 'DarkGray'
-        Pending          = 'Gray'
-        PendingTime      = 'DarkGray'
         NotRun           = 'Gray'
-        NotRunTime       = 'DarkGray'
-        Total            = 'Gray'
         Inconclusive     = 'Gray'
         InconclusiveTime = 'DarkGray'
         Incomplete       = 'Yellow'
         IncompleteTime   = 'DarkGray'
         Foreground       = 'White'
         Information      = 'DarkGray'
+
         Coverage         = 'White'
         Discovery        = 'Magenta'
-        Container        = 'Magenta'
-        BlockFail        = 'Red'
-        Warning          = 'Yellow'
     }
 }
 
@@ -13288,8 +18831,8 @@ function Write-PesterHostMessage {
     )
 
     begin {
-        # Custom PSHosts without UI will fail with Write-Output. Works in PS5+ due to use of InformationRecords
-        $HostSupportsOutput = $null -ne $host.UI.RawUI.ForegroundColor -or $PSVersionTable.PSVersion.Major -ge 5
+        # Custom PSHosts without UI will fail with Write-Host. Works in PS5+ due to use of InformationRecords
+        $HostSupportsOutput = $true # Pester 6 requires PS 5.1+ which always supports InformationRecords
         if (-not $HostSupportsOutput) { return }
 
         # Source https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#text-formatting
@@ -13350,7 +18893,7 @@ function Write-PesterHostMessage {
             # CI auto-resets ANSI on linebreak for some reason. Need to prepend style at beginning of every line
             $message = "$($message -replace '(?m)^', "$fg$bg")$($ANSIcodes.ResetAll)"
 
-            & $SafeCommands['Write-Output'] -Object $message -NoNewLine:$NoNewLine
+            & $SafeCommands['Write-Host'] -Object $message -NoNewLine:$NoNewLine
         }
         else {
             if ($RenderMode -eq 'Plaintext') {
@@ -13366,7 +18909,7 @@ function Write-PesterHostMessage {
                 $null = $PSBoundParameters.Remove('RenderMode')
             }
 
-            & $SafeCommands['Write-Output'] @PSBoundParameters
+            & $SafeCommands['Write-Host'] @PSBoundParameters
         }
     }
 }
@@ -13435,7 +18978,7 @@ function ConvertTo-PesterResult {
         return $testResult
     }
 
-    if (@('PesterAssertionFailed', 'PesterTestSkipped', 'PesterTestInconclusive', 'PesterTestPending') -contains $ErrorRecord.FullyQualifiedErrorID) {
+    if (@('PesterAssertionFailed', 'PesterTestSkipped', 'PesterTestInconclusive') -contains $ErrorRecord.FullyQualifiedErrorID) {
         # we use TargetObject to pass structured information about the error.
         $details = $ErrorRecord.TargetObject
 
@@ -13448,9 +18991,6 @@ function ConvertTo-PesterResult {
             switch ($ErrorRecord.FullyQualifiedErrorID) {
                 PesterTestInconclusive {
                     $testResult.Result = 'Inconclusive'; break;
-                }
-                PesterTestPending {
-                    $testResult.Result = 'Pending'; break;
                 }
                 PesterTestSkipped {
                     $testResult.Result = 'Skipped'; break;
@@ -13477,7 +19017,6 @@ function Write-PesterReport {
         [Parameter(mandatory = $true, valueFromPipeline = $true)]
         [Pester.Run] $RunResult
     )
-    # if(-not ($PesterState.Show | Has-Flag Summary)) { return }
 
     Write-PesterHostMessage ($ReportStrings.Timing -f (Get-HumanTime ($RunResult.Duration))) -Foreground $ReportTheme.Foreground
 
@@ -13502,19 +19041,6 @@ function Write-PesterReport {
         $ReportTheme.Information
     }
 
-    $Total = if ($RunResult.TotalCount -gt 0) {
-        $ReportTheme.Total
-    }
-    else {
-        $ReportTheme.Information
-    }
-
-    # $Pending = if ($RunResult.PendingCount -gt 0) {
-    #     $ReportTheme.Pending
-    # }
-    # else {
-    #     $ReportTheme.Information
-    # }
     $Inconclusive = if ($RunResult.InconclusiveCount -gt 0) {
         $ReportTheme.Inconclusive
     }
@@ -13522,30 +19048,10 @@ function Write-PesterReport {
         $ReportTheme.Information
     }
 
-    # Try {
-    #     $PesterStatePassedScenariosCount = $PesterState.PassedScenarios.Count
-    # }
-    # Catch {
-    #     $PesterStatePassedScenariosCount = 0
-    # }
-
-    # Try {
-    #     $PesterStateFailedScenariosCount = $PesterState.FailedScenarios.Count
-    # }
-    # Catch {
-    #     $PesterStateFailedScenariosCount = 0
-    # }
-
-    # if ($ReportStrings.ContextsPassed) {
-    #     & $SafeCommands['Write-Output'] ($ReportStrings.ContextsPassed -f $PesterStatePassedScenariosCount) -Foreground $Success -NoNewLine
-    #     & $SafeCommands['Write-Output'] ($ReportStrings.ContextsFailed -f $PesterStateFailedScenariosCount) -Foreground $Failure
-    # }
-    # if ($ReportStrings.TestsPassed) {
     Write-PesterHostMessage ($ReportStrings.TestsPassed -f $RunResult.PassedCount) -Foreground $Success -NoNewLine
     Write-PesterHostMessage ($ReportStrings.TestsFailed -f $RunResult.FailedCount) -Foreground $Failure -NoNewLine
     Write-PesterHostMessage ($ReportStrings.TestsSkipped -f $RunResult.SkippedCount) -Foreground $Skipped -NoNewLine
     Write-PesterHostMessage ($ReportStrings.TestsInconclusive -f $RunResult.InconclusiveCount) -Foreground $Inconclusive -NoNewLine
-    Write-PesterHostMessage ($ReportStrings.TestsTotal -f $RunResult.TotalCount) -Foreground $Total -NoNewLine
     Write-PesterHostMessage ($ReportStrings.TestsNotRun -f $RunResult.NotRunCount) -Foreground $NotRun
 
     if (0 -lt $RunResult.FailedBlocksCount) {
@@ -13559,18 +19065,6 @@ function Write-PesterReport {
         }
         Write-PesterHostMessage ('Container failed: {0}' -f $RunResult.FailedContainersCount) -Foreground $ReportTheme.Fail
         Write-PesterHostMessage ($cs -join [Environment]::NewLine) -Foreground $ReportTheme.Fail
-    }
-    # & $SafeCommands['Write-Output'] ($ReportStrings.TestsPending -f $RunResult.PendingCount) -Foreground $Pending -NoNewLine
-    # & $SafeCommands['Write-Output'] ($ReportStrings.TestsInconclusive -f $RunResult.InconclusiveCount) -Foreground $Inconclusive
-    # }
-
-    $rootFrameworkData = @($RunResult.Containers.Blocks.Root.FrameworkData)
-    foreach ($frameworkData in $rootFrameworkData) {
-        if ($null -ne $frameworkData -and $frameworkData['ShowPendingDeprecation']) {
-            Write-PesterHostMessage '**DEPRECATED**: The -Pending parameter of Set-ItResult is deprecated. The parameter will be removed in a future version of Pester.' -ForegroundColor $ReportTheme.Warning
-            # Show it only once.
-            break
-        }
     }
 }
 
@@ -13600,9 +19094,8 @@ function Write-CoverageReport {
         $ReportStrings.FileSingular
     }
 
-    $commonParent = Get-CommonParentPath -Path $CoverageReport.AnalyzedFiles
     $report = $CoverageReport.MissedCommands | & $SafeCommands['Select-Object'] -Property @(
-        @{ Name = 'File'; Expression = { Get-RelativePath -Path $_.File -RelativeTo $commonParent } }
+        @{ Name = 'File'; Expression = { Get-RelativePath -Path $_.File -RelativeTo (Get-ReportRoot) } }
         'Class'
         'Function'
         'Line'
@@ -13734,16 +19227,6 @@ function ConvertTo-FailureLines {
     }
 }
 
-function ConvertTo-HumanTime {
-    param ([TimeSpan]$TimeSpan)
-    if ($TimeSpan.Ticks -lt [timespan]::TicksPerSecond) {
-        "$([int]($TimeSpan.TotalMilliseconds))ms"
-    }
-    else {
-        "$([math]::round($TimeSpan.TotalSeconds ,2))s"
-    }
-}
-
 function Get-WriteScreenPlugin ($Verbosity) {
     # add -FrameworkSetup Write-PesterStart $pester $Script and -FrameworkTeardown { $pester | Write-PesterReport }
     # The plugin is not imported when output None is specified so the usual level of output is Normal.
@@ -13763,7 +19246,19 @@ function Get-WriteScreenPlugin ($Verbosity) {
     $p.DiscoveryStart = {
         param ($Context)
 
-        Write-PesterHostMessage -ForegroundColor $ReportTheme.Discovery "`nStarting discovery in $(@($Context.BlockContainers).Length) files."
+        if ($PesterPreference.Run.SkipRun.Value) {
+            # Discovery-only mode (e.g. populating an IDE Test Explorer); we are not
+            # going to run anything, so announce discovery instead of the run.
+            Write-PesterHostMessage -ForegroundColor $ReportTheme.Discovery "`nStarting discovery in $(@($Context.BlockContainers).Length) files."
+        }
+        else {
+            # A single banner for the whole run. In the interleaved run model the rest of
+            # the discovery/run framing ("Discovery found ...", "Running tests.") is kept
+            # off the screen; the matching plugin events still fire so IDE adapters keep
+            # the full contract. The parent sets Parallel on the context for a parallel run.
+            $parallelSuffix = if ($Context.Parallel) { ' in parallel' } else { '' }
+            Write-PesterHostMessage -ForegroundColor $ReportTheme.Container "`nRunning tests from $(@($Context.BlockContainers).Length) files$parallelSuffix."
+        }
     }
 
     $p.ContainerDiscoveryEnd = {
@@ -13791,15 +19286,15 @@ function Get-WriteScreenPlugin ($Verbosity) {
     $p.DiscoveryEnd = {
         param ($Context)
 
-        # if ($Context.AnyFocusedTests) {
-        #     $focusedTests = $Context.FocusedTests
-        #     & $SafeCommands["Write-Output"] -ForegroundColor Magenta "There are some ($($focusedTests.Count)) focused tests '$($(foreach ($p in $focusedTests) { $p -join "." }) -join ",")' running just them."
-        # }
-
-        # . Found $count$(if(1 -eq $count) { " test" } else { " tests" })
-
         $discoveredTests = @(View-Flat -Block $Context.BlockContainers)
-        Write-PesterHostMessage -ForegroundColor $ReportTheme.Discovery "Discovery found $($discoveredTests.Count) tests in $(ConvertTo-HumanTime $Context.Duration)."
+
+        if ($PesterPreference.Run.SkipRun.Value) {
+            # Only announce the discovery result on screen when we are not going to run
+            # the tests. During a normal run this is collapsed into the run banner and
+            # the final summary to keep the output quiet; the DiscoveryEnd event still
+            # fires for plugins/IDE adapters.
+            Write-PesterHostMessage -ForegroundColor $ReportTheme.Discovery "Discovery found $($discoveredTests.Count) tests in $(Get-HumanTime $Context.Duration)."
+        }
 
         if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
             $activeFilters = $Context.Filter.psobject.Properties | & $SafeCommands['Where-Object'] { $_.Value }
@@ -13824,18 +19319,12 @@ function Get-WriteScreenPlugin ($Verbosity) {
     }
 
 
-    $p.RunStart = {
-        Write-PesterHostMessage -ForegroundColor $ReportTheme.Container "Running tests."
-    }
-
     if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
         $p.ContainerRunStart = {
             param ($Context)
 
-            if ("file" -eq $Context.Block.BlockContainer.Type) {
-                # write two spaces to separate each file
-                Write-PesterHostMessage -ForegroundColor $ReportTheme.Container "`nRunning tests from '$($Context.Block.BlockContainer.Item)'"
-            }
+            # write two spaces to separate each container
+            Write-PesterHostMessage -ForegroundColor $ReportTheme.Container "`nRunning tests from '$($Context.Block.BlockContainer.Name)'"
         }
     }
 
@@ -13843,7 +19332,7 @@ function Get-WriteScreenPlugin ($Verbosity) {
         param ($Context)
 
         if ($Context.Result.ErrorRecord.Count -gt 0) {
-            $errorHeader = "[-] $($Context.Result.Item) failed with:"
+            $errorHeader = "[-] $($Context.Result.Name) failed with:"
 
             $formatErrorParams = @{
                 Err                 = $Context.Result.ErrorRecord
@@ -13861,34 +19350,46 @@ function Get-WriteScreenPlugin ($Verbosity) {
         }
 
         if ('Normal' -eq $PesterPreference.Output.Verbosity.Value) {
-            $humanTime = "$(Get-HumanTime ($Context.Result.Duration)) ($(Get-HumanTime $Context.Result.UserDuration)|$(Get-HumanTime $Context.Result.FrameworkDuration))"
+            # UserDuration and FrameworkDuration are kept on the result object for profiling,
+            # but we only show the combined Duration here to keep the output easy to read.
+            $humanTime = "$(Get-HumanTime ($Context.Result.Duration))"
 
             if ($Context.Result.Passed) {
-                Write-PesterHostMessage -ForegroundColor $ReportTheme.Pass "[+] $($Context.Result.Item)" -NoNewLine
+                Write-PesterHostMessage -ForegroundColor $ReportTheme.Pass "[+] $($Context.Result.Name)" -NoNewLine
                 Write-PesterHostMessage -ForegroundColor $ReportTheme.PassTime " $humanTime"
             }
 
             # this won't work skipping the whole file when all it's tests are skipped is not a feature yet in 5.0.0
             if ($Context.Result.Skip) {
-                Write-PesterHostMessage -ForegroundColor $ReportTheme.Skipped "[!] $($Context.Result.Item)" -NoNewLine
+                Write-PesterHostMessage -ForegroundColor $ReportTheme.Skipped "[!] $($Context.Result.Name)" -NoNewLine
                 Write-PesterHostMessage -ForegroundColor $ReportTheme.SkippedTime " $humanTime"
             }
         }
     }
 
     if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
-        $p.EachBlockSetupStart = {
-            $Context.Configuration.BlockWritePostponed = $true
-        }
-    }
-
-    if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
         $p.EachTestSetupStart = {
             param ($Context)
+
+            # we are currently in scope of describe so $Test is hardtyped and conflicts
+            $_test = $Context.Test
+
             # we postponed writing the Describe / Context to grab the Expanded name, because that is done
             # during execution to get all the variables in scope, if we are the first test then write it
-            if ($Context.Test.First) {
-                Write-BlockToScreen $Context.Test.Block
+            if ($_test.First) {
+                Write-BlockToScreen $_test.Block
+            }
+
+            if ($PesterPreference.Debug.ShowStartMarkers.Value) {
+                $level = $_test.Path.Count
+                $margin = $ReportStrings.Margin * ($level)
+                $out = "$($_test.ExpandedName)..."
+
+                if ($PesterPreference.Debug.ShowNavigationMarkers.Value) {
+                    $out += ", $($_test.ScriptBlock.File):$($_test.StartLine)"
+                }
+
+                Write-PesterHostMessage -ForegroundColor $ReportTheme.Information "$margin[|] $out"
             }
         }
     }
@@ -13904,7 +19405,7 @@ function Get-WriteScreenPlugin ($Verbosity) {
             $margin = $ReportStrings.Margin * ($level)
             $error_margin = $margin + $ReportStrings.Margin
             $out = $_test.ExpandedName
-            if (-not $_test.Skip -and @('PesterTestSkipped', 'PesterTestInconclusive', 'PesterTestPending') -contains $Result.ErrorRecord.FullyQualifiedErrorId) {
+            if (-not $_test.Skip -and @('PesterTestSkipped', 'PesterTestInconclusive') -contains $Result.ErrorRecord.FullyQualifiedErrorId) {
                 $skippedMessage = [String]$_Test.ErrorRecord
                 [String]$out += " $skippedMessage"
             }
@@ -13919,7 +19420,9 @@ function Get-WriteScreenPlugin ($Verbosity) {
             throw "Unsupported level of output '$($PesterPreference.Output.Verbosity.Value)'"
         }
 
-        $humanTime = "$(Get-HumanTime ($_test.Duration)) ($(Get-HumanTime $_test.UserDuration)|$(Get-HumanTime $_test.FrameworkDuration))"
+        # UserDuration and FrameworkDuration are kept on the result object for profiling,
+        # but we only show the combined Duration here to keep the output easy to read.
+        $humanTime = "$(Get-HumanTime ($_test.Duration))"
 
         if ($PesterPreference.Debug.ShowNavigationMarkers.Value) {
             $out += ", $($_test.ScriptBlock.File):$($_Test.StartLine)"
@@ -13980,16 +19483,6 @@ function Get-WriteScreenPlugin ($Verbosity) {
                 break
             }
 
-            Pending {
-                if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
-                    $because = if ($_test.FailureMessage) { ", because $($_test.FailureMessage)" } else { $null }
-                    Write-PesterHostMessage -ForegroundColor $ReportTheme.Pending "$margin[?] $out" -NoNewLine
-                    Write-PesterHostMessage -ForegroundColor $ReportTheme.Pending ", is pending$because" -NoNewLine
-                    Write-PesterHostMessage -ForegroundColor $ReportTheme.PendingTime " $humanTime"
-                }
-                break
-            }
-
             Inconclusive {
                 if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
                     $because = if ($_test.FailureMessage) { ", because $($_test.FailureMessage)" } else { $null }
@@ -14002,13 +19495,7 @@ function Get-WriteScreenPlugin ($Verbosity) {
             }
 
             default {
-                if ($PesterPreference.Output.Verbosity.Value -in 'Detailed', 'Diagnostic') {
-                    # TODO:  Add actual Incomplete status as default rather than checking for null time.
-                    if ($null -eq $_test.Duration) {
-                        Write-PesterHostMessage -ForegroundColor $ReportTheme.Incomplete "$margin[?] $out" -NoNewLine
-                        Write-PesterHostMessage -ForegroundColor $ReportTheme.IncompleteTime " $humanTime"
-                    }
-                }
+                throw "Invalid test result '$result'"
             }
         }
     }
@@ -14652,6 +20139,333 @@ function Get-ScriptBlockHint {
 
     "Unknown unbound ScriptBlock"
 }
+# file src\functions\Pester.Parallel.ps1
+function Test-PesterFileIsNonParallel {
+    <#
+    .SYNOPSIS
+    Returns $true when a test file opts out of parallel execution via a file-level directive.
+
+    .DESCRIPTION
+    EXPERIMENTAL. A test file can opt out of parallelization (when Run.Parallel is enabled)
+    with a comment directive that is parsed similarly to PowerShell's `#requires`:
+
+        #pester:no-parallel
+
+    The colon-style marker is matched against real comment tokens using the PowerShell tokenizer,
+    so the marker is recognized only inside comments and never inside strings or here-strings.
+    It may appear anywhere in the file. Files marked this way run sequentially, after the
+    parallel batch has finished.
+    #>
+    [OutputType([bool])]
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $Path
+    )
+
+    $tokens = $null
+    $parseErrors = $null
+    $null = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref] $tokens, [ref] $parseErrors)
+
+    foreach ($token in $tokens) {
+        if ($token.Kind -eq [System.Management.Automation.Language.TokenKind]::Comment -and
+            $token.Text -match '^#\s*pester:no-parallel\b') {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Resolve-PesterBeforeContainer {
+    <#
+    .SYNOPSIS
+    Returns the initialization code (as text) to run before each test file is discovered and run.
+
+    .DESCRIPTION
+    EXPERIMENTAL. Setup the parent session normally provides - helper modules or dot-sourced
+    functions - is resolved here so it can run before every container, in both sequential and
+    parallel runs. Parallel workers especially start from a clean runspace and would otherwise be
+    missing it.
+
+    - If Run.BeforeContainer is set, its scriptblocks win and apply to every container.
+      ScriptBlocks cannot cross the runspace boundary, so they are returned as text and recreated
+      with [scriptblock]::Create where they run.
+    - Otherwise Pester looks for a single 'Pester.BeforeContainer.ps1' in the repository root
+      (Run.RepoRoot, which defaults to the nearest '.git' directory and can be overridden) and
+      dot-sources it, giving a zero-config per-repo bootstrap.
+
+    The result is the same for every container, so callers resolve it once per run.
+    Returns $null when there is nothing to run.
+    #>
+    [OutputType([string])]
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Configuration
+    )
+
+    $explicit = $Configuration.Run.BeforeContainer.Value
+    if ($explicit -and 0 -lt @($explicit).Count) {
+        return (@(foreach ($sb in $explicit) { $sb.ToString() }) -join [Environment]::NewLine)
+    }
+
+    $repoRoot = $Configuration.Run.RepoRoot.Value
+    if ([string]::IsNullOrEmpty($repoRoot)) {
+        return $null
+    }
+
+    $candidate = & $SafeCommands['Join-Path'] $repoRoot 'Pester.BeforeContainer.ps1'
+    if (& $SafeCommands['Test-Path'] -LiteralPath $candidate -PathType Leaf) {
+        $escaped = $candidate -replace "'", "''"
+        return ". '$escaped'"
+    }
+
+    return $null
+}
+
+function Split-PesterEventTape {
+    <#
+    .SYNOPSIS
+    Splits a recorded parallel event tape into its discovery and run segments.
+
+    .DESCRIPTION
+    EXPERIMENTAL. A parallel worker records the plugin steps it fires while discovering and
+    running a single file (see Invoke-TestInParallel). The parent replays those steps to its
+    reporting plugins so the emitted events match a sequential run. To fire the global
+    DiscoveryEnd/RunStart steps at the right moment, the parent needs the per-container steps
+    grouped by phase: everything up to and including ContainerDiscoveryEnd is discovery, the
+    rest (ContainerRunStart onward) is the run.
+    #>
+    [CmdletBinding()]
+    param(
+        [object[]] $Tape
+    )
+
+    $discoverySteps = @('ContainerDiscoveryStart', 'BlockDiscoveryStart', 'TestDiscoveryStart', 'TestDiscoveryEnd', 'BlockDiscoveryEnd', 'ContainerDiscoveryEnd')
+    $discovery = [System.Collections.Generic.List[object]]@()
+    $run = [System.Collections.Generic.List[object]]@()
+
+    foreach ($entry in $Tape) {
+        if ($discoverySteps -contains $entry.Step) {
+            $discovery.Add($entry)
+        }
+        else {
+            $run.Add($entry)
+        }
+    }
+
+    [PSCustomObject]@{
+        Discovery = $discovery.ToArray()
+        Run       = $run.ToArray()
+    }
+}
+
+function Invoke-TestInParallel {
+    <#
+    .SYNOPSIS
+    EXPERIMENTAL. Runs file-based test containers in parallel, one runspace per file, and
+    returns each file's executed containers together with a recorded tape of the plugin events
+    that fired while it ran.
+
+    .DESCRIPTION
+    Used by Invoke-Pester when Run.Parallel is enabled on PowerShell 7+. Each test file is
+    executed by a full Invoke-Pester run inside its own runspace via `ForEach-Object -Parallel`.
+    The worker runs silently (Output.Verbosity = None) so it produces no console output of its
+    own; instead it records every per-container and per-test plugin step (with the live Block /
+    Test / Result objects) into an ordered tape. The parent replays that tape to its reporting
+    plugins (screen output + IDE adapters), so the events emitted for a parallel run match a
+    sequential run - only the concurrency differs.
+
+    Because Pester.dll is loaded once per process (via Add-Type -Path) and shared by every
+    runspace, the [Pester.Container] objects and the recorded contexts are live objects - no
+    serialization happens - so they can be folded straight back into a single run and replayed.
+    The execution-critical plugins (Mock, TestDrive, TestRegistry, SkipRemainingOnFailure) run
+    inside the worker where the test bodies execute; only the reporting plugins are replayed by
+    the parent.
+
+    Files marked with the `#pester:no-parallel` directive are partitioned out by the caller
+    (Invoke-Pester) and are not passed to this function.
+
+    .NOTES
+    Prototype limitations:
+    - CodeCoverage and TestResult are disabled inside workers to avoid output-file collisions;
+      merging coverage across workers is not handled yet. TestResult is produced once by the
+      parent from the merged result tree.
+    #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('Pester.BuildAnalyzerRules\Measure-SafeCommands', '', Justification = 'Get-Module/Import-Module run in a fresh ForEach-Object -Parallel runspace where the module-internal $SafeCommands table is unavailable.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('Pester.BuildAnalyzerRules\Measure-ObjectCmdlets', '', Justification = 'ForEach-Object -Parallel is the runspace-parallelism primitive with no language-keyword equivalent; the accompanying Where-Object/Sort-Object run once over the small per-run result set.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification = 'Recorder factory parameters are used inside the returned closure, which the rule does not follow.')]
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [Pester.ContainerInfo[]] $BlockContainer,
+
+        [Parameter(Mandatory)]
+        $Configuration
+    )
+
+    # The BeforeContainer initialization is the same for every file (resolved from
+    # Run.BeforeContainer or the repo-root convention file), so resolve it once and reuse it.
+    $beforeContainerInit = Resolve-PesterBeforeContainer -Configuration $Configuration
+    $work = @(foreach ($c in $BlockContainer) {
+            [PSCustomObject]@{
+                Path = $c.Item.FullName
+                Data = $c.Data
+                Init = $beforeContainerInit
+            }
+        })
+
+    # Path to the currently loaded Pester so each worker imports the exact same build.
+    # Use the module manifest (.psd1), not the root module (.psm1) that Module.Path points to:
+    # importing the bare .psm1 loads Pester without its manifest metadata, so its ModuleVersion
+    # becomes 0.0.0.0. That then fails to satisfy any module a test imports whose manifest lists
+    # Pester in RequiredModules (e.g. @{ ModuleName = 'Pester'; ModuleVersion = '5.7.1' }),
+    # because the loaded 0.0.0.0 is below the required version (#2816).
+    $pesterModuleInfo = $ExecutionContext.SessionState.Module
+    $modulePath = $pesterModuleInfo.Path
+    $manifestPath = & $SafeCommands['Join-Path'] $pesterModuleInfo.ModuleBase "$($pesterModuleInfo.Name).psd1"
+    if (& $SafeCommands['Test-Path'] -LiteralPath $manifestPath -PathType Leaf) {
+        $modulePath = $manifestPath
+    }
+
+    # Cap concurrency at Run.ParallelThrottleLimit when set (> 0); otherwise use all processors.
+    $requestedThrottle = [int]$Configuration.Run.ParallelThrottleLimit.Value
+    if ($requestedThrottle -gt 0) {
+        $throttle = $requestedThrottle
+    }
+    else {
+        $throttle = [Environment]::ProcessorCount
+    }
+    if ($throttle -lt 1) { $throttle = 1 }
+
+    # Sanitize the configuration handed to workers: strip the options that hold scriptblocks so
+    # nothing with runspace affinity is sent across the boundary. BeforeContainer is
+    # already resolved to text per work item above; ScriptBlock/Container are unused for file runs.
+    $baseConfig = [PesterConfiguration]::Merge([PesterConfiguration]::Default, $Configuration)
+    $baseConfig.Run.BeforeContainer = [scriptblock[]]@()
+    $baseConfig.Run.ScriptBlock = [scriptblock[]]@()
+    $baseConfig.Run.Container = @()
+
+    # The per-container and per-test plugin steps each worker records and the parent replays.
+    # Global steps (Start/DiscoveryStart/DiscoveryEnd/RunStart/RunEnd/End) are intentionally
+    # excluded - the parent fires those once for the whole run.
+    $recordedSteps = @(
+        'ContainerDiscoveryStart', 'BlockDiscoveryStart', 'TestDiscoveryStart', 'TestDiscoveryEnd',
+        'BlockDiscoveryEnd', 'ContainerDiscoveryEnd', 'ContainerRunStart', 'OneTimeBlockSetupStart',
+        'EachBlockSetupStart', 'OneTimeTestSetupStart', 'EachTestSetupStart', 'EachTestTeardownEnd',
+        'OneTimeTestTeardownEnd', 'EachBlockTeardownEnd', 'OneTimeBlockTeardownEnd', 'ContainerRunEnd'
+    )
+
+    # Worker body. Imports Pester, runs the per-container initialization (so helper
+    # modules/functions the parent provided are available), clones the base configuration (via
+    # Merge so unset options keep their defaults), points it at a single file, disables
+    # parallel/exit/throw to avoid recursion and process exits, disables result/coverage file
+    # writing to avoid concurrent workers overwriting output files, and silences the worker's own
+    # console output. A recorder plugin is injected (via the supported $script:additionalPlugins
+    # channel) to capture the ordered plugin-event tape, which is returned to the parent for replay.
+    $worker = {
+        $item = $_
+        $modulePath = $using:modulePath
+        $baseConfig = $using:baseConfig
+        $recordedSteps = $using:recordedSteps
+
+        if (-not (Get-Module -Name Pester)) {
+            Import-Module $modulePath
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($item.Init)) {
+            # Suppress the initialization's own host output (stream 6) so quiet setup does not
+            # garble the shared parent host while workers run concurrently.
+            . ([scriptblock]::Create($item.Init)) 6>$null
+        }
+
+        $workerConfig = [PesterConfiguration]::Merge([PesterConfiguration]::Default, $baseConfig)
+        # Pass the file together with its -Data so parametrized containers (New-PesterContainer
+        # -Path ... -Data @{ ... }) bind the file's param() block the same way they do sequentially.
+        # Run them by reference - ForEach-Object -Parallel uses runspaces in the same process, so the
+        # Data values (including live objects) cross unchanged. When there is no Data, point at the
+        # path directly, which behaves identically to a plain file run.
+        if (($item.Data -is [System.Collections.IDictionary]) -and 0 -lt $item.Data.Count) {
+            $workerConfig.Run.Container = New-PesterContainer -Path $item.Path -Data $item.Data
+        }
+        else {
+            $workerConfig.Run.Path = $item.Path
+        }
+        $workerConfig.Run.Parallel = $false
+        $workerConfig.Run.PassThru = $true
+        $workerConfig.Run.Exit = $false
+        $workerConfig.Run.Throw = $false
+        $workerConfig.TestResult.Enabled = $false
+        $workerConfig.CodeCoverage.Enabled = $false
+        # The BeforeContainer init already ran above (as $item.Init). Clear RepoRoot so the worker's
+        # own sequential run does not resolve and dot-source the repo-root Pester.BeforeContainer.ps1
+        # a second time; that would run the setup twice per file and diverge from a sequential run.
+        # RepoRoot is otherwise only used for CodeCoverage, which is disabled in workers.
+        $workerConfig.Run.RepoRoot = ''
+        # The worker stays silent; the parent renders all output by replaying the recorded tape.
+        $workerConfig.Output.Verbosity = 'None'
+
+        $pesterModule = Get-Module -Name Pester
+
+        # Build a recorder plugin whose step scriptblocks append (step name + live context) to a
+        # worker-local tape. The plugin is created in the module scope so it can call the internal
+        # New-PluginObject, and each step closes over the same $tape list.
+        $tape = [System.Collections.Generic.List[object]]::new()
+        $recorder = & $pesterModule {
+            param($tape, $steps)
+            $h = @{ Name = 'ParallelRecorder' }
+            foreach ($s in $steps) {
+                $makeStep = {
+                    param($stepName, $tapeRef)
+                    { param($Context) $tapeRef.Add([PSCustomObject]@{ Step = $stepName; Context = $Context }) }.GetNewClosure()
+                }
+                $h[$s] = & $makeStep $s $tape
+            }
+            New-PluginObject @h
+        } $tape $recordedSteps
+
+        # Inject the recorder via the supported additional-plugins channel, run, then clear it.
+        & $pesterModule { param($p) $script:additionalPlugins = $p } $recorder
+        try {
+            $out = Invoke-Pester -Configuration $workerConfig
+        }
+        finally {
+            & $pesterModule { $script:additionalPlugins = $null }
+        }
+
+        $runObject = $null
+        foreach ($o in $out) {
+            if ($o -is [Pester.Run]) { $runObject = $o; break }
+        }
+
+        [PSCustomObject]@{
+            Path       = $item.Path
+            Containers = @($runObject.Containers)
+            Tape       = $tape.ToArray()
+        }
+    }
+
+    $results = @()
+    if (0 -lt $work.Count) {
+        $results = $work | & $SafeCommands['ForEach-Object'] -ThrottleLimit $throttle -Parallel $worker
+    }
+
+    # Keep only well-formed worker results (defensive against stray pipeline output).
+    $results = @($results | & $SafeCommands['Where-Object'] { $_ -is [System.Management.Automation.PSCustomObject] -and $null -ne $_.PSObject.Properties['Containers'] })
+
+    # Restore the original discovery order so replay and the merged run are deterministic
+    # regardless of which worker finished first.
+    $order = @{}
+    for ($i = 0; $i -lt $BlockContainer.Count; $i++) {
+        $order[$BlockContainer[$i].Item.FullName] = $i
+    }
+    @($results | & $SafeCommands['Sort-Object'] -Property @{ Expression = {
+                if ($order.ContainsKey($_.Path)) { $order[$_.Path] } else { [int]::MaxValue }
+            }
+        })
+}
+
 # file src\functions\Pester.Scoping.ps1
 function Set-ScriptBlockScope {
     [CmdletBinding()]
@@ -14700,21 +20514,6 @@ function Set-ScriptBlockScope {
     if ($PesterPreference.Debug.WriteDebugMessages.Value) {
         Set-ScriptBlockHint -ScriptBlock $ScriptBlock
     }
-}
-
-function Get-ScriptBlockScope {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [scriptblock]
-        $ScriptBlock
-    )
-
-    $sessionStateInternal = $script:ScriptBlockSessionStateInternalProperty.GetValue($ScriptBlock, $null)
-    if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-        Write-PesterDebugMessage -Scope SessionState "Getting scope from ScriptBlock '$($sessionStateInternal.Hint)'"
-    }
-    $sessionStateInternal
 }
 # file src\functions\Pester.SessionState.Mock.ps1
 # session state bound functions that act as endpoints,
@@ -14781,8 +20580,7 @@ function Mock {
     Optionally, you may create a Parameter Filter which will examine the
     parameters passed to the mocked command and will invoke the mocked
     behavior only if the values of the parameter values pass the filter. If
-    they do not, the original command implementation will be invoked instead
-    of a mock.
+    they do not, and there is no default mock, the call will throw.
 
     You may create multiple mocks for the same command, each using a different
     ParameterFilter. ParameterFilters will be evaluated in reverse order of
@@ -14933,10 +20731,10 @@ function Mock {
     mocked by using the -ModuleName parameter.
 
     .LINK
-    https://pester.dev/docs/v5/commands/Mock
+    https://pester.dev/docs/commands/Mock
 
     .LINK
-    https://pester.dev/docs/v5/usage/mocking
+    https://pester.dev/docs/usage/mocking
     #>
     [CmdletBinding()]
     param(
@@ -15325,30 +21123,6 @@ function Get-MockDataForCurrentScope {
     $location.PluginData.Mock
 }
 
-function Assert-VerifiableMock {
-    <#
-    .SYNOPSIS
-    Checks if all verifiable Mocks has been called at least once.
-
-    THIS COMMAND IS OBSOLETE AND WILL BE REMOVED SOMEWHERE DURING v5 LIFETIME,
-    USE Should -InvokeVerifiable INSTEAD.
-
-    .LINK
-    https://pester.dev/docs/v5/commands/Assert-VerifiableMock
-    #>
-
-    # Should does not accept a session state, so invoking it directly would
-    # make the assertion run from inside of Pester module, we move it to the
-    # user scope instead an run it from there to keep the scoping correct
-    # for this compatibility adapter
-    [CmdletBinding()]param()
-    $sb = {
-        Should -InvokeVerifiable
-    }
-
-    Set-ScriptBlockScope -ScriptBlock $sb -SessionState $PSCmdlet.SessionState
-    & $sb
-}
 function Should-InvokeVerifiable ([switch] $Negate, [string] $Because) {
     <#
     .SYNOPSIS
@@ -15391,52 +21165,7 @@ function Should-InvokeVerifiable ([switch] $Negate, [string] $Because) {
 Set-ShouldOperatorHelpMessage -OperatorName InvokeVerifiable `
     -HelpMessage 'Checks if any Verifiable Mock has not been invoked. If so, this will throw an exception.'
 
-function Assert-MockCalled {
-    <#
-    .SYNOPSIS
-    Checks if a Mocked command has been called a certain number of times
-    and throws an exception if it has not.
-
-    THIS COMMAND IS OBSOLETE AND WILL BE REMOVED SOMEWHERE DURING v5 LIFETIME,
-    USE Should -Invoke INSTEAD.
-
-    .LINK
-    https://pester.dev/docs/v5/commands/Assert-MockCalled
-    #>
-    [CmdletBinding(DefaultParameterSetName = 'ParameterFilter')]
-    param(
-        [Parameter(Mandatory = $true, Position = 0)]
-        [string]$CommandName,
-
-        [Parameter(Position = 1)]
-        [int]$Times = 1,
-
-        [ScriptBlock]$ParameterFilter = { $True },
-
-        [Parameter(ParameterSetName = 'ExclusiveFilter', Mandatory = $true)]
-        [scriptblock] $ExclusiveFilter,
-
-        [string] $ModuleName,
-
-        [string] $Scope = 0,
-        [switch] $Exactly
-    )
-
-    # Should does not accept a session state, so invoking it directly would
-    # make the assertion run from inside of Pester module, we move it to the
-    # user scope instead an run it from there to keep the scoping correct
-    # for this compatibility adapter
-
-    $sb = {
-        param ($__params__p)
-        Should -Invoke @__params__p
-    }
-
-    Set-ScriptBlockScope -ScriptBlock $sb -SessionState $PSCmdlet.SessionState
-    & $sb $PSBoundParameters
-}
-
-function Should-Invoke {
+function Should-InvokeAssertion {
     <#
     .SYNOPSIS
     Checks if a Mocked command has been called a certain number of times
@@ -15560,11 +21289,9 @@ function Should-Invoke {
     .NOTES
     The parameter filter passed to Should -Invoke does not necessarily have to match the parameter filter
     (if any) which was used to create the Mock.  Should -Invoke will find any entry in the command history
-    which matches its parameter filter, regardless of how the Mock was created.  However, if any calls to the
-    mocked command are made which did not match any mock's parameter filter (resulting in the original command
-    being executed instead of a mock), these calls to the original command are not tracked in the call history.
-    In other words, Should -Invoke can only be used to check for calls to the mocked implementation, not
-    to the original.
+    which matches its parameter filter, regardless of how the Mock was created.  If a call does not match
+    any mock's parameter filter and there is no default mock, the call throws instead of invoking the
+    original command, so every tracked call is a call to a mock behavior.
     #>
     [CmdletBinding(DefaultParameterSetName = 'ParameterFilter')]
     param(
@@ -15587,11 +21314,25 @@ function Should-Invoke {
         [object] $ActualValue,
         [switch] $Negate,
         [string] $Because,
-        [Management.Automation.SessionState] $CallerSessionState
+        [Management.Automation.SessionState] $CallerSessionState,
+        # The Should-Invoke / Should-NotInvoke commands pass their own name here so the error
+        # messages name the command the user actually called. The legacy Should -Invoke operator
+        # does not set it, so we fall back to the operator syntax based on -Negate below.
+        [string] $CommandDisplayName
     )
 
+    $assertionName = if (-not [string]::IsNullOrEmpty($CommandDisplayName)) {
+        $CommandDisplayName
+    }
+    elseif ($Negate) {
+        'Should -Not -Invoke'
+    }
+    else {
+        'Should -Invoke'
+    }
+
     if ($null -ne $ActualValue) {
-        throw "Should -Invoke does not take pipeline input or ActualValue."
+        throw "$assertionName does not take pipeline input or ActualValue."
     }
 
     # Assert-DescribeInProgress -CommandName Should -Invoke
@@ -15721,7 +21462,7 @@ function Should-Invoke {
     # no history.
     $contextInfo = Resolve-Command $CommandName $ModuleName -SessionState $SessionState
     if ($null -eq $contextInfo.Hook) {
-        throw "Should -Invoke: Could not find Mock for command $CommandName in $(if ([string]::IsNullOrEmpty($ModuleName)){ "script scope" } else { "module $ModuleName" }). Was the mock defined? Did you use the same -ModuleName as on the Mock? When using InModuleScope are InModuleScope, Mock and Should -Invoke using the same -ModuleName?"
+        throw "${assertionName}: Could not find Mock for command $CommandName in $(if ([string]::IsNullOrEmpty($ModuleName)){ "script scope" } else { "module $ModuleName" }). Was the mock defined? Did you use the same -ModuleName as on the Mock? When using InModuleScope are InModuleScope, Mock and $assertionName using the same -ModuleName?"
     }
     $resolvedModule = $contextInfo.TargetModule
     $resolvedCommand = $contextInfo.Command.Name
@@ -15743,6 +21484,9 @@ function Should-Invoke {
     if ($PSBoundParameters.ContainsKey('CallerSessionState')) {
         $PSBoundParameters.Remove('CallerSessionState')
     }
+    if ($PSBoundParameters.ContainsKey('CommandDisplayName')) {
+        $PSBoundParameters.Remove('CommandDisplayName')
+    }
 
     $result = Should-InvokeInternal @PSBoundParameters `
         -ContextInfo $contextInfo `
@@ -15754,7 +21498,7 @@ function Should-Invoke {
 
 & $script:SafeCommands['Add-ShouldOperator'] -Name Invoke `
     -InternalName Should-Invoke `
-    -Test         ${function:Should-Invoke}
+    -Test         ${function:Should-InvokeAssertion}
 
 Set-ShouldOperatorHelpMessage -OperatorName Invoke `
     -HelpMessage 'Checks if a Mocked command has been called a certain number of times and throws an exception if it has not.'
@@ -15785,19 +21529,21 @@ function Invoke-Mock {
 
         [object] $InputObject,
 
+        [object] $MockPSCmdlet,
+
         $Hook
     )
 
     if ('End' -eq $FromBlock) {
-        if (-not $MockCallState.ShouldExecuteOriginalCommand) {
+        if (-not $MockCallState.MatchedNoBehavior) {
             if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-                Write-PesterDebugMessage -Scope MockCore "Mock for $CommandName was invoked from block $FromBlock, and should not execute the original command, returning."
+                Write-PesterDebugMessage -Scope MockCore "Mock for $CommandName was invoked from block $FromBlock, and matched at least one behavior, returning."
             }
             return
         }
         else {
             if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-                Write-PesterDebugMessage -Scope MockCore "Mock for $CommandName was invoked from block $FromBlock, and should execute the original command, forwarding the call to Invoke-MockInternal without call history and without behaviors."
+                Write-PesterDebugMessage -Scope MockCore "Mock for $CommandName was invoked from block $FromBlock, no behaviors in scope, forwarding to Invoke-MockInternal (will throw)."
             }
             Invoke-MockInternal @PSBoundParameters -Behaviors @() -CallHistory @{}
             return
@@ -15806,7 +21552,7 @@ function Invoke-Mock {
 
     if ('Begin' -eq $FromBlock) {
         if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-            Write-PesterDebugMessage -Scope MockCore "Mock for $CommandName was invoked from block $FromBlock, and should execute the original command, Invoke-MockInternal without call history and without behaviors."
+            Write-PesterDebugMessage -Scope MockCore "Mock for $CommandName was invoked from block $FromBlock, no behaviors in scope, forwarding to Invoke-MockInternal (will throw)."
         }
         Invoke-MockInternal @PSBoundParameters -Behaviors @() -CallHistory @{}
         return
@@ -15825,7 +21571,7 @@ function Invoke-Mock {
     # because it does not contain whitespace, but if someone mistypes we won't be able to fix it
     # to be empty string in the below condition.
     $TargetModule = $ModuleName
-    $targettingAModule = -not [string]::IsNullOrWhiteSpace($TargetModule)
+    $targetingAModule = -not [string]::IsNullOrWhiteSpace($TargetModule)
 
     $getBehaviorMessage = if ($PesterPreference.Debug.WriteDebugMessages.Value) {
         # output scriptblock that we can call later
@@ -15840,7 +21586,7 @@ function Invoke-Mock {
     }
 
     if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-        Write-PesterDebugMessage -Scope Mock -Message "Filtering behaviors for command $CommandName, for target module $(if ($targettingAModule) { $TargetModule } else { '$null' }) (Showing all behaviors for this command, actual filtered list is further in the log, look for 'Filtered parametrized behaviors:' and 'Filtered default behaviors:'):"
+        Write-PesterDebugMessage -Scope Mock -Message "Filtering behaviors for command $CommandName, for target module $(if ($targetingAModule) { $TargetModule } else { '$null' }) (Showing all behaviors for this command, actual filtered list is further in the log, look for 'Filtered parametrized behaviors:' and 'Filtered default behaviors:'):"
     }
 
     $moduleBehaviors = [System.Collections.Generic.List[Object]]@()
@@ -15880,7 +21626,7 @@ function Invoke-Mock {
             else {
                 # not the targeted module, skip it
                 if ($PesterPreference.Debug.WriteDebugMessages.Value) {
-                    Write-PesterDebugMessage -Scope Mock -Message "Behavior is not from the target module $(if ($targettingAModule) { $TargetModule } else { '$null' }), skipping it:`n$(& $getBehaviorMessage $b)"
+                    Write-PesterDebugMessage -Scope Mock -Message "Behavior is not from the target module $(if ($targetingAModule) { $TargetModule } else { '$null' }), skipping it:`n$(& $getBehaviorMessage $b)"
                 }
             }
         }
@@ -15889,11 +21635,11 @@ function Invoke-Mock {
                 # keep the first found (the last one defined)
                 if ($null -eq $nonModuleDefaultBehavior) {
                     $nonModuleDefaultBehavior = $b
-                    if ($targettingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
+                    if ($targetingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
                         Write-PesterDebugMessage -Scope Mock -Message "Behavior is a default behavior from script scope, saving it to use as a fallback if default behavior for module $TargetModule is not found:`n$(& $getBehaviorMessage $b)"
                     }
 
-                    if (-not $targettingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
+                    if (-not $targetingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
                         Write-PesterDebugMessage -Scope Mock -Message "Behavior is a default behavior from script scope, saving it:`n$(& $getBehaviorMessage $b)"
                     }
                 }
@@ -15904,11 +21650,11 @@ function Invoke-Mock {
                 }
             }
             else {
-                if ($targettingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
+                if ($targetingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
                     Write-PesterDebugMessage -Scope Mock -Message "Behavior is a parametrized behavior from script scope, skipping it. (Parametrized script scope behaviors are not used as fallback for module scoped mocks.):`n$(& $getBehaviorMessage $b)"
                 }
 
-                if (-not $targettingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
+                if (-not $targetingAModule -and $PesterPreference.Debug.WriteDebugMessages.Value) {
                     Write-PesterDebugMessage -Scope Mock -Message "Behavior is a parametrized behavior from script scope, adding it to non-module parametrized behavior list:`n$(& $getBehaviorMessage $b)"
                 }
 
@@ -15922,29 +21668,29 @@ function Invoke-Mock {
     # then the default mock for Remove-Item should be effective.
 
     # using @() to always get array. This avoids null error in Invoke-MockInternal when no behaviors where found (if-else unwraps the lists)
-    $behaviors = @(if ($targettingAModule) {
-        # we have default module behavior add it to the filtered behaviors if there are any
-        if ($null -ne $moduleDefaultBehavior) {
-            $moduleBehaviors.Add($moduleDefaultBehavior)
+    $behaviors = @(if ($targetingAModule) {
+            # we have default module behavior add it to the filtered behaviors if there are any
+            if ($null -ne $moduleDefaultBehavior) {
+                $moduleBehaviors.Add($moduleDefaultBehavior)
+            }
+            else {
+                # we don't have default module behavior add the default non-module behavior if we have any
+                if ($null -ne $nonModuleDefaultBehavior) {
+                    $moduleBehaviors.Add($nonModuleDefaultBehavior)
+                }
+            }
+
+            $moduleBehaviors
         }
         else {
-            # we don't have default module behavior add the default non-module behavior if we have any
+            # we are not targeting a mock in a module use the non module behaviors
             if ($null -ne $nonModuleDefaultBehavior) {
-                $moduleBehaviors.Add($nonModuleDefaultBehavior)
+                # add the default non-module behavior if we have any
+                $nonModuleBehaviors.Add($nonModuleDefaultBehavior)
             }
-        }
 
-        $moduleBehaviors
-    }
-    else {
-        # we are not targeting a mock in a module use the non module behaviors
-        if ($null -ne $nonModuleDefaultBehavior) {
-            # add the default non-module behavior if we have any
-            $nonModuleBehaviors.Add($nonModuleDefaultBehavior)
-        }
-
-        $nonModuleBehaviors
-    })
+            $nonModuleBehaviors
+        })
 
     $callHistory = (Get-MockDataForCurrentScope).CallHistory
 
@@ -15968,7 +21714,7 @@ function Invoke-Mock {
             }
         }
         $message = if ($null -ne $default) { & $getBehaviorMessage $b } else { '$null' }
-        $fallBack = if ($null -ne $default -and $targettingAModule -and [string]::IsNullOrEmpty($b.ModuleName) ) { " (fallback to script scope default behavior)" } else { $null }
+        $fallBack = if ($null -ne $default -and $targetingAModule -and [string]::IsNullOrEmpty($b.ModuleName) ) { " (fallback to script scope default behavior)" } else { $null }
         Write-PesterDebugMessage -Scope Mock -Message "Filtered default behavior$($fallBack):`n$message"
     }
 
@@ -15998,20 +21744,13 @@ function Set-ItResult {
     Sometimes a test shouldn't be executed, sometimes the condition cannot be evaluated.
     By default such tests would typically fail and produce a big red message.
     Using Set-ItResult it is possible to set the result from the inside of the It script
-    block to either inconclusive, pending or skipped.
-
-    As of Pester 5, there is no "Inconclusive" or "Pending" test state, so all tests will now go to state skipped,
-    however the test result notes will include information about being inconclusive or testing to keep this command
-    backwards compatible
+    block to either inconclusive, or skipped.
 
     .PARAMETER Inconclusive
-    Sets the test result to inconclusive. Cannot be used at the same time as -Pending or -Skipped
-
-    .PARAMETER Pending
-    **DEPRECATED** Sets the test result to pending. Cannot be used at the same time as -Inconclusive or -Skipped
+    Sets the test result to inconclusive. Cannot be used at the same time as -Skipped
 
     .PARAMETER Skipped
-    Sets the test result to skipped. Cannot be used at the same time as -Inconclusive or -Pending
+    Sets the test result to skipped. Cannot be used at the same time as -Inconclusive.
 
     .PARAMETER Because
     Similarly to failing tests, skipped and inconclusive tests should have reason. It allows
@@ -16033,19 +21772,18 @@ function Set-ItResult {
 
     ```
     Describing Example
-      [?] Inconclusive test is inconclusive, because we want it to be inconclusive 35ms (32ms|3ms)
-      [!] Skipped test is skipped, because we want it to be skipped 3ms (2ms|1ms)
+      [?] Inconclusive test is inconclusive, because we want it to be inconclusive 35ms
+      [!] Skipped test is skipped, because we want it to be skipped 3ms
     Tests completed in 78ms
     Tests Passed: 0, Failed: 0, Skipped: 1, Inconclusive: 1, NotRun: 0
     ```
 
     .LINK
-    https://pester.dev/docs/v5/commands/Set-ItResult
+    https://pester.dev/docs/commands/Set-ItResult
 #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false, ParameterSetName = "Inconclusive")][switch]$Inconclusive,
-        [Parameter(Mandatory = $false, ParameterSetName = "Pending")][switch]$Pending,
         [Parameter(Mandatory = $false, ParameterSetName = "Skipped")][switch]$Skipped,
         [string]$Because
     )
@@ -16070,11 +21808,6 @@ function Set-ItResult {
         'Inconclusive' {
             [String]$errorId = 'PesterTestInconclusive'
             [String]$message = "is inconclusive"
-            break
-        }
-        'Pending' {
-            [String]$errorId = 'PesterTestPending'
-            [String]$message = "is pending"
             break
         }
         'Skipped' {
@@ -16143,10 +21876,10 @@ function BeforeEach {
         The example uses BeforeEach to ensure a clean sample-file is used for each test.
 
     .LINK
-        https://pester.dev/docs/v5/commands/BeforeEach
+        https://pester.dev/docs/commands/BeforeEach
 
     .LINK
-        https://pester.dev/docs/v5/usage/setup-and-teardown
+        https://pester.dev/docs/usage/setup-and-teardown
     #>
     [CmdletBinding()]
     param
@@ -16158,6 +21891,7 @@ function BeforeEach {
         $Scriptblock
     )
     Assert-DescribeInProgress -CommandName BeforeEach
+    Assert-BoundScriptBlockInput -ScriptBlock $Scriptblock
 
     New-EachTestSetup -ScriptBlock $Scriptblock
 }
@@ -16209,10 +21943,10 @@ function AfterEach {
         The example uses AfterEach to remove a temporary file after each test.
 
     .LINK
-        https://pester.dev/docs/v5/commands/AfterEach
+        https://pester.dev/docs/commands/AfterEach
 
     .LINK
-        https://pester.dev/docs/v5/usage/setup-and-teardown
+        https://pester.dev/docs/usage/setup-and-teardown
     #>
     [CmdletBinding()]
     param
@@ -16224,6 +21958,7 @@ function AfterEach {
         $Scriptblock
     )
     Assert-DescribeInProgress -CommandName AfterEach
+    Assert-BoundScriptBlockInput -ScriptBlock $Scriptblock
 
     New-EachTestTeardown -ScriptBlock $Scriptblock
 }
@@ -16285,10 +22020,10 @@ function BeforeAll {
         the results in separate tests.
 
     .LINK
-        https://pester.dev/docs/v5/commands/BeforeAll
+        https://pester.dev/docs/commands/BeforeAll
 
     .LINK
-        https://pester.dev/docs/v5/usage/setup-and-teardown
+        https://pester.dev/docs/usage/setup-and-teardown
     #>
     [CmdletBinding()]
     param
@@ -16299,6 +22034,7 @@ function BeforeAll {
         [Scriptblock]
         $Scriptblock
     )
+    Assert-BoundScriptBlockInput -ScriptBlock $Scriptblock
 
     New-OneTimeTestSetup -ScriptBlock $Scriptblock
 }
@@ -16329,7 +22065,7 @@ function AfterAll {
         Describe "Validate important file" {
             BeforeAll {
                 $samplePath = "$([IO.Path]::GetTempPath())/$([Guid]::NewGuid()).txt"
-                Write-Output $samplePath
+                Write-Host $samplePath
                 1..100 | Set-Content -Path $samplePath
             }
 
@@ -16351,10 +22087,10 @@ function AfterAll {
         the tests in the Describe-block.
 
     .LINK
-        https://pester.dev/docs/v5/commands/AfterAll
+        https://pester.dev/docs/commands/AfterAll
 
     .LINK
-        https://pester.dev/docs/v5/usage/setup-and-teardown
+        https://pester.dev/docs/usage/setup-and-teardown
 #>
     [CmdletBinding()]
     param
@@ -16366,6 +22102,7 @@ function AfterAll {
         $Scriptblock
     )
     Assert-DescribeInProgress -CommandName AfterAll
+    Assert-BoundScriptBlockInput -ScriptBlock $Scriptblock
 
     New-OneTimeTestTeardown -ScriptBlock $Scriptblock
 }
@@ -16484,12 +22221,32 @@ function Clear-TestDrive {
 
         Remove-TestDriveSymbolicLinks -Path $TestDrivePath
 
-        foreach ($i in [IO.Directory]::GetFileSystemEntries($TestDrivePath, '*.*', [System.IO.SearchOption]::AllDirectories)) {
-            if ($Exclude -contains $i) {
-                continue
-            }
+        $allCurrent = [IO.Directory]::GetFileSystemEntries($TestDrivePath, '*.*', [System.IO.SearchOption]::AllDirectories)
 
-            & $SafeCommands['Remove-Item'] -Force -Recurse $i -ErrorAction Ignore
+        # Collect new items (those not in the snapshot taken before the test)
+        $newItems = foreach ($i in $allCurrent) {
+            if ($Exclude -notcontains $i) {
+                $i
+            }
+        }
+
+        if (-not $newItems) {
+            return
+        }
+
+        # Build a set of new item paths for O(1) parent lookups
+        $newItemSet = [System.Collections.Generic.HashSet[string]]::new(
+            [string[]]@($newItems),
+            [System.StringComparer]::OrdinalIgnoreCase)
+
+        # Only delete "root" new items (those whose parent directory is not also a new item).
+        # Deleting with -Recurse removes all descendants in one call, avoiding redundant
+        # Remove-Item calls on already-deleted children.
+        foreach ($item in $newItemSet) {
+            $parent = [IO.Path]::GetDirectoryName($item)
+            if (-not $newItemSet.Contains($parent)) {
+                & $SafeCommands['Remove-Item'] -Path $item -Force -Recurse -ErrorAction Ignore
+            }
         }
     }
 }
@@ -16497,7 +22254,8 @@ function Clear-TestDrive {
 function New-RandomTempDirectory {
     do {
         $tempPath = Get-TempDirectory
-        $Path = [IO.Path]::Combine($tempPath, ([Guid]::NewGuid()));
+        $dirName = 'Pester_' + [IO.Path]::GetRandomFileName().Substring(0, 4)
+        $Path = [IO.Path]::Combine($tempPath, $dirName)
     } until (-not [IO.Directory]::Exists($Path))
 
     [IO.Directory]::CreateDirectory($Path).FullName
@@ -16521,11 +22279,10 @@ function Remove-TestDriveSymbolicLinks ([String] $Path) {
 
     # issue 621 was fixed before PowerShell 6.1
     # now there is an issue with calling the Delete method in recent (6.1) builds of PowerShell
-    if ((GetPesterPSVersion) -ge 6) {
+    if ((GetPesterPSVersion) -ge 7) {
         return
     }
 
-    # powershell 2-compatible
     $reparsePoint = [System.IO.FileAttributes]::ReparsePoint
     & $SafeCommands['Get-ChildItem'] -Recurse -Path $Path |
         & $SafeCommands['Where-Object'] { ($_.Attributes -band $reparsePoint) -eq $reparsePoint } |
@@ -16632,7 +22389,7 @@ function Get-TestRegistryChildItem ([string]$TestRegistryPath) {
 function New-RandomTempRegistry {
     do {
         $tempPath = Get-TempRegistry
-        $Path = & $SafeCommands['Join-Path'] -Path $tempPath -ChildPath ([Guid]::NewGuid())
+        $Path = & $SafeCommands['Join-Path'] -Path $tempPath -ChildPath ([IO.Path]::GetRandomFileName().Substring(0, 4))
     } until (-not (& $SafeCommands['Test-Path'] -Path $Path -PathType Container))
 
     try {
@@ -17011,7 +22768,8 @@ function Write-NUnitTestSuiteElements {
 
     $suites = @(
         # Tests only have GroupId if parameterized. All other tests are put in group with '' value
-        $Node.Tests | & $SafeCommands['Group-Object'] -Property GroupId
+        # PowerShell 6.1+ sorts by default in Group-Object. We need to sort for consistent output in Windows PowerShell
+        $Node.Tests | & $SafeCommands['Group-Object'] -Property GroupId | & $SafeCommands["Sort-Object"] -Property Name
     )
 
     foreach ($suite in $suites) {
@@ -17060,7 +22818,6 @@ function Get-ParameterizedTestSuiteInfo {
         PassedCount       = 0
         FailedCount       = 0
         SkippedCount      = 0
-        PendingCount      = 0
         InconclusiveCount = 0
     }
 
@@ -17075,9 +22832,6 @@ function Get-ParameterizedTestSuiteInfo {
             }
             Skipped {
                 $node.SkippedCount++; break;
-            }
-            Pending {
-                $node.PendingCount++; break;
             }
             Inconclusive {
                 $node.InconclusiveCount++; break;
@@ -17231,20 +22985,6 @@ function Write-NUnitTestCaseAttributes {
             break
         }
 
-        Pending {
-            $XmlWriter.WriteAttributeString('result', 'Inconclusive')
-            $XmlWriter.WriteAttributeString('executed', 'True')
-
-            # TODO: This doesn't work, FailureMessage comes from Get-ErrorForXmlReport which isn't called
-            if ($TestResult.FailureMessage) {
-                $XmlWriter.WriteStartElement('reason')
-                $xmlWriter.WriteElementString('message', $TestResult.FailureMessage)
-                $XmlWriter.WriteEndElement() # Close reason tag
-            }
-
-            break
-        }
-
         Inconclusive {
             $XmlWriter.WriteAttributeString('result', 'Inconclusive')
             $XmlWriter.WriteAttributeString('executed', 'True')
@@ -17284,9 +23024,6 @@ function Get-GroupResult ($InputObject) {
     }
     if ($InputObject.SkippedCount -gt 0) {
         return 'Ignored'
-    }
-    if ($InputObject.PendingCount -gt 0) {
-        return 'Inconclusive'
     }
     if ($InputObject.InconclusiveCount -gt 0) {
         return 'Inconclusive'
@@ -17355,7 +23092,7 @@ function Write-NUnit3TestRunChildNode {
             continue
         }
 
-        # Incremenet assembly-id per container and reset node-counter
+        # Increment assembly-id per container and reset node-counter
         $reportIds.Assembly++
         $reportIds.Node = 1000
         Write-NUnit3TestSuiteElement -XmlWriter $XmlWriter -Node $container -RuntimeEnvironment $RuntimeEnvironment
@@ -17431,7 +23168,8 @@ function Write-NUnit3TestSuiteElement {
 
     $blockGroups = @(
         # Blocks only have GroupId if parameterized (using -ForEach). All other blocks are put in group with '' value
-        $Node.Blocks | & $SafeCommands['Group-Object'] -Property GroupId
+        # PowerShell 6.1+ sorts by default in Group-Object. We need to sort for consistent output in Windows PowerShell
+        $Node.Blocks | & $SafeCommands['Group-Object'] -Property GroupId | & $SafeCommands["Sort-Object"] -Property Name
     )
 
     foreach ($group in $blockGroups) {
@@ -17466,7 +23204,8 @@ function Write-NUnit3TestSuiteElement {
 
     $testGroups = @(
         # Tests only have GroupId if parameterized. All other tests are put in group with '' value
-        $Node.Tests | & $SafeCommands['Group-Object'] -Property GroupId
+        # PowerShell 6.1+ sorts by default in Group-Object. We need to sort for consistent output in Windows PowerShell
+        $Node.Tests | & $SafeCommands['Group-Object'] -Property GroupId | & $SafeCommands["Sort-Object"] -Property Name
     )
 
     foreach ($group in $testGroups) {
@@ -17779,7 +23518,6 @@ function Write-NUnit3TestCaseElement {
 
     switch ($TestResult.Result) {
         Skipped { Write-NUnitReasonElement -TestResult $TestResult -XmlWriter $XmlWriter; break }
-        Pending { Write-NUnitReasonElement -TestResult $TestResult -XmlWriter $XmlWriter; break }
         Inconclusive { Write-NUnitReasonElement -TestResult $TestResult -XmlWriter $XmlWriter; break }
         Failed { Write-NUnit3FailureElement -TestResult $TestResult -XmlWriter $XmlWriter; break }
     }
@@ -17820,7 +23558,6 @@ function Write-NUnit3TestCaseAttributes {
         Failed { $XmlWriter.WriteAttributeString('result', 'Failed'); break }
         Passed { $XmlWriter.WriteAttributeString('result', 'Passed'); break }
         Skipped { $XmlWriter.WriteAttributeString('result', 'Skipped'); break }
-        Pending { $XmlWriter.WriteAttributeString('result', 'Inconclusive'); break }
         Inconclusive { $XmlWriter.WriteAttributeString('result', 'Inconclusive'); break }
         # result-attribute is required, so intentionally making xml invalid if unknown state occurs
     }
@@ -17836,7 +23573,8 @@ function Write-NUnit3TestCaseAttributes {
     $XmlWriter.WriteAttributeString('asserts', '1') # required attr, so hardcoding 1:1 per testcase
 }
 
-function Write-NUnit3OutputElement ($Output, [System.Xml.XmlWriter] $XmlWriter) {
+function Format-CDataString ($Output) {
+
     # The characters in the range 0x01 to 0x20 are invalid for CData
     # (with the exception of the characters 0x09, 0x0A and 0x0D)
     # We convert each of these using the unicode printable version,
@@ -17849,7 +23587,12 @@ function Write-NUnit3OutputElement ($Output, [System.Xml.XmlWriter] $XmlWriter) 
     $linesCount = $out.Length
     $o = for ($i = 0; $i -lt $linesCount; $i++) {
         # The input is array of objects, convert them to strings.
-        $line = if ($null -eq $out[$i]) { [String]::Empty } else { $out[$i].ToString() }
+        $line = if ($null -eq $out[$i]) {
+            [String]::Empty
+        }
+        else {
+            try { $out[$i].ToString() } catch { "<Output object ToString() failed: $($_.Exception.Message)>" }
+        }
 
         if (0 -gt $line.IndexOfAny($script:invalidCDataChars)) {
             # No special chars that need replacing.
@@ -17870,8 +23613,13 @@ function Write-NUnit3OutputElement ($Output, [System.Xml.XmlWriter] $XmlWriter) 
     }
 
     $outputString = $o -join [Environment]::NewLine
+    return $outputString
+}
+
+
+function Write-NUnit3OutputElement ($Output, [System.Xml.XmlWriter] $XmlWriter) {
     $XmlWriter.WriteStartElement('output')
-    $XmlWriter.WriteCData($outputString)
+    $XmlWriter.WriteCData((Format-CDataString $output))
     $XmlWriter.WriteEndElement()
 }
 
@@ -17883,12 +23631,12 @@ function Write-NUnit3FailureElement ($TestResult, [System.Xml.XmlWriter] $XmlWri
     $XmlWriter.WriteStartElement('failure')
 
     $XmlWriter.WriteStartElement('message')
-    $XmlWriter.WriteCData($result.FailureMessage)
+    $XmlWriter.WriteCData((Format-CDataString $result.FailureMessage))
     $XmlWriter.WriteEndElement() # Close message
 
     if ($result.StackTrace) {
         $XmlWriter.WriteStartElement('stack-trace')
-        $XmlWriter.WriteCData($result.StackTrace)
+        $XmlWriter.WriteCData((Format-CDataString $result.StackTrace))
         $XmlWriter.WriteEndElement() # Close stack-trace
     }
 
@@ -17902,7 +23650,7 @@ function Write-NUnitReasonElement ($TestResult, [System.Xml.XmlWriter] $XmlWrite
     if ($result.FailureMessage) {
         $XmlWriter.WriteStartElement('reason')
         $XmlWriter.WriteStartElement('message')
-        $XmlWriter.WriteCData($result.FailureMessage)
+        $XmlWriter.WriteCData((Format-CDataString $result.FailureMessage))
         $XmlWriter.WriteEndElement() # Close message
         $XmlWriter.WriteEndElement() # Close reason
     }
@@ -17942,7 +23690,7 @@ function Write-NUnit3DataProperty ([System.Collections.IDictionary] $Data, [Syst
 }
 
 function Get-NUnit3NodeId {
-    # depends on inhertied $reportIds created in Write-NUnit3TestRunChildNode
+    # depends on inherited $reportIds created in Write-NUnit3TestRunChildNode
     if ($null -eq $reportIds) { return '' }
 
     # Unique id (string):  <asemmblyid>-<counter>
@@ -17996,24 +23744,57 @@ function Export-PesterResult {
     param (
         [Pester.Run] $Result,
         [string] $Path,
-        [string] $Format
+        [string] $Format,
+        [string] $Encoding = 'UTF8'
     )
 
     switch -Wildcard ($Format) {
         'NUnit2.5' {
-            Export-XmlReport -Result $Result -Path $Path -Format $Format
+            Export-XmlReport -Result $Result -Path $Path -Format $Format -Encoding $Encoding
         }
 
         'NUnit3' {
-            Export-XmlReport -Result $Result -Path $Path -Format $Format
+            Export-XmlReport -Result $Result -Path $Path -Format $Format -Encoding $Encoding
         }
 
         '*Xml' {
-            Export-XmlReport -Result $Result -Path $Path -Format $Format
+            Export-XmlReport -Result $Result -Path $Path -Format $Format -Encoding $Encoding
         }
 
         default {
             throw "'$Format' is not a valid Pester export format."
+        }
+    }
+}
+
+function Get-OutputEncodingFromName {
+    # Converts a PowerShell-style encoding name (the values accepted by Out-File -Encoding, e.g. 'UTF8',
+    # 'UTF8BOM', 'Unicode', 'UTF32', 'ASCII') or a .NET web name (e.g. 'utf-16') to a [System.Text.Encoding]
+    # instance for use with XmlWriterSettings.Encoding, so the xml encoding-declaration and the bytes on disk
+    # match. Falls back to UTF-8 (with BOM, the historical default) and warns when the value is empty or not a
+    # recognized encoding. (#2452, #2450)
+    param (
+        [string] $Encoding,
+        [string] $OptionName = 'TestResult.OutputEncoding'
+    )
+
+    switch -Regex ($Encoding) {
+        '^\s*$' { return [System.Text.UTF8Encoding]::new($true) }
+        '(?i)^utf-?8(-?bom)?$' { return [System.Text.UTF8Encoding]::new($true) }
+        '(?i)^utf-?8-?nobom$' { return [System.Text.UTF8Encoding]::new($false) }
+        '(?i)^(unicode|utf-?16(le)?)$' { return [System.Text.UnicodeEncoding]::new($false, $true) }
+        '(?i)^(bigendianunicode|utf-?16be)$' { return [System.Text.UnicodeEncoding]::new($true, $true) }
+        '(?i)^(utf-?32(le)?)$' { return [System.Text.UTF32Encoding]::new($false, $true) }
+        '(?i)^(bigendianutf32|utf-?32be)$' { return [System.Text.UTF32Encoding]::new($true, $true) }
+        '(?i)^ascii$' { return [System.Text.Encoding]::ASCII }
+        default {
+            try {
+                return [System.Text.Encoding]::GetEncoding($Encoding)
+            }
+            catch {
+                & $SafeCommands['Write-Warning'] "$OptionName '$Encoding' is not a valid encoding name, falling back to 'UTF8'. $($_.Exception.Message)"
+                return [System.Text.UTF8Encoding]::new($true)
+            }
         }
     }
 }
@@ -18052,10 +23833,10 @@ function Export-NUnitReport {
     exports it as an NUnit 2.5-compatible XML-report.
 
     .LINK
-    https://pester.dev/docs/v5/commands/Export-NUnitReport
+    https://pester.dev/docs/commands/Export-NUnitReport
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
+    https://pester.dev/docs/commands/Invoke-Pester
     #>
     param (
         [parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -18102,10 +23883,10 @@ function Export-JUnitReport {
     exports it as an JUnit 4-compatible XML-report.
 
     .LINK
-    https://pester.dev/docs/v5/commands/Export-JUnitReport
+    https://pester.dev/docs/commands/Export-JUnitReport
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
+    https://pester.dev/docs/commands/Invoke-Pester
     #>
     param (
         [parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -18128,7 +23909,9 @@ function Export-XmlReport {
 
         [parameter(Mandatory = $true)]
         [ValidateSet('NUnitXml', 'NUnit2.5', 'NUnit3', 'JUnitXml')]
-        [string] $Format
+        [string] $Format,
+
+        [string] $Encoding = 'UTF8'
     )
 
     if ('NUnit2.5' -eq $Format) {
@@ -18143,6 +23926,7 @@ function Export-XmlReport {
     $settings = [Xml.XmlWriterSettings] @{
         Indent              = $true
         NewLineOnAttributes = $false
+        Encoding            = Get-OutputEncodingFromName -Encoding $Encoding
     }
 
     $xmlFile = $null
@@ -18239,13 +24023,14 @@ function ConvertTo-NUnitReport {
     converts it to an NUnit 2.5-compatible XML-report. The returned object is a string.
 
     .LINK
-    https://pester.dev/docs/v5/commands/ConvertTo-NUnitReport
+    https://pester.dev/docs/commands/ConvertTo-NUnitReport
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
+    https://pester.dev/docs/commands/Invoke-Pester
     #>
+    [OutputType([xml], [string])]
     param (
-        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Pester.Run] $Result,
         [Switch] $AsString,
 
@@ -18261,7 +24046,7 @@ function ConvertTo-NUnitReport {
     $stringWriter = $null
     $xmlWriter = $null
     try {
-        $stringWriter = & $SafeCommands['New-Object'] IO.StringWriter
+        $stringWriter = [IO.StringWriter]::new()
         $xmlWriter = [Xml.XmlWriter]::Create($stringWriter, $settings)
 
         switch ($Format) {
@@ -18329,13 +24114,14 @@ function ConvertTo-JUnitReport {
     converts it to an JUnit 4-compatible XML-report. The returned object is a string.
 
     .LINK
-    https://pester.dev/docs/v5/commands/ConvertTo-JUnitReport
+    https://pester.dev/docs/commands/ConvertTo-JUnitReport
 
     .LINK
-    https://pester.dev/docs/v5/commands/Invoke-Pester
+    https://pester.dev/docs/commands/Invoke-Pester
     #>
+    [OutputType([xml], [string])]
     param (
-        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Pester.Run] $Result,
         [Switch] $AsString
     )
@@ -18348,7 +24134,7 @@ function ConvertTo-JUnitReport {
     $stringWriter = $null
     $xmlWriter = $null
     try {
-        $stringWriter = & $SafeCommands['New-Object'] IO.StringWriter
+        $stringWriter = [IO.StringWriter]::new()
         $xmlWriter = [Xml.XmlWriter]::Create($stringWriter, $settings)
 
         Write-JUnitReport -XmlWriter $xmlWriter -Result $Result
@@ -18440,10 +24226,10 @@ function Get-RunTimeEnvironment {
     $computerName = $env:ComputerName
     $userName = $env:Username
     if ($null -ne $SafeCommands['Get-CimInstance']) {
-        $osSystemInformation = (& $SafeCommands['Get-CimInstance'] Win32_OperatingSystem)
+        $osSystemInformation = (& $SafeCommands['Get-CimInstance'] Win32_OperatingSystem -ErrorAction Ignore)
     }
     elseif ($null -ne $SafeCommands['Get-WmiObject']) {
-        $osSystemInformation = (& $SafeCommands['Get-WmiObject'] Win32_OperatingSystem)
+        $osSystemInformation = (& $SafeCommands['Get-WmiObject'] Win32_OperatingSystem -ErrorAction Ignore)
     }
     elseif ($IsMacOS -or $IsLinux) {
         $osSystemInformation = @{
@@ -18464,7 +24250,9 @@ function Get-RunTimeEnvironment {
             # well, we tried
         }
     }
-    else {
+
+    # Fall back to unknown values if WMI/CIM returned null (e.g. access denied when not running as Administrator)
+    if ($null -eq $osSystemInformation) {
         $osSystemInformation = @{
             Name    = 'Unknown'
             Version = '0.0.0.0'
@@ -18498,7 +24286,7 @@ function Get-TestResultPlugin {
 
         $run = $Context.TestRun
         $testResultConfig = $PesterPreference.TestResult
-        Export-PesterResult -Result $run -Path $testResultConfig.OutputPath.Value -Format $testResultConfig.OutputFormat.Value
+        Export-PesterResult -Result $run -Path $testResultConfig.OutputPath.Value -Format $testResultConfig.OutputFormat.Value -Encoding $testResultConfig.OutputEncoding.Value
     }
 
     New-PluginObject @p
@@ -18518,13 +24306,18 @@ $script:SafeCommands['Get-MockDynamicParameter'] = $ExecutionContext.SessionStat
 $script:SafeCommands['Write-PesterDebugMessage'] = $ExecutionContext.SessionState.InvokeCommand.GetCommand('Write-PesterDebugMessage', 'function')
 $script:SafeCommands['Set-DynamicParameterVariable'] = $ExecutionContext.SessionState.InvokeCommand.GetCommand('Set-DynamicParameterVariable', 'function')
 
-& $SafeCommands['Set-Alias'] 'Add-AssertionOperator' 'Add-ShouldOperator'
-& $SafeCommands['Set-Alias'] 'Get-AssertionOperator' 'Get-ShouldOperator'
+& $SafeCommands['Set-Alias'] 'Add-AssertionOperator'        'Add-ShouldOperator'
+& $SafeCommands['Set-Alias'] 'Get-AssertionOperator'        'Get-ShouldOperator'
+
+
+
 
 & $SafeCommands['Update-TypeData'] -TypeName PesterConfiguration -TypeConverter 'PesterConfigurationDeserializer' -SerializationDepth 5 -Force
 & $SafeCommands['Update-TypeData'] -TypeName 'Deserialized.PesterConfiguration' -TargetTypeForDeserialization PesterConfiguration -Force
 
-& $script:SafeCommands['Export-ModuleMember'] @(
+[Pester.VerbsPatcher]::AllowShouldVerb($PSVersionTable.PSVersion.Major)
+
+& $script:SafeCommands['Export-ModuleMember'] -Function @(
     'Invoke-Pester'
 
     # blocks
@@ -18552,6 +24345,62 @@ $script:SafeCommands['Set-DynamicParameterVariable'] = $ExecutionContext.Session
     'New-PesterContainer'
     'New-PesterConfiguration'
 
+    # assert
+    # bool
+    'Should-BeFalse'
+    'Should-BeTrue'
+    'Should-BeFalsy'
+    'Should-BeTruthy'
+
+    # collection
+    'Should-All'
+    'Should-Any'
+    'Should-ContainCollection'
+    'Should-NotContainCollection'
+    'Should-BeCollection'
+    'Should-BeEquivalent'
+    'Should-Throw'
+    'Should-Be'
+    'Should-BeGreaterThan'
+    'Should-BeGreaterThanOrEqual'
+    'Should-BeLessThan'
+    'Should-BeLessThanOrEqual'
+    'Should-NotBe'
+    'Should-NotBeNull'
+    'Should-NotBeSame'
+    'Should-NotHaveType'
+    'Should-BeNull'
+    'Should-BeSame'
+    'Should-HaveType'
+
+    # hashtable
+    'Should-BeHashtable'
+
+    # string
+    'Should-BeString'
+    'Should-NotBeString'
+
+    'Should-BeEmptyString'
+
+    'Should-NotBeWhiteSpaceString'
+    'Should-NotBeEmptyString'
+
+    'Should-BeLikeString'
+    'Should-NotBeLikeString'
+    'Should-MatchString'
+    'Should-NotMatchString'
+
+    'Should-Invoke'
+    'Should-NotInvoke'
+
+    'Should-BeFasterThan'
+    'Should-BeSlowerThan'
+    'Should-BeBefore'
+    'Should-BeAfter'
+
+    'Should-HaveParameter'
+    'Should-NotHaveParameter'
+
     # export
     'Export-NUnitReport'
     'ConvertTo-NUnitReport'
@@ -18559,13 +24408,10 @@ $script:SafeCommands['Set-DynamicParameterVariable'] = $ExecutionContext.Session
     'ConvertTo-JUnitReport'
     'ConvertTo-Pester4Result'
 
-    # legacy
-    'Assert-VerifiableMock'
-    'Assert-MockCalled'
-    'Set-ItResult'
+    # helpers
     'New-MockObject'
-
     'New-Fixture'
+    'Set-ItResult'
 ) -Alias @(
     'Add-AssertionOperator'
     'Get-AssertionOperator'
@@ -18573,10 +24419,10 @@ $script:SafeCommands['Set-DynamicParameterVariable'] = $ExecutionContext.Session
 
 
 # SIG # Begin signature block
-# MIIttwYJKoZIhvcNAQcCoIItqDCCLaQCAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIIt9AYJKoZIhvcNAQcCoIIt5TCCLeECAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDWxATJOR5gXOiJ
-# 3rcy9Xkx4QLa9kp2ejiWhROteLfy2aCCEw8wggWQMIIDeKADAgECAhAFmxtXno4h
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCD3wYe63Hcm0Nqo
+# Yi59TCkYx1kqp04nX3n/nI9tdKfLaKCCEw8wggWQMIIDeKADAgECAhAFmxtXno4h
 # MuI5B72nd3VcMA0GCSqGSIb3DQEBDAUAMGIxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xITAfBgNV
 # BAMTGERpZ2lDZXJ0IFRydXN0ZWQgUm9vdCBHNDAeFw0xMzA4MDExMjAwMDBaFw0z
@@ -18678,143 +24524,145 @@ $script:SafeCommands['Set-DynamicParameterVariable'] = $ExecutionContext.Session
 # wj53HwvRD7aOx9xUntZUFm99/dQ4QmPfoWIqejwQT9oT2Tb9czoc3ZArOxzTgOsH
 # o2npAzR8jIIuO6vMBms9PtympkNLDtrG4xKQtWXT3jCnDywib5CTqNG60C4ucEym
 # xz5dZIx/08Ymi7AF+7W/W3dWRt7dZrMz8Mm6H060IiCVKdw0rk7Shh11Y7xZ9Edn
-# SJtLRtINTdoQMYIZ/jCCGfoCAQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMO
+# SJtLRtINTdoQMYIaOzCCGjcCAQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMO
 # RGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgQ29k
 # ZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAHNssXKkOy4c8wJoU8
 # r9tXMA0GCWCGSAFlAwQCAQUAoIGWMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEE
 # MBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMCoGCisGAQQBgjcCAQwxHDAa
-# oAKAAKEUgBJodHRwczovL3Blc3Rlci5kZXYwLwYJKoZIhvcNAQkEMSIEIM3MVFgL
-# T8R7S68scJNfw5atBYI+fD+VT++bvZ6KG2i0MA0GCSqGSIb3DQEBAQUABIIBgF8M
-# cm945x+IbTcZ8Oui3/dwl/WsGH/OHClgdqxVb0iWqae0gj1WLrB7zGXvT97oPiCV
-# UVU3xTqDD5zaSL21Dc01l6m77nnc+9O4AAfDSlnv5Bl3pJ6n6KhBcZx7Sa4ELGlx
-# +IJUJ7QWmqvHik8WuPRtlI5D/gQuZQ2CszhqL3a2lf6sxFd2/S0nMNNJS3DPQf5S
-# FE2PFzvNYpdHd+5PyQ4jqkd/GsixVicYcQmlqj/qbLHAoD2rWsYHFOtuM5sdghKx
-# Nu3vi5UpLpmLTxW5P2zzgEd9uUJNx1iiyr/Do84nC5Y+8exSAfzXaf1TgJf1eB1O
-# L4CINyer0aycpDrQxJWr3T5kAWrx1zACYkrBORWEr8E28V/jrukmQfokk2uDhpNW
-# ybR38O1wUz9NXhBLpDJEYCL6V6uMgMMVz2Miq+Ckm1Fmkc9TUwIVfF3RcMMKvq04
-# iEXzw9CkkWOfs/X2cF7pfXfM6aPT9dGtDRlTlZK6NyBo2AMj1wAXR0MYDZfzU6GC
-# Fzkwghc1BgorBgEEAYI3AwMBMYIXJTCCFyEGCSqGSIb3DQEHAqCCFxIwghcOAgED
+# oAKAAKEUgBJodHRwczovL3Blc3Rlci5kZXYwLwYJKoZIhvcNAQkEMSIEIC1tfaS8
+# IejPLmqqqhn+LcOTxdV9MAmRmu121Lt1bGQBMA0GCSqGSIb3DQEBAQUABIIBgCDh
+# slzgyYwVlqJD6zz4U+BzUi13wNChfPqJEp7ILO8dOK1GlewZPgiLRSW6XBcgPhMP
+# 4wJfd2rt7CBLySslrG0yJOkmJLTgd/hhrW36zkr8Ymy27vNHvs9TjgcYe5opGKSA
+# H77ASfIU9H3intZFdG8ABVcyRYxV6CU4XjFGHGMQHR+2Fq0gr8Fj7cUE0wNn759Y
+# /5uSvqQj4ScpYjgE1q711CVsncZiP0JS02+Lfzq6lPqKqcm3pkgXyAscl+TBxAYw
+# VAJRJU1zecO3eEQ/qYBgRb8mGhb5I+LXCJl4HnVFhHd2uuAZNGs3o/DhJZLaE7VX
+# Ljj7l9raCbwYVP/occEsmWkIEsyNuQ+HcliHBuRp1b52vj2NmpQ4IMPex/Z11Nzv
+# 5amMVqmVDDwICjidRAJqPRi4E2+y5hN4my/+XMeQ3lV7a4HTlpYb+aoEoVbIk/gN
+# vse8anQ2zp1vuG2PxDkXzxyyUNaGygOxvwaRxApHcjvKstbEQUHS26SUbB0Y7aGC
+# F3YwghdyBgorBgEEAYI3AwMBMYIXYjCCF14GCSqGSIb3DQEHAqCCF08wghdLAgED
 # MQ8wDQYJYIZIAWUDBAIBBQAwdwYLKoZIhvcNAQkQAQSgaARmMGQCAQEGCWCGSAGG
-# /WwHATAxMA0GCWCGSAFlAwQCAQUABCA2YUzEgnWu2AEyXB/lcw4lVMcdKrKu5dA9
-# lNqYe+FMMQIQOOkPTEB0tDnfPVbx1qfu8RgPMjAyNTAxMDgyMTExNTdaoIITAzCC
-# BrwwggSkoAMCAQICEAuuZrxaun+Vh8b56QTjMwQwDQYJKoZIhvcNAQELBQAwYzEL
-# MAkGA1UEBhMCVVMxFzAVBgNVBAoTDkRpZ2lDZXJ0LCBJbmMuMTswOQYDVQQDEzJE
-# aWdpQ2VydCBUcnVzdGVkIEc0IFJTQTQwOTYgU0hBMjU2IFRpbWVTdGFtcGluZyBD
-# QTAeFw0yNDA5MjYwMDAwMDBaFw0zNTExMjUyMzU5NTlaMEIxCzAJBgNVBAYTAlVT
-# MREwDwYDVQQKEwhEaWdpQ2VydDEgMB4GA1UEAxMXRGlnaUNlcnQgVGltZXN0YW1w
-# IDIwMjQwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQC+anOf9pUhq5Yw
-# ultt5lmjtej9kR8YxIg7apnjpcH9CjAgQxK+CMR0Rne/i+utMeV5bUlYYSuuM4vQ
-# ngvQepVHVzNLO9RDnEXvPghCaft0djvKKO+hDu6ObS7rJcXa/UKvNminKQPTv/1+
-# kBPgHGlP28mgmoCw/xi6FG9+Un1h4eN6zh926SxMe6We2r1Z6VFZj75MU/HNmtsg
-# tFjKfITLutLWUdAoWle+jYZ49+wxGE1/UXjWfISDmHuI5e/6+NfQrxGFSKx+rDdN
-# MsePW6FLrphfYtk/FLihp/feun0eV+pIF496OVh4R1TvjQYpAztJpVIfdNsEvxHo
-# fBf1BWkadc+Up0Th8EifkEEWdX4rA/FE1Q0rqViTbLVZIqi6viEk3RIySho1XyHL
-# IAOJfXG5PEppc3XYeBH7xa6VTZ3rOHNeiYnY+V4j1XbJ+Z9dI8ZhqcaDHOoj5KGg
-# 4YuiYx3eYm33aebsyF6eD9MF5IDbPgjvwmnAalNEeJPvIeoGJXaeBQjIK13SlnzO
-# DdLtuThALhGtyconcVuPI8AaiCaiJnfdzUcb3dWnqUnjXkRFwLtsVAxFvGqsxUA2
-# Jq/WTjbnNjIUzIs3ITVC6VBKAOlb2u29Vwgfta8b2ypi6n2PzP0nVepsFk8nlcuW
-# fyZLzBaZ0MucEdeBiXL+nUOGhCjl+QIDAQABo4IBizCCAYcwDgYDVR0PAQH/BAQD
-# AgeAMAwGA1UdEwEB/wQCMAAwFgYDVR0lAQH/BAwwCgYIKwYBBQUHAwgwIAYDVR0g
-# BBkwFzAIBgZngQwBBAIwCwYJYIZIAYb9bAcBMB8GA1UdIwQYMBaAFLoW2W1NhS9z
-# KXaaL3WMaiCPnshvMB0GA1UdDgQWBBSfVywDdw4oFZBmpWNe7k+SH3agWzBaBgNV
-# HR8EUzBRME+gTaBLhklodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRU
-# cnVzdGVkRzRSU0E0MDk2U0hBMjU2VGltZVN0YW1waW5nQ0EuY3JsMIGQBggrBgEF
-# BQcBAQSBgzCBgDAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGlnaWNlcnQuY29t
-# MFgGCCsGAQUFBzAChkxodHRwOi8vY2FjZXJ0cy5kaWdpY2VydC5jb20vRGlnaUNl
-# cnRUcnVzdGVkRzRSU0E0MDk2U0hBMjU2VGltZVN0YW1waW5nQ0EuY3J0MA0GCSqG
-# SIb3DQEBCwUAA4ICAQA9rR4fdplb4ziEEkfZQ5H2EdubTggd0ShPz9Pce4FLJl6r
-# eNKLkZd5Y/vEIqFWKt4oKcKz7wZmXa5VgW9B76k9NJxUl4JlKwyjUkKhk3aYx7D8
-# vi2mpU1tKlY71AYXB8wTLrQeh83pXnWwwsxc1Mt+FWqz57yFq6laICtKjPICYYf/
-# qgxACHTvypGHrC8k1TqCeHk6u4I/VBQC9VK7iSpU5wlWjNlHlFFv/M93748YTeoX
-# U/fFa9hWJQkuzG2+B7+bMDvmgF8VlJt1qQcl7YFUMYgZU1WM6nyw23vT6QSgwX5P
-# q2m0xQ2V6FJHu8z4LXe/371k5QrN9FQBhLLISZi2yemW0P8ZZfx4zvSWzVXpAb9k
-# 4Hpvpi6bUe8iK6WonUSV6yPlMwerwJZP/Gtbu3CKldMnn+LmmRTkTXpFIEB06nXZ
-# rDwhCGED+8RsWQSIXZpuG4WLFQOhtloDRWGoCwwc6ZpPddOFkM2LlTbMcqFSzm4c
-# d0boGhBq7vkqI1uHRz6Fq1IX7TaRQuR+0BGOzISkcqwXu7nMpFu3mgrlgbAW+Bzi
-# kRVQ3K2YHcGkiKjA4gi4OA/kz1YCsdhIBHXqBzR0/Zd2QwQ/l4Gxftt/8wY3grcc
-# /nS//TVkej9nmUYu83BDtccHHXKibMs/yXHhDXNkoPIdynhVAku7aRZOwqw6pDCC
-# Bq4wggSWoAMCAQICEAc2N7ckVHzYR6z9KGYqXlswDQYJKoZIhvcNAQELBQAwYjEL
-# MAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3
-# LmRpZ2ljZXJ0LmNvbTEhMB8GA1UEAxMYRGlnaUNlcnQgVHJ1c3RlZCBSb290IEc0
-# MB4XDTIyMDMyMzAwMDAwMFoXDTM3MDMyMjIzNTk1OVowYzELMAkGA1UEBhMCVVMx
-# FzAVBgNVBAoTDkRpZ2lDZXJ0LCBJbmMuMTswOQYDVQQDEzJEaWdpQ2VydCBUcnVz
-# dGVkIEc0IFJTQTQwOTYgU0hBMjU2IFRpbWVTdGFtcGluZyBDQTCCAiIwDQYJKoZI
-# hvcNAQEBBQADggIPADCCAgoCggIBAMaGNQZJs8E9cklRVcclA8TykTepl1Gh1tKD
-# 0Z5Mom2gsMyD+Vr2EaFEFUJfpIjzaPp985yJC3+dH54PMx9QEwsmc5Zt+FeoAn39
-# Q7SE2hHxc7Gz7iuAhIoiGN/r2j3EF3+rGSs+QtxnjupRPfDWVtTnKC3r07G1decf
-# BmWNlCnT2exp39mQh0YAe9tEQYncfGpXevA3eZ9drMvohGS0UvJ2R/dhgxndX7RU
-# CyFobjchu0CsX7LeSn3O9TkSZ+8OpWNs5KbFHc02DVzV5huowWR0QKfAcsW6Th+x
-# tVhNef7Xj3OTrCw54qVI1vCwMROpVymWJy71h6aPTnYVVSZwmCZ/oBpHIEPjQ2OA
-# e3VuJyWQmDo4EbP29p7mO1vsgd4iFNmCKseSv6De4z6ic/rnH1pslPJSlRErWHRA
-# KKtzQ87fSqEcazjFKfPKqpZzQmiftkaznTqj1QPgv/CiPMpC3BhIfxQ0z9JMq++b
-# Pf4OuGQq+nUoJEHtQr8FnGZJUlD0UfM2SU2LINIsVzV5K6jzRWC8I41Y99xh3pP+
-# OcD5sjClTNfpmEpYPtMDiP6zj9NeS3YSUZPJjAw7W4oiqMEmCPkUEBIDfV8ju2Tj
-# Y+Cm4T72wnSyPx4JduyrXUZ14mCjWAkBKAAOhFTuzuldyF4wEr1GnrXTdrnSDmuZ
-# DNIztM2xAgMBAAGjggFdMIIBWTASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQW
-# BBS6FtltTYUvcyl2mi91jGogj57IbzAfBgNVHSMEGDAWgBTs1+OC0nFdZEzfLmc/
-# 57qYrhwPTzAOBgNVHQ8BAf8EBAMCAYYwEwYDVR0lBAwwCgYIKwYBBQUHAwgwdwYI
-# KwYBBQUHAQEEazBpMCQGCCsGAQUFBzABhhhodHRwOi8vb2NzcC5kaWdpY2VydC5j
-# b20wQQYIKwYBBQUHMAKGNWh0dHA6Ly9jYWNlcnRzLmRpZ2ljZXJ0LmNvbS9EaWdp
-# Q2VydFRydXN0ZWRSb290RzQuY3J0MEMGA1UdHwQ8MDowOKA2oDSGMmh0dHA6Ly9j
-# cmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRydXN0ZWRSb290RzQuY3JsMCAGA1Ud
-# IAQZMBcwCAYGZ4EMAQQCMAsGCWCGSAGG/WwHATANBgkqhkiG9w0BAQsFAAOCAgEA
-# fVmOwJO2b5ipRCIBfmbW2CFC4bAYLhBNE88wU86/GPvHUF3iSyn7cIoNqilp/GnB
-# zx0H6T5gyNgL5Vxb122H+oQgJTQxZ822EpZvxFBMYh0MCIKoFr2pVs8Vc40BIiXO
-# lWk/R3f7cnQU1/+rT4osequFzUNf7WC2qk+RZp4snuCKrOX9jLxkJodskr2dfNBw
-# CnzvqLx1T7pa96kQsl3p/yhUifDVinF2ZdrM8HKjI/rAJ4JErpknG6skHibBt94q
-# 6/aesXmZgaNWhqsKRcnfxI2g55j7+6adcq/Ex8HBanHZxhOACcS2n82HhyS7T6NJ
-# uXdmkfFynOlLAlKnN36TU6w7HQhJD5TNOXrd/yVjmScsPT9rp/Fmw0HNT7ZAmyEh
-# QNC3EyTN3B14OuSereU0cZLXJmvkOHOrpgFPvT87eK1MrfvElXvtCl8zOYdBeHo4
-# 6Zzh3SP9HSjTx/no8Zhf+yvYfvJGnXUsHicsJttvFXseGYs2uJPU5vIXmVnKcPA3
-# v5gA3yAWTyf7YGcWoWa63VXAOimGsJigK+2VQbc61RWYMbRiCQ8KvYHZE/6/pNHz
-# V9m8BPqC3jLfBInwAM1dwvnQI38AC+R2AibZ8GV2QqYphwlHK+Z/GqSFD/yYlvZV
-# VCsfgPrA8g4r5db7qS9EFUrnEw4d2zc4GqEr9u3WfPwwggWNMIIEdaADAgECAhAO
-# mxiO+dAt5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUw
-# EwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20x
-# JDAiBgNVBAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEw
-# MDAwMDBaFw0zMTExMDkyMzU5NTlaMGIxCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxE
-# aWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xITAfBgNVBAMT
-# GERpZ2lDZXJ0IFRydXN0ZWQgUm9vdCBHNDCCAiIwDQYJKoZIhvcNAQEBBQADggIP
-# ADCCAgoCggIBAL/mkHNo3rvkXUo8MCIwaTPswqclLskhPfKK2FnC4SmnPVirdprN
-# rnsbhA3EMB/zG6Q4FutWxpdtHauyefLKEdLkX9YFPFIPUh/GnhWlfr6fqVcWWVVy
-# r2iTcMKyunWZanMylNEQRBAu34LzB4TmdDttceItDBvuINXJIB1jKS3O7F5OyJP4
-# IWGbNOsFxl7sWxq868nPzaw0QF+xembud8hIqGZXV59UWI4MK7dPpzDZVu7Ke13j
-# rclPXuU15zHL2pNe3I6PgNq2kZhAkHnDeMe2scS1ahg4AxCN2NQ3pC4FfYj1gj4Q
-# kXCrVYJBMtfbBHMqbpEBfCFM1LyuGwN1XXhm2ToxRJozQL8I11pJpMLmqaBn3aQn
-# vKFPObURWBf3JFxGj2T3wWmIdph2PVldQnaHiZdpekjw4KISG2aadMreSx7nDmOu
-# 5tTvkpI6nj3cAORFJYm2mkQZK37AlLTSYW3rM9nF30sEAMx9HJXDj/chsrIRt7t/
-# 8tWMcCxBYKqxYxhElRp2Yn72gLD76GSmM9GJB+G9t+ZDpBi4pncB4Q+UDCEdslQp
-# JYls5Q5SUUd0viastkF13nqsX40/ybzTQRESW+UQUOsxxcpyFiIJ33xMdT9j7CFf
-# xCBRa2+xq4aLT8LWRV+dIPyhHsXAj6KxfgommfXkaS+YHS312amyHeUbAgMBAAGj
-# ggE6MIIBNjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTs1+OC0nFdZEzfLmc/
-# 57qYrhwPTzAfBgNVHSMEGDAWgBRF66Kv9JLLgjEtUYunpyGd823IDzAOBgNVHQ8B
-# Af8EBAMCAYYweQYIKwYBBQUHAQEEbTBrMCQGCCsGAQUFBzABhhhodHRwOi8vb2Nz
-# cC5kaWdpY2VydC5jb20wQwYIKwYBBQUHMAKGN2h0dHA6Ly9jYWNlcnRzLmRpZ2lj
-# ZXJ0LmNvbS9EaWdpQ2VydEFzc3VyZWRJRFJvb3RDQS5jcnQwRQYDVR0fBD4wPDA6
-# oDigNoY0aHR0cDovL2NybDMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0QXNzdXJlZElE
-# Um9vdENBLmNybDARBgNVHSAECjAIMAYGBFUdIAAwDQYJKoZIhvcNAQEMBQADggEB
-# AHCgv0NcVec4X6CjdBs9thbX979XB72arKGHLOyFXqkauyL4hxppVCLtpIh3bb0a
-# FPQTSnovLbc47/T/gLn4offyct4kvFIDyE7QKt76LVbP+fT3rDB6mouyXtTP0UNE
-# m0Mh65ZyoUi0mcudT6cGAxN3J0TU53/oWajwvy8LpunyNDzs9wPHh6jSTEAZNUZq
-# aVSwuKFWjuyk1T3osdz9HNj0d1pcVIxv76FQPfx2CWiEn2/K2yCNNWAcAgPLILCs
-# WKAOQGPFmCLBsln1VWvPJ6tsds5vIy30fnFqI2si/xK4VC0nftg62fC2h5b9W9Fc
-# rBjDTZ9ztwGpn1eqXijiuZQxggN2MIIDcgIBATB3MGMxCzAJBgNVBAYTAlVTMRcw
-# FQYDVQQKEw5EaWdpQ2VydCwgSW5jLjE7MDkGA1UEAxMyRGlnaUNlcnQgVHJ1c3Rl
-# ZCBHNCBSU0E0MDk2IFNIQTI1NiBUaW1lU3RhbXBpbmcgQ0ECEAuuZrxaun+Vh8b5
-# 6QTjMwQwDQYJYIZIAWUDBAIBBQCggdEwGgYJKoZIhvcNAQkDMQ0GCyqGSIb3DQEJ
-# EAEEMBwGCSqGSIb3DQEJBTEPFw0yNTAxMDgyMTExNTdaMCsGCyqGSIb3DQEJEAIM
-# MRwwGjAYMBYEFNvThe5i29I+e+T2cUhQhyTVhltFMC8GCSqGSIb3DQEJBDEiBCCr
-# bQk1OdIX2EyUkKMl9D15ZTV4uucLrRL8O9I1rSQM7DA3BgsqhkiG9w0BCRACLzEo
-# MCYwJDAiBCB2dp+o8mMvH0MLOiMwrtZWdf7Xc9sF1mW5BZOYQ4+a2zANBgkqhkiG
-# 9w0BAQEFAASCAgCIbp5Dc8q3xJj0iqbqsZlT6pW9P6QbN1INReBshzdlWw36O6uw
-# yIid77oZDA7bPVXuEUXyIVJBaXdVJIN6wsxPSWziMXqrBBcvu3B5kQlx88zTAjlB
-# JhYfV1+rbPlhgWEMqv1wTYh/TEZbP1+TOgIgUHmeLJwhHd8giRP6kvZxnVYlNBtz
-# 5O3h18fJ7rJzlJz0JuvtLe9mGaWcFKUyK/UNgWBIvJQZAxAW+p4xh1CmHvaMtPFZ
-# X9RU7np0ah7Q2wZfU6qPVVJGXX/QkIjO1PVRxfWsSHPEGK78t2JbkVvdsMjUR+1l
-# fNgXUAYAjTTeBPE/L4idRSOpf6wFrmurw7jEUucZ/wuRuYTosCh/nnF3wqqzorzk
-# MWaqU5RCBgA4kHzylcL+xPX//t6jnDWEoqCEogVMlvf1Z5y10KweQB8JedZbXp32
-# mHWJ8tSg8KDXyEU3g7B7CO+zmt4hJHoNFMeFGFZAIVVqGsv6Ehe1QL8uehVqEW2M
-# RPRdmGzqOji5fUyku+eLo3ej4UwzdaFh9n7Psk6UwE2iSCFxyWTGL7Val8+2CQLA
-# zpHHRrJi/ZBhET+FOjpOGBKdBWGOe7toc+MgAL3163talD0QWygm13+9ivfQE6SH
-# mr5Jviw1tQmamraHm8PeoZg28zxkqAxeLh0tyHVzaRrB7BaUpCq0NZyvAg==
+# /WwHATAxMA0GCWCGSAFlAwQCAQUABCDXwumu7rrrAfaGEdtjcuOYofMd6kecozX2
+# S4omdMQJGQIQRTB60Ud13ULZj0YErDwCoxgPMjAyNjA3MTgwOTQ3NTdaoIITOjCC
+# Bu0wggTVoAMCAQICEAqA7xhLjfEFgtHEdqeVdGgwDQYJKoZIhvcNAQELBQAwaTEL
+# MAkGA1UEBhMCVVMxFzAVBgNVBAoTDkRpZ2lDZXJ0LCBJbmMuMUEwPwYDVQQDEzhE
+# aWdpQ2VydCBUcnVzdGVkIEc0IFRpbWVTdGFtcGluZyBSU0E0MDk2IFNIQTI1NiAy
+# MDI1IENBMTAeFw0yNTA2MDQwMDAwMDBaFw0zNjA5MDMyMzU5NTlaMGMxCzAJBgNV
+# BAYTAlVTMRcwFQYDVQQKEw5EaWdpQ2VydCwgSW5jLjE7MDkGA1UEAxMyRGlnaUNl
+# cnQgU0hBMjU2IFJTQTQwOTYgVGltZXN0YW1wIFJlc3BvbmRlciAyMDI1IDEwggIi
+# MA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDQRqwtEsae0OquYFazK1e6b1H/
+# hnAKAd/KN8wZQjBjMqiZ3xTWcfsLwOvRxUwXcGx8AUjni6bz52fGTfr6PHRNv6T7
+# zsf1Y/E3IU8kgNkeECqVQ+3bzWYesFtkepErvUSbf+EIYLkrLKd6qJnuzK8Vcn0D
+# vbDMemQFoxQ2Dsw4vEjoT1FpS54dNApZfKY61HAldytxNM89PZXUP/5wWWURK+If
+# xiOg8W9lKMqzdIo7VA1R0V3Zp3DjjANwqAf4lEkTlCDQ0/fKJLKLkzGBTpx6EYev
+# vOi7XOc4zyh1uSqgr6UnbksIcFJqLbkIXIPbcNmA98Oskkkrvt6lPAw/p4oDSRZr
+# eiwB7x9ykrjS6GS3NR39iTTFS+ENTqW8m6THuOmHHjQNC3zbJ6nJ6SXiLSvw4Smz
+# 8U07hqF+8CTXaETkVWz0dVVZw7knh1WZXOLHgDvundrAtuvz0D3T+dYaNcwafsVC
+# GZKUhQPL1naFKBy1p6llN3QgshRta6Eq4B40h5avMcpi54wm0i2ePZD5pPIssosz
+# QyF4//3DoK2O65Uck5Wggn8O2klETsJ7u8xEehGifgJYi+6I03UuT1j7FnrqVrOz
+# aQoVJOeeStPeldYRNMmSF3voIgMFtNGh86w3ISHNm0IaadCKCkUe2LnwJKa8TIlw
+# CUNVwppwn4D3/Pt5pwIDAQABo4IBlTCCAZEwDAYDVR0TAQH/BAIwADAdBgNVHQ4E
+# FgQU5Dv88jHt/f3X85FxYxlQQ89hjOgwHwYDVR0jBBgwFoAU729TSunkBnx6yuKQ
+# VvYv1Ensy04wDgYDVR0PAQH/BAQDAgeAMBYGA1UdJQEB/wQMMAoGCCsGAQUFBwMI
+# MIGVBggrBgEFBQcBAQSBiDCBhTAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGln
+# aWNlcnQuY29tMF0GCCsGAQUFBzAChlFodHRwOi8vY2FjZXJ0cy5kaWdpY2VydC5j
+# b20vRGlnaUNlcnRUcnVzdGVkRzRUaW1lU3RhbXBpbmdSU0E0MDk2U0hBMjU2MjAy
+# NUNBMS5jcnQwXwYDVR0fBFgwVjBUoFKgUIZOaHR0cDovL2NybDMuZGlnaWNlcnQu
+# Y29tL0RpZ2lDZXJ0VHJ1c3RlZEc0VGltZVN0YW1waW5nUlNBNDA5NlNIQTI1NjIw
+# MjVDQTEuY3JsMCAGA1UdIAQZMBcwCAYGZ4EMAQQCMAsGCWCGSAGG/WwHATANBgkq
+# hkiG9w0BAQsFAAOCAgEAZSqt8RwnBLmuYEHs0QhEnmNAciH45PYiT9s1i6UKtW+F
+# ERp8FgXRGQ/YAavXzWjZhY+hIfP2JkQ38U+wtJPBVBajYfrbIYG+Dui4I4PCvHpQ
+# uPqFgqp1PzC/ZRX4pvP/ciZmUnthfAEP1HShTrY+2DE5qjzvZs7JIIgt0GCFD9kt
+# x0LxxtRQ7vllKluHWiKk6FxRPyUPxAAYH2Vy1lNM4kzekd8oEARzFAWgeW3az2xe
+# jEWLNN4eKGxDJ8WDl/FQUSntbjZ80FU3i54tpx5F/0Kr15zW/mJAxZMVBrTE2oi0
+# fcI8VMbtoRAmaaslNXdCG1+lqvP4FbrQ6IwSBXkZagHLhFU9HCrG/syTRLLhAezu
+# /3Lr00GrJzPQFnCEH1Y58678IgmfORBPC1JKkYaEt2OdDh4GmO0/5cHelAK2/gTl
+# QJINqDr6JfwyYHXSd+V08X1JUPvB4ILfJdmL+66Gp3CSBXG6IwXMZUXBhtCyIaeh
+# r0XkBoDIGMUG1dUtwq1qmcwbdUfcSYCn+OwncVUXf53VJUNOaMWMts0VlRYxe5nK
+# +At+DI96HAlXHAL5SlfYxJ7La54i71McVWRP66bW+yERNpbJCjyCYG2j+bdpxo/1
+# Cy4uPcU3AWVPGrbn5PhDBf3Froguzzhk++ami+r3Qrx5bIbY3TVzgiFI7Gq3zWcw
+# gga0MIIEnKADAgECAhANx6xXBf8hmS5AQyIMOkmGMA0GCSqGSIb3DQEBCwUAMGIx
+# CzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3
+# dy5kaWdpY2VydC5jb20xITAfBgNVBAMTGERpZ2lDZXJ0IFRydXN0ZWQgUm9vdCBH
+# NDAeFw0yNTA1MDcwMDAwMDBaFw0zODAxMTQyMzU5NTlaMGkxCzAJBgNVBAYTAlVT
+# MRcwFQYDVQQKEw5EaWdpQ2VydCwgSW5jLjFBMD8GA1UEAxM4RGlnaUNlcnQgVHJ1
+# c3RlZCBHNCBUaW1lU3RhbXBpbmcgUlNBNDA5NiBTSEEyNTYgMjAyNSBDQTEwggIi
+# MA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQC0eDHTCphBcr48RsAcrHXbo0Zo
+# dLRRF51NrY0NlLWZloMsVO1DahGPNRcybEKq+RuwOnPhof6pvF4uGjwjqNjfEvUi
+# 6wuim5bap+0lgloM2zX4kftn5B1IpYzTqpyFQ/4Bt0mAxAHeHYNnQxqXmRinvuNg
+# xVBdJkf77S2uPoCj7GH8BLuxBG5AvftBdsOECS1UkxBvMgEdgkFiDNYiOTx4OtiF
+# cMSkqTtF2hfQz3zQSku2Ws3IfDReb6e3mmdglTcaarps0wjUjsZvkgFkriK9tUKJ
+# m/s80FiocSk1VYLZlDwFt+cVFBURJg6zMUjZa/zbCclF83bRVFLeGkuAhHiGPMvS
+# GmhgaTzVyhYn4p0+8y9oHRaQT/aofEnS5xLrfxnGpTXiUOeSLsJygoLPp66bkDX1
+# ZlAeSpQl92QOMeRxykvq6gbylsXQskBBBnGy3tW/AMOMCZIVNSaz7BX8VtYGqLt9
+# MmeOreGPRdtBx3yGOP+rx3rKWDEJlIqLXvJWnY0v5ydPpOjL6s36czwzsucuoKs7
+# Yk/ehb//Wx+5kMqIMRvUBDx6z1ev+7psNOdgJMoiwOrUG2ZdSoQbU2rMkpLiQ6bG
+# RinZbI4OLu9BMIFm1UUl9VnePs6BaaeEWvjJSjNm2qA+sdFUeEY0qVjPKOWug/G6
+# X5uAiynM7Bu2ayBjUwIDAQABo4IBXTCCAVkwEgYDVR0TAQH/BAgwBgEB/wIBADAd
+# BgNVHQ4EFgQU729TSunkBnx6yuKQVvYv1Ensy04wHwYDVR0jBBgwFoAU7NfjgtJx
+# XWRM3y5nP+e6mK4cD08wDgYDVR0PAQH/BAQDAgGGMBMGA1UdJQQMMAoGCCsGAQUF
+# BwMIMHcGCCsGAQUFBwEBBGswaTAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGln
+# aWNlcnQuY29tMEEGCCsGAQUFBzAChjVodHRwOi8vY2FjZXJ0cy5kaWdpY2VydC5j
+# b20vRGlnaUNlcnRUcnVzdGVkUm9vdEc0LmNydDBDBgNVHR8EPDA6MDigNqA0hjJo
+# dHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRUcnVzdGVkUm9vdEc0LmNy
+# bDAgBgNVHSAEGTAXMAgGBmeBDAEEAjALBglghkgBhv1sBwEwDQYJKoZIhvcNAQEL
+# BQADggIBABfO+xaAHP4HPRF2cTC9vgvItTSmf83Qh8WIGjB/T8ObXAZz8OjuhUxj
+# aaFdleMM0lBryPTQM2qEJPe36zwbSI/mS83afsl3YTj+IQhQE7jU/kXjjytJgnn0
+# hvrV6hqWGd3rLAUt6vJy9lMDPjTLxLgXf9r5nWMQwr8Myb9rEVKChHyfpzee5kH0
+# F8HABBgr0UdqirZ7bowe9Vj2AIMD8liyrukZ2iA/wdG2th9y1IsA0QF8dTXqvcnT
+# mpfeQh35k5zOCPmSNq1UH410ANVko43+Cdmu4y81hjajV/gxdEkMx1NKU4uHQcKf
+# ZxAvBAKqMVuqte69M9J6A47OvgRaPs+2ykgcGV00TYr2Lr3ty9qIijanrUR3anzE
+# wlvzZiiyfTPjLbnFRsjsYg39OlV8cipDoq7+qNNjqFzeGxcytL5TTLL4ZaoBdqbh
+# OhZ3ZRDUphPvSRmMThi0vw9vODRzW6AxnJll38F0cuJG7uEBYTptMSbhdhGQDpOX
+# gpIUsWTjd6xpR6oaQf/DJbg3s6KCLPAlZ66RzIg9sC+NJpud/v4+7RWsWCiKi9EO
+# LLHfMR2ZyJ/+xhCx9yHbxtl5TPau1j/1MIDpMPx0LckTetiSuEtQvLsNz3Qbp7wG
+# WqbIiOWCnb5WqxL3/BAPvIXKUjPSxyZsq8WhbaM2tszWkPZPubdcMIIFjTCCBHWg
+# AwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0BAQwFADBlMQswCQYDVQQG
+# EwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNl
+# cnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVkIElEIFJvb3QgQ0EwHhcN
+# MjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQswCQYDVQQGEwJVUzEVMBMG
+# A1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSEw
+# HwYDVQQDExhEaWdpQ2VydCBUcnVzdGVkIFJvb3QgRzQwggIiMA0GCSqGSIb3DQEB
+# AQUAA4ICDwAwggIKAoICAQC/5pBzaN675F1KPDAiMGkz7MKnJS7JIT3yithZwuEp
+# pz1Yq3aaza57G4QNxDAf8xukOBbrVsaXbR2rsnnyyhHS5F/WBTxSD1Ifxp4VpX6+
+# n6lXFllVcq9ok3DCsrp1mWpzMpTREEQQLt+C8weE5nQ7bXHiLQwb7iDVySAdYykt
+# zuxeTsiT+CFhmzTrBcZe7FsavOvJz82sNEBfsXpm7nfISKhmV1efVFiODCu3T6cw
+# 2Vbuyntd463JT17lNecxy9qTXtyOj4DatpGYQJB5w3jHtrHEtWoYOAMQjdjUN6Qu
+# BX2I9YI+EJFwq1WCQTLX2wRzKm6RAXwhTNS8rhsDdV14Ztk6MUSaM0C/CNdaSaTC
+# 5qmgZ92kJ7yhTzm1EVgX9yRcRo9k98FpiHaYdj1ZXUJ2h4mXaXpI8OCiEhtmmnTK
+# 3kse5w5jrubU75KSOp493ADkRSWJtppEGSt+wJS00mFt6zPZxd9LBADMfRyVw4/3
+# IbKyEbe7f/LVjHAsQWCqsWMYRJUadmJ+9oCw++hkpjPRiQfhvbfmQ6QYuKZ3AeEP
+# lAwhHbJUKSWJbOUOUlFHdL4mrLZBdd56rF+NP8m800ERElvlEFDrMcXKchYiCd98
+# THU/Y+whX8QgUWtvsauGi0/C1kVfnSD8oR7FwI+isX4KJpn15GkvmB0t9dmpsh3l
+# GwIDAQABo4IBOjCCATYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQU7NfjgtJx
+# XWRM3y5nP+e6mK4cD08wHwYDVR0jBBgwFoAUReuir/SSy4IxLVGLp6chnfNtyA8w
+# DgYDVR0PAQH/BAQDAgGGMHkGCCsGAQUFBwEBBG0wazAkBggrBgEFBQcwAYYYaHR0
+# cDovL29jc3AuZGlnaWNlcnQuY29tMEMGCCsGAQUFBzAChjdodHRwOi8vY2FjZXJ0
+# cy5kaWdpY2VydC5jb20vRGlnaUNlcnRBc3N1cmVkSURSb290Q0EuY3J0MEUGA1Ud
+# HwQ+MDwwOqA4oDaGNGh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEFz
+# c3VyZWRJRFJvb3RDQS5jcmwwEQYDVR0gBAowCDAGBgRVHSAAMA0GCSqGSIb3DQEB
+# DAUAA4IBAQBwoL9DXFXnOF+go3QbPbYW1/e/Vwe9mqyhhyzshV6pGrsi+IcaaVQi
+# 7aSId229GhT0E0p6Ly23OO/0/4C5+KH38nLeJLxSA8hO0Cre+i1Wz/n096wwepqL
+# sl7Uz9FDRJtDIeuWcqFItJnLnU+nBgMTdydE1Od/6Fmo8L8vC6bp8jQ87PcDx4eo
+# 0kxAGTVGamlUsLihVo7spNU96LHc/RzY9HdaXFSMb++hUD38dglohJ9vytsgjTVg
+# HAIDyyCwrFigDkBjxZgiwbJZ9VVrzyerbHbObyMt9H5xaiNrIv8SuFQtJ37YOtnw
+# toeW/VvRXKwYw02fc7cBqZ9Xql4o4rmUMYIDfDCCA3gCAQEwfTBpMQswCQYDVQQG
+# EwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0
+# IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0Ex
+# AhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoIHRMBoGCSqGSIb3DQEJ
+# AzENBgsqhkiG9w0BCRABBDAcBgkqhkiG9w0BCQUxDxcNMjYwNzE4MDk0NzU3WjAr
+# BgsqhkiG9w0BCRACDDEcMBowGDAWBBTdYjCshgotMGvaOLFoeVIwB/tBfjAvBgkq
+# hkiG9w0BCQQxIgQgSURhZTp8DpjBtBtWIPaRmaqnJo6tYbV9Zt4ZZr2wM50wNwYL
+# KoZIhvcNAQkQAi8xKDAmMCQwIgQgSqA/oizXXITFXJOPgo5na5yuyrM/420mmqM0
+# 8UYRCjMwDQYJKoZIhvcNAQEBBQAEggIAVzn4NrVAqKOiV0n5QYCLoT0TxucjgpEn
+# F693KX3y7M5tFJDDBBJyOse8GkWNK8OIbUmvISG+9SKUZ+bofhqOFxT29J4g+YW4
+# GcilUGXNPkEgDtZDj5o4OhsKOY4i+0Nwfvy5Dk6UtxoMMkEpDxc0xPwbFFfpLN1O
+# SNzLxJ8H8CTN0MOCc9vl/RVsIIfuENCA8kwKekiAoyqt33PoJ81Z4MyJEClxvRdh
+# 20j01pZ5S/wLpIagfomgchJFASw+WD1NJjpUZo2eRbD9FbnZY6KfQ4pm+QBxmOFN
+# Fdc1NF1T2J4NKRQjNxAfgOSc+0OSwfQbAGp4xjchJd620Ysd3ZL97lO/MOvisi+8
+# NcpP8DyfC3hqyllNnv171o8WmWkP0qfUtyeaOQVvY6PGKujscVPnRH47VG0EXFvm
+# lbAKkt7/8sCgCALRPRLY9mNWc61BlLahxENH1vToa7aT1m0i4yJ8sBPIRJss75Im
+# bi0lTW12W/7c3Y5+6BYqa9M7tJTR5cJfPYedO6aZ84e6xNcwsbYGrVkkJ25WHWd8
+# pg7GdrfJ3JvYkaE54fOAUCbUKZxGd+/Wk5uV8tuQADcVwQFl5av+RQSbu5kwFR3D
+# o8363jteqLQgoFHVgfre3O6RNQLUzj6ifD4qXnzPqH4H3vf03g0fiyoBQ1qvG8zh
+# 2D1sVTQ3ENk=
 # SIG # End signature block

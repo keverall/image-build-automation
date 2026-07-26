@@ -16,7 +16,7 @@ BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
     $Script:RepoRoot   = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
     $Script:PublicDir  = Join-Path $Script:ModuleRoot 'Automation\Public'
-    Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
+    Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
 }
 
@@ -32,7 +32,7 @@ $Script:LoggingCommands = @(
 
 Describe 'Every automation command that should log is wired to Initialize-Logging' {
 
-    It "calls Initialize-Logging with a LogFile" -ForEach $Script:LoggingCommands {
+    It "calls Initialize-Logging with a LogFile" -ForEach $Script:LoggingCommands -AllowNullOrEmptyForEach {
         $path = Join-Path $Script:PublicDir $_.File
         $content = Get-Content -Path $path -Raw
         $content | Should -Match "Initialize-Logging\s+-LogFile"

@@ -33,7 +33,7 @@ $BIN_DIR            = Join-Path $PROJECT_ROOT 'bin'
 # floor; the actual installed version may be higher for modules like
 # OperationsManager that ship with SCOM in arbitrary versions).
 $REQUIRED_MODULES = @(
-    @{ Name = 'Pester';           Version = '5.7.1' },
+    @{ Name = 'Pester';           Version = '6.0.1' },
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
     @{ Name = 'HPEOneView.1000';   Version = '10.00' },
@@ -246,7 +246,7 @@ function Install-RequiredModule {
         try {
             Import-Module $Name -RequiredVersion $existing.Version -ErrorAction Stop -WarningAction SilentlyContinue
             if ($Name -eq 'Pester') {   # well-known silent corruption
-                $dll = Join-Path (Split-Path $existing.Path) 'bin\netstandard2.0\Pester.dll'
+                $dll = Join-Path (Split-Path $existing.Path) 'bin\net8.0\Pester.dll'
                 if (-not (Test-Path $dll)) { throw "Pester.dll missing" }
             }
             Write-OK "$Name $($existing.Version) already verified"

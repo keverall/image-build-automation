@@ -107,7 +107,7 @@ BeforeAll {
     }
 
     # ---- Import module ----
-    Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
+    Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
     
     # Import the Automation module which provides all functions including Set-MaintenanceMode
     Import-Module (Join-Path $Script:ModuleRoot 'src/powershell/Automation/Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
