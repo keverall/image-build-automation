@@ -35,12 +35,8 @@
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 
-if (-not (Get-Module Pester -ListAvailable)) {
-    Write-Error "Pester not installed. Install with: Install-Module Pester -Scope CurrentUser"
-    exit 1
-}
-
-Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
+# Ensure a working Pester 6.0.1 (with Pester.dll) is available, then import it.
+. (Join-Path $PSScriptRoot 'Ensure-Pester.ps1')
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $sourcePath = Join-Path $PROJECT_ROOT 'src/powershell'

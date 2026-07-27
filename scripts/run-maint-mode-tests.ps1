@@ -32,7 +32,8 @@
 $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 
-Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
+# Ensure a working Pester 6.0.1 (with Pester.dll) is available, then import it.
+. (Join-Path $PSScriptRoot 'Ensure-Pester.ps1')
 Import-Module (Join-Path $PROJECT_ROOT 'src/powershell/Automation/Automation.psd1') -Force -WarningAction SilentlyContinue
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
