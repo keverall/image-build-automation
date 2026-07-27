@@ -21,17 +21,17 @@ Remove-Item -Recurse -Force "$env:USERPROFILE\Documents\PowerShell\Modules\Peste
 Install-Module Pester -RequiredVersion 6.0.1 -Scope CurrentUser -Force -SkipPublisherCheck
 
 # Verify
-Import-Module Pester 6.0.1 -PassThru
+Import-Module Pester -RequiredVersion 6.0.1 -PassThru
 Or install from the bundled vendor copy (offline):
 
 # Copy the bundled module to the PowerShell modules folder
 $dest = "$env:USERPROFILE\Documents\PowerShell\Modules\Pester\6.0.1"
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
-Copy-Item -Path "C:\Users\98253\repos\image-build-automation\scripts\modules\Pester\6.0.1\*" -Destination $dest -Recurse -Force
+Copy-Item -Path "<repo-path>\scripts\modules\Pester\6.0.1\*" -Destination $dest -Recurse -Force
 
 # Verify
-Import-Module Pester 6.0.1 -PassThru
-Replace <repo-path> with the full path to your cloned repo on the Windows server.s
+Import-Module Pester -RequiredVersion 6.0.1 -PassThru
+Replace <repo-path> with the full path to your cloned repo on the Windows server.
 
 
 Switch to GitStash (BMC Bitbucket):
