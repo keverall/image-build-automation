@@ -162,12 +162,14 @@ function Invoke-IloRedfish {
                 'Status' {
                     $sys = $session.GetSystem()
                     $vm  = $session.ListVirtualMedia()
-                    return @{
+                    $result = @{
                         Success = $true
                         Action  = $Action
                         IloIp   = $IloIp
                         Details = @{ system = $sys; virtual_media = $vm }
                     }
+                    _Format-IloRedfishResult -Result $result
+                    return $result
                 }
             }
         }
@@ -182,5 +184,54 @@ function Invoke-IloRedfish {
 
 # IloRedfishSession class is defined in Automation.psm1 (root module)
 # so the type is available at module-load time.
+
+function _Format-IloRedfishResult {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  iLO Redfish - $($Result.Action)" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  iLO IP:    $($Result.IloIp)" -ForegroundColor White
+    Write-Host "  Success:   $($Result.Success)" -ForegroundColor $(if ($Result.Success) { 'Green' } else { 'Red' })
+
+    if ($Result.Error) {
+        Write-Host "  Error:     $($Result.Error)" -ForegroundColor Red
+    }
+
+    if ($Result.Details -is [hashtable] -and $Result.Details.system) {
+        $sys = $Result.Details.system
+        $vm  = $Result.Details.virtual_media
+        Write-Host ""
+        Write-Host "  --- System ---" -ForegroundColor Yellow
+        if ($sys.Name) { Write-Host "    Name:          $($sys.Name)" }
+        if ($sys.Manufacturer) { Write-Host "    Manufacturer:  $($sys.Manufacturer)" }
+        if ($sys.Model) { Write-Host "    Model:         $($sys.Model)" }
+        if ($sys.SerialNumber) { Write-Host "    Serial:        $($sys.SerialNumber)" }
+        if ($sys.PowerState) { Write-Host "    Power State:   $($sys.PowerState)" -ForegroundColor $(if ($sys.PowerState -eq 'On') { 'Green' } else { 'Yellow' }) }
+        if ($sys.Status -and $sys.Status.Health) { Write-Host "    Health:        $($sys.Status.Health)" -ForegroundColor $(if ($sys.Status.Health -eq 'OK') { 'Green' } else { 'Yellow' }) }
+        if ($sys.BiosVersion) { Write-Host "    BIOS:          $($sys.BiosVersion)" }
+
+        if ($vm) {
+            Write-Host ""
+            Write-Host "  --- Virtual Media ---" -ForegroundColor Yellow
+            $vmItems = if ($vm -is [array]) { $vm } else { @($vm) }
+            foreach ($v in $vmItems) {
+                $id = if ($v.Id) { $v.Id } elseif ($v.Name) { $v.Name } else { 'unknown' }
+                $inserted = if ($v.Inserted) { 'Yes' } else { 'No' }
+                $image = if ($v.Image) { $v.Image } else { '-' }
+                Write-Host "    Device $id`:  Inserted=$inserted" -ForegroundColor $(if ($v.Inserted) { 'Green' } else { 'Gray' })
+                if ($v.Image) { Write-Host "      Image: $image" }
+            }
+        }
+    } elseif ($Result.Details -is [string]) {
+        Write-Host "  Details:   $($Result.Details)" -ForegroundColor Gray
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 # vim: ts=4 sw=4 et

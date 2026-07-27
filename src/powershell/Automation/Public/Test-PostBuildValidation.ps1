@@ -96,7 +96,9 @@ function Test-PostBuildValidation {
 
     if ($SkipRemote) {
         _Set 'remote_checks_skipped' $true 'Skipped by parameter'
-        return @{ Success = $true; Hostname = $Hostname; Checks = $checks }
+        $result = @{ Success = $true; Hostname = $Hostname; Checks = $checks }
+        _Format-PostBuildResult -Result $result
+        return $result
     }
 
     $winrmReachable = $false
@@ -184,13 +186,55 @@ $rdp  = Get-Service -Name TermService -ErrorAction SilentlyContinue
         _Set 'audit_recorded' $true "postbuild_$Hostname logged"
     } catch { _Set 'audit_recorded' $false $_.Exception.Message }
 
-    return @{
+    $result = @{
         Success   = $overall
         Hostname  = $Hostname
         Timestamp = Get-UtcTimestamp
         Checks    = $checks
         AuditFile = $auditFile
     }
+    _Format-PostBuildResult -Result $result
+    return $result
+}
+
+function _Format-PostBuildResult {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  Post-Build Validation Report" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Hostname:    $($Result.Hostname)" -ForegroundColor White
+    Write-Host "  Timestamp:   $($Result.Timestamp)" -ForegroundColor Gray
+    Write-Host "  Overall:     $(if ($Result.Success) { 'PASS' } else { 'FAIL' })" -ForegroundColor $(if ($Result.Success) { 'Green' } else { 'Red' })
+    Write-Host ""
+
+    if ($Result.Checks -and $Result.Checks.Count -gt 0) {
+        $nameWidth = ($Result.Checks.Keys | ForEach-Object { $_.Length } | Measure-Object -Maximum).Maximum
+        if ($nameWidth -lt 20) { $nameWidth = 20 }
+        if ($nameWidth -gt 40) { $nameWidth = 40 }
+
+        $header = "{0,-$nameWidth}  {1,-8}  {2}" -f 'Check', 'Status', 'Details'
+        Write-Host $header -ForegroundColor Yellow
+        Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+        foreach ($checkName in $Result.Checks.Keys) {
+            $check = $Result.Checks[$checkName]
+            $statusColor = if ($check.status -eq 'PASS') { 'Green' } else { 'Red' }
+            $line = "{0,-$nameWidth}  {1,-8}  {2}" -f $checkName, $check.status, $check.details
+            Write-Host $line -ForegroundColor $statusColor
+        }
+    }
+
+    if ($Result.AuditFile) {
+        Write-Host ""
+        Write-Host "  Audit Log:   $($Result.AuditFile)" -ForegroundColor Gray
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # vim: ts=4 sw=4 et
