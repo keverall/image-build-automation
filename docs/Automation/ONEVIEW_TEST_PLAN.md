@@ -26,8 +26,6 @@
 <p class="report-run-date"><strong>Run date:</strong> 24/07/2026 16:34 UTC</p>
 <!-- END:run-date -->
 <a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
-
-<a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
 ## **Current OneView Connected Automation Command testing status and progress Summary**
 
 <!-- BEGIN:oneview-status-summary -->
@@ -35,13 +33,9 @@
 <!-- END:oneview-status-summary -->
 
 <a name="major-bugs-fixed-log"></a>
-
-<a name="major-bugs-fixed-log"></a>
 ## Major Bugs fixed log
 
 **Date: 24/07/2026**
-
-<a name="1-phantom-proxy-configuration-on-ewismgmt-19"></a>
 
 <a name="1-phantom-proxy-configuration-on-ewismgmt-19"></a>
 ### 1. Phantom proxy configuration on EWISMGMT-19
@@ -55,8 +49,6 @@ variables are stored as Windows credentials and survived process restarts. A ded
 cleanup script was written to purge the stale proxy env vars from the system.
 
 <a name="2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting"></a>
-
-<a name="2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting"></a>
 ### 2. Test-ServerConnectivity was disconnecting the OneView session after connecting
 
 **Severity: Critical — cascading design flaw across all automation commands.**
@@ -67,8 +59,6 @@ across all automation commands was fundamentally broken. Fixing this single defe
 cavernous mess of related connectivity and session-handling design flaws across the entire
 command set, requiring significant rework and retesting of Windows and HPEOneView connectivity
 logic across all commands.
-
-<a name="3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts"></a>
 
 <a name="3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts"></a>
 ### 3. Invoke-IsoDeploy Pester tests hanging on interactive prompts
@@ -250,6 +240,7 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 | 1 | 23/07/2026 18:55 UTC | Phases 1-10 (pending live execution) | <tester> | HPEOpenview.1000 | Pending | <log ref> | <delivery lead> |
 | 2 | 24/07/2026 16:34 UTC | 2 | K Everall | HPEOpenview.1000 | Failed | <log ref> | <delivery lead> |
 | 3 | 24/07/2026 16:34 UTC | Phase 1 | K Everall | HPEOpenview.1000 | (all 95 automated regression unit test scenarios above) \| Ran manually on terminal \| Passed (95/95) \| see run log below \| Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing. | 20260724 | n/a |
+| 4 | 27/07/2026 14:55 UTC | Phase 1 | K Everall | va-oneviewt-01 | Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). | 20260727 | n/a |
 <!-- END:phase11-rows -->
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>
@@ -263,58 +254,3 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 - Fill **Exp. Pass** against the project schedule; update **Act. Pass** + **Status** as each test is
   executed on `HPEOpenview.1000` and evidenced in Phase 11.
 
-
-   Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                                               0  15:54:09 Enter OneView username for 'va-oneviewt-01': adm_98253 
-Enter OneView password for 'va-oneviewt-01': : ************************ 
-2026-07-27 14:54:54 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
-2026-07-27 14:54:54 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 12ms) 
-This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective 
-action including termination, civil and/or criminal penalties.
-
-
-============================================== 
-  OneView Connectivity Test
-==============================================
-
-  Status:     AVAILABLE
-  Mode:       oneview
-  Host:       va-oneviewt-01
-  Environment:Prod 
-  Timestamp:  2026-07-27T14:55:18.6156500Z
-
-  --- Phase 1: Network Ping ---
-    DNS:       Resolved
-    IP:        10.239.124.79
-    TCP:       Open (port 443, 12ms)
-
-  --- Phase 2: Auth Connect ---
-    Module:    Loaded
-    Connected: Yes (session active)
-
-==============================================
-
-2026-07-27 14:55:18 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True)
-
-Name                           Value
-----                           -----
-ManagementHost                 va-oneviewt-01
-Available                      True
-AuthConnect                    {[Disconnected, False], [Error, ], [Connected, True], [ModuleLoaded, True]}
-Environment                    Prod
-NetworkPing                    {[DnsResolved, True], [IpAddress, 10.239.124.79], [LatencyMs, 12], [Port, 443]…}
-Timestamp                      2026-07-27T14:55:18.6156500Z
-Mode                           oneview
-
-   image-build-automation  Get-OneViewConnectionStatus                                                                                             0  1m 2s 982ms  15:55:18 
-Name                           Value
-----                           -----
-Reachable                      True
-Success                        True
-ServerCount
-Appliance                      va-oneviewt-01 
-Connected                      True
-Version                        8200
-Error
-Server
-Authenticated                  True
-SessionSource                  HPEOneViewModule

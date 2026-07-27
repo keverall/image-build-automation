@@ -173,12 +173,14 @@ function Get-OneViewServerList {
             $start += $PageSize
         } while ($start -lt $total -and $resp.members.Count -gt 0)
 
-        return @{
+        $result = @{
             Success = $true
             Count   = $servers.Count
             Servers = $servers.ToArray()
             Error   = $null
         }
+        _Format-ServerListResult -Result $result
+        return $result
     }
     catch {
         return @{
@@ -188,6 +190,57 @@ function Get-OneViewServerList {
             Error   = "OneView server list failed: $($_.Exception.Message)"
         }
     }
+}
+
+function _Format-ServerListResult {
+    param([hashtable]$Result)
+
+    if (-not $Result.Success -or $Result.Count -eq 0) { return }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  OneView Server List ($($Result.Count) servers)" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $nameWidth = ($Result.Servers | ForEach-Object { $_.name.Length } | Measure-Object -Maximum).Maximum
+    if ($nameWidth -lt 10) { $nameWidth = 10 }
+    if ($nameWidth -gt 50) { $nameWidth = 50 }
+
+    $serialWidth = 15
+    $powerWidth = 8
+    $healthWidth = 10
+    $iloWidth = 15
+
+    $header = "{0,-$nameWidth}  {1,-$serialWidth}  {2,-$powerWidth}  {3,-$healthWidth}  {4,-$iloWidth}" -f `
+        'Server Name', 'Serial Number', 'Power', 'Health', 'iLO IP'
+    Write-Host $header -ForegroundColor Yellow
+    Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+    foreach ($srv in $Result.Servers) {
+        $name = $srv.name
+        if ($name.Length -gt 50) { $name = $name.Substring(0, 47) + '...' }
+
+        $powerColor = switch ($srv.power_state) {
+            'On'  { 'Green' }
+            'Off' { 'Red' }
+            default { 'Yellow' }
+        }
+        $healthColor = switch -Wildcard ($srv.health_status) {
+            '*OK*'       { 'Green' }
+            '*Warning*'  { 'Yellow' }
+            '*Critical*' { 'Red' }
+            default      { 'Gray' }
+        }
+
+        $line = "{0,-$nameWidth}  {1,-$serialWidth}  {2,-$powerWidth}  {3,-$healthWidth}  {4,-$iloWidth}" -f `
+            $name, $srv.serial_number, $srv.power_state, $srv.health_status, $srv.ilo_ip
+        Write-Host $line -ForegroundColor $healthColor
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # vim: ts=4 sw=4 et

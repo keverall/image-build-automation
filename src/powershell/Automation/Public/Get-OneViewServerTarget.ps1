@@ -164,12 +164,14 @@ function Get-OneViewServerTarget {
                         Details = $details
                     }
                 }
-                return @{
+                $result = @{
                     Success = $true
                     Server  = $ServerIdentifier
                     ResolvedBy = $t
                     Details = $details
                 }
+                _Format-ServerTargetResult -Result $result
+                return $result
             }
         }
         return @{
@@ -185,6 +187,35 @@ function Get-OneViewServerTarget {
             Error   = "OneView query failed: $($_.Exception.Message)"
         }
     }
+}
+
+function _Format-ServerTargetResult {
+    param([hashtable]$Result)
+
+    if (-not $Result.Success -or -not $Result.Details) { return }
+
+    $d = $Result.Details
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  OneView Server Target" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $powerColor = switch ($d.power_state) { 'On' { 'Green' } 'Off' { 'Red' } default { 'Yellow' } }
+    $healthColor = switch -Wildcard ($d.health_status) { '*OK*' { 'Green' } '*Warning*' { 'Yellow' } '*Critical*' { 'Red' } default { 'Gray' } }
+
+    Write-Host "  Server:       $($d.name)" -ForegroundColor White
+    Write-Host "  Serial:       $($d.serial_number)"
+    Write-Host "  Model:        $($d.model)"
+    Write-Host "  Power:        $($d.power_state)" -ForegroundColor $powerColor
+    Write-Host "  Health:       $($d.health_status)" -ForegroundColor $healthColor
+    Write-Host "  iLO IP:       $($d.ilo_ip)"
+    Write-Host "  Enclosure:    $($d.enclosure_name) / $($d.enclosure_bay)"
+    Write-Host "  ROM Version:  $($d.rom_version)"
+    Write-Host "  Resolved By:  $($Result.ResolvedBy)" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # vim: ts=4 sw=4 et

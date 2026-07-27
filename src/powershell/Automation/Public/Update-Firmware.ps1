@@ -97,11 +97,56 @@ param(
         $resDir  = Join-Path $OutputDir 'results'
         Ensure-DirectoryExists -Path $resDir
         foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }
-        return @{ Success = ($okCount -eq $servers.Count); Total = $servers.Count; Succeeded = $okCount; Results = $results }
+        $result = @{ Success = ($okCount -eq $servers.Count); Total = $servers.Count; Succeeded = $okCount; Results = $results }
+        _Format-FirmwareResult -Result $result
+        return $result
     }
     catch {
         return @{ Success = $false; Error = $_.Exception.Message }
     }
+}
+
+
+function _Format-FirmwareResult {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  Firmware Build Results" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $overallColor = if ($Result.Success) { 'Green' } else { 'Red' }
+    Write-Host "  Total:      $($Result.Total)" -ForegroundColor White
+    Write-Host "  Succeeded:  $($Result.Succeeded)" -ForegroundColor Green
+    Write-Host "  Failed:     $($Result.Total - $Result.Succeeded)" -ForegroundColor $(if ($Result.Succeeded -eq $Result.Total) { 'Gray' } else { 'Red' })
+    Write-Host "  Overall:    $(if ($Result.Success) { 'PASS' } else { 'FAIL' })" -ForegroundColor $overallColor
+    Write-Host ""
+
+    if ($Result.Results -and $Result.Results.Count -gt 0) {
+        $nameWidth = ($Result.Results | ForEach-Object { $_.server.Length } | Measure-Object -Maximum).Maximum
+        if ($nameWidth -lt 15) { $nameWidth = 15 }
+        if ($nameWidth -gt 40) { $nameWidth = 40 }
+
+        $header = "{0,-$nameWidth}  {1,-10}  {2}" -f 'Server', 'Status', 'ISO Path'
+        Write-Host $header -ForegroundColor Yellow
+        Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+        foreach ($r in $Result.Results) {
+            $statusColor = if ($r.success) { 'Green' } else { 'Red' }
+            $status = if ($r.success) { 'SUCCESS' } else { 'FAILED' }
+            $isoPath = if ($r.firmware_iso) { $r.firmware_iso } else { '-' }
+            $line = "{0,-$nameWidth}  {1,-10}  {2}" -f $r.server, $status, $isoPath
+            Write-Host $line -ForegroundColor $statusColor
+            if (-not $r.success -and $r.error) {
+                Write-Host "    Error: $($r.error)" -ForegroundColor Red
+            }
+        }
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 

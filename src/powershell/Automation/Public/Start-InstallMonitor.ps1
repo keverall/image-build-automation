@@ -88,16 +88,132 @@ function Start-InstallMonitor {
             $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
             if (-not $si) { return @{ Success=$false; Error="Server not found: $Server" } }
             $r = $monitor.MonitorServer($si, $TimeoutSeconds, $PollIntervalSeconds)
-            return @{ Success = ($r.status -eq 'completed'); Status = $r.status; Details = $r }
+            $result = @{ Success = ($r.status -eq 'completed'); Status = $r.status; Details = $r }
+            _Format-InstallMonitorResult -Result $result
+            return $result
         }
         else {
             $summary = $monitor.MonitorAll($TimeoutSeconds)
-            return @{ Success = ($summary['completed'] -gt 0); Summary = $summary }
+            $result = @{ Success = ($summary['completed'] -gt 0); Summary = $summary }
+            _Format-InstallMonitorSummary -Result $result
+            return $result
+        }
+        else {
+            $summary = $monitor.MonitorAll($TimeoutSeconds)
+            $result = @{ Success = ($summary['completed'] -gt 0); Summary = $summary }
+            _Format-InstallMonitorSummary -Result $result
+            return $result
         }
     }
     catch {
         return @{ Success = $false; Error = $_.Exception.Message }
     }
+}
+
+function _Format-InstallMonitorResult {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  Install Monitor - Single Server" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $statusColor = switch ($Result.Status) {
+        'completed' { 'Green' }
+        'failed'    { 'Red' }
+        'timeout'   { 'Yellow' }
+        default     { 'Gray' }
+    }
+    Write-Host "  Status:    $($Result.Status)" -ForegroundColor $statusColor
+
+    if ($Result.Details) {
+        $d = $Result.Details
+        if ($d.server) { Write-Host "  Server:    $($d.server)" -ForegroundColor White }
+        if ($d.current_phase) { Write-Host "  Phase:     $($d.current_phase)" }
+        if ($null -ne $d.progress_percent) { Write-Host "  Progress:  $($d.progress_percent)%" }
+        if ($d.duration_seconds) { Write-Host "  Duration:  $([math]::Round($d.duration_seconds))s" }
+        if ($d.check_count) { Write-Host "  Checks:    $($d.check_count)" }
+        if ($d.alerts_sent) { Write-Host "  Alerts:    $($d.alerts_sent)" }
+        if ($d.error) { Write-Host "  Error:     $($d.error)" -ForegroundColor Red }
+
+        if ($d.ilo_events -and $d.ilo_events.Count -gt 0) {
+            Write-Host ""
+            Write-Host "  --- Recent iLO Events (last 5) ---" -ForegroundColor Yellow
+            $recent = $d.ilo_events | Select-Object -Last 5
+            foreach ($evt in $recent) {
+                $ts = if ($evt.timestamp) { $evt.timestamp } else { '-' }
+                $ps = if ($evt.power_state) { $evt.power_state } else { 'unknown' }
+                $bs = if ($evt.boot_source) { $evt.boot_source } else { 'unknown' }
+                Write-Host "    $ts | Power=$ps | Boot=$bs" -ForegroundColor Gray
+            }
+        }
+
+        if ($d.winrm_progress -and $d.winrm_progress.Count -gt 0) {
+            Write-Host ""
+            Write-Host "  --- Recent WinRM Progress (last 5) ---" -ForegroundColor Yellow
+            $recent = $d.winrm_progress | Select-Object -Last 5
+            foreach ($wp in $recent) {
+                $ts = if ($wp.timestamp) { $wp.timestamp } else { '-' }
+                $phase = if ($wp.setup_phase) { $wp.setup_phase } else { '-' }
+                $pct = if ($null -ne $wp.progress_percent) { "$($wp.progress_percent)%" } else { '-' }
+                Write-Host "    $ts | Phase=$phase | Progress=$pct" -ForegroundColor Gray
+            }
+        }
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+}
+
+function _Format-InstallMonitorSummary {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  Install Monitor - Summary" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    if ($Result.Summary) {
+        $s = $Result.Summary
+        $overallColor = if ($Result.Success) { 'Green' } else { 'Red' }
+        Write-Host "  Total:      $($s.total)" -ForegroundColor White
+        Write-Host "  Completed:  $($s.completed)" -ForegroundColor Green
+        Write-Host "  Failed:     $($s.failed)" -ForegroundColor $(if ($s.failed -gt 0) { 'Red' } else { 'Gray' })
+        Write-Host "  Timeout:    $($s.timeout)" -ForegroundColor $(if ($s.timeout -gt 0) { 'Yellow' } else { 'Gray' })
+        Write-Host "  Overall:    $(if ($Result.Success) { 'PASS' } else { 'FAIL' })" -ForegroundColor $overallColor
+
+        if ($s.details -and $s.details.Count -gt 0) {
+            Write-Host ""
+            Write-Host "  --- Server Details ---" -ForegroundColor Yellow
+            $nameWidth = ($s.details | ForEach-Object { $_.server.Length } | Measure-Object -Maximum).Maximum
+            if ($nameWidth -lt 15) { $nameWidth = 15 }
+            if ($nameWidth -gt 40) { $nameWidth = 40 }
+
+            $header = "{0,-$nameWidth}  {1,-12}  {2,-10}  {3}" -f 'Server', 'Status', 'Progress', 'Duration'
+            Write-Host $header -ForegroundColor Yellow
+            Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+            foreach ($srv in $s.details) {
+                $statusColor = switch ($srv.status) {
+                    'completed' { 'Green' }
+                    'failed'    { 'Red' }
+                    'timeout'   { 'Yellow' }
+                    default     { 'Gray' }
+                }
+                $pct = if ($null -ne $srv.progress_percent) { "$($srv.progress_percent)%" } else { '-' }
+                $dur = if ($srv.duration_seconds) { "$([math]::Round($srv.duration_seconds))s" } else { '-' }
+                $line = "{0,-$nameWidth}  {1,-12}  {2,-10}  {3}" -f $srv.server, $srv.status, $pct, $dur
+                Write-Host $line -ForegroundColor $statusColor
+            }
+        }
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 if (-not $Script:MonitorLogDir -or $Script:MonitorLogDir -eq '') {
@@ -346,6 +462,94 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         Write-Output "Saved: $summaryFile"
         return $summary
     }
+}
+
+function _Format-InstallMonitorResult {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  Installation Monitor - Single Server" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $d = $Result.Details
+    $statusColor = switch ($Result.Status) {
+        'completed' { 'Green' }
+        'failed'    { 'Red' }
+        'timeout'   { 'Yellow' }
+        default     { 'Gray' }
+    }
+
+    Write-Host "  Server:        $($d.server)" -ForegroundColor White
+    Write-Host "  Status:        $($Result.Status)" -ForegroundColor $statusColor
+    Write-Host "  Progress:      $($d.progress_percent)%" -ForegroundColor $(if ($d.progress_percent -eq 100) { 'Green' } else { 'Yellow' })
+    Write-Host "  Current Phase: $($d.current_phase)"
+    Write-Host "  Duration:      $([math]::Round($d.duration_seconds))s"
+    Write-Host "  Checks:        $($d.check_count)"
+
+    if ($d.error) {
+        Write-Host "  Error:         $($d.error)" -ForegroundColor Red
+    }
+
+    if ($d.winrm_progress -and $d.winrm_progress.Count -gt 0) {
+        $last = $d.winrm_progress[-1]
+        Write-Host ""
+        Write-Host "  --- Latest WinRM Progress ---" -ForegroundColor Yellow
+        if ($last.setup_phase) { Write-Host "    Setup Phase:    $($last.setup_phase)" }
+        if ($last.install_state) { Write-Host "    Install State:  $($last.install_state)" }
+        if ($last.progress_percent) { Write-Host "    Progress:       $($last.progress_percent)%" }
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+}
+
+function _Format-InstallMonitorSummary {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  Installation Monitor - Summary" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $s = $Result.Summary
+    $overallColor = if ($Result.Success) { 'Green' } else { 'Red' }
+
+    Write-Host "  Total:       $($s.total)" -ForegroundColor White
+    Write-Host "  Completed:   $($s.completed)" -ForegroundColor Green
+    Write-Host "  Failed:      $($s.failed)" -ForegroundColor $(if ($s.failed -gt 0) { 'Red' } else { 'Gray' })
+    Write-Host "  Timed Out:   $($s.timeout)" -ForegroundColor $(if ($s.timeout -gt 0) { 'Yellow' } else { 'Gray' })
+    Write-Host "  Overall:     $(if ($Result.Success) { 'PASS' } else { 'FAIL' })" -ForegroundColor $overallColor
+
+    if ($s.details -and $s.details.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  --- Server Details ---" -ForegroundColor Yellow
+        $nameWidth = ($s.details | ForEach-Object { $_.server.Length } | Measure-Object -Maximum).Maximum
+        if ($nameWidth -lt 15) { $nameWidth = 15 }
+        if ($nameWidth -gt 40) { $nameWidth = 40 }
+
+        $header = "{0,-$nameWidth}  {1,-12}  {2,-8}  {3}" -f 'Server', 'Status', 'Progress', 'Duration'
+        Write-Host $header -ForegroundColor Gray
+        Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+        foreach ($srv in $s.details) {
+            $statusColor = switch ($srv.status) {
+                'completed' { 'Green' }
+                'failed'    { 'Red' }
+                'timeout'   { 'Yellow' }
+                default     { 'Gray' }
+            }
+            $line = "{0,-$nameWidth}  {1,-12}  {2,7}%  {3,8}s" -f $srv.server, $srv.status, $srv.progress_percent, [math]::Round($srv.duration_seconds)
+            Write-Host $line -ForegroundColor $statusColor
+        }
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # vim: ts=4 sw=4 et
