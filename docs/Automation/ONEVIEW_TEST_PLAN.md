@@ -262,3 +262,59 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
   (Phases 4, 5, 7, 8, 10) per the standing rule — serial runs also pass `-OneViewHost`.
 - Fill **Exp. Pass** against the project schedule; update **Act. Pass** + **Status** as each test is
   executed on `HPEOpenview.1000` and evidenced in Phase 11.
+
+
+   Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                                               0  15:54:09 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-27 14:54:54 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-27 14:54:54 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 12ms) 
+This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective 
+action including termination, civil and/or criminal penalties.
+
+
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod 
+  Timestamp:  2026-07-27T14:55:18.6156500Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 12ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: Yes (session active)
+
+==============================================
+
+2026-07-27 14:55:18 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True)
+
+Name                           Value
+----                           -----
+ManagementHost                 va-oneviewt-01
+Available                      True
+AuthConnect                    {[Disconnected, False], [Error, ], [Connected, True], [ModuleLoaded, True]}
+Environment                    Prod
+NetworkPing                    {[DnsResolved, True], [IpAddress, 10.239.124.79], [LatencyMs, 12], [Port, 443]…}
+Timestamp                      2026-07-27T14:55:18.6156500Z
+Mode                           oneview
+
+   image-build-automation  Get-OneViewConnectionStatus                                                                                             0  1m 2s 982ms  15:55:18 
+Name                           Value
+----                           -----
+Reachable                      True
+Success                        True
+ServerCount
+Appliance                      va-oneviewt-01 
+Connected                      True
+Version                        8200
+Error
+Server
+Authenticated                  True
+SessionSource                  HPEOneViewModule
