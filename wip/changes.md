@@ -27,7 +27,7 @@ Or install from the bundled vendor copy (offline):
 # Copy the bundled module to the PowerShell modules folder
 $dest = "$env:USERPROFILE\Documents\PowerShell\Modules\Pester\6.0.1"
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
-Copy-Item -Path "<repo-path>\vendor\modules\Pester\6.0.1\*" -Destination $dest -Recurse -Force
+Copy-Item -Path "C:\Users\98253\repos\image-build-automation\scripts\modules\Pester\6.0.1\*" -Destination $dest -Recurse -Force
 
 # Verify
 Import-Module Pester 6.0.1 -PassThru

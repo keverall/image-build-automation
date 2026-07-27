@@ -693,4 +693,37 @@ NEXT: open a NEW pwsh window, then run:
 RESULT: No proxy configuration found anywhere on this host.
 If Connect-OVMgmt still fails, the HPEOneView module cache or a GPO is re-applying it - re-run this script in the exact session that fails.
 
-   image-build-automation                                                                                                                                       0  15:15:23 
+
+
+
+
+
+
+99999999999999999999
+
+
+ make automation-mode-tests                                       0  13:29:40 
+[prune-logs] Pruning old log files...
+[prune-logs] Pruning logs to keep maximum 10 per type...
+[prune-logs] Pruned 0 excess log files.
+Add-Type: Cannot bind parameter 'Path' to the target. Exception setting "Path": "Cannot find path
+'C:\Users\98253\Documents\PowerShell\Modules\Pester\6.0.1\bin\net8.0\Pester.dll' because it does not exist."
+make: *** [Makefile:92: automation-mode-tests] Error 1
+     image-build-automation  main  Import-Module Pester 6.0.1 -PassThru                   2  8s 502ms  13:33:11 
+Import-Module: A positional parameter cannot be found that accepts argument '6.0.1'.
+     image-build-automation  main  $env:USERPROFILE                                                 1  13:34:40 
+C:\Users\98253
+     image-build-automation  main  code $profile                                                    0  13:35:20 
+     image-build-automation  main  $dest = "$env:USERPROFILE\Documents\PowerShell\Modules\Pester\6.0.1"13:35:38 
+     image-build-automation  main  New-Item -ItemType Directory -Force -Path $dest | Out-Null       0  13:36:28 
+     image-build-automation  main  Copy-Item -Path "<repo-path>\vendor\modules\Pester\6.0.1\*" -Destination $dest -Recurse -Force                                                                                    
+Copy-Item: Cannot find path 'C:\Users\98253\repos\image-build-automation\<repo-path>\vendor\modules\Pester\6.0.1' because it does not exist.
+     image-build-automation  main  Copy-Item -Path "C:\Users\98253\repos\image-build-automation\scripts\modules\Pester\6.0.1\*" -Destination $dest -Recurse -Force                                                   
+     image-build-automation  main  Import-Module Pester 6.0.1 -PassThru                      0  891ms  13:38:47 
+Import-Module: A positional parameter cannot be found that accepts argument '6.0.1'.
+     image-build-automation  main  Remove-Item -Recurse -Force "$env:USERPROFILE\Documents\PowerShell\Modules\Pester"
+     image-build-automation  main  Install-Module Pester -RequiredVersion 6.0.1 -Scope CurrentUser -Force -SkipPublisherCheck                                                                                        
+     image-build-automation  main  Import-Module Pester 6.0.1 -PassThru                  0  11s 448ms  13:40:20 
+Import-Module: A positional parameter cannot be found that accepts argument '6.0.1'.
+     image-build-automation  main                                                                   1  13:40:41 
+
