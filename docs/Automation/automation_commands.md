@@ -52,7 +52,7 @@
   - [Source links](#source-links)
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
-> **Terminal command rules (see [`AGENTS.md`](../../AGENTS.md#top)):** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - supply `-Credential`/user+password parameters or enter them when prompted.
+> **Terminal command rules:** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - supply `-Credential`/user+password parameters or enter them when prompted.
 
 ---
 

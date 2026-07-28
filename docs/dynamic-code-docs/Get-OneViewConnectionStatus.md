@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewConnectionStatus.ps1
-generated: 2026-07-24 17:14 UTC
+generated: 2026-07-28 15:30 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -115,8 +115,11 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
 
     .RETURNS
         [hashtable] with Success, Connected, Reachable, Authenticated, Appliance,
-        Version, ServerCount (optional), Server (optional) and SessionSource
-        ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise).
+        Version, ServerCount (optional), Server (optional), SessionSource
+        ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise),
+        VersionCompliant (bool: $true when the appliance reports OneView 10.x,
+        $false when it reports an unsupported major version, $null when unknown)
+        and VersionWarning (string describing a version mismatch, or $null).
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
