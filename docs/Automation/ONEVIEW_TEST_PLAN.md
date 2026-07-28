@@ -254,3 +254,156 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 - Fill **Exp. Pass** against the project schedule; update **Act. Pass** + **Status** as each test is
   executed on `HPEOpenview.1000` and evidenced in Phase 11.
 
+
+
+ Get-OneViewServerList                                                                                                                0  16:45:13 
+============================================== 
+  OneView Server List (16 servers)
+============================================== 
+
+Server Name                      Serial Number    Power     Health      iLO IP          
+--------------------------------------------------------------------------------------- 
+OMG-STARWAY-01ILO.AD.AIB.PRI     CZJ831052N       On        OK                          
+ALP-WISCLU-01ilo                 CZ3508PYS5       On        OK
+OMG-WISCLU-01ilo                 CZJ5500337       On        OK
+ALP-STARWAY-01ILO                CZJ831052R       On        OK
+gam-isechost-02-03ilo.ad.ad.pri  CZ29350B60       On        OK
+gamdmzhost-01-03ilo.AD.AIB.PRI   CZ29350B5Y       On        OK
+gamdmzhost-02-03ilo              CZ29350B5Z       On        OK
+gamisechost-01-03ilo.AD.AIB.PRI  CZ29350B61       On        Critical
+OMG-CONSTC2-02ilo                CZ2D3701LY       On        OK
+ALP-CONSTC1-01ilo                CZ2D3701LT       On        Warning
+ALP-CONSTC2-01ilo                CZ2D3701LV       On        Warning
+OMG-CONSTC1-02ilo                CZ2D3701LZ       On        Critical
+alp-qlikview-03ilo               CZ22420JCM       On        OK
+alp-qliksen-02ilo                CZ22420JCZ       On        OK
+omg-qlikview-03ilo               CZ22420JCN       On        OK
+omg-qliksen-02ilo                CZ22420JD0       On        OK
+
+==============================================
+
+
+Name                           Value
+----                           -----
+Count                          16
+Error
+Success                        True
+Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, OMG-WISCLU-01ilo, ALP-STARWAY-01ILO…}
+
+
+
+
+
+
+ image-build-automation  Get-OneViewConnectionStatus                                                                                                          0  16:55:39 
+Name                           Value
+----                           -----
+Success                        False
+Appliance
+Error                          No active OneView session. Use Test-ServerConnectivity -ManagementHost <oneview-appliance-host> to connect, or supply -OneViewHost. 
+Authenticated                  False
+Reachable                      False
+Connected                      False
+
+   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                                               0  16:55:44 Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ************************ 
+2026-07-27 15:56:09 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-07-27 15:56:09 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 19ms) 
+This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective 
+action including termination, civil and/or criminal penalties.
+ 
+
+============================================== 
+  OneView Connectivity Test
+============================================== 
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod 
+  Timestamp:  2026-07-27T15:56:33.4130999Z
+ 
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79 
+    TCP:       Open (port 443, 19ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded 
+    Connected: Yes (session active)
+
+==============================================
+
+2026-07-27 15:56:33 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True)
+
+Name                           Value
+----                           -----
+Available                      True
+Environment                    Prod
+ManagementHost                 va-oneviewt-01
+Mode                           oneview
+NetworkPing                    {[Error, ], [Port, 443], [LatencyMs, 19], [IpAddress, 10.239.124.79]…}
+Timestamp                      2026-07-27T15:56:33.4130999Z
+AuthConnect                    {[Error, ], [Connected, True], [Disconnected, False], [ModuleLoaded, True]}
+
+   image-build-automation  Get-OneViewConnectionStatus                                                                                               0  42s 223ms  16:56:33 
+Name                           Value 
+----                           -----
+SessionSource                  HPEOneViewModule
+Appliance                      va-oneviewt-01
+Reachable                      True
+Version                        8200
+Connected                      True
+Server
+Error
+Success                        True
+Authenticated                  True
+ServerCount
+
+   image-build-automation  Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000                                                                            0  16:56:43 
+Name                           Value 
+----                           -----
+SessionSource                  Explicit
+Appliance                      HPEOpenview.1000
+Reachable                      False
+Version
+Connected                      False
+Server
+Error                          OneView appliance 'HPEOpenview.1000' is not reachable: No such host is known. (hpeopenview.1000:443)
+Success                        False 
+Authenticated                  False
+ServerCount
+
+   image-build-automation  Get-OneViewServerList                                                                                                                0  16:56:56 
+============================================== 
+  OneView Server List (16 servers)
+==============================================
+
+Server Name                      Serial Number    Power     Health      iLO IP          
+---------------------------------------------------------------------------------------
+OMG-STARWAY-01ILO.AD.AIB.PRI     CZJ831052N       On        OK                          
+ALP-WISCLU-01ilo                 CZ3508PYS5       On        OK
+OMG-WISCLU-01ilo                 CZJ5500337       On        OK
+ALP-STARWAY-01ILO                CZJ831052R       On        OK
+gam-isechost-02-03ilo.ad.ad.pri  CZ29350B60       On        OK
+gamdmzhost-01-03ilo.AD.AIB.PRI   CZ29350B5Y       On        OK
+gamdmzhost-02-03ilo              CZ29350B5Z       On        OK
+gamisechost-01-03ilo.AD.AIB.PRI  CZ29350B61       On        Critical
+OMG-CONSTC2-02ilo                CZ2D3701LY       On        OK
+ALP-CONSTC1-01ilo                CZ2D3701LT       On        Warning
+ALP-CONSTC2-01ilo                CZ2D3701LV       On        Warning
+OMG-CONSTC1-02ilo                CZ2D3701LZ       On        Critical
+alp-qlikview-03ilo               CZ22420JCM       On        OK                          
+alp-qliksen-02ilo                CZ22420JCZ       On        OK
+omg-qlikview-03ilo               CZ22420JCN       On        OK
+omg-qliksen-02ilo                CZ22420JD0       On        OK
+
+==============================================
+
+
+Name                           Value
+----                           -----
+Success                        True
+Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, OMG-WISCLU-01ilo, ALP-STARWAY-01ILO…}
+Count                          16
+Error
