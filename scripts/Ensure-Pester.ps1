@@ -21,13 +21,15 @@ $ErrorActionPreference = 'Stop'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 
 function Ensure-PesterAvailable {
-    $pesterUserPath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules\Pester'
+    $userModuleDir = ($env:PSModulePath -split [IO.Path]::PathSeparator | Select-Object -First 1)
+    $pesterUserPath = Join-Path $userModuleDir 'Pester'
+    $dllRelative = Join-Path 'bin' 'net8.0' 'Pester.dll'
     $pesterOk = $false
 
     $pesterModule = Get-Module Pester -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
     if ($pesterModule) {
         $moduleBase = Split-Path $pesterModule.Path -Parent
-        $dllPath = Join-Path $moduleBase 'bin\net8.0\Pester.dll'
+        $dllPath = Join-Path $moduleBase $dllRelative
         if (Test-Path $dllPath) { $pesterOk = $true }
     }
 
@@ -38,9 +40,6 @@ function Ensure-PesterAvailable {
             Write-Host '[ensure-pester] Removed broken Pester installation' -ForegroundColor Yellow
         }
 
-        # Local-first: try the repo's own bundled copies before touching the network.
-        # (scripts/modules is what gets copied to offline test servers; vendor is the
-        # committed fallback.) Each is resolved relative to the project root.
         $localRoots = @(
             (Join-Path $PROJECT_ROOT 'scripts/modules/Pester'),
             (Join-Path $PROJECT_ROOT 'vendor/modules/Pester')
@@ -49,10 +48,16 @@ function Ensure-PesterAvailable {
         foreach ($localRoot in $localRoots) {
             $versionDir = Get-ChildItem -Path $localRoot -Directory -ErrorAction SilentlyContinue |
                 Sort-Object Name -Descending | Select-Object -First 1
-            if ($versionDir -and (Test-Path (Join-Path $versionDir.FullName 'bin/net8.0/Pester.dll'))) {
+            if ($versionDir -and (Test-Path (Join-Path $versionDir.FullName $dllRelative))) {
                 $destDir = Join-Path $pesterUserPath $versionDir.Name
                 New-Item -ItemType Directory -Force -Path $destDir | Out-Null
                 Copy-Item -Path "$($versionDir.FullName)/*" -Destination $destDir -Recurse -Force
+                $verifyPath = Join-Path $destDir $dllRelative
+                if (-not (Test-Path $verifyPath)) {
+                    Write-Host "[ensure-pester] Copy verification failed ($verifyPath missing) - trying next source" -ForegroundColor Yellow
+                    Remove-Item -Recurse -Force $destDir -ErrorAction SilentlyContinue
+                    continue
+                }
                 Write-Host "[ensure-pester] Installed Pester $($versionDir.Name) from $($localRoot)" -ForegroundColor Green
                 $repaired = $true
                 break
