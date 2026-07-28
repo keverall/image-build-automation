@@ -58,6 +58,13 @@ function New-OneViewMaintenanceScript {
         }
         $ModuleName = $defaultModule ?? 'HPEOneView.1000'
     }
+
+    # Policy: only HPEOneView.1000 is supported. Warn loudly when anything else
+    # slips through auto-detection or explicit config so stray installs
+    # (e.g. HPEOneView.860) are caught before the generated script runs.
+    if ($ModuleName -ne 'HPEOneView.1000') {
+        Write-Warning "OneView module '$ModuleName' is not the supported 'HPEOneView.1000'. Uninstall stray HPEOneView.* versions and update oneview_config.json / ONEVIEW_MODULE_NAME."
+    }
     
     $asyncParam = if ($Async) { '-Async' } else { '' }
     

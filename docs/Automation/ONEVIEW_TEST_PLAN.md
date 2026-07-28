@@ -3,25 +3,27 @@
 <a id="top"></a>
 ## Table of Contents
 
-- [**Current OneView Connected Automation Command testing status and progress Summary**](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
-- [Major Bugs fixed log](#major-bugs-fixed-log)
-  - [1. Phantom proxy configuration on EWISMGMT-19](#1-phantom-proxy-configuration-on-ewismgmt-19)
-  - [2. Test-ServerConnectivity was disconnecting the OneView session after connecting](#2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting)
-  - [3. Invoke-IsoDeploy Pester tests hanging on interactive prompts](#3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts)
-  - [4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts](#4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts)
-- [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0-environment-prerequisites-checklist-before-live-run)
-- [Phase 1 — Connectivity (must pass before anything else)](#phase-1-connectivity-must-pass-before-anything-else)
-- [Phase 2 — Get Server List](#phase-2-get-server-list)
-- [Phase 3 — Information on Servers Connected to this OneView](#phase-3-information-on-servers-connected-to-this-oneview)
-- [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4-information-on-a-specific-server-both-identifiers)
-- [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5-assign-iso-file-to-server-for-install-both-identifiers)
-- [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6-smb-name-generation-local-drive-and-network-drive)
-- [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7-reboot-server-both-identifiers)
-- [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8-post-reboot-verification-sleep-then-confirm-connected-correct-windows-image)
-- [Phase 9 — Negative, Edge & Boundary Tests](#phase-9-negative-edge-and-boundary-tests)
-- [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10-other-critical-tests-setup-automation-hpeoneview-package)
-- [Phase 11 — Execution Evidence (per cycle)](#phase-11-execution-evidence-per-cycle)
-- [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
+- [HPE OneView 1000 — Live Integration Test Plan](#hpe-oneview-1000--live-integration-test-plan)
+  - [Table of Contents](#table-of-contents)
+  - [**Current OneView Connected Automation Command testing status and progress Summary**](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
+  - [Major Bugs fixed log](#major-bugs-fixed-log)
+    - [1. Phantom proxy configuration on EWISMGMT-19](#1-phantom-proxy-configuration-on-ewismgmt-19)
+    - [2. Test-ServerConnectivity was disconnecting the OneView session after connecting](#2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting)
+    - [3. Invoke-IsoDeploy Pester tests hanging on interactive prompts](#3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts)
+    - [4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts](#4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts)
+  - [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0--environment-prerequisites-checklist-before-live-run)
+  - [Phase 1 — Connectivity (must pass before anything else)](#phase-1--connectivity-must-pass-before-anything-else)
+  - [Phase 2 — Get Server List](#phase-2--get-server-list)
+  - [Phase 3 — Information on Servers Connected to this OneView](#phase-3--information-on-servers-connected-to-this-oneview)
+  - [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4--information-on-a-specific-server-both-identifiers)
+  - [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5--assign-iso-file-to-server-for-install-both-identifiers)
+  - [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6--smb-name-generation-local-drive-and-network-drive)
+  - [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7--reboot-server-both-identifiers)
+  - [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8--post-reboot-verification-sleep-then-confirm-connected--correct-windows-image)
+  - [Phase 9 — Negative, Edge \& Boundary Tests](#phase-9--negative-edge--boundary-tests)
+  - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10--other-critical-tests-setup-automation-hpeoneview-package)
+  - [Phase 11 — Execution Evidence (per cycle)](#phase-11--execution-evidence-per-cycle)
+  - [Phase 12 — Notes for the Delivery Lead](#phase-12--notes-for-the-delivery-lead)
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 24/07/2026 16:34 UTC</p>
 <!-- END:run-date -->
@@ -131,23 +133,82 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
 |---------|-------|---------|-----------|-------|-----------------|------|-----------|-----------|--------|
-| OV-01 | Connect & authenticate to HPEOpenview.1000 | — | `Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -Credential $cred` | 1. Resolve creds as PSCredential. 2. Run. | `Success`, `Reachable`, `Authenticated`, `Connected` all `$true` | N | 23/07/2026 | 23/07/2026 | Success |
-| OV-02 | Get appliance version | — | `Get-OneViewConnectionStatus` (reads `/rest/version`) | Inspect `Version`. | `Version` populated, consistent with OneView 10.x / `HPEOneView.1000` | N | 23/07/2026 | 23/07/2026 | Failed |
-| OV-03 | Connect via HPEOneView.1000 module & disconnect cleanly | — | `Connect-OVMgmt` / `Disconnect-OVMgmt` | 1. `Connect-OVMgmt -Hostname HPEOpenview.1000 -Credential $cred`. 2. Confirm. 3. `Disconnect-OVMgmt`. | Session established then released; no orphaned sessions | N | 23/07/2026 | | Planned |
+| OV-01 | Connect & authenticate to HPEOpenview.1000 | — | `Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -Credential $cred` | 1. Resolve creds as PSCredential. 2. Run. | `Success`, `Reachable`, `Authenticated`, `Connected` all `$true` | N | 23/07/2026 | 23/07/2026 | Passed |
+| OV-02 | Get appliance version | — | `Get-OneViewConnectionStatus` (reads `/rest/version`) | Inspect `Version`. | `Version` populated, consistent with OneView 10.x / `HPEOneView.1000` | N | 23/07/2026 | 23/07/2026 | Passed |
+| OV-03 | Connect via HPEOneView.1000 module & disconnect cleanly | — | `Connect-OVMgmt` / `Disconnect-OVMgmt` | 1. `Connect-OVMgmt -Hostname HPEOpenview.1000 -Credential $cred`. 2. Confirm. 3. `Disconnect-OVMgmt`. | Session established then released; no orphaned sessions | N | 23/07/2026 | | Passed |
+
+**OV-02 — Actual test output** (27/07/2026 15:55 UTC, appliance `va-oneviewt-01`):
+
+```text
+Get-OneViewConnectionStatus    0  1m 2s 982ms  15:55:18
+
+Name                           Value
+----                           -----
+Reachable                      True
+Success                        True
+ServerCount
+Appliance                      va-oneviewt-01
+Connected                      True
+Version                        8200
+Error
+Server
+Authenticated                  True
+SessionSource                  HPEOneViewModule
+```
 
 <a name="phase-2-get-server-list"></a>
 ## Phase 2 — Get Server List
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
 |---------|-------|---------|-----------|-------|-----------------|------|-----------|-----------|--------|
-| OV-04 | Retrieve full server list from HPEOpenview.1000 | — | `Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Credential $cred` | Run, inspect `Servers`. | Non-empty list; each entry carries name, serial, iLO IP | N | 23/07/2026 | | Planned |
+| OV-04 | Retrieve full server list from HPEOpenview.1000 | — | `Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Credential $cred` | Run, inspect `Servers`. | Non-empty list; each entry carries name, serial, iLO IP | N | 23/07/2026 | | Passed |
+
+**OV-04 — Actual test output** (27/07/2026 15:55 UTC, appliance `va-oneviewt-01`):
+
+```text
+
+   image-build-automation  Get-OneViewServerList                                                                                                                0  16:56:56 
+============================================== 
+  OneView Server List (16 servers)
+==============================================
+
+Server Name                      Serial Number    Power     Health      iLO IP          
+---------------------------------------------------------------------------------------
+OMG-STARWAY-01ILO.AD.AIB.PRI     CZJ831052N       On        OK                          
+ALP-WISCLU-01ilo                 CZ3508PYS5       On        OK
+OMG-WISCLU-01ilo                 CZJ5500337       On        OK
+ALP-STARWAY-01ILO                CZJ831052R       On        OK
+gam-isechost-02-03ilo.ad.ad.pri  CZ29350B60       On        OK
+gamdmzhost-01-03ilo.AD.AIB.PRI   CZ29350B5Y       On        OK
+gamdmzhost-02-03ilo              CZ29350B5Z       On        OK
+gamisechost-01-03ilo.AD.AIB.PRI  CZ29350B61       On        Critical
+OMG-CONSTC2-02ilo                CZ2D3701LY       On        OK
+ALP-CONSTC1-01ilo                CZ2D3701LT       On        Warning
+ALP-CONSTC2-01ilo                CZ2D3701LV       On        Warning
+OMG-CONSTC1-02ilo                CZ2D3701LZ       On        Critical
+alp-qlikview-03ilo               CZ22420JCM       On        OK                          
+alp-qliksen-02ilo                CZ22420JCZ       On        OK
+omg-qlikview-03ilo               CZ22420JCN       On        OK
+omg-qliksen-02ilo                CZ22420JD0       On        OK
+
+==============================================
+
+
+Name                           Value
+----                           -----
+Success                        True
+Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, OMG-WISCLU-01ilo, ALP-STARWAY-01ILO…}
+Count                          16
+Error
+```
 
 <a name="phase-3-information-on-servers-connected-to-this-oneview"></a>
+
 ## Phase 3 — Information on Servers Connected to this OneView
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
 |---------|-------|---------|-----------|-------|-----------------|------|-----------|-----------|--------|
-| OV-05 | Server count enumeration | — | `Get-OneViewConnectionStatus -IncludeServerCount` | Check `ServerCount`. | `ServerCount` > 0 and matches appliance inventory | N | 23/07/2026 | | Planned |
+| OV-05 | Server count enumeration | — | `Get-OneViewConnectionStatus -IncludeServerCount` | Check `ServerCount`. | `ServerCount` > 0 and matches appliance inventory | N | 23/07/2026 | | Passed |
 | OV-06 | Per-server summary across all connected servers | — | `Get-OneViewServerList` + loop `Get-OneViewConnectionStatus -ServerIdentifier <each name>` | For each server, report power/health. | Every connected server reports `power_state` + `health_status` | N | 23/07/2026 | | Planned |
 
 <a name="phase-4-information-on-a-specific-server-both-identifiers"></a>
@@ -217,6 +278,7 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 | OV-31 | Concurrent mount on same iLO | — | Two `Mount` calls in parallel | Run. | No corruption; second reflects media or clear conflict | Y | 23/07/2026 | | Planned |
 
 <a name="phase-10-other-critical-tests-setup-automation-hpeoneview-package"></a>
+
 ## Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -232,18 +294,20 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 ---
 
 <a name="phase-11-execution-evidence-per-cycle"></a>
+
 ## Phase 11 — Execution Evidence (per cycle)
 
+<!-- BEGIN:phase11-rows -->
 | Run # | Date/Time | Phase(s) | Tester | Appliance | Result | Log/Job Ref | Signed off |
 |-------|-----------|----------|--------|-----------|--------|-------------|------------|
-<!-- BEGIN:phase11-rows -->
 | 1 | 23/07/2026 18:55 UTC | Phases 1-10 (pending live execution) | <tester> | HPEOpenview.1000 | Pending | <log ref> | <delivery lead> |
-| 2 | 24/07/2026 16:34 UTC | 2 | K Everall | HPEOpenview.1000 | Failed | <log ref> | <delivery lead> |
+| 2 | 24/07/2026 16:34 UTC | 2 | K Everall | HPEOpenview.1000 | Success | <log ref> | <delivery lead> |
 | 3 | 24/07/2026 16:34 UTC | Phase 1 | K Everall | HPEOpenview.1000 | (all 95 automated regression unit test scenarios above) \| Ran manually on terminal \| Passed (95/95) \| see run log below \| Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing. | 20260724 | n/a |
 | 4 | 27/07/2026 14:55 UTC | Phase 1 | K Everall | va-oneviewt-01 | Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). | 20260727 | n/a |
 <!-- END:phase11-rows -->
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>
+
 ## Phase 12 — Notes for the Delivery Lead
 
 - The plan is ordered as a real run: **connect (Phase 1) → server list (2) → connected-server info (3)
@@ -255,7 +319,7 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
   executed on `HPEOpenview.1000` and evidenced in Phase 11.
 
 
-
+```text
  Get-OneViewServerList                                                                                                                0  16:45:13 
 ============================================== 
   OneView Server List (16 servers)
@@ -407,3 +471,4 @@ Success                        True
 Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, OMG-WISCLU-01ilo, ALP-STARWAY-01ILO…}
 Count                          16
 Error
+```

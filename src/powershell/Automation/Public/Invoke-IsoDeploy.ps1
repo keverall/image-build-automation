@@ -187,7 +187,9 @@ function Invoke-IsoDeploy {
         }
         else {
             $summary = $deployer.DeployAll($Method, [bool]$DryRun)
-            return @{ Success = ($summary['successful'] -eq $summary['total']); Summary = $summary }
+            $result = @{ Success = ($summary['successful'] -eq $summary['total']); Summary = $summary }
+            _Format-IsoDeploySummary -Result $result
+            return $result
         }
     }
     catch {
@@ -340,6 +342,51 @@ class ISODeployer {
         Write-Output "Log saved: $logFile"
         return $summary
     }
+}
+
+function _Format-IsoDeploySummary {
+    param([hashtable]$Result)
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  ISO Deployment Summary" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    if ($Result.Summary) {
+        $s = $Result.Summary
+        $overallColor = if ($Result.Success) { 'Green' } else { 'Red' }
+        
+        Write-Host "  Method:     $($s.method)" -ForegroundColor White
+        Write-Host "  Total:      $($s.total)" -ForegroundColor White
+        Write-Host "  Successful: $($s.successful)" -ForegroundColor Green
+        Write-Host "  Failed:     $($s.failed)" -ForegroundColor $(if ($s.failed -gt 0) { 'Red' } else { 'Gray' })
+        Write-Host "  Overall:    $(if ($Result.Success) { 'PASS' } else { 'FAIL' })" -ForegroundColor $overallColor
+
+        if ($s.results -and $s.results.Count -gt 0) {
+            Write-Host ""
+            Write-Host "  --- Server Results ---" -ForegroundColor Yellow
+            $nameWidth = ($s.results | ForEach-Object { $_.server.Length } | Measure-Object -Maximum).Maximum
+            if ($nameWidth -lt 15) { $nameWidth = 15 }
+            if ($nameWidth -gt 40) { $nameWidth = 40 }
+
+            $header = "{0,-$nameWidth}  {1,-10}  {2}" -f 'Server', 'Status', 'Method'
+            Write-Host $header -ForegroundColor Yellow
+            Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+            foreach ($srv in $s.results) {
+                $statusColor = if ($srv.success) { 'Green' } else { 'Red' }
+                $status = if ($srv.success) { 'SUCCESS' } else { 'FAILED' }
+                $method = if ($srv.method) { $srv.method } else { '-' }
+                $line = "{0,-$nameWidth}  {1,-10}  {2}" -f $srv.server, $status, $method
+                Write-Host $line -ForegroundColor $statusColor
+            }
+        }
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 function Get-SmbPathFromDriveLetter {

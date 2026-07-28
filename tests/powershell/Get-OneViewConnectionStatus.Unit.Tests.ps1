@@ -76,6 +76,7 @@ Describe 'Get-OneViewConnectionStatus - parsing (mocked REST)' {
         $r.Reachable      | Should -Be $true
         $r.Authenticated  | Should -Be $true
         $r.Version        | Should -Be '10.00'
+        $r.VersionCompliant | Should -Be $true
         $r.ServerCount    | Should -Be 7
         $r.Error          | Should -Be $null
     }
@@ -86,6 +87,50 @@ Describe 'Get-OneViewConnectionStatus - parsing (mocked REST)' {
         $r.Server.name         | Should -Be 's1'
         $r.Server.serial_number| Should -Be 'A'
         $r.Server.connected    | Should -Be $true
+    }
+}
+
+Describe 'Get-OneViewConnectionStatus - version guard (HPEOneView.1000 / OneView 10.x)' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/version*' } -MockWith {
+                $Script:CurrentVersionProbe
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -notlike '*filter*' } -MockWith {
+                @{ total = 0; members = @() }
+            }
+        }
+    }
+
+    It 'Flags a compliant OneView 10.x version (string "10.00") as compliant' {
+        InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = '10.00' } }
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred
+        $r.Version          | Should -Be '10.00'
+        $r.VersionCompliant | Should -Be $true
+        $r.VersionWarning   | Should -Be $null
+    }
+
+    It 'Flags a compliant OneView 10.x version (integer 10000) as compliant' {
+        InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = 10000 } }
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred
+        $r.VersionCompliant | Should -Be $true
+        $r.VersionWarning   | Should -Be $null
+    }
+
+    It 'Fails loudly (warns) on a non-compliant version (integer 8200 = 8.20)' {
+        InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = 8200 } }
+        $r = Get-OneViewConnectionStatus -OneViewHost 'va-oneviewt-01' -Credential $Script:TestCred -WarningAction SilentlyContinue
+        $r.Version          | Should -Be 8200
+        $r.VersionCompliant | Should -Be $false
+        $r.VersionWarning   | Should -Not -Be $null
+        $r.VersionWarning   | Should -Match 'OneView 10.x'
+    }
+
+    It 'Fails loudly (warns) on a non-compliant dotted version (string "8.20")' {
+        InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = '8.20' } }
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -WarningAction SilentlyContinue
+        $r.VersionCompliant | Should -Be $false
+        $r.VersionWarning   | Should -Not -Be $null
     }
 }
 

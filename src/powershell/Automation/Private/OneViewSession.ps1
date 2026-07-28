@@ -19,6 +19,98 @@ $script:ONEVIEW_NO_SESSION_MSG = "No active OneView session. Use Test-ServerConn
 # and reuse the session reliably regardless of how the module exposes its state.
 $script:ActiveOneViewSession = $null
 
+# The ONLY HPE OneView PowerShell library version supported by this automation.
+# All other HPEOneView.* / legacy HPOneView.* versions are rejected at import time.
+$script:REQUIRED_ONEVIEW_MODULE = 'HPEOneView.1000'
+
+function Get-OneViewModuleStatus {
+    <#
+    .SYNOPSIS
+        Report which HPEOneView PowerShell library versions are loaded and installed.
+
+    .DESCRIPTION
+        Inspects the current session (Get-Module) and PSModulePath
+        (Get-Module -ListAvailable) for HPEOneView.* and legacy HPOneView.*
+        libraries. Used to enforce the HPEOneView.1000-only policy and to power
+        Get-OneViewVersion diagnostics.
+
+    .OUTPUTS
+        [hashtable] RequiredModule, LoadedModules, InstalledModules (name/version/path),
+        Compliant (bool: no non-1000 module loaded), NonCompliantLoaded, NonCompliantInstalled.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+
+    $loaded = @(Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue)
+    $installed = @(Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue)
+
+    $describe = { param($m) @{ Name = $m.Name; Version = "$($m.Version)"; Path = $m.Path } }
+
+    $nonCompliantLoaded    = @($loaded    | Where-Object { $_.Name -ne $script:REQUIRED_ONEVIEW_MODULE })
+    $nonCompliantInstalled = @($installed | Where-Object { $_.Name -ne $script:REQUIRED_ONEVIEW_MODULE })
+
+    return @{
+        RequiredModule        = $script:REQUIRED_ONEVIEW_MODULE
+        LoadedModules         = @($loaded    | ForEach-Object { & $describe $_ })
+        InstalledModules      = @($installed | ForEach-Object { & $describe $_ })
+        Compliant             = ($nonCompliantLoaded.Count -eq 0)
+        NonCompliantLoaded    = @($nonCompliantLoaded    | ForEach-Object { $_.Name })
+        NonCompliantInstalled = @($nonCompliantInstalled | ForEach-Object { $_.Name } | Sort-Object -Unique)
+    }
+}
+
+function Assert-OneViewModuleCompliance {
+    <#
+    .SYNOPSIS
+        Enforce that only HPEOneView.1000 is (or will be) used in this session.
+
+    .DESCRIPTION
+        Returns a hashtable with Ok=$true when no other HPEOneView.*/HPOneView.*
+        module is loaded. When a non-compliant module is already loaded, returns
+        Ok=$false with a remediation message (the offending module holds cmdlet
+        names like Connect-OVMgmt, so importing HPEOneView.1000 alongside it is
+        unsafe). Also warns (non-fatal) when other versions are merely installed
+        on PSModulePath so operators can uninstall them.
+
+    .PARAMETER ModuleName
+        The module the caller intends to import. Anything other than
+        HPEOneView.1000 fails the check.
+
+    .OUTPUTS
+        [hashtable] Ok, Error.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [string] $ModuleName = $script:REQUIRED_ONEVIEW_MODULE
+    )
+
+    if ($ModuleName -ne $script:REQUIRED_ONEVIEW_MODULE) {
+        return @{
+            Ok    = $false
+            Error = "OneView module '$ModuleName' is not permitted. Only '$($script:REQUIRED_ONEVIEW_MODULE)' (OneView 10.x library) is supported by this automation. Update oneview_config.json / the -ModuleName argument."
+        }
+    }
+
+    $status = Get-OneViewModuleStatus
+
+    if ($status.NonCompliantLoaded.Count -gt 0) {
+        $names = $status.NonCompliantLoaded -join ', '
+        return @{
+            Ok    = $false
+            Error = "Unsupported HPE OneView module(s) already loaded in this session: $names. Only '$($script:REQUIRED_ONEVIEW_MODULE)' is supported. Run: Remove-Module $names -Force; then Uninstall-Module (or delete the module folder) so it cannot auto-load, and retry."
+        }
+    }
+
+    if ($status.NonCompliantInstalled.Count -gt 0) {
+        $names = $status.NonCompliantInstalled -join ', '
+        Write-Warning "Unsupported HPE OneView module version(s) found on PSModulePath: $names. Only '$($script:REQUIRED_ONEVIEW_MODULE)' is supported - uninstall/delete the others to avoid accidental auto-loading (see Get-OneViewVersion for their paths)."
+    }
+
+    return @{ Ok = $true; Error = $null }
+}
+
 function Get-OneViewActiveSession {
     <#
     .SYNOPSIS
@@ -129,6 +221,14 @@ function Connect-OneViewSession {
         SessionId       = $null
         ModuleName      = $ModuleName
         Error           = $null
+    }
+
+    # HPEOneView.1000-only policy: reject any other library version before we
+    # touch the session or import anything.
+    $moduleCheck = Assert-OneViewModuleCompliance -ModuleName $ModuleName
+    if (-not $moduleCheck.Ok) {
+        $result.Error = $moduleCheck.Error
+        return $result
     }
 
     $existing = Get-OneViewActiveSession
