@@ -62,8 +62,11 @@ function Get-OneViewConnectionStatus {
 
     .RETURNS
         [hashtable] with Success, Connected, Reachable, Authenticated, Appliance,
-        Version, ServerCount (optional), Server (optional) and SessionSource
-        ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise).
+        Version, ServerCount (optional), Server (optional), SessionSource
+        ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise),
+        VersionCompliant (bool: $true when the appliance reports OneView 10.x,
+        $false when it reports an unsupported major version, $null when unknown)
+        and VersionWarning (string describing a version mismatch, or $null).
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
@@ -151,6 +154,8 @@ function Get-OneViewConnectionStatus {
         Authenticated  = $false
         Appliance      = $OneViewHost
         Version        = $null
+        VersionCompliant = $null
+        VersionWarning  = $null
         ServerCount    = $null
         Server         = $null
         SessionSource  = $(if ($sessionToken) { 'HPEOneViewModule' } else { 'Explicit' })
@@ -164,7 +169,10 @@ function Get-OneViewConnectionStatus {
                 -SkipCertificateCheck:$SkipCertificateCheck `
                 -TimeoutSec $TimeoutSec -ErrorAction Stop
             $result.Reachable = $true
-            if ($ver -and $ver.currentVersion) { $result.Version = $ver.currentVersion }
+            if ($ver -and $ver.currentVersion) {
+                $result.Version = $ver.currentVersion
+                _Test-OneViewVersionCompliance -Result $result -Version $ver.currentVersion -Appliance $OneViewHost
+            }
         } catch {
             $result.Reachable = $false
             $result.Error = "OneView appliance '$OneViewHost' is not reachable: $($_.Exception.Message)"
@@ -258,6 +266,68 @@ function Get-OneViewConnectionStatus {
         $result.Error = "OneView connection status failed: $($_.Exception.Message)"
         return $result
     }
+}
+
+function _Get-OneViewMajorVersion {
+    <#
+    .SYNOPSIS
+        Normalise an HPE OneView version (string or number) to its major version.
+    .DESCRIPTION
+        Handles the representations seen across OneView generations:
+          * Dotted strings: "10.00.0000" / "8.20" -> leading segment (10 / 8)
+          * Integers from /rest/version currentVersion (encoded Major*1000 + Minor*10,
+            e.g. 8200 -> 8.20, 10000 -> 10.00) -> major via integer division by 1000
+          * Legacy 3-digit integers (e.g. 820 -> 8.20) -> major via division by 100
+        Returns $null when the value cannot be parsed.
+    #>
+    param($Version)
+    if ($null -eq $Version -or [string]::IsNullOrWhiteSpace("$Version")) { return $null }
+    $s = "$Version".Trim()
+    if ($s -match '\.') {
+        $seg = ($s -split '\.')[0]
+        [int]$m = 0
+        if ([int]::TryParse($seg, [ref]$m)) { return $m }
+        return $null
+    }
+    [long]$n = 0
+    if ([long]::TryParse($s, [ref]$n)) {
+        if ($n -ge 1000) { return [int]($n / 1000) }   # 8200 -> 8 ; 10000 -> 10
+        if ($n -ge 100)  { return [int]($n / 100) }    # 820  -> 8 (legacy 3-digit)
+        return [int]$n                                  # e.g. 9 -> 9
+    }
+    return $null
+}
+
+function _Test-OneViewVersionCompliance {
+    <#
+    .SYNOPSIS
+        Enforce the HPEOneView.1000 / OneView 10.x requirement on a reported version.
+    .DESCRIPTION
+        Populates $Result.VersionCompliant ($true when major == 10, $false otherwise,
+        $null when the version is unknown/unparseable) and $Result.VersionWarning.
+        Emits a non-terminating warning so a non-compliant appliance fails loudly
+        without suppressing the rest of the connectivity diagnostics.
+    #>
+    param(
+        [hashtable] $Result,
+        $Version,
+        [string]    $Appliance
+    )
+    $major = _Get-OneViewMajorVersion -Version $Version
+    if ($null -eq $major) {
+        $Result.VersionCompliant = $null
+        return
+    }
+    if ($major -eq 10) {
+        $Result.VersionCompliant = $true
+        return
+    }
+    $Result.VersionCompliant = $false
+    $msg = "OneView appliance '$Appliance' reports version '$Version' (major $major); " +
+           "HPEOneView.1000 / OneView 10.x is required. Connect to a OneView 10.x appliance or upgrade this one."
+    $Result.VersionWarning = $msg
+    Write-Warning $msg
+    if ($logger) { $logger.Warning($msg) }
 }
 
 # vim: ts=4 sw=4 et

@@ -92,6 +92,7 @@
         'Get-OneViewServerTarget'
         'Get-OneViewConnectionStatus'
         'Get-OneViewServerList'
+        'Get-OneViewVersion'
         'Invoke-IloRedfish'
         'Publish-BootIso'
         'Test-PreBuildValidation'
