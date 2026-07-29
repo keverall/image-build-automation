@@ -20,16 +20,15 @@ Complete documentation for the PowerShell automation module (`src/powershell/Aut
 ## Repository Structure
 
 ```
-hpe-windows-iso-automation/
-├── .gitlab-ci.yml                              # GitLab CI pipeline
-├── src/powershell/Automation                        # PowerShell module
-│   ├── Public/                                   # Exported cmdlets
-│   ├── Private/                                  # Internal helpers
-│   └── Automation.psd1                           # Module manifest
-├── tests/powershell/                             # PowerShell / Pester tests
-├── configs/                                     # Server/cluster/patch JSON configs
-├── docs/                                        # This directory
-└── generated/logs/                            # Audit trails & build reports
+image-build-automation/
+├── .gitlab-ci.yml                 # GitLab CI pipeline
+├── src/powershell/Automation/     # PowerShell module (Public cmdlets + Private helpers + manifest)
+├── tests/powershell/              # Pester v6 test suite
+├── scripts/                       # CI provisioning and helper scripts
+├── configs/                       # Server/cluster/patch JSON configs
+├── docs/                          # Documentation (this tree)
+├── vendor/                        # Vendored PowerShell modules
+└── generated/logs/                # Audit trails & build reports (gitignored)
 ```
 
 ---

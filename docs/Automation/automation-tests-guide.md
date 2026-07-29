@@ -18,7 +18,7 @@
   - [8. End-to-end orchestration – `Start-PhysicalServerBuild`](#8-end-to-end-orchestration-start-physicalserverbuild)
   - [9. Deploy command layer – `Invoke-IsoDeploy`](#9-deploy-command-layer-invoke-isodeploy)
   - [10. Firmware updates – `Update-Firmware`](#10-firmware-updates-update-firmware)
-  - [11. Windows security updates – `Invoke-WindowsSecurityUpdate`](#11-windows-security-updates-invoke-windowssecurityupdate)
+  - [11. Windows security updates – `Update-WindowsSecurity`](#11-windows-security-updates-update-windowssecurity)
 - [Test criticality at a glance](#test-criticality-at-a-glance)
 - [What a failed test means for a change request](#what-a-failed-test-means-for-a-change-request)
 - [Running the test suite](#running-the-test-suite)
@@ -306,8 +306,8 @@ Firmware on HPE servers must be at a known baseline. If the automation that appl
 **Criticality:** MEDIUM. A failure here means firmware updates cannot be invoked by the automation; servers may still build, but the firmware baseline is no longer guaranteed.
 
 
-<a name="11-windows-security-updates-invoke-windowssecurityupdate"></a>
-### 11. Windows security updates – `Invoke-WindowsSecurityUpdate`
+<a name="11-windows-security-updates-update-windowssecurity"></a>
+### 11. Windows security updates – `Update-WindowsSecurity`
 
 **Test file:** `tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1`
 **Runbook step:** Post-build security baseline, part of the *Post-build validation* objectives

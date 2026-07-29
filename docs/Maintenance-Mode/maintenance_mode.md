@@ -22,9 +22,8 @@
 - [Change History](#change-history)
 Maintenance mode manages scheduled maintenance windows for clusters across two monitoring systems:
 
-- **SCOM 2015** (System Center Operations Manager) - maintenance mode on groups
-- **HPE iLO** (Integrated Lights-Out) - Redfish / REST maintenance windows
-- **HPE OneView** - REST API or optional legacy CLI
+- **SCOM** (System Center Operations Manager) - maintenance mode on groups/servers
+- **HPE OneView** - via the HPEOneView PowerShell module (server hardware and scopes)
 
 Features include audit logging, OpsRamp telemetry, email notifications, and automatic disable via OS task scheduling.
 
@@ -33,16 +32,11 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 <a name="flow"></a>
 ## Flow
 
-- SCOM: Maintenance mode needs to operate the SCOM using the [schedule maintenance functionality](https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance)
-  - first the script must powershell remote into the server using SCOM and HPe iLO so get a token for the SCOM management servers [here](https://learn.microsoft.com/en-us/rest/api/operationsmanager/#initialize-the-csrf-token)
-  - enable, disable or stop maintenance mode for the cluster of servers in SCOM
-
-- HPE OneView: Enable maintenance mode for cluster of servers or disable or stop separately.
-
-- Also disable all alerting during maintenance window SCOM and HPE OneView
-- Update OpsRamp
-- Alerting is via Marin's alerting SCOM code not via Opsramp do not duplicate alerts
-- email dist list when Maintenance mode changes for cluster group
+- SCOM: enable, disable, or validate maintenance mode for a cluster of servers, via PowerShell cmdlets or the SCOM [schedule maintenance REST API](https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance) (SCOM 2019 UR1+).
+- HPE OneView: enable, disable, or validate maintenance mode per server or scope via the HPEOneView PowerShell module (e.g. `HPEOneView.1000`).
+- Maintenance mode suppresses SCOM and OneView alerting for the window.
+- Update OpsRamp metrics/events (OpsRamp is not used for alerting itself, to avoid duplicate alerts).
+- Email the distribution list when maintenance mode changes for a cluster group.
 
 ---
 
@@ -50,13 +44,12 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 ## Architecture
 
 ```
-iRequest or manual call
+iRequest or manual call (Set-MaintenanceMode)
           ↓
     enable action
           ↓
-     ├─ SCOM      → maintenance mode on management groups (duration-based)
-     ├─ iLO       → Redfish/POST maintenance windows
-      ├─ OneView  → REST API or CLI fallback for node maintenance
+     ├─ SCOM      → maintenance mode on group/server objects (duration-based)
+     ├─ OneView   → Enable-OVMaintenanceMode per server or scope member
      ├─ OpsRamp   → metrics + alerts + events
      ├─ Email     → distribution-list notification
      └─ Scheduler → schedule disable at window end time
@@ -67,7 +60,7 @@ iRequest or manual call
           ↓
      ├─ Email disabled notification
      ├─ OpsRamp metrics = 0
-     └─ SCOM/iLO windows auto-expire (duration / end-time)
+     └─ SCOM windows auto-expire (duration / end-time)
 ```
 
 ---
@@ -75,10 +68,10 @@ iRequest or manual call
 <a name="high-level-flow"></a>
 ## High-Level Flow
 
-1. **Enable** - validate cluster ID, optionally compute end time from the cluster schedule, then enable maintenance on each configured subsystem (SCOM, iLO, OneView). Optionally schedule a one-shot task to run disable at end time.
-2. **Disable** - reverse the enable actions and clear the maintenance windows.
-3. **Validate** - confirm the cluster definition and environment are ready without altering any subsystem state.
-4. **Dry run** - walk the enable/disable path with real-time logs and audit records but skip all subsystem mutations.
+1. **Enable** - validate the target (cluster ID, server name, or OneView serial number), optionally compute the end time from the cluster schedule, then enable maintenance in SCOM or OneView. Optionally schedule a one-shot task to run disable at the end time.
+2. **Disable** - reverse the enable actions and clear the maintenance windows (SCOM disable includes a post-disable stabilization wait, default 120s).
+3. **Validate** - query the actual maintenance mode status from SCOM/OneView without altering state.
+4. **Dry run** (`-DryRun`) - walk any action with mock data and audit records but skip all subsystem mutations.
 
 ---
 
@@ -90,14 +83,14 @@ iRequest or manual call
 <a name="scheduled-automatic-disable"></a>
 ### Scheduled Automatic Disable
 
-When enable is called without `--no-schedule` / `-NoSchedule`, a one-shot OS task is created to run disable at the computed end time. This task sends the disabled notification, resets OpsRamp metrics, and writes an audit entry. The task should not be skipped unless disable is managed another way.
+When enable is called without `-NoSchedule`, a one-shot OS task is created to run disable at the computed end time. This task sends the disabled notification, resets OpsRamp metrics, and writes an audit entry. The task should not be skipped unless disable is managed another way.
 
 ---
 
 <a name="audit-logging"></a>
 ### Audit Logging
 
-Every run writes a timestamped JSON file and appends one JSON line to a master log. Records include cluster ID, action, dry-run flag, per-system success flags (SCOM, iLO, OneView, email, OpsRamp), start/end timestamps, and any errors.
+Every run writes a timestamped JSON file and appends one JSON line to a master log. Records include target ID, action, mode, dry-run flag, per-system success flags (SCOM, OneView, email, OpsRamp), start/end timestamps, and any errors.
 
 ---
 
@@ -114,8 +107,9 @@ On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1
 | Variable | Purpose |
 |----------|---------|
 | `SCOM_ADMIN_USER` / `SCOM_ADMIN_PASSWORD` | SCOM connection credentials |
-| `ILO_USER` / `ILO_PASSWORD` | iLO credentials (global; per-server overrides supported) |
-| `ONEVIEW_USER` / `ONEVIEW_PASSWORD` | OneView API/CLI authentication |
+| `ONEVIEW_USER` / `ONEVIEW_PASSWORD` | OneView authentication |
+| `ENVIRONMENT` | Default environment (`Test` / `Prod`) when `-Environment` is not passed |
+| `MAINTENANCE_HOST` | Optional management host override |
 | `SMTP_USER` / `SMTP_PASSWORD` | SMTP auth (optional / often not required internally) |
 | `OPSRAMP_*` family | OpsRamp client credentials (shared across scripts) |
 
@@ -124,30 +118,32 @@ On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1
 <a name="configuration-files"></a>
 ### Configuration Files
 
-Dozens of options live in clustered JSON files and optional plain-text lists under the `configs/` directory. The conventions are the same across all implementations.
+Configuration lives in JSON files under `configs/`, plus one optional plain-text list at the repository root.
 
 | File | Purpose |
 |------|---------|
-| `clusters_catalogue.json` | Cluster definitions: servers, SCOM groups, iLO IPs, OneView node IDs, default schedules |
-| `scom_config.json` | SCOM connection settings (server, module name, WinRM flags, credential env-var names) |
-| `oneview_config.json` | OneView API URL, auth type, optional CLI path |
-| `email_distribution_lists.json` | SMTP settings and recipient lists for enabled / disabled / failure events |
-| `opsramp_config.json` | OpsRamp client settings (re-used across all automation stages) |
-| `maintenance_distribution_list.txt` | Optional override: one email per line (takes precedence over JSON lists) |
+| `configs/connection_hosts.json` | Environment-based host resolution (`environments` → `Test`/`Prod` → `scom`/`oneview`) |
+| `configs/clusters_catalogue.json` | Cluster definitions: servers, SCOM groups, default schedules |
+| `configs/servers_catalogue.oneview.json` | OneView servers: serial number / display name / OneView name mapping |
+| `configs/scom_config.json` | SCOM connection settings (server, module name, WinRM flags, credential env-var names) |
+| `configs/oneview_config.json` | OneView `appliance` and `module_name` (e.g. `HPEOneView.1000`) |
+| `configs/email_distribution_lists.json` | SMTP settings and recipient lists for enabled / disabled / failure events |
+| `configs/opsramp_config.json` | OpsRamp client settings (re-used across all automation stages) |
+| `maintenance_distribution_list.txt` (repo root) | Optional override: one email per line (takes precedence over JSON lists) |
 
 ---
 
 <a name="error-handling"></a>
 ### Error Handling
 
-No automatic rollback is performed on partial failure (e.g., SCOM succeeded but iLO failed). The operator receives a structured audit record with per-system success flags, an email notification if the mail subsystem is healthy, and OpsRamp alerts. Manual recovery is via the SCOM console, iLO interface, or by re-running the script with `--disable` / `-Action disable`.
+No automatic rollback is performed on partial failure (e.g., some servers succeeded and others failed). The operator receives a structured audit record with per-object success flags, an email notification if the mail subsystem is healthy, and OpsRamp alerts. Manual recovery is via the SCOM console, OneView, or by re-running `Set-MaintenanceMode -Action disable`.
 
 ---
 
 <a name="timezone-and-scheduling"></a>
 ### Timezone and Scheduling
 
-The server's OS timezone should match the `timezone` field in the cluster schedule. The scheduler assumes local time equals the configured timezone when calculating end times. When crossing timezones, supply explicit ISO 8601 datetimes for `--start` / `-Start` and `--end` / `-End`.
+All datetime values are UTC only; no local timezone conversion is performed. Supply explicit UTC datetimes (`YYYY-MM-DD HH:MM` or ISO 8601) or relative offsets (`now`, `+2hours`) for `-Start` / `-End`.
 
 ---
 
@@ -156,7 +152,6 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 
 - Credentials flow through environment variables exclusively; no plaintext configs.
 - Scheduler tasks run as SYSTEM by default - restrict to a dedicated service account under least-privilege policy.
-- iLO credentials must hold only maintenance-window-level privileges.
 - Audit records are local by default; forward to SIEM for retention and access control.
 
 ---
@@ -167,8 +162,7 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 | Symptom | Check |
 |---------|-------|
 | SCOM module not found | Install SCOM console or remote administration tools; verify `scom_config.json` module name |
-| iLO connection failures | Verify IPs and credentials in the cluster catalogue; check HTTPS 443 reachability; self-signed certs handled by default |
-| OneView not implemented in initial release | Set `"use_cli": true` and `"cli_path"` in `oneview_config.json` for CLI fallback |
+| OneView connection failures | Verify appliance hostname and credentials; check HTTPS 443 reachability; verify the HPEOneView module (`oneview_config.json` `module_name`) is installed |
 | Scheduler task not created | Run elevated or ensure `SeBatchLogonRight` for the acting account |
 | Email not sent | Verify SMTP connectivity and `smtp_server` in `email_distribution_lists.json` |
 | OpsRamp metrics absent | Check `opsramp_config.json` presence and network access |
@@ -179,10 +173,8 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 ## Future Enhancements
 
 - Automatic rollback of successful subsystems on partial failure
-- Status query command to inspect current maintenance state per cluster / server
 - SCOM exit-notification via SCOM alert pipeline
 - Per-server individual windows within a cluster
-- Redfish 2023+ `MaintenanceWindow` collection improvements
 
 ---
 
@@ -194,7 +186,7 @@ The server's OS timezone should match the `timezone` field in the cluster schedu
 
 A dedicated test runner (`make maint-mode-tests`) runs high-priority Pester tests for the three primary actions:
 
-- **Enable** (`Set-MaintenanceMode.Enable.Tests.ps1`) - validates SCOM, iLO, and OneView enable paths
+- **Enable** (`Set-MaintenanceMode.Enable.Tests.ps1`) - validates SCOM and OneView enable paths
 - **Disable** (`Set-MaintenanceMode.Disable.Tests.ps1`) - validates reverse operations and post-disable waits
 - **Validate** (`Set-MaintenanceMode.Validation.Tests.ps1`) - validates cluster configuration without altering state
 

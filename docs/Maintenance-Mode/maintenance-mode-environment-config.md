@@ -189,6 +189,8 @@ MAINTENANCE_HOST=
 
 **Security Note:** Never commit `.env` with real passwords. Add to `.gitignore`.
 
+**Email override:** `maintenance_distribution_list.txt` lives at the **repository root** (not in `configs/`); one email per line, takes precedence over `configs/email_distribution_lists.json`.
+
 <a name="credential-resolution-order"></a>
 ## Credential Resolution Order
 
@@ -219,7 +221,7 @@ For SCOM and OneView in `Set-MaintenanceMode`:
 <a name="test-serverconnectivity"></a>
 ### Test-ServerConnectivity
 
-For SCOM and OneView in `Test-ServerConnectivity`:
+For the OneView appliance in `Test-ServerConnectivity` (OneView-only):
 
 **With `-JsonConfig` switch:**
 1. `-ManagementHost` parameter
@@ -304,10 +306,8 @@ withCredentials([
 ]) {
     sh '''
     export ENVIRONMENT=Prod
-    pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 \\
-        -Action enable \\
-        -TargetId CLU-CLUSTER-01 \\
-        -Mode scom
+    export AUTOMATED_MODE=true
+    pwsh -Command "Import-Module ./src/powershell/Automation/Automation.psd1; Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom"
     '''
 }
 ```
@@ -350,39 +350,34 @@ For EU GDPR/EMIR regulated environments, consider:
 ### Run Connection Test
 
 ```powershell
-# Test SCOM connection in Test environment using config file
-pwsh scripts/test-connectivity.ps1 -Mode scom -JsonConfig -Environment Test
+# OneView connectivity test using config file (Test environment)
+pwsh scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
-# Test OneView connection in Prod environment using config file
-pwsh scripts/test-connectivity.ps1 -Mode oneview -JsonConfig -Environment Prod
+# Test with explicit appliance host (no config lookup)
+pwsh scripts/test-connectivity.ps1 -ManagementHost 'oneview-test.ad.example.com'
 
-# Test with explicit host (no config lookup)
-pwsh scripts/test-connectivity.ps1 -Mode scom -ManagementHost 'scom-test.local'
-
-# Test with interactive prompt (no -JsonConfig, no -ManagementHost)
-pwsh scripts/test-connectivity.ps1 -Mode scom
-# Script will prompt: "Enter SCOM management host (or press Enter to cancel):"
+# Test with explicit credential
+pwsh scripts/test-connectivity.ps1 -ManagementHost 'oneview-test.ad.example.com' -Credential (Get-Credential)
 ```
+
+Note: `Test-ServerConnectivity` is OneView-only. For SCOM connectivity, use `Test-ScomMaintenanceConnectivity`.
 
 <a name="test-serverconnectivity---jsonconfig-parameter"></a>
 ### Test-ServerConnectivity - JsonConfig Parameter
 
-The `Test-ServerConnectivity` function now supports `-JsonConfig` to explicitly use `connection_hosts.json`:
+The `Test-ServerConnectivity` function supports `-JsonConfig` to resolve the OneView appliance from `connection_hosts.json`:
 
 ```powershell
-# Use connection_hosts.json to resolve host
-Test-ServerConnectivity -Mode scom -Environment Test -JsonConfig
+# Use connection_hosts.json to resolve the appliance
+Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
 
-# Without -JsonConfig, prompts for host interactively
-Test-ServerConnectivity -Mode scom
-
-# Dry run to verify configuration
-Test-ServerConnectivity -Mode scom -JsonConfig -DryRun
+# Explicit host (required for live runs without -JsonConfig)
+Test-ServerConnectivity -ManagementHost 'oneview-test.ad.example.com'
 ```
 
 **Host Resolution Order for Test-ServerConnectivity:**
 
-With `-JsonConfig:
+With `-JsonConfig`:
 1. `-ManagementHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. `connection_hosts.json` based on `-Environment`

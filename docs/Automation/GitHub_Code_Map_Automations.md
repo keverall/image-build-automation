@@ -23,7 +23,7 @@
   - [4.1 - Firmware Update Function](#41---firmware-update-function)
   - [4.2 - FirmwareUpdater Class](#42---firmwareupdater-class)
 - [5. Windows Security Patching](#5-windows-security-patching)
-  - [5.1 - Invoke-WindowsSecurityUpdate](#51---invoke-windowssecurityupdate)
+  - [5.1 - Update-WindowsSecurity](#51---update-windowssecurity)
   - [5.2 - WindowsPatcher Class](#52---windowspatcher-class)
 - [6. ISO Deployment](#6-iso-deployment)
   - [6.1 - Invoke-IsoDeploy](#61---invoke-isodeploy)
@@ -162,7 +162,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 |--------------|-----------------|----------|
 | `build_iso` | `New-IsoBuild` | `all` |
 | `update_firmware` | `Update-Firmware` | `firmware` |
-| `patch_windows` | `Invoke-WindowsSecurityUpdate` | `windows` |
+| `patch_windows` | `Update-WindowsSecurity` | `windows` |
 | `deploy` | `Invoke-IsoDeploy` | `deploy` |
 | `monitor` | `Start-InstallMonitor` | null |
 | `maintenance_enable` | `Set-MaintenanceMode` | null |
@@ -353,10 +353,10 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 <a name="5-windows-security-patching"></a>
 ## 5. Windows Security Patching
 
-<a name="51---invoke-windowssecurityupdate"></a>
-### 5.1 - Invoke-WindowsSecurityUpdate
+<a name="51---update-windowssecurity"></a>
+### 5.1 - Update-WindowsSecurity
 
-**[`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)** - [`Invoke-WindowsSecurityUpdate()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)
+**[`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)** - [`Update-WindowsSecurity()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#8)
 - Default patches config: `configs/windows_patches.json`
 - Default output: `output/patched`
 - Creates [`WindowsPatcher`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#88) instance at [L74](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#74) (2 args: `$PatchesConfig`, `$OutputDir`)
@@ -914,7 +914,7 @@ All configs loaded from `configs/` directory:
 | **iLO Redfish** | `Invoke-IloRedfish` | iLO Redfish actions | [`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) | L19–166 |
 | **Deploy ISO** | `Invoke-IsoDeploy` | Bulk deploy orchestrator | [`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) | L20–246 |
 | **Update firmware** | `Update-Firmware` | `FirmwareUpdater` | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) | L19–245 |
-| **Patch Windows** | `Invoke-WindowsSecurityUpdate` | `WindowsPatcher` | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) | L8–237 |
+| **Patch Windows** | `Update-WindowsSecurity` | `WindowsPatcher` | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) | L8–237 |
 | **Pre-build check** | `Test-PreBuildValidation` | Validation checklist | [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) | L15–184 |
 | **Post-build check** | `Test-PostBuildValidation` | Validation via WinRM | [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) | L16–180 |
 | **Connectivity test** | `Test-ServerConnectivity` | Network + auth check | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) | L157–694 |

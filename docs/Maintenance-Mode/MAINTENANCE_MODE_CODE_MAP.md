@@ -27,7 +27,7 @@
 - [11. Documentation References](#11-documentation-references)
 - [10. Execution Flow Summary](#10-execution-flow-summary)
 - [Quick Navigation for Clients](#quick-navigation-for-clients)
-This document provides a complete map of all code locations hit by the `Set-MaintenanceMode` command, with direct links to source files for client review.
+This document provides a complete map of all code locations hit by the `Set-MaintenanceMode` command, with direct links to source files for client review. Line numbers are approximate and may drift as the source evolves.
 
 ---
 
@@ -36,7 +36,7 @@ This document provides a complete map of all code locations hit by the `Set-Main
 
 <a name="powershell-profile-functions"></a>
 ### PowerShell Profile Functions
-- **`Set-MaintenanceMode`**: [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) - Adds module import to profile
+- **Setup**: `make setup` registers the Automation module; [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) adds the module import to your PowerShell profile
 - **Command Syntax**:
 ```powershell
 Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mode <scom|oneview> [-Environment <Test|Prod>] [options]
@@ -193,7 +193,7 @@ All configurations loaded from `configs/` directory:
 
 <a name="test-files"></a>
 ### Test Files
-- **PowerShell tests**: Search for `*.Tests.ps1` in `src/powershell/Tests/`
+- **PowerShell tests**: `tests/powershell/Set-MaintenanceMode.*.Tests.ps1` (Unit, Enable, Disable, Validation, Environment)
 
 ---
 
@@ -254,8 +254,7 @@ Set-MaintenanceMode (Public/Set-MaintenanceMode.ps1:174)
 
 ---
 
-*Document generated: 2026-06-12*
-*For questions about specific code locations, refer to the line numbers provided in the links above.*
+*Document generated: 2026-06-12; line numbers are approximate.*
 
 
 

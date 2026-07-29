@@ -19,18 +19,15 @@
   - [SCOM Connection Test](#scom-connection-test)
   - [OneView Connection Test](#oneview-connection-test)
 - [4 Enable Maintenance Mode](#4-enable-maintenance-mode)
-- [4 Enable Maintenance Mode](#4-enable-maintenance-mode-1)
   - [4.1 Pre-Check: Already Enabled?](#41-pre-check-already-enabled)
   - [4.2 Start/End Time Resolution](#42-startend-time-resolution)
   - [4.3 SCOM: Enter Maintenance](#43-scom-enter-maintenance)
   - [4.4 OneView: Set Maintenance](#44-oneview-set-maintenance)
 - [5. Enable Post-Operation Actions](#5-enable-post-operation-actions)
-- [5. Enable Post-Operation Actions](#5-enable-post-operation-actions-1)
   - [5.1 SCOM: Schedule Auto-Disable Task](#51-scom-schedule-auto-disable-task)
   - [5.2 Email Notification (Enable)](#52-email-notification-enable)
   - [5.3 OpsRamp Metrics & Alerts (Enable)](#53-opsramp-metrics-and-alerts-enable)
 - [6 Disable Maintenance Mode](#6-disable-maintenance-mode)
-- [6 Disable Maintenance Mode](#6-disable-maintenance-mode-1)
   - [6.1 Pre-Check: Already Disabled?](#61-pre-check-already-disabled)
   - [6.2 SCOM: Exit Maintenance](#62-scom-exit-maintenance)
   - [6.3 SCOM: Post-Disable Stabilization Wait](#63-scom-post-disable-stabilization-wait)
@@ -44,7 +41,6 @@
   - [Status Computation](#status-computation)
   - [Result Assembly](#result-assembly)
 - [8 Audit Record & Output](#8-audit-record-and-output)
-- [8 Audit Record & Output](#8-audit-record-and-output-1)
   - [8.1 Audit Initialization](#81-audit-initialization)
   - [8.2 Audit Finalization & Save](#82-audit-finalization-and-save)
   - [8.3 Response Construction](#83-response-construction)
@@ -61,15 +57,16 @@
   - [Test Scripts](#test-scripts)
 - [14 Quick Navigation](#14-quick-navigation)
 - [15 Documentation References](#15-documentation-references)
-**Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
+
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 
 This document maps every code location executed by `Set-MaintenanceMode` and `Test-ServerConnectivity`, organized in the **workflow order** you should follow:
 1. Test connectivity first (`Test-ServerConnectivity`)
 2. Then run maintenance operations (`Set-MaintenanceMode`)
 
-> **Source file**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - 3,803 lines total.
-> **Source file**: [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - ~560 lines total.
+> **Source file**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) (~3,800 lines)
+> **Source file**: [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) (~520 lines)
+> Line numbers below are approximate and may drift as the source evolves.
 
 ---
 
@@ -236,11 +233,9 @@ Set-MaintenanceMode -Action enable `
 ### 1.4 OneView Connect by SerialNumber
 
 OneView supports direct hardware serial number targeting - **only the single server with that serial number is placed into maintenance mode**. This is the safest mode for change freezes because it cannot accidentally affect other servers in a scope.
-OneView supports direct hardware serial number targeting - **only the single server with that serial number is placed into maintenance mode**. This is the safest mode for change freezes because it cannot accidentally affect other servers in a scope.
 
 ```powershell
 # --- OneView: Connect and enable maintenance for a SINGLE server by serial number ---
-#    No -TargetId needed - only this specific physical server is affected
 #    No -TargetId needed - only this specific physical server is affected
 Set-MaintenanceMode -Action enable `
     -Mode oneview `
@@ -274,7 +269,6 @@ After signon, the command identifies exactly which infrastructure objects will b
 |----------|---------------|------------------|
 | `-TargetId` = cluster ID | Resolves `scom_group` + server list from catalogue | Resolves `oneview_scope` → iterates scope members |
 | `-TargetId` = server hostname | Direct server mode - single SCOM group object | `Get-OVServer` → `ServerHardware` target |
-| `-TargetId` = server hostname | Direct server mode - single SCOM group object | `Get-OVServer` → `ServerHardware` target |
 | `-SerialNumber` = hardware serial | N/A (rejected) | `ResolveServerBySerial()` → `ServerHardware` target |
 
 **Environment host resolution**: [`Lines 657–699`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L657-L699)
@@ -289,7 +283,6 @@ After signon, the command identifies exactly which infrastructure objects will b
 
 **Pre-flight check before any state-changing operation**: [`Lines 1164–1199`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1164-L1199)
 
-This step is skipped in DryRun mode - no credentials are needed when simulating.
 This step is skipped in DryRun mode - no credentials are needed when simulating.
 
 <a name="scom-connection-test"></a>
@@ -308,19 +301,9 @@ This step is skipped in DryRun mode - no credentials are needed when simulating.
 
 ---
 
-
-=======
 <a name="4-enable-maintenance-mode"></a>
 ## 4 Enable Maintenance Mode
 
-<a name="41-pre-check-already-enabled"></a>
-
-=======
-<a name="4-enable-maintenance-mode-1"></a>
-## 4 Enable Maintenance Mode
-
-
-=======
 <a name="41-pre-check-already-enabled"></a>
 ### 4.1 Pre-Check: Already Enabled?
 
@@ -402,23 +385,12 @@ SetMaintenance($targetName, $targetType, $startDt, $endDt, $DryRun)
 ```
 
 **OneView serial-number targeting** - When `-SerialNumber` was used in Section 1.4, `$targetType` is `ServerHardware`, so **only a single `Enable-OVMaintenanceMode` call** is issued for the resolved server.
-**OneView serial-number targeting** - When `-SerialNumber` was used in Section 1.4, `$targetType` is `ServerHardware`, so **only a single `Enable-OVMaintenanceMode` call** is issued for the resolved server.
 
 ---
 
-
-=======
 <a name="5-enable-post-operation-actions"></a>
 ## 5. Enable Post-Operation Actions
 
-
-
-=======
-<a name="5-enable-post-operation-actions-1"></a>
-## 5. Enable Post-Operation Actions
-
-
-=======
 <a name="51-scom-schedule-auto-disable-task"></a>
 ### 5.1 SCOM: Schedule Auto-Disable Task
 
@@ -450,19 +422,9 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 
 ---
 
-
-=======
 <a name="6-disable-maintenance-mode"></a>
 ## 6 Disable Maintenance Mode
 
-<a name="61-pre-check-already-disabled"></a>
-
-=======
-<a name="6-disable-maintenance-mode-1"></a>
-## 6 Disable Maintenance Mode
-
-
-=======
 <a name="61-pre-check-already-disabled"></a>
 ### 6.1 Pre-Check: Already Disabled?
 
@@ -598,14 +560,6 @@ The validate action queries current maintenance status **without making any chan
 ## 8 Audit Record & Output
 
 <a name="81-audit-initialization"></a>
-
-=======
-<a name="8-audit-record-and-output-1"></a>
-## 8 Audit Record & Output
-
-
-=======
-<a name="81-audit-initialization"></a>
 ### 8.1 Audit Initialization
 
 - **[`Lines 1222–1239`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1222-L1239)**: Creates `$audit` hashtable with action, mode, environment, target_id, serial_number, timestamps, steps, success flag
@@ -730,7 +684,6 @@ All configurations loaded from `configs/` directory, in load order:
 | **`clusters_catalogue.scom.json`** | [372](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L372) | SCOM hostname → cluster key mapping |
 | **`connection_hosts.json`** | [659](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L659) | Environment-based host resolution (Test/Prod) |
 | **`request_types.json`** | - | Routes maintenance requests from the Router |
-| **`request_types.json`** | - | Routes maintenance requests from the Router |
 
 ---
 
@@ -740,9 +693,6 @@ All configurations loaded from `configs/` directory, in load order:
 - **Root module**: [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1) (509 lines)
   - **[Lines 397–421](../../src/powershell/Automation/Automation.psm1#L397-L421):** Private script loading (dependency order): `Audit.ps1` → `Config.ps1` → `Credentials.ps1` → `Executor.ps1` → `FileIO.ps1` → `PathResolver.ps1` → `Inventory.ps1` → `Logging.ps1` → `Router.ps1` → `Base.ps1`
   - **[Lines 424–429](../../src/powershell/Automation/Automation.psm1#L424-L429):** Public script loading (alphabetical)
-  - **[Lines 433–505](../../src/powershell/Automation/Automation.psm1#L433-L505):** `Export-ModuleMember` - [`Set-MaintenanceMode` at line 449](../../src/powershell/Automation/Automation.psm1#L449)
-- **Request Router**: [`Invoke-RoutedRequest`](../../src/powershell/Automation/Private/Router.ps1#L20) - Routes from `request_types.json`
-- **PowerShell Profile**: [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) - Adds module import
   - **[Lines 433–505](../../src/powershell/Automation/Automation.psm1#L433-L505):** `Export-ModuleMember` - [`Set-MaintenanceMode` at line 449](../../src/powershell/Automation/Automation.psm1#L449)
 - **Request Router**: [`Invoke-RoutedRequest`](../../src/powershell/Automation/Private/Router.ps1#L20) - Routes from `request_types.json`
 - **PowerShell Profile**: [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) - Adds module import
@@ -817,9 +767,8 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-*Document updated: 2026-06-23*
-*Source file total: 3,803 lines (Set-MaintenanceMode.ps1) + 481 lines (Test-ServerConnectivity.ps1)*
-*For questions about specific code locations, refer to the line numbers provided in the links above.*
+*Document updated: 2026-07-29*
+*Line numbers are approximate; verify against current source when in doubt.*
 
 
 

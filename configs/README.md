@@ -1,380 +1,358 @@
 # Configuration Files Reference
 
 <a id="top"></a>
-## Table of Contents
 
-- [Summary Table](#summary-table)
-- [server_list.txt](#server_listtxt)
-- [clusters_catalogue.json](#clusters_cataloguejson)
-  - [Fields](#fields)
-- [hpe_firmware_drivers_nov2025.json](#hpe_firmware_drivers_nov2025json)
-  - [Environment Substitution](#environment-substitution)
-  - [Component Selection](#component-selection)
-- [windows_patches.json](#windows_patchesjson)
-- [scom_config.json](#scom_configjson)
-  - [Fields](#fields-1)
-- [oneview_config.json](#oneview_configjson)
-  - [Modes](#modes)
-- [email_distribution_lists.json](#email_distribution_listsjson)
-  - [Override File](#override-file)
-- [opsramp_config.json](#opsramp_configjson)
-- [Environment Variable Cheat Sheet](#environment-variable-cheat-sheet)
-This directory contains all configuration for the HPE ProLiant Windows Server ISO Automation pipeline.
+This directory holds all configuration for the automation pipeline. **Secrets are never stored here** — credentials are supplied via environment variables or CyberArk at runtime.
 
-<a name="summary-table"></a>
 ## Summary Table
 
 | File | Purpose | Required | Secret? |
 |------|---------|----------|---------|
-| `server_list.txt` | Target server hostnames | Yes | No |
-| `clusters_catalogue.json` | Cluster definitions (SCOM groups, iLO IPs, schedules) | Yes | No |
-| `hpe_firmware_drivers_nov2025.json` | HPE repository URL and component versions | Yes | No |
-| `windows_patches.json` | Security patch KB list and metadata | Yes | No |
-| `scom_config.json` | SCOM 2015 management server connection | Optional | No |
-| `oneview_config.json` | HPE OneView API/CLI settings | Optional | No |
-| `email_distribution_lists.json` | SMTP server and recipient lists | Optional | No |
-| `opsramp_config.json` | OpsRamp API credentials | Yes (if OpsRamp used) | Yes |
-| `maintenance_distribution_list.txt` | Override for maintenance emails | Optional | No |
+| `server_list.txt` | Target server hostnames (one per line) | Yes | No |
+| `clusters_catalogue.json` | Cluster definitions: servers, SCOM groups, iLO IPs, OneView scopes, schedules | Yes | No |
+| `servers_catalogue.oneview.json` | OneView server definitions (serial → name, iLO IP, scope) | Yes | No |
+| `connection_hosts.json` | Per-environment SCOM/OneView appliance host mappings | Yes | No |
+| `scom_config.json` | SCOM connection, transport, maintenance and managed-server settings | Optional | No |
+| `oneview_config.json` | HPE OneView appliance and module settings | Optional | No |
+| `configmgr_config.json` | Example ConfigMgr site/MP/DP values (real builds pass these as runtime params) | No | No |
+| `hpe_firmware_drivers_nov2025.json` | HPE SUT firmware/driver component manifest and repo URL | Yes | No |
+| `windows_patches.json` | Windows security patch set (KB list, DISM order, metadata) | Yes | No |
+| `request_types.json` | Single source of truth for automation request types, CI stage mapping and routing | Yes | No |
+| `email_distribution_lists.json` | SMTP server and notification recipient lists | Optional | No |
+| `opsramp_config.json` | OpsRamp API, credentials and alert/metric settings | Optional | No |
+| `maintenance_distribution_list.txt` | **Repo-root** override for maintenance email recipients | Optional | No |
 
-**Secrets** (passwords, API keys, tokens) must be provided via **environment variables**, not stored in files.
-
----
-
-<a name="server_listtxt"></a>
-## server_list.txt
-
-Plain-text list of target servers, one per line. Optional columns for management IPs.
-
-```TEXT
-# Format: hostname  [ipmi_ip]  [ilo_ip]
-server1.example.com
-server2.example.com,192.168.1.102,192.168.1.202
-server3.example.com,,,,  # (blank fields allowed but not recommended)
-```
-
-- **Column 1** (required): Server hostname (FQDN or NetBIOS name)
-- **Column 2** (optional): IPMI/iDRAC/IPMI IP address
-- **Column 3** (optional): iLO IP address
-
-**Note**: When using `clusters_catalogue.json`, this file may be used for simple single-server builds only. Clustered environments should define servers in the catalogue.
+> `maintenance_distribution_list.txt` lives at the **repository root**, not in `configs/`.
 
 ---
 
-<a name="clusters_cataloguejson"></a>
 ## clusters_catalogue.json
 
-Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneView node IDs, and maintenance schedules.
+Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneView scopes/node IDs and maintenance schedules.
 
 ```json
 {
   "clusters": {
     "CLU-CLUSTER-01": {
       "display_name": "Production Cluster 01",
-      "servers": ["web01.example.com", "web02.example.com", "db01.example.com"],
-      "scom_group": "SCOM_Prod_WebDB",
-      "scom_management_server": "scom01.example.com",
+      "servers": ["prod-server-01.example.com", "prod-server-02.example.com"],
+      "scom_group": "SCOM_Prod_Cluster_01",
+      "scom_version": "2019",
+      "scom_management_server": "vr-opm19p1-7382.ad.example.com",
+      "scom_environment": "production",
       "ilo_addresses": {
-        "web01.example.com": "192.168.1.101",
-        "web02.example.com": "192.168.1.102",
-        "db01.example.com": "192.168.1.103"
+        "prod-server-01.example.com": "192.168.1.101",
+        "prod-server-02.example.com": "192.168.1.102"
       },
+      "oneview_scope": "Production_Cluster_01",
       "oneview_node_ids": {
-        "web01.example.com": "OV001",
-        "web02.example.com": "OV002",
-        "db01.example.com": "OV003"
-      },"schedule": {
-         "timezone": "UTC",
-         "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
-         "work_start": "08:00",
-         "work_end": "17:00"
-       },
+        "prod-server-01.example.com": "OV_NODE_001",
+        "prod-server-02.example.com": "OV_NODE_002"
+      },
+      "schedule": {
+        "timezone": "UTC",
+        "work_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+        "work_start": "08:00",
+        "work_end": "17:00"
+      },
       "environment": "production"
     }
   }
 }
 ```
 
-<a name="fields"></a>
-### Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `display_name` | string | Human-readable cluster name |
-| `servers` | array of strings | Member server hostnames (must match keys in `ilo_addresses`) |
-| `scom_group` | string | SCOM 2015 group display name for this cluster |
-| `scom_management_server` | string | SCOM management server hostname/IP |
-| `ilo_addresses` | object | Map: `server_hostname → iLO IP/hostname` |
-| `oneview_node_ids` | object | Map: `server_hostname → OneView node identifier` |
-| `schedule.timezone` | string | IANA timezone (e.g., `UTC`, `America/New_York`) |
-| `schedule.work_days` | array of 3-char day codes | `["Mon","Tue","Wed","Thu","Fri"]` |
-| `schedule.work_start` | string | Daily maintenance start (HH:MM, 24h) |
-| `schedule.work_end` | string | Daily maintenance end (HH:MM, 24h) |
-| `environment` | string | `production`, `staging`, or `dev` |
-
-**Notes**:
-- Only top-level keys in `clusters` are valid cluster IDs. Server hostnames that are not top-level keys are **rejected** by validation logic.
-- `schedule` is used only when `--end` is omitted; the script calculates the next workday 08:00 after start time.
-- `scom_management_server` can be overridden by `scom_config.json` per-environment but typically matches.
+**Field notes**
+- Only top-level keys under `clusters` are valid cluster IDs.
+- `schedule` is used to compute the maintenance window end time when `-End` is omitted.
+- `scom_version` selects the connection method (2012/2016 = PowerShell remoting only; 2019 UR1+ / 2025 = REST API also available).
 
 ---
 
-<a name="hpe_firmware_drivers_nov2025json"></a>
-## hpe_firmware_drivers_nov2025.json
+## servers_catalogue.oneview.json
 
-HPE Smart Update Tool (SUT) repository and component version manifest.
+OneView-centric server catalogue used for serial-number lookups.
 
 ```json
 {
-  "firmware_drivers_version": "November 2025",
-  "hpe_repository_url": "https://downloads.hpe.com/repo/nov2025/",
-  "hpe_repository_username": "${HPE_DOWNLOAD_USER}",
-  "hpe_repository_password": "${HPE_DOWNLOAD_PASS}",
-  "components": {
-    "gen10_plus": {
-      "firmware": [
-        {
-          "component": "HPE_BIOS",
-          "version": "2.80",
-          "description": "System ROM"
-        },
-        {
-          "component": "HPE_ILO5",
-          "version": "2.70",
-          "description": "iLO 5 Firmware"
-        }
-      ],
-      "drivers": [
-        {
-          "component": "HPE_SSA",
-          "version": "4.20",
-          "description": "Smart Storage Administrator"
-        }
-      ]
-    },
-    "gen10": {
-      "firmware": [...],
-      "drivers": [...]
+  "servers": {
+    "PROD-SERVER-01": {
+      "serial_number": "MXQ1234567",
+      "display_name": "Production Server 01",
+      "ilo_ip": "192.168.1.101",
+      "oneview_name": "PROD-SERVER-01.ad.example.com",
+      "rack": "Rack-A",
+      "environment": "production"
     }
   }
 }
 ```
 
-<a name="environment-substitution"></a>
-### Environment Substitution
-
-Credentials use `${VAR}` placeholders replaced at runtime from environment:
-
-```bash
-export HPE_DOWNLOAD_USER="my_username"
-export HPE_DOWNLOAD_PASS="my_password"
-```
-
-<a name="component-selection"></a>
-### Component Selection
-
-The update_firmware_drivers script reads this manifest and instructs HPE SUT to:
-
-1. Download each component (firmware + drivers) for the detected server generation
-2. Verify checksums
-3. Create a bootable Service Pack for ProLiant (SPP) ISO
-
 ---
 
-<a name="windows_patchesjson"></a>
-## windows_patches.json
+## connection_hosts.json
 
-Security update specifications for DISM offline patching.
+Maps each environment to its SCOM management server and OneView appliance.
 
 ```json
 {
-  "patches": [
-    {
-      "kb_number": "KB5041234",
-      "severity": "Critical",
-      "cve_ids": ["CVE-2025-12345", "CVE-2025-67890"],
-      "description": "Security update for Windows Kernel",
-      "url": "https://catalog.update.microsoft.com/...",
-      "release_date": "2025-03-15"
+  "environments": {
+    "Test": {
+      "scom": { "management_server": "VR-OPM19T1-7382.ad.example.com", "group_id": "TEST-SERVERS-GROUP", "environment": "test" },
+      "oneview": { "appliance": "oneview-test.ad.example.com", "scope_name": "Test_Cluster_01" }
+    },
+    "Prod": {
+      "scom": { "management_server": "VR-OPM19P1-7382.ad.example.com", "group_id": "PROD-SERVERS-GROUP", "environment": "production" },
+      "oneview": { "appliance": "oneview.ad.example.com", "scope_name": "Production_Cluster_01" }
     }
-  ]
+  }
 }
 ```
 
-**Notes**:
-- `kb_number` must match Microsoft Update Catalog identifier
-- `cve_ids` array may be empty if CVE IDs unknown
-- `url` is optional metadata for manual lookup
-- `patch_windows_security` mounts base ISO, applies these MSU files via DISM, generates patched ISO
+Host resolution priority: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `connection_hosts.json` (by `-Environment`).
 
 ---
 
-<a name="scom_configjson"></a>
 ## scom_config.json
-
-System Center Operations Manager connection details.
 
 ```json
 {
-  "scom_2015": {
-    "management_server": "scom01.example.com",
-    "module_name": "OperationsManager",
-    "use_winrm": false,
-    "winrm_transport": "ntlm",
-    "winrm_port": 5985,
+  "scom": {
+    "use_winrm": true,
+    "winrm": {
+      "transport": "ntlm",
+      "username_env": "SCOM_ADMIN_USER",
+      "password_env": "SCOM_ADMIN_PASSWORD",
+      "timeout_seconds": 300
+    },
     "credentials": {
       "username_env": "SCOM_ADMIN_USER",
       "password_env": "SCOM_ADMIN_PASSWORD"
+    },
+    "maintenance_settings": {
+      "default_duration_hours": 4,
+      "comment_prefix": "iRequest Maintenance: ",
+      "suppress_alerts": true,
+      "health_state_reset": "green"
+    },
+    "management_servers": {
+      "2019": {
+        "test": { "group": "TEST-GROUP", "servers": ["scom-t1.ad.example.com"] },
+        "production": { "group": "PROD-GROUP", "servers": ["scom-p1.ad.example.com"] }
+      }
     }
   }
 }
 ```
 
-<a name="fields-1"></a>
-### Fields
-
-| Field | Description |
-|-------|-------------|
-| `management_server` | SCOM management server hostname/IP |
-| `module_name` | PowerShell module name (typically `OperationsManager`) |
-| `use_winrm` | If `true`, connect via WinRM instead of local PowerShell |
-| `winrm_transport` | `ntlm`, `kerberos`, or `basic` |
-| `winrm_port` | 5985 (HTTP) or 5986 (HTTPS) |
-| `credentials.username_env` | Environment variable containing admin username |
-| `credentials.password_env` | Environment variable containing admin password |
-
-**Credentials** must be set as environment variables on the execution host:
-
-```bash
-export SCOM_ADMIN_USER="domain\\adminuser"
-export SCOM_ADMIN_PASSWORD="secret_password"
-```
+- `use_winrm: true` connects via WinRM; `false` uses the local `OperationsManager` module.
+- Credentials are read from the named environment variables (never from the file).
 
 ---
 
-<a name="oneview_configjson"></a>
 ## oneview_config.json
-
-HPE OneView integration settings.
 
 ```json
 {
   "oneview": {
-    "api_url": "https://oneview.example.com:8443/rest/",
-    "api_version": "v1",
-    "auth_type": "basic",
-    "username_env": "ONEVIEW_USER",
-    "password_env": "ONEVIEW_PASSWORD",
-    "use_cli": false,
-    "cli_path": "C:\\Program Files\\OneView\\bin\\ovcall.exe",
-    "node_id_field": "node_id",
-    "maintenance_mode_action": "set_maintenance",
-    "verify_ssl": false
+    "appliance": "oneview.example.com",
+    "module_name": "HPEOneView.1000",
+    "use_winrm": false,
+    "winrm": { "server": "oneview.example.com" },
+    "credentials": {
+      "username_env": "ONEVIEW_USER",
+      "password_env": "ONEVIEW_PASSWORD"
+    }
   }
 }
 ```
 
-<a name="modes"></a>
-### Modes
-
-- **REST API** (`use_cli: false`): Script sends HTTP requests to `api_url` with Basic auth.
-- **CLI** (`use_cli: true`): Script invokes `cli_path` with command-line arguments. Useful for legacy installations without REST enabled.
-
-**Authentication**: Set environment variables:
-
-```bash
-export ONEVIEW_USER="ov_admin"
-export ONEVIEW_PASSWORD="ov_password"
-```
+- `module_name` must be a valid `HPEOneView.<version>` module (e.g. `HPEOneView.1000` for OneView 10.00).
+- Credentials are supplied at runtime via `-OneViewUser`/`-OneViewPassword` or the env vars above.
 
 ---
 
-<a name="email_distribution_listsjson"></a>
-## email_distribution_lists.json
+## configmgr_config.json
 
-SMTP configuration and recipient lists for notification emails.
+Example/mock data only. In real builds these values are passed as runtime parameters to `Start-PhysicalServerBuild` / `New-IsoBuild`: `-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-SiteServer`, `-BootImageName`, `-TaskSequenceName`, `-RepoBaseUrl`.
 
 ```json
 {
-  "smtp": {
-    "server": "smtp.example.com",
-    "port": 25,
-    "use_tls": false,
-    "use_ssl": false,
-    "username_env": "SMTP_USER",
-    "password_env": "SMTP_PASSWORD",
-    "from_address": "iso-automation@example.com"
-  },
-  "distribution_lists": {
-    "maintenance_enable": ["infra-team@example.com", "ops@example.com"],
-    "maintenance_disable": ["infra-team@example.com"],
-    "build_success": ["dev-team@example.com"],
-    "build_failure": ["oncall-engineer@example.com", "infra-team@example.com"],
-    "scan_critical": ["security@example.com"]
+  "configmgr": {
+    "site_code": "P01",
+    "management_point": "mp01.ad.example.com",
+    "distribution_points": ["dp01.ad.example.com"],
+    "site_server": "cm01.ad.example.com",
+    "boot_image_name": "WinPE x64 - HPE",
+    "task_sequence_name_prefix": "TS - WinSrv2025 - HPE",
+    "media_password_env": "CM_MEDIA_PASSWORD",
+    "output_path": "\\\\fileserver\\osdmedia\\"
   }
 }
 ```
 
-<a name="override-file"></a>
-### Override File
+---
 
-If `maintenance_distribution_list.txt` exists in repository root, its contents (one email per line) override the `maintenance_enable` and `maintenance_disable` lists. This allows quick updates without editing JSON.
+## hpe_firmware_drivers_nov2025.json
 
-**SMTP auth**: If your internal SMTP does not require authentication, omit `username_env`/`password_env` or leave them empty.
+HPE Smart Update Tools (SUT) repository and component manifest.
+
+```json
+{
+  "firmware_drivers_version": "November 2025",
+  "release_date": "2025-11-15",
+  "hpe_repository_url": "https://downloads.hpe.com/repo/nov2025/",
+  "spp_iso": "HPE-Service-Pack-ProLiant-2025.11.0.iso",
+  "components": {
+    "gen10_plus": {
+      "firmware": [
+        { "component": "HPE_BIOS", "version": "2.80" },
+        { "component": "HPE_ILO5", "version": "2.70" }
+      ],
+      "drivers": [
+        { "component": "HPE_Network_Adapter", "version": "1.10.0" }
+      ]
+    }
+  },
+  "spp_iso_checksum": "a1b2c3d4...",
+  "download_credentials": {
+    "username": "${HPE_DOWNLOAD_USER}",
+    "password": "${HPE_DOWNLOAD_PASS}"
+  }
+}
+```
+
+`${VAR}` placeholders are replaced at runtime from environment variables (`HPE_DOWNLOAD_USER`, `HPE_DOWNLOAD_PASS`).
 
 ---
 
-<a name="opsramp_configjson"></a>
-## opsramp_config.json
+## windows_patches.json
 
-Existing OpsRamp integration configuration (not modified by this refactor).
+Security update set applied via DISM offline patching.
+
+```json
+{
+  "patch_set": "November 2025 Security Updates",
+  "base_os": "Windows Server 2022/2025",
+  "release_date": "2025-11-15",
+  "patches": [
+    {
+      "kb_number": "KB5041234",
+      "severity": "Critical",
+      "cve_ids": ["CVE-2025-12345"],
+      "description": "Security update for Windows Kernel",
+      "date_released": "2025-11-12",
+      "applicable_versions": ["Windows Server 2022", "Windows Server 2025"]
+    }
+  ],
+  "install_order": ["KB5041234"],
+  "reboot_required": true,
+  "offline_install": true
+}
+```
+
+---
+
+## request_types.json
+
+Authoritative map of automation request types to PowerShell handlers and CI stages. Consumed by the orchestrator (`Start-AutomationOrchestrator`) and CI.
+
+```json
+{
+  "request_types": {
+    "build_iso":              { "powershell_handler": "New-IsoBuild",              "ci_stage": "all" },
+    "update_firmware":        { "powershell_handler": "Update-Firmware",          "ci_stage": "firmware" },
+    "patch_windows":          { "powershell_handler": "Update-WindowsSecurity",   "ci_stage": "windows" },
+    "deploy":                 { "powershell_handler": "Invoke-IsoDeploy",          "ci_stage": "deploy" },
+    "monitor":                { "powershell_handler": "Start-InstallMonitor",     "ci_stage": null },
+    "maintenance_enable":     { "powershell_handler": "Set-MaintenanceMode",      "ci_stage": null },
+    "maintenance_disable":    { "powershell_handler": "Set-MaintenanceMode",      "ci_stage": null },
+    "maintenance_validate":   { "powershell_handler": "Set-MaintenanceMode",      "ci_stage": null },
+    "opsramp_report":         { "powershell_handler": "Invoke-OpsRampClient",     "ci_stage": "scan" },
+    "generate_uuid":          { "powershell_handler": "New-Uuid",                 "ci_stage": null },
+    "connectivity_check":     { "powershell_handler": "Test-ServerConnectivity",  "ci_stage": null },
+    "gitlab_maintenance":     { "powershell_handler": "Invoke-GitLabMaintenanceTrigger", "ci_stage": null },
+    "physical_server_build":  { "powershell_handler": "Start-PhysicalServerBuild","ci_stage": "all" },
+    "query_oneview_server":   { "powershell_handler": "Get-OneViewServerTarget",  "ci_stage": null },
+    "oneview_connection_status": { "powershell_handler": "Get-OneViewConnectionStatus", "ci_stage": null },
+    "oneview_server_list":    { "powershell_handler": "Get-OneViewServerList",    "ci_stage": null },
+    "prebuild_validation":    { "powershell_handler": "Test-PreBuildValidation",  "ci_stage": null },
+    "postbuild_validation":   { "powershell_handler": "Test-PostBuildValidation", "ci_stage": null },
+    "publish_iso":            { "powershell_handler": "Publish-BootIso",          "ci_stage": "deploy" },
+    "ilo_redfish_mount":      { "powershell_handler": "Invoke-IloRedfish",        "ci_stage": "deploy" }
+  }
+}
+```
+
+> The Windows-security handler is `Update-WindowsSecurity` (not `Invoke-WindowsSecurityUpdate`).
+
+---
+
+## email_distribution_lists.json
+
+```json
+{
+  "email": {
+    "smtp_server": "smtp.example.com",
+    "smtp_port": 587,
+    "use_tls": true,
+    "username_env": "SMTP_USER",
+    "password_env": "SMTP_PASSWORD",
+    "from_address": "maintenance-bot@example.com",
+    "distribution_lists": {
+      "maintenance_enabled": ["infrastructure-alerts@example.com"],
+      "maintenance_disabled": ["infrastructure-alerts@example.com"],
+      "failures": ["ops-alert@example.com"],
+      "audit": ["audit-team@example.com"]
+    }
+  }
+}
+```
+
+- Set `username_env`/`password_env` only when SMTP auth is required; omit for open relays.
+- `maintenance_distribution_list.txt` at the repo root overrides `maintenance_enabled` / `maintenance_disabled`.
+
+---
+
+## opsramp_config.json
 
 ```json
 {
   "opsramp_api": {
     "base_url": "https://api.opsramp.com",
-    "version": "v2"
+    "version": "v2",
+    "auth_endpoint": "/oauth/token"
+  },
+  "credentials": {
+    "client_id": "${OPSRAMP_CLIENT_ID}",
+    "client_secret": "${OPSRAMP_CLIENT_SECRET}",
+    "tenant_id": "${OPSRAMP_TENANT_ID}"
   },
   "integration": {
     "send_metrics": true,
     "send_alerts": true,
     "send_events": true
-  },
-  "credentials": {
-    "client_id_env": "OPSRAMP_CLIENT_ID",
-    "client_secret_env": "OPSRAMP_CLIENT_SECRET",
-    "tenant_id_env": "OPSRAMP_TENANT_ID"
   }
 }
 ```
 
-**Environment variables**:
-
-```bash
-export OPSRAMP_CLIENT_ID="your_client_id"
-export OPSRAMP_CLIENT_SECRET="your_client_secret"
-export OPSRAMP_TENANT_ID="your_tenant_id"
-```
-
 ---
 
-<a name="environment-variable-cheat-sheet"></a>
 ## Environment Variable Cheat Sheet
 
 ```bash
-# HPE Repository Access
+# HPE repository access
 export HPE_DOWNLOAD_USER="xxx"
 export HPE_DOWNLOAD_PASS="xxx"
 
-# iLO Credentials (global defaults)
+# iLO credentials (global; per-server override: ILO_USER_<SERVER>)
 export ILO_USER="Administrator"
 export ILO_PASSWORD="xxx"
-# Per-server override: ILO_USER_<SERVER>, ILO_PASSWORD_<SERVER>
 
-# SCOM (if used)
+# SCOM
 export SCOM_ADMIN_USER="domain\\admin"
 export SCOM_ADMIN_PASSWORD="xxx"
 
-# OneView (if used)
+# OneView
 export ONEVIEW_USER="ov_admin"
 export ONEVIEW_PASSWORD="xxx"
 
@@ -388,6 +366,4 @@ export OPSRAMP_CLIENT_SECRET="xxx"
 export OPSRAMP_TENANT_ID="xxx"
 ```
 
-**Tip**: Store these in a `.env` file and load via environment variable loader.
-
----
+Store these in a `.env` file (gitignored) and load it before running commands.

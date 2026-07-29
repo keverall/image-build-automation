@@ -15,11 +15,8 @@
   - [What Will NOT Work Without More Work](#what-will-not-work-without-more-work)
 - [HPE iLO - Will It Work](#hpe-ilo---will-it-work)
   - [`ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅](#ilomanager-inside-set-maintenancemode---ilo-rest-maintenance-window-)
-  - [`ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅](#ilomanager-inside-set-maintenancemode---ilo-rest-maintenance-window--1)
   - [`Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place](#invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place)
-  - [`Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place](#invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place-1)
   - [`Start-InstallMonitor` - iLO Redfish polling ✅](#start-installmonitor---ilo-redfish-polling-)
-  - [`Start-InstallMonitor` - iLO Redfish polling ✅](#start-installmonitor---ilo-redfish-polling--1)
 - [Open Items](#open-items)
 - [See Also](#see-also)
 What is required to run the `src/powershell/Automation` module standalone or inside a CI pipeline stage. Does **not** duplicate Pester testing guidance (see [`testing.md`](testing.md#top)).
@@ -36,7 +33,6 @@ CyberArk is the **single source of truth for all credentials** used by this pipe
 
 | Method | Tool | Details |
 |---|---|---|
-| CCP CLI | `ark_ccl` / `ark_cc` on PATH | Preferred - zero REST overhead |
 | CCP CLI | `ark_ccl` / `ark_cc` on PATH | Preferred - zero REST overhead |
 | AIM REST API | `$env:AIM_WEBSERVICE_URL` or `$env:CYBERARK_CCP_URL` | Fallback when CLI is unavailable |
 
@@ -70,7 +66,7 @@ For a Jenkins pipeline excerpt showing the bootstrap implementation, see [Jenkin
 <a name="minimal-prerequisites"></a>
 ### Minimal Prerequisites
 
-- PowerShell 7.2+ (cross-platform) or Windows PowerShell 5.1
+- PowerShell 7.2+ (cross-platform)
 - Pester 6.0.1 (bundled offline under `vendor/modules/Pester/6.0.1/`):
   ```powershell
   # Setup script installs from bundled copy automatically
@@ -110,7 +106,6 @@ powershell_tests:
 ### Jenkins CI Example
 
 ```groovy
-stage('PowerShell - Pester Unit Tests') {
 stage('PowerShell - Pester Unit Tests') {
     agent { label 'windows' }
     steps {
@@ -164,7 +159,7 @@ foreach ($inst in $instances) {
 |---|---|
 | CI agent is **domain-joined** | The `windows` agent must be in the same AD forest as the SCOM management group |
 | `OperationsManager` module installed | Picked up from the SCOM 2015 console server; copy or use `Import-Module \\scom-server\share\OperationsManager` if remote |
-| `scom_config.json`  - `management_server` | SCOM management-group server hostname |
+| `scom_config.json`  - `management_servers` | SCOM management-group servers by version/environment |
 | `scom_config.json`  - `use_winrm` | Leave `false` (local PowerShell direct); set `true` only if WinRM to a SCOM server is required, then configure WinRM `TrustedHosts` |
 | `clusters_catalogue.json` - `scom_group` | Display name **must match exactly** what SCOM `Get-SCOMGroup` returns |
 
@@ -183,14 +178,9 @@ foreach ($inst in $instances) {
 
 <a name="ilomanager-inside-set-maintenancemode---ilo-rest-maintenance-window-"></a>
 ### `ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅
-<a name="ilomanager-inside-set-maintenancemode---ilo-rest-maintenance-window--1"></a>
-### `ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅
 
 `POST /rest/v1/maintenancewindows` is fully implemented and uses proper iLO auth (ISO session login + `X-Redfish-Session` header). This will create a maintenance window on a real iLO 4/5/6 if IPs and credentials are correct.
 
-<a name="invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place"></a>
-### `Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place
-<a name="invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place-1"></a>
 ### `Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place
 
 The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but the actual virtual media mount step is a **commented scaffold**:
@@ -209,8 +199,6 @@ Invoke-RestMethod -Uri $vmActionUrl -Method Post -Body $vmBody -Headers @{ "X-Re
 Until that `<http_iso_url>` is available the step is intentionally a no-op.
 
 <a name="start-installmonitor---ilo-redfish-polling-"></a>
-### `Start-InstallMonitor` - iLO Redfish polling ✅
-<a name="start-installmonitor---ilo-redfish-polling--1"></a>
 ### `Start-InstallMonitor` - iLO Redfish polling ✅
 
 `CheckIloStatus` queries `GET /redfish/v1/Systems/1` and returns `PowerState` / `BootSourceOverrideTarget`. Fully wired into the `MonitorServer` poll loop.
