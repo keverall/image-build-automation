@@ -3,19 +3,30 @@
 <a id="top"></a>
 ## Table of Contents
 
-- [🚀 Quick Start - Setup & Installation](#-quick-start---setup-and-installation)
-  - [TL;DR - One-Line Setup](#tldr---one-line-setup)
-  - [Internal docs index](#internal-docs-index)
-  - [In this document](#in-this-document)
-- [Project Architecture](#project-architecture)
-- [Generated Audit Logs (JSON)](#generated-audit-logs-json)
-- [Quick Links for Common Tasks](#quick-links-for-common-tasks)
-- [GitLab Pipeline Files](#gitlab-pipeline-files)
-  - [Pipeline Activation](#pipeline-activation)
-- [Contributing](#contributing)
-- [Support](#support)
-- [License](#license)
-- [HPe Doc](#hpe-doc)
+- [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)
+  - [Table of Contents](#table-of-contents)
+  - [Summary](#summary)
+  - [🚀 Quick Start - Setup \& Installation](#-quick-start---setup--installation)
+    - [TL;DR - One-Line Setup](#tldr---one-line-setup)
+    - [Internal docs index](#internal-docs-index)
+      - [Core Documentation](#core-documentation)
+      - [Physical Server Build \& Runbooks](#physical-server-build--runbooks)
+      - [Maintenance Mode \& Scheduling](#maintenance-mode--scheduling)
+      - [Integration \& Authentication](#integration--authentication)
+      - [Developer Resources](#developer-resources)
+    - [In this document](#in-this-document)
+  - [Project Architecture](#project-architecture)
+  - [Generated Audit Logs (JSON)](#generated-audit-logs-json)
+  - [Quick Links for Common Tasks](#quick-links-for-common-tasks)
+  - [GitLab Pipeline Files](#gitlab-pipeline-files)
+    - [Pipeline Activation](#pipeline-activation)
+  - [Contributing](#contributing)
+  - [Support](#support)
+  - [License](#license)
+  - [HPe Doc](#hpe-doc)
+
+## Summary
+
 Automated build pipelines for creating customized Windows Server installation ISOs and for orchestrating physical HPE ProLiant server deployments using Microsoft Configuration Manager bootable media, HPE OneView, and HPE iLO Redfish. Integrates firmware/driver updates, security patching, vulnerability scanning, complete audit trails, with OpsRamp monitoring and reporting.
 
 ---
@@ -107,12 +118,13 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 <a name="in-this-document"></a>
 ### In this document
 - [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)
+  - [Table of Contents](#table-of-contents)
+  - [Summary](#summary)
   - [🚀 Quick Start - Setup \& Installation](#-quick-start---setup--installation)
     - [TL;DR - One-Line Setup](#tldr---one-line-setup)
-  - [Table of Contents](#table-of-contents)
     - [Internal docs index](#internal-docs-index)
       - [Core Documentation](#core-documentation)
-      - [Physical Server Build & Runbooks](#physical-server-build--runbooks)
+      - [Physical Server Build \& Runbooks](#physical-server-build--runbooks)
       - [Maintenance Mode \& Scheduling](#maintenance-mode--scheduling)
       - [Integration \& Authentication](#integration--authentication)
       - [Developer Resources](#developer-resources)
