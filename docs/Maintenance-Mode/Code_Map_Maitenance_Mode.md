@@ -63,75 +63,68 @@ This document maps every code location executed by `Set-MaintenanceMode` and `Te
 1. Test connectivity first (`Test-ServerConnectivity`)
 2. Then run maintenance operations (`Set-MaintenanceMode`)
 
-> **Source file**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - 3,803 lines total.
-> **Source file**: [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - ~560 lines total.
+> **Source file**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) (~3,800 lines)
+> **Source file**: [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) (~520 lines)
+> Line numbers below are approximate and may drift as the source evolves.
 
 ---
 
 <a name="0-test-serverconnectivity---start-here"></a>
 ## 0. Test-ServerConnectivity - Start Here
 
-This phase performs read-only connectivity checks against SCOM or OneView management infrastructure before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects.
+This phase performs read-only connectivity checks against the **OneView appliance** before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects. This command is OneView-only (there is no `-Mode` parameter); for SCOM connectivity use `Test-ScomMaintenanceConnectivity`.
 
 <a name="parameters"></a>
 ### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-Mode` | **Required** | `scom` or `oneview` - selects the integration path |
-| `-Environment` | Optional | `Test` or `Prod` (default: `Prod`) |
-| `-ManagementHost` | Optional | Override management server/appliance hostname |
+| `-ManagementHost` | Optional* | OneView appliance hostname (required for live runs) |
+| `-Environment` | Optional | `Test` or `Prod`; used with `-JsonConfig` to resolve the host |
+| `-Credential` | Optional | `PSCredential` for the connection; prompted if omitted |
+| `-JsonConfig` | Switch | Resolve host from `configs/connection_hosts.json` |
 | `-ConfigDir` | Optional | Config file directory (default: `configs`) |
 | `-PingTimeoutMs` | Optional | TCP timeout in ms (default: 3000) |
+| `-Port` | Optional | TCP port to probe (default: 443) |
 | `-Json` | Switch | Output as JSON for automation |
 | `-DryRun` | Switch | Test configuration without network calls |
 
-**Full `param()` block**: [`Lines 7-14`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L7-L14)
-**Function `param()` block**: [`Lines 131-140`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L131-L140)
+\* Required for a live (non-`-DryRun`) test unless resolved via `-JsonConfig` or `$env:MAINTENANCE_HOST`.
+
+**Source**: [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1)
 
 <a name="dryrun-mode"></a>
 ### DryRun Mode
 
 When `-DryRun` is specified, the function returns mock connectivity data without making actual network calls. This allows you to verify configuration resolution.
 
-**DryRun logic**: [`Lines 252-294`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L252-L294)
-**Output formatter with DryRun**: [`Lines 408-536`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L408-L536)
-
 ```powershell
 # Mock successful connectivity check
-Test-ServerConnectivity -Mode scom -Environment Test -DryRun
+Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
 ```
 
 **DryRun returns:**
 - Mock `NetworkPing` result (DNS resolved, TCP port open, 1ms latency)
 - Mock `AuthConnect` result (module loaded, connected, session active)
-- MockData with resolved configuration (target ports, PowerShell module, WinRM status, credential env vars)
+- MockData with resolved configuration (target port, PowerShell module, credential env vars)
 - `DryRun = $true` flag in result
 
 <a name="phase-1---network-ping"></a>
 ### Phase 1 - Network Ping
 
-**Code Location**: [`Lines 252-304`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L252-L304)
-
 1. **DNS Resolution**: Resolves the management host hostname using `System.Net.Dns::GetHostEntry()`
-2. **TCP Port Probe**: Attempts connection to relevant ports with configurable timeout
-   - SCOM (WinRM): 5985, 5986
-   - SCOM (non-WinRM): 5985, 135
-   - OneView: 443
+2. **TCP Port Probe**: Attempts connection to the OneView HTTPS port (443) with configurable timeout
 
 <a name="phase-2---auth-connect"></a>
 ### Phase 2 - Auth Connect
 
-**Code Location**: [`Lines 306-390`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L306-L390)
-
-1. **SCOM**: Creates management group connection with credentials, immediately disconnects
-2. **OneView**: Calls `Connect-OVMgmt` with credentials. **Session persists** for subsequent commands - use `Disconnect-OneView` to close explicitly
-3. Validates module loaded (operationsManager or HPEOneView.*) and connected successfully
+1. **OneView**: Calls `Connect-OVMgmt` with credentials. **Session persists** in `$global:ConnectedSessions` for subsequent commands - use `Disconnect-OneView` to close explicitly
+2. Validates module loaded (HPEOneView.*) and connected successfully
 
 <a name="result-structure"></a>
 ### Result Structure
 
-**Result assembly**: [`Lines 392-406`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L392-L406)
+See the result assembly at the end of [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1).
 
 ---
 
@@ -763,9 +756,8 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-*Document updated: 2026-06-23*
-*Source file total: 3,803 lines (Set-MaintenanceMode.ps1) + 481 lines (Test-ServerConnectivity.ps1)*
-*For questions about specific code locations, refer to the line numbers provided in the links above.*
+*Document updated: 2026-07-29*
+*Line numbers are approximate; verify against current source when in doubt.*
 
 
 

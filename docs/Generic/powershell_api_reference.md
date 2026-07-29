@@ -34,10 +34,10 @@
 
 | Requirement | Version |
 |---|---|
-| PowerShell | 5.1 or PowerShell 7 |
+| PowerShell | 7+ (HPEOneView.1000 requires PS 7) |
 | Windows | Windows 10 / 11 / Server 2016+ (WinRM, DISM, schtasks) |
 | HPE SUT | `hpe_sut.exe` on the machine or in `PATH` |
-| .NET | .NET Framework 4.7.2 (PS 5.1 hosts) or .NET 6+ (PS 7) |
+| .NET | .NET 6+ (PS 7) |
 
 Optional modules:
 - `powershell-yaml` (`Install-Module powershell-yaml`) - for YAML config support
@@ -56,8 +56,7 @@ hpe-windows-iso-automation/
 │   ├── Private/                   # Internal helpers
 │   └── Automation.psd1            # Module manifest
 └── tests/powershell/              # Pester test suite (Pester 6+)
-    ├── Tests.Tests.ps1            # Shared BeforeAll/AfterAll
-    └── *.Unit.Tests.ps1           # Test files per module
+    └── *.Unit.Tests.ps1           # One test file per Public cmdlet / Private module
 ```
 
 ---

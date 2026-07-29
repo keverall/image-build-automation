@@ -8,7 +8,7 @@
 - [Working Config Files](#working-config-files)
 - [GitLab CI Integration](#gitlab-ci-integration)
 - [Usage](#usage)
-Configuration and secrets for `Set-MaintenanceMode.ps1`. All secrets stored in CyberArk vault `pas.example.com`. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between SCOM, OneView, and iLO.
+Configuration and secrets for `Set-MaintenanceMode`. All secrets stored in CyberArk vault `pas.example.com`. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between SCOM, OneView, and iLO.
 
 <a name="quick-reference"></a>
 ## Quick Reference

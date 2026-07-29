@@ -43,7 +43,7 @@ Automated build pipelines for creating customized Windows Server installation IS
 ### TL;DR - One-Line Setup
 
 ```powershell
-make setup && cp wip/vscodeprofile.ps1 ~/.config/powershell/Microsoft.VSCode_profile.ps1 && . $PROFILE
+make setup && . $PROFILE
 ```
 
 Then use:
@@ -145,114 +145,24 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 ## Project Architecture
 
 ```
-hpe-windows-iso-automation/
-├── generated/                         # Generated output (gitignored)
-│   ├── base_iso/                      # Base Windows ISOs (mounted in build)
-│   │   └── Windows_Server_2022.iso    # Base ISO used by patching pipeline
-│   ├── output/                        # Build artefacts
-│   │   ├── combined/
-│   │   ├── firmware/
-│   │   └── patched/
-│   ├── patched_iso/                   # Staging for patched Windows ISOs
-│   ├── logs/                          # Audit trails and build reports
-│   │   ├── audit/                     # Regulatory compliance & audit trails
-│   │   ├── testing/                   # Test execution logs
-│   │   ├── production/                # Operational and execution logs
-│   │   └── build_reports/             # Build artefacts and output
-│   └── coverage-results.xml             # Cobertura XML coverage report (see docs/testing.md)
+image-build-automation/
+├── bin/                               # Bundled binaries (checkmake, make, oh-my-posh)
 ├── configs/                           # Server/cluster/patch JSON configs
-│   ├── server_list.txt                # Target servers (one per line)
-│   ├── clusters_catalogue.json        # Cluster/SCOM/iLO definitions
-│   ├── hpe_firmware_drivers_nov2025.json  # Firmware/driver manifests from HPE
-│   ├── windows_patches.json           # Security patch specifications
-│   ├── scom_config.json               # SCOM 2015 server and group config
-│   ├── oneview_config.json           # HPE OneView integration settings
-│   ├── email_distribution_lists.json  # SMTP and distribution list recipients
-│   └── maintenance_distribution_list.txt  # Override email list for maintenance events
+├── docs/                              # Documentation (see Documentation Index above)
+├── generated/                         # Generated output (gitignored)
+│   └── logs/                          # Audit trails and build reports
+├── scripts/                           # CI runner provisioning and helpers
+├── src/powershell/Automation/         # PowerShell module
+│   ├── Public/                        # Exported cmdlets (30+)
+│   ├── Private/                       # Internal helpers (12 modules)
+│   └── Automation.psd1                # Module manifest
+├── tests/powershell/                  # Pester v6 test suite (47 test files)
+├── vendor/                            # Vendored PowerShell modules
+├── .gitlab-ci.yml                     # GitLab CI/CD pipeline
 ├── docker-compose.yml                 # Containerised build environment
 ├── Dockerfile                         # Docker image for build agents
-├── docker-entrypoint.ps1              # PowerShell entrypoint
-├── docs/                              # Full documentation set
-│   └── (see Documentation Index above)
-├── .gitlab-ci.yml                     # GitLab CI/CD pipeline (REST API triggers)
-├── src/powershell/                    # PowerShell module
-│   ├── Automation/                    # Module root
-│   │   ├── Public/                    # Exported cmdlets
-│   │   │   ├── Get-OneViewServerTarget.ps1
-│   │   │   ├── Get-RouteMap.ps1
-│   │   │   ├── Invoke-GitLabMaintenanceTrigger.ps1
-│   │   │   ├── Invoke-IloRedfish.ps1
-│   │   │   ├── Invoke-IsoDeploy.ps1
-│   │   │   ├── Invoke-OpsRampClient.ps1
-│   │   │   ├── Invoke-PowerShellScript.ps1
-│   │   │   ├── Invoke-PowerShellWinRM.ps1
-│   │   │   ├── New-IsoBuild.ps1
-│   │   │   ├── New-OneViewMaintenanceScript.ps1
-│   │   │   ├── New-ScomConnection.ps1
-│   │   │   ├── New-ScomMaintenanceScript.ps1
-│   │   │   ├── New-Uuid.ps1
-│   │   │   ├── Publish-BootIso.ps1
-│   │   │   ├── Set-MaintenanceMode.ps1
-│   │   │   ├── Start-AutomationOrchestrator.ps1
-│   │   │   ├── Start-InstallMonitor.ps1
-│   │   │   ├── Start-PhysicalServerBuild.ps1
-│   │   │   ├── Test-BuildParams.ps1
-│   │   │   ├── Test-ClusterId.ps1
-│   │   │   ├── Test-PostBuildValidation.ps1
-│   │   │   ├── Test-PreBuildValidation.ps1
-│   │   │   ├── Test-ServerConnectivity.ps1
-│   │   │   ├── Test-ServerList.ps1
-│   │   │   ├── Update-Firmware.ps1
-│   │   │   ├── Update-WindowsSecurity.ps1
-│   │   │   ├── Control.ps1
-│   │   │   └── _Validate-Request.ps1
-│   │   └── Private/                    # Internal helpers
-│   │       ├── Audit.ps1
-│   │       ├── Base.ps1
-│   │       ├── Config.ps1
-│   │       ├── Credentials.ps1
-│   │       ├── Executor.ps1
-│   │       ├── FileIO.ps1
-│   │       ├── Inventory.ps1
-│   │       ├── Logging.ps1
-│   │       ├── PathResolver.ps1
-│   │       ├── Router.ps1
-│   │       └── Automation.psd1          # Module manifest
-├── tests/powershell/                  # Pester v6 test suite
-│   ├── Tests.Tests.ps1
-│   ├── Config.Unit.Tests.ps1
-│   ├── Credentials.Unit.Tests.ps1
-│   ├── Executor.Unit.Tests.ps1
-│   ├── FileIO.Unit.Tests.ps1
-│   ├── Inventory.Unit.Tests.ps1
-│   ├── Validators.Unit.Tests.ps1
-│   ├── Router.Unit.Tests.ps1
-│   ├── New-Uuid.Unit.Tests.ps1
-│   ├── Audit.Unit.Tests.ps1
-│   ├── Set-MaintenanceMode.Unit.Tests.ps1
-│   ├── Set-MaintenanceMode.Enable.Tests.ps1
-│   ├── Set-MaintenanceMode.Disable.Tests.ps1
-│   ├── Set-MaintenanceMode.Validation.Tests.ps1
-│   ├── Set-MaintenanceMode.Environment.Tests.ps1
-│   ├── Invoke-IsoDeploy.Unit.Tests.ps1
-│   ├── Invoke-OpsRampClient.Unit.Tests.ps1
-│   ├── New-IsoBuild.Unit.Tests.ps1
-│   ├── New-OneViewMaintenanceScript.Unit.Tests.ps1
-│   ├── New-ScomConnection.Unit.Tests.ps1
-│   ├── New-ScomMaintenanceScript.Unit.Tests.ps1
-│   ├── Start-AutomationOrchestrator.Unit.Tests.ps1
-│   ├── Start-InstallMonitor.Unit.Tests.ps1
-│   ├── Test-ServerConnectivity.Tests.ps1
-│   ├── Update-Firmware.Unit.Tests.ps1
-│   ├── Update-WindowsSecurity.Unit.Tests.ps1
-│   ├── Generate-PSDocs.Unit.Tests.ps1
-│   ├── Makefile.Unit.Tests.ps1
-│   ├── Pester.Integration.ps1
-│   ├── Test-GitLabIntegration.ps1
-│   └── Test-GitLabCallback.ps1
-└── scripts/                            # CI runner provisioning and helpers
-    ├── setup-runner.ps1
-    └── test-connectivity.ps1
+├── Makefile                           # Build automation targets
+└── README.md                          # This file
 ```
 
 <a name="generated-audit-logs-json"></a>

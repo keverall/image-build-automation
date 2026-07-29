@@ -45,7 +45,7 @@ iRequest / ServiceNow / Jira
             │
             │  calls
             ▼
-  Set-MaintenanceMode.ps1  →  SCOM / iLO / OneView
+   Set-MaintenanceMode  →  SCOM / iLO / OneView
 ```
 
 ---
@@ -109,8 +109,8 @@ in the CI/CD Variables UI for that invocation only.
 
 **`scripts/gitlab/Invoke-GitLabMaintenance.ps1`**
 
-Executed as `pwsh -File`. Runs inside the CI runner (not dot-sourced). Sources
-`Set-MaintenanceMode.ps1`, executes it with the CI environment variables, emits
+Executed as `pwsh -File`. Runs inside the CI runner (not dot-sourced). Calls the
+`Set-MaintenanceMode` cmdlet with the CI environment variables, emits
 a JSON result line, and writes an artifact to `generated/logs/audit/`.
 
 Key environment variables exported to the script:

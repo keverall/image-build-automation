@@ -27,7 +27,7 @@
 <a name="goal"></a>
 ## Goal
 
-Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bootable media workflow matching `wip/runbook-requirements.md`. The automation will create a ConfigMgr WinPE boot ISO, query HPE OneView for target server identity, mount the ISO via iLO Redfish virtual media, force one-time boot, and monitor the OS deployment.
+Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bootable media workflow matching `runbook-requirements.md`. The automation will create a ConfigMgr WinPE boot ISO, query HPE OneView for target server identity, mount the ISO via iLO Redfish virtual media, force one-time boot, and monitor the OS deployment.
 
 <a name="key-design-decisions"></a>
 ## Key Design Decisions

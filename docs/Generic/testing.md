@@ -75,7 +75,6 @@ Get-Module Pester -ListAvailable
 
 | Runtime | Version |
 |---|---|
-| Windows PowerShell | 5.1 |
 | PowerShell 7 | 7.2+ |
 | Pester | 6.0.1 (bundled) |
 
@@ -181,44 +180,21 @@ pwsh -File scripts/coverage-report.ps1
 <a name="test-file-structure"></a>
 ## Test File Structure
 
-```
-tests/powershell/
-├── Tests.Tests.ps1                                # Shared BeforeAll/AfterAll (temp dirs, sample configs)
-├── Config.Unit.Tests.ps1
-├── Credentials.Unit.Tests.ps1
-├── Executor.Unit.Tests.ps1
-├── FileIO.Unit.Tests.ps1
-├── Inventory.Unit.Tests.ps1
-├── Validators.Unit.Tests.ps1
-├── Router.Unit.Tests.ps1
-├── New-Uuid.Unit.Tests.ps1
-├── Audit.Unit.Tests.ps1
-├── Set-MaintenanceMode.Unit.Tests.ps1             # Core unit tests
-├── Set-MaintenanceMode.Enable.Tests.ps1           # High-priority enable action tests
-├── Set-MaintenanceMode.Disable.Tests.ps1          # High-priority disable action tests
-├── Set-MaintenanceMode.Validation.Tests.ps1       # High-priority validation tests
-├── Set-MaintenanceMode.Environment.Tests.ps1      # Environment variable handling tests
-├── Invoke-IsoDeploy.Unit.Tests.ps1
-├── Invoke-OpsRampClient.Unit.Tests.ps1
-├── New-IsoBuild.Unit.Tests.ps1
-├── New-OneViewMaintenanceScript.Unit.Tests.ps1
-├── New-ScomConnection.Unit.Tests.ps1
-├── New-ScomMaintenanceScript.Unit.Tests.ps1
-├── Start-AutomationOrchestrator.Unit.Tests.ps1
-├── Start-InstallMonitor.Unit.Tests.ps1
-├── Update-Firmware.Unit.Tests.ps1
-├── Update-WindowsSecurity.Unit.Tests.ps1
-├── Generate-PSDocs.Unit.Tests.ps1
-├── Makefile.Unit.Tests.ps1                        # Makefile target validation tests
-├── Pester.Integration.ps1                         # Integration test suite
-├── Test-GitLabIntegration.ps1                     # GitLab CI integration tests
-├── Test-GitLabCallback.ps1                        # GitLab webhook callback tests
-├── _import_test.ps1                               # Module import validation
-├── _mod_detail.ps1                                # Module detail inspection
-├── _cls_final.ps1                                 # Class-based tests (final)
-├── _class_test.ps1                                # Class-based test helpers
-└── _debug_module.ps1                              # Module debugging utilities
-```
+Tests colocate with the module under `tests/powershell/`. Each Public cmdlet and key
+Private helper has a corresponding `*.Unit.Tests.ps1` (helper modules use `*.Tests.ps1`).
+Run the whole suite with `Invoke-Pester -Path tests/powershell`.
+
+Representative test files (not exhaustive):
+
+- `Set-MaintenanceMode.{Unit,Enable,Disable,Validation,Environment}.Tests.ps1` - core maintenance mode tests
+- `Start-AutomationOrchestrator.Unit.Tests.ps1`, `Router.Unit.Tests.ps1` - orchestrator/routing
+- `Get-OneViewServerTarget.Unit.Tests.ps1`, `Get-OneViewServerList.Unit.Tests.ps1`, `Get-OneViewConnectionStatus.Unit.Tests.ps1`, `Get-OneViewVersion.Unit.Tests.ps1`, `Test-ServerConnectivity.Tests.ps1` - OneView
+- `New-ScomConnection.Unit.Tests.ps1`, `New-ScomMaintenanceScript.Unit.Tests.ps1` - SCOM
+- `New-IsoBuild.Unit.Tests.ps1`, `Publish-BootIso.Unit.Tests.ps1`, `Invoke-IsoDeploy.Unit.Tests.ps1`, `Invoke-IloRedfish.Unit.Tests.ps1`, `Start-InstallMonitor.Unit.Tests.ps1`, `Start-PhysicalServerBuild.Unit.Tests.ps1` - build/deploy
+- `Update-Firmware.Unit.Tests.ps1`, `Update-WindowsSecurity.Unit.Tests.ps1` - patching
+- `Test-PreBuildValidation.Unit.Tests.ps1`, `Test-PostBuildValidation.Unit.Tests.ps1` - validation
+- `Config`, `Credentials`, `Executor`, `FileIO`, `Inventory`, `Logging`, `Audit`, `Validators` - Private module tests
+- `Pester.Integration.ps1`, `Test-GitLabIntegration.ps1`, `Test-GitLabCallback.ps1` - integration/CI
 
 ---
 
@@ -334,12 +310,14 @@ Comprehensive testing for maintenance mode operations across SCOM and OneView sy
 <a name="test-files"></a>
 ### Test Files
 
-| File | Purpose | Description |
-|------|---------|-------------|
-| `tests/powershell/Environment.Tests.ps1` | Environment/parameter tests | Tests for environment selection, host override, parameters |
-| `tests/powershell/DateTime.Tests.ps1` | Date/time format tests | Tests for time parsing, format validation |
-| `tests/powershell/BackwardCompat.Tests.ps1` | Backward compatibility tests | Tests for existing behavior preservation |
-| `tests/powershell/Connection.Tests.ps1` | Connection validation tests | Tests for connectivity validation |
+| File | Purpose |
+|------|---------|
+| `tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1` | Core unit tests |
+| `tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1` | High-priority enable action |
+| `tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1` | High-priority disable action |
+| `tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1` | High-priority validation |
+| `tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1` | Environment/host resolution |
+| `tests/powershell/Test-ServerConnectivity.Tests.ps1` | OneView connectivity check |
 
 <a name="test-scripts"></a>
 ### Test Scripts
@@ -364,10 +342,10 @@ pwsh scripts/run-maintenance-tests.ps1 -TestSuite Environment -PassThru
 pwsh scripts/run-maintenance-tests.ps1 -TestSuite All -PassThru
 
 # Run with detailed output
-Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -Output Detailed
+Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -Output Detailed
 
 # Quick test: validate a cluster
-pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test -DryRun
+Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test -DryRun
 ```
 
 <a name="test-coverage-areas"></a>
@@ -375,15 +353,15 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action validate -
 
 | Area | Description | Test File |
 |------|-------------|----------|
-| Environment parameter | Test/Prod environment selection | Environment.Tests.ps1 |
-| Host override | ManagementHost parameter and env var | Environment.Tests.ps1 |
-| Credential parameters | Username parameter | Environment.Tests.ps1 |
-| Relative time formats | +Xhours, +Xminutes, +Xdays, +Xseconds | DateTime.Tests.ps1 |
-| Absolute time formats | YYYY-MM-DD HH:MM, ISO 8601 | DateTime.Tests.ps1 |
-| Connection validation | SCOM/OneView pre-flight checks | Connection.Tests.ps1 |
-| Combined parameters | Multiple parameters together | Environment.Tests.ps1 |
-| Configuration files | connection_hosts.json structure | Environment.Tests.ps1 |
-| Backward compatibility | Existing behavior preservation | BackwardCompat.Tests.ps1 |
+| Environment parameter | Test/Prod environment selection | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Host override | ManagementHost parameter and env var | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Credential parameters | Username parameter | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Relative time formats | +Xhours, +Xminutes, +Xdays, +Xseconds | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Absolute time formats | YYYY-MM-DD HH:MM, ISO 8601 | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Connection validation | SCOM/OneView pre-flight checks | Test-ServerConnectivity.Tests.ps1 |
+| Combined parameters | Multiple parameters together | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Configuration files | connection_hosts.json structure | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Backward compatibility | Existing behavior preservation | Set-MaintenanceMode.Unit.Tests.ps1 |
 
 <a name="interpreting-test-results"></a>
 ### Interpreting Test Results
@@ -434,10 +412,10 @@ Tests Passed: 90, Failed: 10, Skipped: 0, Duration: 25s
 
 ```powershell
 # Run with verbose output
-Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -Output Detailed
+Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -Output Detailed
 
 # Run specific test
-Invoke-Pester -Path tests/powershell/Environment.Tests.ps1 -TestName "*Environment parameter*"
+Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -TestName "*Environment parameter*"
 
 # Export results to XML
 Invoke-Pester -Path tests/powershell/ -OutputFile test-results.xml -OutputFormat NUnitXml
@@ -513,7 +491,7 @@ Before deploying maintenance mode changes:
 
 **Example 1: Basic Validation (No Changes)**
 ```powershell
-pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+Set-MaintenanceMode `
     -Action validate `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
@@ -522,7 +500,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 
 **Example 2: Dry Run Enable**
 ```powershell
-pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+Set-MaintenanceMode `
     -Action enable `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
@@ -534,7 +512,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 
 **Example 3: Host Override**
 ```powershell
-pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+Set-MaintenanceMode `
     -Action validate `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
@@ -545,7 +523,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 
 **Example 4: OneView with Serial Number**
 ```powershell
-pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+Set-MaintenanceMode `
     -Action enable `
     -Mode oneview `
     -TargetId '' `
@@ -558,7 +536,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
 
 **Example 5: JSON Output for Automation**
 ```powershell
-$result = pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+$result = Set-MaintenanceMode `
     -Action validate `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
@@ -625,7 +603,7 @@ When maintenance mode is enabled or disabled, the response includes detailed sta
 **Testing Per-Object Reporting:**
 ```powershell
 # Enable and check status
-$result = pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+$result = Set-MaintenanceMode `
     -Action enable `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
@@ -651,7 +629,7 @@ Write-Output "Successes: $successes, Failures: $failures"
 
 ```powershell
 # DryRun is safe - no changes to systems
-pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+Set-MaintenanceMode `
     -Action enable `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
@@ -661,7 +639,7 @@ pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
     -DryRun
 
 # Remove -DryRun to ACTUALLY enable maintenance mode
-pwsh src/powershell/Automation/Public/Set-MaintenanceMode.ps1 `
+Set-MaintenanceMode `
     -Action enable `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `

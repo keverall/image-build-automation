@@ -6,13 +6,13 @@
 - [Required Secrets (CyberArk Safe: `SCOM-2015`)](#required-secrets-cyberark-safe-scom-2015)
 - [Configuration Files](#configuration-files)
   - [`configs/scom_config.json`](#configsscom_configjson)
-  - [`configs/scom_clusters_catalogue.json`](#configsscom_clusters_cataloguejson)
+  - [`configs/clusters_catalogue.json`](#configsclusters_cataloguejson)
 - [GitLab CI Integration](#gitlab-ci-integration)
   - [Required GitLab CI/CD Variables (Masked)](#required-gitlab-cicd-variables-masked)
   - [How it works](#how-it-works)
   - [Manual Testing](#manual-testing)
 - [Setup Script](#setup-script)
-Configure `Set-MaintenanceMode.ps1` for SCOM cluster-level maintenance mode. SCOM manages Microsoft Windows cluster objects - all servers and resources nested under the group are put into maintenance mode. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the relationship between SCOM, OneView, and iLO.
+Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM manages Microsoft Windows cluster objects - all servers and resources nested under the group are put into maintenance mode. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the relationship between SCOM, OneView, and iLO.
 
 <a name="required-secrets-cyberark-safe-scom-2015"></a>
 ## Required Secrets (CyberArk Safe: `SCOM-2015`)
@@ -31,8 +31,6 @@ Configure `Set-MaintenanceMode.ps1` for SCOM cluster-level maintenance mode. SCO
 ```json
 {
   "scom": {
-    "management_server": "VR-OPM19P1-7382.ad.example.com",
-    "powershell_module": "OperationsManager",
     "use_winrm": true,
     "winrm": {
       "transport": "ntlm",
@@ -43,13 +41,24 @@ Configure `Set-MaintenanceMode.ps1` for SCOM cluster-level maintenance mode. SCO
     "credentials": {
       "username_env": "SCOM_ADMIN_USER",
       "password_env": "SCOM_ADMIN_PASSWORD"
+    },
+    "maintenance_settings": {
+      "default_duration_hours": 4,
+      "comment_prefix": "iRequest Maintenance: ",
+      "suppress_alerts": true
+    },
+    "management_servers": {
+      "2019": {
+        "test": { "group": "SCOM_Test_Cluster", "servers": ["srv01.ad.example.com"] },
+        "production": { "group": "SCOM_Prod_Cluster", "servers": ["srv01.ad.example.com", "srv02.ad.example.com"] }
+      }
     }
   }
 }
 ```
 
-<a name="configsscom_clusters_cataloguejson"></a>
-### `configs/scom_clusters_catalogue.json`
+<a name="configsclusters_cataloguejson"></a>
+### `configs/clusters_catalogue.json`
 
 ```json
 {
@@ -91,7 +100,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 2. It queries the CyberArk REST API for `SCOM_ADMIN_USER` and `SCOM_ADMIN_PASSWORD`
 3. Secrets are exported to `secrets.env` as artifacts
 4. Subsequent maintenance jobs source `secrets.env` to set environment variables
-5. `Set-MaintenanceMode.ps1` reads these variables via `Get-ScomCredentials`
+5. `Set-MaintenanceMode` reads these variables via `Get-ScomCredentials`
 
 <a name="manual-testing"></a>
 ### Manual Testing

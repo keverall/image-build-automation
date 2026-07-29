@@ -845,27 +845,27 @@ Update-Firmware -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
 ### Patch Windows ISO with security updates
 
 ```powershell
-Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01
+Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01
 ```
 
 #### Patch with custom method
 
 ```powershell
-Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Method powershell
+Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01 -Method powershell
 ```
 
 #### Dry run
 
 ```powershell
-Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -DryRun
+Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01 -DryRun
 ```
 
 **Parameters:**
 
 | Parameter | Required | Description | Default |
 |-----------|----------|-------------|---------|
-| `-BaseIsoPath` | No | Path to the base Windows Server ISO | - |
-| `-Server` | No | Server hostname for output naming. Mutually exclusive with `-SerialNumber`. | - |
+| `-BaseIsoPath` | Yes | Path to the base Windows Server ISO | - |
+| `-Server` | Yes | Server hostname for output naming. Mutually exclusive with `-SerialNumber`. | - |
 | `-SerialNumber` | No | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires `-OneViewHost`. | - |
 | `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
 | `-PatchesConfig` | Yes (live) | Patch manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
@@ -875,7 +875,7 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -DryRun
 
 ```powershell
 # Target by serial number (resolved via OneView)
-Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
+Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
 ```
 
 **Returns:** `[hashtable]` with `Success`, `PatchedIso`, and details.

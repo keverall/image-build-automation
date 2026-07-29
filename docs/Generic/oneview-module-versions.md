@@ -5,13 +5,15 @@
 
 - [Quick Selection Guide](#quick-selection-guide)
   - [For OneView 8.x+ appliances (recommended)](#for-oneview-8x-appliances-recommended)
-  - [For OneView 7.x appliances (PowerShell 5.1 compatibility)](#for-oneview-7x-appliances-powershell-51-compatibility)
+  - [For OneView 7.x appliances (legacy)](#for-oneview-7x-appliances-legacy)
 - [Installation Commands](#installation-commands)
 - [Connection Command](#connection-command)
 - [How the Automation Selects Modules](#how-the-automation-selects-modules)
 - [Module Validation](#module-validation)
 - [Related Documentation](#related-documentation)
 This table helps you select the correct PowerShell module for your OneView appliance version.
+
+> **Project standard:** This automation uses `HPEOneView.1000` and requires **PowerShell 7+** (HPEOneView.1000 does not support Windows PowerShell 5.1). The pre-8.0 module rows below are historical only and are not used here.
 
 | Module Name | PowerShell | .NET Standard | OneView Appliance Min | Notes |
 |-------------|------------|---------------|----------------------|-------|
@@ -38,7 +40,7 @@ Install-Module HPEOneView.1000 -Scope AllUsers
 ```
 
 <a name="for-oneview-7x-appliances-powershell-51-compatibility"></a>
-### For OneView 7.x appliances (PowerShell 5.1 compatibility)
+### For OneView 7.x appliances (legacy)
 ```powershell
 Install-Module HPEOneView.720 -Scope AllUsers
 ```
@@ -103,7 +105,7 @@ Connect-OVMgmt -Appliance oneview.example.com -Credential $cred
 
 When `Set-MaintenanceMode` runs (non-dry-run), it validates:
 - Module exists on the target system
-- PowerShell version compatibility (warns if PS 7+ required but running PS 5.1)
+- PowerShell version compatibility (warns if PowerShell 7+ is required but not available)
 - Logs the selected module name
 
 <a name="related-documentation"></a>

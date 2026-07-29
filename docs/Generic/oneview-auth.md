@@ -10,13 +10,13 @@
 - [Required Secrets (CyberArk Safe: `HPE-OneView`)](#required-secrets-cyberark-safe-hpe-oneview)
 - [Configuration Files](#configuration-files)
   - [`configs/oneview_config.json`](#configsoneview_configjson)
-  - [`configs/oneview_servers_catalogue.json`](#configsoneview_servers_cataloguejson)
+  - [`configs/servers_catalogue.oneview.json`](#configsservers_catalogueoneviewjson)
 - [GitLab CI Integration](#gitlab-ci-integration)
   - [Required GitLab CI/CD Variables (Masked)](#required-gitlab-cicd-variables-masked)
   - [How it works](#how-it-works)
   - [Manual Testing](#manual-testing)
 - [Setup Script](#setup-script)
-Configure `Set-MaintenanceMode.ps1` for HPE OneView hardware-level maintenance mode. OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between OneView maintenance mode and iLO maintenance mode.
+Configure `Set-MaintenanceMode` (HPE OneView hardware-level maintenance mode). OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between OneView maintenance mode and iLO maintenance mode.
 
 <a name="oneview-session-management"></a>
 ## OneView Session Management
@@ -94,8 +94,8 @@ This model avoids repeated authentication overhead and aligns with the HPE OneVi
 }
 ```
 
-<a name="configsoneview_servers_cataloguejson"></a>
-### `configs/oneview_servers_catalogue.json`
+<a name="configsservers_catalogueoneviewjson"></a>
+### `configs/servers_catalogue.oneview.json`
 
 ```json
 {
@@ -138,7 +138,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 2. It queries the CyberArk REST API for `ONEVIEW_USER` and `ONEVIEW_PASSWORD`
 3. Secrets are exported to `secrets.env` as artifacts
 4. Subsequent maintenance jobs source `secrets.env` to set environment variables
-5. `Set-MaintenanceMode.ps1` reads these variables via `Get-OneViewCredentials`
+5. `Set-MaintenanceMode` reads these variables via `Get-OneViewCredentials`
 
 <a name="manual-testing"></a>
 ### Manual Testing
