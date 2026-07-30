@@ -229,6 +229,7 @@ function Add-BitbucketMdToc {
             Where-Object {
                 $_.FullName -notmatch '(^|[\\/])\.git([\\/]|$)' -and
                 $_.FullName -notmatch '(^|[\\/])generated([\\/]|$)' -and
+                $_.FullName -notmatch '(^|[\\/])dynamic-code-docs([\\/]|$)' -and
                 $_.FullName -notmatch '(^|[\\/])(scripts|vendor)[\\/]modules([\\/]|$)'
             } |
             Sort-Object FullName

@@ -49,7 +49,7 @@ function Find-TargetFile {
 
     param([string]$TargetFilename)
     $files = Get-ChildItem -Path $RepoRoot -Filter $TargetFilename -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notmatch '\.git|generated/' }
+        Where-Object { $_.FullName -notmatch '\.git|generated/|dynamic-code-docs' }
     
     if ($files.Count -eq 0) { return $null }
     if ($files.Count -eq 1) {
@@ -103,7 +103,7 @@ function Get-MarkdownFiles {
     if (Test-Path $docsPath) {
         $files += Get-ChildItem -Path $docsPath -Filter *.md -Recurse -File -ErrorAction SilentlyContinue
     }
-    return $files | Where-Object { $_.FullName -notmatch '\.git' }
+    return $files | Where-Object { $_.FullName -notmatch '\.git|dynamic-code-docs' }
 }
 
 Write-Status $Cyan "Scanning markdown files for validation..."

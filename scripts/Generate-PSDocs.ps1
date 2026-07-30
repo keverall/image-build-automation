@@ -310,7 +310,10 @@ $md += ''
 # docs/dynamic-code-docs (which is excluded from `make fix-docs` because it is
 # generated) self-consistent after a plain `make docs` run.
 $mdLines = Build-CanonicalContent -Lines $md
-return ($mdLines -join "`n")
+# Match the committed baseline (which ends with a single trailing newline) so
+# `make docs` produces no churn when the source is unchanged. dynamic-code-docs
+# is excluded from fix-links/add-anchors, so this WriteAllText output is final.
+return ($mdLines -join "`n") + "`n"
 }
 
 # Determine relative path for docs (consistent src/powershell or scripts style)
@@ -402,11 +405,13 @@ $idx = @(
 )
 foreach ($fn in ($generated | Sort-Object)) {
     $name = [IO.Path]::GetFileNameWithoutExtension($fn)
-    $idx += "- [$name]($fn)"
+    # Include the #top anchor so the link matches the canonical form produced by
+    # fix-links for the rest of the repo (each doc has a <a id="top"></a> anchor).
+    $idx += "- [$name]($fn#top)"
 }
 $idx += @('', '---', '')
 $idxLines = Build-CanonicalContent -Lines $idx
-[IO.File]::WriteAllText($indexPath, ($idxLines -join "`n"), [System.Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText($indexPath, ($idxLines -join "`n") + "`n", [System.Text.UTF8Encoding]::new($false))
 Write-Status "  OK   INDEX.md"
 
 Write-Status ""
