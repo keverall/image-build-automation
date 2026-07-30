@@ -378,7 +378,7 @@ foreach ($f in $files) {
 
 # INDEX.md
 $indexPath = Join-Path $OutputDir 'INDEX.md'
-$ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm') + ' UTC'
+$ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
 $idx = @(
     '# PowerShell Module - Generated API Reference',
     '',
