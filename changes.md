@@ -1,5 +1,9 @@
 # Changes
 
+<a id="top"></a>
+
+## Table of Contents
+
 - [Standards](#standards)
   - [DevOps](#devops)
   - [HPE OneView](#hpe-oneview)
@@ -21,6 +25,8 @@ history (`git log`).
 > and is excluded from documentation. This root `changes.md` is the canonical
 > changelog.
 
+<a name="standards"></a>
+
 ## Standards
 
 These are the agreed engineering standards (DevOps, HPE OneView, PowerShell),
@@ -29,7 +35,10 @@ aligned with the automation HPE OneView requirements in
 physical HPE server build automation). They are the yardstick used to advise
 when a request would go against best practice.
 
+<a name="devops"></a>
+
 ### DevOps
+
 - **Sensible default + explicit override.** Automation pins the latest
   `HPEOneView.*` module installed on the server running the code. Pipelines pin
   an *exact, reproducible* version via the `ONEVIEW_MODULE_NAME` environment
@@ -45,7 +54,10 @@ when a request would go against best practice.
   runbook's Security & Control Requirements); production builds follow approval /
   CRQ traceability where required.
 
+<a name="hpe-oneview"></a>
+
 ### HPE OneView
+
 - **OneView is the authoritative targeting source.** Managed HPE ProLiant/Synergy
   servers are identified and validated through the OneView REST API; query
   `server-hardware` by name, serial number, bay/enclosure, or approved identifier.
@@ -67,7 +79,10 @@ when a request would go against best practice.
   certificates over certificate-bypass (lab/test only) - runbook Security &
   Control Requirements.
 
+<a name="powershell"></a>
+
 ### PowerShell
+
 - **OS-aware module handling.** The `HPEOneView.*` libraries are Windows-only.
   Enumerating or importing them off-Windows (`Get-Module -ListAvailable`) crashes
   the native PowerShell layer on Linux/macOS, so resolution/import is skipped
@@ -82,9 +97,14 @@ when a request would go against best practice.
   REST patterns documented in the runbook (e.g. virtual-media insert, boot-source
   override, reset).
 
+<a name="changes"></a>
+
 ## Changes
 
+<a name="2026-07-30---oneview-module-pinning-reworked-to-latest-installed-on-this-server"></a>
+
 ### 2026-07-30 - OneView module pinning reworked to "latest installed on this server"
+
 - `Resolve-PinnedOneViewModule` now pins the **latest `HPEOneView.*` module
   installed on the automation server** instead of probing the appliance and
   matching its minor version. Resolution order: `ONEVIEW_MODULE_NAME` override

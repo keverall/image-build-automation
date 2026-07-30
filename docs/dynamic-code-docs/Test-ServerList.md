@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerList.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-ServerList
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Reads the server list text file (server_list.txt) and returns a hashtable with Success and Servers properties. Skips empty lines and comments (lines starting with #). Optionally trims comma-separated metadata from each line.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -29,16 +31,21 @@ Reads the server list text file (server_list.txt) and returns a hashtable with S
 | `-ServerListPath` | Path to server_list.txt (default: configs\server_list.txt). |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 $servers = Test-ServerList
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Validate and load the server list text file.

@@ -1,6 +1,7 @@
 # HPE OneView Commands
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Session Management](#session-management)
@@ -10,11 +11,12 @@
 - [Quick Health Check](#quick-health-check)
 - [Notes](#notes)
 
-
 > Note: "OpenView" is the legacy HP product name; the current product used by this
 > automation is **HPE OneView**. This document covers the OneView cmdlets exported
 > by the Automation module.
+
 <a name="session-management"></a>
+
 ## Session Management
 
 The module uses a persistent OneView session stored in `$global:ConnectedSessions`.
@@ -29,6 +31,7 @@ Disconnect-OneView
 ```
 
 <a name="version-and-information"></a>
+
 ## Version and Information
 
 ```powershell
@@ -37,6 +40,7 @@ Get-OneViewVersion -OneViewHost oneview.ad.example.com
 ```
 
 <a name="server-queries"></a>
+
 ## Server Queries
 
 ```powershell
@@ -48,6 +52,7 @@ Get-OneViewServerTarget -OneViewHost oneview.ad.example.com -ServerIdentifier MX
 ```
 
 <a name="maintenance"></a>
+
 ## Maintenance
 
 ```powershell
@@ -59,6 +64,7 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 ```
 
 <a name="quick-health-check"></a>
+
 ## Quick Health Check
 
 ```powershell
@@ -67,6 +73,7 @@ Get-OneViewVersion -OneViewHost oneview.ad.example.com
 ```
 
 <a name="notes"></a>
+
 ## Notes
 
 - Appliance settings live in `configs/oneview_config.json`; server inventory in

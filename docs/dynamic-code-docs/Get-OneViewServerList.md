@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerList.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-OneViewServerList
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -17,13 +18,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Queries GET /rest/server-hardware across all pages and returns a normalised list of servers (name, serial, model, power state, health, iLO IP, enclosure). Supports an optional -Filter to narrow the result by health or power state.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -40,28 +42,37 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 | `-DryRun` | Print the query without performing it. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Get-OneViewServerList -OneViewHost 'oneview.ad.example.com'
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 Get-OneViewServerList -OneViewHost 'oneview.ad.example.com' -Filter 'health:Critical'
 ```
 
 <a name="example-3"></a>
+
 ### Example 3
+
 ```powershell
 Get-OneViewServerList Uses an existing HPEOneView module session if available.
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         List all servers connected to HPE OneView.  Callable from the module Router.

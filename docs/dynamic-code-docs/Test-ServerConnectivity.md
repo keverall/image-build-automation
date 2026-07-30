@@ -1,25 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-ServerConnectivity
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe (HTTPS 443) - Measures latency in milliseconds Phase 2: Authentication Connect - Prompts for username/password (or uses -Credential) - Loads the HPE OneView PowerShell module - Performs a full authentication (Connect-OVMgmt) - Session persists for subsequent OneView commands - No objects are modified SAFETY / COMPLIANCE (regulated EMIR environment): - On a live run, config files are NEVER read. The appliance host is taken verbatim from -ManagementHost and only that appliance is contacted. Credentials are never taken from config - they are supplied via -Credential or entered interactively. - Config files (connection_hosts.json, oneview_config.json) are read ONLY with -DryRun, for dry-run validation. Returns a structured hashtable with per-phase results and an overall Available boolean.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -34,7 +36,9 @@ Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe
 | `-DryRun` | Simulate connectivity without actual network calls. Returns mock data to verify configuration resolution. Config files may be read for validation. |
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         OneView-only network ping + authentication connectivity test.

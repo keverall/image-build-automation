@@ -1,6 +1,7 @@
 # OneView Maintenance Mode - Authentication & Configuration
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [OneView Session Management](#oneview-session-management)
@@ -16,14 +17,17 @@
   - [How it works](#how-it-works)
   - [Manual Testing](#manual-testing)
 - [Setup Script](#setup-script)
+
 Configure `Set-MaintenanceMode` (HPE OneView hardware-level maintenance mode). OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between OneView maintenance mode and iLO maintenance mode.
 
 <a name="oneview-session-management"></a>
+
 ## OneView Session Management
 
 OneView connections use a **persistent session model**. The session is established once and remains active for subsequent commands until explicitly closed.
 
 <a name="establishing-a-connection"></a>
+
 ### Establishing a Connection
 
 Use `Test-ServerConnectivity` to verify connectivity and establish a persistent OneView session:
@@ -40,6 +44,7 @@ Get-OneViewConnectionStatus
 The session is stored in `$global:ConnectedSessions` and is automatically reused by other OneView commands (`Get-OneViewServerList`, `Get-OneViewConnectionStatus`, etc.) without requiring re-authentication.
 
 <a name="closing-the-connection"></a>
+
 ### Closing the Connection
 
 Use `Disconnect-OneView` to explicitly close the session when finished:
@@ -55,6 +60,7 @@ Disconnect-OneView -Force
 The session is also automatically closed when the PowerShell session ends.
 
 <a name="session-lifecycle"></a>
+
 ### Session Lifecycle
 
 1. **Connect**: `Test-ServerConnectivity` establishes the session
@@ -64,6 +70,7 @@ The session is also automatically closed when the PowerShell session ends.
 This model avoids repeated authentication overhead and aligns with the HPE OneView PowerShell module's session management.
 
 <a name="required-secrets-cyberark-safe-hpe-oneview"></a>
+
 ## Required Secrets (CyberArk Safe: `HPE-OneView`)
 
 | Environment Variable | Purpose |
@@ -72,9 +79,11 @@ This model avoids repeated authentication overhead and aligns with the HPE OneVi
 | `ONEVIEW_PASSWORD` | OneView appliance admin password |
 
 <a name="configuration-files"></a>
+
 ## Configuration Files
 
 <a name="configsoneview_configjson"></a>
+
 ### `configs/oneview_config.json`
 
 ```json
@@ -95,6 +104,7 @@ This model avoids repeated authentication overhead and aligns with the HPE OneVi
 ```
 
 <a name="configsservers_catalogueoneviewjson"></a>
+
 ### `configs/servers_catalogue.oneview.json`
 
 ```json
@@ -119,11 +129,13 @@ This model avoids repeated authentication overhead and aligns with the HPE OneVi
 ```
 
 <a name="gitlab-ci-integration"></a>
+
 ## GitLab CI Integration
 
 In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job before any maintenance operations. 
 
 <a name="required-gitlab-cicd-variables-masked"></a>
+
 ### Required GitLab CI/CD Variables (Masked)
 
 | Variable | Description | Example |
@@ -132,6 +144,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 | `CYBERARK_APP_ID` | Application ID registered in CyberArk | `ci` |
 
 <a name="how-it-works"></a>
+
 ### How it works
 
 1. The `cyberark-bootstrap` job runs `scripts/cyberark-bootstrap.ps1`
@@ -141,6 +154,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 5. `Set-MaintenanceMode` reads these variables via `Get-OneViewCredentials`
 
 <a name="manual-testing"></a>
+
 ### Manual Testing
 
 ```powershell
@@ -153,6 +167,7 @@ pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "https://cyberark-ccp:4
 ```
 
 <a name="setup-script"></a>
+
 ## Setup Script
 
 ```powershell
@@ -181,5 +196,3 @@ if (-not $ovUser -or -not $ovPass) {
     Write-Warning "`$env:ONEVIEW_USER`n`$env:ONEVIEW_PASSWORD"
 }
 ```
-
-

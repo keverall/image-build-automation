@@ -1,6 +1,7 @@
 # Configuration Files Reference
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Summary Table](#summary-table)
@@ -16,11 +17,13 @@
 - [email_distribution_lists.json](#email_distribution_listsjson)
 - [opsramp_config.json](#opsramp_configjson)
 - [Environment Variable Cheat Sheet](#environment-variable-cheat-sheet)
+
 This directory holds all configuration for the automation pipeline. **Secrets are never stored here** — credentials are supplied via environment variables or CyberArk at runtime.
 
 > **Test/mock fixtures only — never used by live commands.** Every file in `configs/` is a *mock/test fixture*. **Live (terminal and pipeline) commands do NOT read these files.** Live commands are driven entirely by **command parameters** and a small set of documented environment variables (`ONEVIEW_USER`, `ONEVIEW_PASSWORD`, `ONEVIEW_MODULE_NAME`, `MAINTENANCE_HOST`, `HPE_DOWNLOAD_USER`, `SMTP_USER`, `OPSRAMP_*`). In particular, `oneview_config.json`'s `appliance`, `module_name`, and `credentials` are example values used only by unit tests and mocks — the live HPEOneView module is resolved automatically from the appliance's version (or the `ONEVIEW_MODULE_NAME` override) and is **never** taken from this file.
 
 <a name="summary-table"></a>
+
 ## Summary Table
 
 | File | Purpose | Required | Secret? |
@@ -44,6 +47,7 @@ This directory holds all configuration for the automation pipeline. **Secrets ar
 ---
 
 <a name="clusters_cataloguejson"></a>
+
 ## clusters_catalogue.json
 
 Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneView scopes/node IDs and maintenance schedules.
@@ -87,6 +91,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneV
 ---
 
 <a name="servers_catalogueoneviewjson"></a>
+
 ## servers_catalogue.oneview.json
 
 OneView-centric server catalogue used for serial-number lookups.
@@ -109,6 +114,7 @@ OneView-centric server catalogue used for serial-number lookups.
 ---
 
 <a name="connection_hostsjson"></a>
+
 ## connection_hosts.json
 
 Maps each environment to its SCOM management server and OneView appliance.
@@ -133,6 +139,7 @@ Host resolution priority: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `con
 ---
 
 <a name="scom_configjson"></a>
+
 ## scom_config.json
 
 ```json
@@ -171,6 +178,7 @@ Host resolution priority: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `con
 ---
 
 <a name="oneview_configjson"></a>
+
 ## oneview_config.json
 
 ```json
@@ -194,6 +202,7 @@ Host resolution priority: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `con
 ---
 
 <a name="configmgr_configjson"></a>
+
 ## configmgr_config.json
 
 Example/mock data only. In real builds these values are passed as runtime parameters to `Start-PhysicalServerBuild` / `New-IsoBuild`: `-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-SiteServer`, `-BootImageName`, `-TaskSequenceName`, `-RepoBaseUrl`.
@@ -216,6 +225,7 @@ Example/mock data only. In real builds these values are passed as runtime parame
 ---
 
 <a name="hpe_firmware_drivers_nov2025json"></a>
+
 ## hpe_firmware_drivers_nov2025.json
 
 HPE Smart Update Tools (SUT) repository and component manifest.
@@ -250,6 +260,7 @@ HPE Smart Update Tools (SUT) repository and component manifest.
 ---
 
 <a name="windows_patchesjson"></a>
+
 ## windows_patches.json
 
 Security update set applied via DISM offline patching.
@@ -278,6 +289,7 @@ Security update set applied via DISM offline patching.
 ---
 
 <a name="request_typesjson"></a>
+
 ## request_types.json
 
 Authoritative map of automation request types to PowerShell handlers and CI stages. Consumed by the orchestrator (`Start-AutomationOrchestrator`) and CI.
@@ -314,6 +326,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
 ---
 
 <a name="email_distribution_listsjson"></a>
+
 ## email_distribution_lists.json
 
 ```json
@@ -341,6 +354,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
 ---
 
 <a name="opsramp_configjson"></a>
+
 ## opsramp_config.json
 
 ```json
@@ -366,6 +380,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
 ---
 
 <a name="environment-variable-cheat-sheet"></a>
+
 ## Environment Variable Cheat Sheet
 
 ```bash

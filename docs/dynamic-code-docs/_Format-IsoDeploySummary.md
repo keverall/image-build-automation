@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # _Format-IsoDeploySummary
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -16,13 +17,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Helper function to find the SMB address of a mapped drive. Useful when you have a file on a mapped drive (e.g. H:\windows.iso) and need to find the UNC path for iLO virtual media.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -30,22 +32,29 @@ Helper function to find the SMB address of a mapped drive. Useful when you have 
 | `-DriveLetter` | The drive letter to resolve (e.g. 'H', 'Z'). |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Get-SmbPathFromDriveLetter -DriveLetter 'H' # Returns: \\fileserver\isos
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 # Find the full UNC path for a file on H:\ $uncBase = Get-SmbPathFromDriveLetter -DriveLetter 'H' $fullUnc = Join-Path $uncBase 'windows.iso' # Returns: \\fileserver\isos\windows.iso
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Resolve a Windows drive letter to its UNC/SMB path (if it's a mapped network drive).

@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/prune-logs.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # prune-logs
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Scans generated/logs and generated/output directories for log files. Groups logs by type (based on filename pattern) and removes excess files beyond the configured maximum (default: 10 per type). Also removes legacy redundant log files (pester-log.txt, pester.log). Skips coverage report files and .gitkeep files.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -29,16 +31,21 @@ Scans generated/logs and generated/output directories for log files. Groups logs
 | `-MaxLogsToKeep` | Maximum number of log files to keep per type (default: 10) |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 pwsh -File scripts/prune-logs.ps1
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Prune old log files to maintain maximum count per type.

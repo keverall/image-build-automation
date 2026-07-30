@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/CoverageSummary.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # CoverageSummary
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Parses Cobertura XML coverage file and generates formatted table showing: - Per-file coverage statistics (rate, covered lines, missed lines) - Overall coverage summary - Output to both console and text file Default input: coverage-results.xml Default output: coverage-report.txt
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -30,16 +32,21 @@ Parses Cobertura XML coverage file and generates formatted table showing: - Per-
 | `-OutputFile` | Path for text report output (default: coverage-report.txt) |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 pwsh -File scripts/CoverageSummary.ps1
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Generate human-readable coverage summary from Cobertura XML.

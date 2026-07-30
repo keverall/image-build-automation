@@ -1,6 +1,7 @@
 # PowerShell Code Quality & Security Scanning
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -15,11 +16,13 @@
   - [PSScriptAnalyzer `Error` Findings](#psscriptanalyzer-error-findings)
   - [Gitleaks Secrets](#gitleaks-secrets)
 - [See Also](#see-also)
+
 Automated code quality, linting, and security scanning for PowerShell scripts in CI/CD pipelines.
 
 ---
 
 <a name="overview"></a>
+
 ## Overview
 
 Every build runs a **Code Quality & Security Scan** stage that executes:
@@ -34,9 +37,11 @@ All reports are archived as build artifacts.
 ---
 
 <a name="psscriptanalyzer-powershell-linter"></a>
+
 ## PSScriptAnalyzer (PowerShell Linter)
 
 <a name="command"></a>
+
 ### Command
 
 ```powershell
@@ -50,6 +55,7 @@ Invoke-ScriptAnalyzer -Path 'src\powershell\Automation' -Recurse -Severity Error
 ```
 
 <a name="key-rules"></a>
+
 ### Key Rules
 
 | Rule ID | Severity | Description |
@@ -63,6 +69,7 @@ Invoke-ScriptAnalyzer -Path 'src\powershell\Automation' -Recurse -Severity Error
 ---
 
 <a name="gitleaks-secret-detection"></a>
+
 ## Gitleaks (Secret Detection)
 
 ```powershell
@@ -74,6 +81,7 @@ gitleaks detect --source=. --report-format json --no-banner
 ---
 
 <a name="quality-gates"></a>
+
 ## Quality Gates
 
 | Metric | Threshold | Enforcement |
@@ -84,6 +92,7 @@ gitleaks detect --source=. --report-format json --no-banner
 ---
 
 <a name="local-development"></a>
+
 ## Local Development
 
 ```powershell
@@ -101,6 +110,7 @@ gitleaks detect --source=. --report-format json --no-banner
 ---
 
 <a name="quick-reference-common-quality-rules"></a>
+
 ## Quick Reference: Common Quality Rules
 
 ```powershell
@@ -128,9 +138,11 @@ Set-StrictMode -Version Latest
 ---
 
 <a name="handling-findings"></a>
+
 ## Handling Findings
 
 <a name="psscriptanalyzer-error-findings"></a>
+
 ### PSScriptAnalyzer `Error` Findings
 
 These are blocking - fix before merging:
@@ -139,6 +151,7 @@ These are blocking - fix before merging:
 - **`AvoidUsingInvokeExpression`**: Refactor; pass a `[ScriptBlock]` parameter instead of raw string.
 
 <a name="gitleaks-secrets"></a>
+
 ### Gitleaks Secrets
 
 **URGENT**: If gitleaks finds a committed secret:
@@ -151,8 +164,8 @@ These are blocking - fix before merging:
 ---
 
 <a name="see-also"></a>
+
 ## See Also
 
 - CI integration: [powershell_ci.md](powershell_ci.md#top)
 - Testing: [testing.md](testing.md#top)
-

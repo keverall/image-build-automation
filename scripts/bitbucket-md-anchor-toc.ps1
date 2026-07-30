@@ -52,26 +52,9 @@ $script:RepoRoot  = Split-Path -Parent $script:ScriptDir
 $script:LogDir    = Join-Path $script:RepoRoot "generated/logs/toc-anchor"
 $script:LogFile   = $null
 
-function Write-Status {
-    <#
-    .SYNOPSIS
-        Writes status.
-    #>
-
-    param([string]$Color, [string]$Message)
-    $cleanMessage = $Message -replace '\x1b\[[0-9;]*m', ''
-    Write-Output "${Color}${Message}${script:Reset}"
-    if ($script:LogFile) {
-        $logEntry = "[$(Get-Date -Format 'HH:mm:ss')] $cleanMessage"
-        Add-Content -Path $script:LogFile -Value $logEntry -Encoding UTF8
-    }
-}
-
-$script:Green  = "`e[0;32m"
-$script:Yellow = "`e[1;33m"
-$script:Red    = "`e[0;31m"
-$script:Cyan   = "`e[0;36m"
-$script:Reset  = "`e[0m"
+# Shared logging + canonical top-anchor placement come from Docs.Common.ps1 so this
+# script cannot drift from validate-docs-links.ps1 (the other half of `make fix-docs`).
+. (Join-Path $PSScriptRoot 'Docs.Common.ps1')
 
 function Add-BitbucketMdToc {
     <#
@@ -244,11 +227,9 @@ function Add-BitbucketMdToc {
             $finalContent.Add($line)
 
             if (-not $inserted -and $line -match '^#\s+') {
-                # Anchor the top of the document immediately below the H1, then the
-                # TOC follows. This keeps "#top" links working and the anchor above
-                # the TOC (where it belongs).
-                $finalContent.Add("")
-                $finalContent.Add('<a id="top"></a>')
+                # The TOC is inserted right after the H1. The "top" anchor itself is
+                # added by the shared Set-TopAnchor (Docs.Common.ps1) so its placement
+                # stays identical to validate-docs-links.ps1.
                 $finalContent.Add("")
                 foreach ($tocLine in $tocBlock) { $finalContent.Add($tocLine) }
                 $inserted = $true
@@ -281,7 +262,10 @@ function Add-BitbucketMdToc {
             $finalContent.RemoveAt($finalContent.Count - 1)
         }
 
-        return $finalContent.ToArray()
+        # Insert the canonical "top" anchor (single source of truth in Docs.Common.ps1)
+        # immediately below the H1, above the TOC.
+        $finalWithTop = Set-TopAnchor -Lines $finalContent.ToArray()
+        return $finalWithTop
     }
 
     # ------------------------------------------------------------------
@@ -395,21 +379,21 @@ function Add-BitbucketMdToc {
         $canonicalText = $canonicalLines -join "`n"
 
         if ($originalText -eq $canonicalText) {
-            Write-Status $script:Green "PASS: $filePath"
+            Write-Status $Green "PASS: $filePath"
             return $true
         }
 
         if ($DryRun) {
-            Write-Status $script:Red "FAIL: $filePath"
+            Write-Status $Red "FAIL: $filePath"
             $issues = Test-TocValidity $originalLines
             foreach ($issue in $issues) {
-                Write-Status $script:Yellow "  - $issue"
+                Write-Status $Yellow "  - $issue"
             }
             return $false
         }
 
         $canonicalText | Set-Content $filePath -Encoding utf8
-        Write-Status $script:Cyan "FIXED: $filePath"
+        Write-Status $Cyan "FIXED: $filePath"
         return $false
     }
 
@@ -423,11 +407,12 @@ function Add-BitbucketMdToc {
     }
     $logTimestamp   = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
     $script:LogFile = Join-Path $script:LogDir "toc-anchor-$logTimestamp.log"
+    Set-DocsStatusLog -Path $script:LogFile
     Add-Content -Path $script:LogFile -Value "=== TOC/Anchor Log Started: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ===" -Encoding UTF8
     Add-Content -Path $script:LogFile -Value "Repository root : $repoRoot" -Encoding UTF8
     Add-Content -Path $script:LogFile -Value "DryRun         : $DryRun" -Encoding UTF8
 
-    Write-Status $script:Cyan "Scanning repository for markdown files..."
+    Write-Status $Cyan "Scanning repository for markdown files..."
 
     if ($All) {
         $files = Get-ChildItem -Path $repoRoot -Filter *.md -Recurse -File -Force -ErrorAction SilentlyContinue |
@@ -442,11 +427,11 @@ function Add-BitbucketMdToc {
         $failCount = 0
 
         if ($files.Count -eq 0) {
-            Write-Status $script:Yellow "No .md files found in repository: $repoRoot"
+            Write-Status $Yellow "No .md files found in repository: $repoRoot"
             return
         }
 
-        Write-Status $script:Green "Found $($files.Count) markdown file(s) to process"
+        Write-Status $Green "Found $($files.Count) markdown file(s) to process"
 
         foreach ($file in $files) {
             $ok = Invoke-FileProcess -filePath $file.FullName -DryRun:$DryRun
@@ -454,15 +439,15 @@ function Add-BitbucketMdToc {
         }
 
         Write-Output ""
-        Write-Status $script:Cyan "=== Summary ==="
-        Write-Status $script:Green "Files  : $($files.Count)"
-        Write-Status $script:Green "Passed : $passCount"
+        Write-Status $Cyan "=== Summary ==="
+        Write-Status $Green "Files  : $($files.Count)"
+        Write-Status $Green "Passed : $passCount"
         if ($failCount -gt 0) {
-            Write-Status $script:Red "Failed : $failCount"
+            Write-Status $Red "Failed : $failCount"
         } else {
-            Write-Status $script:Green "Failed : $failCount"
+            Write-Status $Green "Failed : $failCount"
         }
-        Write-Status $script:Cyan "Log    : $($script:LogFile)"
+        Write-Status $Cyan "Log    : $($script:LogFile)"
     }
     elseif ($InputFileName) {
         $filePath = Join-Path $repoRoot $InputFileName
@@ -472,7 +457,7 @@ function Add-BitbucketMdToc {
         }
         $filePath = (Resolve-Path $filePath).Path
         $null = Invoke-FileProcess -filePath $filePath -DryRun:$DryRun
-        Write-Status $script:Cyan "Log: $($script:LogFile)"
+        Write-Status $Cyan "Log: $($script:LogFile)"
     }
     else {
         Write-Error "Specify -InputFileName <relative-path> or -All. Use -DryRun to validate without writing."

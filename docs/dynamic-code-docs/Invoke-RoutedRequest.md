@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Private/Router.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-RoutedRequest
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Routes a request to the appropriate handler function based on request type.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -30,16 +32,21 @@ Routes a request to the appropriate handler function based on request type.
 | `-Params` | Hashtable of additional parameters forwarded to the handler. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Invoke-RoutedRequest -RequestType 'build_iso' -Params @{ BaseIsoPath = 'C:\ISOs\base.iso' }
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Routes a request to the appropriate handler function based on request type.

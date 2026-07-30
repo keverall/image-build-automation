@@ -1,25 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Assert-OneViewModuleCompliance
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Returns Ok=$true when no other HPEOneView.*/HPOneView.* module is loaded and the intended $ModuleName matches the locked module (Resolve-PinnedOneViewModule). A non-compliant/loaded module holds cmdlets like Connect-OVMgmt, so importing the locked module alongside it is unsafe - Remove-OtherOneViewModules must run first.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -27,7 +29,9 @@ Returns Ok=$true when no other HPEOneView.*/HPOneView.* module is loaded and the
 | `-ModuleName` | The module the caller intends to import. Omit to just validate the session against the locked module. |
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Enforce that only the locked HPEOneView module is (or will be) used in this session.

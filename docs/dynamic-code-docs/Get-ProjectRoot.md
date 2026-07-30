@@ -1,25 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Private/PathResolver.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-ProjectRoot
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Walk up directories from the current location to find the project root (identified by the presence of kilo.json or Makefile).
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -27,7 +29,9 @@ Walk up directories from the current location to find the project root (identifi
 | `-StartPath` | Directory to start searching from. Defaults to $PSScriptRoot. |
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Walk up directories from the current location to find the project root

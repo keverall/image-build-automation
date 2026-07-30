@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Private/Logging.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Initialize-Logging
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Configures logging with specified log file path and level. By default creates timestamped log files in generated/logs/testing or generated/logs/production. When -CommandName is supplied the log is written to a dedicated per-command folder so every command's run history stays isolated (critical logs are never pruned early or lost in a shared, mixed folder): generated/logs/commands/<CommandName>/<LogName|CommandName>_<isotimestamp>_<level>.log -CommandName is optional: when omitted on the Get-Logger auto-init path (no -LogFile either), it is auto-derived from the PowerShell call stack as the innermost Verb-Noun command frame, so any command that logs through Get-Logger gets an isolated log automatically. All filenames carry an ISO-8601 UTC timestamp (e.g. 2026-07-22T15-03-27Z), never a unix epoch.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -32,16 +34,21 @@ Configures logging with specified log file path and level. By default creates ti
 | `-Level` | Minimum log level: Verbose, Debug, Information, Warning, or Error (default: Information) |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Initialize-Logging -LogFile 'automation.log' -Level 'Debug' Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-ManagementHost-va-ov-01'
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Initialize centralized logging system.

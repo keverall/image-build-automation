@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-GitLabMaintenanceTrigger
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -16,13 +17,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Router handler that initiates GitLab CI/CD pipeline for maintenance operations. Wraps Send-GitLabMaintenanceRequest to enable, disable, or validate maintenance mode via GitLab pipelines instead of direct execution.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -43,22 +45,29 @@ Router handler that initiates GitLab CI/CD pipeline for maintenance operations. 
 | `-JobToken` | GitLab job token for API access (from GITLAB_JOB_TOKEN) |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'enable' -Start '2024-01-01T00:00:00Z' -End '2024-01-01T06:00:00Z'
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'disable' -DryRun
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Trigger GitLab CI/CD pipeline for cluster maintenance.

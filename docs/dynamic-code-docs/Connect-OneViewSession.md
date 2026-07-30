@@ -1,25 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Connect-OneViewSession
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Shared connection helper used by all OneView automation commands. Resolves the locked HPEOneView module (ONEVIEW_MODULE_NAME env, or the appliance's OneView version), removes any other loaded HPEOneView.* modules so only the locked library's cmdlets (Connect-OVMgmt, etc.) are in scope, imports it, then connects.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -31,7 +33,9 @@ Shared connection helper used by all OneView automation commands. Resolves the l
 | `-Port` | HTTPS port for the appliance version probe (default 443). |
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Establish or reuse an HPE OneView management session using the locked module.
