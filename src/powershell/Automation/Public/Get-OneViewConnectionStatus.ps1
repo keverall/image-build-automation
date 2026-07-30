@@ -188,8 +188,11 @@ function Get-OneViewConnectionStatus {
                 $result.ModuleVersion = "$($ovMod.Version)"
                 $result.ModuleSource  = 'LoadedSession'
             } else {
-                $result.ModuleName   = Resolve-PinnedOneViewModule -Appliance $OneViewHost
-                $result.ModuleSource = 'Resolved (library not yet imported in this session)'
+                # Read-only status check: do NOT scan/import HPEOneView.* modules here
+                # (that is done only by Connect-OneViewSession). Just report the intended
+                # library from the env override / default.
+                $result.ModuleName   = Get-ExpectedOneViewModuleName
+                $result.ModuleSource = 'Expected (library not yet imported in this session)'
             }
         } catch {
             $result.Reachable = $false
@@ -337,7 +340,7 @@ function _Test-OneViewVersionCompliance {
         $Result.VersionCompliant = $null
         return
     }
-    $lockedModule = Resolve-PinnedOneViewModule -Appliance $Appliance
+    $lockedModule = Get-ExpectedOneViewModuleName
     $reqMajor = Get-OneViewModuleMajorVersion -ModuleName $lockedModule
     if ($reqMajor -gt 0 -and $major -eq $reqMajor) {
         $Result.VersionCompliant = $true
