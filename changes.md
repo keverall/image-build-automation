@@ -10,6 +10,7 @@
   - [PowerShell](#powershell)
 - [Changes](#changes)
   - [2026-07-30 - OneView module pinning reworked to "latest installed on this server"](#2026-07-30---oneview-module-pinning-reworked-to-latest-installed-on-this-server)
+  - [2026-07-30 - Documentation tooling aligned between make docs and make fix-docs](#2026-07-30---documentation-tooling-aligned-between-make-docs-and-make-fix-docs)
 
 Standard, dated changelog for the `image-build-automation` repository. Major,
 user-facing changes are recorded here with dates. The **Standards** section
@@ -126,3 +127,19 @@ when a request would go against best practice.
   scans in `Resolve-PinnedOneViewModule`, `Connect-OneViewSession`, and
   `Get-OneViewModuleStatus`. All OneView automation tests now pass (99/99) on
   Linux without segfaulting.
+
+<a name="2026-07-30---documentation-tooling-aligned-between-make-docs-and-make-fix-docs"></a>
+
+### 2026-07-30 - Documentation tooling aligned between make docs and make fix-docs
+
+- `make docs` and `make fix-docs` now share a single canonicalization module
+  (`scripts/Docs.Common.ps1`) for logging and the `<a id="top"></a>` anchor, so the
+  two targets can no longer drift apart; `make docs` also runs markdown link
+  validation/fixing.
+- Fixed markdown anchor/TOC spacing for MD022/MD012 compliance: each anchor now has
+  a single blank line before its heading, and headings are separated from preceding
+  lists by a blank line.
+- The `<a id="top"></a>` anchor is now placed immediately below the first H1 and
+  above the Table of Contents, where `#top` fragment links expect it.
+- Collapsed multiple consecutive blank lines into a single blank line across all
+  generated documentation.
