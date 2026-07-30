@@ -115,6 +115,178 @@ function Set-TopAnchorCore {
     return $collapsed
 }
 
+# ------------------------------------------------------------------
+# Canonical markdown TOC + anchor generation (shared source of truth)
+#
+# Used by both `make docs` (via bitbucket-md-anchor-toc.ps1) and the
+# Generate-PSDocs.ps1 dynamic-code-docs generator so every markdown file in the
+# repo - hand-written docs AND auto-generated API reference - ends up in the
+# exact same canonical form (Bitbucket/GitStash anchors + TOC + "top" anchor).
+# Keeping it here prevents the two Makefile targets from drifting apart.
+# ------------------------------------------------------------------
+
+function Get-Anchor($title, [ref]$anchorsSeen) {
+    $anchor = $title.ToLower()
+    $anchor = $anchor -replace '&', 'and'
+    $anchor = $anchor -replace '[^a-z0-9\s\-_]', ''
+    $anchor = $anchor -replace '\s+', '-'
+
+    if ($anchorsSeen.Value.ContainsKey($anchor)) {
+        $anchorsSeen.Value[$anchor]++
+        $anchor = "$anchor-$($anchorsSeen.Value[$anchor])"
+    } else {
+        $anchorsSeen.Value[$anchor] = 0
+    }
+    return $anchor
+}
+
+function Remove-ExistingToc([string[]]$lines) {
+    $result  = [System.Collections.Generic.List[string]]::new()
+    $skipToc = $false
+
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($skipToc) {
+            $isBlank    = $lines[$i] -match '^\s*$'
+            $isTocEntry = $lines[$i] -match '^\s*- \[[^\]]+\]\(#[^)]+\)$'
+            if ($isBlank -or $isTocEntry) {
+                continue
+            }
+            $skipToc = $false
+            $result.Add($lines[$i])
+            continue
+        }
+        if ($lines[$i] -match '^## Table of Contents$') {
+            $skipToc = $true
+            continue
+        }
+        $result.Add($lines[$i])
+    }
+    return $result.ToArray()
+}
+
+function Remove-ExistingAnchors([string[]]$lines) {
+    $result = [System.Collections.Generic.List[string]]::new()
+
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^<a\s+id="top"\s*></a>\s*$') {
+            continue
+        }
+
+        $isAnchorLine = $lines[$i] -match '^<a name="[^"]*"></a>$'
+        if ($isAnchorLine) {
+            $headingBelow = $false
+            $limit = [Math]::Min($i + 2, $lines.Count - 1)
+            for ($j = $i + 1; $j -le $limit; $j++) {
+                if ($lines[$j] -match '^#{2,3}\s+') { $headingBelow = $true; break }
+            }
+            if ($headingBelow) {
+                continue
+            }
+        }
+        $result.Add($lines[$i])
+    }
+    return $result.ToArray()
+}
+
+function Build-CanonicalContent([string[]]$lines) {
+    $cleaned = Remove-ExistingToc $lines
+    $cleaned = Remove-ExistingAnchors $cleaned
+
+    $updatedContent = [System.Collections.Generic.List[string]]::new()
+    $toc            = [System.Collections.Generic.List[string]]::new()
+    $anchorsSeen    = @{}
+    $needBlankBeforeNext = $false
+
+    function Ensure-BlankBefore([System.Collections.Generic.List[string]]$list) {
+        if ($list.Count -eq 0) { return }
+        if ($list[$list.Count - 1] -eq '') { return }
+        $list.Add('')
+    }
+
+    foreach ($line in $cleaned) {
+        if ($needBlankBeforeNext) {
+            if ($line -ne '') {
+                $updatedContent.Add('')
+            }
+            $needBlankBeforeNext = $false
+        }
+
+        if ($line -match '^(#{1,6})\s+(.+)$') {
+            $level = $matches[1].Length
+            $title = $matches[2]
+
+            if ($level -eq 1) {
+                $updatedContent.Add($line)
+                continue
+            }
+
+            Ensure-BlankBefore $updatedContent
+
+            if ($level -le 3) {
+                $anchor = Get-Anchor $title ([ref]$anchorsSeen)
+                $indent = '  ' * ($level - 2)
+                $toc.Add("$indent- [$title](#$anchor)")
+
+                $updatedContent.Add("<a name=""$anchor""></a>")
+                $updatedContent.Add('')
+            }
+
+            $updatedContent.Add($line)
+            $needBlankBeforeNext = $true
+        } else {
+            if ($line -eq '' -and $updatedContent.Count -gt 0 -and $updatedContent[$updatedContent.Count - 1] -eq '') {
+                continue
+            }
+            $updatedContent.Add($line)
+        }
+    }
+
+    $tocBlock = [System.Collections.Generic.List[string]]::new()
+    $tocBlock.Add("## Table of Contents")
+    $tocBlock.Add("")
+    foreach ($entry in $toc) { $tocBlock.Add($entry) }
+    $tocBlock.Add("")
+
+    $finalContent = [System.Collections.Generic.List[string]]::new()
+    $inserted     = $false
+
+    foreach ($line in $updatedContent) {
+        $finalContent.Add($line)
+
+        if (-not $inserted -and $line -match '^#\s+') {
+            $finalContent.Add("")
+            foreach ($tocLine in $tocBlock) { $finalContent.Add($tocLine) }
+            $inserted = $true
+        }
+    }
+
+    if (-not $inserted) {
+        $prepended = [System.Collections.Generic.List[string]]::new()
+        foreach ($tocLine in $tocBlock) { $prepended.Add($tocLine) }
+        foreach ($line in $finalContent) { $prepended.Add($line) }
+        $finalContent = $prepended
+    }
+
+    $collapsed = [System.Collections.Generic.List[string]]::new()
+    foreach ($l in $finalContent) {
+        if ($l -eq '' -and $collapsed.Count -gt 0 -and $collapsed[$collapsed.Count - 1] -eq '') {
+            continue
+        }
+        $collapsed.Add($l)
+    }
+    $finalContent = $collapsed
+
+    while ($finalContent.Count -gt 0 -and $finalContent[0] -eq '') {
+        $finalContent.RemoveAt(0)
+    }
+    while ($finalContent.Count -gt 0 -and $finalContent[$finalContent.Count - 1] -eq '') {
+        $finalContent.RemoveAt($finalContent.Count - 1)
+    }
+
+    $finalWithTop = Set-TopAnchor -Lines $finalContent.ToArray()
+    return $finalWithTop
+}
+
 # NOTE: This file is dot-sourced (not imported as a module), matching the repo's
 # *.Common.ps1 convention, so functions and colour variables are exposed directly
 # to the calling script's scope.
