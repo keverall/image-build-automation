@@ -845,19 +845,19 @@ Update-Firmware -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
 ### Patch Windows ISO with security updates
 
 ```powershell
-Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01
+Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01
 ```
 
 #### Patch with custom method
 
 ```powershell
-Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01 -Method powershell
+Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01 -Method powershell
 ```
 
 #### Dry run
 
 ```powershell
-Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01 -DryRun
+Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01 -DryRun
 ```
 
 **Parameters:**
@@ -875,7 +875,7 @@ Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01 -DryR
 
 ```powershell
 # Target by serial number (resolved via OneView)
-Update-WindowsSecurity -BaseIsoPath 'C:\isos\WinSrv2025.iso' -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
+Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
 ```
 
 **Returns:** `[hashtable]` with `Success`, `PatchedIso`, and details.

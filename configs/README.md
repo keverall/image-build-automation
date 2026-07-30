@@ -4,6 +4,8 @@
 
 This directory holds all configuration for the automation pipeline. **Secrets are never stored here** — credentials are supplied via environment variables or CyberArk at runtime.
 
+> **Test/mock fixtures only — never used by live commands.** Every file in `configs/` is a *mock/test fixture*. **Live (terminal and pipeline) commands do NOT read these files.** Live commands are driven entirely by **command parameters** and a small set of documented environment variables (`ONEVIEW_USER`, `ONEVIEW_PASSWORD`, `ONEVIEW_MODULE_NAME`, `MAINTENANCE_HOST`, `HPE_DOWNLOAD_USER`, `SMTP_USER`, `OPSRAMP_*`). In particular, `oneview_config.json`'s `appliance`, `module_name`, and `credentials` are example values used only by unit tests and mocks — the live HPEOneView module is resolved automatically from the appliance's version (or the `ONEVIEW_MODULE_NAME` override) and is **never** taken from this file.
+
 ## Summary Table
 
 | File | Purpose | Required | Secret? |
@@ -261,7 +263,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
   "request_types": {
     "build_iso":              { "powershell_handler": "New-IsoBuild",              "ci_stage": "all" },
     "update_firmware":        { "powershell_handler": "Update-Firmware",          "ci_stage": "firmware" },
-    "patch_windows":          { "powershell_handler": "Update-WindowsSecurity",   "ci_stage": "windows" },
+    "patch_windows":          { "powershell_handler": "Invoke-WindowsSecurityUpdate", "ci_stage": "windows" },
     "deploy":                 { "powershell_handler": "Invoke-IsoDeploy",          "ci_stage": "deploy" },
     "monitor":                { "powershell_handler": "Start-InstallMonitor",     "ci_stage": null },
     "maintenance_enable":     { "powershell_handler": "Set-MaintenanceMode",      "ci_stage": null },
@@ -283,7 +285,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
 }
 ```
 
-> The Windows-security handler is `Update-WindowsSecurity` (not `Invoke-WindowsSecurityUpdate`).
+> The Windows-security handler is `Invoke-WindowsSecurityUpdate` — the exported cmdlet. (The source file is `Update-WindowsSecurity.ps1`.)
 
 ---
 

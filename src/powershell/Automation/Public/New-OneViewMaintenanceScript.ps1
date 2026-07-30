@@ -38,38 +38,57 @@ function New-OneViewMaintenanceScript {
     )
     
     if (-not $ModuleName) {
-        Write-Warning "ModuleName not specified. Check oneview_config.json module_name setting."
-        $ModuleName = $env:ONEVIEW_MODULE_NAME
+        # 1. Explicit env override wins.
+        $envVal = $env:ONEVIEW_MODULE_NAME
+        if ($envVal -and $envVal -match '^(HPEOneView|HPOneView)\.\d+$') {
+            if (Get-Module -ListAvailable -Name $envVal -ErrorAction SilentlyContinue) {
+                $ModuleName = $envVal
+            } else {
+                Write-Warning "ONEVIEW_MODULE_NAME '$envVal' is not installed; detecting from appliance instead."
+            }
+        } elseif ($envVal) {
+            Write-Warning "ONEVIEW_MODULE_NAME '$envVal' is not a valid OneView module name; ignoring."
+        }
     }
     if (-not $ModuleName) {
-        $defaultModule = $null
-        $installedModules = Get-Module -ListAvailable HPEOneView.* 2>$null | Select-Object -ExpandProperty Name
-        if ($installedModules) {
-            $sorted = $installedModules | Sort-Object { if ($_ -match 'HPEOneView\.(\d+)') { [int]$matches[1] } else { 0 } } -Descending
-            $defaultModule = $sorted[0]
-            Write-Verbose "Detected OneView module: $defaultModule"
-        }
-        if (-not $defaultModule) {
-            $installedLegacy = Get-Module -ListAvailable HPOneView.* 2>$null | Select-Object -ExpandProperty Name
-            if ($installedLegacy) {
-                $defaultModule = $installedLegacy[0]
-                Write-Verbose "Detected legacy OneView module: $defaultModule"
+        # 2. Probe the appliance and map its major version to the matching library.
+        try {
+            $ver = Invoke-RestMethod -Uri "https://${Appliance}/rest/version" -Method Get -SkipCertificateCheck -TimeoutSec 30 -ErrorAction Stop
+            if ($ver -and $null -ne $ver.currentVersion) {
+                [long]$n = 0
+                if ([long]::TryParse("$($ver.currentVersion)", [ref]$n)) {
+                    [int]$major = if ($n -ge 1000) { $n / 1000 } elseif ($n -ge 100) { $n / 100 } else { $n }
+                    $candidate = "HPEOneView.$($major)000"
+                    if (Get-Module -ListAvailable -Name $candidate -ErrorAction SilentlyContinue) {
+                        $ModuleName = $candidate
+                    } else {
+                        Write-Warning "Appliance reports OneView $major, but module '$candidate' is not installed."
+                    }
+                }
             }
+        } catch {
+            Write-Verbose "Appliance version probe failed: $($_.Exception.Message)"
         }
-        $ModuleName = $defaultModule ?? 'HPEOneView.1000'
     }
-
-    # Policy: only HPEOneView.1000 is supported. Warn loudly when anything else
-    # slips through auto-detection or explicit config so stray installs
-    # (e.g. HPEOneView.860) are caught before the generated script runs.
-    if ($ModuleName -ne 'HPEOneView.1000') {
-        Write-Warning "OneView module '$ModuleName' is not the supported 'HPEOneView.1000'. Uninstall stray HPEOneView.* versions and update oneview_config.json / ONEVIEW_MODULE_NAME."
+    if (-not $ModuleName) {
+        # 3. Fallback: highest installed module (warned).
+        $installedModules = @(Get-Module -ListAvailable HPEOneView.* -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+        if (-not $installedModules) {
+            $installedModules = @(Get-Module -ListAvailable HPOneView.* -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+        }
+        if ($installedModules) {
+            $ModuleName = $installedModules | Sort-Object { if ($_ -match 'HPEOneView\.(\d+)') { [int]$matches[1] } elseif ($_ -match 'HPOneView\.(\d+)') { [int]$matches[1] } else { 0 } } -Descending | Select-Object -First 1
+            Write-Warning "Could not pin OneView module from appliance/env; using highest installed '$ModuleName'. Verify it matches the appliance version."
+        } else {
+            $ModuleName = 'HPEOneView.1000'
+        }
     }
     
     $asyncParam = if ($Async) { '-Async' } else { '' }
     
     if ($Operation -eq 'enable') {
         return @"
+Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ModuleName' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ModuleName -ErrorAction Stop
 Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop
@@ -84,6 +103,7 @@ foreach (`$s in `$servers) {
     }
     else {
         return @"
+Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ModuleName' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ModuleName -ErrorAction Stop
 Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop

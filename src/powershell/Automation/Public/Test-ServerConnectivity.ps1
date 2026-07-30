@@ -415,9 +415,9 @@ function Test-ServerConnectivity {
             $authResult.Error = "Skipped - credentials not supplied"
         }
     } else {
-        $moduleName = $modeCfg.Get_Item('module_name') ?? 'HPEOneView.1000'
+        $moduleName = Resolve-PinnedOneViewModule -Appliance $resolvedHost
 
-        $connResult = Connect-OneViewSession -Appliance $resolvedHost -Credential $Credential -ModuleName $moduleName
+        $connResult = Connect-OneViewSession -Appliance $resolvedHost -Credential $Credential
         $authResult.ModuleLoaded = $true
         $authResult.Connected = $connResult.Connected
         if ($connResult.Error) {
