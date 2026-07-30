@@ -2816,7 +2816,7 @@ class OneViewClient {
     )
 
     [string] _DetectRecommendedModule([string]$Appliance) {
-        $resolved = Resolve-PinnedOneViewModule -Appliance $Appliance
+        $resolved = Resolve-PinnedOneViewModule
         if ($resolved) { return $resolved }
         return 'HPEOneView.1000'
     }

@@ -400,10 +400,13 @@ function Test-ServerConnectivity {
     # PHASE 2: Authentication Connect (OneView)
     # ══════════════════════════════════════════════════════════════════════════
     $authResult = @{
-        Connected    = $false
-        Disconnected = $false
-        ModuleLoaded = $false
-        Error        = $null
+        Connected        = $false
+        Disconnected     = $false
+        ModuleLoaded     = $false
+        ModuleName       = $null
+        ModuleVersion    = $null
+        ApplianceVersion = $null
+        Error            = $null
     }
 
     if (-not $pingResult.TcpPortOpen) {
@@ -415,10 +418,13 @@ function Test-ServerConnectivity {
             $authResult.Error = "Skipped - credentials not supplied"
         }
     } else {
-        $moduleName = Resolve-PinnedOneViewModule -Appliance $resolvedHost
+        $moduleName = Resolve-PinnedOneViewModule
 
         $connResult = Connect-OneViewSession -Appliance $resolvedHost -Credential $Credential
-        $authResult.ModuleLoaded = $true
+        $authResult.ModuleLoaded     = $true
+        $authResult.ModuleName       = $connResult.ModuleName
+        $authResult.ModuleVersion    = $connResult.ModuleVersion
+        $authResult.ApplianceVersion = $connResult.ApplianceVersion
         $authResult.Connected = $connResult.Connected
         if ($connResult.Error) {
             $authResult.Error = $connResult.Error
@@ -499,6 +505,13 @@ function _Format-ConnectivityResult {
     $authColor = if ($ac.Connected) { 'Green' } elseif ($ac.Error -match 'Skipped') { 'Yellow' } else { 'Red' }
     Write-Host "    Module:    $(if ($ac.ModuleLoaded) { 'Loaded' } else { 'Not loaded' })" `
         -ForegroundColor $(if ($ac.ModuleLoaded) { 'Green' } else { 'Red' })
+    if ($ac.ModuleName) {
+        $modVer = if ($ac.ModuleVersion) { "  v$($ac.ModuleVersion)" } else { '' }
+        Write-Host "    OneView PS module: $($ac.ModuleName)$modVer (module used for all OneView calls on this server)"
+    }
+    if ($null -ne $ac.ApplianceVersion) {
+        Write-Host "    Appliance OneView version: $($ac.ApplianceVersion)"
+    }
     Write-Host "    Connected: $(if ($ac.Connected) { 'Yes (session active)' } else { 'No' })" -ForegroundColor $authColor
     if ($ac.Error) {
         Write-Host "    Error:     $($ac.Error)" -ForegroundColor Red
