@@ -237,7 +237,7 @@ function Format-FunctionDoc {
         [pscustomobject]$Doc
     )
 
-    $ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm') + ' UTC'
+    $ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
 
     $md = @()
 $md += '---'

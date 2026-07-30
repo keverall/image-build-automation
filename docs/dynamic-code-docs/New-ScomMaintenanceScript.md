@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-ScomMaintenanceScript.ps1
-generated: 2026-07-30 17:06 UTC
+generated: 2026-07-30
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
