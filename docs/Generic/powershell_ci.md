@@ -181,6 +181,7 @@ foreach ($inst in $instances) {
 
 `POST /rest/v1/maintenancewindows` is fully implemented and uses proper iLO auth (ISO session login + `X-Redfish-Session` header). This will create a maintenance window on a real iLO 4/5/6 if IPs and credentials are correct.
 
+<a name="invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place"></a>
 ### `Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place
 
 The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but the actual virtual media mount step is a **commented scaffold**:

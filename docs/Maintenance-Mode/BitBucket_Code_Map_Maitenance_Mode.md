@@ -57,7 +57,6 @@
   - [Test Scripts](#test-scripts)
 - [14 Quick Navigation](#14-quick-navigation)
 - [15 Documentation References](#15-documentation-references)
-
 **Always start with Test-ServerConnectivity** - it verifies connectivity before running maintenance operations.
 
 This document maps every code location executed by `Set-MaintenanceMode` and `Test-ServerConnectivity`, organized in the **workflow order** you should follow:

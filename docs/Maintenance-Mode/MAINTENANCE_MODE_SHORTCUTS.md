@@ -3,29 +3,28 @@
 <a id="top"></a>
 ## Table of Contents
 
-- [1. Test-ServerConnectivity - Test Connectivity First](#1-test-serverconnectivity---test-connectivity-first)
-  - [Quick Start](#quick-start)
-  - [Two-Phase Test](#two-phase-test)
-  - [Parameters](#parameters)
-  - [Examples](#examples)
-  - [Exit Codes](#exit-codes)
-  - [Change Freeze Safety](#change-freeze-safety)
-  - [Troubleshooting](#troubleshooting)
-  - [Configuration Files](#configuration-files)
-- [2. Set-MaintenanceMode - Maintenance Operations](#2-set-maintenancemode---maintenance-operations)
-  - [Quick Start](#quick-start-1)
-  - [Actions](#actions)
-  - [Target Identification](#target-identification)
-  - [Time Formats](#time-formats)
-  - [Parameters](#parameters-1)
-  - [Output Formats](#output-formats)
-  - [Host Resolution Priority](#host-resolution-priority)
-  - [Credential Configuration](#credential-configuration)
-  - [Dry Run Mode](#dry-run-mode)
-  - [Troubleshooting](#troubleshooting-1)
-  - [Best Practices](#best-practices)
+- [Quick Start](#quick-start)
+- [Two-Phase Test](#two-phase-test)
+  - [Phase 1: Network Ping](#phase-1-network-ping)
+  - [Phase 2: Authentication Connect](#phase-2-authentication-connect)
+- [Parameters](#parameters)
+- [Examples](#examples)
+- [Exit Codes](#exit-codes)
+- [Change Freeze Safety](#change-freeze-safety)
+- [Troubleshooting](#troubleshooting)
+- [Configuration Files](#configuration-files)
+- [Quick Start](#quick-start-1)
+- [Actions](#actions)
+- [Target Identification](#target-identification)
+- [Time Formats](#time-formats)
+- [Parameters](#parameters-1)
+- [Output Formats](#output-formats)
+- [Host Resolution Priority](#host-resolution-priority)
+- [Credential Configuration](#credential-configuration)
+- [Dry Run Mode](#dry-run-mode)
+- [Troubleshooting](#troubleshooting-1)
+- [Best Practices](#best-practices)
 - [Related](#related)
-
 > Complete guide for maintenance mode commands. **Always test connectivity first** before running maintenance operations.
 > Setup: run `make setup` (registers the Automation module) or `pwsh scripts/Setup-Profile.ps1` to add the module import to your PowerShell profile.
 
@@ -49,10 +48,12 @@ Test-ServerConnectivity -Environment Test -JsonConfig
 <a name="two-phase-test"></a>
 ## Two-Phase Test
 
+<a name="phase-1-network-ping"></a>
 ### Phase 1: Network Ping
 - **DNS Resolution**: Verifies hostname resolves correctly
 - **TCP Port Probe**: Checks HTTPS connectivity (port 443 by default)
 
+<a name="phase-2-authentication-connect"></a>
 ### Phase 2: Authentication Connect
 - **Module Check**: Verifies the HPEOneView PowerShell module is installed
 - **Authentication Test**: Full login via `Connect-OVMgmt`

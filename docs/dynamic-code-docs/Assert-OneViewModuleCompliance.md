@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-07-28 15:30 UTC
+generated: 2026-07-30 14:48 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,32 +17,30 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Returns a hashtable with Ok=$true when no other HPEOneView.*/HPOneView.* module is loaded. When a non-compliant module is already loaded, returns Ok=$false with a remediation message (the offending module holds cmdlet names like Connect-OVMgmt, so importing HPEOneView.1000 alongside it is unsafe). Also warns (non-fatal) when other versions are merely installed on PSModulePath so operators can uninstall them.
+Returns Ok=$true when no other HPEOneView.*/HPOneView.* module is loaded and the intended $ModuleName matches the locked module (Resolve-PinnedOneViewModule). A non-compliant/loaded module holds cmdlets like Connect-OVMgmt, so importing the locked module alongside it is unsafe - Remove-OtherOneViewModules must run first.
 
 <a name="parameters"></a>
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ModuleName` | The module the caller intends to import. Anything other than HPEOneView.1000 fails the check. |
+| `-ModuleName` | The module the caller intends to import. Omit to just validate the session against the locked module. |
 
 <a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Enforce that only HPEOneView.1000 is (or will be) used in this session.
+        Enforce that only the locked HPEOneView module is (or will be) used in this session.
 
     .DESCRIPTION
-        Returns a hashtable with Ok=$true when no other HPEOneView.*/HPOneView.*
-        module is loaded. When a non-compliant module is already loaded, returns
-        Ok=$false with a remediation message (the offending module holds cmdlet
-        names like Connect-OVMgmt, so importing HPEOneView.1000 alongside it is
-        unsafe). Also warns (non-fatal) when other versions are merely installed
-        on PSModulePath so operators can uninstall them.
+        Returns Ok=$true when no other HPEOneView.*/HPOneView.* module is loaded and the
+        intended $ModuleName matches the locked module (Resolve-PinnedOneViewModule). A
+        non-compliant/loaded module holds cmdlets like Connect-OVMgmt, so importing the
+        locked module alongside it is unsafe - Remove-OtherOneViewModules must run first.
 
     .PARAMETER ModuleName
-        The module the caller intends to import. Anything other than
-        HPEOneView.1000 fails the check.
+        The module the caller intends to import. Omit to just validate the session against
+        the locked module.
 
     .OUTPUTS
         [hashtable] Ok, Error.

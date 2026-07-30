@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-07-28 15:30 UTC
+generated: 2026-07-30 14:48 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,7 +28,6 @@ Resolution order: 0. Existing connection ALWAYS wins: - If any OneView session i
 | `-Credential` | PSCredential for authentication. Preferred, non-interactive entry point. |
 | `-OneViewUser` | OneView username (used with -OneViewPassword when -Credential is absent). |
 | `-OneViewPassword` | OneView password (used with -OneViewUser when -Credential is absent). |
-| `-ModuleName` | HPEOneView module name (default: HPEOneView.1000). |
 
 <a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
@@ -75,9 +74,6 @@ Resolution order: 0. Existing connection ALWAYS wins: - If any OneView session i
 
     .PARAMETER OneViewPassword
         OneView password (used with -OneViewUser when -Credential is absent).
-
-    .PARAMETER ModuleName
-        HPEOneView module name (default: HPEOneView.1000).
 
     .OUTPUTS
         [hashtable] Success, OneViewHost, SessionToken, ReusedSession, Message, Error.
