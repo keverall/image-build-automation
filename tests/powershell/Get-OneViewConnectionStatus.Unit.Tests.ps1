@@ -117,20 +117,19 @@ Describe 'Get-OneViewConnectionStatus - version guard (HPEOneView.1000 / OneView
         $r.VersionWarning   | Should -Be $null
     }
 
-    It 'Fails loudly (warns) on a non-compliant version (integer 8200 = 8.20)' {
+    It 'Does NOT warn when the module (major 10) is newer than the appliance (8200 = 8.20) - backward compatible' {
         InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = 8200 } }
         $r = Get-OneViewConnectionStatus -OneViewHost 'va-oneviewt-01' -Credential $Script:TestCred -WarningAction SilentlyContinue
         $r.Version          | Should -Be 8200
-        $r.VersionCompliant | Should -Be $false
-        $r.VersionWarning   | Should -Not -Be $null
-        $r.VersionWarning   | Should -Match 'HPEOneView\.1000'
+        $r.VersionCompliant | Should -Be $true
+        $r.VersionWarning   | Should -Be $null
     }
 
-    It 'Fails loudly (warns) on a non-compliant dotted version (string "8.20")' {
+    It 'Does NOT warn on a dotted 8.20 appliance version with HPEOneView.1000 (backward compatible)' {
         InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = '8.20' } }
         $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -WarningAction SilentlyContinue
-        $r.VersionCompliant | Should -Be $false
-        $r.VersionWarning   | Should -Not -Be $null
+        $r.VersionCompliant | Should -Be $true
+        $r.VersionWarning   | Should -Be $null
     }
 }
 

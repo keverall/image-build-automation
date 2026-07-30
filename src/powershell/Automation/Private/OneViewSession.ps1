@@ -21,51 +21,12 @@ $script:ActiveOneViewSession = $null
 
 # The HPE OneView PowerShell library locked for this automation. Resolved at
 # runtime by Resolve-PinnedOneViewModule(): ONEVIEW_MODULE_NAME env override, else the
-# appliance's actual OneView major version (detected via /rest/version) mapped to the
-# matching HPEOneView.<major>000 library (OneView 10.x -> HPEOneView.1000), else default.
-# ALL OneView calls (especially destructive ones) use exactly this module and no other
-# HPEOneView.* / HPOneView.* version, even when stray versions are installed on the host.
+# LATEST HPEOneView.* module installed on the server running this code (the newest module
+# is backward-compatible with older appliances, so this is the safe default), else default
+# HPEOneView.1000. ALL OneView calls (especially destructive ones) use exactly this module
+# and no other HPEOneView.* / HPOneView.* version, even when stray versions are installed.
 $script:REQUIRED_ONEVIEW_MODULE = 'HPEOneView.1000'
 $script:ActiveOneViewModuleName  = $null
-
-function Get-OneViewApplianceMajorVersion {
-    <#
-    .SYNOPSIS
-        Read the appliance's OneView major version from /rest/version (no auth).
-    #>
-    [CmdletBinding()]
-    [OutputType([int])]
-    param(
-        [Parameter(Mandatory)][string] $Appliance,
-        [int] $Port = 443,
-        [bool] $SkipCertificateCheck = $true,
-        [int] $TimeoutSec = 30
-    )
-    try {
-        $ver = Invoke-RestMethod -Uri "https://${Appliance}:${Port}/rest/version" -Method Get `
-            -SkipCertificateCheck:$SkipCertificateCheck -TimeoutSec $TimeoutSec -ErrorAction Stop
-        if ($null -ne $ver -and $null -ne $ver.currentVersion) {
-            $s = "$($ver.currentVersion)".Trim()
-            # Dotted string (e.g. "10.00") -> take the leading segment.
-            if ($s -match '\.') {
-                $seg = ($s -split '\.')[0]
-                [int]$m = 0
-                if ([int]::TryParse($seg, [ref]$m)) { return $m }
-                return 0
-            }
-            [long]$n = 0
-            if ([long]::TryParse($s, [ref]$n)) {
-                # Encoded currentVersion (e.g. 10000 = 10.00, 8200 = 8.20).
-                if ($n -ge 1000) { return [int]($n / 1000) }
-                if ($n -ge 100)  { return [int]($n / 100) }
-                return [int]$n
-            }
-        }
-    } catch {
-        Write-Verbose "Get-OneViewApplianceMajorVersion: probe failed: $($_.Exception.Message)"
-    }
-    return 0
-}
 
 function Get-OneViewModuleMajorVersion {
     <#
@@ -88,46 +49,14 @@ function Get-OneViewModuleMajorVersion {
     return 0
 }
 
-function Get-OneViewVersionPair {
-    <#
-    .SYNOPSIS
-        Parse an OneView version into its major/minor components.
-    .DESCRIPTION
-        Accepts either the encoded numeric currentVersion (e.g. 8200 = 8.20,
-        10000 = 10.00) or a dotted string ("8.20", "10.00"). Returns a hashtable
-        with Major and Minor, used to name the matching HPEOneView.<major*100+minor> library.
-    #>
-    [CmdletBinding()]
-    [OutputType([hashtable])]
-    param($Version)
-    $s = "$Version".Trim()
-    if ($s -match '\.') {
-        $parts = $s -split '\.'
-        [int]$maj = 0; [int]$min = 0
-        if ([int]::TryParse($parts[0], [ref]$maj)) {
-            if ($parts.Count -gt 1) { [int]::TryParse($parts[1], [ref]$min) }
-            return @{ Major = $maj; Minor = $min }
-        }
-        return $null
-    }
-    [long]$n = 0
-    if ([long]::TryParse($s, [ref]$n)) {
-        if ($n -ge 1000) { return @{ Major = [int]($n / 1000); Minor = [int](($n % 1000) / 10) } }
-        if ($n -ge 100)  { return @{ Major = [int]($n / 100);  Minor = 0 } }
-        return @{ Major = [int]$n; Minor = 0 }
-    }
-    return $null
-}
-
 function Resolve-PinnedOneViewModule {
     <#
     .SYNOPSIS
-        Resolve the exact HPEOneView module to use for an appliance.
+        Resolve the HPEOneView module to use for OneView calls on THIS server.
     .DESCRIPTION
         1. ONEVIEW_MODULE_NAME env var (valid module name) - explicit override.
-        2. Otherwise probe the appliance /rest/version and map its major.minor version to
-           the matching HPEOneView.<major*100+minor> library (OneView 10.00 -> HPEOneView.1000).
-        3. Fall back to the highest installed HPEOneView.* module (warned), else default.
+        2. Otherwise the latest HPEOneView.* module installed on this server (sorted by
+            version; the newest is backward-compatible with older appliances), else default.
         NOTE: The HPEOneView.* libraries are Windows-only. On non-Windows hosts (Linux/
         macOS) enumerating/importing them crashes the native PowerShell layer, so the
         availability checks below are SKIPPED off-Windows and resolution is by name only
@@ -135,11 +64,7 @@ function Resolve-PinnedOneViewModule {
     #>
     [CmdletBinding()]
     [OutputType([string])]
-    param(
-        [string] $Appliance,
-        [System.Management.Automation.PSCredential] $Credential,
-        [int] $Port = 443
-    )
+    param()
 
     $isWindows = ($PSVersionTable.PSVersion.Major -le 5) -or $IsWindows
 
@@ -154,42 +79,15 @@ function Resolve-PinnedOneViewModule {
         Write-Warning "ONEVIEW_MODULE_NAME '$envVal' is not a valid OneView module name; ignoring."
     }
 
-    # 2. Probe the appliance and map its major.minor version to the matching library.
-    if ($Appliance) {
-        $pair = $null
-        try {
-            $ver = Invoke-RestMethod -Uri "https://${Appliance}:${Port}/rest/version" -Method Get `
-                -SkipCertificateCheck -TimeoutSec $TimeoutSec -ErrorAction Stop
-            if ($ver -and $null -ne $ver.currentVersion) {
-                $pair = Get-OneViewVersionPair -Version $ver.currentVersion
-            }
-        } catch {
-            Write-Verbose "Resolve-PinnedOneViewModule: appliance probe failed: $($_.Exception.Message)"
-        }
-        if ($pair) {
-            $candidate = "HPEOneView.$($pair.Major * 100 + $pair.Minor)"
-            if ($isWindows) {
-                if (Get-Module -ListAvailable -Name $candidate -ErrorAction SilentlyContinue) {
-                    Write-Verbose "Resolved OneView module '$candidate' from appliance version $($pair.Major).$($pair.Minor)."
-                    return $candidate
-                }
-                Write-Warning "Appliance reports OneView $($pair.Major).$($pair.Minor), but module '$candidate' is not installed."
-            } else {
-                # Non-Windows: return the name derived from the appliance; import is Windows-only.
-                Write-Verbose "Resolved OneView module '$candidate' from appliance version $($pair.Major).$($pair.Minor) (non-Windows host; import skipped)."
-                return $candidate
-            }
-        }
-    }
-
-    # 3. Fallback: highest installed module (warned). Skipped off-Windows (disk scan crashes).
+    # 2. Latest HPEOneView.* module installed on THIS automation server. The newest module
+    #    is backward-compatible with older appliances, so this is the safe default.
     if ($isWindows) {
-        $installed = @(Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue |
-            Sort-Object { if ($_ -match 'HPEOneView\.(\d+)') { [int]$matches[1] } else { 0 } } -Descending |
+        $latest = @(Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue |
+            Sort-Object { if ($_ -match '(HPEOneView|HPOneView)\.(\d+)') { [int]$matches[2] } else { 0 } } -Descending |
             Select-Object -ExpandProperty Name -First 1)
-        if ($installed) {
-            Write-Warning "Could not pin OneView module from appliance/env; using highest installed '$installed'. Verify it matches the appliance version."
-            return $installed
+        if ($latest) {
+            Write-Verbose "Resolved OneView module '$latest' as the latest installed on this server."
+            return $latest
         }
     }
 
@@ -445,7 +343,7 @@ function Connect-OneViewSession {
         HTTPS port for the appliance version probe (default 443).
 
     .OUTPUTS
-        [hashtable] Connected, ReusedSession, Appliance, SessionId, ModuleName, Error.
+        [hashtable] Connected, ReusedSession, Appliance, SessionId, ModuleName, ModuleVersion, ApplianceVersion, Error.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -460,16 +358,18 @@ function Connect-OneViewSession {
         [int]    $Port = 443
     )
 
-    # Lock the module to the appliance's actual version (or the ONEVIEW_MODULE_NAME override).
-    $pinned = Resolve-PinnedOneViewModule -Appliance $Appliance -Credential $Credential -Port $Port
+    # Lock the module to the latest installed on this server (or the ONEVIEW_MODULE_NAME override).
+    $pinned = Resolve-PinnedOneViewModule
 
     $result = @{
-        Connected       = $false
-        ReusedSession   = $false
-        Appliance       = $Appliance
-        SessionId       = $null
-        ModuleName      = $pinned
-        Error           = $null
+        Connected        = $false
+        ReusedSession    = $false
+        Appliance        = $Appliance
+        SessionId        = $null
+        ModuleName       = $pinned
+        ModuleVersion    = $null
+        ApplianceVersion = $null
+        Error            = $null
     }
 
     # Guarantee only the locked module is in scope: remove any stray HPEOneView.* that
@@ -525,6 +425,9 @@ function Connect-OneViewSession {
         return $result
     }
 
+    $imp = Get-Module -Name $pinned -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($imp) { $result.ModuleVersion = "$($imp.Version)" }
+
     try {
         $ovSession = Connect-OVMgmt -Appliance $Appliance -Credential $Credential -ErrorAction Stop
         # Capture the session object Connect-OVMgmt returns and fall back to the
@@ -543,19 +446,17 @@ function Connect-OneViewSession {
         $result.Error = "Connect-OVMgmt failed: $($_.Exception.Message)"
     }
 
-    # Lock guard: the pinned module's major version MUST match the appliance's OneView
-    # major version. Mismatch => 502s / corrupted state. Hard error when destructive.
+    # Capture the appliance's OneView version for display. The module used is the latest
+    # installed on this server and is backward-compatible with older appliances, so the
+    # module and appliance versions are intentionally distinct - a major mismatch is
+    # expected and is NOT an error.
     if ($result.Connected) {
-        $modMajor  = Get-OneViewModuleMajorVersion -ModuleName $pinned
-        $applMajor = Get-OneViewApplianceMajorVersion -Appliance $Appliance -Port $Port
-        if ($modMajor -gt 0 -and $applMajor -gt 0 -and $modMajor -ne $applMajor) {
-            $msg = "Locked module '$pinned' (major $modMajor) does not match appliance '$Appliance' (major $applMajor). Use ONEVIEW_MODULE_NAME to select the matching library (e.g. HPEOneView.$($applMajor)000)."
-            if ($Destructive) {
-                $result.Connected = $false
-                $result.Error = $msg
-                return $result
-            }
-            Write-Warning $msg
+        try {
+            $av = Invoke-RestMethod -Uri "https://${Appliance}:${Port}/rest/version" -Method Get `
+                -SkipCertificateCheck -TimeoutSec 30 -ErrorAction Stop
+            if ($av -and $null -ne $av.currentVersion) { $result.ApplianceVersion = $av.currentVersion }
+        } catch {
+            Write-Verbose "Connect-OneViewSession: appliance version probe failed: $($_.Exception.Message)"
         }
     }
 

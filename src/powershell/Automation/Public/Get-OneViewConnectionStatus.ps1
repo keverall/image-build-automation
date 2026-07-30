@@ -66,9 +66,10 @@ function Get-OneViewConnectionStatus {
         ServerCount (optional), Server (optional), SessionSource
         ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise),
         ModuleName (the HPEOneView PowerShell library that serves the call),
-        ModuleVersion, ModuleSource, VersionCompliant (bool: $true when the appliance
-        major matches the locked module's major, $false on mismatch, $null when unknown)
-        and VersionWarning (string describing a version mismatch, or $null).
+        ModuleVersion, ModuleSource, VersionCompliant (bool: $true when the selected module's
+        major version is >= the appliance major, i.e. backward-compatible; $false when the
+        module is older than the appliance; $null when unknown) and VersionWarning (string
+        describing a version mismatch, or $null).
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
@@ -322,13 +323,14 @@ function _Get-OneViewMajorVersion {
 function _Test-OneViewVersionCompliance {
     <#
     .SYNOPSIS
-        Verify the appliance major version matches the locked HPEOneView module.
+        Record the appliance-vs-module version relationship (informational).
     .DESCRIPTION
-        Populates $Result.VersionCompliant ($true when the appliance major equals the
-        locked module's major, $false otherwise, $null when the version is
-        unknown/unparseable) and $Result.VersionWarning. A mismatch means the wrong
-        PowerShell library is selected for this appliance - the root cause of 502 /
-        corrupted-state failures.
+        Populates $Result.VersionCompliant and $Result.VersionWarning. The newest
+        HPEOneView module is backward-compatible with older appliances, so a module whose
+        major version is >= the appliance major version is compatible (VersionCompliant =
+        $true). Only a module OLDER than the appliance (module major < appliance major) is
+        a genuine risk and is flagged. Because automation pins the latest module installed
+        on the server, the module is virtually always newer than or equal to the appliance.
     #>
     param(
         [hashtable] $Result,
@@ -342,13 +344,12 @@ function _Test-OneViewVersionCompliance {
     }
     $lockedModule = Get-ExpectedOneViewModuleName
     $reqMajor = Get-OneViewModuleMajorVersion -ModuleName $lockedModule
-    if ($reqMajor -gt 0 -and $major -eq $reqMajor) {
+    if ($reqMajor -ge $major) {
         $Result.VersionCompliant = $true
         return
     }
     $Result.VersionCompliant = $false
-    $msg = "OneView appliance '$Appliance' reports version '$Version' (major $major), but the locked module is '$lockedModule' (major $reqMajor). " +
-           "Use ONEVIEW_MODULE_NAME to pin the matching library (e.g. HPEOneView.$($major)000)."
+    $msg = "OneView module '$lockedModule' (major $reqMajor) is OLDER than appliance '$Appliance' (major $major). Upgrade HPEOneView on this server to a version >= the appliance generation before connecting."
     $Result.VersionWarning = $msg
     Write-Warning $msg
     if ($logger) { $logger.Warning($msg) }
