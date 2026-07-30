@@ -49,6 +49,45 @@ function Get-OneViewModuleMajorVersion {
     return 0
 }
 
+function Get-OneViewApplianceMajorVersion {
+    <#
+    .SYNOPSIS
+        Read the appliance's OneView major version from /rest/version (no auth).
+    #>
+    [CmdletBinding()]
+    [OutputType([int])]
+    param(
+        [Parameter(Mandatory)][string] $Appliance,
+        [int] $Port = 443,
+        [bool] $SkipCertificateCheck = $true,
+        [int] $TimeoutSec = 30
+    )
+    try {
+        $ver = Invoke-RestMethod -Uri "https://${Appliance}:${Port}/rest/version" -Method Get `
+            -SkipCertificateCheck:$SkipCertificateCheck -TimeoutSec $TimeoutSec -ErrorAction Stop
+        if ($null -ne $ver -and $null -ne $ver.currentVersion) {
+            $s = "$($ver.currentVersion)".Trim()
+            # Dotted string (e.g. "10.00") -> take the leading segment.
+            if ($s -match '\.') {
+                $seg = ($s -split '\.')[0]
+                [int]$m = 0
+                if ([int]::TryParse($seg, [ref]$m)) { return $m }
+                return 0
+            }
+            [long]$n = 0
+            if ([long]::TryParse($s, [ref]$n)) {
+                # Encoded currentVersion (e.g. 10000 = 10.00, 8200 = 8.20).
+                if ($n -ge 1000) { return [int]($n / 1000) }
+                if ($n -ge 100)  { return [int]($n / 100) }
+                return [int]$n
+            }
+        }
+    } catch {
+        Write-Verbose "Get-OneViewApplianceMajorVersion: probe failed: $($_.Exception.Message)"
+    }
+    return 0
+}
+
 function Resolve-PinnedOneViewModule {
     <#
     .SYNOPSIS
@@ -336,8 +375,10 @@ function Connect-OneViewSession {
         call fails.
 
     .PARAMETER Destructive
-        When $true, a module/appliance version mismatch is a hard error (prevents corrupting
-        server state with the wrong library). Read-only calls should leave it $false (warning).
+        When $true, destructive calls are additionally guarded before mutating server
+        state. NOTE: using an HPEOneView module OLDER than the appliance is ALWAYS rejected
+        (hard error) regardless of this switch, because it causes 502 / corrupted-state
+        failures; only a newer-or-equal module (backward-compatible) is permitted.
 
     .PARAMETER Port
         HTTPS port for the appliance version probe (default 443).
@@ -370,6 +411,25 @@ function Connect-OneViewSession {
         ModuleVersion    = $null
         ApplianceVersion = $null
         Error            = $null
+    }
+
+    # Guard: NEVER use a module OLDER than the appliance. An older HPEOneView PowerShell
+    # library against a newer appliance is unsupported by HPE and is the root cause of 502 /
+    # corrupted-state failures. The opposite (newer module vs older appliance) is fine - the
+    # newest module is backward-compatible - so only the older-than case blocks. If the
+    # appliance version cannot be probed we cannot compare, so we proceed (the connection
+    # attempt itself surfaces any real reachability problem).
+    try {
+        $applMajor = Get-OneViewApplianceMajorVersion -Appliance $Appliance -Port $Port
+    } catch {
+        $applMajor = 0
+    }
+    if ($applMajor -gt 0) {
+        $modMajor = Get-OneViewModuleMajorVersion -ModuleName $pinned
+        if ($modMajor -gt 0 -and $modMajor -lt $applMajor) {
+            $result.Error = "OneView module '$pinned' (major $modMajor) is OLDER than appliance '$Appliance' (major $applMajor). Using an older module against a newer appliance is not supported - it causes 502 / corrupted-state failures. Install or select a module with major >= $applMajor (e.g. set ONEVIEW_MODULE_NAME to a newer HPEOneView.* library, or upgrade HPEOneView on this server)."
+            return $result
+        }
     }
 
     # Guarantee only the locked module is in scope: remove any stray HPEOneView.* that

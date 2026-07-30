@@ -3,20 +3,18 @@
 <a id="top"></a>
 ## Table of Contents
 
-- [Automation Test Plan — Physical Server Build \& ISO Pipeline](#automation-test-plan--physical-server-build--iso-pipeline)
-  - [Table of Contents](#table-of-contents)
-  - [How to execute (runner reference):](#how-to-execute-runner-reference)
-    - [Column legend:](#column-legend)
-  - [1. ISO Build, Patching, Deployment \& Monitoring](#1-iso-build-patching-deployment--monitoring)
-  - [2. OneView \& iLO Connectivity / Targeting](#2-oneview--ilo-connectivity--targeting)
-  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
-  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
-  - [5. Orchestration, Routing \& Utility](#5-orchestration-routing--utility)
-  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
-  - [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
-    - [Run log](#run-log)
-  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
+- [How to execute (runner reference):](#how-to-execute-runner-reference)
+  - [Column legend:  ](#column-legend-)
+- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-and-monitoring)
+- [2. OneView & iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity-targeting)
+- [3. Pre/Post Build Validation](#3-prepost-build-validation)
+- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
+- [5. Orchestration, Routing & Utility](#5-orchestration-routing-and-utility)
+- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
+- [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
+  - [Run log](#run-log)
+- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 28/07/2026 15:47 UTC</p>
 <!-- END:run-date -->
@@ -137,6 +135,7 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 <a name="run-log"></a>
 
+<a name="run-log"></a>
 ### Run log
 
 Latest Full test run output (from `make test` / `make automation-mode-tests`):

@@ -39,7 +39,7 @@ This table helps you select the correct PowerShell module for your OneView appli
 Install-Module HPEOneView.1000 -Scope AllUsers
 ```
 
-<a name="for-oneview-7x-appliances-powershell-51-compatibility"></a>
+<a name="for-oneview-7x-appliances-legacy"></a>
 ### For OneView 7.x appliances (legacy)
 ```powershell
 Install-Module HPEOneView.720 -Scope AllUsers

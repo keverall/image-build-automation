@@ -1,7 +1,15 @@
 # Setup Guide - PowerShell Profile & Maintenance Mode
 
 <a id="top"></a>
+## Table of Contents
 
+- [Quick Start (5 Minutes)](#quick-start-5-minutes)
+- [What Gets Installed](#what-gets-installed)
+- [Manual Setup (if `make setup` fails)](#manual-setup-if-make-setup-fails)
+- [Uninstall](#uninstall)
+- [Troubleshooting](#troubleshooting)
+- [Next Steps](#next-steps)
+<a name="quick-start-5-minutes"></a>
 ## Quick Start (5 Minutes)
 
 `make setup` installs the required bundled modules and registers the Automation module in your PowerShell profile.
@@ -25,6 +33,7 @@ Get-Command Set-MaintenanceMode
 
 ---
 
+<a name="what-gets-installed"></a>
 ## What Gets Installed
 
 - **Automation module** auto-import (provides `Set-MaintenanceMode`, `Test-ServerConnectivity`, etc.)
@@ -33,6 +42,7 @@ Get-Command Set-MaintenanceMode
 
 ---
 
+<a name="manual-setup-if-make-setup-fails"></a>
 ## Manual Setup (if `make setup` fails)
 
 Add the module import to your PowerShell profile (`$PROFILE`):
@@ -60,6 +70,7 @@ Reload after editing:
 
 ---
 
+<a name="uninstall"></a>
 ## Uninstall
 
 ```bash
@@ -68,6 +79,7 @@ pwsh -File scripts/Setup-Profile.ps1 -Uninstall
 
 ---
 
+<a name="troubleshooting"></a>
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -79,6 +91,7 @@ pwsh -File scripts/Setup-Profile.ps1 -Uninstall
 
 ---
 
+<a name="next-steps"></a>
 ## Next Steps
 
 - [Maintenance Mode Shortcuts](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top) — usage examples

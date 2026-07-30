@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-07-28 15:30 UTC
+generated: 2026-07-30 14:48 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,7 +17,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Shared connection helper used by all OneView automation commands. 1. Reuses an existing active session (same appliance) when present. 2. Connects directly to the appliance (no proxy handling). 3. Imports the HPEOneView PowerShell module. 4. Calls Connect-OVMgmt to establish a persistent session. The session remains active for subsequent commands.
+Shared connection helper used by all OneView automation commands. Resolves the locked HPEOneView module (ONEVIEW_MODULE_NAME env, or the appliance's OneView version), removes any other loaded HPEOneView.* modules so only the locked library's cmdlets (Connect-OVMgmt, etc.) are in scope, imports it, then connects.
 
 <a name="parameters"></a>
 ## Parameters
@@ -26,21 +26,21 @@ Shared connection helper used by all OneView automation commands. 1. Reuses an e
 |-----------|-------------|
 | `-Appliance` | OneView appliance hostname or IP. |
 | `-Credential` | PSCredential for authentication. If omitted, resolves from $env:ONEVIEW_USER / $env:ONEVIEW_PASSWORD or CyberArk. |
-| `-ModuleName` | HPEOneView module name (default: HPEOneView.1000). |
+| `-ModuleName` | Deprecated/ignored for resolution. The locked module is resolved automatically. Kept for backwards compatibility; if supplied and it is not the locked module the call fails. |
+| `-Destructive` | When $true, destructive calls are additionally guarded before mutating server state. NOTE: using an HPEOneView module OLDER than the appliance is ALWAYS rejected (hard error) regardless of this switch, because it causes 502 / corrupted-state failures; only a newer-or-equal module (backward-compatible) is permitted. |
+| `-Port` | HTTPS port for the appliance version probe (default 443). |
 
 <a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Establish or reuse an HPE OneView management session.
+        Establish or reuse an HPE OneView management session using the locked module.
 
     .DESCRIPTION
         Shared connection helper used by all OneView automation commands.
-        1. Reuses an existing active session (same appliance) when present.
-        2. Connects directly to the appliance (no proxy handling).
-        3. Imports the HPEOneView PowerShell module.
-        4. Calls Connect-OVMgmt to establish a persistent session.
-        The session remains active for subsequent commands.
+        Resolves the locked HPEOneView module (ONEVIEW_MODULE_NAME env, or the appliance's
+        OneView version), removes any other loaded HPEOneView.* modules so only the locked
+        library's cmdlets (Connect-OVMgmt, etc.) are in scope, imports it, then connects.
 
     .PARAMETER Appliance
         OneView appliance hostname or IP.
@@ -50,10 +50,21 @@ Shared connection helper used by all OneView automation commands. 1. Reuses an e
         $env:ONEVIEW_USER / $env:ONEVIEW_PASSWORD or CyberArk.
 
     .PARAMETER ModuleName
-        HPEOneView module name (default: HPEOneView.1000).
+        Deprecated/ignored for resolution. The locked module is resolved automatically.
+        Kept for backwards compatibility; if supplied and it is not the locked module the
+        call fails.
+
+    .PARAMETER Destructive
+        When $true, destructive calls are additionally guarded before mutating server
+        state. NOTE: using an HPEOneView module OLDER than the appliance is ALWAYS rejected
+        (hard error) regardless of this switch, because it causes 502 / corrupted-state
+        failures; only a newer-or-equal module (backward-compatible) is permitted.
+
+    .PARAMETER Port
+        HTTPS port for the appliance version probe (default 443).
 
     .OUTPUTS
-        [hashtable] Connected, ReusedSession, Appliance, SessionId, ModuleName, Error.
+        [hashtable] Connected, ReusedSession, Appliance, SessionId, ModuleName, ModuleVersion, ApplianceVersion, Error.
 ```
 
 ---

@@ -1,9 +1,5 @@
 # HPE OneView Commands
 
-> Note: "OpenView" is the legacy HP product name; the current product used by this
-> automation is **HPE OneView**. This document covers the OneView cmdlets exported
-> by the Automation module.
-
 <a id="top"></a>
 ## Table of Contents
 
@@ -14,6 +10,10 @@
 - [Quick Health Check](#quick-health-check)
 - [Notes](#notes)
 
+
+> Note: "OpenView" is the legacy HP product name; the current product used by this
+> automation is **HPE OneView**. This document covers the OneView cmdlets exported
+> by the Automation module.
 <a name="session-management"></a>
 ## Session Management
 

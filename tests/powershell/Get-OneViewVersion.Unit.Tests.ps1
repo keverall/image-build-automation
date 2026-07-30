@@ -121,4 +121,16 @@ Describe 'Connect-OneViewSession - module guard integration' {
             $r.Error     | Should -Match "HPEOneView.1000"
         }
     }
+
+    It 'Errors when an older module is pinned against a newer appliance' {
+        InModuleScope Automation {
+            Mock Resolve-PinnedOneViewModule { return 'HPEOneView.800' }
+            Mock Get-OneViewApplianceMajorVersion { return 10 }
+            $cred = [System.Management.Automation.PSCredential]::new(
+                'u', (ConvertTo-SecureString 'p' -AsPlainText -Force))
+            $r = Connect-OneViewSession -Appliance 'ov.test' -Credential $cred
+            $r.Connected | Should -Be $false
+            $r.Error     | Should -Match 'OLDER'
+        }
+    }
 }

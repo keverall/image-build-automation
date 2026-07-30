@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-07-28 15:30 UTC
+generated: 2026-07-30 14:48 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,20 +16,20 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 <a name="description"></a>
 ## Description
 
-Inspects the global $global:ConnectedSessions collection populated by the HPEOneView module's Connect-OVMgmt. Returns the first session whose Connected flag is true, or $null when none is active. This is the single source of truth used by all OneView commands that reuse an existing session instead of re-authenticating.
+Inspects the global $global:ConnectedSessions collection and the module-tracked $script:ActiveOneViewSession. Only returns a session established by the locked module (Resolve-PinnedOneViewModule); a session from a stray install (e.g. HPEOneView.840/.820) is never reused, so OneView calls cannot run against the wrong library.
 
 <a name="original-comment-based-help"></a>
 ## Original Comment-Based Help
 ```powershell
 .SYNOPSIS
-        Return the first active HPE OneView module session, if present.
+        Return the active HPE OneView module session, if established by the locked module.
 
     .DESCRIPTION
-        Inspects the global $global:ConnectedSessions collection populated by the
-        HPEOneView module's Connect-OVMgmt. Returns the first session whose
-        Connected flag is true, or $null when none is active. This is the single
-        source of truth used by all OneView commands that reuse an existing
-        session instead of re-authenticating.
+        Inspects the global $global:ConnectedSessions collection and the module-tracked
+        $script:ActiveOneViewSession. Only returns a session established by the locked
+        module (Resolve-PinnedOneViewModule); a session from a stray install
+        (e.g. HPEOneView.840/.820) is never reused, so OneView calls cannot run against
+        the wrong library.
 
     .OUTPUTS
         [PSObject] The active session object, or $null.
