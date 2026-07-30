@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/Show-Help.ps1
-generated: 2026-07-30 17:06 UTC
+generated: 2026-07-30
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -19,7 +19,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Parses Makefile for documented targets and displays them in a formatted table. Shows all available 'make' commands with their descriptions from inline comments. Uses Write-Output with ANSI escape codes (not Write-Host) so that the PSScriptAnalyzer AvoidUsingWriteHost rule is not triggered, while still rendering colored output in a supporting terminal.
+Parses Makefile for documented targets and displays them in a formatted bordered table with a header row. Descriptions that are longer than the available terminal width are wrapped onto multiple lines. Uses Write-Output with ANSI escape codes (not Write-Host) so that the PSScriptAnalyzer AvoidUsingWriteHost rule is not triggered, while still rendering colored output in a supporting terminal.
 
 <a name="examples"></a>
 
@@ -42,8 +42,9 @@ pwsh -File scripts/Show-Help.ps1
     Display available Makefile commands and targets.
 
 .DESCRIPTION
-    Parses Makefile for documented targets and displays them in a formatted table.
-    Shows all available 'make' commands with their descriptions from inline comments.
+    Parses Makefile for documented targets and displays them in a formatted
+    bordered table with a header row. Descriptions that are longer than the
+    available terminal width are wrapped onto multiple lines.
 
     Uses Write-Output with ANSI escape codes (not Write-Host) so that the
     PSScriptAnalyzer AvoidUsingWriteHost rule is not triggered, while still
@@ -51,9 +52,6 @@ pwsh -File scripts/Show-Help.ps1
 
 .EXAMPLE
     pwsh -File scripts/Show-Help.ps1
-    
-.EXAMPLE
-    ./scripts/Show-Help.ps1
 ```
 
 ---
