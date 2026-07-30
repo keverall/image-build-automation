@@ -140,10 +140,24 @@ function Add-BitbucketMdToc {
         $result = [System.Collections.Generic.List[string]]::new()
 
         for ($i = 0; $i -lt $lines.Count; $i++) {
-            $isAnchorLine   = $lines[$i]    -match '^<a name="[^"]*"></a>$'
-            $isHeadingBelow = ($i + 1 -lt $lines.Count) -and ($lines[$i + 1] -match '^#{2,3}\s+')
-            if ($isAnchorLine -and $isHeadingBelow) {
+            # The "top" anchor is owned by this builder: always strip any existing
+            # one so it can be re-inserted in the canonical position (right after
+            # the H1, above the TOC) by Build-CanonicalContent.
+            if ($lines[$i] -match '^<a\s+id="top"\s*></a>\s*$') {
                 continue
+            }
+
+            $isAnchorLine = $lines[$i] -match '^<a name="[^"]*"></a>$'
+            if ($isAnchorLine) {
+                # Allow a blank line between the anchor and the heading it precedes
+                $headingBelow = $false
+                $limit = [Math]::Min($i + 2, $lines.Count - 1)
+                for ($j = $i + 1; $j -le $limit; $j++) {
+                    if ($lines[$j] -match '^#{2,3}\s+') { $headingBelow = $true; break }
+                }
+                if ($headingBelow) {
+                    continue
+                }
             }
             $result.Add($lines[$i])
         }
@@ -160,28 +174,59 @@ function Add-BitbucketMdToc {
         $updatedContent = [System.Collections.Generic.List[string]]::new()
         $toc            = [System.Collections.Generic.List[string]]::new()
         $anchorsSeen    = @{}
+        $needBlankBeforeNext = $false
+
+        function Ensure-BlankBefore([System.Collections.Generic.List[string]]$list) {
+            if ($list.Count -eq 0) { return }
+            if ($list[$list.Count - 1] -eq '') { return }
+            $list.Add('')
+        }
 
         foreach ($line in $cleaned) {
-            if ($line -match '^(#{1,3})\s+(.+)$') {
+            if ($needBlankBeforeNext) {
+                if ($line -ne '') {
+                    $updatedContent.Add('')
+                }
+                $needBlankBeforeNext = $false
+            }
+
+            if ($line -match '^(#{1,6})\s+(.+)$') {
                 $level = $matches[1].Length
                 $title = $matches[2]
 
                 if ($level -eq 1) {
-                    $updatedContent.Add($line)
-                    continue
-                }
-                if ($level -gt 3) {
+                    # H1 stays at the top; the TOC is inserted right after it
+                    # (which supplies the required blank line below it).
                     $updatedContent.Add($line)
                     continue
                 }
 
-                $anchor = Get-Anchor $title ([ref]$anchorsSeen)
-                $indent = '  ' * ($level - 2)
-                $toc.Add("$indent- [$title](#$anchor)")
+                # MD022: every heading must be surrounded by blank lines. This
+                # also fixes the common case where a heading directly follows a
+                # list (ordered/unordered) with no blank gap.
+                Ensure-BlankBefore $updatedContent
 
-                $updatedContent.Add("<a name=""$anchor""></a>")
+                if ($level -le 3) {
+                    $anchor = Get-Anchor $title ([ref]$anchorsSeen)
+                    $indent = '  ' * ($level - 2)
+                    $toc.Add("$indent- [$title](#$anchor)")
+
+                    # Separate the anchor from any preceding block (e.g. lists)
+                    # with a blank line, and put a blank line between the anchor
+                    # and the heading it targets.
+                    $updatedContent.Add("<a name=""$anchor""></a>")
+                    $updatedContent.Add('')
+                }
+
                 $updatedContent.Add($line)
+                $needBlankBeforeNext = $true
             } else {
+                # Collapse runs of consecutive blank lines into a single blank
+                # line so the generated doc stays MD012-compliant (a single gap,
+                # never multiple).
+                if ($line -eq '' -and $updatedContent.Count -gt 0 -and $updatedContent[$updatedContent.Count - 1] -eq '') {
+                    continue
+                }
                 $updatedContent.Add($line)
             }
         }
@@ -199,6 +244,11 @@ function Add-BitbucketMdToc {
             $finalContent.Add($line)
 
             if (-not $inserted -and $line -match '^#\s+') {
+                # Anchor the top of the document immediately below the H1, then the
+                # TOC follows. This keeps "#top" links working and the anchor above
+                # the TOC (where it belongs).
+                $finalContent.Add("")
+                $finalContent.Add('<a id="top"></a>')
                 $finalContent.Add("")
                 foreach ($tocLine in $tocBlock) { $finalContent.Add($tocLine) }
                 $inserted = $true
@@ -210,6 +260,25 @@ function Add-BitbucketMdToc {
             foreach ($tocLine in $tocBlock) { $prepended.Add($tocLine) }
             foreach ($line in $finalContent) { $prepended.Add($line) }
             $finalContent = $prepended
+        }
+
+        # Collapse any remaining runs of consecutive blank lines (e.g. the TOC
+        # block's trailing blank combined with the blank after H1) into a single
+        # blank line, then trim leading/trailing blanks.
+        $collapsed = [System.Collections.Generic.List[string]]::new()
+        foreach ($l in $finalContent) {
+            if ($l -eq '' -and $collapsed.Count -gt 0 -and $collapsed[$collapsed.Count - 1] -eq '') {
+                continue
+            }
+            $collapsed.Add($l)
+        }
+        $finalContent = $collapsed
+
+        while ($finalContent.Count -gt 0 -and $finalContent[0] -eq '') {
+            $finalContent.RemoveAt(0)
+        }
+        while ($finalContent.Count -gt 0 -and $finalContent[$finalContent.Count - 1] -eq '') {
+            $finalContent.RemoveAt($finalContent.Count - 1)
         }
 
         return $finalContent.ToArray()
@@ -272,8 +341,23 @@ function Add-BitbucketMdToc {
 
                 if ($i -eq 0) {
                     $issues.Add("Heading '$headingTitle' on line 1 has no preceding line for anchor tag")
-                } elseif ($lines[$i - 1] -ne $expectedTag) {
-                    $issues.Add("Heading '$headingTitle' missing/incorrect anchor above: expected '$expectedTag', found '$($lines[$i-1])'")
+                } else {
+                    # A blank line must separate the heading from the previous
+                    # block, and the anchor must sit one line above the heading
+                    # (with a blank line between) for MD022 compliance.
+                    $anchorAbove =
+                        ($lines[$i - 1] -eq $expectedTag) -or
+                        ($i -ge 2 -and $lines[$i - 1] -eq '' -and $lines[$i - 2] -eq $expectedTag)
+
+                    if (-not $anchorAbove) {
+                        $issues.Add("Heading '$headingTitle' missing/incorrect anchor above: expected '$expectedTag', found '$($lines[$i-1])'")
+                    }
+                    # MD022: a blank line must separate the heading from the
+                    # previous block (the anchor sits one line above, with a blank
+                    # line between).
+                    if ($lines[$i - 1] -ne '' -and $lines[$i - 1] -ne $expectedTag) {
+                        $issues.Add("Heading '$headingTitle' is not separated from the previous block by a blank line (MD022)")
+                    }
                 }
 
                 if ($tocEntries.Count -gt 0 -and -not $tocEntries.ContainsKey($expectedAnchor)) {
@@ -346,7 +430,7 @@ function Add-BitbucketMdToc {
     Write-Status $script:Cyan "Scanning repository for markdown files..."
 
     if ($All) {
-        $files = Get-ChildItem -Path $repoRoot -Filter *.md -Recurse -File -ErrorAction SilentlyContinue |
+        $files = Get-ChildItem -Path $repoRoot -Filter *.md -Recurse -File -Force -ErrorAction SilentlyContinue |
             Where-Object {
                 $_.FullName -notmatch '(^|[\\/])\.git([\\/]|$)' -and
                 $_.FullName -notmatch '(^|[\\/])generated([\\/]|$)' -and
