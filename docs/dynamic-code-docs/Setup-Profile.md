@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/Setup-Profile.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Setup-Profile
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Copies the correct WIP profile template to the live profile location (platform-aware: windowspsprofile.ps1 on Windows, psprofile.ps1 on Linux/macOS, vscodeprofile.ps1 for the VS Code profile), then injects the Automation module import block (with the machine-specific absolute path) into the live profile(s). Can be run from anywhere - uses the script's repo root as the base path.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -33,16 +35,21 @@ Copies the correct WIP profile template to the live profile location (platform-a
 | `-DryRun` | Simulate changes without actually modifying profile files. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 pwsh -File scripts/Setup-Profile.ps1 pwsh -File scripts/Setup-Profile.ps1 -SkipTemplateCopy pwsh -File scripts/Setup-Profile.ps1 -Uninstall pwsh -File scripts/Setup-Profile.ps1 -Merge
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Setup-Profile.ps1 - Configure PowerShell profiles with Automation module.

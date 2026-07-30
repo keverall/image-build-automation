@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Private/Config.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Import-JsonConfig
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Load a JSON file into a hashtable, optionally resolving ${VAR} env placeholders.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -31,16 +33,21 @@ Load a JSON file into a hashtable, optionally resolving ${VAR} env placeholders.
 | `-AutoEnvVarReplace` | Replace ${VAR} placeholder strings with environment variable values. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 $cfg = Import-JsonConfig 'configs\clusters_catalogue.json'
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Load a JSON file into a hashtable, optionally resolving ${VAR} env placeholders.

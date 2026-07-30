@@ -1,25 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Private/ExternalIso.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # ExternalIso
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 The iLO virtual media controller requires network-accessible ISO sources. Supported formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Local file path: Auto-shared via an SMB share when run as Administrator (otherwise an existing SMB/HTTP path must be supplied) iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or 'C:\isos\win.iso'). The iLO BMC is a separate management controller on the physical server and cannot access local drives on your workstation. NOTE: This is a module-internal helper (defined once in Private/) and is dot-sourced into the module scope. It is intentionally not exported.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -29,7 +31,9 @@ The iLO virtual media controller requires network-accessible ISO sources. Suppor
 | `-RepoBaseUrl` | Retained for call-site compatibility. Not used by the resolver. |
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Resolve an external ISO path to a URL accessible by the iLO BMC.

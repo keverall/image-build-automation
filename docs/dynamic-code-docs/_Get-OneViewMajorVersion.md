@@ -1,25 +1,28 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewConnectionStatus.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # _Get-OneViewMajorVersion
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Handles the representations seen across OneView generations: * Dotted strings: "10.00.0000" / "8.20" -> leading segment (10 / 8) * Integers from /rest/version currentVersion (encoded Major*1000 + Minor*10, e.g. 8200 -> 8.20, 10000 -> 10.00) -> major via integer division by 1000 * Legacy 3-digit integers (e.g. 820 -> 8.20) -> major via division by 100 Returns $null when the value cannot be parsed.
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Normalise an HPE OneView version (string or number) to its major version.

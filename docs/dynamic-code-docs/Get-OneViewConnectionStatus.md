@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewConnectionStatus.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-OneViewConnectionStatus
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -17,13 +18,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Performs two read-only checks against the OneView REST API: 1. Reachability - GET /rest/version (no auth) to confirm the appliance is online and responding. 2. Authentication - GET /rest/server-hardware (authenticated) to confirm the supplied credentials are valid. If -ServerIdentifier is supplied, the target server is also resolved and its power/health reported so you can see at a glance whether it is "connected".
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -41,28 +43,37 @@ Performs two read-only checks against the OneView REST API: 1. Reachability - GE
 | `-DryRun` | Print the checks without performing them. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
 ```
 
 <a name="example-3"></a>
+
 ### Example 3
+
 ```powershell
 Get-OneViewConnectionStatus Uses an existing HPEOneView module session if available. Returns Connected=$false if no session is active.
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Quickly check OneView appliance connectivity and (optionally) a server's

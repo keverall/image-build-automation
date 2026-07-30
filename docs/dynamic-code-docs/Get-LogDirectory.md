@@ -1,25 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Private/PathResolver.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-LogDirectory
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Get the appropriate log directory based on context (testing vs production).
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -27,7 +29,9 @@ Get the appropriate log directory based on context (testing vs production).
 | `-Category` | Log category: 'test', 'audit', 'regulatory', 'build_reports', or 'production' (default). |
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Get the appropriate log directory based on context (testing vs production).

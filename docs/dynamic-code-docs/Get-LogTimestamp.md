@@ -1,25 +1,28 @@
 ---
 source:  ./src/powershell/Automation/Private/Base.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-LogTimestamp
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Returns current UTC timestamp in log format (yyyy-MM-dd HH:mm:ss).
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Returns current UTC timestamp in log format (yyyy-MM-dd HH:mm:ss).

@@ -1,6 +1,7 @@
 # SCOM Maintenance Mode - Authentication & Configuration
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Required Secrets (CyberArk Safe: `SCOM-2015`)](#required-secrets-cyberark-safe-scom-2015)
@@ -12,9 +13,11 @@
   - [How it works](#how-it-works)
   - [Manual Testing](#manual-testing)
 - [Setup Script](#setup-script)
+
 Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM manages Microsoft Windows cluster objects - all servers and resources nested under the group are put into maintenance mode. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the relationship between SCOM, OneView, and iLO.
 
 <a name="required-secrets-cyberark-safe-scom-2015"></a>
+
 ## Required Secrets (CyberArk Safe: `SCOM-2015`)
 
 | Environment Variable | Purpose |
@@ -23,9 +26,11 @@ Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM mana
 | `SCOM_ADMIN_PASSWORD` | SCOM admin password |
 
 <a name="configuration-files"></a>
+
 ## Configuration Files
 
 <a name="configsscom_configjson"></a>
+
 ### `configs/scom_config.json`
 
 ```json
@@ -58,6 +63,7 @@ Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM mana
 ```
 
 <a name="configsclusters_cataloguejson"></a>
+
 ### `configs/clusters_catalogue.json`
 
 ```json
@@ -81,11 +87,13 @@ Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM mana
 ```
 
 <a name="gitlab-ci-integration"></a>
+
 ## GitLab CI Integration
 
 In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job before any maintenance operations. 
 
 <a name="required-gitlab-cicd-variables-masked"></a>
+
 ### Required GitLab CI/CD Variables (Masked)
 
 | Variable | Description | Example |
@@ -94,6 +102,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 | `CYBERARK_APP_ID` | Application ID registered in CyberArk | `ci` |
 
 <a name="how-it-works"></a>
+
 ### How it works
 
 1. The `cyberark-bootstrap` job runs `scripts/cyberark-bootstrap.ps1`
@@ -103,6 +112,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 5. `Set-MaintenanceMode` reads these variables via `Get-ScomCredentials`
 
 <a name="manual-testing"></a>
+
 ### Manual Testing
 
 ```powershell
@@ -115,6 +125,7 @@ pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "https://cyberark-ccp:4
 ```
 
 <a name="setup-script"></a>
+
 ## Setup Script
 
 ```powershell
@@ -138,5 +149,3 @@ if (-not $scomUser -or -not $scomPass) {
     Write-Warning "`$env:SCOM_ADMIN_USER`n`$env:SCOM_ADMIN_PASSWORD"
 }
 ```
-
-

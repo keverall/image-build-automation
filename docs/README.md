@@ -1,6 +1,7 @@
 # HPE ProLiant Windows Server ISO Automation - Documentation Index
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Repository Structure](#repository-structure)
@@ -12,11 +13,13 @@
   - [Integration & Authentication](#integration-and-authentication)
   - [Developer Resources](#developer-resources)
 - [Contributing](#contributing)
+
 Complete documentation for the PowerShell automation module (`src/powershell/Automation/`).
 
 ---
 
 <a name="repository-structure"></a>
+
 ## Repository Structure
 
 ```
@@ -34,6 +37,7 @@ image-build-automation/
 ---
 
 <a name="quick-start"></a>
+
 ## Quick Start
 
 - **PowerShell** module import and first command: see [powershell_api_reference.md](Generic/powershell_api_reference.md#quick-start)
@@ -44,9 +48,11 @@ image-build-automation/
 ---
 
 <a name="document-index"></a>
+
 ## Document Index
 
 <a name="core-documentation"></a>
+
 ### Core Documentation
 
 | Document | Description |
@@ -60,6 +66,7 @@ image-build-automation/
 | [GitLab CI/CD Integration](Generic/gitlab.md#top) | REST API pipeline triggers, webhook configuration, polling |
 
 <a name="physical-server-build-and-runbooks"></a>
+
 ### Physical Server Build & Runbooks
 
 | Document | Description |
@@ -70,6 +77,7 @@ image-build-automation/
 | [PowerShell API Reference](Generic/powershell_api_reference.md#top) | Orchestrator and workflow overview for the physical server build |
 
 <a name="maintenance-mode-and-scheduling"></a>
+
 ### Maintenance Mode & Scheduling
 
 | Document | Description |
@@ -79,6 +87,7 @@ image-build-automation/
 | [Maintenance Mode Code Map](Maintenance-Mode/Code_Map_Maitenance_Mode.md#top) | Complete code map with links to all mm command functionality |
 
 <a name="integration-and-authentication"></a>
+
 ### Integration & Authentication
 
 | Document | Description |
@@ -91,6 +100,7 @@ image-build-automation/
 | [GDPR Compliance](Generic/gdpr_compliance.md#top) | GDPR compliance documentation |
 
 <a name="developer-resources"></a>
+
 ### Developer Resources
 
 | Document | Description |
@@ -101,6 +111,7 @@ image-build-automation/
 ---
 
 <a name="contributing"></a>
+
 ## Contributing
 
 1. Add or update unit tests mirroring the module structure in `tests/powershell/`
@@ -108,6 +119,3 @@ image-build-automation/
 3. Run linting: `pwsh -Command "Invoke-ScriptAnalyzer -Path src/powershell -Recurse"`
 4. Ensure Pester passes: `pwsh -File scripts/run-tests.ps1`
 5. PR description must link to any documentation changes
-
-
-

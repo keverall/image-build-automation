@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Disconnect-OneView.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Disconnect-OneView
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -16,13 +17,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Closes the active HPE OneView session established by Test-ServerConnectivity or Connect-OVMgmt. This command safely disconnects from the OneView appliance and cleans up the session state. Use this command when you are finished running OneView commands and want to explicitly close the connection.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -30,22 +32,29 @@ Closes the active HPE OneView session established by Test-ServerConnectivity or 
 | `-Force` | Force disconnection even if errors occur during cleanup. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Disconnect-OneView Disconnect from the current OneView session.
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 Disconnect-OneView -Force Force disconnection, suppressing any cleanup errors.
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Disconnect from the HPE OneView appliance and close the active session.

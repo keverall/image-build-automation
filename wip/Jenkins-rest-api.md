@@ -1,5 +1,7 @@
 # CI Pipeline REST API to bridge web-based ticketing systems
 
+<a id="top"></a>
+
 ## Table of Contents
 
 - [Step 1: Configure Pipeline Variables](#step-1-configure-pipeline-variables)
@@ -11,12 +13,13 @@
 - [Step 3: Raw Curl Format (If iRequest cannot use PowerShell)](#step-3-raw-curl-format-if-irequest-cannot-use-powershell)
 - [⚠️ Critical Security Notice for SCOM Scripts](#-critical-security-notice-for-scom-scripts)
 
-
 (like iRequest, ServiceNow, or Jira) with automated backend PowerShell scripts is a very standard enterprise workflow.
 Because this server is running inside a strict corporate network with no internet access, this API architecture is actually the best solution. It allows external applications to trigger automation inside your isolated zone safely.
 Here is the exact architecture and code required to make this work.
 ------------------------------
+
 <a name="step-1-configure-pipeline-variables"></a>
+
 ## Step 1: Configure Pipeline Variables
 
 Before sending data via API, you must configure a CI pipeline that knows how to accept incoming data from iRequest and pass it into a PowerShell script.
@@ -36,6 +39,7 @@ Before sending data via API, you must configure a CI pipeline that knows how to 
 ------------------------------
 
 <a name="step-2-generate-a-pipeline-trigger-token"></a>
+
 ## Step 2: Generate a Pipeline Trigger Token
 
 The CI system requires a trigger token for authentication instead of your raw corporate Active Directory password for programmatic access.
@@ -48,6 +52,7 @@ The CI system requires a trigger token for authentication instead of your raw co
 ------------------------------
 
 <a name="step-3-triggering-ci-from-irequest-the-api-call"></a>
+
 ## Step 3: Triggering CI from iRequest (The API Call)
 
 Your corporate iRequest tool just needs to send an HTTP POST request to your local CI server web port.
@@ -84,6 +89,7 @@ Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x
 ```
 
 <a name="how-the-workflow-passes-data"></a>
+
 ## How the workflow passes data:
 
    1. An end-user fills out an iRequest form requesting a task (e.g., provisioning a resource or restarting a service).
@@ -91,6 +97,7 @@ Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x
    3. Your local CI instance accepts the payload, extracts the variables, and launches your backend PowerShell script to do the work.
 
 <a name="to-trigger-your-specific-scom-script-through-the-ci-rest-api-from-irequest-you-must-use-the-trigger-pipeline-endpoint"></a>
+
 ## To trigger your specific SCOM script through the CI REST API from iRequest, you must use the trigger pipeline endpoint.
 
 This allows iRequest to send a web request that triggers your CI pipeline to run your local script file while passing variable data (like Computer Name, Duration, and Reason) dynamically into it.
@@ -98,6 +105,7 @@ This allows iRequest to send a web request that triggers your CI pipeline to run
 ------------------------------
 
 <a name="step-2-the-irequest-api-command-powershell-payload"></a>
+
 ## Step 2: The iRequest API Command (PowerShell Payload)
 
 When an iRequest form is submitted, the iRequest workflow engine must fire this specific raw HTTP POST command to pass the server details over to the CI pipeline.
@@ -141,6 +149,7 @@ Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x
 ------------------------------
 
 <a name="step-3-raw-curl-format-if-irequest-cannot-use-powershell"></a>
+
 ## Step 3: Raw Curl Format (If iRequest cannot use PowerShell)
 
 If your corporate iRequest engine uses a standard linux-style webhook runner instead of native Windows PowerShell, it must execute this standard curl string to perform the exact same task:
@@ -155,6 +164,7 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
 ```
 
 <a name="-critical-security-notice-for-scom-scripts"></a>
+
 ## ⚠️ Critical Security Notice for SCOM Scripts
 
 Because CI runners execute scripts, ensure the runner service account has appropriate permissions to communicate with SCOM management groups. If your script throws an "Unauthorized" or "Cannot connect to Management Server" error when triggered via the API, you will need to configure the runner to execute as a Domain Service Account that has administrative rights inside your SCOM console.

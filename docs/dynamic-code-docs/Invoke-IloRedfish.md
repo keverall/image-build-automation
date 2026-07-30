@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IloRedfish.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-IloRedfish
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â†’ X-Auth-Token) * Insert / Eject virtual media (CD/DVD) * One-time boot override to CD * System reset (ForceRestart) Operates against a single iLO IP. Connection details are runtime parameters - no JSON config required.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -38,16 +40,21 @@ Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â
 | `-DryRun` | Print actions without performing them. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Invoke-IloRedfish -Action MountAndBoot -IloIp 192.168.1.101 ` -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso'
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Mount, boot, reset, or eject virtual media on an iLO 5/6 Redfish endpoint.

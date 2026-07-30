@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/Update-TestProgress.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Update-TestProgress
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -17,13 +18,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Extracts test summary from the latest automation test log, prompts for test run details, and updates the Execution Evidence tables in both AUTOMATION_TEST_PLAN.md and ONEVIEW_TEST_PLAN.md. Then regenerates HTML.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -47,28 +49,37 @@ Extracts test summary from the latest automation test log, prompts for test run 
 | `-SkipHtml` | Skip HTML regeneration (used by tests to keep runs hermetic). |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Prompts for test run details and updates both test plans.
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 Uses specific log file.
 ```
 
 <a name="example-3"></a>
+
 ### Example 3
+
 ```powershell
 Non-interactive mode with explicit parameters.
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Updates test plan documents with today's test execution progress.

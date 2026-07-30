@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Private/Inventory.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Resolve-OneViewTarget
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Lets any OneView automation task accept EITHER a server name or a serial number. In BOTH cases the target is resolved to its OneView server record (hostname + iLO IP) via Get-OneViewServerTarget, so destructive operations always deploy to / reboot / build the confirmed OneView server and never a free-floating name.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -32,16 +34,21 @@ Lets any OneView automation task accept EITHER a server name or a serial number.
 | `-DryRun` | Resolve without performing a real OneView query. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Normalise a server name or serial number into a OneView target.

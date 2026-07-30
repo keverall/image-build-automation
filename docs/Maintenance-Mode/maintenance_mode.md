@@ -1,6 +1,7 @@
 # Maintenance Mode Orchestration
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Flow](#flow)
@@ -20,6 +21,7 @@
 - [Testing](#testing)
   - [Maintenance Mode Test Runner](#maintenance-mode-test-runner)
 - [Change History](#change-history)
+
 Maintenance mode manages scheduled maintenance windows for clusters across two monitoring systems:
 
 - **SCOM** (System Center Operations Manager) - maintenance mode on groups/servers
@@ -30,6 +32,7 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 ---
 
 <a name="flow"></a>
+
 ## Flow
 
 - SCOM: enable, disable, or validate maintenance mode for a cluster of servers, via PowerShell cmdlets or the SCOM [schedule maintenance REST API](https://learn.microsoft.com/en-us/rest/api/operationsmanager/schedule-maintenance) (SCOM 2019 UR1+).
@@ -41,6 +44,7 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 ---
 
 <a name="architecture"></a>
+
 ## Architecture
 
 ```
@@ -66,6 +70,7 @@ iRequest or manual call (Set-MaintenanceMode)
 ---
 
 <a name="high-level-flow"></a>
+
 ## High-Level Flow
 
 1. **Enable** - validate the target (cluster ID, server name, or OneView serial number), optionally compute the end time from the cluster schedule, then enable maintenance in SCOM or OneView. Optionally schedule a one-shot task to run disable at the end time.
@@ -76,11 +81,13 @@ iRequest or manual call (Set-MaintenanceMode)
 ---
 
 <a name="functionality"></a>
+
 ## Functionality
 
 ---
 
 <a name="scheduled-automatic-disable"></a>
+
 ### Scheduled Automatic Disable
 
 When enable is called without `-NoSchedule`, a one-shot OS task is created to run disable at the computed end time. This task sends the disabled notification, resets OpsRamp metrics, and writes an audit entry. The task should not be skipped unless disable is managed another way.
@@ -88,6 +95,7 @@ When enable is called without `-NoSchedule`, a one-shot OS task is created to ru
 ---
 
 <a name="audit-logging"></a>
+
 ### Audit Logging
 
 Every run writes a timestamped JSON file and appends one JSON line to a master log. Records include target ID, action, mode, dry-run flag, per-system success flags (SCOM, OneView, email, OpsRamp), start/end timestamps, and any errors.
@@ -95,6 +103,7 @@ Every run writes a timestamped JSON file and appends one JSON line to a master l
 ---
 
 <a name="opsramp-integration"></a>
+
 ### OpsRamp Integration
 
 On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1 / 0), fire `maintenance.enabled` or `maintenance.disabled` alerts, and emit an event. Failure to publish is recorded in the audit record but does not block the overall operation.
@@ -102,6 +111,7 @@ On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1
 ---
 
 <a name="environment-variables"></a>
+
 ### Environment Variables
 
 | Variable | Purpose |
@@ -116,6 +126,7 @@ On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1
 ---
 
 <a name="configuration-files"></a>
+
 ### Configuration Files
 
 Configuration lives in JSON files under `configs/`, plus one optional plain-text list at the repository root.
@@ -134,6 +145,7 @@ Configuration lives in JSON files under `configs/`, plus one optional plain-text
 ---
 
 <a name="error-handling"></a>
+
 ### Error Handling
 
 No automatic rollback is performed on partial failure (e.g., some servers succeeded and others failed). The operator receives a structured audit record with per-object success flags, an email notification if the mail subsystem is healthy, and OpsRamp alerts. Manual recovery is via the SCOM console, OneView, or by re-running `Set-MaintenanceMode -Action disable`.
@@ -141,6 +153,7 @@ No automatic rollback is performed on partial failure (e.g., some servers succee
 ---
 
 <a name="timezone-and-scheduling"></a>
+
 ### Timezone and Scheduling
 
 All datetime values are UTC only; no local timezone conversion is performed. Supply explicit UTC datetimes (`YYYY-MM-DD HH:MM` or ISO 8601) or relative offsets (`now`, `+2hours`) for `-Start` / `-End`.
@@ -148,6 +161,7 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 ---
 
 <a name="security-considerations"></a>
+
 ## Security Considerations
 
 - Credentials flow through environment variables exclusively; no plaintext configs.
@@ -157,6 +171,7 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 ---
 
 <a name="troubleshooting"></a>
+
 ## Troubleshooting
 
 | Symptom | Check |
@@ -170,6 +185,7 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 ---
 
 <a name="future-enhancements"></a>
+
 ## Future Enhancements
 
 - Automatic rollback of successful subsystems on partial failure
@@ -179,9 +195,11 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 ---
 
 <a name="testing"></a>
+
 ## Testing
 
 <a name="maintenance-mode-test-runner"></a>
+
 ### Maintenance Mode Test Runner
 
 A dedicated test runner (`make maint-mode-tests`) runs high-priority Pester tests for the three primary actions:
@@ -203,6 +221,7 @@ Each test file contains BDD-style Pester `Describe`/`Context`/`It` blocks coveri
 ---
 
 <a name="change-history"></a>
+
 ## Change History
 
 - 2026-06-09: Added `make maint-mode-tests` target and dedicated test runner for high-priority enable/disable/validate scenarios

@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/gitlab/Send-GitLabMaintenanceRequest.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Send-GitLabMaintenanceRequest
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -16,13 +17,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Initiates GitLab pipeline via trigger API and optionally waits for completion. Sends web callback with results when pipeline finishes. Can be used two ways: 1. Dot-sourced: Defines Send-GitLabMaintenanceRequest function for reuse 2. Direct execution: Runs immediately with provided parameters Integrates with GitLab trigger tokens, job tokens, and pipeline variables.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -44,22 +46,29 @@ Initiates GitLab pipeline via trigger API and optionally waits for completion. S
 | `-SkipValidation` | Skip parameter validation when running directly (for testing) |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 # Dot-source and use as function Send-GitLabMaintenanceRequest -Action enable -TargetId 'CLUSTER01' -ProjectId '123' -TriggerToken 'abc'
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 # Run directly with all parameters pwsh -File scripts/gitlab/Send-GitLabMaintenanceRequest.ps1 -Action enable -TargetId 'CLUSTER01' -GitLabUrl 'https://gitlab.com' -ProjectId '123' -TriggerToken 'abc'
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Trigger and monitor GitLab CI/CD pipeline for maintenance operations.

@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-WindowsSecurity.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-WindowsSecurityUpdate
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Applies Windows security patches to a base ISO using DISM or PowerShell DISM equivalent, creating a patched ISO ready for deployment. Reads patch manifest from windows_patches.json and downloads/applies MSU packages to the mounted ISO image.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -36,16 +38,21 @@ Applies Windows security patches to a base ISO using DISM or PowerShell DISM equ
 | `-DryRun` | Simulate without making changes. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01' -DryRun
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Apply Windows security patches to a base Windows Server ISO and build the patched ISO.

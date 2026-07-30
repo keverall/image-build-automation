@@ -1,6 +1,7 @@
 # Automation test guide for process teams and change approvers
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Purpose of this document](#purpose-of-this-document)
@@ -24,7 +25,9 @@
 - [Running the test suite](#running-the-test-suite)
 - [Glossary for non-technical readers](#glossary-for-non-technical-readers)
 - [Related documents](#related-documents)
+
 <a name="purpose-of-this-document"></a>
+
 ## Purpose of this document
 
 This guide explains what the automation test suite for the HPE physical server build process actually does. It is written for:
@@ -37,8 +40,8 @@ It is intentionally written without requiring scripting or development knowledge
 
 The companion technical document is the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md#top). This guide explains the tests; the runbook explains the process the tests are protecting.
 
-
 <a name="who-this-is-for"></a>
+
 ## Who this is for
 
 | Role | What this document helps you do |
@@ -50,8 +53,8 @@ The companion technical document is the runbook at [docs/Automation/runbook-requ
 
 If you need to run or debug the tests, speak to an engineer in the Server Engineering team. This document is for understanding, not operating.
 
-
 <a name="what-the-test-suite-does"></a>
+
 ## What the test suite does
 
 The file `scripts/run-automation-mode-tests.ps1` runs a collection of **automated checks** (called "unit tests" in the industry) that prove the automation behaves as expected. You can think of them as a series of "what would happen if..." simulations covering every stage of the runbook, from creating the boot ISO to checking the server after the build has finished.
@@ -65,8 +68,8 @@ Key properties of the suite:
 
 In short: the test suite is the quality gate the runbook is sitting behind. Approving a change when the suite is red means accepting risk. Approving it when green means the automation has been validated against its own specification.
 
-
 <a name="how-to-read-the-test-results"></a>
+
 ## How to read the test results
 
 When the suite runs, it produces a summary block like this:
@@ -86,14 +89,14 @@ How to interpret it:
 - **Skipped** means a test intentionally did not run, usually because the environment does not support it (for example, a test that needs a live WinRM connection being skipped in a lab without Windows hosts). Skips are not failures.
 - **Duration** is how long the suite took. A sudden increase in duration can itself be a warning sign (for example, network timeouts).
 
-
 <a name="tests-by-runbook-stage"></a>
+
 ## Tests by runbook stage
 
 Each test file maps to one stage of the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md#top). They are listed below in the order the build actually happens.
 
-
 <a name="1-iso-creation-new-isobuild"></a>
+
 ### 1. ISO creation – `New-IsoBuild`
 
 **Test file:** `tests/powershell/New-IsoBuild.Unit.Tests.ps1`
@@ -115,8 +118,8 @@ The bootable ISO is the starting point of the entire build. If the ISO is not cr
 
 **Criticality:** HIGH. A failing test here means the ISO cannot be trusted to exist in the right place, with the right name, or with the right audit record.
 
-
 <a name="2-publishing-the-boot-iso-publish-bootiso"></a>
+
 ### 2. Publishing the boot ISO – `Publish-BootIso`
 
 **Test file:** `tests/powershell/Publish-BootIso.Unit.Tests.ps1`
@@ -137,8 +140,8 @@ Publishing is the hand-off between the Configuration Manager side and the iLO si
 
 **Criticality:** HIGH. A failure here means the ISO may not be reachable by iLO when the build starts.
 
-
 <a name="3-identifying-the-target-server-get-oneviewservertarget"></a>
+
 ### 3. Identifying the target server – `Get-OneViewServerTarget`
 
 **Test file:** `tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1`
@@ -159,8 +162,8 @@ This is the "right server, right build" check. Getting it wrong is the highest-s
 
 **Criticality:** CRITICAL. A failure here, or a regression that allowed this function to silently accept bad input, would risk a wrong-server build.
 
-
 <a name="4-mounting-the-iso-and-forcing-boot-invoke-iloredfish"></a>
+
 ### 4. Mounting the ISO and forcing boot – `Invoke-IloRedfish`
 
 **Test file:** `tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1`
@@ -182,8 +185,8 @@ Mounting the ISO and rebooting the server is the single most dangerous operation
 
 **Criticality:** CRITICAL. A regression here (for example, `-Force` no longer being required) would remove the safety interlock on a destructive operation.
 
-
 <a name="5-pre-build-checks-test-prebuildvalidation"></a>
+
 ### 5. Pre-build checks – `Test-PreBuildValidation`
 
 **Test file:** `tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1`
@@ -204,8 +207,8 @@ Pre-build validation is the difference between discovering a missing driver in t
 
 **Criticality:** HIGH. A failure here undermines the gate that prevents bad builds from starting.
 
-
 <a name="6-post-build-checks-test-postbuildvalidation"></a>
+
 ### 6. Post-build checks – `Test-PostBuildValidation`
 
 **Test file:** `tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1`
@@ -225,8 +228,8 @@ This is the "did we actually succeed?" check. A server that appears to have buil
 
 **Criticality:** HIGH. A failure here means the build is being signed off without evidence that it actually finished correctly.
 
-
 <a name="7-monitoring-the-install-start-installmonitor"></a>
+
 ### 7. Monitoring the install – `Start-InstallMonitor`
 
 **Test file:** `tests/powershell/Start-InstallMonitor.Unit.Tests.ps1`
@@ -245,8 +248,8 @@ Monitoring is what separates an attended build from a fire-and-forget one. If th
 
 **Criticality:** MEDIUM. A failure here means the monitoring command is not available, but the build itself may still work; the risk is operational visibility rather than build correctness.
 
-
 <a name="8-end-to-end-orchestration-start-physicalserverbuild"></a>
+
 ### 8. End-to-end orchestration – `Start-PhysicalServerBuild`
 
 **Test file:** `tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1`
@@ -265,8 +268,8 @@ This is "the build ran and everything agreed to proceed". If the orchestrator do
 
 **Criticality:** CRITICAL. The orchestrator is the single entry point operators and pipelines use. If it does not behave, the whole process is unreliable.
 
-
 <a name="9-deploy-command-layer-invoke-isodeploy"></a>
+
 ### 9. Deploy command layer – `Invoke-IsoDeploy`
 
 **Test file:** `tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1`
@@ -285,8 +288,8 @@ This is a supporting layer. It exists to keep the orchestrator clean and the dep
 
 **Criticality:** MEDIUM. Failures here usually surface as orchestrator failures, but if they do not, a deploy command silently behaving differently from expectation is a real risk.
 
-
 <a name="10-firmware-updates-update-firmware"></a>
+
 ### 10. Firmware updates – `Update-Firmware`
 
 **Test file:** `tests/powershell/Update-Firmware.Unit.Tests.ps1`
@@ -305,8 +308,8 @@ Firmware on HPE servers must be at a known baseline. If the automation that appl
 
 **Criticality:** MEDIUM. A failure here means firmware updates cannot be invoked by the automation; servers may still build, but the firmware baseline is no longer guaranteed.
 
-
 <a name="11-windows-security-updates-invoke-windowssecurityupdate"></a>
+
 ### 11. Windows security updates – `Invoke-WindowsSecurityUpdate`
 
 **Test file:** `tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1`
@@ -325,8 +328,8 @@ A server that builds cleanly but ships without current security patches fails th
 
 **Criticality:** MEDIUM. Security patching is a policy control as much as a technical one. A failure here does not stop the build, but it does mean the change request is shipping a server that does not meet the required patch level.
 
-
 <a name="test-criticality-at-a-glance"></a>
+
 ## Test criticality at a glance
 
 | Test file | Stage | Criticality | Blocks a production change if failing? |
@@ -345,8 +348,8 @@ A server that builds cleanly but ships without current security patches fails th
 
 As a rule of thumb for **CAB approvers**: any red result in the **CRITICAL** or **HIGH** rows should be treated as a blocker for the change. **MEDIUM** results should be understood and accepted explicitly before approval.
 
-
 <a name="what-a-failed-test-means-for-a-change-request"></a>
+
 ## What a failed test means for a change request
 
 In plain terms:
@@ -357,8 +360,8 @@ In plain terms:
 
 The test log in `generated/logs/automation/automated-mode-test_<timestamp>.log` provides the evidence that can be attached to the change record.
 
-
 <a name="running-the-test-suite"></a>
+
 ## Running the test suite
 
 The suite is run by the operations or engineering team using:
@@ -376,8 +379,8 @@ The command:
 
 Process and CAB members do not need to run the suite themselves; they need to see a green result and a log file attached to the change record.
 
-
 <a name="glossary-for-non-technical-readers"></a>
+
 ## Glossary for non-technical readers
 
 | Term | Plain-language meaning |
@@ -394,10 +397,9 @@ Process and CAB members do not need to run the suite themselves; they need to se
 | Orchestration | Running the stages of the build in the correct order, with the correct inputs. |
 | Audit file | A record that says "this build was attempted on this server at this time with this ISO". |
 
-
 <a name="related-documents"></a>
+
 ## Related documents
 
 - [Runbook: automating the build of physical HPE servers](./runbook-requirements.md#top) — the process this test suite protects.
 - [Code map of the automations](./Code_Map_Automations.md#top) — the engineering-level map of the same functions.
-

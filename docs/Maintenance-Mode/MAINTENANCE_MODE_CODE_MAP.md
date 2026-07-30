@@ -1,6 +1,7 @@
 # Maintenance Mode (mm) Command - Complete Code Map
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [1. Entry Points & User Interface](#1-entry-points-and-user-interface)
@@ -27,15 +28,19 @@
 - [11. Documentation References](#11-documentation-references)
 - [10. Execution Flow Summary](#10-execution-flow-summary)
 - [Quick Navigation for Clients](#quick-navigation-for-clients)
+
 This document provides a complete map of all code locations hit by the `Set-MaintenanceMode` command, with direct links to source files for client review. Line numbers are approximate and may drift as the source evolves.
 
 ---
 
 <a name="1-entry-points-and-user-interface"></a>
+
 ## 1. Entry Points & User Interface
 
 <a name="powershell-profile-functions"></a>
+
 ### PowerShell Profile Functions
+
 - **Setup**: `make setup` registers the Automation module; [`Setup-Profile.ps1`](../../scripts/Setup-Profile.ps1) adds the module import to your PowerShell profile
 - **Command Syntax**:
 ```powershell
@@ -45,10 +50,13 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 ---
 
 <a name="2-core-implementation"></a>
+
 ## 2. Core Implementation
 
 <a name="main-function"></a>
+
 ### Main Function
+
 - **`Set-MaintenanceMode`**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1)
   - **Lines 306-321**: Parameter definitions (Action, TargetId, Mode, Environment, etc.)
   - **Lines 323-339**: Mode validation and normalization
@@ -62,13 +70,17 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 ---
 
 <a name="3-scom-integration"></a>
+
 ## 3. SCOM Integration
 
 <a name="scommanager-class"></a>
+
 ### SCOMManager Class
+
 **Location**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1364)
 
 #### Key Methods:
+
 - **`EnterMaintenance`** (line 1450): Enable maintenance mode for SCOM groups/clusters
   - Lines 1455-1488: Dry-run mock data
   - Lines 1490-1499: Version detection and REST API routing
@@ -86,18 +98,23 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 - **`_DetectVersion`** (line 1405): Auto-detect SCOM version and REST API readiness
 
 #### Connection Validation:
+
 - **`Test-ScomConnection`**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1235)
 
 ---
 
 <a name="4-hpe-oneview-integration"></a>
+
 ## 4. HPE OneView Integration
 
 <a name="oneviewclient-class"></a>
+
 ### OneViewClient Class
+
 **Location**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L2002)
 
 #### Key Methods:
+
 - **`SetMaintenance`** (line 2030): Enable maintenance mode
   - Lines 2037-2149: Module-based implementation
   - Lines 2052-2111: Server hardware mode
@@ -114,15 +131,19 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
   - Lines 2290-2334: Server and scope resolution
 
 #### Connection Validation:
+
 - **`Test-OneViewConnection`**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1259)
 
 ---
 
 <a name="5-email-notifications"></a>
+
 ## 5. Email Notifications
 
 <a name="emailnotifier-class"></a>
+
 ### EmailNotifier Class
+
 **Location**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L2444)
 
 - **`SendMaintenanceNotification`** (line 2479): Send enable/disable notifications
@@ -132,26 +153,34 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 ---
 
 <a name="6-helper-functions"></a>
+
 ## 6. Helper Functions
 
 <a name="datetime-parsing"></a>
+
 ### Datetime Parsing
+
 - **`_Parse-Datetime`**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1285)
   - Supports: `now`, `+Xhours`, `+Xminutes`, `+Xdays`, `YYYY-MM-DD HH:MM`
 
 <a name="scheduling"></a>
+
 ### Scheduling
+
 - **`_Compute-NextWorkStart`**: Line 1332 - Calculate next maintenance window end time
 - **`_Compute-DefaultEnd`**: Line 1321 - Default end time calculation
 
 <a name="audit-and-logging"></a>
+
 ### Audit & Logging
+
 - **`_Save-AuditRecord`**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1347)
 - **`Initialize-Logging`**: [`Logging.ps1`](../../src/powershell/Automation/Private/Logging.ps1)
 
 ---
 
 <a name="7-configuration-files"></a>
+
 ## 7. Configuration Files
 
 All configurations loaded from `configs/` directory:
@@ -166,38 +195,49 @@ All configurations loaded from `configs/` directory:
 ---
 
 <a name="8-module-loading-and-routing"></a>
+
 ## 8. Module Loading & Routing
 
 <a name="module-structure"></a>
+
 ### Module Structure
+
 - **Root module**: [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1)
   - Lines 397-421: Private script loading (dependency-ordered)
   - Lines 424-429: Public script loading (alphabetical)
   - Line 449: `Set-MaintenanceMode` export
 
 <a name="request-router"></a>
+
 ### Request Router
+
 - **`Invoke-RoutedRequest`**: [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1)
   - Routes maintenance requests from `request_types.json` configuration
 
 ---
 
 <a name="9-testing-and-validation"></a>
+
 ## 9. Testing & Validation
 
 <a name="test-scripts"></a>
+
 ### Test Scripts
+
 - **Connection testing**: [`test-maintenance-connection.ps1`](../../scripts/test-maintenance-connection.ps1)
 - **Configuration validation**: [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1)
 - **Test runner**: [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1)
 
 <a name="test-files"></a>
+
 ### Test Files
+
 - **PowerShell tests**: `tests/powershell/Set-MaintenanceMode.*.Tests.ps1` (Unit, Enable, Disable, Validation, Environment)
 
 ---
 
 <a name="11-documentation-references"></a>
+
 ## 11. Documentation References
 
 - **Architecture overview**: [`maintenance_mode.md`](maintenance_mode.md#top)
@@ -210,6 +250,7 @@ All configurations loaded from `configs/` directory:
 ---
 
 <a name="10-execution-flow-summary"></a>
+
 ## 10. Execution Flow Summary
 
 ```
@@ -242,6 +283,7 @@ Set-MaintenanceMode (Public/Set-MaintenanceMode.ps1:174)
 ---
 
 <a name="quick-navigation-for-clients"></a>
+
 ## Quick Navigation for Clients
 
 | Functionality | SCOM | OneView |
@@ -255,6 +297,3 @@ Set-MaintenanceMode (Public/Set-MaintenanceMode.ps1:174)
 ---
 
 *Document generated: 2026-06-12; line numbers are approximate.*
-
-
-

@@ -1,12 +1,13 @@
 # Nerd Fonts
 
+<a id="top"></a>
+
 ## Table of Contents
 
 - [Which font?](#which-font)
   - [TL;DR](#tldr)
   - [Ligatures](#ligatures)
   - [Explanation](#explanation)
-
 
 This is an archived font from the Nerd Fonts release v3.4.0.
 
@@ -23,9 +24,11 @@ For more information have a look at the upstream website: https://github.com/sou
 Version: 3.003
 
 <a name="which-font"></a>
+
 ## Which font?
 
 <a name="tldr"></a>
+
 ### TL;DR
 
 * Pick your font family:
@@ -34,6 +37,7 @@ Version: 3.003
   * If you work in a proportional context (GUI elements or edit a presentation etc) pick a font with `Nerd Font Propo` (or `NFP`).
 
 <a name="ligatures"></a>
+
 ### Ligatures
 
 Ligatures are generally preserved in the patched fonts.
@@ -41,6 +45,7 @@ Nerd Fonts `v2.0.0` had no ligatures in the `Nerd Font Mono` fonts, this has bee
 If you have a ligature-aware terminal and don't want ligatures you can (usually) disable them in the terminal settings.
 
 <a name="explanation"></a>
+
 ### Explanation
 
 Once you narrow down your font choice of family (`Droid Sans`, `Inconsolata`, etc) and style (`bold`, `italic`, etc) you have 2 main choices:
@@ -57,4 +62,3 @@ Once you narrow down your font choice of family (`Droid Sans`, `Inconsolata`, et
 For more information see: [The FAQ](https://github.com/ryanoasis/nerd-fonts/wiki/FAQ-and-Troubleshooting#which-font)
 
 [SIL-RFN]:http://scripts.sil.org/cms/scripts/page.php?item_id=OFL_web_fonts_and_RFNs#14cbfd4a
-

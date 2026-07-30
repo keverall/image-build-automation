@@ -1,6 +1,7 @@
 # Test Progress Report Generator — Test Plan
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Column legend](#column-legend)
@@ -13,6 +14,7 @@
 - [7. Log summary parsing](#7-log-summary-parsing)
 - [8. End-to-end script (child process, `-SkipHtml`)](#8-end-to-end-script-child-process--skiphtml)
 - [9. HTML converter comment stripping](#9-html-converter-comment-stripping)
+
 This plan documents the automated test coverage for the test-plan progress
 generator, i.e. the pipeline behind `make test-progress-update`:
 
@@ -32,12 +34,15 @@ Pester v5 tests. Integration cases invoke `Update-TestProgress.ps1` in a child
 repository files are modified and the script's `exit` calls cannot abort Pester.
 
 <a name="column-legend"></a>
+
 ## Column legend
+
 - **Area** — component under test.
 - **Case** — the specific branch/variant exercised.
 - **Expected** — the asserted outcome.
 
 <a name="1-marker-block-helpers-get-block-set-block"></a>
+
 ## 1. Marker block helpers (`Get-Block` / `Set-Block`)
 
 | Test ID | Case | Expected |
@@ -50,6 +55,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-BLK-06 | `Set-Block` only touches the targeted key | Other blocks left intact |
 
 <a name="2-cell-row-utilities"></a>
+
 ## 2. Cell / row utilities
 
 | Test ID | Case | Expected |
@@ -65,6 +71,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-UTL-09 | `Set-LastRowDateTime` on empty rows | No error, returns empty |
 
 <a name="3-run-date-block"></a>
+
 ## 3. Run-date block
 
 | Test ID | Case | Expected |
@@ -73,6 +80,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-RD-02 | Idempotent format | Output matches `dd/MM/yyyy HH:mm` value supplied |
 
 <a name="4-automation-section-7-evidence"></a>
+
 ## 4. Automation section-7 evidence
 
 | Test ID | Case | Expected |
@@ -82,6 +90,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-AUT-03 | Block missing | Warns, content unchanged, `RunNumber=0` |
 
 <a name="5-oneview-status-summary-bullet"></a>
+
 ## 5. OneView status summary bullet
 
 | Test ID | Case | Expected |
@@ -91,6 +100,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-SUM-03 | Replacement run twice | Replaces, does not append a second bullet |
 
 <a name="6-oneview-phase-11-table"></a>
+
 ## 6. OneView Phase 11 table
 
 | Test ID | Case | Expected |
@@ -101,6 +111,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-P11-04 | Block missing | Warns, content unchanged |
 
 <a name="7-log-summary-parsing"></a>
+
 ## 7. Log summary parsing
 
 | Test ID | Case | Expected |
@@ -110,6 +121,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-LOG-03 | No summary block | Fallback zeroes, duration `N/A`, `Parsed=$false` |
 
 <a name="8-end-to-end-script-child-process--skiphtml"></a>
+
 ## 8. End-to-end script (child process, `-SkipHtml`)
 
 | Test ID | Case | Expected |
@@ -122,6 +134,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-E2E-06 | Missing log file | Non-zero exit, clear error |
 
 <a name="9-html-converter-comment-stripping"></a>
+
 ## 9. HTML converter comment stripping
 
 | Test ID | Case | Expected |

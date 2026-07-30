@@ -23,12 +23,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Colors for output
-$Green = "`e[0;32m"
-$Yellow = "`e[1;33m"
-$Red = "`e[0;31m"
-$Cyan = "`e[0;36m"
-$Reset = "`e[0m"
+# Shared helpers (logging + canonical top-anchor placement) live in Docs.Common.ps1 so
+# that `make docs` and `make fix-docs` cannot drift apart.
+. (Join-Path $PSScriptRoot 'Docs.Common.ps1')
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
@@ -39,22 +36,7 @@ if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 }
 $LogFile = Join-Path $LogDir "fix-docs-$LogTimestamp.log"
-
-function Write-Status {
-    <#
-    .SYNOPSIS
-        Writes status.
-    #>
-
-    param([string]$Color, [string]$Message)
-    # Strip ANSI codes for log file
-    $cleanMessage = $Message -replace '\x1b\[[0-9;]*m', ''
-    # Write to terminal with color
-    Write-Output "${Color}${Message}${Reset}"
-    # Write to log file without colors
-    $logEntry = "[$(Get-Date -Format 'HH:mm:ss')] $cleanMessage"
-    Add-Content -Path $LogFile -Value $logEntry -Encoding UTF8
-}
+Set-DocsStatusLog -Path $LogFile
 
 # Log script start
 Add-Content -Path $LogFile -Value "=== Fix Docs Log Started: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ===" -Encoding UTF8
@@ -91,54 +73,6 @@ function Get-RelativeLink {
     $targetFullPath = Join-Path $RepoRoot $TargetPath.TrimStart('/')
     $relativePath = [System.IO.Path]::GetRelativePath($sourceDir, $targetFullPath) -replace '\\', '/'
     return $relativePath
-}
-
-function Ensure-TopAnchor {
-    <#
-    .SYNOPSIS
-        Ensures top anchor.
-    #>
-
-    # Ensures every markdown file has an <a id="top"></a> anchor placed
-    # below its first H1 (# Heading) so #top fragment links scroll to the
-    # top without violating MD041 (first-line-heading) or MD033 in the title.
-    param([System.IO.FileInfo]$File)
-    $content = Get-Content $File.FullName -Raw -ErrorAction SilentlyContinue
-    if (-not $content) { return }
-
-    # Remove any stale anchors we previously inserted anywhere
-    $cleaned = $content -replace '(?m)^[\s]*<a\s+id="top"\s*>\s*</a>\r?\n*', '' `
-                       -replace '(?m)^[\s]*## Top\s*\r?\n', ''
-
-    # Re-read raw content after cleanup to get a fresh pass over the structure
-    $cleaned = $cleaned.TrimStart("`n", "`r")
-
-    # Locate the first H1 heading
-    $h1Match = [regex]::Match($cleaned, '(?m)^#\s+.*$')
-    if (-not $h1Match.Success) { return }
-
-    # If the file already has an id="top" somewhere, skip
-    if ($cleaned -match 'id="top"') { return }
-
-    # Insert anchor directly below the H1 line
-    $insertPos = $h1Match.Index + $h1Match.Length
-    $before = $cleaned.Substring(0, $insertPos)
-    $after  = $cleaned.Substring($insertPos)
-    # Ensure a blank line below the H1, then anchor, then blank, then rest
-    $after = $after -replace '^\r?\n*', "`n`n<a id=`"top`"></a>`n"
-
-    Set-Content -Path $File.FullName -Value ($before + $after) -NoNewline -Encoding UTF8
-}
-
-function Remove-TopAnchorArtifacts {
-    <#
-    .SYNOPSIS
-        Removes top anchor artifacts.
-    #>
-
-    # Backwards-compat wrapper: delegates to Ensure-TopAnchor
-    param([System.IO.FileInfo]$File)
-    Ensure-TopAnchor -File $File
 }
 
 function Get-Anchor {
@@ -185,8 +119,8 @@ $results = @{
 }
 
 foreach ($mdFile in $mdFiles) {
-    # Ensure every markdown file has a top anchor below its H1
-    Ensure-TopAnchor -File $mdFile
+    # Ensure every markdown file has a top anchor below its H1 (canonical placement)
+    Set-TopAnchor -File $mdFile
 
     $content = Get-Content $mdFile.FullName -Raw
     $matches = [regex]::Matches($content, '\[([^\]]+)\]\(([^)]+)\)')

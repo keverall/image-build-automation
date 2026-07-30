@@ -28,6 +28,10 @@ endif
 # Coverage threshold (percentage)
 COVERAGE_THRESHOLD := 70
 
+# Doc fix flags (populated by fix-docs-dryrun); empty for real runs
+WHATIF ?=
+DRYRUN ?=
+
 # Colors: fallback to empty on Windows to avoid $(shell printf) errors without sh.exe
 ifeq ($(OS),Windows_NT)
   GREEN := 
@@ -99,7 +103,7 @@ coverage: prune-logs ## Run Pester tests with code coverage and generate report
 	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage and generating report..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/coverage-report.ps1
 
-docs: prune-logs gen-docs add-anchors ## Generate PowerShell Markdown docs + Bitbucket anchors
+docs: prune-logs gen-docs fix-links add-anchors ## Generate PowerShell Markdown docs, fix links, and add anchors/TOC
 	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
 
 gen-docs: ## Generate PowerShell API reference docs (src/ + scripts/ -> docs/dynamic-code-docs)
@@ -108,23 +112,24 @@ gen-docs: ## Generate PowerShell API reference docs (src/ + scripts/ -> docs/dyn
 		(echo "$(YELLOW)[docs]$(NC) PlatyPS not installed. Install with: Install-Module PlatyPS -Scope CurrentUser" && false)
 
 add-anchors: ## Add Bitbucket/GitStash-compatible anchors + TOC to all markdown
-	@echo "$(CYAN)[docs]$(NC) Adding Bitbucket/GitStash-compatible anchors + TOC to all markdown..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All
+	@echo "$(CYAN)[add-anchors]$(NC) Adding anchors + TOC to all markdown..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All $(DRYRUN)
 
 # ─── Documentation Link Validation ───────────────────────────────────────────
-fix-docs: prune-logs ## Fix broken markdown links + anchors/TOC in configs/, docs/, and root
-	@echo "$(CYAN)[fix-docs]$(NC) Validating and fixing markdown links..."
+# Shared by `make docs` and `make fix-docs` so both leave the repository in the
+# exact same canonical doc state (no churn when run in either order).
+fix-links: ## Validate and fix broken markdown links (shared by docs + fix-docs)
+	@echo "$(CYAN)[fix-links]$(NC) Validating and fixing markdown links..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
-	@echo "$(CYAN)[fix-docs]$(NC) Fixing markdown anchors and table of contents..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All $(DRYRUN)
+
+fix-docs: prune-logs fix-links add-anchors ## Fix broken markdown links + anchors/TOC in configs/, docs/, and root
+	@echo "$(GREEN)[fix-docs]$(NC) Done."
 
 fix-docs-dryrun: WHATIF=-WhatIf
 fix-docs-dryrun: DRYRUN=-DryRun
 fix-docs-dryrun: prune-logs ## Preview broken markdown link + anchor/TOC fixes (dry-run)
-	@echo "$(CYAN)[fix-docs-dryrun]$(NC) Previewing link fixes (no changes)..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
-	@echo "$(CYAN)[fix-docs-dryrun]$(NC) Previewing anchor/TOC fixes (no changes)..."
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All $(DRYRUN)
+	@$(MAKE) fix-links
+	@$(MAKE) add-anchors
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: prune-logs ## Show this help message

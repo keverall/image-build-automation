@@ -1,25 +1,28 @@
 ---
 source:  ./scripts/Setup-Profile.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Write-Color
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Writes color.
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Writes color.

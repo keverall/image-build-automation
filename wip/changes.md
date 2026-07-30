@@ -11,9 +11,9 @@ On the Windows test server, run these PowerShell commands:
 
 # Remove the broken installation
 
+<a id="top"></a>
+
 ## Table of Contents
-
-
 
 Remove-Item -Recurse -Force "$env:USERPROFILE\Documents\PowerShell\Modules\Pester"
 
@@ -33,7 +33,6 @@ Copy-Item -Path "<repo-path>\scripts\modules\Pester\6.0.1\*" -Destination $dest 
 Import-Module Pester -RequiredVersion 6.0.1 -PassThru
 Replace <repo-path> with the full path to your cloned repo on the Windows server.
 
-
 Switch to GitStash (BMC Bitbucket):
 
 git remote set-url origin https://gitstash.bmc.com/scm/~keverall/image-build-automation.git
@@ -50,7 +49,6 @@ https://www.gitkraken.com/
 TortoiseGit - Windows shell integration, works with any remote:
 
 https://tortoisegit.org/
-
 
 1. Generate the PAT in GitStash/Bitbucket:
 
@@ -74,6 +72,4 @@ git config --global credential.helper store
 git fetch origin
 # Enter username + PAT once, saved to ~/.git-credentials
 
-
 https://monitoringguys.com/2020/07/30/control-scom-maintenance-mode-from-the-agent-with-scomagenthelper-management-pack/
-

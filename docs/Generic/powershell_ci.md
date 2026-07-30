@@ -1,6 +1,7 @@
 # PowerShell Module - CI Run Requirements
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [CyberArk Credential Bootstrap](#cyberark-credential-bootstrap)
@@ -19,16 +20,17 @@
   - [`Start-InstallMonitor` - iLO Redfish polling ✅](#start-installmonitor---ilo-redfish-polling-)
 - [Open Items](#open-items)
 - [See Also](#see-also)
+
 What is required to run the `src/powershell/Automation` module standalone or inside a CI pipeline stage. Does **not** duplicate Pester testing guidance (see [`testing.md`](testing.md#top)).
 
-
-
 <a name="cyberark-credential-bootstrap"></a>
+
 ## CyberArk Credential Bootstrap
 
 CyberArk is the **single source of truth for all credentials** used by this pipeline. A dedicated **`CyberArk - Bootstrap Secrets`** stage runs as the first step after workspace setup and retrieves every secret, injecting them as environment variables for all subsequent jobs.
 
 <a name="fetching-strategy"></a>
+
 ### Fetching Strategy
 
 | Method | Tool | Details |
@@ -39,6 +41,7 @@ CyberArk is the **single source of truth for all credentials** used by this pipe
 Both sides call the same logic. CLI tried first (13 secrets, one by one); any that CLI misses are retried through the REST API automatically.
 
 <a name="secrets-fetched-safe-object-env-var"></a>
+
 ### Secrets Fetched (Safe → Object → Env Var)
 
 ```
@@ -61,9 +64,11 @@ HPE-Download      hpe-download-pass        → HPE_DOWNLOAD_PASS
 For a Jenkins pipeline excerpt showing the bootstrap implementation, see [Jenkins CI Example](#jenkins-ci-example).
 
 <a name="ci-pipeline---powershell-stage-requirements"></a>
+
 ## CI Pipeline - PowerShell Stage Requirements
 
 <a name="minimal-prerequisites"></a>
+
 ### Minimal Prerequisites
 
 - PowerShell 7.2+ (cross-platform)
@@ -83,6 +88,7 @@ For a Jenkins pipeline excerpt showing the bootstrap implementation, see [Jenkin
   ```
 
 <a name="gitlab-ci-example"></a>
+
 ### GitLab CI Example
 
 ```yaml
@@ -103,6 +109,7 @@ powershell_tests:
 ```
 
 <a name="jenkins-ci-example"></a>
+
 ### Jenkins CI Example
 
 ```groovy
@@ -134,6 +141,7 @@ stage('PowerShell - Pester Unit Tests') {
 See [`testing.md`](testing.md#top) for the full Pester guide (commands, tags, mocking, CI integration).
 
 <a name="scom2015"></a>
+
 ## scom2015
 
 **Yes  - this is the strongest part of the module.**
@@ -153,6 +161,7 @@ foreach ($inst in $instances) {
 ```
 
 <a name="what-must-be-true"></a>
+
 ### What Must Be True
 
 | Requirement | Detail |
@@ -164,6 +173,7 @@ foreach ($inst in $instances) {
 | `clusters_catalogue.json` - `scom_group` | Display name **must match exactly** what SCOM `Get-SCOMGroup` returns |
 
 <a name="what-will-not-work-without-more-work"></a>
+
 ### What Will NOT Work Without More Work
 
 | Gap | Explanation |
@@ -174,14 +184,17 @@ foreach ($inst in $instances) {
 ---
 
 <a name="hpe-ilo---will-it-work"></a>
+
 ## HPE iLO - Will It Work
 
 <a name="ilomanager-inside-set-maintenancemode---ilo-rest-maintenance-window-"></a>
+
 ### `ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅
 
 `POST /rest/v1/maintenancewindows` is fully implemented and uses proper iLO auth (ISO session login + `X-Redfish-Session` header). This will create a maintenance window on a real iLO 4/5/6 if IPs and credentials are correct.
 
 <a name="invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place"></a>
+
 ### `Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place
 
 The PS module has **correct iLO session login** (`POST /rest/v1/sessions`) but the actual virtual media mount step is a **commented scaffold**:
@@ -200,6 +213,7 @@ Invoke-RestMethod -Uri $vmActionUrl -Method Post -Body $vmBody -Headers @{ "X-Re
 Until that `<http_iso_url>` is available the step is intentionally a no-op.
 
 <a name="start-installmonitor---ilo-redfish-polling-"></a>
+
 ### `Start-InstallMonitor` - iLO Redfish polling ✅
 
 `CheckIloStatus` queries `GET /redfish/v1/Systems/1` and returns `PowerState` / `BootSourceOverrideTarget`. Fully wired into the `MonitorServer` poll loop.
@@ -207,6 +221,7 @@ Until that `<http_iso_url>` is available the step is intentionally a no-op.
 ---
 
 <a name="open-items"></a>
+
 ## Open Items
 
 | Priority | Item | Status | Detail |
@@ -221,10 +236,9 @@ Until that `<http_iso_url>` is available the step is intentionally a no-op.
 ---
 
 <a name="see-also"></a>
+
 ## See Also
 
 - [Maintenance Mode Orchestration](../Maintenance-Mode/maintenance_mode.md#top)
 - [PowerShell Testing Guide](testing.md#top)
 - [Code Quality & Security](code_quality.md#top)
-
-

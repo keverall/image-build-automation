@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PreBuildValidation.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Test-PreBuildValidation
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Returns a hashtable of named checks with pass/fail status.  Any failure marks the overall result as failed.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -42,16 +44,21 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 | `-DryRun` | Validate inputs but skip network probes. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' -IloIp '192.168.1.101' ` -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso' ` -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com'
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Run pre-build validation checks for a physical server build.

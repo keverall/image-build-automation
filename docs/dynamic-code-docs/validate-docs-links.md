@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/validate-docs-links.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # validate-docs-links
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -15,13 +16,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Scans all .md files for markdown links pointing to source files and validates that they exist. Fixes broken links by searching for the target file and correcting the path. Reports errors for links that cannot be resolved.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -29,16 +31,21 @@ Scans all .md files for markdown links pointing to source files and validates th
 | `-WhatIf` | Preview changes without modifying files (dry-run mode). |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 pwsh -File scripts/validate-docs-links.ps1 pwsh -File scripts/validate-docs-links.ps1 -WhatIf
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Validate markdown file links in configs/, docs/, and root directories.

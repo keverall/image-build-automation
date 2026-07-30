@@ -1,25 +1,28 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-OneViewActiveSession
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Inspects the global $global:ConnectedSessions collection and the module-tracked $script:ActiveOneViewSession. Only returns a session established by the locked module (Resolve-PinnedOneViewModule); a session from a stray install (e.g. HPEOneView.840/.820) is never reused, so OneView calls cannot run against the wrong library.
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Return the active HPE OneView module session, if established by the locked module.

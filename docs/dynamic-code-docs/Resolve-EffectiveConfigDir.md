@@ -1,25 +1,27 @@
 ---
 source:  ./src/powershell/Automation/Private/PathResolver.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Resolve-EffectiveConfigDir
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Shared resolution logic used by all Public commands that accept a -ConfigDir parameter. Resolution order: 1. When -ConfigDir was explicitly bound: absolute paths are used verbatim; relative paths are resolved against the current location. 2. Otherwise: <project-root>\configs. 3. Fallback: when the marker file is not found in the resolved directory and -ConfigDir is relative, retry against the project root (handles commands invoked from outside the repo root).
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -29,7 +31,9 @@ Shared resolution logic used by all Public commands that accept a -ConfigDir par
 | `-ExplicitlyBound` | Pass $PSBoundParameters.ContainsKey('ConfigDir') from the caller. |
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Resolve the effective configuration directory for a command.

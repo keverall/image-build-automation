@@ -1,6 +1,7 @@
 # GitLab CI/CD Pipeline Trigger API - REST reference and integration guide
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -22,9 +23,11 @@
 - [Comparison with legacy CI systems](#comparison-with-legacy-ci-systems)
 - [Network requirements](#network-requirements)
 - [Error reference - callers](#error-reference---callers)
+
 ---
 
 <a name="overview"></a>
+
 ## Overview
 
 GitLab CI/CD pipeline triggers bridge web-based ticketing systems (iRequest,
@@ -51,12 +54,14 @@ iRequest / ServiceNow / Jira
 ---
 
 <a name="step-1---pipeline-configuration-gitlab-ciyml"></a>
+
 ## Step 1 - Pipeline configuration (`.gitlab-ci.yml`)
 
 Pipeline jobs are defined as code in `.gitlab-ci.yml` and committed to the
 same repository as the automation scripts.
 
 <a name="required-file"></a>
+
 ### Required file
 
 **`.gitlab-ci.yml`**
@@ -86,6 +91,7 @@ maintenance-mode:
 ```
 
 <a name="cicd-variables-project-defaults-override-source"></a>
+
 ### CI/CD Variables (project defaults / override source)
 
 Set in **GitLab > Project Settings > CI/CD > Variables** (`/settings/ci_cd`).
@@ -105,6 +111,7 @@ Variables passed directly in the trigger API payload override the values set
 in the CI/CD Variables UI for that invocation only.
 
 <a name="gitlab-ci-entry-point-script"></a>
+
 ### GitLab CI entry-point script
 
 **`scripts/gitlab/Invoke-GitLabMaintenance.ps1`**
@@ -138,6 +145,7 @@ generated/logs/audit/maintenance_<CI_JOB_ID>_error.json    # on unhandled except
 ---
 
 <a name="step-2---generate-a-pipeline-trigger-token"></a>
+
 ## Step 2 - Generate a Pipeline Trigger Token
 
 The Pipeline Trigger Token authenticates pipeline launches from external systems.
@@ -157,9 +165,11 @@ required in both `Send-GitLabMaintenanceRequest.ps1` and any manual curl test.
 ---
 
 <a name="step-3---triggering-from-irequest"></a>
+
 ## Step 3 - Triggering from iRequest
 
 <a name="rest-endpoint"></a>
+
 ### REST endpoint
 
 ```
@@ -182,6 +192,7 @@ The `ref` parameter specifies the branch or tag the pipeline runs against
 (`main` in most cases).
 
 <a name="powershell-payload-irequest-powershell-engine"></a>
+
 ### PowerShell payload (iRequest PowerShell engine)
 
 ```powershell
@@ -208,6 +219,7 @@ Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x
 ```
 
 <a name="curl-payload-linux-style-webhook-runner"></a>
+
 ### curl payload (Linux-style webhook runner)
 
 ```bash
@@ -223,6 +235,7 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
 ---
 
 <a name="powershell-helper---send-gitlabmaintenancerequest"></a>
+
 ### PowerShell helper - `Send-GitLabMaintenanceRequest`
 
 Instead of crafting the POST call directly, iRequest can call the pre-built
@@ -262,6 +275,7 @@ Send-GitLabMaintenanceRequest -Action enable -TargetId CLU-CLUSTER-01 -CallbackU
 ```
 
 <a name="control-layer-integration-recommended"></a>
+
 ### Control-layer integration (recommended)
 
 The `Run-GitLab` and `New-GitLabCtrl` send-cmdlets in the **Control module**
@@ -277,6 +291,7 @@ $result = $ctrl | Run-GitLab
 ```
 
 <a name="dry-run-mode"></a>
+
 ### Dry-run mode
 
 Add `-DryRun` to any path (function call or trigger payload) to walk the
@@ -290,6 +305,7 @@ Send-GitLabMaintenanceRequest -Action enable -TargetId 'CLU-CLUSTER-01' -DryRun
 ---
 
 <a name="completion-callbacks"></a>
+
 ## Completion callbacks
 
 When `MAINTENANCE_CALLBACK_URL` is set in the pipeline CI/CD variables,
@@ -317,6 +333,7 @@ For iRequest callbacks, set the `X-API-Key` header from
 ---
 
 <a name="pipeline-status-polling-via-the-gitlab-api"></a>
+
 ## Pipeline status polling via the GitLab API
 
 Directly query a pipeline without callbacks using the GitLab Pipelines API
@@ -351,6 +368,7 @@ Status values: `created`, `waiting_for_resource`, `preparing`, `pending`,
 ---
 
 <a name="cluster-configuration"></a>
+
 ## Cluster configuration
 
 Cluster definitions live in `configs/clusters_catalogue.json`:
@@ -376,6 +394,7 @@ making any subsystem calls.
 ---
 
 <a name="comparison-with-legacy-ci-systems"></a>
+
 ## Comparison with legacy CI systems
 
 | Aspect | Legacy CI | GitLab |
@@ -391,6 +410,7 @@ making any subsystem calls.
 ---
 
 <a name="network-requirements"></a>
+
 ## Network requirements
 
 | Direction | Description |
@@ -406,6 +426,7 @@ in PowerShell, `--insecure` in curl).
 ---
 
 <a name="error-reference---callers"></a>
+
 ## Error reference - callers
 
 | Symptom | Cause | Action |

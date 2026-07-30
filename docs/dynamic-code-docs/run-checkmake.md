@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/run-checkmake.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # run-checkmake
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -14,23 +15,28 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Validates Makefile syntax using the checkmake tool. If checkmake is not installed, the script exits gracefully with a warning message.
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 pwsh -File scripts/run-checkmake.ps1
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Run checkmake to validate Makefile (Windows-compatible).

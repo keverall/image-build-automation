@@ -1,6 +1,7 @@
 # DevOps Guide to HPE Terms: Maintenance Mode vs. Disable vs. iLO vs. OneView
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [1. Monitoring Software vs. The Actual Hardware](#1-monitoring-software-vs-the-actual-hardware)
@@ -11,6 +12,7 @@
 - [The Sneaky Exception: iLO's Own Maintenance Mode](#the-sneaky-exception-ilos-own-maintenance-mode)
   - [1. You cannot manually put iLO into Maintenance Mode](#1-you-cannot-manually-put-ilo-into-maintenance-mode)
   - [2. If iLO is in Maintenance Mode, it means it is broken](#2-if-ilo-is-in-maintenance-mode-it-means-it-is-broken)
+
 HPE and Microsoft love to reuse words like "maintenance mode," but they mean entirely different things depending on whether you are looking at the **physical hardware** or the **monitoring software**.
 
 putting a server into maintenance mode in your monitoring software (like HPE OneView or SCOM) does not impact the actual physical server’s operation. It is purely a way to stop the alarms from screaming while you do work.
@@ -20,6 +22,7 @@ Here is the breakdown of how these pieces fit together and what those terms actu
 ---
 
 <a name="1-monitoring-software-vs-the-actual-hardware"></a>
+
 ## 1. Monitoring Software vs. The Actual Hardware
 
 When you change a status to "Maintenance Mode" or "Disable" in monitoring software, you are essentially putting noise-canceling headphones on your alerting system.
@@ -30,6 +33,7 @@ When you change a status to "Maintenance Mode" or "Disable" in monitoring softwa
 ---
 
 <a name="2-hpe-ilo-vs-hpe-oneview-note-openview-is-now-oneview"></a>
+
 ## 2. HPE iLO vs. HPE OneView (Note: "OpenView" is now OneView)
 
 *Quick side note: HPE "OpenView" is an older legacy suite. The modern tool you are likely using for HPE hardware management is called **HPE OneView**.*
@@ -45,6 +49,7 @@ Here is how maintenance and disabling work across these two HPE tools:
 ---
 
 <a name="3-where-does-scom-fit-into-this"></a>
+
 ## 3. Where does SCOM fit into this?
 
 **SCOM (Microsoft System Center Operations Manager)** is the ultimate "umbrella" monitoring system for your entire data center.
@@ -56,6 +61,7 @@ Think of the hierarchy like this:
 3. **SCOM** sits at the very top. It watches the Windows/Linux Operating Systems, the applications (like SQL or Exchange), **and** it hooks into HPE OneView to get hardware alerts.
 
 <a name="scom-maintenance-mode"></a>
+
 ### SCOM Maintenance Mode
 
 If you put a server into Maintenance Mode in SCOM, you are telling SCOM: *"Stop watching the Windows OS and applications on this box for the next hour."* Again, the server keeps running perfectly fine; SCOM just suppresses the alerts so your dashboard doesn't turn bright red when you reboot it for Windows Updates.
@@ -63,6 +69,7 @@ If you put a server into Maintenance Mode in SCOM, you are telling SCOM: *"Stop 
 ---
 
 <a name="summary-of-the-flow"></a>
+
 ## Summary of the Flow
 
 Imagine you need to replace a bad stick of RAM in an HPE server:
@@ -73,8 +80,8 @@ Imagine you need to replace a bad stick of RAM in an HPE server:
 4. You swap the RAM, turn it back on, and verify it's healthy in iLO.
 5. You take the server **out of Maintenance Mode** in OneView and SCOM so it starts actively monitoring for real failures again.
 
-
 <a name="the-sneaky-exception-ilos-own-maintenance-mode"></a>
+
 ## The Sneaky Exception: iLO's Own Maintenance Mode
 
 There is one sneaky exception with **iLO** that you need to watch out for!
@@ -86,11 +93,13 @@ While "Maintenance Mode" in **OneView** and **SCOM** strictly means *"stop sendi
 Here is the distinction:
 
 <a name="1-you-cannot-manually-put-ilo-into-maintenance-mode"></a>
+
 ### 1. You cannot manually put iLO into Maintenance Mode
 
 In SCOM or OneView, you click a button to turn Maintenance Mode on. In iLO, there is no button for you to do this.
 
 <a name="2-if-ilo-is-in-maintenance-mode-it-means-it-is-broken"></a>
+
 ### 2. If iLO is in Maintenance Mode, it means it is broken
 
 If you log into an HPE server's iLO interface and see a banner that says **"iLO is in Maintenance Mode,"** it means the iLO management chip itself has experienced a critical self-test failure (usually a corrupted flash memory chip/NAND).

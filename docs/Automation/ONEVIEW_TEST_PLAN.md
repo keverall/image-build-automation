@@ -1,6 +1,7 @@
 # HPE OneView 1000 — Live Integration Test Plan
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [**Current OneView Connected Automation Command testing status and progress Summary**](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
@@ -22,10 +23,13 @@
 - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10-other-critical-tests-setup-automation-hpeoneview-package)
 - [Phase 11 — Execution Evidence (per cycle)](#phase-11-execution-evidence-per-cycle)
 - [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
+
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 28/07/2026 15:47 UTC</p>
 <!-- END:run-date -->
+
 <a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
+
 ## **Current OneView Connected Automation Command testing status and progress Summary**
 
 <!-- BEGIN:oneview-status-summary -->
@@ -33,11 +37,13 @@
 <!-- END:oneview-status-summary -->
 
 <a name="major-bugs-fixed-log"></a>
+
 ## Major Bugs fixed log
 
 **Date: 24/07/2026**
 
 <a name="1-phantom-proxy-configuration-on-ewismgmt-19"></a>
+
 ### 1. Phantom proxy configuration on EWISMGMT-19
 
 A proxy was mistakenly configured and assumed to be in use on the EWISMGMT-19 automation server.
@@ -49,6 +55,7 @@ variables are stored as Windows credentials and survived process restarts. A ded
 cleanup script was written to purge the stale proxy env vars from the system.
 
 <a name="2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting"></a>
+
 ### 2. Test-ServerConnectivity was disconnecting the OneView session after connecting
 
 **Severity: Critical — cascading design flaw across all automation commands.**
@@ -61,6 +68,7 @@ command set, requiring significant rework and retesting of Windows and HPEOneVie
 logic across all commands.
 
 <a name="3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts"></a>
+
 ### 3. Invoke-IsoDeploy Pester tests hanging on interactive prompts
 
 The 3 Pester tests for `Invoke-IsoDeploy` were hanging indefinitely because `Read-Host` prompts
@@ -72,6 +80,7 @@ where no operator is present.
 `Read-Host` prompts, allowing the tests to run non-interactively. All 3 tests now pass in 309ms.
 
 <a name="4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts"></a>
+
 ### 4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts
 
 All 35 tests in `Test-ServerConnectivity.Tests.ps1` were hanging because the credential prompt's
@@ -115,6 +124,7 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 ---
 
 <a name="phase-0-environment-prerequisites-checklist-before-live-run"></a>
+
 ## Phase 0 — Environment Prerequisites (checklist before live run)
 
 - [ ] `HPEOneView.1000` PowerShell module installed (PS 7+)
@@ -127,6 +137,7 @@ the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`
 - [ ] `Start-InstallMonitor` timeout/poll tuned for the test server
 
 <a name="phase-1-connectivity-must-pass-before-anything-else"></a>
+
 ## Phase 1 — Connectivity (must pass before anything else)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -155,6 +166,7 @@ SessionSource                  HPEOneViewModule
 ```
 
 <a name="phase-2-get-server-list"></a>
+
 ## Phase 2 — Get Server List
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -191,7 +203,6 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
 
-
 Name                           Value
 ----                           -----
 Success                        True
@@ -203,6 +214,7 @@ Error
 <a name="phase-3-information-on-servers-connected-to-this-oneview"></a>
 
 <a name="phase-3-information-on-servers-connected-to-this-oneview"></a>
+
 ## Phase 3 — Information on Servers Connected to this OneView
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -211,6 +223,7 @@ Error
 | OV-06 | Per-server summary across all connected servers | — | `Get-OneViewServerList` + loop `Get-OneViewConnectionStatus -ServerIdentifier <each name>` | For each server, report power/health. | Every connected server reports `power_state` + `health_status` | N | 27/07/2026 | | Planned |
 
 <a name="phase-4-information-on-a-specific-server-both-identifiers"></a>
+
 ## Phase 4 — Information on a Specific Server (BOTH identifiers)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -221,6 +234,7 @@ Error
 | OV-08b | Server target resolution — by serial number | Serial | `Get-OneViewServerTarget -ServerIdentifier <serial> -OneViewHost HPEOpenview.1000 -IdentifierType Serial` | Run with serial. | `Success`, correct `Server`, `ResolvedBy=Serial` | N | 27/07/2026 | | Planned |
 
 <a name="phase-5-assign-iso-file-to-server-for-install-both-identifiers"></a>
+
 ## Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -231,6 +245,7 @@ Error
 | OV-11 | Set one-time boot to CD | — | `Invoke-IloRedfish -Action Boot -IloIp <ilo> -Force` | Set boot override. | `BootSourceOverrideTarget=Cd`, `Enabled=Once` | N | 27/07/2026 | | Planned |
 
 <a name="phase-6-smb-name-generation-local-drive-and-network-drive"></a>
+
 ## Phase 6 — SMB Name Generation (local drive AND network drive)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -240,6 +255,7 @@ Error
 | OV-14 | Verify generated SMB names mount on iLO | — | `Invoke-IloRedfish -Action Mount -IsoUrl <generated CIFS> -Force` (both local- and network-derived URLs) | Mount each generated URL. | Both URLs mount successfully as virtual media | N | 27/07/2026 | | Planned |
 
 <a name="phase-7-reboot-server-both-identifiers"></a>
+
 ## Phase 7 — Reboot Server (BOTH identifiers)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -249,6 +265,7 @@ Error
 | OV-16 | Monitor reboot power-state transitions | Both | `Start-InstallMonitor -Server <serverName>` and `-SerialNumber <serial> -OneViewHost HPEOpenview.1000` | Watch On → Off → On. | Correct completion/failure detection; `Success` for both identifier runs | N | 27/07/2026 | | Planned |
 
 <a name="phase-8-post-reboot-verification-sleep-then-confirm-connected-correct-windows-image"></a>
+
 ## Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -259,6 +276,7 @@ Error
 | OV-19 | Confirm server remains manageable in OneView | Both | `Get-OneViewServerList` / `Get-OneViewConnectionStatus` post-install | Confirm health. | Server listed, `health_status` OK, ISO now the booted Windows image | N | 27/07/2026 | | Planned |
 
 <a name="phase-9-negative-edge-and-boundary-tests"></a>
+
 ## Phase 9 — Negative, Edge & Boundary Tests
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -279,6 +297,7 @@ Error
 <a name="phase-10-other-critical-tests-setup-automation-hpeoneview-package"></a>
 
 <a name="phase-10-other-critical-tests-setup-automation-hpeoneview-package"></a>
+
 ## Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)
 
 | Test ID | Title | ID-Type | Command(s) | Steps | Expected Result | Neg? | Exp. Pass | Act. Pass | Status |
@@ -296,6 +315,7 @@ Error
 <a name="phase-11-execution-evidence-per-cycle"></a>
 
 <a name="phase-11-execution-evidence-per-cycle"></a>
+
 ## Phase 11 — Execution Evidence (per cycle)
 
 <!-- BEGIN:phase11-rows -->
@@ -312,6 +332,7 @@ Error
 <a name="phase-12-notes-for-the-delivery-lead"></a>
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>
+
 ## Phase 12 — Notes for the Delivery Lead
 
 - The plan is ordered as a real run: **connect (Phase 1) → server list (2) → connected-server info (3)

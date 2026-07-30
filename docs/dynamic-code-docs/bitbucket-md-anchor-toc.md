@@ -1,12 +1,13 @@
 ---
 source:  ./scripts/bitbucket-md-anchor-toc.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # bitbucket-md-anchor-toc
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -19,13 +20,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 5](#example-5)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Processes markdown files across the entire repository, ensuring each file has a valid TOC and matching anchor tags above every H2/H3 heading. Files already in canonical form are left untouched. Scans all folders recursively (including docs/, configs/, src/, and root README.md). Results are logged to generated/logs/toc-anchor/.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -35,40 +37,53 @@ Processes markdown files across the entire repository, ensuring each file has a 
 | `-DryRun` | Validate without writing changes. Reports pass/fail for every file processed. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Fixes a single file (writes changes in-place).
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 Validates a file without making changes.
 ```
 
 <a name="example-3"></a>
+
 ### Example 3
+
 ```powershell
 Fixes every .md file in the entire repository in-place.
 ```
 
 <a name="example-4"></a>
+
 ### Example 4
+
 ```powershell
 Validates every .md file in the entire repository without making changes.
 ```
 
 <a name="example-5"></a>
+
 ### Example 5
+
 ```powershell
 Add-BitbucketMdToc -All -DryRun       # then call it manually
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
     Adds Bitbucket/GitStash compatible anchors to markdown headings and generates a Table of Contents (TOC).

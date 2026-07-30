@@ -1,6 +1,7 @@
 # Automation Command Reference
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
@@ -50,6 +51,7 @@
   - [Check module is loaded](#check-module-is-loaded)
   - [Force reimport](#force-reimport)
   - [Source links](#source-links)
+
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
 > **Terminal command rules:** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - supply `-Credential`/user+password parameters or enter them when prompted.
@@ -57,6 +59,7 @@ Runnable examples for every public Automation command. All commands work from an
 ---
 
 <a name="setup-one-time"></a>
+
 ## Setup (One-Time)
 
 Run make setup from the project root to register the Automation module in your PowerShell profile:
@@ -82,11 +85,13 @@ Get-Command -Module Automation
 ---
 
 <a name="connectivity-connection-and-server-lookup"></a>
+
 ## Connectivity, Connection & Server Lookup
 
 Pre-flight read-only checks. Safe to run during a change freeze. Start here - confirm the appliance is reachable, that you have an active session, and which servers are managed before you build or deploy anything.
 
 <a name="test-oneview-connectivity"></a>
+
 ### Test OneView connectivity
 
 Combined network ping + authentication test for a OneView appliance. Read-only - safe during a change freeze. On a live run the command never reads config: the appliance host comes from `-ManagementHost` (used verbatim) and credentials come from `-Credential` or an interactive prompt. Config files are read **only** with `-DryRun`.
@@ -135,6 +140,7 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 ---
 
 <a name="disconnect-from-oneview"></a>
+
 ### Disconnect from OneView
 
 Closes the active HPE OneView session established by `Test-ServerConnectivity` or `Connect-OVMgmt`. Use this command when you are finished running OneView commands and want to explicitly close the connection.
@@ -160,6 +166,7 @@ Disconnect-OneView -Force
 ---
 
 <a name="get-oneview-connection-status"></a>
+
 ### Get OneView connection status
 
 Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing OneView session (established via `Test-ServerConnectivity`) and uses that appliance automatically - no connect/disconnect. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the session token or supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health. If no session exists, the command returns an error telling you to connect first with `Test-ServerConnectivity -ManagementHost <oneview-appliance-host>`.
@@ -207,6 +214,7 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 ---
 
 <a name="get-oneview-server-list"></a>
+
 ### Get OneView server list
 
 Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name.
@@ -251,6 +259,7 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 ---
 
 <a name="validate-server-list"></a>
+
 ### Validate server list
 
 ```powershell
@@ -262,6 +271,7 @@ Test-ServerList
 ---
 
 <a name="validate-build-parameters"></a>
+
 ### Validate build parameters
 
 ```powershell
@@ -273,11 +283,13 @@ Test-BuildParams -BaseIsoPath 'C:\isos\WinSrv2025.iso'
 ---
 
 <a name="iso-image-naming-and-smb-shares"></a>
+
 ## ISO Image Naming & SMB Shares
 
 How ISO filenames are generated and how local ISO paths are exposed to the iLO BMC over SMB/CIFS. Read this before passing a local path to a deploy command so you know the expected filename and the share name the iLO will mount.
 
 <a name="bootable-iso-filename-convention"></a>
+
 ### Bootable ISO filename convention
 
 `New-IsoBuild` emits a ConfigMgr bootable media ISO using the runbook naming standard:
@@ -299,6 +311,7 @@ Example generated names:
 The same `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso` name is what `Publish-BootIso` and `Invoke-IsoDeploy -IsoUrl` expect to reference in the repository.
 
 <a name="smb-cifs-share-naming-for-local-iso-paths"></a>
+
 ### SMB / CIFS share naming for local ISO paths
 
 The iLO BMC is a separate physical controller and **cannot** read local drives (`C:\`, `H:\`, ...) on your admin workstation. To deploy a local ISO, it must be reachable over the network as an SMB/CIFS share that the iLO can mount.
@@ -337,6 +350,7 @@ Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\<COMPUTERNAME>\isos\windows.i
 ---
 
 <a name="physical-server-build-end-to-end"></a>
+
 ## Physical Server Build (End-to-End)
 
 The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, publish to HTTPS, OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, and audit logging. Supports two modes:
@@ -344,6 +358,7 @@ The full runbook workflow in one command: pre-build validation, ConfigMgr bootab
 - **External ISO mode** (`-ExternalIsoPath`): Deploys a client-supplied ISO directly, skipping build and publish.
 
 <a name="full-build-most-common"></a>
+
 ### Full build (most common)
 
 ```powershell
@@ -351,6 +366,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 ```
 
 <a name="dry-run-validate-without-changing-anything"></a>
+
 ### Dry run (validate without changing anything)
 
 ```powershell
@@ -358,6 +374,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 ```
 
 <a name="re-run-after-iso-already-built-skip-build-phases"></a>
+
 ### Re-run after ISO already built (skip build phases)
 
 ```powershell
@@ -365,6 +382,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -SkipPreBuild
 ```
 
 <a name="re-run-monitoring-after-deployment"></a>
+
 ### Re-run monitoring after deployment
 
 ```powershell
@@ -372,6 +390,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -SkipPreBuild -SkipIsoBuild -S
 ```
 
 <a name="build-with-custom-domain-and-post-build-checks"></a>
+
 ### Build with custom domain and post-build checks
 
 ```powershell
@@ -379,6 +398,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 ```
 
 <a name="mock-build-testing"></a>
+
 ### Mock build (testing)
 
 ```powershell
@@ -439,11 +459,13 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 ---
 
 <a name="iso-build-deployment-and-monitoring"></a>
+
 ## ISO Build, Deployment & Monitoring
 
 Individual commands for the ISO pipeline - build, publish, deploy (reboot + install), and monitor. These are the building blocks the full build above orchestrates.
 
 <a name="build-a-bootable-iso"></a>
+
 ### Build a bootable ISO
 
 ```powershell
@@ -482,6 +504,7 @@ New-IsoBuild -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint d
 ---
 
 <a name="publish-a-bootable-iso"></a>
+
 ### Publish a bootable ISO
 
 ```powershell
@@ -516,6 +539,7 @@ Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
 ---
 
 <a name="deploy-isos-to-servers"></a>
+
 ### Deploy ISOs to servers
 
 Mounts the ISO on the server's iLO via Redfish, sets the one-time boot override, and reboots the server to begin installation. This is the command that actually reboots the server and kicks off the OS install.
@@ -593,6 +617,7 @@ Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -I
 ---
 
 <a name="monitor-installation-progress"></a>
+
 ### Monitor installation progress
 
 ```powershell
@@ -633,6 +658,7 @@ Start-InstallMonitor -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.co
 ---
 
 <a name="ilo-redfish-operations"></a>
+
 ### iLO Redfish operations
 
 ```powershell
@@ -681,6 +707,7 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 ---
 
 <a name="resolve-server-target-via-oneview"></a>
+
 ### Resolve server target via OneView
 
 Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively when `-Credential` is not supplied. With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Invoke-IsoDeploy`, `Update-Firmware`, `Test-PostBuildValidation`, `Start-InstallMonitor`, `Start-PhysicalServerBuild`, etc.) all resolve through this module and inherit both behaviours.
@@ -719,6 +746,7 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 ---
 
 <a name="pre-build-validation"></a>
+
 ### Pre-build validation
 
 ```powershell
@@ -760,6 +788,7 @@ Test-PreBuildValidation -ServerIdentifier srv01 -DryRun
 ---
 
 <a name="post-build-validation"></a>
+
 ### Post-build validation
 
 ```powershell
@@ -801,6 +830,7 @@ Test-PostBuildValidation -SerialNumber MXQ1234567 -OneViewHost oneview.ad.exampl
 ---
 
 <a name="build-firmware-iso"></a>
+
 ### Build firmware ISO
 
 ```powershell
@@ -842,6 +872,7 @@ Update-Firmware -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
 ---
 
 <a name="patch-windows-iso-with-security-updates"></a>
+
 ### Patch Windows ISO with security updates
 
 ```powershell
@@ -883,11 +914,13 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -SerialNumber
 ---
 
 <a name="maintenance-mode"></a>
+
 ## Maintenance Mode
 
 See [`CLIENT-QUICK-START.md`](../CLIENT-QUICK-START.md#top) for the full guide.
 
 <a name="examples"></a>
+
 ### Examples
 
 ```powershell
@@ -897,11 +930,13 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 ---
 
 <a name="powershell-execution-and-utility"></a>
+
 ## PowerShell Execution and Utility
 
 Low-level helpers used by other commands.
 
 <a name="run-a-local-powershell-script"></a>
+
 ### Run a local PowerShell script
 
 Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Prefers `pwsh` (PowerShell 7+) on all platforms and falls back to `powershell.exe` (Windows PowerShell 5.1) only when `pwsh` is not available.
@@ -911,6 +946,7 @@ Invoke-PowerShellScript -Script 'Get-Process | Select-Object -First 5' -TimeoutS
 ```
 
 <a name="run-a-remote-powershell-script-via-winrm"></a>
+
 ### Run a remote PowerShell script via WinRM
 
 ```powershell
@@ -918,6 +954,7 @@ Invoke-PowerShellWinRM -Script 'Get-Service wuauserv' -Server srv01
 ```
 
 <a name="generate-a-deterministic-uuid"></a>
+
 ### Generate a deterministic UUID
 
 ```powershell
@@ -925,6 +962,7 @@ New-Uuid -ServerName srv01
 ```
 
 <a name="opsramp-api-client"></a>
+
 ### OpsRamp API client
 
 ```powershell
@@ -934,11 +972,13 @@ Invoke-OpsRampClient
 ---
 
 <a name="routing-and-control-surfaces"></a>
+
 ## Routing and Control Surfaces
 
 Dispatch requests to the appropriate handler.
 
 <a name="orchestrator-unified-entry-point"></a>
+
 ### Orchestrator (unified entry point)
 
 ```powershell
@@ -946,6 +986,7 @@ Start-AutomationOrchestrator -RequestType build_iso -Params @{ SiteCode = 'P01';
 ```
 
 <a name="view-the-route-map"></a>
+
 ### View the route map
 
 ```powershell
@@ -953,6 +994,7 @@ Get-RouteMap
 ```
 
 <a name="control-surface-factories-and-runners"></a>
+
 ### Control surface factories and runners
 
 ```powershell
@@ -962,6 +1004,7 @@ Run-GitLab -Params @{ TargetId = 'CLU-01'; Action = 'enable' }
 ```
 
 <a name="gitlab-maintenance-trigger"></a>
+
 ### GitLab maintenance trigger
 
 ```powershell
@@ -970,9 +1013,11 @@ Run-GitLab -Params @{ TargetId = 'CLU-01'; Action = 'enable' }
 ---
 
 <a name="troubleshooting"></a>
+
 ## Troubleshooting
 
 <a name="command-not-found"></a>
+
 ### Command not found
 
 ```powershell
@@ -981,6 +1026,7 @@ Get-Command -Module Automation
 ```
 
 <a name="run-setup-again"></a>
+
 ### Run setup again
 
 ```powershell
@@ -988,6 +1034,7 @@ Get-Command -Module Automation
 ```
 
 <a name="check-module-is-loaded"></a>
+
 ### Check module is loaded
 
 ```powershell
@@ -995,6 +1042,7 @@ Get-Module Automation
 ```
 
 <a name="force-reimport"></a>
+
 ### Force reimport
 
 ```powershell
@@ -1002,7 +1050,7 @@ Import-Module (Get-ChildItem -Recurse -Filter 'Automation.psd1' -Path (Split-Pat
 ```
 
 <a name="source-links"></a>
+
 ### Source links
 
 [Generated API reference](../dynamic-code-docs/INDEX.md#top) with per-command detail pages.
-

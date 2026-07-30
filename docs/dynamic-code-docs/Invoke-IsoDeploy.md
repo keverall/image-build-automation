@@ -1,12 +1,13 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Invoke-IsoDeploy
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
@@ -16,13 +17,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.txt, resolves the bootable ISO under -IsoDir, and delegates the actual virtual-media mount + boot to Invoke-IloRedfish.
 
 <a name="parameters"></a>
+
 ## Parameters
 
 | Parameter | Description |
@@ -41,22 +43,29 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | `-SkipConfirmation` | Skip the interactive confirmation prompt before deployment. |
 
 <a name="examples"></a>
+
 ## Examples
 
 <a name="example-1"></a>
+
 ### Example 1
+
 ```powershell
 Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
 ```
 
 <a name="example-2"></a>
+
 ### Example 2
+
 ```powershell
 Invoke-IsoDeploy -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.example.com' -ExternalIsoPath 'H:\windows.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos'
 ```
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Deploy a bootable ISO to HPE ProLiant servers via iLO Redfish.

@@ -1,25 +1,28 @@
 ---
 source:  ./scripts/TestProgress.Common.ps1
-generated: 2026-07-30 14:48 UTC
+generated: 2026-07-30 17:06 UTC
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
 # Get-TestResultFromLog
 
 <a id="top"></a>
+
 ## Table of Contents
 
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-
 <a name="description"></a>
+
 ## Description
 
 Falls back to zeroes / 'N/A' duration when the block is not found. The Result string is 'Passed (p/t)' only when Failed=0 and Passed=Total, otherwise 'Failed (p/t passed, f failed)'.
 
 <a name="original-comment-based-help"></a>
+
 ## Original Comment-Based Help
+
 ```powershell
 .SYNOPSIS
         Parse a TEST SUMMARY BLOCK from log content into a result object.
