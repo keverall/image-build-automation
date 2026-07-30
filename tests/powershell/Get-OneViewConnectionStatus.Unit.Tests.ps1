@@ -123,7 +123,7 @@ Describe 'Get-OneViewConnectionStatus - version guard (HPEOneView.1000 / OneView
         $r.Version          | Should -Be 8200
         $r.VersionCompliant | Should -Be $false
         $r.VersionWarning   | Should -Not -Be $null
-        $r.VersionWarning   | Should -Match 'OneView 10.x'
+        $r.VersionWarning   | Should -Match 'HPEOneView\.1000'
     }
 
     It 'Fails loudly (warns) on a non-compliant dotted version (string "8.20")' {

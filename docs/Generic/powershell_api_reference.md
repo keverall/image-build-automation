@@ -177,7 +177,7 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 |-------------|---------|-----------------|
 | `build_iso` | `New-IsoBuild` | `SiteCode`, `ManagementPoint`, `DistributionPoint` |
 | `update_firmware` | `Update-Firmware` | - |
-| `patch_windows` | `Update-WindowsSecurity` | `BaseIsoPath` |
+| `patch_windows` | `Invoke-WindowsSecurityUpdate` | `BaseIsoPath` |
 | `deploy` | `Invoke-IsoDeploy` | - |
 | `monitor` | `Start-InstallMonitor` | - |
 | `maintenance_enable` | `Set-MaintenanceMode` | `TargetId` |

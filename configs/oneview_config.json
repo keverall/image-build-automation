@@ -11,5 +11,5 @@
       "password_env": "ONEVIEW_PASSWORD"
     }
   },
-  "notes": "HPE OneView configuration. Module name format is HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.1000 for OneView 10.00). See https://github.com/HewlettPackard/POSH-HPEOneView. Appliance/credentials are EXAMPLE values used for tests; in production supply -OneViewHost / -OneViewUser / -OneViewPassword (or env vars ONEVIEW_USER / ONEVIEW_PASSWORD) at runtime."
+  "notes": "TEST/MOCK FIXTURE ONLY. This file is never read by live commands. Live OneView commands resolve everything from command parameters and environment variables (ONEVIEW_USER / ONEVIEW_PASSWORD / ONEVIEW_MODULE_NAME / MAINTENANCE_HOST); the 'appliance', 'module_name', and 'credentials' here are EXAMPLE values used by unit tests and mocks. The 'module_name' field is IGNORED by live code - the locked HPEOneView library is derived from the appliance's actual OneView version (or the ONEVIEW_MODULE_NAME override). For production, supply -OneViewHost / -OneViewUser / -OneViewPassword (or ONEVIEW_* env vars) at runtime."
 }

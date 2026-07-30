@@ -1878,7 +1878,7 @@ function Test-OneViewConnection {
         $cred = [System.Management.Automation.PSCredential]::new(
             $Username,
             (ConvertTo-SecureString $Password -AsPlainText -Force))
-        $connResult = Connect-OneViewSession -Appliance $Appliance -Credential $cred -ModuleName $ModuleName
+        $connResult = Connect-OneViewSession -Appliance $Appliance -Credential $cred
         return $connResult.Connected
     } catch {
         Write-Warning "OneView connection test failed: $($_.Exception.Message)"
@@ -2781,10 +2781,12 @@ class OneViewClient {
         $ovConfig = $Config.Get_Item('oneview') ?? @{}
         $this.Config = $ovConfig
         $this.Appliance = $ovConfig.Get_Item('appliance') ?? 'oneview.example.com'
-        $this.ModuleName = $ovConfig.Get_Item('module_name')
-        if (-not $this.ModuleName) {
-            $this.ModuleName = $this._DetectRecommendedModule($this.Appliance)
-        }
+        # Module selection is NEVER taken from config: oneview_config.json is a test/mock
+        # fixture only and must not drive live commands. Live maintenance resolves the
+        # locked HPEOneView module from the appliance version (or the ONEVIEW_MODULE_NAME
+        # override) via _DetectRecommendedModule, so the library always matches the
+        # appliance. See configs/README.md.
+        $this.ModuleName = $this._DetectRecommendedModule($this.Appliance)
         $this._ValidateModuleCompat($this.ModuleName, $this.Appliance)
         $this.UseWinRM = [bool]($ovConfig.Get_Item('use_winrm') ?? $false)
         if ($this.UseWinRM) {
@@ -2814,22 +2816,8 @@ class OneViewClient {
     )
 
     [string] _DetectRecommendedModule([string]$Appliance) {
-        $availableModules = Get-Module -ListAvailable HPEOneView.* -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
-        if (-not $availableModules) {
-            $availableModules = Get-Module -ListAvailable HPOneView.* -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
-        }
-        
-        if ($availableModules) {
-            $sortedModules = $availableModules | Sort-Object { 
-                if ($_ -match 'HPEOneView\.(\d+)') { [int]$matches[1] }
-                elseif ($_ -match 'HPOneView\.(\d+)') { [int]$matches[1] }
-                else { 0 }
-            } -Descending
-            $recommended = $sortedModules[0]
-            Write-Information "HPE OneView module detected: $recommended" -InformationAction Continue
-            return $recommended
-        }
-        
+        $resolved = Resolve-PinnedOneViewModule -Appliance $Appliance
+        if ($resolved) { return $resolved }
         return 'HPEOneView.1000'
     }
 
@@ -2869,6 +2857,7 @@ class OneViewClient {
             return @{ Success = $true; Message = "[DRY RUN] OneView maintenance for $TargetType '$Target'"; Objects = @() }
         }
         $scriptContent = @"
+Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
@@ -2996,6 +2985,7 @@ if ('$TargetType' -eq 'ServerHardware') {
             return @{ Success = $true; Message = "[DRY RUN] OneView disable maintenance for $TargetType '$Target'"; Objects = @() }
         }
         $scriptContent = @"
+Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {

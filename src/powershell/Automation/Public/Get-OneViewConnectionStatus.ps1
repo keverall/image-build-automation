@@ -62,10 +62,12 @@ function Get-OneViewConnectionStatus {
 
     .RETURNS
         [hashtable] with Success, Connected, Reachable, Authenticated, Appliance,
-        Version, ServerCount (optional), Server (optional), SessionSource
+        Version (appliance OneView version, e.g. 8200 = 8.20), ApplianceVersion (alias),
+        ServerCount (optional), Server (optional), SessionSource
         ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise),
-        VersionCompliant (bool: $true when the appliance reports OneView 10.x,
-        $false when it reports an unsupported major version, $null when unknown)
+        ModuleName (the HPEOneView PowerShell library that serves the call),
+        ModuleVersion, ModuleSource, VersionCompliant (bool: $true when the appliance
+        major matches the locked module's major, $false on mismatch, $null when unknown)
         and VersionWarning (string describing a version mismatch, or $null).
 
     .EXAMPLE
@@ -153,9 +155,13 @@ function Get-OneViewConnectionStatus {
         Reachable      = $false
         Authenticated  = $false
         Appliance      = $OneViewHost
-        Version        = $null
+        Version        = $null   # appliance OneView version (e.g. 8200 = 8.20)
+        ApplianceVersion = $null # explicit alias of Version
         VersionCompliant = $null
         VersionWarning  = $null
+        ModuleName     = $null   # HPEOneView PowerShell library that serves the call
+        ModuleVersion  = $null
+        ModuleSource   = $null   # 'LoadedSession' | 'Resolved' | $null
         ServerCount    = $null
         Server         = $null
         SessionSource  = $(if ($sessionToken) { 'HPEOneViewModule' } else { 'Explicit' })
@@ -171,7 +177,19 @@ function Get-OneViewConnectionStatus {
             $result.Reachable = $true
             if ($ver -and $ver.currentVersion) {
                 $result.Version = $ver.currentVersion
+                $result.ApplianceVersion = $ver.currentVersion
                 _Test-OneViewVersionCompliance -Result $result -Version $ver.currentVersion -Appliance $OneViewHost
+            }
+            # Report exactly which HPEOneView PowerShell library serves the call so the
+            # operator can tell appliance version apart from module version.
+            $ovMod = @(Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Select-Object -First 1)
+            if ($ovMod) {
+                $result.ModuleName    = $ovMod.Name
+                $result.ModuleVersion = "$($ovMod.Version)"
+                $result.ModuleSource  = 'LoadedSession'
+            } else {
+                $result.ModuleName   = Resolve-PinnedOneViewModule -Appliance $OneViewHost
+                $result.ModuleSource = 'Resolved (library not yet imported in this session)'
             }
         } catch {
             $result.Reachable = $false
@@ -301,12 +319,13 @@ function _Get-OneViewMajorVersion {
 function _Test-OneViewVersionCompliance {
     <#
     .SYNOPSIS
-        Enforce the HPEOneView.1000 / OneView 10.x requirement on a reported version.
+        Verify the appliance major version matches the locked HPEOneView module.
     .DESCRIPTION
-        Populates $Result.VersionCompliant ($true when major == 10, $false otherwise,
-        $null when the version is unknown/unparseable) and $Result.VersionWarning.
-        Emits a non-terminating warning so a non-compliant appliance fails loudly
-        without suppressing the rest of the connectivity diagnostics.
+        Populates $Result.VersionCompliant ($true when the appliance major equals the
+        locked module's major, $false otherwise, $null when the version is
+        unknown/unparseable) and $Result.VersionWarning. A mismatch means the wrong
+        PowerShell library is selected for this appliance - the root cause of 502 /
+        corrupted-state failures.
     #>
     param(
         [hashtable] $Result,
@@ -318,13 +337,15 @@ function _Test-OneViewVersionCompliance {
         $Result.VersionCompliant = $null
         return
     }
-    if ($major -eq 10) {
+    $lockedModule = Resolve-PinnedOneViewModule -Appliance $Appliance
+    $reqMajor = Get-OneViewModuleMajorVersion -ModuleName $lockedModule
+    if ($reqMajor -gt 0 -and $major -eq $reqMajor) {
         $Result.VersionCompliant = $true
         return
     }
     $Result.VersionCompliant = $false
-    $msg = "OneView appliance '$Appliance' reports version '$Version' (major $major); " +
-           "HPEOneView.1000 / OneView 10.x is required. Connect to a OneView 10.x appliance or upgrade this one."
+    $msg = "OneView appliance '$Appliance' reports version '$Version' (major $major), but the locked module is '$lockedModule' (major $reqMajor). " +
+           "Use ONEVIEW_MODULE_NAME to pin the matching library (e.g. HPEOneView.$($major)000)."
     $Result.VersionWarning = $msg
     Write-Warning $msg
     if ($logger) { $logger.Warning($msg) }
