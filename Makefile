@@ -112,14 +112,19 @@ add-anchors: ## Add Bitbucket/GitStash-compatible anchors + TOC to all markdown
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All
 
 # ─── Documentation Link Validation ───────────────────────────────────────────
-fix-docs: prune-logs ## Fix broken markdown links in configs/, docs/, and root
+fix-docs: prune-logs ## Fix broken markdown links + anchors/TOC in configs/, docs/, and root
 	@echo "$(CYAN)[fix-docs]$(NC) Validating and fixing markdown links..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
+	@echo "$(CYAN)[fix-docs]$(NC) Fixing markdown anchors and table of contents..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All $(DRYRUN)
 
 fix-docs-dryrun: WHATIF=-WhatIf
-fix-docs-dryrun: prune-logs ## Preview broken markdown link fixes (dry-run)
+fix-docs-dryrun: DRYRUN=-DryRun
+fix-docs-dryrun: prune-logs ## Preview broken markdown link + anchor/TOC fixes (dry-run)
 	@echo "$(CYAN)[fix-docs-dryrun]$(NC) Previewing link fixes (no changes)..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
+	@echo "$(CYAN)[fix-docs-dryrun]$(NC) Previewing anchor/TOC fixes (no changes)..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bitbucket-md-anchor-toc.ps1 -All $(DRYRUN)
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: prune-logs ## Show this help message
