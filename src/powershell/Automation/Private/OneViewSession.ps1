@@ -125,10 +125,13 @@ function Resolve-PinnedOneViewModule {
         Resolve the exact HPEOneView module to use for an appliance.
     .DESCRIPTION
         1. ONEVIEW_MODULE_NAME env var (valid module name) - explicit override.
-        2. Otherwise probe the appliance /rest/version and map its major version to the
-           matching HPEOneView.<major>000 library (OneView 10.x -> HPEOneView.1000).
+        2. Otherwise probe the appliance /rest/version and map its major.minor version to
+           the matching HPEOneView.<major*100+minor> library (OneView 10.00 -> HPEOneView.1000).
         3. Fall back to the highest installed HPEOneView.* module (warned), else default.
-        Verifies the resolved module is installed; warns but never loads a stray version.
+        NOTE: The HPEOneView.* libraries are Windows-only. On non-Windows hosts (Linux/
+        macOS) enumerating/importing them crashes the native PowerShell layer, so the
+        availability checks below are SKIPPED off-Windows and resolution is by name only
+        (the actual Connect-OVMgmt import is a Windows-only operation; unit tests mock it).
     #>
     [CmdletBinding()]
     [OutputType([string])]
@@ -138,9 +141,12 @@ function Resolve-PinnedOneViewModule {
         [int] $Port = 443
     )
 
+    $isWindows = ($PSVersionTable.PSVersion.Major -le 5) -or $IsWindows
+
+    # 1. Explicit env override
     $envVal = [System.Environment]::GetEnvironmentVariable('ONEVIEW_MODULE_NAME')
     if ($envVal -and $envVal -match '^(HPEOneView|HPOneView)\.\d+$') {
-        if (Get-Module -ListAvailable -Name $envVal -ErrorAction SilentlyContinue) {
+        if (-not $isWindows -or (Get-Module -ListAvailable -Name $envVal -ErrorAction SilentlyContinue)) {
             return $envVal
         }
         Write-Warning "ONEVIEW_MODULE_NAME '$envVal' is not installed; detecting from appliance instead."
@@ -148,6 +154,7 @@ function Resolve-PinnedOneViewModule {
         Write-Warning "ONEVIEW_MODULE_NAME '$envVal' is not a valid OneView module name; ignoring."
     }
 
+    # 2. Probe the appliance and map its major.minor version to the matching library.
     if ($Appliance) {
         $pair = $null
         try {
@@ -161,22 +168,52 @@ function Resolve-PinnedOneViewModule {
         }
         if ($pair) {
             $candidate = "HPEOneView.$($pair.Major * 100 + $pair.Minor)"
-            if (Get-Module -ListAvailable -Name $candidate -ErrorAction SilentlyContinue) {
-                Write-Verbose "Resolved OneView module '$candidate' from appliance version $($pair.Major).$($pair.Minor)."
+            if ($isWindows) {
+                if (Get-Module -ListAvailable -Name $candidate -ErrorAction SilentlyContinue) {
+                    Write-Verbose "Resolved OneView module '$candidate' from appliance version $($pair.Major).$($pair.Minor)."
+                    return $candidate
+                }
+                Write-Warning "Appliance reports OneView $($pair.Major).$($pair.Minor), but module '$candidate' is not installed."
+            } else {
+                # Non-Windows: return the name derived from the appliance; import is Windows-only.
+                Write-Verbose "Resolved OneView module '$candidate' from appliance version $($pair.Major).$($pair.Minor) (non-Windows host; import skipped)."
                 return $candidate
             }
-            Write-Warning "Appliance reports OneView $($pair.Major).$($pair.Minor), but module '$candidate' is not installed."
         }
     }
 
-    $installed = @(Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue |
-        Sort-Object { if ($_ -match 'HPEOneView\.(\d+)') { [int]$matches[1] } else { 0 } } -Descending |
-        Select-Object -ExpandProperty Name -First 1)
-    if ($installed) {
-        Write-Warning "Could not pin OneView module from appliance/env; using highest installed '$installed'. Verify it matches the appliance version."
-        return $installed
+    # 3. Fallback: highest installed module (warned). Skipped off-Windows (disk scan crashes).
+    if ($isWindows) {
+        $installed = @(Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue |
+            Sort-Object { if ($_ -match 'HPEOneView\.(\d+)') { [int]$matches[1] } else { 0 } } -Descending |
+            Select-Object -ExpandProperty Name -First 1)
+        if ($installed) {
+            Write-Warning "Could not pin OneView module from appliance/env; using highest installed '$installed'. Verify it matches the appliance version."
+            return $installed
+        }
     }
 
+    return 'HPEOneView.1000'
+}
+
+function Get-ExpectedOneViewModuleName {
+    <#
+    .SYNOPSIS
+        Pure resolution of the intended HPEOneView module name (no probing, no module scanning).
+    .DESCRIPTION
+        Returns $env:ONEVIEW_MODULE_NAME when set to a valid module name, otherwise the
+        project default 'HPEOneView.1000'. Used by read-only status checks that must not
+        import or scan HPEOneView.* modules (which can be costly/unsafe on hosts where the
+        full library is installed). The authoritative, appliance-probing resolution lives in
+        Resolve-PinnedOneViewModule (used only when actually connecting).
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+    $envVal = [System.Environment]::GetEnvironmentVariable('ONEVIEW_MODULE_NAME')
+    if ($envVal -and $envVal -match '^(HPEOneView|HPOneView)\.\d+$') {
+        return $envVal
+    }
     return 'HPEOneView.1000'
 }
 
@@ -224,7 +261,14 @@ function Get-OneViewModuleStatus {
     param()
 
     $loaded = @(Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue)
-    $installed = @(Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue)
+    # On non-Windows hosts, enumerating HPEOneView.* via Get-Module -ListAvailable crashes
+    # the native PowerShell layer (the libraries are Windows-only), so skip the scan.
+    $isWindows = ($PSVersionTable.PSVersion.Major -le 5) -or $IsWindows
+    $installed = if ($isWindows) {
+        @(Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue)
+    } else {
+        @()
+    }
 
     $describe = { param($m) @{ Name = $m.Name; Version = "$($m.Version)"; Path = $m.Path } }
 
@@ -462,8 +506,14 @@ function Connect-OneViewSession {
             (ConvertTo-SecureString $pass -AsPlainText -Force))
     }
 
-    # Import the exact locked module (RequiredVersion pins it even if multiple same-name exist).
-    $mod = Get-Module -ListAvailable -Name $pinned -ErrorAction SilentlyContinue | Select-Object -First 1
+    # Import the exact locked module. On non-Windows the HPEOneView.* libraries cannot load
+    # and enumerating them via Get-Module crashes the native layer, so skip the
+    # RequiredVersion lookup (the import path is mocked in unit tests anyway).
+    $isWindows = ($PSVersionTable.PSVersion.Major -le 5) -or $IsWindows
+    $mod = $null
+    if ($isWindows) {
+        $mod = Get-Module -ListAvailable -Name $pinned -ErrorAction SilentlyContinue | Select-Object -First 1
+    }
     try {
         if ($mod -and $mod.Version) {
             Import-Module $pinned -RequiredVersion $mod.Version -ErrorAction Stop
