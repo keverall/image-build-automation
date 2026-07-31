@@ -918,15 +918,40 @@ TEST SUMMARY BLOCK
 }
 
 Describe 'HTML converter comment stripping' {
+    # These tests exercise scripts/MD_to_HTML_Converter.py, which runs under
+    # Python. Python is available on the CachyOS (Linux) dev environment but is
+    # NOT installed on the Windows test servers (and cannot be). Skip the whole
+    # block there so we don't produce confusing, irrelevant failures.
     BeforeAll {
         $Script:ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
         $Script:ConverterScript = Join-Path $Script:ProjectRoot 'scripts/MD_to_HTML_Converter.py'
         $Script:FixtureDir = Join-Path $Script:ProjectRoot 'generated/test-fixtures/html-converter'
+
+        # Probe for a working Python interpreter. Get-Command can resolve the
+        # Windows "Python was not found" app-execution-alias stub, so we actually
+        # run --version and rely on $LASTEXITCODE (the stub exits non-zero, so it
+        # is correctly treated as absent). stderr is discarded (2>$null) because
+        # `python --version` writes its banner to stderr and under
+        # $ErrorActionPreference='Stop' that can raise a NativeCommandError.
+        $Script:PythonCmd = $null
+        $Script:PythonAvailable = $false
+        foreach ($cand in @('python3', 'python')) {
+            try {
+                $probe = & $cand --version 2>$null
+            } catch {
+                continue
+            }
+            if ($LASTEXITCODE -eq 0 -and ($probe -join ' ') -match 'Python') {
+                $Script:PythonCmd = $cand
+                $Script:PythonAvailable = $true
+                break
+            }
+        }
     }
 
     BeforeEach {
         if (Test-Path $Script:FixtureDir) { Remove-Item -Recurse -Force $Script:FixtureDir }
-        New-Item -ItemType Directory -Force -Path $Script:FixtureDir | Out-Null
+        $null = New-Item -ItemType Directory -Force -Path $Script:FixtureDir
     }
 
     AfterAll {
@@ -934,6 +959,10 @@ Describe 'HTML converter comment stripping' {
     }
 
     It 'TPR-HTML-01: Markers around a table are stripped, data rows present' {
+        if (-not $Script:PythonAvailable) {
+            Set-ItResult -Skipped -Because 'Python interpreter not available (e.g. Windows test server)'
+            return
+        }
         $inputMd = Join-Path $Script:FixtureDir 'input.md'
         $outputHtml = Join-Path $Script:FixtureDir 'output.html'
 
@@ -947,7 +976,7 @@ Describe 'HTML converter comment stripping' {
 "@
         Set-Content -Path $inputMd -Value $mdContent -NoNewline
 
-        & python3 $ConverterScript $inputMd $outputHtml
+        & $Script:PythonCmd $ConverterScript $inputMd $outputHtml
         $htmlContent = Get-Content $outputHtml -Raw
         $htmlContent | Should -Not -Match '<!--'
         $htmlContent | Should -Match 'data1'
@@ -955,6 +984,10 @@ Describe 'HTML converter comment stripping' {
     }
 
     It 'TPR-HTML-02: Markers around run-date <p> are stripped, passthrough intact' {
+        if (-not $Script:PythonAvailable) {
+            Set-ItResult -Skipped -Because 'Python interpreter not available (e.g. Windows test server)'
+            return
+        }
         $inputMd = Join-Path $Script:FixtureDir 'input.md'
         $outputHtml = Join-Path $Script:FixtureDir 'output.html'
 
@@ -967,7 +1000,7 @@ Describe 'HTML converter comment stripping' {
 "@
         Set-Content -Path $inputMd -Value $mdContent -NoNewline
 
-        & python3 $ConverterScript $inputMd $outputHtml
+        & $Script:PythonCmd $ConverterScript $inputMd $outputHtml
         $htmlContent = Get-Content $outputHtml -Raw
         $htmlContent | Should -Not -Match '<!--'
         $htmlContent | Should -Match 'report-run-date'
@@ -975,6 +1008,10 @@ Describe 'HTML converter comment stripping' {
     }
 
     It 'TPR-HTML-03: Standalone marker line removal leaves no stray blank line' {
+        if (-not $Script:PythonAvailable) {
+            Set-ItResult -Skipped -Because 'Python interpreter not available (e.g. Windows test server)'
+            return
+        }
         $inputMd = Join-Path $Script:FixtureDir 'input.md'
         $outputHtml = Join-Path $Script:FixtureDir 'output.html'
 
@@ -989,7 +1026,7 @@ Describe 'HTML converter comment stripping' {
 "@
         Set-Content -Path $inputMd -Value $mdContent -NoNewline
 
-        & python3 $ConverterScript $inputMd $outputHtml
+        & $Script:PythonCmd $ConverterScript $inputMd $outputHtml
         $htmlContent = Get-Content $outputHtml -Raw
         $htmlContent | Should -Not -Match '<!--'
         $htmlContent | Should -Match 'data'
