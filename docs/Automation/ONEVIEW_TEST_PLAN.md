@@ -25,7 +25,7 @@
 - [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
-<p class="report-run-date"><strong>Run date:</strong> 28/07/2026 15:47 UTC</p>
+<p class="report-run-date"><strong>Run date:</strong> 31/07/2026 09:14 UTC</p>
 <!-- END:run-date -->
 
 <a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
@@ -326,7 +326,8 @@ Error
 | 3 | 24/07/2026 16:34 UTC | Phase 1 | K Everall | HPEOpenview.1000 | Passed (95/95) | see run log below | n/a |
 | 4 | 27/07/2026 14:55 UTC | Phase 1 | K Everall | va-oneviewt-01 | Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). | 20260727 | n/a |
 | 5 | 27/07/2026 17:00 UTC | Phase 1 | K Everall | va-oneviewt-01 | Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). Server list output correctly, test passed, version shown is incorrect as HPeOneView.840 version shown, will purge powershell env and fix| 20260727 | n/a |
-| 6 | 28/07/2026 15:47 UTC | Phase 1 | K Everall | va-oneviewt-01 | NO TESTING TODAY AS THERE IS A FREEZE UNTIL 31/07/2026 | 20260731 | n/a |
+| 6 | 31/07/2026 09:14 UTC | Phase 1 | K Everall | va-oneviewt-01 | NO TESTING TODAY AS THERE IS A FREEZE UNTIL 31/07/2026 | 20260731 | n/a |
+| 7 | 31/07/2026 09:14 UTC | Phases 1-10 | K Everall | HPEOpenview.1000 | Passed (99/99) | see run log below | n/a |
 <!-- END:phase11-rows -->
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>
