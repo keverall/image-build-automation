@@ -218,3 +218,321 @@ Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, 
 Count                          16
 Error
 ```
+
+
+999999999hhhhhhhh
+
+
+
+
+==============================================
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       localhost
+  Environment:Prod
+  Timestamp:  2026-07-31T09:25:06.6643125Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        127.0.0.1
+    TCP:       Open (port 18443, 18ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: Yes (session active)
+
+==============================================
+
+2026-07-31 09:25:06 - Connectivity - INFO - Connectivity test for 'localhost' completed: Available=True (DNS=True, TCP=True, Auth=True)
+  [+] Should pass the supplied -Credential to Connect-OneViewSession (integration, mocked session) 422ms
+
+==============================================
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE [DRY-RUN]
+  Mode:       oneview
+  Host:       localhost
+  Environment:Prod
+  Timestamp:  2026-07-31T09:25:06.8517885Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.254.254.254
+    TCP:       Open (port 443, 1ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    Connected: Yes (session active)
+
+  --- Dry-Run Configuration Summary ---
+    Module:       HPEOneView.1000
+    Target ports: 443
+    WinRM:        False
+    Cred user:    ONEVIEW_USER
+    Cred pass:    ONEVIEW_PASSWORD
+    Note:         Mock data - no actual connectivity test performed
+
+==============================================
+
+2026-07-31 09:25:07 - Connectivity - INFO - Connectivity test for 'localhost' completed (DryRun): Available=True, Mode=oneview
+  [+] Should accept PSCredential parameter without throwing 391ms
+2026-07-31 09:25:07 - Connectivity - INFO - DNS resolution for 'localhost': Resolved -> 127.0.0.1
+2026-07-31 09:25:08 - Connectivity - INFO - TCP probe for 'localhost': FAILED - TCP connection failed - no open port found (443) on 'localhost' within 1000ms
+
+==============================================
+  OneView Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       localhost
+  Environment:Prod
+  Timestamp:  2026-07-31T09:25:08.2508072Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        127.0.0.1
+    TCP:       FAILED
+    Error:     TCP connection failed - no open port found (443) on 'localhost' within 1000ms
+
+  --- Phase 2: Auth Connect ---
+    Module:    Not loaded
+    Connected: No
+    Error:     Skipped - network ping failed
+
+==============================================
+
+2026-07-31 09:25:08 - Connectivity - INFO - Connectivity test for 'localhost' completed: Available=False (DNS=True, TCP=False, Auth=False)
+  [+] Should pass -Credential through to Phase 2 when network is available 1.11s
+
+Running tests from 'C:\Users\98253\repos\image-build-automation\tests\powershell\Update-Firmware.Unit.Tests.ps1'
+WARNING: The names of some imported commands from the module 'Pester' include unapproved verbs that might make them less discoverable. To find the commands with unapproved verbs, run the Import-Module command again with the Verbose parameter. For a list of approved verbs, type Get-Verb.
+Describing Update-Firmware - basic invocation and parameter validation
+  [+] Function is exported and has expected parameters 17ms
+  [+] Accepts -DryRun switch without throwing 18ms
+  [+] Rejects unknown parameters (strict mode) 3ms
+
+Running tests from 'C:\Users\98253\repos\image-build-automation\tests\powershell\Update-TestProgress.Unit.Tests.ps1'
+Describing Get-Block
+  [+] Returns inner text when block exists 32ms
+  [+] Returns null when block does not exist 4ms
+  [+] Handles multi-line block content 4ms
+  [+] Handles empty block content 3ms
+  [+] Handles special regex characters in key 4ms
+
+Describing Set-Block
+  [+] Replaces block inner content 17ms
+  [+] Returns unchanged content when block not found 4ms
+  [+] Preserves markers exactly 12ms
+  [+] Handles special characters in replacement text 10ms
+  [+] Only touches the targeted key, leaving other blocks intact 6ms
+
+Describing ConvertTo-TableCell
+  [+] Escapes pipe characters 16ms
+  [+] Collapses newlines to spaces 3ms
+  [+] Trims whitespace 3ms
+  [+] Handles null input 3ms
+  [+] Handles empty string 3ms
+  [+] Combines escaping and newline handling 3ms
+
+Describing Get-RowLine
+  [+] Returns non-empty lines from block content 21ms
+  [+] Returns empty array for null input 6ms
+  [+] Returns empty array for empty string 5ms
+  [+] Returns empty array for whitespace-only input 4ms
+  [+] Handles Windows line endings 4ms
+
+Describing Get-NextRunNumber
+  [+] Returns 1 when no rows provided 13ms
+  [+] Returns 1 for empty array 4ms
+  [+] Returns max + 1 from existing rows 5ms
+  [+] Handles non-sequential run numbers 4ms
+  [+] Ignores rows with non-numeric first cell 4ms
+  [+] Handles rows with insufficient cells 10ms
+
+Describing Set-LastRowDateTime
+  [+] Updates date/time in last row 19ms
+  [+] Returns empty array unchanged 5ms
+  [+] Handles null rows 6ms
+  [+] Preserves other columns 4ms
+
+Describing Update-RunDateBlock
+  [+] Updates run-date block with new date 22ms
+  [+] Preserves HTML structure 6ms
+
+Describing Update-AutomationEvidenceBlock
+  [+] Adds new row with correct run number when -AddRow is specified 19ms
+  [+] Updates last row date without adding when -AddRow is not specified 8ms
+  [+] Returns RunNumber 0 and Added false when block not found 4ms
+  [+] Escapes special characters in fields 5ms
+  [+] Handles empty fields 10ms
+
+Describing Set-OneViewStatusSummary
+  [+] Updates status summary text 10ms
+  [+] Returns unchanged content when SummaryText is null 4ms
+  [+] Returns unchanged content when SummaryText is empty 3ms
+  [+] Trims whitespace from summary text 9ms
+  [+] Wraps text in bold markers 5ms
+  [+] Is idempotent: running twice replaces, does not append a second bullet 10ms
+
+Describing Update-Phase11Block
+  [+] Updates last row date without adding row 14ms
+  [+] Adds new row when AddRow specified 7ms
+  [+] Returns RunNumber 0 when block not found 12ms
+  [+] Updates last row date even when adding new row 17ms
+  [+] Escapes pipe characters in add-row fields 5ms
+
+Describing Get-TestResultFromLog
+  [+] Parses valid test summary block 19ms
+  [+] Returns Passed result when all tests pass 4ms
+  [+] Returns fallback values when summary not found 7ms
+  [+] Handles null log content 4ms
+  [+] Handles empty log content 13ms
+  [+] Returns Failed result when any tests fail 6ms
+  [+] Parses duration with decimal places 4ms
+
+Describing End-to-end script (child process, -SkipHtml)
+[test-progress] Extracting test summary from log...
+[test-progress] Test Summary:
+  Total: 10 | Passed: 10 | Failed: 0 | Skipped: 0 | Duration: 5.0s
+
+[test-progress] Please provide details for the test run record:
+[test-progress] Updated Automation section 7 last row date
+[test-progress] Updating C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md...
+[test-progress] Updated C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md
+
+[test-progress] -SkipHtml supplied; skipping HTML regeneration.
+
+[test-progress] Test progress update complete!
+Please review the updated test plans and commit the changes.
+  [+] TPR-E2E-01: Default non-interactive run updates both plans 2.22s
+[test-progress] Extracting test summary from log...
+[test-progress] Test Summary:
+  Total: 10 | Passed: 10 | Failed: 0 | Skipped: 0 | Duration: 5.0s
+
+[test-progress] Please provide details for the test run record:
+[test-progress] Updated Automation section 7 last row date
+[test-progress] Updating C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md...
+[test-progress] Updated C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md
+
+[test-progress] -SkipHtml supplied; skipping HTML regeneration.
+
+[test-progress] Test progress update complete!
+Please review the updated test plans and commit the changes.
+  [+] TPR-E2E-02: Phase 11 last-row date refresh without adding row 2.27s
+[test-progress] Extracting test summary from log...
+[test-progress] Test Summary:
+  Total: 10 | Passed: 10 | Failed: 0 | Skipped: 0 | Duration: 5.0s
+
+[test-progress] Please provide details for the test run record:
+[test-progress] Updated Automation section 7 last row date
+[test-progress] Updating C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md...
+[test-progress] Updated OneView status summary
+[test-progress] Updated C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md
+
+[test-progress] -SkipHtml supplied; skipping HTML regeneration.
+
+[test-progress] Test progress update complete!
+Please review the updated test plans and commit the changes.
+  [+] TPR-E2E-03: -OneViewStatusSummary supplied replaces bullet 2.48s
+[test-progress] Extracting test summary from log...
+[test-progress] Test Summary:
+  Total: 10 | Passed: 10 | Failed: 0 | Skipped: 0 | Duration: 5.0s
+
+[test-progress] Please provide details for the test run record:
+[test-progress] Updated Automation section 7 last row date
+[test-progress] Updating C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md...
+[test-progress] Updated C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md
+
+[test-progress] -SkipHtml supplied; skipping HTML regeneration.
+
+[test-progress] Test progress update complete!
+Please review the updated test plans and commit the changes.
+  [+] TPR-E2E-04: No summary param leaves bullet unchanged 2.27s
+[test-progress] Extracting test summary from log...
+[test-progress] Test Summary:
+  Total: 10 | Passed: 10 | Failed: 0 | Skipped: 0 | Duration: 5.0s
+
+[test-progress] Please provide details for the test run record:
+[test-progress] Updated Automation section 7 last row date
+[test-progress] Updating C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md...
+[test-progress] Added OneView Phase 11 row #2
+[test-progress] Updated C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\ONEVIEW_TEST_PLAN.md
+
+[test-progress] -SkipHtml supplied; skipping HTML regeneration.
+
+[test-progress] Test progress update complete!
+Please review the updated test plans and commit the changes.
+  [+] TPR-E2E-05: -AddOneViewRow with fields appends new row 2.33s
+Write-Error: C:\Users\98253\repos\image-build-automation\scripts\Update-TestProgress.ps1:181:5
+Line |
+ 181 |      Write-Error "Log file not found: $LogPath"
+     |      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Log file not found: C:\Users\98253\repos\image-build-automation\generated\test-fixtures\test-progress-e2e\nonexistent.log
+  [+] TPR-E2E-06: Missing log file causes non-zero exit 2.23s
+
+Describing HTML converter comment stripping
+Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.
+  [-] TPR-HTML-01: Markers around a table are stripped, data rows present 874ms
+   at <ScriptBlock>, C:\Users\98253\repos\image-build-automation\tests\powershell\Update-TestProgress.Unit.Tests.ps1:951
+   ItemNotFoundException: Cannot find path 'C:\Users\98253\repos\image-build-automation\generated\test-fixtures\html-converter\output.html' because it does not exist.
+Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.
+  [-] TPR-HTML-02: Markers around run-date $null are stripped, passthrough intact 919ms
+   at <ScriptBlock>, C:\Users\98253\repos\image-build-automation\tests\powershell\Update-TestProgress.Unit.Tests.ps1:971
+   ItemNotFoundException: Cannot find path 'C:\Users\98253\repos\image-build-automation\generated\test-fixtures\html-converter\output.html' because it does not exist.
+Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.
+  [-] TPR-HTML-03: Standalone marker line removal leaves no stray blank line 748ms
+   at <ScriptBlock>, C:\Users\98253\repos\image-build-automation\tests\powershell\Update-TestProgress.Unit.Tests.ps1:993
+   ItemNotFoundException: Cannot find path 'C:\Users\98253\repos\image-build-automation\generated\test-fixtures\html-converter\output.html' because it does not exist.
+
+Running tests from 'C:\Users\98253\repos\image-build-automation\tests\powershell\Update-WindowsSecurity.Unit.Tests.ps1'
+WARNING: The names of some imported commands from the module 'Pester' include unapproved verbs that might make them less discoverable. To find the commands with unapproved verbs, run the Import-Module command again with the Verbose parameter. For a list of approved verbs, type Get-Verb.
+Describing Invoke-WindowsSecurityUpdate - basic invocation and parameter validation
+  [+] Function is exported and has expected parameters 9ms
+  [+] Accepts -DryRun switch without throwing 16ms
+  [+] Rejects unknown parameters (strict mode) 3ms
+
+Running tests from 'C:\Users\98253\repos\image-build-automation\tests\powershell\Validators.Unit.Tests.ps1'
+Describing Test-ClusterId
+  [+] Returns definition for a valid cluster ID 15ms
+  [+] Returns failure for a missing catalogue file 14ms
+  [+] Returns failure for a cluster not in the catalogue 8ms
+
+Describing Test-ServerList
+  [+] Returns a non-empty list for a valid server list 13ms
+  [+] Returns failure for a missing file 5ms
+
+Describing Test-BuildParams
+  [+] Returns no errors for a valid (or absent) ISO path 13ms
+  [+] Reports an error for a non-existent ISO path 4ms
+Tests completed in 231.34s
+Tests Passed: 468, Failed: 3, Skipped: 0, Inconclusive: 0, NotRun: 0
+
+================================================================================
+                           TEST SUMMARY BLOCK                                   
+================================================================================
+ Total Tests   : 471
+ Passed        : 468 
+-NoNewline
+✔
+ Failed        : 3 
+-NoNewline
+✖ (CRITICAL)
+ Skipped       : 0
+ Duration      : 231.34s
+================================================================================
+make: *** [Makefile:79: test] Error 1
+     image-build-automation  main                                                                 2  4m 4s 469ms  10:25:29 
+
+
+
+
+
+
+
+
+
