@@ -1,5 +1,16 @@
 # Security & Compliance Pipeline — EMIR / DORA Control Evidence
 
+<a id="top"></a>
+
+## Table of Contents
+
+- [1. What the pipeline now does](#1-what-the-pipeline-now-does)
+- [2. Remediation posture (report-only → enforce)](#2-remediation-posture-report-only-enforce)
+- [3. The security baseline — how exceptions work](#3-the-security-baseline-how-exceptions-work)
+- [4. Findings that block an EMIR review (code remediation — separate program)](#4-findings-that-block-an-emir-review-code-remediation-separate-program)
+- [5. Supply-chain hardening still required before production](#5-supply-chain-hardening-still-required-before-production)
+- [6. Retention](#6-retention)
+
 **Standard:** EU EMIR (Reg. 648/2012) Art. 34 operational risk; DORA (Reg.
 2022/2554) Art. 8–10 ICT risk management; EBA Guidelines on ICT and security
 risk management (EBA/GL/2019/04).
@@ -9,6 +20,8 @@ protect changes to the automation that touches production banking
 infrastructure. It treats the pipeline itself as an in-scope ICT system.
 
 ---
+
+<a name="1-what-the-pipeline-now-does"></a>
 
 ## 1. What the pipeline now does
 
@@ -34,6 +47,8 @@ Secret Detection (Gitleaks) **is** available on all tiers and runs a
 **historic** scan, so it catches credentials committed and later "removed".
 
 ---
+
+<a name="2-remediation-posture-report-only-enforce"></a>
 
 ## 2. Remediation posture (report-only → enforce)
 
@@ -61,6 +76,8 @@ commitment.**
 
 ---
 
+<a name="3-the-security-baseline-how-exceptions-work"></a>
+
 ## 3. The security baseline — how exceptions work
 
 `.security-baseline.json` is the risk-acceptance ledger. Each entry is a
@@ -81,6 +98,8 @@ Regenerate after a legitimate fix: `pwsh -File scripts/ci-security-check.ps1
 -UpdateBaseline`, then set owner/justification/expiry on the remaining entries.
 
 ---
+
+<a name="4-findings-that-block-an-emir-review-code-remediation-separate-program"></a>
 
 ## 4. Findings that block an EMIR review (code remediation — separate program)
 
@@ -103,6 +122,8 @@ must be tracked as their own change program.
 
 ---
 
+<a name="5-supply-chain-hardening-still-required-before-production"></a>
+
 ## 5. Supply-chain hardening still required before production
 
 - `POWERSHELL_IMAGE` is a **mutable tag**. Pin to a `sha256` digest and mirror
@@ -113,6 +134,8 @@ must be tracked as their own change program.
   validation. Replace with signature-verified install from the internal mirror.
 
 ---
+
+<a name="6-retention"></a>
 
 ## 6. Retention
 

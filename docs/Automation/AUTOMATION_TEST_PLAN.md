@@ -4,19 +4,17 @@
 
 ## Table of Contents
 
-- [Automation Test Plan — Physical Server Build and ISO Pipeline](#automation-test-plan--physical-server-build-and-iso-pipeline)
-  - [Table of Contents](#table-of-contents)
-  - [How to execute (runner reference):](#how-to-execute-runner-reference)
-  - [1. ISO Build, Patching, Deployment and Monitoring](#1-iso-build-patching-deployment-and-monitoring)
-  - [2. OneView and iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity--targeting)
-  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
-  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
-  - [5. Orchestration, Routing and Utility](#5-orchestration-routing-and-utility)
-  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
-  - [7. Test Run Summary (filled per cycle)](#7-test-run-summary-filled-per-cycle)
-    - [Run log](#run-log)
-  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
+- [How to execute (runner reference):](#how-to-execute-runner-reference)
+- [1. ISO Build, Patching, Deployment and Monitoring](#1-iso-build-patching-deployment-and-monitoring)
+- [2. OneView and iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity-targeting)
+- [3. Pre/Post Build Validation](#3-prepost-build-validation)
+- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
+- [5. Orchestration, Routing and Utility](#5-orchestration-routing-and-utility)
+- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
+- [7. Test Run Summary (filled per cycle)](#7-test-run-summary-filled-per-cycle)
+  - [Run log](#run-log)
+- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 31/07/2026 09:14 UTC</p>
@@ -66,7 +64,7 @@
 
 ---
 
-<a name="1-iso-build-patching-deployment-monitoring"></a>
+<a name="1-iso-build-patching-deployment-and-monitoring"></a>
 
 ## 1. ISO Build, Patching, Deployment and Monitoring
 
@@ -165,7 +163,7 @@
   </tbody>
 </table>
 
-<a name="2-oneview-ilo-connectivity-targeting"></a>
+<a name="2-oneview-and-ilo-connectivity-targeting"></a>
 
 ## 2. OneView and iLO Connectivity / Targeting
 
@@ -451,7 +449,7 @@
   </tbody>
 </table>
 
-<a name="5-orchestration-routing-utility"></a>
+<a name="5-orchestration-routing-and-utility"></a>
 
 ## 5. Orchestration, Routing and Utility
 

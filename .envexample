@@ -1,16 +1,60 @@
-# Environment Configuration for Maintenance Mode Scripts
-# Copy this file to .env and fill in your values
+# Environment Configuration — Maintenance Mode & HPE OneView Automation
+# Copy this file to .env and fill in your values for LOCAL runs.
+#
+# IMPORTANT (CI/CD): Do NOT put real secrets in this file or in .gitlab-ci.yml.
+# In the pipeline, secrets are injected at runtime from CyberArk via the AIM Web
+# Service, using the environment-specific secret file (dev / uat / prod) for the
+# pipeline run. The cyberark-bootstrap job retrieves them and exports them as job
+# variables (dotenv). Only non-secret configuration below is safe to commit.
+#
+# Live Automation commands receive values as PARAMETERS (the commands never read
+# them from env). The non-secret values here double as the defaults the pipeline
+# declares in .gitlab-ci.yml `variables:`.
+
+# This is the way! The DevOps way!
 
 # Environment: Test or Prod
 ENVIRONMENT=Test
 
-# SCOM Connection Settings
+# --- Hosts / endpoints (non-secret) ---
+MAINTENANCE_HOST=            # Overrides both SCOM and OneView appliance host resolution
+ONEVIEW_HOST=                # OneView appliance FQDN (-> -OneViewHost)
+ONEVIEW_MODULE_NAME=HPEOneView.1000
+ILO_IP=                      # Target iLO address (-> -IloIp)
+TARGET_SERVER=               # Server name/serial the command acts on (-> -ServerIdentifier / -SerialNumber)
+
+# --- ConfigMgr (used by ISO build / publish) ---
+CONFIGMGR_SITE_CODE=
+CONFIGMGR_MANAGEMENT_POINT=
+CONFIGMGR_DISTRIBUTION_POINT=
+
+# --- ISO repository ---
+ISO_REPO_BASE_URL=           # HTTPS base URL of the ISO repository (-> -RepoBaseUrl)
+ISO_REPO_LOCAL_PATH=         # Local path mirrored to ISO_REPO_BASE_URL (-> -RepoLocalPath)
+
+# Windows Server ISO image reference. Accepts:
+#   - SMB/UNC path:    \\host\share\WinSrv2025.iso
+#   - HTTPS URL:       https://artifacts/isos/WinSrv2025.iso
+#   - LOCAL filepath:  H:\windows.iso
+# The build/deploy module converts a LOCAL filepath into an SMB/CIFS share that
+# the iLO mounts. This is the "links the ISO to the designated OneView server"
+# behaviour shared by New-IsoBuild and Invoke-IsoDeploy. In CI prefer SMB/UNC or
+# HTTPS form to skip the auto-share-creation step.
+WINDOWS_ISO_IMAGE=
+
+# --- Secrets (LOCAL runs only; CI injects these from CyberArk) ---
+# In CI these are NOT read from .env - they are fetched from CyberArk (the
+# environment-specific secret file) at pipeline runtime and injected as job
+# variables by cyberark-bootstrap. Leave blank here and in .gitlab-ci.yml;
+# never commit real values.
 SCOM_ADMIN_USER=
 SCOM_ADMIN_PASSWORD=
-
-# OneView Connection Settings
 ONEVIEW_USER=
 ONEVIEW_PASSWORD=
+ILO_USER=
+ILO_PASSWORD=
 
-# Management Host Override (optional - overrides both SCOM and OneView)
-MAINTENANCE_HOST=
+# --- CyberArk (non-secret endpoint config) ---
+CYBERARK_CCP_URL=https://fake.cyberark-ccp:443/AIMWebService/API/Accounts
+CYBERARK_APP_ID=ci
+# AIM_WEBSERVICE_URL=        # optional alternative CyberArk AIM endpoint

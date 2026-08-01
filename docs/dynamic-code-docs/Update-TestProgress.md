@@ -43,8 +43,6 @@ Extracts test summary from the latest automation test log, prompts for test run 
 | `-OvTester` | Tester name for new OneView row (default: "<tester>"). |
 | `-OvAppliance` | Appliance name for new OneView row (default: "HPEOpenview.1000"). |
 | `-OvResult` | Result for new OneView row (default: "Pending"). |
-| `-OvLogRef` | Log/Job reference for new OneView row (default: "<log ref>"). |
-| `-OvSignedOff` | Signed off by for new OneView row (default: "<delivery lead>"). |
 | `-ReportsDir` | Output directory for generated HTML reports (default: docs/Automation/Testing_Reports). |
 | `-SkipHtml` | Skip HTML regeneration (used by tests to keep runs hermetic). |
 
@@ -127,12 +125,6 @@ Non-interactive mode with explicit parameters.
 
 .PARAMETER OvResult
     Result for new OneView row (default: "Pending").
-
-.PARAMETER OvLogRef
-    Log/Job reference for new OneView row (default: "<log ref>").
-
-.PARAMETER OvSignedOff
-    Signed off by for new OneView row (default: "<delivery lead>").
 
 .PARAMETER ReportsDir
     Output directory for generated HTML reports (default: docs/Automation/Testing_Reports).

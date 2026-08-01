@@ -54,6 +54,17 @@ include:
 # and the reason recorded in the change ticket.
 workflow:
   rules:
+    # --- Instance pinning (fail-closed) ------------------------------------
+    # Only run on the CLIENT's GitLab instance. ALLOWED_CI_SERVER_HOST must be
+    # set on the client project to the client GitLab host. If it is empty or
+    # does not match $CI_SERVER_HOST, the ENTIRE pipeline is disabled. This
+    # prevents the repo (and its client-specific OneView/SCOM/CyberArk
+    # automation) from ever running on a personal or other account.
+    - if: '$ALLOWED_CI_SERVER_HOST == ""'
+      when: never
+    - if: '$CI_SERVER_HOST != $ALLOWED_CI_SERVER_HOST'
+      when: never
+    # Explicit, auditable kill switch.
     - if: '$PIPELINE_ENABLED == "false"'
       when: never
     # Avoid duplicate pipelines when an MR is open for a branch.
@@ -77,6 +88,15 @@ stages:
   - maintenance
 
 variables:
+  # --- Instance pinning (fail-closed) --------------------------------------
+  # MUST be set in the CLIENT project's CI/CD variables to the client GitLab
+  # host (e.g. "gitlab.bank.example.com"). It is left EMPTY here on purpose so
+  # the pipeline is fail-closed: it will NOT run on any instance where this is
+  # not explicitly set - i.e. a personal or any non-client GitLab account.
+  # The pipeline must never execute the client's OneView/SCOM/CyberArk
+  # automation on the wrong instance. Do NOT hardcode a real host in this file.
+  ALLOWED_CI_SERVER_HOST: ""
+
   # --- Runtime -----------------------------------------------------------
   # IMPORTANT: POWERSHELL_IMAGE is the OS the GITLAB RUNNER executes pipeline
   # jobs on (lint, test, scan). It is NOT the HPE OneView / Windows Server 2025
