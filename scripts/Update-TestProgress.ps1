@@ -48,12 +48,6 @@
 .PARAMETER OvResult
     Result for new OneView row (default: "Pending").
 
-.PARAMETER OvLogRef
-    Log/Job reference for new OneView row (default: "<log ref>").
-
-.PARAMETER OvSignedOff
-    Signed off by for new OneView row (default: "<delivery lead>").
-
 .PARAMETER ReportsDir
     Output directory for generated HTML reports (default: docs/Automation/Testing_Reports).
 
@@ -116,12 +110,6 @@ param(
 
     [Parameter()]
     [string]$OvResult,
-
-    [Parameter()]
-    [string]$OvLogRef,
-
-    [Parameter()]
-    [string]$OvSignedOff,
 
     [Parameter()]
     [string]$ReportsDir = "docs/Automation/Testing_Reports",
@@ -222,8 +210,6 @@ $CommandSuite = _PromptOrDefault -CurrentValue $CommandSuite `
 $Environment = _PromptOrDefault -CurrentValue $Environment `
     -Prompt 'Environment' -Default 'Ran manually on terminal' -NonInteractive:$NonInteractive
 
-$logRef = "see run log below"
-
 $addAutoRow = $false
 if ($AddAutomationRow) {
     $addAutoRow = $true
@@ -255,19 +241,13 @@ if ($addOvRow) {
         -Prompt 'Phase(s)' -Default 'Phases 1-10' -NonInteractive:$NonInteractive
 
     $OvTester = _PromptOrDefault -CurrentValue $OvTester `
-        -Prompt 'Tester' -Default '<tester>' -NonInteractive:$NonInteractive
+        -Prompt 'Tester' -Default '' -NonInteractive:$NonInteractive
 
     $OvAppliance = _PromptOrDefault -CurrentValue $OvAppliance `
         -Prompt 'Appliance' -Default 'HPEOpenview.1000' -NonInteractive:$NonInteractive
 
     $OvResult = _PromptOrDefault -CurrentValue $OvResult `
         -Prompt 'Result' -Default 'Pending' -NonInteractive:$NonInteractive
-
-    $OvLogRef = _PromptOrDefault -CurrentValue $OvLogRef `
-        -Prompt 'Log/Job Ref' -Default '<log ref>' -NonInteractive:$NonInteractive
-
-    $OvSignedOff = _PromptOrDefault -CurrentValue $OvSignedOff `
-        -Prompt 'Signed off by' -Default '<delivery lead>' -NonInteractive:$NonInteractive
 }
 
 # Read current test plan
@@ -288,7 +268,7 @@ $content = Update-RunDateBlock -Content $content -RunDate $runDate
 if ($null -ne (Get-Block -Content $content -Key 'automation-evidence-rows')) {
     $auto = Update-AutomationEvidenceBlock -Content $content -DateTime $testDate `
         -AddRow:$addAutoRow -CommandSuite $CommandSuite -Environment $Environment `
-        -Result $result -LogRef $logRef -Reason $Reason
+        -Result $result -Reason $Reason
     $content = $auto.Content
 
     Set-Content -Path $TestPlanPath -Value $content -NoNewline
@@ -324,7 +304,7 @@ if (Test-Path $OneViewTestPlanPath) {
     if ($null -ne (Get-Block -Content $oneViewContent -Key 'phase11-rows')) {
         $phase11 = Update-Phase11Block -Content $oneViewContent -DateTime $runDate `
             -AddRow:$addOvRow -Phases $OvPhases -Tester $OvTester -Appliance $OvAppliance `
-            -Result $OvResult -LogRef $OvLogRef -SignedOff $OvSignedOff
+            -Result $OvResult
         $oneViewContent = $phase11.Content
 
         if ($phase11.Added) {

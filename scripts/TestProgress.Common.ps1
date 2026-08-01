@@ -194,7 +194,6 @@ function Update-AutomationEvidenceBlock {
         [AllowEmptyString()][string]$CommandSuite,
         [AllowEmptyString()][string]$Environment,
         [AllowEmptyString()][string]$Result,
-        [AllowEmptyString()][string]$LogRef,
         [AllowEmptyString()][string]$Reason
     )
     $inner = Get-Block -Content $Content -Key 'automation-evidence-rows'
@@ -209,7 +208,7 @@ function Update-AutomationEvidenceBlock {
     $added = $false
     if ($AddRow) {
         $runNumber = Get-NextRunNumber -Rows $rows
-        $row = "| $runNumber | $DateTime | $(ConvertTo-TableCell $CommandSuite) | $(ConvertTo-TableCell $Environment) | $(ConvertTo-TableCell $Result) | $(ConvertTo-TableCell $LogRef) | $(ConvertTo-TableCell $Reason) |"
+        $row = "| $runNumber | $DateTime | $(ConvertTo-TableCell $CommandSuite) | $(ConvertTo-TableCell $Environment) | $(ConvertTo-TableCell $Result) | $(ConvertTo-TableCell $Reason) |"
         $rows += $row
         $added = $true
     }
@@ -254,9 +253,7 @@ function Update-Phase11Block {
         [AllowEmptyString()][string]$Phases,
         [AllowEmptyString()][string]$Tester,
         [AllowEmptyString()][string]$Appliance,
-        [AllowEmptyString()][string]$Result,
-        [AllowEmptyString()][string]$LogRef,
-        [AllowEmptyString()][string]$SignedOff
+        [AllowEmptyString()][string]$Result
     )
     $inner = Get-Block -Content $Content -Key 'phase11-rows'
     if ($null -eq $inner) {
@@ -270,12 +267,97 @@ function Update-Phase11Block {
     $added = $false
     if ($AddRow) {
         $runNumber = Get-NextRunNumber -Rows $rows
-        $row = "| $runNumber | $DateTime | $(ConvertTo-TableCell $Phases) | $(ConvertTo-TableCell $Tester) | $(ConvertTo-TableCell $Appliance) | $(ConvertTo-TableCell $Result) | $(ConvertTo-TableCell $LogRef) | $(ConvertTo-TableCell $SignedOff) |"
+        $row = "| $runNumber | $DateTime | $(ConvertTo-TableCell $Phases) | $(ConvertTo-TableCell $Tester) | $(ConvertTo-TableCell $Appliance) | $(ConvertTo-TableCell $Result) |"
         $rows += $row
         $added = $true
     }
 
     $updated = Set-Block -Content $Content -Key 'phase11-rows' -Inner ($rows -join "`n")
+    return [pscustomobject]@{ Content = $updated; RunNumber = $runNumber; Added = $added }
+}
+
+function Update-GitLabHardeningBlock {
+    <#
+    .SYNOPSIS
+        Refresh the last GitLab hardening evidence row's date and optionally append a new row.
+    .DESCRIPTION
+        Mirrors Update-AutomationEvidenceBlock but for the GitLab/CI compliance
+        test plan. Columns: Run | Date/Time | Pipeline/Job | Environment |
+        Result | Ref/Notes. Used to record each pipeline run that exercised the
+        EMIR/DORA hardening controls (SAST, Secret Detection, security gate,
+        coverage, dependency/container scanning, runner-OS detection).
+    .OUTPUTS
+        [pscustomobject] with Content, RunNumber, Added.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Content,
+        [Parameter(Mandatory)][string]$DateTime,
+        [switch]$AddRow,
+        [AllowEmptyString()][string]$PipelineJob,
+        [AllowEmptyString()][string]$Environment,
+        [AllowEmptyString()][string]$Result,
+        [AllowEmptyString()][string]$RefNotes
+    )
+    $inner = Get-Block -Content $Content -Key 'gitlab-hardening-evidence-rows'
+    if ($null -eq $inner) {
+        Write-Warning "Block 'gitlab-hardening-evidence-rows' not found"
+        return [pscustomobject]@{ Content = $Content; RunNumber = 0; Added = $false }
+    }
+    $rows = @(Get-RowLine -Inner $inner)
+    $rows = @(Set-LastRowDateTime -Rows $rows -DateTime $DateTime)
+
+    $runNumber = 0
+    $added = $false
+    if ($AddRow) {
+        $runNumber = Get-NextRunNumber -Rows $rows
+        $row = "| $runNumber | $DateTime | $(ConvertTo-TableCell $PipelineJob) | $(ConvertTo-TableCell $Environment) | $(ConvertTo-TableCell $Result) | $(ConvertTo-TableCell $RefNotes) |"
+        $rows += $row
+        $added = $true
+    }
+
+    $updated = Set-Block -Content $Content -Key 'gitlab-hardening-evidence-rows' -Inner ($rows -join "`n")
+    return [pscustomobject]@{ Content = $updated; RunNumber = $runNumber; Added = $added }
+}
+
+function Update-GitLabCoverageBlock {
+    <#
+    .SYNOPSIS
+        Refresh the last GitLab pipeline coverage row's date and optionally append a new row.
+    .DESCRIPTION
+        Columns: Run | Date/Time | Coverage % | Threshold | Enforcement |
+        Notes. Records the code-coverage figure measured by the pipeline's
+        test-unit job (Cobertura) per pipeline run, so coverage drift over time
+        is visible in the same evidence document as the security findings.
+    .OUTPUTS
+        [pscustomobject] with Content, RunNumber, Added.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Content,
+        [Parameter(Mandatory)][string]$DateTime,
+        [switch]$AddRow,
+        [AllowEmptyString()][string]$CoveragePercent,
+        [AllowEmptyString()][string]$Threshold,
+        [AllowEmptyString()][string]$Enforcement,
+        [AllowEmptyString()][string]$Notes
+    )
+    $inner = Get-Block -Content $Content -Key 'gitlab-coverage-rows'
+    if ($null -eq $inner) {
+        Write-Warning "Block 'gitlab-coverage-rows' not found"
+        return [pscustomobject]@{ Content = $Content; RunNumber = 0; Added = $false }
+    }
+    $rows = @(Get-RowLine -Inner $inner)
+    $rows = @(Set-LastRowDateTime -Rows $rows -DateTime $DateTime)
+
+    $runNumber = 0
+    $added = $false
+    if ($AddRow) {
+        $runNumber = Get-NextRunNumber -Rows $rows
+        $row = "| $runNumber | $DateTime | $(ConvertTo-TableCell $CoveragePercent) | $(ConvertTo-TableCell $Threshold) | $(ConvertTo-TableCell $Enforcement) | $(ConvertTo-TableCell $Notes) |"
+        $rows += $row
+        $added = $true
+    }
+
+    $updated = Set-Block -Content $Content -Key 'gitlab-coverage-rows' -Inner ($rows -join "`n")
     return [pscustomobject]@{ Content = $updated; RunNumber = $runNumber; Added = $added }
 }
 

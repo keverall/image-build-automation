@@ -4,25 +4,29 @@
 
 ## Table of Contents
 
-- [**Current OneView Connected Automation Command testing status and progress Summary**](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
-- [Major Bugs fixed log](#major-bugs-fixed-log)
-  - [1. Phantom proxy configuration on EWISMGMT-19](#1-phantom-proxy-configuration-on-ewismgmt-19)
-  - [2. Test-ServerConnectivity was disconnecting the OneView session after connecting](#2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting)
-  - [3. Invoke-IsoDeploy Pester tests hanging on interactive prompts](#3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts)
-  - [4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts](#4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts)
-- [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0-environment-prerequisites-checklist-before-live-run)
-- [Phase 1 — Connectivity (must pass before anything else)](#phase-1-connectivity-must-pass-before-anything-else)
-- [Phase 2 — Get Server List](#phase-2-get-server-list)
-- [Phase 3 — Information on Servers Connected to this OneView](#phase-3-information-on-servers-connected-to-this-oneview)
-- [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4-information-on-a-specific-server-both-identifiers)
-- [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5-assign-iso-file-to-server-for-install-both-identifiers)
-- [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6-smb-name-generation-local-drive-and-network-drive)
-- [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7-reboot-server-both-identifiers)
-- [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8-post-reboot-verification-sleep-then-confirm-connected-correct-windows-image)
-- [Phase 9 — Negative, Edge & Boundary Tests](#phase-9-negative-edge-boundary-tests)
-- [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10-other-critical-tests-setup-automation-hpeoneview-package)
-- [Phase 11 — Test Run Summary (filled per cycle)](#phase-11-test-run-summary-filled-per-cycle)
-- [Phase 12 — Notes for the Delivery Lead](#phase-12-notes-for-the-delivery-lead)
+- [HPE OneView 1000 — Live Integration Test Plan](#hpe-oneview-1000--live-integration-test-plan)
+  - [Table of Contents](#table-of-contents)
+  - [**Current OneView Connected Automation Command testing status and progress Summary**](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
+  - [Major Bugs fixed log](#major-bugs-fixed-log)
+    - [1. Phantom proxy configuration on EWISMGMT-19](#1-phantom-proxy-configuration-on-ewismgmt-19)
+    - [2. Test-ServerConnectivity was disconnecting the OneView session after connecting](#2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting)
+    - [3. Invoke-IsoDeploy Pester tests hanging on interactive prompts](#3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts)
+    - [4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts](#4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts)
+    - [5. Ripgrep JSON record exceeded 65536 bytes exception](#5-ripgrep-json-record-exceeded-65536-bytes-exception)
+    - [6. Credential handling security hardened](#6-credential-handling-security-hardened)
+  - [Phase 0 — Environment Prerequisites (checklist before live run)](#phase-0--environment-prerequisites-checklist-before-live-run)
+  - [Phase 1 — Connectivity (must pass before anything else)](#phase-1--connectivity-must-pass-before-anything-else)
+  - [Phase 2 — Get Server List](#phase-2--get-server-list)
+  - [Phase 3 — Information on Servers Connected to this OneView](#phase-3--information-on-servers-connected-to-this-oneview)
+  - [Phase 4 — Information on a Specific Server (BOTH identifiers)](#phase-4--information-on-a-specific-server-both-identifiers)
+  - [Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)](#phase-5--assign-iso-file-to-server-for-install-both-identifiers)
+  - [Phase 6 — SMB Name Generation (local drive AND network drive)](#phase-6--smb-name-generation-local-drive-and-network-drive)
+  - [Phase 7 — Reboot Server (BOTH identifiers)](#phase-7--reboot-server-both-identifiers)
+  - [Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)](#phase-8--post-reboot-verification-sleep-then-confirm-connected--correct-windows-image)
+  - [Phase 9 — Negative, Edge \& Boundary Tests](#phase-9--negative-edge--boundary-tests)
+  - [Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)](#phase-10--other-critical-tests-setup-automation-hpeoneview-package)
+  - [Phase 11 — Test Run Summary (filled per cycle)](#phase-11--test-run-summary-filled-per-cycle)
+  - [Phase 12 — Notes for the Delivery Lead](#phase-12--notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 31/07/2026 09:14 UTC</p>
@@ -120,6 +124,60 @@ also requires `-OneViewHost HPEOpenview.1000` so the appliance can resolve the s
 the test last passed on `HPEOpenview.1000`; **Status** = `Planned`/`In Progress`/`Passed`/`Failed`/`Blocked`;
 **Neg?** = `Y` for negative/edge/boundary tests; **ID-Type** = which identifier the row exercises
 (`Name` / `Serial` / `Both` / `—`).
+
+### 5. Ripgrep JSON record exceeded 65536 bytes exception
+
+```text
+
+Fixed. The root cause and resolution:
+
+**Root cause** — The error `The ServicePointManager does not support proxies with the https scheme` is not a parameter-count bug. The `"with '3' argument(s)"` text is the HPEOneView internal `RestClient` call, which is why it reads like "too many parms". The real cause: the operator environment/PowerShell profile exports a corporate proxy using an **`https://`** scheme (`HTTPS_PROXY`). .NET rejects an `https`-scheme proxy, so `Connect-OVMgmt` throws.
+
+**What changed** — `Private/OneViewSession.ps1`:
+- Rewrote `Set-OneViewProxyBypass` as clean **PowerShell 7 / .NET Core** code (uses `::new()`, `??`, `HttpClient.DefaultProxy`).
+- Removed the legacy `winhttp.dll` P/Invoke block (the old PS5.1/.NET-Framework approach).
+- The helper now, before every `Connect-OVMgmt`:
+  1. Rewrites any `https://` proxy env var (`HTTPS_PROXY`/`HTTP_PROXY`/etc.) to `http://` — proxies tunnel TLS via CONNECT, so the proxy link itself must be `http`.
+  2. Rebuilds the in-process .NET proxy (`WebRequest.DefaultWebProxy` + `HttpClient.DefaultProxy`) so the appliance (and its resolved IP) is **bypassed → contacted directly**, while any legitimate `http` proxy stays in place for other traffic.
+  3. Appends the appliance to `NO_PROXY` as a final safeguard.
+- It is called from `Connect-OneViewSession`, which is shared by `Test-ServerConnectivity`, `Set-MaintenanceMode`, and `Get-OneViewServerTarget`, so all OneView commands are covered.
+
+**Verification** — File re-parses with no syntax errors under `pwsh`, and no `winhttp`/`Add-Type` references remain.
+
+**To deploy** — On the Windows server, re-import the module from the repo checkout (new PS7 session, or `Import-Module ...\Automation.psd1 -Force`) and re-run `Test-ServerConnectivity -ManagementHost va-oneviewt-01`. The `Status` should now report `AVAILABLE` with `Connected: Yes`.
+
+I also corrected the stale project memory that claimed the module loads under PowerShell 5.1 — it runs under PS7, so no PS5.1 workarounds should be added going forward. If you want a broader sweep of the rest of the module for other PS5.1-isms, say the word and I'll run it.
+
+All fixes applied and verified. Summary:
+
+Fixed:
+
+✅ SendMetric signature reordered — [hashtable]$Tags now before [datetime]$Timestamp (fixes latent runtime bug)
+✅ Dead -Port parameter removed from Connect-OneViewSession
+✅ Duplicate Invoke-WindowsSecurityUpdate export removed
+✅ SecureString round-trip eliminated — password stays encrypted throughout
+✅ _PS_ConvertTo-Hashtable removed — replaced with native ConvertFrom-Json -AsHashtable
+✅ Dead else branch in ReportVulnerabilityScan collapsed
+✅ All files parse clean. and have been successfully retested.
+```
+
+### 6. Credential handling security hardened
+
+```text
+Credential handling hardened as checkov and 
+
+Added a primary -Credential ([PSCredential]) parameter — the secure entry point. Callers pass a PSCredential from a secret store / Get-Credential; the plaintext password is never assigned to a named variable and is only materialised by .NET inside Invoke-RestMethod -Credential at the network layer.
+-OneViewUser/-OneViewPassword remain only as an env/CyberArk fallback, kept for compatibility with the sibling OneView commands.
+Inline # SuppressMessage attributes document why the -AsPlainText conversion is unavoidable (REST Basic auth), so the suppression is auditable rather than silent.
+Verification
+
+PSScriptAnalyzer (project PSScriptAnalyzerSettings.psd1): 0 Errors on both files. Remaining Warnings (WriteHost, PSUseConsistentWhitespace, PlainTextForPassword) exactly match the existing Get-OneViewServerTarget.ps1.
+Module imports, routes resolve (oneview_connection_status, oneview_server_list), and both -Credential and fallback paths work in DryRun/Mock.
+Two things the security team will likely still flag (your call):
+
+SkipCertificateCheck defaults to $true — for banking you probably want it $false with proper CA trust. I left it as-is to avoid breaking internal-CA appliances; say the word and I'll flip the default or remove the switch.
+The same plaintext-param pattern exists in the older Get-OneViewServerTarget.ps1 / Resolve-OneViewTarget — I can retrofit -Credential there too for consistency if you want one standard across all OneView commands.
+```
 
 ---
 
@@ -946,92 +1004,15 @@ Error
 ## Phase 11 — Test Run Summary (filled per cycle)
 
 <!-- BEGIN:phase11-rows -->
-<table style="border-collapse:collapse;width:100%;table-layout:auto;">
-  <thead>
-    <tr>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Run #</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Date/Time</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Phase(s)</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Tester</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Appliance</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Result</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Log/Job Ref</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Signed off</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">1</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">27/07/2026 18:55 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Phases 1-10 (pending live execution)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">&lt;tester&gt;</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">HPEOpenview.1000</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Pending</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">&lt;log ref&gt;</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">&lt;delivery lead&gt;</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">2</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">24/07/2026 16:34 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">2</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">K Everall</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">HPEOpenview.1000</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Success</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">&lt;log ref&gt;</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">&lt;delivery lead&gt;</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">3</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">24/07/2026 16:34 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Phase 1</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">K Everall</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">HPEOpenview.1000</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (95/95)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">see run log below</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">n/a</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">4</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">27/07/2026 14:55 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Phase 1</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">K Everall</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">va-oneviewt-01</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">20260727</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">n/a</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">5</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">27/07/2026 17:00 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Phase 1</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">K Everall</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">va-oneviewt-01</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). Server list output correctly, test passed, version shown is incorrect as HPeOneView.840 version shown, will purge powershell env and fix</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">20260727</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">n/a</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">6</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">31/07/2026 09:14 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Phase 1</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">K Everall</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">va-oneviewt-01</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">NO TESTING TODAY AS THERE IS A FREEZE UNTIL 31/07/2026</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">20260731</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">n/a</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">7</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">31/07/2026 09:14 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Phases 1-10</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">K Everall</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">HPEOpenview.1000</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (99/99)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">see run log below</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">n/a</td>
-    </tr>
-  </tbody>
-</table>
+|Run #|Date/Time|Phase(s)|Tester|Appliance|Result|
+|---|---|---|---|---|---|
+|1|27/07/2026 18:55 UTC|Phases 1-10 (pending live execution)||HPEOpenview.1000|Pending|
+|2|24/07/2026 16:34 UTC|2|K Everall|HPEOpenview.1000|Success|
+|3|24/07/2026 16:34 UTC|Phase 1|K Everall|HPEOpenview.1000|Passed (95/95)|
+|4|27/07/2026 14:55 UTC|Phase 1|K Everall|va-oneviewt-01|Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).|
+|5|27/07/2026 17:00 UTC|Phase 1|K Everall|va-oneviewt-01|Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). Server list output correctly, test passed, version shown is incorrect as HPeOneView.840 version shown, will purge powershell env and fix|
+|6|31/07/2026 09:14 UTC|Phase 1|K Everall|va-oneviewt-01|NO TESTING TODAY AS THERE IS A FREEZE UNTIL 31/07/2026|
+|7|31/07/2026 09:14 UTC|Phases 1-10|K Everall|HPEOpenview.1000|Passed (99/99)|
 <!-- END:phase11-rows -->
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>

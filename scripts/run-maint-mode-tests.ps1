@@ -34,7 +34,8 @@ $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 
 # Ensure a working Pester 6.0.1 (with Pester.dll) is available, then import it.
 . (Join-Path $PSScriptRoot 'Ensure-Pester.ps1')
-Import-Module (Join-Path $PROJECT_ROOT 'src/powershell/Automation/Automation.psd1') -Force -WarningAction SilentlyContinue
+. (Join-Path $PSScriptRoot 'Detect-Runner.ps1')
+$null = Import-AutomationModule -ErrorAction SilentlyContinue
 
 $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }

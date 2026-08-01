@@ -1,0 +1,16 @@
+# Environment Configuration for Maintenance Mode Scripts
+# Copy this file to .env and fill in your values
+
+# Environment: Test or Prod
+ENVIRONMENT=Test
+
+# SCOM Connection Settings
+SCOM_ADMIN_USER=
+SCOM_ADMIN_PASSWORD=
+
+# OneView Connection Settings
+ONEVIEW_USER=
+ONEVIEW_PASSWORD=
+
+# Management Host Override (optional - overrides both SCOM and OneView)
+MAINTENANCE_HOST=

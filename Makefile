@@ -163,3 +163,12 @@ test-progress-update-ci: ## Update test plans non-interactively (use REASON="...
 		-OneViewStatusSummary "$(OV_SUMMARY)" $(if $(OV_ADD_ROW),-AddOneViewRow,) \
 		-OvPhases "$(OV_PHASES)" -OvTester "$(OV_TESTER)" -OvAppliance "$(OV_APPLIANCE)" \
 		-OvResult "$(OV_RESULT)" -OvLogRef "$(OV_LOGREF)" -OvSignedOff "$(OV_SIGNOFF)"
+
+# ─── GitLab Hardening & Compliance Test Plan ─────────────────────────────────
+gitlab-hardening-update: ## Update GitLab hardening test plan (interactive)
+	@echo "$(CYAN)[gitlab-hardening]$(NC) Updating GitLab hardening test plan..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Update-GitLabHardeningPlan.ps1
+
+gitlab-hardening-update-ci: ## Update GitLab hardening test plan non-interactively (env-driven; see script header)
+	@echo "$(CYAN)[gitlab-hardening]$(NC) Updating GitLab hardening test plan (non-interactive)..."
+	@GH_ADD_ROW=1 GH_ADD_COV_ROW=1 pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Update-GitLabHardeningPlan.ps1 -NonInteractive

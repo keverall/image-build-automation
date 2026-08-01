@@ -141,3 +141,4 @@ Thumbs.db
 
 # ---- AGENT ENGINES (Re-add this before push) ----
 .kilo/
+.env
