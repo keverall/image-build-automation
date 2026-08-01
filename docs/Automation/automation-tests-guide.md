@@ -4,27 +4,29 @@
 
 ## Table of Contents
 
-- [Purpose of this document](#purpose-of-this-document)
-- [Who this is for](#who-this-is-for)
-- [What the test suite does](#what-the-test-suite-does)
-- [How to read the test results](#how-to-read-the-test-results)
-- [Tests by runbook stage](#tests-by-runbook-stage)
-  - [1. ISO creation – `New-IsoBuild`](#1-iso-creation-new-isobuild)
-  - [2. Publishing the boot ISO – `Publish-BootIso`](#2-publishing-the-boot-iso-publish-bootiso)
-  - [3. Identifying the target server – `Get-OneViewServerTarget`](#3-identifying-the-target-server-get-oneviewservertarget)
-  - [4. Mounting the ISO and forcing boot – `Invoke-IloRedfish`](#4-mounting-the-iso-and-forcing-boot-invoke-iloredfish)
-  - [5. Pre-build checks – `Test-PreBuildValidation`](#5-pre-build-checks-test-prebuildvalidation)
-  - [6. Post-build checks – `Test-PostBuildValidation`](#6-post-build-checks-test-postbuildvalidation)
-  - [7. Monitoring the install – `Start-InstallMonitor`](#7-monitoring-the-install-start-installmonitor)
-  - [8. End-to-end orchestration – `Start-PhysicalServerBuild`](#8-end-to-end-orchestration-start-physicalserverbuild)
-  - [9. Deploy command layer – `Invoke-IsoDeploy`](#9-deploy-command-layer-invoke-isodeploy)
-  - [10. Firmware updates – `Update-Firmware`](#10-firmware-updates-update-firmware)
-  - [11. Windows security updates – `Invoke-WindowsSecurityUpdate`](#11-windows-security-updates-invoke-windowssecurityupdate)
-- [Test criticality at a glance](#test-criticality-at-a-glance)
-- [What a failed test means for a change request](#what-a-failed-test-means-for-a-change-request)
-- [Running the test suite](#running-the-test-suite)
-- [Glossary for non-technical readers](#glossary-for-non-technical-readers)
-- [Related documents](#related-documents)
+- [Automation test guide for process teams and change approvers](#automation-test-guide-for-process-teams-and-change-approvers)
+  - [Table of Contents](#table-of-contents)
+  - [Purpose of this document](#purpose-of-this-document)
+  - [Who this is for](#who-this-is-for)
+  - [What the test suite does](#what-the-test-suite-does)
+  - [How to read the test results](#how-to-read-the-test-results)
+  - [Tests by runbook stage](#tests-by-runbook-stage)
+    - [1. ISO creation – `New-IsoBuild`](#1-iso-creation--new-isobuild)
+    - [2. Publishing the boot ISO – `Publish-BootIso`](#2-publishing-the-boot-iso--publish-bootiso)
+    - [3. Identifying the target server – `Get-OneViewServerTarget`](#3-identifying-the-target-server--get-oneviewservertarget)
+    - [4. Mounting the ISO and forcing boot – `Invoke-IloRedfish`](#4-mounting-the-iso-and-forcing-boot--invoke-iloredfish)
+    - [5. Pre-build checks – `Test-PreBuildValidation`](#5-pre-build-checks--test-prebuildvalidation)
+    - [6. Post-build checks – `Test-PostBuildValidation`](#6-post-build-checks--test-postbuildvalidation)
+    - [7. Monitoring the install – `Start-InstallMonitor`](#7-monitoring-the-install--start-installmonitor)
+    - [8. End-to-end orchestration – `Start-PhysicalServerBuild`](#8-end-to-end-orchestration--start-physicalserverbuild)
+    - [9. Deploy command layer – `Invoke-IsoDeploy`](#9-deploy-command-layer--invoke-isodeploy)
+    - [10. Firmware updates – `Update-Firmware`](#10-firmware-updates--update-firmware)
+    - [11. Windows security updates – `Invoke-WindowsSecurityUpdate`](#11-windows-security-updates--invoke-windowssecurityupdate)
+  - [Test criticality at a glance](#test-criticality-at-a-glance)
+  - [What a failed test means for a change request](#what-a-failed-test-means-for-a-change-request)
+  - [Running the test suite](#running-the-test-suite)
+  - [Glossary for non-technical readers](#glossary-for-non-technical-readers)
+  - [Related documents](#related-documents)
 
 <a name="purpose-of-this-document"></a>
 
@@ -74,7 +76,8 @@ In short: the test suite is the quality gate the runbook is sitting behind. Appr
 
 When the suite runs, it produces a summary block like this:
 
-```
+
+```text
 Total Tests    : <number>
 Passed         : <number>  ✔
 Failed         : <number>  ✔  or  ✘ (CRITICAL)

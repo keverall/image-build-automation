@@ -309,36 +309,36 @@ Describe 'Update-AutomationEvidenceBlock' {
     It 'Adds new row with correct run number when -AddRow is specified' {
         $content = @"
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite1 | env1 | Pass | log1 | reason1 |
-| 2 | 02/01/2026 | suite2 | env2 | Fail | log2 | reason2 |
+| 1 | 01/01/2026 | suite1 | env1 | Pass | reason1 |
+| 2 | 02/01/2026 | suite2 | env2 | Fail | reason2 |
 <!-- END:automation-evidence-rows -->
 "@
         $result = Update-AutomationEvidenceBlock -Content $content -DateTime '03/01/2026' `
-            -AddRow -CommandSuite 'suite3' -Environment 'env3' -Result 'Pass' -LogRef 'log3' -Reason 'reason3'
+            -AddRow -CommandSuite 'suite3' -Environment 'env3' -Result 'Pass' -Reason 'reason3'
         $result.RunNumber | Should -Be 3
         $result.Added | Should -BeTrue
-        $result.Content | Should -Match '\| 3 \| 03/01/2026 \| suite3 \| env3 \| Pass \| log3 \| reason3 \|'
+        $result.Content | Should -Match '\| 3 \| 03/01/2026 \| suite3 \| env3 \| Pass \| reason3 \|'
     }
 
     It 'Updates last row date without adding when -AddRow is not specified' {
         $content = @"
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite1 | env1 | Pass | log1 | reason1 |
-| 2 | 02/01/2026 | suite2 | env2 | Fail | log2 | reason2 |
+| 1 | 01/01/2026 | suite1 | env1 | Pass | reason1 |
+| 2 | 02/01/2026 | suite2 | env2 | Fail | reason2 |
 <!-- END:automation-evidence-rows -->
 "@
         $result = Update-AutomationEvidenceBlock -Content $content -DateTime '03/01/2026' `
-            -CommandSuite 'suite3' -Environment 'env3' -Result 'Pass' -LogRef 'log3' -Reason 'reason3'
+            -CommandSuite 'suite3' -Environment 'env3' -Result 'Pass' -Reason 'reason3'
         $result.RunNumber | Should -Be 0
         $result.Added | Should -BeFalse
-        $result.Content | Should -Match '\| 2 \| 03/01/2026 \| suite2 \| env2 \| Fail \| log2 \| reason2 \|'
+        $result.Content | Should -Match '\| 2 \| 03/01/2026 \| suite2 \| env2 \| Fail \| reason2 \|'
         $result.Content | Should -Not -Match '\| 3 \|'
     }
 
     It 'Returns RunNumber 0 and Added false when block not found' {
         $content = 'no block here'
         $result = Update-AutomationEvidenceBlock -Content $content -DateTime '01/01/2026' `
-            -AddRow -CommandSuite 'suite' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason' -WarningAction SilentlyContinue
+            -AddRow -CommandSuite 'suite' -Environment 'env' -Result 'Pass' -Reason 'reason' -WarningAction SilentlyContinue
         $result.RunNumber | Should -Be 0
         $result.Added | Should -BeFalse
         $result.Content | Should -Be $content
@@ -347,25 +347,25 @@ Describe 'Update-AutomationEvidenceBlock' {
     It 'Escapes special characters in fields' {
         $content = @"
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         $result = Update-AutomationEvidenceBlock -Content $content -DateTime '02/01/2026' `
-            -AddRow -CommandSuite 'suite|with|pipes' -Environment 'env' -Result 'Pass' -LogRef 'log' -Reason 'reason'
+            -AddRow -CommandSuite 'suite|with|pipes' -Environment 'env' -Result 'Pass' -Reason 'reason'
         $result.Content | Should -Match 'suite\\|with\\|pipes'
     }
 
     It 'Handles empty fields' {
         $content = @"
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         $result = Update-AutomationEvidenceBlock -Content $content -DateTime '02/01/2026' `
-            -AddRow -CommandSuite '' -Environment '' -Result '' -LogRef '' -Reason ''
+            -AddRow -CommandSuite '' -Environment '' -Result '' -Reason ''
         $result.RunNumber | Should -Be 2
         $result.Added | Should -BeTrue
-        $result.Content | Should -Match '\| 2 \| 02/01/2026 \|  \|  \|  \|  \|  \|'
+        $result.Content | Should -Match '\| 2 \| 02/01/2026 \|  \|  \|  \|  \|'
     }
 }
 
@@ -441,7 +441,7 @@ Describe 'Update-Phase11Block' {
     It 'Updates last row date without adding row' {
         $content = @"
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 | 2 | 02/01/2026 | Phases 6-10 | tester | appliance | Pass | log | signed |
 <!-- END:phase11-rows -->
 "@
@@ -455,15 +455,15 @@ Describe 'Update-Phase11Block' {
     It 'Adds new row when AddRow specified' {
         $content = @"
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         $result = Update-Phase11Block -Content $content -DateTime '02/01/2026' -AddRow `
             -Phases 'Phases 6-10' -Tester 'tester2' -Appliance 'appliance2' `
-            -Result 'Fail' -LogRef 'log2' -SignedOff 'signed2'
+            -Result 'Fail'
         $result.Added | Should -Be $true
         $result.RunNumber | Should -Be 2
-        $result.Content | Should -Match '\| 2 \| 02/01/2026 \| Phases 6-10 \| tester2 \| appliance2 \| Fail \| log2 \| signed2 \|'
+        $result.Content | Should -Match '\| 2 \| 02/01/2026 \| Phases 6-10 \| tester2 \| appliance2 \| Fail \|'
     }
 
     It 'Returns RunNumber 0 when block not found' {
@@ -477,24 +477,24 @@ Describe 'Update-Phase11Block' {
     It 'Updates last row date even when adding new row' {
         $content = @"
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         $result = Update-Phase11Block -Content $content -DateTime '02/01/2026' -AddRow `
             -Phases 'Phases 6-10' -Tester 'tester2' -Appliance 'appliance2' `
-            -Result 'Pass' -LogRef 'log2' -SignedOff 'signed2'
+            -Result 'Pass'
         $result.Content | Should -Match '\| 1 \| 02/01/2026 \|'
     }
 
     It 'Escapes pipe characters in add-row fields' {
         $content = @"
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         $result = Update-Phase11Block -Content $content -DateTime '02/01/2026' -AddRow `
             -Phases 'Phases|with|pipes' -Tester 'tester' -Appliance 'appliance' `
-            -Result 'Pass' -LogRef 'log' -SignedOff 'signed'
+            -Result 'Pass' -SignedOff 'signed'
         $result.Content | Should -Match 'Phases\\|with\\|pipes'
     }
 }
@@ -588,6 +588,77 @@ TEST SUMMARY BLOCK
     }
 }
 
+Describe 'Update-GitLabHardeningBlock' {
+    It 'Updates last row date without adding row' {
+        $content = @"
+<!-- BEGIN:gitlab-hardening-evidence-rows -->
+| 1 | 01/01/2026 | gitlab-ci | GitLab CI | Partial | Initial hardening |
+<!-- END:gitlab-hardening-evidence-rows -->
+"@
+        $result = Update-GitLabHardeningBlock -Content $content -DateTime '03/01/2026'
+        $result.Added | Should -Be $false
+        $result.RunNumber | Should -Be 0
+        $result.Content | Should -Match '\| 1 \| 03/01/2026 \|'
+    }
+
+    It 'Adds new evidence row when AddRow specified' {
+        $content = @"
+<!-- BEGIN:gitlab-hardening-evidence-rows -->
+| 1 | 01/01/2026 | gitlab-ci | GitLab CI | Partial | Initial hardening |
+<!-- END:gitlab-hardening-evidence-rows -->
+"@
+        $result = Update-GitLabHardeningBlock -Content $content -DateTime '02/01/2026' -AddRow `
+            -PipelineJob 'gitlab-ci security' -Environment 'Bank GitLab UAT' `
+            -Result 'Pass' -RefNotes 'SAST + Secret Detection enabled'
+        $result.Added | Should -Be $true
+        $result.RunNumber | Should -Be 2
+        $result.Content | Should -Match '\| 2 \| 02/01/2026 \| gitlab-ci security \| Bank GitLab UAT \| Pass \| SAST \+ Secret Detection enabled \|'
+    }
+
+    It 'Returns RunNumber 0 when block not found' {
+        $content = 'no block'
+        $result = Update-GitLabHardeningBlock -Content $content -DateTime '01/01/2026'
+        $result.RunNumber | Should -Be 0
+        $result.Added | Should -Be $false
+        $result.Content | Should -Be $content
+    }
+}
+
+Describe 'Update-GitLabCoverageBlock' {
+    It 'Updates last row date without adding row' {
+        $content = @"
+<!-- BEGIN:gitlab-coverage-rows -->
+| 1 | 01/01/2026 | 72 | 70 | report | Baseline |
+<!-- END:gitlab-coverage-rows -->
+"@
+        $result = Update-GitLabCoverageBlock -Content $content -DateTime '03/01/2026'
+        $result.Added | Should -Be $false
+        $result.RunNumber | Should -Be 0
+        $result.Content | Should -Match '\| 1 \| 03/01/2026 \|'
+    }
+
+    It 'Adds new coverage row when AddRow specified' {
+        $content = @"
+<!-- BEGIN:gitlab-coverage-rows -->
+| 1 | 01/01/2026 | N/A | 70 | report | Baseline |
+<!-- END:gitlab-coverage-rows -->
+"@
+        $result = Update-GitLabCoverageBlock -Content $content -DateTime '02/01/2026' -AddRow `
+            -CoveragePercent '73.4' -Threshold '70' -Enforcement 'report' -Notes 'Coverage measured'
+        $result.Added | Should -Be $true
+        $result.RunNumber | Should -Be 2
+        $result.Content | Should -Match '\| 2 \| 02/01/2026 \| 73.4 \| 70 \| report \| Coverage measured \|'
+    }
+
+    It 'Returns RunNumber 0 when block not found' {
+        $content = 'no block'
+        $result = Update-GitLabCoverageBlock -Content $content -DateTime '01/01/2026'
+        $result.RunNumber | Should -Be 0
+        $result.Added | Should -Be $false
+        $result.Content | Should -Be $content
+    }
+}
+
 Describe 'End-to-end script (child process, -SkipHtml)' {
     BeforeAll {
         $Script:ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -615,7 +686,7 @@ Describe 'End-to-end script (child process, -SkipHtml)' {
 <!-- END:run-date -->
 
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         Set-Content -Path $automationPlan -Value $automationContent -NoNewline
@@ -626,7 +697,7 @@ Describe 'End-to-end script (child process, -SkipHtml)' {
 <!-- END:run-date -->
 
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
@@ -667,7 +738,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         Set-Content -Path $automationPlan -Value $automationContent -NoNewline
@@ -678,7 +749,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
@@ -720,7 +791,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         Set-Content -Path $automationPlan -Value $automationContent -NoNewline
@@ -735,7 +806,7 @@ TEST SUMMARY BLOCK
 <!-- END:oneview-status-summary -->
 
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
@@ -776,7 +847,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         Set-Content -Path $automationPlan -Value $automationContent -NoNewline
@@ -791,7 +862,7 @@ TEST SUMMARY BLOCK
 <!-- END:oneview-status-summary -->
 
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
@@ -830,7 +901,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         Set-Content -Path $automationPlan -Value $automationContent -NoNewline
@@ -841,7 +912,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline
@@ -866,9 +937,7 @@ TEST SUMMARY BLOCK
             '-OvPhases', '"Phases 6-10"',
             '-OvTester', 'tester2',
             '-OvAppliance', 'appliance2',
-            '-OvResult', 'Pass',
-            '-OvLogRef', 'log2',
-            '-OvSignedOff', 'signed2'
+            '-OvResult', 'Pass'
         ) -Wait -PassThru -NoNewWindow
 
         $proc.ExitCode | Should -Be 0
@@ -889,7 +958,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:automation-evidence-rows -->
-| 1 | 01/01/2026 | suite | env | Pass | log | reason |
+| 1 | 01/01/2026 | suite | env | Pass | reason |
 <!-- END:automation-evidence-rows -->
 "@
         Set-Content -Path $automationPlan -Value $automationContent -NoNewline
@@ -900,7 +969,7 @@ TEST SUMMARY BLOCK
 <!-- END:run-date -->
 
 <!-- BEGIN:phase11-rows -->
-| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass | log | signed |
+| 1 | 01/01/2026 | Phases 1-5 | tester | appliance | Pass |
 <!-- END:phase11-rows -->
 "@
         Set-Content -Path $oneviewPlan -Value $oneviewContent -NoNewline

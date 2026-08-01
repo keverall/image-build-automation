@@ -1,151 +1,503 @@
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation - GitLab CI Pipeline
-# Note: Pipeline disabled pending migration to Bank's GitLab instance
-# TODO: Remove the 'workflow' block (lines 10-15) before deploying to Bank's GitLab
+# HPE ProLiant Windows Server ISO Automation - GitLab CI/CD Pipeline
 # =============================================================================
-# Stages: bootstrap → lint → test → security → maintenance
-# Coverage threshold: 70%
+# Control owner : Platform Engineering
+# Standard      : EU EMIR (Reg. 648/2012) Art. 34 operational risk, supported by
+#                 DORA (Reg. 2022/2554) Art. 8-10 ICT risk management and the
+#                 EBA Guidelines on ICT and Security Risk Management (EBA/GL/2019/04)
+# Review cycle  : Annual, or on material change to the pipeline
+#
+# This pipeline automates changes to production banking infrastructure
+# (firmware, ISO deployment, monitoring suppression). It is therefore itself an
+# in-scope ICT system and must evidence: segregation of duties, change control,
+# traceability, and secure development practice.
+#
+# Stages: bootstrap -> validate -> lint -> test -> security -> compliance -> maintenance
+#
+# Tier portability
+# ----------------
+# The Bank instance tier is not yet confirmed, so this pipeline degrades
+# gracefully:
+#   Free/Premium : Secret Detection, PSScriptAnalyzer security gate, Code
+#                  Quality MR widget, JUnit + Cobertura widgets, all artifacts.
+#   Ultimate     : additionally populates the Security Dashboard and
+#                  vulnerability management from the SAST/Secret Detection
+#                  reports. Enable by setting GITLAB_TIER_ULTIMATE: "true".
+# See docs/compliance/SECURITY_PIPELINE.md.
 # =============================================================================
 
-# Disable pipeline execution on current GitLab instance while retaining config
+# -----------------------------------------------------------------------------
+# GitLab-managed security templates
+# -----------------------------------------------------------------------------
+# Secret Detection (Gitleaks) is available on ALL tiers and is the authoritative
+# secret scanner. The previous hand-rolled 'password|secret|key|token' substring
+# search in ci-security-check.ps1 has been removed in favour of it.
+#
+# SAST runs the language analyzers GitLab provides. Note that GitLab has NO
+# PowerShell SAST analyzer - the Semgrep analyzer will cover the Python helper
+# (scripts/MD_to_HTML_Converter.py) and any IaC, but PowerShell coverage comes
+# entirely from our PSScriptAnalyzer security gate below. This is the single
+# most important thing to understand about SAST on this repository.
+include:
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.gitlab-ci.yml
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
+
+# -----------------------------------------------------------------------------
+# Workflow rules
+# -----------------------------------------------------------------------------
+# The previous config used a blanket 'when: never', which disabled the entire
+# pipeline including every security control. That is replaced with an explicit,
+# auditable kill switch: PIPELINE_ENABLED must be set to "false" deliberately,
+# and the reason recorded in the change ticket.
 workflow:
   rules:
-    - when: never
+    - if: '$PIPELINE_ENABLED == "false"'
+      when: never
+    # Avoid duplicate pipelines when an MR is open for a branch.
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUEST_IID'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_COMMIT_BRANCH'
 
 stages:
   - bootstrap
+  - validate
   - lint
   - test
   - security
+  - compliance
   - maintenance
 
 variables:
-  POWERSHELL_VERSION: "7.4"
+  # --- Runtime -----------------------------------------------------------
+  # IMPORTANT: POWERSHELL_IMAGE is the OS the GITLAB RUNNER executes pipeline
+  # jobs on (lint, test, scan). It is NOT the HPE OneView / Windows Server 2025
+  # estate that the automation manages - those are reached over REST/WinRM from
+  # inside the scripts regardless of runner OS.
+  #
+  # The runner OS is a DevOps choice and is detected at runtime by
+  # scripts/Detect-Runner.ps1 (via `uname` then $IsWindows/$IsLinux). The
+  # Automation module is imported branch-aware: it loads fully on a Windows
+  # runner, and on a Linux/macOS runner it degrades gracefully so platform-
+  # independent unit tests and the file-based security scan still run.
+  #
+  # If DevOps provisions Windows Server 2025 shared runners, set this to a
+  # Windows pwsh image (the HPEOneView.1000 dependency targets Windows).
+  #
+  # Pinned to a patch version rather than a floating major.minor tag so that
+  # builds are reproducible and the runtime is a reviewable change.
+  # HARDENING TODO: replace with a sha256 digest and an internal mirror before
+  # production use. A tag is mutable; a digest is not. See SECURITY_PIPELINE.md.
+  POWERSHELL_IMAGE: "mcr.microsoft.com/powershell:7.4-ubuntu-22.04"
+
+  # --- Quality gates -----------------------------------------------------
   COVERAGE_THRESHOLD: "70"
-  # CyberArk settings - must be set in GitLab CI/CD variables (Masked)
+
+  # --- Security gate posture ---------------------------------------------
+  # 'report'  : findings are published to the MR and Security Dashboard but do
+  #             not fail the pipeline.
+  # 'enforce' : non-baselined findings fail the pipeline.
+  # Currently 'report' during the remediation window. The cutover date and the
+  # sign-off required to move to 'enforce' are recorded in
+  # docs/compliance/SECURITY_PIPELINE.md.
+  SECURITY_ENFORCEMENT_MODE: "report"
+  SECURITY_FAIL_ON: "Warning"
+
+  # Set to "true" once confirmed the Bank instance is Ultimate. Controls whether
+  # SAST/Secret Detection report artifacts are declared as 'reports:' (ingested
+  # into vulnerability management) or plain 'paths:' artifacts.
+  GITLAB_TIER_ULTIMATE: "false"
+
+  # --- Supply chain ------------------------------------------------------
+  # Point at the Bank's internal analyzer mirror to avoid egress to
+  # registry.gitlab.com from a regulated build network.
+  # SECURE_ANALYZERS_PREFIX: "registry.internal.bank/gitlab-security-products"
+
+  # Fetch full history: Secret Detection must scan all commits, not just the
+  # tip, to catch credentials introduced and later "removed" in a follow-up.
+  GIT_DEPTH: "0"
+  GIT_SUBMODULE_STRATEGY: none
+
+  # --- Secret Detection tuning -------------------------------------------
+  # Vendored third-party sample code contains deliberate demo credentials
+  # (scripts/modules/HPEOneView.1000/Samples). Excluded so real findings are
+  # not lost in the noise. The exclusion is narrow and reviewable.
+  SECRET_DETECTION_EXCLUDED_PATHS: "scripts/modules,vendor,generated,bin"
+
+  # --- CyberArk ----------------------------------------------------------
+  # Non-secret configuration only. CYBERARK_* secrets, MAINTENANCE_CALLBACK_URL
+  # and MAINTENANCE_API_KEY are supplied as MASKED + PROTECTED GitLab CI/CD
+  # variables and must never appear in this file.
   CYBERARK_CCP_URL: "https://cyberark-ccp:443/AIMWebService/API/Accounts"
   CYBERARK_APP_ID: "ci"
-  # Callback settings - must be set in GitLab CI/CD variables (Masked)
-  # MAINTENANCE_CALLBACK_URL - webhook URL for completion callback
-  # MAINTENANCE_API_KEY - optional API key for callback authentication (MUST be masked in GitLab CI/CD variables)
+
+# -----------------------------------------------------------------------------
+# Global defaults
+# -----------------------------------------------------------------------------
+default:
+  image: $POWERSHELL_IMAGE
+  # Bound job runtime so a hung job cannot occupy a runner indefinitely.
+  timeout: 30 minutes
+  interruptible: true
+  retry:
+    max: 2
+    # Retry only on infrastructure faults. Never retry script_failure: a failing
+    # test or security gate must not be able to pass on a second attempt.
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+
+# -----------------------------------------------------------------------------
+# Reusable fragments
+# -----------------------------------------------------------------------------
+.pwsh_strict: &pwsh_strict
+  # Fail fast on any non-zero exit inside multi-command script blocks.
+  FF_USE_FASTZIP: "true"
+
+.module_setup: &module_setup
+  # Modules are vendored under scripts/modules and Ensure-Pester.ps1 prefers the
+  # vendored copy. PSGallery is registered as a fallback only.
+  #
+  # SUPPLY CHAIN NOTE: -SkipPublisherCheck is deliberately NOT used here. The
+  # existing scripts/Ensure-Pester.ps1 does use it at line 71, which bypasses
+  # Authenticode publisher validation; that is tracked as a remediation item.
+  - pwsh -NoProfile -Command "Set-PSRepository -Name PSGallery -InstallationPolicy Trusted"
+
+.on_code_change: &on_code_change
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 # =============================================================================
-# Bootstrap Stage (CyberArk Secret Fetching)
+# Bootstrap Stage - CyberArk secret retrieval
 # =============================================================================
 cyberark-bootstrap:
   stage: bootstrap
-  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   script:
-    - pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "$CYBERARK_CCP_URL" -AppId "$CYBERARK_APP_ID" -ExportForGitLab > secrets.env
-    - pwsh -Command "if (Test-Path 'secrets.env') { Get-Content 'secrets.env' | Write-Output }"
+    - pwsh -NoProfile -File ./scripts/cyberark-bootstrap.ps1
+      -CyberArkUrl "$CYBERARK_CCP_URL"
+      -AppId "$CYBERARK_APP_ID"
+      -ExportForGitLab > secrets.env
+    # The previous config echoed secrets.env to the job log with Get-Content,
+    # writing retrieved credentials into GitLab job output in plaintext, where
+    # they persist for the artifact retention period and are visible to anyone
+    # with Reporter access. Removed. Only the variable NAMES are echoed, so the
+    # job remains debuggable without disclosing values.
+    - pwsh -NoProfile -Command "if (Test-Path 'secrets.env') { (Get-Content 'secrets.env' | ForEach-Object { ($_ -split '=',2)[0] }) -join ', ' | ForEach-Object { Write-Output \"Retrieved secrets: $_\" } } else { throw 'secrets.env was not produced' }"
   artifacts:
     reports:
       dotenv: secrets.env
+    # Shortest practical lifetime for a credential-bearing artifact.
     expire_in: 10 minutes
   rules:
     - if: '$CI_PIPELINE_SOURCE == "trigger"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
   allow_failure: false
 
 # =============================================================================
-# Lint Stage
+# Validate Stage - fail fast before spending runner time
 # =============================================================================
-.lint_template: &lint_template
-  stage: lint
-  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
-  before_script:
-    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
-    - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
-    - pwsh -File ./scripts/prune-logs.ps1
+validate-pipeline:
+  stage: validate
   script:
-    - pwsh -File ./scripts/lint.ps1
-  artifacts:
-    reports:
-      metrics: metrics.txt
-    expire_in: 1 week
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    # Lint this file against the GitLab CI schema via the project's own API.
+    - |
+      pwsh -NoProfile -Command '
+        $body = @{ content = (Get-Content ".gitlab-ci.yml" -Raw) } | ConvertTo-Json
+        $uri = "$env:CI_API_V4_URL/projects/$env:CI_PROJECT_ID/ci/lint?include_merged_yaml=true"
+        try {
+          $r = Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json" -Headers @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+          if ($r.valid) { Write-Output "Pipeline definition is valid." }
+          else { Write-Output "INVALID:"; $r.errors | ForEach-Object { Write-Output "  - $_" }; exit 1 }
+        } catch {
+          Write-Output "CI lint endpoint unavailable ($($_.Exception.Message)); skipping."
+        }'
+  <<: *on_code_change
+  allow_failure: true
 
-lint-powershell:
-  <<: *lint_template
+validate-config:
+  stage: validate
   script:
-    - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
-    - pwsh -File ./scripts/lint.ps1
+    - pwsh -NoProfile -File ./scripts/validate-maintenance-config.ps1
+  <<: *on_code_change
+  allow_failure: true
+
+# =============================================================================
+# Lint Stage - style and syntax (security rules live in the security stage)
+# =============================================================================
+lint-powershell:
+  stage: lint
+  before_script:
+    - *module_setup
+    - pwsh -NoProfile -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
+    - pwsh -NoProfile -File ./scripts/prune-logs.ps1
+  script:
+    - pwsh -NoProfile -File ./scripts/lint.ps1
+  artifacts:
+    when: always
+    paths:
+      - generated/logs/
+    expire_in: 1 week
+  <<: *on_code_change
 
 # =============================================================================
 # Test Stage
 # =============================================================================
-.test_template: &test_template
+test-unit:
   stage: test
-  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   before_script:
-    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
-    - pwsh -Command "Install-Module Pester -MinimumVersion 6.0.0 -Scope CurrentUser -Force"
-    - pwsh -File ./scripts/prune-logs.ps1
+    - *module_setup
+    - pwsh -NoProfile -File ./scripts/prune-logs.ps1
   script:
-    # Run tests with coverage
-    - pwsh -File ./scripts/run-coverage.ps1 -TestPath tests/powershell -SourcePath src/powershell -OutputFile generated/output/coverage/coverage-results.xml -Threshold 70
-    # Report coverage summary
-    - pwsh -File ./scripts/CoverageSummary.ps1 -InputFile generated/output/coverage/coverage-results.xml -OutputFile generated/output/coverage/coverage-report.txt
+    - pwsh -NoProfile -File ./scripts/run-coverage.ps1
+      -TestPath tests/powershell
+      -SourcePath src/powershell
+      -OutputDirectory generated/output/coverage
+      -Threshold "$COVERAGE_THRESHOLD"
+    - pwsh -NoProfile -File ./scripts/CoverageSummary.ps1
+      -InputFile generated/output/coverage/coverage-results.xml
+      -OutputFile generated/output/coverage/coverage-report.txt
+  # Surfaces the coverage number in the MR widget and the job badge.
+  coverage: '/ Coverage\s+:\s+(\d+(?:\.\d+)?)%/'
   artifacts:
+    when: always
     reports:
+      junit: generated/output/coverage/test-results.xml
       coverage_report:
         coverage_format: cobertura
         path: generated/output/coverage/coverage-results.xml
     paths:
-      - generated/output/coverage/coverage-results.xml
-      - generated/output/coverage/coverage-report.txt
-    expire_in: 1 week
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-
-test-unit:
-  <<: *test_template
-  script:
-    - pwsh -Command "Install-Module Pester -MinimumVersion 6.0.0 -Scope CurrentUser -Force"
-    - pwsh -File ./scripts/run-tests.ps1
-    - pwsh -File ./scripts/CoverageSummary.ps1 -InputFile generated/output/coverage/coverage-results.xml -OutputFile generated/output/coverage/coverage-report.txt
+      - generated/output/coverage/
+      - generated/logs/
+    expire_in: 1 month
+  <<: *on_code_change
 
 # =============================================================================
 # Security Stage
 # =============================================================================
-security-scan:
+
+# --- PowerShell security gate ------------------------------------------------
+# This is the ONLY control that inspects PowerShell for security defects.
+# GitLab ships no PowerShell SAST analyzer, so without this job the repository's
+# PowerShell - which is ~20,000 lines and holds all the credential handling and
+# remote execution - would be entirely unscanned.
+sast-powershell:
   stage: security
-  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   before_script:
-    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
-    - pwsh -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
-    - pwsh -File ./scripts/prune-logs.ps1
+    - *module_setup
+    - pwsh -NoProfile -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
   script:
-    - pwsh -File ./scripts/ci-security-check.ps1
+    - pwsh -NoProfile -File ./scripts/ci-security-check.ps1
+      -Mode "$SECURITY_ENFORCEMENT_MODE"
+      -FailOn "$SECURITY_FAIL_ON"
+      -OutputDirectory generated/output/security
   artifacts:
-    expire_in: 1 week
+    when: always
+    reports:
+      # Renders findings inline on changed lines in the MR. Available on all
+      # tiers, which is why the gate stays useful if the Bank is not Ultimate.
+      codequality: generated/output/security/pssa-code-quality.json
+    paths:
+      - generated/output/security/
+    # Retained for one year as change-control evidence for the audit trail.
+    expire_in: 1 year
+  <<: *on_code_change
+
+# Ultimate-only variant: additionally declares the SAST report so findings flow
+# into vulnerability management. Kept as a separate job because declaring an
+# unsupported 'reports:sast' key on Free/Premium is silently ignored, which
+# would make it look like the control was working when it was not.
+sast-powershell-ultimate:
+  extends: sast-powershell
+  artifacts:
+    when: always
+    reports:
+      codequality: generated/output/security/pssa-code-quality.json
+      sast: generated/output/security/pssa-sast-report.json
+    paths:
+      - generated/output/security/
+    expire_in: 1 year
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$GITLAB_TIER_ULTIMATE != "true"'
+      when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+# Disable the non-Ultimate variant when the Ultimate one is active, so the gate
+# runs exactly once.
+sast-powershell-guard:
+  extends: sast-powershell
+  rules:
+    - if: '$GITLAB_TIER_ULTIMATE == "true"'
+      when: never
+    - when: never
+
+# --- GitLab-managed analyzer configuration -----------------------------------
+secret_detection:
+  stage: security
+  variables:
+    # Scan the entire history, not just the current ref. A credential committed
+    # and then deleted in a later commit is still a disclosed credential.
+    SECRET_DETECTION_HISTORIC_SCAN: "true"
+  artifacts:
+    when: always
+    paths:
+      - gl-secret-detection-report.json
+    expire_in: 1 year
+  # Report-only during the remediation window. Note that .env is tracked in this
+  # repository and WILL be flagged; its committed values are empty, so it is a
+  # template rather than a disclosure, but it should become .env.example and be
+  # gitignored.
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+semgrep-sast:
+  stage: security
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+iac-sast:
+  stage: security
+  allow_failure: true
+  rules:
+    # Dockerfile and docker-compose.yml are the IaC surface here.
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [Dockerfile, docker-compose.yml, "**/*.tf", "**/*.yaml", "**/*.yml"]
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+gemnasium-python-dependency_scanning:
+  stage: security
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+container_scanning:
+  stage: security
+  allow_failure: true
+  rules:
+    # Only meaningful once an image has actually been built and pushed.
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CS_IMAGE'
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CS_IMAGE'
 
 # =============================================================================
-# Maintenance Stage (existing jobs)
+# Compliance Stage - evidence generation
 # =============================================================================
+# EMIR/DORA require that controls are not merely present but demonstrable. This
+# job produces a single dated, retained artifact per pipeline recording which
+# controls ran and what they found, so an auditor can be shown evidence without
+# reconstructing it from job logs that have since expired.
+compliance-evidence:
+  stage: compliance
+  needs:
+    - job: lint-powershell
+      artifacts: true
+      optional: true
+    - job: test-unit
+      artifacts: true
+      optional: true
+    - job: sast-powershell
+      artifacts: true
+      optional: true
+    - job: secret_detection
+      artifacts: true
+      optional: true
+  script:
+    - pwsh -NoProfile -File ./scripts/ci/New-ComplianceEvidence.ps1
+      -OutputPath generated/output/compliance/evidence.json
+    # Record this pipeline run in the GitLab hardening & compliance test plan
+    # (docs/Automation/GITLAB_HARDENING_TEST_PLAN.md) and regenerate its
+    # timestamped HTML snapshot, so compliance test results and coverage for
+    # pipeline runs are tracked alongside the Automation/OneView plans.
+    - GH_ADD_ROW=1
+      GH_ADD_COV_ROW=1
+      GH_REASON="Pipeline run $CI_PIPELINE_ID"
+      GH_PIPELINEJOB="compliance-evidence (security + compliance)"
+      GH_ENV="$CI_SERVER_HOST / $CI_COMMIT_REF_NAME"
+      GH_RESULT="$SECURITY_ENFORCEMENT_MODE gate (report-only until cutover)"
+      GH_NOTES="SAST/Secret Detection + sast-powershell + coverage + compliance evidence"
+      GH_COVERAGE="see coverage-report.txt"
+      GH_THRESHOLD="$COVERAGE_THRESHOLD"
+      GH_ENFORCED="$SECURITY_ENFORCEMENT_MODE"
+      pwsh -NoProfile -File ./scripts/Update-GitLabHardeningPlan.ps1 -NonInteractive
+  artifacts:
+    when: always
+    paths:
+      - generated/output/compliance/
+      - docs/Automation/GITLAB_HARDENING_TEST_PLAN.md
+      - docs/Automation/Testing_Reports/
+    # Aligned to the record-retention obligation. EMIR Art. 39 requires records
+    # be kept for at least five years; GitLab artifact expiry is a convenience
+    # copy only - the authoritative archive must be the Bank's evidence store.
+    # 'never' prevents silent expiry before the nightly export has run.
+    expire_in: never
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  allow_failure: true
+
+# =============================================================================
+# Maintenance Stage
+# =============================================================================
+# Operational jobs that change production state. These run only from triggers
+# and require the CyberArk bootstrap to have supplied credentials.
 .maintenance_defaults: &maintenance_defaults
   stage: maintenance
-  image: mcr.microsoft.com/powershell:$POWERSHELL_VERSION
   needs: ["cyberark-bootstrap"]
   before_script:
-    - pwsh -Command "Set-PSRepository PSGallery -InstallationPolicy Trusted"
-    - pwsh -File ./scripts/prune-logs.ps1
+    - *module_setup
+    - pwsh -NoProfile -File ./scripts/prune-logs.ps1
   artifacts:
+    when: always
     paths:
       - generated/logs/
-    expire_in: 7 days
-  only:
-    - triggers
+    # Operational change records. Retained far longer than the previous 7 days,
+    # which was well short of any supervisory expectation.
+    expire_in: 1 year
+  # 'interruptible' is overridden to false: a maintenance job that is cancelled
+  # part-way can leave monitoring suppressed on production hosts.
+  interruptible: false
+  timeout: 2 hours
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+maintenance-validate:
+  <<: *maintenance_defaults
+  script:
+    - pwsh -NoProfile -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+      -ACTION "validate"
+      -CLUSTER_ID "$CLUSTER_ID"
+      -MODE "$MODE"
+      -CONFIG_DIR "$CONFIG_DIR"
+      -DRY_RUN "$DRY_RUN"
+      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
+      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
+  variables:
+    MODE: "scom"
 
 maintenance-enable:
   <<: *maintenance_defaults
+  needs: ["cyberark-bootstrap", "maintenance-validate"]
   script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+    - pwsh -NoProfile -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
       -ACTION "enable"
       -CLUSTER_ID "$CLUSTER_ID"
       -MODE "$MODE"
@@ -162,7 +514,7 @@ maintenance-enable:
 maintenance-disable:
   <<: *maintenance_defaults
   script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+    - pwsh -NoProfile -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
       -ACTION "disable"
       -CLUSTER_ID "$CLUSTER_ID"
       -MODE "$MODE"
@@ -174,24 +526,10 @@ maintenance-disable:
     MODE: "scom"
     FF_NETWORK_PER_BUILD: "true"
 
-maintenance-validate:
-  <<: *maintenance_defaults
-  script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
-      -ACTION "validate"
-      -CLUSTER_ID "$CLUSTER_ID"
-      -MODE "$MODE"
-      -CONFIG_DIR "$CONFIG_DIR"
-      -DRY_RUN "$DRY_RUN"
-      -CALLBACK_URL "$MAINTENANCE_CALLBACK_URL"
-      -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
-  variables:
-    MODE: "scom"
-
 maintenance-auto-disable:
   <<: *maintenance_defaults
   script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+    - pwsh -NoProfile -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
       -ACTION "disable"
       -CLUSTER_ID "$CLUSTER_ID"
       -MODE "$MODE"
@@ -200,14 +538,18 @@ maintenance-auto-disable:
       -CALLBACK_API_KEY "$MAINTENANCE_API_KEY"
   variables:
     MODE: "scom"
-  when: manual
-  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
+      allow_failure: true
 
-# OneView-specific jobs (hardware level, no cluster nesting)
 maintenance-oneview-enable:
   <<: *maintenance_defaults
   script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+    - pwsh -NoProfile -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
       -ACTION "enable"
       -CLUSTER_ID "$CLUSTER_ID"
       -MODE "oneview"
@@ -223,7 +565,7 @@ maintenance-oneview-enable:
 maintenance-oneview-disable:
   <<: *maintenance_defaults
   script:
-    - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
+    - pwsh -NoProfile -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
       -ACTION "disable"
       -CLUSTER_ID "$CLUSTER_ID"
       -MODE "oneview"

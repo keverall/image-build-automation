@@ -1,21 +1,22 @@
-# Automation Test Plan — Physical Server Build & ISO Pipeline
+# Automation Test Plan — Physical Server Build and ISO Pipeline
 
 <a id="top"></a>
 
 ## Table of Contents
 
-- [How to execute (runner reference):](#how-to-execute-runner-reference)
-  - [Column legend:  ](#column-legend)
-- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-monitoring)
-- [2. OneView & iLO Connectivity / Targeting](#2-oneview-ilo-connectivity-targeting)
-- [3. Pre/Post Build Validation](#3-prepost-build-validation)
-- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
-- [5. Orchestration, Routing & Utility](#5-orchestration-routing-utility)
-- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
-- [7. Test Run Summary (filled per cycle)](#7-test-run-summary-filled-per-cycle)
-  - [Run log](#run-log)
-- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
+- [Automation Test Plan — Physical Server Build and ISO Pipeline](#automation-test-plan--physical-server-build-and-iso-pipeline)
+  - [Table of Contents](#table-of-contents)
+  - [How to execute (runner reference):](#how-to-execute-runner-reference)
+  - [1. ISO Build, Patching, Deployment and Monitoring](#1-iso-build-patching-deployment-and-monitoring)
+  - [2. OneView and iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity--targeting)
+  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
+  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
+  - [5. Orchestration, Routing and Utility](#5-orchestration-routing-and-utility)
+  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
+  - [7. Test Run Summary (filled per cycle)](#7-test-run-summary-filled-per-cycle)
+    - [Run log](#run-log)
+  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 31/07/2026 09:14 UTC</p>
@@ -56,9 +57,7 @@
   </tbody>
 </table>
 
-<a name="column-legend"></a>
-
-### Column legend:  
+**Column legend:**
 
 - **Expected Pass Date** — target sign-off date agreed with the delivery lead (fill in per the project schedule).
 - **Actual Pass Date** — date/time the test last passed in the target environment. Leave blank until executed.
@@ -69,7 +68,7 @@
 
 <a name="1-iso-build-patching-deployment-monitoring"></a>
 
-## 1. ISO Build, Patching, Deployment & Monitoring
+## 1. ISO Build, Patching, Deployment and Monitoring
 
 <table style="border-collapse:collapse;width:100%;table-layout:auto;">
   <thead>
@@ -168,7 +167,7 @@
 
 <a name="2-oneview-ilo-connectivity-targeting"></a>
 
-## 2. OneView & iLO Connectivity / Targeting
+## 2. OneView and iLO Connectivity / Targeting
 
 <table style="border-collapse:collapse;width:100%;table-layout:auto;">
   <thead>
@@ -261,7 +260,18 @@
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-08</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewVersion</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Appliance major-version read from <code>Get-OneViewConnectionStatus -IncludeServerCount</code> path; module/version compliance</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Get-OneViewVersion.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Version populated; consistent with OneView 10.x / HPEOneView.1000</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
     </tr>
+
   </tbody>
 </table>
 
@@ -419,20 +429,31 @@
     <tr>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-07</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">New-ScomConnection</code> / <code style="background:#f4f4f4;color:#000000;">New-ScomMaintenanceScript</code></td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">SCOM connection &amp; script</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">SCOM connection andamp; script</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/New-ScomConnection.Unit.Tests.ps1</code>, <code style="background:#f4f4f4;color:#000000;">New-ScomMaintenanceScript.Unit.Tests.ps1</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Connection + script valid</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-08</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">New-ScomMaintenanceScript</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">SCOM maintenance script generation (companion to New-ScomConnection)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/New-ScomMaintenanceScript.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Valid SCOM maintenance script emitted</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
     </tr>
+
   </tbody>
 </table>
 
 <a name="5-orchestration-routing-utility"></a>
 
-## 5. Orchestration, Routing & Utility
+## 5. Orchestration, Routing and Utility
 
 <table style="border-collapse:collapse;width:100%;table-layout:auto;">
   <thead>
@@ -613,7 +634,40 @@
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-08</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Logging</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Structured logging module (file + console sinks, redaction)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Logging.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Logs written; secrets redacted; log directory created</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
     </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-09</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">AutomationCommandLogging</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Per-command audit logging of invoked automation commands</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/AutomationCommandLogging.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Command invocations logged with args (secrets redacted)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-10</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Update-TestProgress (tooling)</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Test-progress update tooling (markdown block editing, HTML report generation)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Update-TestProgress.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Block edit + HTML report generation verified</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+
   </tbody>
 </table>
 
@@ -626,76 +680,15 @@
 Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 <!-- BEGIN:automation-evidence-rows -->
-<table style="border-collapse:collapse;width:100%;table-layout:auto;">
-  <thead>
-    <tr>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Run #</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Date/Time</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Command / Suite</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Environment</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Result</th>
-      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Reason for full testing rerun</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">1</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make test</code> + <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 38 <code style="background:#f4f4f4;color:#000000;">AT-*</code> scenarios above → 68 atomic Pester tests)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (68/68)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Initial test run</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">2</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">23/07/2026 09:31:16</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make test</code> + <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 93 automated regression unit test scenarios above)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (93/93)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">3</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">23/07/2026 18:55:24 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make test</code> + <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 93 automated regression unit test scenarios above)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (93/93)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. 2</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">4</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">24/07/2026 16:34:08 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 95 automated regression unit test scenarios above)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (95/95)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">5</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">27/07/2026 15:30:48 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Live connectivity verification — <code style="background:#f4f4f4;color:#000000;">Test-ServerConnectivity -ManagementHost va-oneviewt-01</code> + <code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus</code></td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">va-oneviewt-01 (Prod)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">6</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">31/07/2026 09:14:27 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N/A</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N/A</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N/A</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">7</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">31/07/2026 09:14:27 UTC</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">make automation-mode-tests (all 99 automated regression unit test scenarios above)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (99/99)</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green</td>
-    </tr>
-  </tbody>
-</table>
+|Run #|Date/Time|Command / Suite|Environment|Result|Reason for full testing rerun|
+|---|---|---|---|---|---|
+|1|21/07/2026|Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests)|Ran manually on terminal on Test VDI Mocking Tests|Passed (68/68)|Initial test run|
+|2|23/07/2026 09:31:16|Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (93/93)|Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken.|
+|3|23/07/2026 18:55:24 UTC|Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (93/93)|Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. 2|
+|4|24/07/2026 16:34:08 UTC|Full Automation suite — `make automation-mode-tests` (all 95 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (95/95)|Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing.|
+|5|27/07/2026 15:30:48 UTC|Live connectivity verification — `Test-ServerConnectivity -ManagementHost va-oneviewt-01` + `Get-OneViewConnectionStatus`|va-oneviewt-01 (Prod)|Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).|Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session.|
+|6|31/07/2026 09:14:27 UTC|NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE|N/A|N/A|N/A|
+|7|31/07/2026 09:14:27 UTC|make automation-mode-tests (all 99 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux)|Passed (99/99)|Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green|
 <!-- END:automation-evidence-rows -->
 
 <a name="run-log"></a>
