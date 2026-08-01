@@ -11,7 +11,7 @@
 - [To trigger your specific SCOM script through the CI REST API from iRequest, you must use the trigger pipeline endpoint.](#to-trigger-your-specific-scom-script-through-the-ci-rest-api-from-irequest-you-must-use-the-trigger-pipeline-endpoint)
 - [Step 2: The iRequest API Command (PowerShell Payload)](#step-2-the-irequest-api-command-powershell-payload)
 - [Step 3: Raw Curl Format (If iRequest cannot use PowerShell)](#step-3-raw-curl-format-if-irequest-cannot-use-powershell)
-- [⚠️ Critical Security Notice for SCOM Scripts](#-critical-security-notice-for-scom-scripts)
+- [⚠️ Critical Security Notice for SCOM Scripts](#critical-security-notice-for-scom-scripts)
 
 (like iRequest, ServiceNow, or Jira) with automated backend PowerShell scripts is a very standard enterprise workflow.
 Because this server is running inside a strict corporate network with no internet access, this API architecture is actually the best solution. It allows external applications to trigger automation inside your isolated zone safely.
@@ -163,7 +163,7 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
      --data-urlencode "variables[Reason]=Planned OS Patching via iRequest"
 ```
 
-<a name="-critical-security-notice-for-scom-scripts"></a>
+<a name="critical-security-notice-for-scom-scripts"></a>
 
 ## ⚠️ Critical Security Notice for SCOM Scripts
 

@@ -7,17 +7,17 @@
 - [CyberArk Credential Bootstrap](#cyberark-credential-bootstrap)
   - [Fetching Strategy](#fetching-strategy)
   - [Secrets Fetched (Safe → Object → Env Var)](#secrets-fetched-safe-object-env-var)
-- [CI Pipeline - PowerShell Stage Requirements](#ci-pipeline---powershell-stage-requirements)
+- [CI Pipeline - PowerShell Stage Requirements](#ci-pipeline-powershell-stage-requirements)
   - [Minimal Prerequisites](#minimal-prerequisites)
   - [GitLab CI Example](#gitlab-ci-example)
   - [Jenkins CI Example](#jenkins-ci-example)
 - [scom2015](#scom2015)
   - [What Must Be True](#what-must-be-true)
   - [What Will NOT Work Without More Work](#what-will-not-work-without-more-work)
-- [HPE iLO - Will It Work](#hpe-ilo---will-it-work)
-  - [`ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅](#ilomanager-inside-set-maintenancemode---ilo-rest-maintenance-window-)
-  - [`Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place](#invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place)
-  - [`Start-InstallMonitor` - iLO Redfish polling ✅](#start-installmonitor---ilo-redfish-polling-)
+- [HPE iLO - Will It Work](#hpe-ilo-will-it-work)
+  - [`ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅](#ilomanager-inside-set-maintenancemode-ilo-rest-maintenance-window)
+  - [`Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place](#invoke-isodeploy-ilo-virtual-media-mount-scaffold-in-place)
+  - [`Start-InstallMonitor` - iLO Redfish polling ✅](#start-installmonitor-ilo-redfish-polling)
 - [Open Items](#open-items)
 - [See Also](#see-also)
 
@@ -63,7 +63,7 @@ HPE-Download      hpe-download-pass        → HPE_DOWNLOAD_PASS
 
 For a Jenkins pipeline excerpt showing the bootstrap implementation, see [Jenkins CI Example](#jenkins-ci-example).
 
-<a name="ci-pipeline---powershell-stage-requirements"></a>
+<a name="ci-pipeline-powershell-stage-requirements"></a>
 
 ## CI Pipeline - PowerShell Stage Requirements
 
@@ -183,17 +183,17 @@ foreach ($inst in $instances) {
 
 ---
 
-<a name="hpe-ilo---will-it-work"></a>
+<a name="hpe-ilo-will-it-work"></a>
 
 ## HPE iLO - Will It Work
 
-<a name="ilomanager-inside-set-maintenancemode---ilo-rest-maintenance-window-"></a>
+<a name="ilomanager-inside-set-maintenancemode-ilo-rest-maintenance-window"></a>
 
 ### `ILOManager` inside `Set-MaintenanceMode` - iLO REST maintenance window ✅
 
 `POST /rest/v1/maintenancewindows` is fully implemented and uses proper iLO auth (ISO session login + `X-Redfish-Session` header). This will create a maintenance window on a real iLO 4/5/6 if IPs and credentials are correct.
 
-<a name="invoke-isodeploy---ilo-virtual-media-mount-scaffold-in-place"></a>
+<a name="invoke-isodeploy-ilo-virtual-media-mount-scaffold-in-place"></a>
 
 ### `Invoke-IsoDeploy` - iLO virtual media mount ⚠️ scaffold in place
 
@@ -212,7 +212,7 @@ Invoke-RestMethod -Uri $vmActionUrl -Method Post -Body $vmBody -Headers @{ "X-Re
 
 Until that `<http_iso_url>` is available the step is intentionally a no-op.
 
-<a name="start-installmonitor---ilo-redfish-polling-"></a>
+<a name="start-installmonitor-ilo-redfish-polling"></a>
 
 ### `Start-InstallMonitor` - iLO Redfish polling ✅
 

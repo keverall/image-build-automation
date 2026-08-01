@@ -8,9 +8,9 @@
 - [Quick Start](#quick-start)
 - [Document Index](#document-index)
   - [Core Documentation](#core-documentation)
-  - [Physical Server Build & Runbooks](#physical-server-build-and-runbooks)
-  - [Maintenance Mode & Scheduling](#maintenance-mode-and-scheduling)
-  - [Integration & Authentication](#integration-and-authentication)
+  - [Physical Server Build & Runbooks](#physical-server-build-runbooks)
+  - [Maintenance Mode & Scheduling](#maintenance-mode-scheduling)
+  - [Integration & Authentication](#integration-authentication)
   - [Developer Resources](#developer-resources)
 - [Contributing](#contributing)
 
@@ -65,7 +65,7 @@ image-build-automation/
 | [Code Quality & Security](Generic/code_quality.md#top) | PSScriptAnalyzer, gitleaks - configuration, usage, CI pipeline integration |
 | [GitLab CI/CD Integration](Generic/gitlab.md#top) | REST API pipeline triggers, webhook configuration, polling |
 
-<a name="physical-server-build-and-runbooks"></a>
+<a name="physical-server-build-runbooks"></a>
 
 ### Physical Server Build & Runbooks
 
@@ -76,7 +76,7 @@ image-build-automation/
 | [Automation Command Reference](Automation/automation_commands.md#top) | Command-level reference for the physical server build functions |
 | [PowerShell API Reference](Generic/powershell_api_reference.md#top) | Orchestrator and workflow overview for the physical server build |
 
-<a name="maintenance-mode-and-scheduling"></a>
+<a name="maintenance-mode-scheduling"></a>
 
 ### Maintenance Mode & Scheduling
 
@@ -86,7 +86,7 @@ image-build-automation/
 | [Maintenance Mode Environment Config](Maintenance-Mode/maintenance-mode-environment-config.md#top) | Environment variable configuration for maintenance mode |
 | [Maintenance Mode Code Map](Maintenance-Mode/Code_Map_Maitenance_Mode.md#top) | Complete code map with links to all mm command functionality |
 
-<a name="integration-and-authentication"></a>
+<a name="integration-authentication"></a>
 
 ### Integration & Authentication
 

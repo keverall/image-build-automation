@@ -9,8 +9,8 @@
   - [HPE OneView](#hpe-oneview)
   - [PowerShell](#powershell)
 - [Changes](#changes)
-  - [2026-07-30 - OneView module pinning reworked to "latest installed on this server"](#2026-07-30---oneview-module-pinning-reworked-to-latest-installed-on-this-server)
-  - [2026-07-30 - Documentation tooling aligned between make docs and make fix-docs](#2026-07-30---documentation-tooling-aligned-between-make-docs-and-make-fix-docs)
+  - [2026-07-30 - OneView module pinning reworked to "latest installed on this server"](#2026-07-30-oneview-module-pinning-reworked-to-latest-installed-on-this-server)
+  - [2026-07-30 - Documentation tooling aligned between make docs and make fix-docs](#2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs)
 
 Standard, dated changelog for the `image-build-automation` repository. Major,
 user-facing changes are recorded here with dates. The **Standards** section
@@ -102,7 +102,7 @@ when a request would go against best practice.
 
 ## Changes
 
-<a name="2026-07-30---oneview-module-pinning-reworked-to-latest-installed-on-this-server"></a>
+<a name="2026-07-30-oneview-module-pinning-reworked-to-latest-installed-on-this-server"></a>
 
 ### 2026-07-30 - OneView module pinning reworked to "latest installed on this server"
 
@@ -128,7 +128,7 @@ when a request would go against best practice.
   `Get-OneViewModuleStatus`. All OneView automation tests now pass (99/99) on
   Linux without segfaulting.
 
-<a name="2026-07-30---documentation-tooling-aligned-between-make-docs-and-make-fix-docs"></a>
+<a name="2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs"></a>
 
 ### 2026-07-30 - Documentation tooling aligned between make docs and make fix-docs
 

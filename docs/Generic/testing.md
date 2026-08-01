@@ -13,7 +13,7 @@
   - [Run via Wrapper Script](#run-via-wrapper-script)
   - [Run a Single Test File](#run-a-single-test-file)
   - [Run by Tag](#run-by-tag)
-  - [CI / XML Output & Coverage Reports](#ci-xml-output-and-coverage-reports)
+  - [CI / XML Output & Coverage Reports](#ci-xml-output-coverage-reports)
   - [Code Coverage](#code-coverage)
 - [Test File Structure](#test-file-structure)
 - [Writing a New Test](#writing-a-new-test)
@@ -154,7 +154,7 @@ Invoke-Pester -Path 'tests/powershell' -Tag @('Config','FileIO') -PassThru
 Invoke-Pester -Path 'tests/powershell' -ExcludeTag @('Integration') -PassThru
 ```
 
-<a name="ci-xml-output-and-coverage-reports"></a>
+<a name="ci-xml-output-coverage-reports"></a>
 
 ### CI / XML Output & Coverage Reports
 

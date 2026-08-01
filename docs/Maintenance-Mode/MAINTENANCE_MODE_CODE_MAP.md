@@ -4,7 +4,7 @@
 
 ## Table of Contents
 
-- [1. Entry Points & User Interface](#1-entry-points-and-user-interface)
+- [1. Entry Points & User Interface](#1-entry-points-user-interface)
   - [PowerShell Profile Functions](#powershell-profile-functions)
 - [2. Core Implementation](#2-core-implementation)
   - [Main Function](#main-function)
@@ -17,12 +17,12 @@
 - [6. Helper Functions](#6-helper-functions)
   - [Datetime Parsing](#datetime-parsing)
   - [Scheduling](#scheduling)
-  - [Audit & Logging](#audit-and-logging)
+  - [Audit & Logging](#audit-logging)
 - [7. Configuration Files](#7-configuration-files)
-- [8. Module Loading & Routing](#8-module-loading-and-routing)
+- [8. Module Loading & Routing](#8-module-loading-routing)
   - [Module Structure](#module-structure)
   - [Request Router](#request-router)
-- [9. Testing & Validation](#9-testing-and-validation)
+- [9. Testing & Validation](#9-testing-validation)
   - [Test Scripts](#test-scripts)
   - [Test Files](#test-files)
 - [11. Documentation References](#11-documentation-references)
@@ -33,7 +33,7 @@ This document provides a complete map of all code locations hit by the `Set-Main
 
 ---
 
-<a name="1-entry-points-and-user-interface"></a>
+<a name="1-entry-points-user-interface"></a>
 
 ## 1. Entry Points & User Interface
 
@@ -170,7 +170,7 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 - **`_Compute-NextWorkStart`**: Line 1332 - Calculate next maintenance window end time
 - **`_Compute-DefaultEnd`**: Line 1321 - Default end time calculation
 
-<a name="audit-and-logging"></a>
+<a name="audit-logging"></a>
 
 ### Audit & Logging
 
@@ -194,7 +194,7 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="8-module-loading-and-routing"></a>
+<a name="8-module-loading-routing"></a>
 
 ## 8. Module Loading & Routing
 
@@ -216,7 +216,7 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="9-testing-and-validation"></a>
+<a name="9-testing-validation"></a>
 
 ## 9. Testing & Validation
 

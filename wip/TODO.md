@@ -27,7 +27,7 @@ iRequest -   HTTPS POST   → CI Pipeline -   Native Execution   → PowerShell 
 
 Depending on how iRequest is configured by your identity/portal team, you will use one of these three standard connection protocols: [1]
 
-<a name="option-a-the-ci-web-api-the-easiest-and-safest-way"></a>
+<a name="option-a-the-ci-web-api-the-easiest-safest-way"></a>
 
 ## Option A: The CI Web API (The Easiest & Safest Way)
 
@@ -48,7 +48,7 @@ Run these on the Windows OneView server (not the Linux repo). Nothing here touch
 
 - [The Architecture: How They Interact](#the-architecture-how-they-interact)
 - [The 3 Ways to Connect iRequest to Your PowerShell Code](#the-3-ways-to-connect-irequest-to-your-powershell-code)
-- [Option A: The CI Web API (The Easiest & Safest Way)](#option-a-the-ci-web-api-the-easiest-and-safest-way)
+- [Option A: The CI Web API (The Easiest & Safest Way)](#option-a-the-ci-web-api-the-easiest-safest-way)
 
 Get-Module -ListAvailable -Name 'HPEOneView.*','HPOneView.*' | Select-Object Name,Version,Path | Format-Table -AutoSize
 
@@ -219,11 +219,7 @@ Count                          16
 Error
 ```
 
-
 999999999hhhhhhhh
-
-
-
 
 ==============================================
   OneView Connectivity Test
@@ -527,12 +523,3 @@ Tests Passed: 468, Failed: 3, Skipped: 0, Inconclusive: 0, NotRun: 0
 ================================================================================
 make: *** [Makefile:79: test] Error 1
      image-build-automation  main                                                                 2  4m 4s 469ms  10:25:29 
-
-
-
-
-
-
-
-
-
