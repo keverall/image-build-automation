@@ -5,14 +5,14 @@
 ## Table of Contents
 
 - [Setup (One-Time)](#setup-one-time)
-- [Connectivity, Connection & Server Lookup](#connectivity-connection-and-server-lookup)
+- [Connectivity, Connection & Server Lookup](#connectivity-connection-server-lookup)
   - [Test OneView connectivity](#test-oneview-connectivity)
   - [Disconnect from OneView](#disconnect-from-oneview)
   - [Get OneView connection status](#get-oneview-connection-status)
   - [Get OneView server list](#get-oneview-server-list)
   - [Validate server list](#validate-server-list)
   - [Validate build parameters](#validate-build-parameters)
-- [ISO Image Naming & SMB Shares](#iso-image-naming-and-smb-shares)
+- [ISO Image Naming & SMB Shares](#iso-image-naming-smb-shares)
   - [Bootable ISO filename convention](#bootable-iso-filename-convention)
   - [SMB / CIFS share naming for local ISO paths](#smb-cifs-share-naming-for-local-iso-paths)
 - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
@@ -22,7 +22,7 @@
   - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
   - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
   - [Mock build (testing)](#mock-build-testing)
-- [ISO Build, Deployment & Monitoring](#iso-build-deployment-and-monitoring)
+- [ISO Build, Deployment & Monitoring](#iso-build-deployment-monitoring)
   - [Build a bootable ISO](#build-a-bootable-iso)
   - [Publish a bootable ISO](#publish-a-bootable-iso)
   - [Deploy ISOs to servers](#deploy-isos-to-servers)
@@ -84,7 +84,7 @@ Get-Command -Module Automation
 
 ---
 
-<a name="connectivity-connection-and-server-lookup"></a>
+<a name="connectivity-connection-server-lookup"></a>
 
 ## Connectivity, Connection & Server Lookup
 
@@ -282,7 +282,7 @@ Test-BuildParams -BaseIsoPath 'C:\isos\WinSrv2025.iso'
 
 ---
 
-<a name="iso-image-naming-and-smb-shares"></a>
+<a name="iso-image-naming-smb-shares"></a>
 
 ## ISO Image Naming & SMB Shares
 
@@ -458,7 +458,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 
 ---
 
-<a name="iso-build-deployment-and-monitoring"></a>
+<a name="iso-build-deployment-monitoring"></a>
 
 ## ISO Build, Deployment & Monitoring
 

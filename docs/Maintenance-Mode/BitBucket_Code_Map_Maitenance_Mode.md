@@ -27,23 +27,23 @@
 - [5. Enable Post-Operation Actions](#5-enable-post-operation-actions)
   - [5.1 SCOM: Schedule Auto-Disable Task](#51-scom-schedule-auto-disable-task)
   - [5.2 Email Notification (Enable)](#52-email-notification-enable)
-  - [5.3 OpsRamp Metrics & Alerts (Enable)](#53-opsramp-metrics-and-alerts-enable)
+  - [5.3 OpsRamp Metrics & Alerts (Enable)](#53-opsramp-metrics-alerts-enable)
 - [6 Disable Maintenance Mode](#6-disable-maintenance-mode)
   - [6.1 Pre-Check: Already Disabled?](#61-pre-check-already-disabled)
   - [6.2 SCOM: Exit Maintenance](#62-scom-exit-maintenance)
   - [6.3 SCOM: Post-Disable Stabilization Wait](#63-scom-post-disable-stabilization-wait)
   - [6.4 OneView: Disable Maintenance](#64-oneview-disable-maintenance)
   - [6.5 Email Notification (Disable)](#65-email-notification-disable)
-  - [6.6 OpsRamp Metrics & Alerts (Disable)](#66-opsramp-metrics-and-alerts-disable)
+  - [6.6 OpsRamp Metrics & Alerts (Disable)](#66-opsramp-metrics-alerts-disable)
 - [7 Validate Action (Read-Only)](#7-validate-action-read-only)
   - [DryRun Validation](#dryrun-validation)
   - [SCOM Validation](#scom-validation)
   - [OneView Validation](#oneview-validation)
   - [Status Computation](#status-computation)
   - [Result Assembly](#result-assembly)
-- [8 Audit Record & Output](#8-audit-record-and-output)
+- [8 Audit Record & Output](#8-audit-record-output)
   - [8.1 Audit Initialization](#81-audit-initialization)
-  - [8.2 Audit Finalization & Save](#82-audit-finalization-and-save)
+  - [8.2 Audit Finalization & Save](#82-audit-finalization-save)
   - [8.3 Response Construction](#83-response-construction)
   - [8.4 CLI Output (Script-Mode Only)](#84-cli-output-script-mode-only)
 - [9 Helper Functions (Shared)](#9-helper-functions-shared)
@@ -437,7 +437,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 2. [`Lines 3500–3528`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3500-L3528): Template variable substitution (`{cluster_name}`, `{environment}`, `{servers}`, etc.)
 3. [`Lines 3538–3565`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3538-L3565): `System.Net.Mail.SmtpClient` send to all recipients
 
-<a name="53-opsramp-metrics-and-alerts-enable"></a>
+<a name="53-opsramp-metrics-alerts-enable"></a>
 
 ### 5.3 OpsRamp Metrics & Alerts (Enable)
 
@@ -534,7 +534,7 @@ DisableMaintenance($targetName, $targetType, $DryRun)
 - **Call site**: [`Line 1600`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1600)
 - Uses same [`EmailNotifier.SendMaintenanceNotification()`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3473) with action `'disabled'`
 
-<a name="66-opsramp-metrics-and-alerts-disable"></a>
+<a name="66-opsramp-metrics-alerts-disable"></a>
 
 ### 6.6 OpsRamp Metrics & Alerts (Disable)
 
@@ -593,7 +593,7 @@ The validate action queries current maintenance status **without making any chan
 
 ---
 
-<a name="8-audit-record-and-output"></a>
+<a name="8-audit-record-output"></a>
 
 ## 8 Audit Record & Output
 
@@ -603,7 +603,7 @@ The validate action queries current maintenance status **without making any chan
 
 - **[`Lines 1222–1239`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1222-L1239)**: Creates `$audit` hashtable with action, mode, environment, target_id, serial_number, timestamps, steps, success flag
 
-<a name="82-audit-finalization-and-save"></a>
+<a name="82-audit-finalization-save"></a>
 
 ### 8.2 Audit Finalization & Save
 

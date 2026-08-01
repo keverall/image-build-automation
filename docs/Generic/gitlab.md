@@ -5,16 +5,16 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [Step 1 - Pipeline configuration (`.gitlab-ci.yml`)](#step-1---pipeline-configuration-gitlab-ciyml)
+- [Step 1 - Pipeline configuration (`.gitlab-ci.yml`)](#step-1-pipeline-configuration-gitlab-ciyml)
   - [Required file](#required-file)
   - [CI/CD Variables (project defaults / override source)](#cicd-variables-project-defaults-override-source)
   - [GitLab CI entry-point script](#gitlab-ci-entry-point-script)
-- [Step 2 - Generate a Pipeline Trigger Token](#step-2---generate-a-pipeline-trigger-token)
-- [Step 3 - Triggering from iRequest](#step-3---triggering-from-irequest)
+- [Step 2 - Generate a Pipeline Trigger Token](#step-2-generate-a-pipeline-trigger-token)
+- [Step 3 - Triggering from iRequest](#step-3-triggering-from-irequest)
   - [REST endpoint](#rest-endpoint)
   - [PowerShell payload (iRequest PowerShell engine)](#powershell-payload-irequest-powershell-engine)
   - [curl payload (Linux-style webhook runner)](#curl-payload-linux-style-webhook-runner)
-  - [PowerShell helper - `Send-GitLabMaintenanceRequest`](#powershell-helper---send-gitlabmaintenancerequest)
+  - [PowerShell helper - `Send-GitLabMaintenanceRequest`](#powershell-helper-send-gitlabmaintenancerequest)
   - [Control-layer integration (recommended)](#control-layer-integration-recommended)
   - [Dry-run mode](#dry-run-mode)
 - [Completion callbacks](#completion-callbacks)
@@ -22,7 +22,7 @@
 - [Cluster configuration](#cluster-configuration)
 - [Comparison with legacy CI systems](#comparison-with-legacy-ci-systems)
 - [Network requirements](#network-requirements)
-- [Error reference - callers](#error-reference---callers)
+- [Error reference - callers](#error-reference-callers)
 
 ---
 
@@ -53,7 +53,7 @@ iRequest / ServiceNow / Jira
 
 ---
 
-<a name="step-1---pipeline-configuration-gitlab-ciyml"></a>
+<a name="step-1-pipeline-configuration-gitlab-ciyml"></a>
 
 ## Step 1 - Pipeline configuration (`.gitlab-ci.yml`)
 
@@ -144,7 +144,7 @@ generated/logs/audit/maintenance_<CI_JOB_ID>_error.json    # on unhandled except
 
 ---
 
-<a name="step-2---generate-a-pipeline-trigger-token"></a>
+<a name="step-2-generate-a-pipeline-trigger-token"></a>
 
 ## Step 2 - Generate a Pipeline Trigger Token
 
@@ -164,7 +164,7 @@ required in both `Send-GitLabMaintenanceRequest.ps1` and any manual curl test.
 
 ---
 
-<a name="step-3---triggering-from-irequest"></a>
+<a name="step-3-triggering-from-irequest"></a>
 
 ## Step 3 - Triggering from iRequest
 
@@ -234,7 +234,7 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
 
 ---
 
-<a name="powershell-helper---send-gitlabmaintenancerequest"></a>
+<a name="powershell-helper-send-gitlabmaintenancerequest"></a>
 
 ### PowerShell helper - `Send-GitLabMaintenanceRequest`
 
@@ -425,7 +425,7 @@ in PowerShell, `--insecure` in curl).
 
 ---
 
-<a name="error-reference---callers"></a>
+<a name="error-reference-callers"></a>
 
 ## Error reference - callers
 

@@ -126,10 +126,16 @@ function Set-TopAnchorCore {
 # ------------------------------------------------------------------
 
 function Get-Anchor($title, [ref]$anchorsSeen) {
-    $anchor = $title.ToLower()
-    $anchor = $anchor -replace '&', 'and'
+    # Match the slug algorithm used by GitHub / VS Code (markdown-it +
+    # github-slugger): lowercase, drop punctuation (incl. '&'), collapse
+    # whitespace to a single dash, collapse runs of dashes, and trim leading/
+    # trailing dashes. This keeps TOC links equal to the id the renderer
+    # auto-assigns to each heading, so in-page anchors work everywhere.
+    $anchor = $title.Trim().ToLower()
     $anchor = $anchor -replace '[^a-z0-9\s\-_]', ''
     $anchor = $anchor -replace '\s+', '-'
+    $anchor = $anchor -replace '-+', '-'
+    $anchor = $anchor.Trim('-')
 
     if ($anchorsSeen.Value.ContainsKey($anchor)) {
         $anchorsSeen.Value[$anchor]++
@@ -174,10 +180,19 @@ function Remove-ExistingAnchors([string[]]$lines) {
 
         $isAnchorLine = $lines[$i] -match '^<a name="[^"]*"></a>$'
         if ($isAnchorLine) {
+            # Walk forward past blank lines AND any other stacked anchors to find
+            # the next real content line. A name-anchor is a heading anchor (and is
+            # regenerated canonically) whenever it ultimately precedes a heading.
+            # Only anchors sitting in prose with no heading below are kept. This is
+            # idempotent and also collapses the stacked-duplicate-anchor case where
+            # two anchors are separated by blank line(s) before the heading.
             $headingBelow = $false
-            $limit = [Math]::Min($i + 2, $lines.Count - 1)
-            for ($j = $i + 1; $j -le $limit; $j++) {
-                if ($lines[$j] -match '^#{2,3}\s+') { $headingBelow = $true; break }
+            $j = $i + 1
+            while ($j -lt $lines.Count) {
+                if ($lines[$j] -match '^\s*$') { $j++; continue }
+                if ($lines[$j] -match '^<a name="[^"]*"></a>$') { $j++; continue }
+                if ($lines[$j] -match '^#{2,3}\s+') { $headingBelow = $true }
+                break
             }
             if ($headingBelow) {
                 continue

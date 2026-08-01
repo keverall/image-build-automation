@@ -5,8 +5,8 @@
 ## Table of Contents
 
 - [Summary](#summary)
-- [🚀 Quick Start - Setup & Installation](#-quick-start---setup-and-installation)
-  - [TL;DR - One-Line Setup](#tldr---one-line-setup)
+- [🚀 Quick Start - Setup & Installation](#quick-start-setup-installation)
+  - [TL;DR - One-Line Setup](#tldr-one-line-setup)
   - [Internal docs index](#internal-docs-index)
   - [In this document](#in-this-document)
 - [Project Architecture](#project-architecture)
@@ -27,7 +27,7 @@ Automated build pipelines for creating customized Windows Server installation IS
 
 ---
 
-<a name="-quick-start---setup-and-installation"></a>
+<a name="quick-start-setup-installation"></a>
 
 ## 🚀 Quick Start - Setup & Installation
 
@@ -36,7 +36,7 @@ Automated build pipelines for creating customized Windows Server installation IS
 1. **[📖 Setup Guide](docs/SETUP-GUIDE.md#top)** - Complete setup instructions for PowerShell profile and maintenance mode
 2. **[🔧 Quick Client Setup](docs/Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top)** - 5-minute setup for using maintenance mode commands
 
-<a name="tldr---one-line-setup"></a>
+<a name="tldr-one-line-setup"></a>
 
 ### TL;DR - One-Line Setup
 

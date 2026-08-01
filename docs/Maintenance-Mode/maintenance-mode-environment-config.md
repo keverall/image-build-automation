@@ -29,7 +29,7 @@
   - [Additional Controls Required for Production](#additional-controls-required-for-production)
 - [Testing](#testing)
   - [Run Connection Test](#run-connection-test)
-  - [Test-ServerConnectivity - JsonConfig Parameter](#test-serverconnectivity---jsonconfig-parameter)
+  - [Test-ServerConnectivity - JsonConfig Parameter](#test-serverconnectivity-jsonconfig-parameter)
   - [Run Connection Test (Legacy Script)](#run-connection-test-legacy-script)
   - [Validate Configuration](#validate-configuration)
 - [Troubleshooting](#troubleshooting)
@@ -389,7 +389,7 @@ pwsh scripts/test-connectivity.ps1 -ManagementHost 'oneview-test.ad.example.com'
 
 Note: `Test-ServerConnectivity` is OneView-only. For SCOM connectivity, use `Test-ScomMaintenanceConnectivity`.
 
-<a name="test-serverconnectivity---jsonconfig-parameter"></a>
+<a name="test-serverconnectivity-jsonconfig-parameter"></a>
 
 ### Test-ServerConnectivity - JsonConfig Parameter
 

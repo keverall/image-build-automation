@@ -4,70 +4,70 @@
 
 ## Table of Contents
 
-- [1. Module Loading & Bootstrap](#1-module-loading-and-bootstrap)
-  - [1.1 - Root Module Loader](#11---root-module-loader)
-  - [1.2 - Private Script Load Order](#12---private-script-load-order)
-  - [1.3 - Public Function Load Order](#13---public-function-load-order)
-- [2. Request Routing & Control Surfaces](#2-request-routing-and-control-surfaces)
-  - [2.1 - Request Router](#21---request-router)
-  - [2.2 - Unified Orchestrator Entry Point](#22---unified-orchestrator-entry-point)
-  - [2.3 - Request Validation](#23---request-validation)
-  - [2.4 - CI Pipeline Surface](#24---ci-pipeline-surface)
-  - [2.5 - iRequest/ISAPI Surface](#25---irequestisapi-surface)
-  - [2.6 - Scheduled Task Surface](#26---scheduled-task-surface)
-  - [2.7 - GitLab CI/CD Surface](#27---gitlab-cicd-surface)
+- [1. Module Loading & Bootstrap](#1-module-loading-bootstrap)
+  - [1.1 - Root Module Loader](#11-root-module-loader)
+  - [1.2 - Private Script Load Order](#12-private-script-load-order)
+  - [1.3 - Public Function Load Order](#13-public-function-load-order)
+- [2. Request Routing & Control Surfaces](#2-request-routing-control-surfaces)
+  - [2.1 - Request Router](#21-request-router)
+  - [2.2 - Unified Orchestrator Entry Point](#22-unified-orchestrator-entry-point)
+  - [2.3 - Request Validation](#23-request-validation)
+  - [2.4 - CI Pipeline Surface](#24-ci-pipeline-surface)
+  - [2.5 - iRequest/ISAPI Surface](#25-irequestisapi-surface)
+  - [2.6 - Scheduled Task Surface](#26-scheduled-task-surface)
+  - [2.7 - GitLab CI/CD Surface](#27-gitlab-cicd-surface)
 - [3. Physical Server Build Pipeline](#3-physical-server-build-pipeline)
-  - [3.1 - End-to-End Build Orchestrator](#31---end-to-end-build-orchestrator)
-  - [3.2 - ConfigMgr Bootable ISO Builder](#32---configmgr-bootable-iso-builder)
-  - [3.3 - ISO Publisher](#33---iso-publisher)
+  - [3.1 - End-to-End Build Orchestrator](#31-end-to-end-build-orchestrator)
+  - [3.2 - ConfigMgr Bootable ISO Builder](#32-configmgr-bootable-iso-builder)
+  - [3.3 - ISO Publisher](#33-iso-publisher)
 - [4. Firmware ISO Builder (Standalone)](#4-firmware-iso-builder-standalone)
-  - [4.1 - Firmware Update Function](#41---firmware-update-function)
-  - [4.2 - FirmwareUpdater Class](#42---firmwareupdater-class)
+  - [4.1 - Firmware Update Function](#41-firmware-update-function)
+  - [4.2 - FirmwareUpdater Class](#42-firmwareupdater-class)
 - [5. Windows Security Patching](#5-windows-security-patching)
-  - [5.1 - Invoke-WindowsSecurityUpdate](#51---invoke-windowssecurityupdate)
-  - [5.2 - WindowsPatcher Class](#52---windowspatcher-class)
+  - [5.1 - Invoke-WindowsSecurityUpdate](#51-invoke-windowssecurityupdate)
+  - [5.2 - WindowsPatcher Class](#52-windowspatcher-class)
 - [6. ISO Deployment](#6-iso-deployment)
-  - [6.1 - Invoke-IsoDeploy](#61---invoke-isodeploy)
-  - [6.2 - ISODeployer Class](#62---isodeployer-class)
+  - [6.1 - Invoke-IsoDeploy](#61-invoke-isodeploy)
+  - [6.2 - ISODeployer Class](#62-isodeployer-class)
 - [7. iLO Redfish Integration](#7-ilo-redfish-integration)
-  - [7.1 - Invoke-IloRedfish](#71---invoke-iloredfish)
-  - [7.2 - IloRedfishSession Class](#72---iloredfishsession-class)
+  - [7.1 - Invoke-IloRedfish](#71-invoke-iloredfish)
+  - [7.2 - IloRedfishSession Class](#72-iloredfishsession-class)
 - [8. Installation Monitoring](#8-installation-monitoring)
-  - [8.1 - Start-InstallMonitor](#81---start-installmonitor)
-  - [8.2 - InstallationMonitor Class](#82---installationmonitor-class)
-- [9. Pre & Post Build Validation](#9-pre-and-post-build-validation)
-  - [9.1 - Test-PreBuildValidation](#91---test-prebuildvalidation)
-  - [9.2 - Test-PostBuildValidation](#92---test-postbuildvalidation)
-  - [9.3 - Test-ServerConnectivity](#93---test-serverconnectivity)
+  - [8.1 - Start-InstallMonitor](#81-start-installmonitor)
+  - [8.2 - InstallationMonitor Class](#82-installationmonitor-class)
+- [9. Pre & Post Build Validation](#9-pre-post-build-validation)
+  - [9.1 - Test-PreBuildValidation](#91-test-prebuildvalidation)
+  - [9.2 - Test-PostBuildValidation](#92-test-postbuildvalidation)
+  - [9.3 - Test-ServerConnectivity](#93-test-serverconnectivity)
 - [10. PowerShell Execution Utilities](#10-powershell-execution-utilities)
-  - [10.1 - Local PowerShell Execution](#101---local-powershell-execution)
-  - [10.2 - Remote PowerShell via WinRM](#102---remote-powershell-via-winrm)
+  - [10.1 - Local PowerShell Execution](#101-local-powershell-execution)
+  - [10.2 - Remote PowerShell via WinRM](#102-remote-powershell-via-winrm)
 - [11. OpsRamp Integration](#11-opsramp-integration)
-  - [11.1 - OpsRamp_Client Class](#111---opsramp_client-class)
-  - [11.2 - OpsRamp Entry Points](#112---opsramp-entry-points)
+  - [11.1 - OpsRamp_Client Class](#111-opsramp_client-class)
+  - [11.2 - OpsRamp Entry Points](#112-opsramp-entry-points)
 - [12. Credential Resolution](#12-credential-resolution)
-- [13. Inventory & Configuration](#13-inventory-and-configuration)
-  - [13.1 - Inventory Functions](#131---inventory-functions)
-  - [13.2 - Configuration Functions](#132---configuration-functions)
-  - [13.3 - Validator Functions](#133---validator-functions)
-- [14. Process Execution & Retry](#14-process-execution-and-retry)
-- [15. File I/O & Path Resolution](#15-file-io-and-path-resolution)
-  - [15.1 - File I/O Functions](#151---file-io-functions)
-  - [15.2 - Path Resolution](#152---path-resolution)
-- [16. Logging & Audit](#16-logging-and-audit)
-  - [16.1 - Logging Functions](#161---logging-functions)
-  - [16.2 - Audit Logger](#162---audit-logger)
-  - [16.3 - Timestamp Helpers](#163---timestamp-helpers)
+- [13. Inventory & Configuration](#13-inventory-configuration)
+  - [13.1 - Inventory Functions](#131-inventory-functions)
+  - [13.2 - Configuration Functions](#132-configuration-functions)
+  - [13.3 - Validator Functions](#133-validator-functions)
+- [14. Process Execution & Retry](#14-process-execution-retry)
+- [15. File I/O & Path Resolution](#15-file-io-path-resolution)
+  - [15.1 - File I/O Functions](#151-file-io-functions)
+  - [15.2 - Path Resolution](#152-path-resolution)
+- [16. Logging & Audit](#16-logging-audit)
+  - [16.1 - Logging Functions](#161-logging-functions)
+  - [16.2 - Audit Logger](#162-audit-logger)
+  - [16.3 - Timestamp Helpers](#163-timestamp-helpers)
 - [17. Script Helpers](#17-script-helpers)
-  - [17.1 - PowerShell Profile Setup](#171---powershell-profile-setup)
-  - [17.2 - CI/Security & Lint Scripts](#172---cisecurity-and-lint-scripts)
-  - [17.3 - Setup & Bootstrap Scripts](#173---setup-and-bootstrap-scripts)
-  - [17.4 - Documentation & Coverage Scripts](#174---documentation-and-coverage-scripts)
+  - [17.1 - PowerShell Profile Setup](#171-powershell-profile-setup)
+  - [17.2 - CI/Security & Lint Scripts](#172-cisecurity-lint-scripts)
+  - [17.3 - Setup & Bootstrap Scripts](#173-setup-bootstrap-scripts)
+  - [17.4 - Documentation & Coverage Scripts](#174-documentation-coverage-scripts)
 - [18. Configuration Files](#18-configuration-files)
 - [19. Testing](#19-testing)
-  - [19.1 - Pester Unit Tests](#191---pester-unit-tests)
-  - [19.2 - Test Execution Scripts](#192---test-execution-scripts)
-  - [19.3 - Coverage & Lint](#193---coverage-and-lint)
+  - [19.1 - Pester Unit Tests](#191-pester-unit-tests)
+  - [19.2 - Test Execution Scripts](#192-test-execution-scripts)
+  - [19.3 - Coverage & Lint](#193-coverage-lint)
 - [20. Quick Navigation](#20-quick-navigation)
 
 This document maps every code location in the automation module **excluding** maintenance mode (which is fully documented in [`GitHub_Code_Map_Maitenance_Mode.md`](../Maintenance-Mode/GitHub_Code_Map_Maitenance_Mode.md#top)). It is organized in the **chronological order a user or caller encounters each feature** - from module loading, through request routing, physical server builds, firmware/Windows patching, deployment, monitoring, validation, and OpsRamp reporting.
@@ -78,13 +78,13 @@ This document maps every code location in the automation module **excluding** ma
 
 ---
 
-<a name="1-module-loading-and-bootstrap"></a>
+<a name="1-module-loading-bootstrap"></a>
 
 ## 1. Module Loading & Bootstrap
 
 Before any function can be called, the `Automation` module must be loaded. This loads all shared types, private helpers (in dependency order), and public functions.
 
-<a name="11---root-module-loader"></a>
+<a name="11-root-module-loader"></a>
 
 ### 1.1 - Root Module Loader
 
@@ -102,7 +102,7 @@ Before any function can be called, the `Automation` module must be loaded. This 
 | Public script load | [L559–565](../../src/powershell/Automation/Automation.psm1#559-565) | Dot-sources `Public/*.ps1` alphabetically |
 | Export surface | [L569–652](../../src/powershell/Automation/Automation.psm1#569-652) | `Export-ModuleMember` - explicit public API |
 
-<a name="12---private-script-load-order"></a>
+<a name="12-private-script-load-order"></a>
 
 ### 1.2 - Private Script Load Order
 
@@ -120,7 +120,7 @@ Dot-sourced in dependency order by [`Automation.psm1`](../../src/powershell/Auto
 | 9 | [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1) | `Invoke-RoutedRequest` - dispatches by `request_types.json` (66 lines) |
 | 10 | [`Base.ps1`](../../src/powershell/Automation/Private/Base.ps1) | `New-AutomationBase`, timestamp helpers (91 lines) |
 
-<a name="13---public-function-load-order"></a>
+<a name="13-public-function-load-order"></a>
 
 ### 1.3 - Public Function Load Order
 
@@ -154,13 +154,13 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 
 ---
 
-<a name="2-request-routing-and-control-surfaces"></a>
+<a name="2-request-routing-control-surfaces"></a>
 
 ## 2. Request Routing & Control Surfaces
 
 After module load, requests arrive from one of four surfaces: CI pipeline, iRequest/ISAPI, Scheduled tasks, or GitLab CI/CD. All surfaces converge on the central router.
 
-<a name="21---request-router"></a>
+<a name="21-request-router"></a>
 
 ### 2.1 - Request Router
 
@@ -192,7 +192,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 - Dispatches by calling handler with `@Params` splat at [L54](../../src/powershell/Automation/Private/Router.ps1#54)
 - Returns `Success=false` for unknown types at [L43–49](../../src/powershell/Automation/Private/Router.ps1#43-49)
 
-<a name="22---unified-orchestrator-entry-point"></a>
+<a name="22-unified-orchestrator-entry-point"></a>
 
 ### 2.2 - Unified Orchestrator Entry Point
 
@@ -201,7 +201,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 - Routes via [`Invoke-RoutedRequest()`](../../src/powershell/Automation/Private/Router.ps1#20) at [L46](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#46)
 - Adds `Timestamp` and `RequestType` to result at [L47–48](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1#47-48)
 
-<a name="23---request-validation"></a>
+<a name="23-request-validation"></a>
 
 ### 2.3 - Request Validation
 
@@ -211,7 +211,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 |-------|-------|-------|
 | Build params | [L31–33](../../src/powershell/Automation/Public/_Validate-Request.ps1#31-33) | Calls `Test-BuildParams` for `build_iso` / `patch_windows` |
 
-<a name="24---ci-pipeline-surface"></a>
+<a name="24-ci-pipeline-surface"></a>
 
 ### 2.4 - CI Pipeline Surface
 
@@ -224,14 +224,14 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
   - `all` → `build_iso`
 - Executes via [`_Execute()`](../../src/powershell/Automation/Public/Control.ps1#164)
 
-<a name="25---irequestisapi-surface"></a>
+<a name="25-irequestisapi-surface"></a>
 
 ### 2.5 - iRequest/ISAPI Surface
 
 **[`Control.ps1`](../../src/powershell/Automation/Public/Control.ps1#207)** - [`Run-IRequest()`](../../src/powershell/Automation/Public/Control.ps1#207)
 - Executes via [`_Execute()`](../../src/powershell/Automation/Public/Control.ps1#164)
 
-<a name="26---scheduled-task-surface"></a>
+<a name="26-scheduled-task-surface"></a>
 
 ### 2.6 - Scheduled Task Surface
 
@@ -241,7 +241,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
   - `build_firmware` → `update_firmware`
   - `build_windows` → `patch_windows`
 
-<a name="27---gitlab-cicd-surface"></a>
+<a name="27-gitlab-cicd-surface"></a>
 
 ### 2.7 - GitLab CI/CD Surface
 
@@ -276,7 +276,7 @@ After module load, requests arrive from one of four surfaces: CI pipeline, iRequ
 
 The end-to-end physical server build pipeline orchestrates the full runbook workflow.
 
-<a name="31---end-to-end-build-orchestrator"></a>
+<a name="31-end-to-end-build-orchestrator"></a>
 
 ### 3.1 - End-to-End Build Orchestrator
 
@@ -294,7 +294,7 @@ One-call orchestrator for new HPE ProLiant server deployments. Steps:
 
 Skip switches: `-SkipPreBuild`, `-SkipIsoBuild`, `-SkipPublish`, `-SkipOneView`, `-SkipMount`, `-SkipMonitor`, `-SkipPostBuild`
 
-<a name="32---configmgr-bootable-iso-builder"></a>
+<a name="32-configmgr-bootable-iso-builder"></a>
 
 ### 3.2 - ConfigMgr Bootable ISO Builder
 
@@ -309,7 +309,7 @@ Builds ConfigMgr bootable WinPE media (replaces old DSC/DISM firmware+patching p
 - Mock mode for tests at [L144](../../src/powershell/Automation/Public/New-IsoBuild.ps1#144)
 - Writes `deployment_metadata.json` at [L239](../../src/powershell/Automation/Public/New-IsoBuild.ps1#239)
 
-<a name="33---iso-publisher"></a>
+<a name="33-iso-publisher"></a>
 
 ### 3.3 - ISO Publisher
 
@@ -327,7 +327,7 @@ Builds ConfigMgr bootable WinPE media (replaces old DSC/DISM firmware+patching p
 
 Standalone firmware ISO generation via HPE SUT. Not part of the ConfigMgr end-to-end workflow.
 
-<a name="41---firmware-update-function"></a>
+<a name="41-firmware-update-function"></a>
 
 ### 4.1 - Firmware Update Function
 
@@ -337,7 +337,7 @@ Standalone firmware ISO generation via HPE SUT. Not part of the ConfigMgr end-to
 - Delegates to [`FirmwareUpdater`](../../src/powershell/Automation/Public/Update-Firmware.ps1#82) class at [L67](../../src/powershell/Automation/Public/Update-Firmware.ps1#67)
 - Saves per-server result JSON at [L73](../../src/powershell/Automation/Public/Update-Firmware.ps1#73)
 
-<a name="42---firmwareupdater-class"></a>
+<a name="42-firmwareupdater-class"></a>
 
 ### 4.2 - FirmwareUpdater Class
 
@@ -375,7 +375,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 ## 5. Windows Security Patching
 
-<a name="51---invoke-windowssecurityupdate"></a>
+<a name="51-invoke-windowssecurityupdate"></a>
 
 ### 5.1 - Invoke-WindowsSecurityUpdate
 
@@ -386,7 +386,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 - Calls `Build()` at [L75](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#75)
 - Saves patch result JSON at [L78](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#78)
 
-<a name="52---windowspatcher-class"></a>
+<a name="52-windowspatcher-class"></a>
 
 ### 5.2 - WindowsPatcher Class
 
@@ -417,7 +417,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 ## 6. ISO Deployment
 
-<a name="61---invoke-isodeploy"></a>
+<a name="61-invoke-isodeploy"></a>
 
 ### 6.1 - Invoke-IsoDeploy
 
@@ -429,7 +429,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 - Bulk mode via `DeployAll()` at [L199](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#199)
 - Delegates actual mount+boot to `Invoke-IloRedfish` at [L175](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#175)
 
-<a name="62---isodeployer-class"></a>
+<a name="62-isodeployer-class"></a>
 
 ### 6.2 - ISODeployer Class
 
@@ -460,7 +460,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 ## 7. iLO Redfish Integration
 
-<a name="71---invoke-iloredfish"></a>
+<a name="71-invoke-iloredfish"></a>
 
 ### 7.1 - Invoke-IloRedfish
 
@@ -478,7 +478,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 - `PATCH /redfish/v1/Systems/1` - BootSourceOverrideTarget=Cd, Enabled=Once
 - `POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset` - ResetType=ForceRestart
 
-<a name="72---iloredfishsession-class"></a>
+<a name="72-iloredfishsession-class"></a>
 
 ### 7.2 - IloRedfishSession Class
 
@@ -516,7 +516,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 ## 8. Installation Monitoring
 
-<a name="81---start-installmonitor"></a>
+<a name="81-start-installmonitor"></a>
 
 ### 8.1 - Start-InstallMonitor
 
@@ -532,7 +532,7 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 0 = Not Started → 1 = Generalize → 2 = Specialize → 3 = Running Windows → 4 = RunPhase
 ```
 
-<a name="82---installationmonitor-class"></a>
+<a name="82-installationmonitor-class"></a>
 
 ### 8.2 - InstallationMonitor Class
 
@@ -562,11 +562,11 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 ---
 
-<a name="9-pre-and-post-build-validation"></a>
+<a name="9-pre-post-build-validation"></a>
 
 ## 9. Pre & Post Build Validation
 
-<a name="91---test-prebuildvalidation"></a>
+<a name="91-test-prebuildvalidation"></a>
 
 ### 9.1 - Test-PreBuildValidation
 
@@ -581,7 +581,7 @@ Pre-build checks from the runbook:
 
 Skip switches: `-SkipOneView`, `-SkipIlo`, `-SkipDpMp`, `-SkipIsoUrl`
 
-<a name="92---test-postbuildvalidation"></a>
+<a name="92-test-postbuildvalidation"></a>
 
 ### 9.2 - Test-PostBuildValidation
 
@@ -599,7 +599,7 @@ Post-build checks via WinRM:
 
 Skip switches: `-SkipCmClient`, `-SkipDrivers`, `-SkipRemote`
 
-<a name="93---test-serverconnectivity"></a>
+<a name="93-test-serverconnectivity"></a>
 
 ### 9.3 - Test-ServerConnectivity
 
@@ -618,7 +618,7 @@ Read-only connectivity test safe during change freezes (694 lines):
 
 ## 10. PowerShell Execution Utilities
 
-<a name="101---local-powershell-execution"></a>
+<a name="101-local-powershell-execution"></a>
 
 ### 10.1 - Local PowerShell Execution
 
@@ -628,7 +628,7 @@ Read-only connectivity test safe during change freezes (694 lines):
 - Configurable timeout (default: 300s), execution policy (default: `Bypass`)
 - Returns `@{ Success, Output }`
 
-<a name="102---remote-powershell-via-winrm"></a>
+<a name="102-remote-powershell-via-winrm"></a>
 
 ### 10.2 - Remote PowerShell via WinRM
 
@@ -645,7 +645,7 @@ Read-only connectivity test safe during change freezes (694 lines):
 
 ## 11. OpsRamp Integration
 
-<a name="111---opsramp_client-class"></a>
+<a name="111-opsramp_client-class"></a>
 
 ### 11.1 - OpsRamp_Client Class
 
@@ -666,7 +666,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | `ReportInstallationProgress()` | [L313](../../src/powershell/Automation/Automation.psm1#313) | Progress percent + elapsed seconds |
 | `ReportVulnerabilityScan()` | [L322](../../src/powershell/Automation/Automation.psm1#322) | Vuln counts + critical alert |
 
-<a name="112---opsramp-entry-points"></a>
+<a name="112-opsramp-entry-points"></a>
 
 ### 11.2 - OpsRamp Entry Points
 
@@ -702,11 +702,11 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 
 ---
 
-<a name="13-inventory-and-configuration"></a>
+<a name="13-inventory-configuration"></a>
 
 ## 13. Inventory & Configuration
 
-<a name="131---inventory-functions"></a>
+<a name="131-inventory-functions"></a>
 
 ### 13.1 - Inventory Functions
 
@@ -717,7 +717,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | [`Load-ServerList()`](../../src/powershell/Automation/Private/Inventory.ps1#5) | L5 | Reads `server_list.txt` → `ServerInfo[]` or plain strings |
 | [`New-ServerInfo()`](../../src/powershell/Automation/Private/Inventory.ps1#83) | L83 | Factory for `ServerInfo` objects |
 
-<a name="132---configuration-functions"></a>
+<a name="132-configuration-functions"></a>
 
 ### 13.2 - Configuration Functions
 
@@ -731,7 +731,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | [`_PS_ReplaceEnvVars()`](../../src/powershell/Automation/Private/Config.ps1#88) | L88 | Replaces `${VAR}` placeholders with environment variable values |
 | [`_PS_SubstituteEnvVars()`](../../src/powershell/Automation/Private/Config.ps1#108) | L108 | Recursive env-var substitution across all nested hashtables |
 
-<a name="133---validator-functions"></a>
+<a name="133-validator-functions"></a>
 
 ### 13.3 - Validator Functions
 
@@ -742,7 +742,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 
 ---
 
-<a name="14-process-execution-and-retry"></a>
+<a name="14-process-execution-retry"></a>
 
 ## 14. Process Execution & Retry
 
@@ -758,11 +758,11 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 
 ---
 
-<a name="15-file-io-and-path-resolution"></a>
+<a name="15-file-io-path-resolution"></a>
 
 ## 15. File I/O & Path Resolution
 
-<a name="151---file-io-functions"></a>
+<a name="151-file-io-functions"></a>
 
 ### 15.1 - File I/O Functions
 
@@ -777,7 +777,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | [`Test-PathEx()`](../../src/powershell/Automation/Private/FileIO.ps1#77) | L77 | Enhanced Test-Path with better error messages |
 | [`_FileIO_DeepHashtable()`](../../src/powershell/Automation/Private/FileIO.ps1#94) | L94 | Internal: deep conversion of PSCustomObject tree to hashtable |
 
-<a name="152---path-resolution"></a>
+<a name="152-path-resolution"></a>
 
 ### 15.2 - Path Resolution
 
@@ -790,11 +790,11 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 
 ---
 
-<a name="16-logging-and-audit"></a>
+<a name="16-logging-audit"></a>
 
 ## 16. Logging & Audit
 
-<a name="161---logging-functions"></a>
+<a name="161-logging-functions"></a>
 
 ### 16.1 - Logging Functions
 
@@ -805,7 +805,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | [`Initialize-Logging()`](../../src/powershell/Automation/Private/Logging.ps1#6) | L6 | Sets up log directory, creates timestamped log file |
 | [`Get-Logger()`](../../src/powershell/Automation/Private/Logging.ps1#59) | L59 | Returns logger object with Info/Warning/Error/Debug methods |
 
-<a name="162---audit-logger"></a>
+<a name="162-audit-logger"></a>
 
 ### 16.2 - Audit Logger
 
@@ -817,7 +817,7 @@ Also defined as class in [`Automation.psm1`](../../src/powershell/Automation/Aut
 - [`AuditLogger.Save()`](../../src/powershell/Automation/Automation.psm1#82) - writes JSON file
 - [`AuditLogger.AppendToMaster()`](../../src/powershell/Automation/Automation.psm1#99) - appends to master log
 
-<a name="163---timestamp-helpers"></a>
+<a name="163-timestamp-helpers"></a>
 
 ### 16.3 - Timestamp Helpers
 
@@ -841,7 +841,7 @@ Also defined as class in [`Automation.psm1`](../../src/powershell/Automation/Aut
 
 ## 17. Script Helpers
 
-<a name="171---powershell-profile-setup"></a>
+<a name="171-powershell-profile-setup"></a>
 
 ### 17.1 - PowerShell Profile Setup
 
@@ -853,7 +853,7 @@ Configures PowerShell profiles to auto-import the Automation module:
 - Supports `-Merge` (preserve user customizations), `-Uninstall`, `-DryRun`
 - Platform-aware: `windowspsprofile.ps1` (Windows) / `psprofile.ps1` (Linux)
 
-<a name="172---cisecurity-and-lint-scripts"></a>
+<a name="172-cisecurity-lint-scripts"></a>
 
 ### 17.2 - CI/Security & Lint Scripts
 
@@ -865,7 +865,7 @@ Configures PowerShell profiles to auto-import the Automation module:
 | [`run-checkmake.ps1`](../../scripts/run-checkmake.ps1) | 57 lines | Standalone checkmake runner |
 | [`prune-logs.ps1`](../../scripts/prune-logs.ps1) | 152 lines | Prunes excess log files, keeps max per type |
 
-<a name="173---setup-and-bootstrap-scripts"></a>
+<a name="173-setup-bootstrap-scripts"></a>
 
 ### 17.3 - Setup & Bootstrap Scripts
 
@@ -875,7 +875,7 @@ Configures PowerShell profiles to auto-import the Automation module:
 | [`setup-oneview.ps1`](../../scripts/setup-oneview.ps1) | 89 lines | Validates OneView setup: module, credentials, config file |
 | [`cyberark-bootstrap.ps1`](../../scripts/cyberark-bootstrap.ps1) | 139 lines | Fetches secrets from CyberArk CCP, exports as env vars for CI |
 
-<a name="174---documentation-and-coverage-scripts"></a>
+<a name="174-documentation-coverage-scripts"></a>
 
 ### 17.4 - Documentation & Coverage Scripts
 
@@ -914,7 +914,7 @@ All configs loaded from `configs/` directory:
 
 ## 19. Testing
 
-<a name="191---pester-unit-tests"></a>
+<a name="191-pester-unit-tests"></a>
 
 ### 19.1 - Pester Unit Tests
 
@@ -944,7 +944,7 @@ All configs loaded from `configs/` directory:
 | [`Update-Firmware.Unit.Tests.ps1`](../../tests/powershell/Update-Firmware.Unit.Tests.ps1) | Firmware ISO builder |
 | [`Update-WindowsSecurity.Unit.Tests.ps1`](../../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
 
-<a name="192---test-execution-scripts"></a>
+<a name="192-test-execution-scripts"></a>
 
 ### 19.2 - Test Execution Scripts
 
@@ -956,7 +956,7 @@ All configs loaded from `configs/` directory:
 | [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1) | Full maintenance test suite with environment/DateTime/connection filters |
 | [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1) | Configuration file + module validation |
 
-<a name="193---coverage-and-lint"></a>
+<a name="193-coverage-lint"></a>
 
 ### 19.3 - Coverage & Lint
 

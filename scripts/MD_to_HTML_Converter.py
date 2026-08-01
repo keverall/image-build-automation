@@ -132,6 +132,21 @@ def convert(md):
             out.append(line.strip())
             i += 1
             continue
+        # raw HTML table passthrough: the test-plan .md files use bordered HTML
+        # <table> blocks (standard Markdown has no border syntax). Pass the whole
+        # <table>...</table> block through verbatim so inline styles and cell
+        # markup are preserved instead of being HTML-escaped into plain text.
+        if re.match(r"^\s*<table\b", line, re.I):
+            tbl = [line.strip()]
+            i += 1
+            while i < n and "</table>" not in lines[i]:
+                tbl.append(lines[i].strip())
+                i += 1
+            if i < n:
+                tbl.append(lines[i].strip())
+                i += 1
+            out.append("\n".join(tbl))
+            continue
         if line.lstrip().startswith("```"):
             i += 1
             buf = []

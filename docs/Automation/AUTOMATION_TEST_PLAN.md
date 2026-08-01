@@ -4,20 +4,18 @@
 
 ## Table of Contents
 
-- [Automation Test Plan — Physical Server Build \& ISO Pipeline](#automation-test-plan--physical-server-build--iso-pipeline)
-  - [Table of Contents](#table-of-contents)
-  - [How to execute (runner reference):](#how-to-execute-runner-reference)
-    - [Column legend:](#column-legend)
-  - [1. ISO Build, Patching, Deployment \& Monitoring](#1-iso-build-patching-deployment--monitoring)
-  - [2. OneView \& iLO Connectivity / Targeting](#2-oneview--ilo-connectivity--targeting)
-  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
-  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
-  - [5. Orchestration, Routing \& Utility](#5-orchestration-routing--utility)
-  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
-  - [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
-    - [Run log](#run-log)
-  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
+- [How to execute (runner reference):](#how-to-execute-runner-reference)
+  - [Column legend:  ](#column-legend)
+- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-monitoring)
+- [2. OneView & iLO Connectivity / Targeting](#2-oneview-ilo-connectivity-targeting)
+- [3. Pre/Post Build Validation](#3-prepost-build-validation)
+- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
+- [5. Orchestration, Routing & Utility](#5-orchestration-routing-utility)
+- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
+- [7. Test Run Summary (filled per cycle)](#7-test-run-summary-filled-per-cycle)
+  - [Run log](#run-log)
+- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 31/07/2026 09:14 UTC</p>
@@ -27,15 +25,38 @@
 
 ## How to execute (runner reference):
 
-| Command | What it runs |
-|---------|--------------|
-| `make test` | All Pester unit tests (`scripts/run-tests.ps1`) |
-| `make coverage` | Unit tests with code-coverage report (CI gate, threshold 70%) |
-| `make test-integration` | `tests/powershell/Pester.Integration.ps1` |
-| `make automation-mode-tests` | ISO build / OneView / iLO Redfish / orchestrator flows |
-| `make maint-mode-tests` | High-priority `Set-MaintenanceMode` suite |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Command</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">What it runs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">make test</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">All Pester unit tests (<code style="background:#f4f4f4;color:#000000;">scripts/run-tests.ps1</code>)</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">make coverage</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Unit tests with code-coverage report (CI gate, threshold 70%)</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">make test-integration</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Pester.Integration.ps1</code></td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">ISO build / OneView / iLO Redfish / orchestrator flows</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">make maint-mode-tests</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">High-priority <code style="background:#f4f4f4;color:#000000;">Set-MaintenanceMode</code> suite</td>
+    </tr>
+  </tbody>
+</table>
 
-<a name="column-legend-"></a>
+<a name="column-legend"></a>
 
 ### Column legend:  
 
@@ -46,109 +67,636 @@
 
 ---
 
-<a name="1-iso-build-patching-deployment-and-monitoring"></a>
+<a name="1-iso-build-patching-deployment-monitoring"></a>
 
 ## 1. ISO Build, Patching, Deployment & Monitoring
 
-| Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
-|---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-ISO-01 | `New-IsoBuild` | Bootable ISO creation from ConfigMgr MP/DP; versioning; dry-run | `tests/powershell/New-IsoBuild.Unit.Tests.ps1` | ISO produced at expected path with correct metadata | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ISO-02 | `Publish-BootIso` | Publish to HTTPS repo; overwrite; HEAD verification; dry-run | `tests/powershell/Publish-BootIso.Unit.Tests.ps1` | Public URL returned and verified | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ISO-03 | `Invoke-IsoDeploy` | Redfish mount by host / serial (OneView resolve); external ISO paths (HTTP/SMB/NFS/local); bulk; dry-run | `tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1` | Correct server targeted, summary returned | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ISO-04 | `Start-InstallMonitor` | Polling loop, timeout, per-server status; serial resolution | `tests/powershell/Start-InstallMonitor.Unit.Tests.ps1` | Correct completion/failure detection | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ISO-05 | `Update-Firmware` | Firmware manifest build; download skip; dry-run; serial target | `tests/powershell/Update-Firmware.Unit.Tests.ps1` | Firmware package produced/validated | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ISO-06 | `Invoke-WindowsSecurityUpdate` | DISM/PowerShell patch methods; dry-run; serial naming | `tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1` | Patched ISO produced | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ISO-07 | End-to-end `Start-PhysicalServerBuild` | Full runbook: pre-build → ISO → publish → OneView → iLO → monitor → post-build; dry-run / `-Mock` / skip-phase variants | `tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1` | `Success=$true`, all `Steps` recorded, `AuditFile` written | 21/07/2026 | 21/07/2026 | Passed | Y |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test ID</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Component / Command</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test Scope</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test File (existing)</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Result</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Actual Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Status</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">CI?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ISO-01</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">New-IsoBuild</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Bootable ISO creation from ConfigMgr MP/DP; versioning; dry-run</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/New-IsoBuild.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">ISO produced at expected path with correct metadata</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ISO-02</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Publish-BootIso</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Publish to HTTPS repo; overwrite; HEAD verification; dry-run</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Publish-BootIso.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Public URL returned and verified</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ISO-03</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Invoke-IsoDeploy</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Redfish mount by host / serial (OneView resolve); external ISO paths (HTTP/SMB/NFS/local); bulk; dry-run</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct server targeted, summary returned</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ISO-04</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Start-InstallMonitor</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Polling loop, timeout, per-server status; serial resolution</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Start-InstallMonitor.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct completion/failure detection</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ISO-05</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Update-Firmware</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Firmware manifest build; download skip; dry-run; serial target</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Update-Firmware.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Firmware package produced/validated</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ISO-06</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Invoke-WindowsSecurityUpdate</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">DISM/PowerShell patch methods; dry-run; serial naming</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Patched ISO produced</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ISO-07</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">End-to-end <code style="background:#f4f4f4;color:#000000;">Start-PhysicalServerBuild</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full runbook: pre-build → ISO → publish → OneView → iLO → monitor → post-build; dry-run / <code style="background:#f4f4f4;color:#000000;">-Mock</code> / skip-phase variants</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Success=$true</code>, all <code style="background:#f4f4f4;color:#000000;">Steps</code> recorded, <code style="background:#f4f4f4;color:#000000;">AuditFile</code> written</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+  </tbody>
+</table>
 
-<a name="2-oneview-and-ilo-connectivity-targeting"></a>
+<a name="2-oneview-ilo-connectivity-targeting"></a>
 
 ## 2. OneView & iLO Connectivity / Targeting
 
-| Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
-|---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-OV-01 | `Get-OneViewServerTarget` | Resolve by name/serial/iLO IP/bay; `-DryRun` | `tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1` | Correct server + `ResolvedBy` returned | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-OV-02 | `Resolve-OneViewTarget` | Underlying resolver used by targeting | `tests/powershell/Resolve-OneViewTarget.Unit.Tests.ps1` | Correct mapping resolved | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-OV-03 | `Get-OneViewConnectionStatus` | Connection status with `PSCredential` param (env/CyberArk fallback) | `tests/powershell/Get-OneViewConnectionStatus.Unit.Tests.ps1` | Status object returned without plaintext creds | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-OV-04 | `Get-OneViewServerList` | Server enumeration, credential hardening | `tests/powershell/Get-OneViewServerList.Unit.Tests.ps1` | Server list returned | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-OV-05 | `Test-ServerConnectivity` | Live OneView ping + auth (interactive/`-Credential`); config-based dry-run | `tests/powershell/Test-ServerConnectivity.Tests.ps1` | `Available`, `NetworkPing`, `AuthConnect` populated | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-OV-06 | `Invoke-IloRedfish` | Mount / MountAndBoot / Boot / Reset / Eject / Status; `-Force`; dry-run | `tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1` | Correct action result per iLO | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-OV-07 | OneView live reachability (integration) | Real appliance auth against Test env | `tests/powershell/Pester.Integration.ps1` | Authenticates and enumerates | 21/07/2026 | 21/07/2026 | Passed | Y |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test ID</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Component / Command</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test Scope</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test File (existing)</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Result</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Actual Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Status</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">CI?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-01</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerTarget</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Resolve by name/serial/iLO IP/bay; <code style="background:#f4f4f4;color:#000000;">-DryRun</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct server + <code style="background:#f4f4f4;color:#000000;">ResolvedBy</code> returned</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-02</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Resolve-OneViewTarget</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Underlying resolver used by targeting</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Resolve-OneViewTarget.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct mapping resolved</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-03</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Connection status with <code style="background:#f4f4f4;color:#000000;">PSCredential</code> param (env/CyberArk fallback)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Get-OneViewConnectionStatus.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Status object returned without plaintext creds</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-04</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerList</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Server enumeration, credential hardening</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Get-OneViewServerList.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Server list returned</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-05</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Test-ServerConnectivity</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Live OneView ping + auth (interactive/<code style="background:#f4f4f4;color:#000000;">-Credential</code>); config-based dry-run</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Test-ServerConnectivity.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Available</code>, <code style="background:#f4f4f4;color:#000000;">NetworkPing</code>, <code style="background:#f4f4f4;color:#000000;">AuthConnect</code> populated</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-06</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Invoke-IloRedfish</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Mount / MountAndBoot / Boot / Reset / Eject / Status; <code style="background:#f4f4f4;color:#000000;">-Force</code>; dry-run</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct action result per iLO</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-OV-07</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OneView live reachability (integration)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Real appliance auth against Test env</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Pester.Integration.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Authenticates and enumerates</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+  </tbody>
+</table>
 
 <a name="3-prepost-build-validation"></a>
 
 ## 3. Pre/Post Build Validation
 
-| Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
-|---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-VAL-01 | `Test-PreBuildValidation` | OneView/iLO/MP/DP/ISO-URL checks; skip flags; dry-run | `tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1` | `Checks` all pass for a valid target | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-VAL-02 | `Test-PostBuildValidation` | Hostname/domain/OS/driver/CM-client checks; serial resolve; `-SkipRemote`; dry-run | `tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1` | `Checks` reflect built state | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-VAL-03 | `Test-ServerList` | Validate server inventory list | (to be added — not yet covered) | `Success` and valid `Servers` | 21/07/2026 | 21/07/2026 | Passed | N |
-| AT-VAL-04 | `Test-BuildParams` | Validate build parameters against a base ISO | (to be added — not yet covered) | Empty array when valid, errors otherwise | 21/07/2026 | 21/07/2026 | Passed | N |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test ID</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Component / Command</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test Scope</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test File (existing)</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Result</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Actual Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Status</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">CI?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-VAL-01</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Test-PreBuildValidation</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OneView/iLO/MP/DP/ISO-URL checks; skip flags; dry-run</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Checks</code> all pass for a valid target</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-VAL-02</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Test-PostBuildValidation</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Hostname/domain/OS/driver/CM-client checks; serial resolve; <code style="background:#f4f4f4;color:#000000;">-SkipRemote</code>; dry-run</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Checks</code> reflect built state</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-VAL-03</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Test-ServerList</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Validate server inventory list</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">(to be added — not yet covered)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Success</code> and valid <code style="background:#f4f4f4;color:#000000;">Servers</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-VAL-04</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Test-BuildParams</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Validate build parameters against a base ISO</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">(to be added — not yet covered)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Empty array when valid, errors otherwise</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
+    </tr>
+  </tbody>
+</table>
 
 <a name="4-maintenance-mode-oneview-scom"></a>
 
 ## 4. Maintenance Mode (OneView / SCOM)
 
-| Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
-|---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-MM-01 | `Set-MaintenanceMode` (unit) | Parameter/state logic | `tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1` | Correct state transitions | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-MM-02 | `Set-MaintenanceMode` (enable) | Enable on OneView/SCOM | `tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1` | Mode enabled | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-MM-03 | `Set-MaintenanceMode` (disable) | Disable / restore | `tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1` | Mode disabled | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-MM-04 | `Set-MaintenanceMode` (validation) | Input validation paths | `tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1` | Invalid input rejected | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-MM-05 | `Set-MaintenanceMode` (environment) | Test vs Prod behaviour | `tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1` | Env-specific routing correct | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-MM-06 | `New-OneViewMaintenanceScript` | Script generation | `tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1` | Valid script emitted | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-MM-07 | `New-ScomConnection` / `New-ScomMaintenanceScript` | SCOM connection & script | `tests/powershell/New-ScomConnection.Unit.Tests.ps1`, `New-ScomMaintenanceScript.Unit.Tests.ps1` | Connection + script valid | 21/07/2026 | 21/07/2026 | Passed | Y |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test ID</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Component / Command</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test Scope</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test File (existing)</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Result</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Actual Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Status</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">CI?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-01</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Set-MaintenanceMode</code> (unit)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Parameter/state logic</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct state transitions</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-02</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Set-MaintenanceMode</code> (enable)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Enable on OneView/SCOM</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Set-MaintenanceMode.Enable.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Mode enabled</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-03</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Set-MaintenanceMode</code> (disable)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Disable / restore</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Set-MaintenanceMode.Disable.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Mode disabled</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-04</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Set-MaintenanceMode</code> (validation)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Input validation paths</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Invalid input rejected</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-05</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Set-MaintenanceMode</code> (environment)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Test vs Prod behaviour</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Env-specific routing correct</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-06</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">New-OneViewMaintenanceScript</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Script generation</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Valid script emitted</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-MM-07</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">New-ScomConnection</code> / <code style="background:#f4f4f4;color:#000000;">New-ScomMaintenanceScript</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">SCOM connection &amp; script</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/New-ScomConnection.Unit.Tests.ps1</code>, <code style="background:#f4f4f4;color:#000000;">New-ScomMaintenanceScript.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Connection + script valid</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+  </tbody>
+</table>
 
-<a name="5-orchestration-routing-and-utility"></a>
+<a name="5-orchestration-routing-utility"></a>
 
 ## 5. Orchestration, Routing & Utility
 
-| Test ID | Component / Command | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
-|---------|---------------------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-ORC-01 | `Start-AutomationOrchestrator` | Unified entry dispatch by request type | `tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1` | Correct handler invoked | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ORC-02 | `Get-RouteMap` / routing | Route map + router resolution | `tests/powershell/Router.Unit.Tests.ps1` | Routes resolve to handlers | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ORC-03 | `New-Uuid` | Deterministic UUID from server name | `tests/powershell/New-Uuid.Unit.Tests.ps1` | Stable UUID per input | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ORC-04 | `Invoke-OpsRampClient` | OpsRamp API client | `tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1` | Client constructed/called | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-ORC-05 | `Invoke-PowerShellScript` (local) | Local script exec, timeout, capture | (to be added — not yet covered) | Output captured, timeout honoured | 21/07/2026 | 21/07/2026 | Passed | N |
-| AT-ORC-06 | `Invoke-PowerShellWinRM` (remote) | Remote WinRM script exec | (to be added — not yet covered) | Remote output returned | 21/07/2026 | 21/07/2026 | Passed | N |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test ID</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Component / Command</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test Scope</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test File (existing)</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Result</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Actual Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Status</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">CI?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ORC-01</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Start-AutomationOrchestrator</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Unified entry dispatch by request type</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct handler invoked</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ORC-02</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-RouteMap</code> / routing</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Route map + router resolution</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Router.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Routes resolve to handlers</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ORC-03</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">New-Uuid</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Deterministic UUID from server name</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/New-Uuid.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Stable UUID per input</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ORC-04</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Invoke-OpsRampClient</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OpsRamp API client</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Client constructed/called</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ORC-05</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Invoke-PowerShellScript</code> (local)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Local script exec, timeout, capture</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">(to be added — not yet covered)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Output captured, timeout honoured</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-ORC-06</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Invoke-PowerShellWinRM</code> (remote)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Remote WinRM script exec</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">(to be added — not yet covered)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Remote output returned</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
+    </tr>
+  </tbody>
+</table>
 
 <a name="6-shared-infrastructure-modules"></a>
 
 ## 6. Shared / Infrastructure Modules
 
-| Test ID | Component | Test Scope | Test File (existing) | Expected Result | Expected Pass Date | Actual Pass Date | Status | CI? |
-|---------|-----------|------------|----------------------|-----------------|--------------------|-----------------|--------|-----|
-| AT-INF-01 | `Audit` | Audit log write/read | `tests/powershell/Audit.Unit.Tests.ps1` | Audit entries persisted | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-INF-02 | `Config` | Config load/resolve | `tests/powershell/Config.Unit.Tests.ps1` | Config resolved correctly | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-INF-03 | `Credentials` | `PSCredential` handling, secure materialisation | `tests/powershell/Credentials.Unit.Tests.ps1` | No plaintext leakage | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-INF-04 | `Executor` | Command execution wrapper | `tests/powershell/Executor.Unit.Tests.ps1` | Commands executed/timed | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-INF-05 | `FileIO` | File read/write helpers | `tests/powershell/FileIO.Unit.Tests.ps1` | IO ops correct | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-INF-06 | `Inventory` | Inventory parsing | `tests/powershell/Inventory.Unit.Tests.ps1` | Inventory parsed | 21/07/2026 | 21/07/2026 | Passed | Y |
-| AT-INF-07 | `Validators` | Input validators | `tests/powershell/Validators.Unit.Tests.ps1` | Validation rules enforced | 21/07/2026 | 21/07/2026 | Passed | Y |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test ID</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Component</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test Scope</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Test File (existing)</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Result</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Expected Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Actual Pass Date</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Status</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">CI?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-01</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Audit</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Audit log write/read</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Audit.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Audit entries persisted</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-02</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Config</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Config load/resolve</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Config.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Config resolved correctly</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-03</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Credentials</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">PSCredential</code> handling, secure materialisation</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Credentials.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">No plaintext leakage</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-04</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Executor</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Command execution wrapper</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Executor.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Commands executed/timed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-05</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">FileIO</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">File read/write helpers</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/FileIO.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">IO ops correct</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-06</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Inventory</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Inventory parsing</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Inventory.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Inventory parsed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">AT-INF-07</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Validators</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Input validators</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">tests/powershell/Validators.Unit.Tests.ps1</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Validation rules enforced</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Y</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
-<a name="7-execution-evidence-to-be-filled-per-cycle"></a>
+<a name="7-test-run-summary-filled-per-cycle"></a>
 
-<a name="7-execution-evidence-to-be-filled-per-cycle"></a>
-
-## 7. Execution Evidence (to be filled per cycle)
+## 7. Test Run Summary (filled per cycle)
 
 Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 <!-- BEGIN:automation-evidence-rows -->
-| Run # | Date/Time | Command / Suite | Environment | Result | Reason for full testing rerun |
-| --- | --- | --- | --- | --- | --- |
-| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | Ran manually on terminal on Test VDI Mocking Tests | Passed (68/68) | Initial test run |
-| 2 | 23/07/2026 09:31:16 | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests | Passed (93/93) | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. |
-| 3 | 23/07/2026 18:55:24 UTC | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests | Passed (93/93) | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. 2 |
-| 4 | 24/07/2026 16:34:08 UTC | Full Automation suite — `make automation-mode-tests` (all 95 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests | Passed (95/95) | Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing. |
-| 5 | 27/07/2026 15:30:48 UTC | Live connectivity verification — `Test-ServerConnectivity -ManagementHost va-oneviewt-01` + `Get-OneViewConnectionStatus` | va-oneviewt-01 (Prod) | Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). | Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session. |
-| 6 | 31/07/2026 09:14:27 UTC | NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE | N/A | N/A | N/A |
-| 7 | 31/07/2026 09:14:27 UTC | make automation-mode-tests (all 99 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux) | Passed (99/99) | Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green |
+<table style="border-collapse:collapse;width:100%;table-layout:auto;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Run #</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Date/Time</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Command / Suite</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Environment</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Result</th>
+      <th style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;background:#e8e8e8;">Reason for full testing rerun</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">1</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">21/07/2026</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make test</code> + <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 38 <code style="background:#f4f4f4;color:#000000;">AT-*</code> scenarios above → 68 atomic Pester tests)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (68/68)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Initial test run</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">2</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">23/07/2026 09:31:16</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make test</code> + <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 93 automated regression unit test scenarios above)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (93/93)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken.</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">3</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">23/07/2026 18:55:24 UTC</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make test</code> + <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 93 automated regression unit test scenarios above)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (93/93)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. 2</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">4</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">24/07/2026 16:34:08 UTC</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full Automation suite — <code style="background:#f4f4f4;color:#000000;">make automation-mode-tests</code> (all 95 automated regression unit test scenarios above)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (95/95)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing.</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">5</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">27/07/2026 15:30:48 UTC</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Live connectivity verification — <code style="background:#f4f4f4;color:#000000;">Test-ServerConnectivity -ManagementHost va-oneviewt-01</code> + <code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">va-oneviewt-01 (Prod)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session.</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">6</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">31/07/2026 09:14:27 UTC</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N/A</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N/A</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N/A</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">7</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">31/07/2026 09:14:27 UTC</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">make automation-mode-tests (all 99 automated regression unit test scenarios above)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Passed (99/99)</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green</td>
+    </tr>
+  </tbody>
+</table>
 <!-- END:automation-evidence-rows -->
-
-<a name="run-log"></a>
 
 <a name="run-log"></a>
 
@@ -171,8 +719,6 @@ Latest Full test run output (from `make test` / `make automation-mode-tests`):
  Skipped       : 0
  Duration      : 3.15s
 ```
-
-<a name="8-coverage-gaps-action-items-for-the-team"></a>
 
 <a name="8-coverage-gaps-action-items-for-the-team"></a>
 

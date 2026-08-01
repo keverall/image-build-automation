@@ -9,7 +9,7 @@
   - [1. Data Minimization (Article 5(1)(c))](#1-data-minimization-article-51c)
   - [2. Purpose Limitation (Article 5(1)(b))](#2-purpose-limitation-article-51b)
   - [3. Storage Limitation (Article 5(1)(e))](#3-storage-limitation-article-51e)
-  - [4. Integrity & Confidentiality (Article 5(1)(f))](#4-integrity-and-confidentiality-article-51f)
+  - [4. Integrity & Confidentiality (Article 5(1)(f))](#4-integrity-confidentiality-article-51f)
 - [Personal Data Processing](#personal-data-processing)
 - [Lawful Basis for Processing (Article 6)](#lawful-basis-for-processing-article-6)
 - [Data Subject Rights](#data-subject-rights)
@@ -78,7 +78,7 @@ Data is not repurposed for marketing, profiling, or unrelated analytics.
 - CI master/agent nodes configured with EU-based storage
 - No cross-border data transfers outside EEA without appropriate safeguards (Standard Contractual Clauses)
 
-<a name="4-integrity-and-confidentiality-article-51f"></a>
+<a name="4-integrity-confidentiality-article-51f"></a>
 
 ### 4. Integrity & Confidentiality (Article 5(1)(f))
 

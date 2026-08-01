@@ -12,7 +12,7 @@
 - [5. OneView status summary bullet](#5-oneview-status-summary-bullet)
 - [6. OneView Phase 11 table](#6-oneview-phase-11-table)
 - [7. Log summary parsing](#7-log-summary-parsing)
-- [8. End-to-end script (child process, `-SkipHtml`)](#8-end-to-end-script-child-process--skiphtml)
+- [8. End-to-end script (child process, `-SkipHtml`)](#8-end-to-end-script-child-process-skiphtml)
 - [9. HTML converter comment stripping](#9-html-converter-comment-stripping)
 
 This plan documents the automated test coverage for the test-plan progress
@@ -120,7 +120,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-LOG-02 | Failures present | Result `Failed (p/t passed, f failed)` |
 | TPR-LOG-03 | No summary block | Fallback zeroes, duration `N/A`, `Parsed=$false` |
 
-<a name="8-end-to-end-script-child-process--skiphtml"></a>
+<a name="8-end-to-end-script-child-process-skiphtml"></a>
 
 ## 8. End-to-end script (child process, `-SkipHtml`)
 
