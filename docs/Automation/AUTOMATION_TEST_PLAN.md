@@ -4,18 +4,20 @@
 
 ## Table of Contents
 
-- [How to execute (runner reference):](#how-to-execute-runner-reference)
-  - [Column legend:  ](#column-legend-)
-- [1. ISO Build, Patching, Deployment & Monitoring](#1-iso-build-patching-deployment-and-monitoring)
-- [2. OneView & iLO Connectivity / Targeting](#2-oneview-and-ilo-connectivity-targeting)
-- [3. Pre/Post Build Validation](#3-prepost-build-validation)
-- [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview-scom)
-- [5. Orchestration, Routing & Utility](#5-orchestration-routing-and-utility)
-- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
-- [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
-  - [Run log](#run-log)
-- [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
-- [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
+- [Automation Test Plan — Physical Server Build \& ISO Pipeline](#automation-test-plan--physical-server-build--iso-pipeline)
+  - [Table of Contents](#table-of-contents)
+  - [How to execute (runner reference):](#how-to-execute-runner-reference)
+    - [Column legend:](#column-legend)
+  - [1. ISO Build, Patching, Deployment \& Monitoring](#1-iso-build-patching-deployment--monitoring)
+  - [2. OneView \& iLO Connectivity / Targeting](#2-oneview--ilo-connectivity--targeting)
+  - [3. Pre/Post Build Validation](#3-prepost-build-validation)
+  - [4. Maintenance Mode (OneView / SCOM)](#4-maintenance-mode-oneview--scom)
+  - [5. Orchestration, Routing \& Utility](#5-orchestration-routing--utility)
+  - [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
+  - [7. Execution Evidence (to be filled per cycle)](#7-execution-evidence-to-be-filled-per-cycle)
+    - [Run log](#run-log)
+  - [8. Coverage Gaps (action items for the team)](#8-coverage-gaps-action-items-for-the-team)
+  - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
 <p class="report-run-date"><strong>Run date:</strong> 31/07/2026 09:14 UTC</p>
@@ -135,15 +137,15 @@
 Record each execution run here so the lead can trace sign-off to a build/CI job.
 
 <!-- BEGIN:automation-evidence-rows -->
-| Run # | Date/Time | Command / Suite | Environment | Result | CI Job / Log Ref | Reason for full testing rerun |
-|-------|-----------|-----------------|-------------|--------|------------------|---------------|
-| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | Ran manually on terminal  | Passed (68/68) |  | Initial test run |
-| 2 | 23/07/2026 09:31:16 | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal | Passed (93/93) | see run log below | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. |
-| 3 | 23/07/2026 18:55:24 UTC | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal | Passed (93/93) | see run log below | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. 2 |
-| 4 | 24/07/2026 16:34:08 UTC | Full Automation suite — `make automation-mode-tests` (all 95 automated regression unit test scenarios above) | Ran manually on terminal | Passed (95/95) | see run log below | Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing. |
-| 5 | 27/07/2026 15:30:48 UTC | Live connectivity verification — `Test-ServerConnectivity -ManagementHost va-oneviewt-01` + `Get-OneViewConnectionStatus` | va-oneviewt-01 (Prod) | Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). | n/a | Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session. |
-| 6 | 31/07/2026 09:14:27 UTC | NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE | N/A | N/A | N/A | |
-| 7 | 31/07/2026 09:14:27 UTC | make automation-mode-tests (all 99 automated regression unit test scenarios above) | Ran manually on terminal (CachyOS Linux) | Passed (99/99) | see run log below | Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green |
+| Run # | Date/Time | Command / Suite | Environment | Result | Reason for full testing rerun |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 21/07/2026 | Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests) | Ran manually on terminal on Test VDI Mocking Tests | Passed (68/68) | Initial test run |
+| 2 | 23/07/2026 09:31:16 | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests | Passed (93/93) | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. |
+| 3 | 23/07/2026 18:55:24 UTC | Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests | Passed (93/93) | Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. 2 |
+| 4 | 24/07/2026 16:34:08 UTC | Full Automation suite — `make automation-mode-tests` (all 95 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests | Passed (95/95) | Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing. |
+| 5 | 27/07/2026 15:30:48 UTC | Live connectivity verification — `Test-ServerConnectivity -ManagementHost va-oneviewt-01` + `Get-OneViewConnectionStatus` | va-oneviewt-01 (Prod) | Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). | Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session. |
+| 6 | 31/07/2026 09:14:27 UTC | NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE | N/A | N/A | N/A |
+| 7 | 31/07/2026 09:14:27 UTC | make automation-mode-tests (all 99 automated regression unit test scenarios above) | Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux) | Passed (99/99) | Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green |
 <!-- END:automation-evidence-rows -->
 
 <a name="run-log"></a>
