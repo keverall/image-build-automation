@@ -11,15 +11,27 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 ## Table of Contents
 
 - [Description](#description)
+- [Parameters](#parameters)
 - [Examples](#examples)
   - [Example 1](#example-1)
+  - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
 <a name="description"></a>
 
 ## Description
 
-Performs security validation on PowerShell source files including: - PSScriptAnalyzer security rule scanning - Hardcoded secrets detection - JSON configuration file validation Exits with code 1 if security issues are found.
+Replaces the previous ci-security-check.ps1, which had three defects that made it unfit as a regulatory control: 1. It scanned only 'src/powershell', ignoring 'scripts/' - which contains the CyberArk bootstrap and the GitLab maintenance triggers. 2. It gated on -Severity Error only. Every security rule in PSScriptAnalyzer emits Warning, so the gate could never fire. 3. It explicitly excluded PSAvoidUsingInvokeExpression, PSAvoidUsingConvertToSecureStringWithPlainText and PSAvoidUsingUsernameAndPasswordParams - the exact rules that detect the highest-severity defects in this repository. Naive secret grepping has been removed. GitLab native Secret Detection (Gitleaks) runs as a separate pipeline job and is authoritative; duplicating it here with a 'password|secret|key|token' substring match produced only unactionable warnings that were never gated on. Findings are matched against .security-baseline.json. A baselined finding is an explicitly risk-accepted exception carrying an owner, a justification and an expiry date. Expired exceptions are re-raised as active findings, so the baseline cannot be used to bury a finding indefinitely.
+
+<a name="parameters"></a>
+
+## Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `-Mode` | 'report'  - always exit 0. Findings are still written to all report artifacts and surfaced in the MR. Used during the remediation window defined in docs/compliance/SECURITY_PIPELINE.md. 'enforce' - exit non-zero when a non-baselined finding at or above -FailOn severity is present. |
+| `-FailOn` | Minimum severity that fails the build in 'enforce' mode. |
+| `-UpdateBaseline` | Regenerate .security-baseline.json from the current findings. Intended for the initial baselining exercise only; the resulting file must be reviewed and have owners and expiry dates set before it is committed. |
 
 <a name="examples"></a>
 
@@ -30,7 +42,15 @@ Performs security validation on PowerShell source files including: - PSScriptAna
 ### Example 1
 
 ```powershell
-pwsh -File scripts/ci-security-check.ps1
+pwsh -File scripts/ci-security-check.ps1 -Mode report
+```
+
+<a name="example-2"></a>
+
+### Example 2
+
+```powershell
+pwsh -File scripts/ci-security-check.ps1 -Mode enforce -FailOn Warning
 ```
 
 <a name="original-comment-based-help"></a>
@@ -39,18 +59,52 @@ pwsh -File scripts/ci-security-check.ps1
 
 ```powershell
 .SYNOPSIS
-    Run CI pipeline security checks.
+    CI security gate: PSScriptAnalyzer security rules, config validation, and
+    GitLab-native report generation.
 
 .DESCRIPTION
-    Performs security validation on PowerShell source files including:
-    - PSScriptAnalyzer security rule scanning
-    - Hardcoded secrets detection
-    - JSON configuration file validation
-    
-    Exits with code 1 if security issues are found.
+    Replaces the previous ci-security-check.ps1, which had three defects that
+    made it unfit as a regulatory control:
+
+      1. It scanned only 'src/powershell', ignoring 'scripts/' - which contains
+         the CyberArk bootstrap and the GitLab maintenance triggers.
+      2. It gated on -Severity Error only. Every security rule in
+         PSScriptAnalyzer emits Warning, so the gate could never fire.
+      3. It explicitly excluded PSAvoidUsingInvokeExpression,
+         PSAvoidUsingConvertToSecureStringWithPlainText and
+         PSAvoidUsingUsernameAndPasswordParams - the exact rules that detect
+         the highest-severity defects in this repository.
+
+    Naive secret grepping has been removed. GitLab native Secret Detection
+    (Gitleaks) runs as a separate pipeline job and is authoritative; duplicating
+    it here with a 'password|secret|key|token' substring match produced only
+    unactionable warnings that were never gated on.
+
+    Findings are matched against .security-baseline.json. A baselined finding is
+    an explicitly risk-accepted exception carrying an owner, a justification and
+    an expiry date. Expired exceptions are re-raised as active findings, so the
+    baseline cannot be used to bury a finding indefinitely.
+
+.PARAMETER Mode
+    'report'  - always exit 0. Findings are still written to all report
+                artifacts and surfaced in the MR. Used during the remediation
+                window defined in docs/compliance/SECURITY_PIPELINE.md.
+    'enforce' - exit non-zero when a non-baselined finding at or above
+                -FailOn severity is present.
+
+.PARAMETER FailOn
+    Minimum severity that fails the build in 'enforce' mode.
+
+.PARAMETER UpdateBaseline
+    Regenerate .security-baseline.json from the current findings. Intended for
+    the initial baselining exercise only; the resulting file must be reviewed
+    and have owners and expiry dates set before it is committed.
 
 .EXAMPLE
-    pwsh -File scripts/ci-security-check.ps1
+    pwsh -File scripts/ci-security-check.ps1 -Mode report
+
+.EXAMPLE
+    pwsh -File scripts/ci-security-check.ps1 -Mode enforce -FailOn Warning
 ```
 
 ---
