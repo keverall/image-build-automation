@@ -212,16 +212,13 @@ default:
 cyberark-bootstrap:
   stage: bootstrap
   script:
-    - pwsh -NoProfile -File ./scripts/cyberark-bootstrap.ps1
-      -CyberArkUrl "$CYBERARK_CCP_URL"
-      -AppId "$CYBERARK_APP_ID"
-      -ExportForGitLab > secrets.env
+    - 'pwsh -NoProfile -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "$CYBERARK_CCP_URL" -AppId "$CYBERARK_APP_ID" -ExportForGitLab > secrets.env'
     # The previous config echoed secrets.env to the job log with Get-Content,
     # writing retrieved credentials into GitLab job output in plaintext, where
     # they persist for the artifact retention period and are visible to anyone
     # with Reporter access. Removed. Only the variable NAMES are echoed, so the
     # job remains debuggable without disclosing values.
-    - pwsh -NoProfile -Command "if (Test-Path 'secrets.env') { (Get-Content 'secrets.env' | ForEach-Object { ($_ -split '=',2)[0] }) -join ', ' | ForEach-Object { Write-Output \"Retrieved secrets: $_\" } } else { throw 'secrets.env was not produced' }"
+    - 'pwsh -NoProfile -Command "if (Test-Path ''secrets.env'') { (Get-Content ''secrets.env'' | ForEach-Object { ($_ -split ''='',2)[0] }) -join '', '' | ForEach-Object { Write-Output \"Retrieved secrets: $_.\" } } else { throw ''secrets.env was not produced'' }"'
   artifacts:
     reports:
       dotenv: secrets.env
