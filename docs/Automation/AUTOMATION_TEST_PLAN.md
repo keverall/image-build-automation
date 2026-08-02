@@ -17,7 +17,7 @@
 - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
-<p class="report-run-date"><strong>Run date:</strong> 31/07/2026 09:14 UTC</p>
+<p class="report-run-date"><strong>Run date:</strong> 02/08/2026 01:54 UTC</p>
 <!-- END:run-date -->
 
 <a name="how-to-execute-runner-reference"></a>
@@ -686,7 +686,8 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 |4|24/07/2026 16:34:08 UTC|Full Automation suite — `make automation-mode-tests` (all 95 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (95/95)|Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing.|
 |5|27/07/2026 15:30:48 UTC|Live connectivity verification — `Test-ServerConnectivity -ManagementHost va-oneviewt-01` + `Get-OneViewConnectionStatus`|va-oneviewt-01 (Prod)|Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).|Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session.|
 |6|31/07/2026 09:14:27 UTC|NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE|N/A|N/A|N/A|
-|7|31/07/2026 09:14:27 UTC|make automation-mode-tests (all 99 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux)|Passed (99/99)|Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green|
+|7| 02/08/2026 01:54:37 UTC |make automation-mode-tests (all 99 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux)|Passed (99/99)|Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green|
+| 8 | 02/08/2026 01:54:37 UTC | Full Automation suite — `make automation-mode-tests` (all 99 automated regression unit test scenarios above) | Ran manually on terminal | Passed (99/99) | fix gitlab hopefully |
 <!-- END:automation-evidence-rows -->
 
 <a name="run-log"></a>

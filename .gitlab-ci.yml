@@ -60,7 +60,14 @@ workflow:
     # does not match $CI_SERVER_HOST, the ENTIRE pipeline is disabled. This
     # prevents the repo (and its client-specific OneView/SCOM/CyberArk
     # automation) from ever running on a personal or other account.
-    - if: '$ALLOWED_CI_SERVER_HOST == ""'
+    #
+    # NOTE: `!~ /.+/` is used instead of `== ""` because it reliably matches
+    # both empty strings and undefined variables in GitLab's workflow rule
+    # evaluator. The `== ""` comparison can fail to match when a variable is
+    # defined in .gitlab-ci.yml but not available at workflow evaluation time
+    # (e.g. on non-client instances where the variable is not set as a
+    # project-level CI/CD variable).
+    - if: '$ALLOWED_CI_SERVER_HOST !~ /.+/'
       when: never
     - if: '$CI_SERVER_HOST != $ALLOWED_CI_SERVER_HOST'
       when: never
