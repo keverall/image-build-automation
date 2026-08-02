@@ -180,7 +180,8 @@ default:
     # test or security gate must not be able to pass on a second attempt.
     when:
       - runner_system_failure
-      - stuck_or_timeout_failure
+      - stuck_failure
+      - timeout_failure
       - api_failure
 
 # -----------------------------------------------------------------------------
