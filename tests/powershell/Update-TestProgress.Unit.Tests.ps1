@@ -494,7 +494,7 @@ Describe 'Update-Phase11Block' {
 "@
         $result = Update-Phase11Block -Content $content -DateTime '02/01/2026' -AddRow `
             -Phases 'Phases|with|pipes' -Tester 'tester' -Appliance 'appliance' `
-            -Result 'Pass' -SignedOff 'signed'
+            -Result 'Pass'
         $result.Content | Should -Match 'Phases\\|with\\|pipes'
     }
 }

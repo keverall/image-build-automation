@@ -133,7 +133,7 @@ function _PromptOrDefault {
     param(
         [AllowNull()][AllowEmptyString()][string]$CurrentValue,
         [Parameter(Mandatory)][string]$Prompt,
-        [Parameter(Mandatory)][string]$Default,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Default,
         [switch]$NonInteractive
     )
     if (-not [string]::IsNullOrWhiteSpace($CurrentValue)) { return $CurrentValue }
