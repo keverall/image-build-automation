@@ -88,14 +88,21 @@ function Test-ServerConnectivity {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
+        [Alias('Env')]
         [ValidateSet('Test', 'Prod')][string] $Environment,
+        [Alias('MgmtHost')]
         [string] $ManagementHost,
+        [Alias('Cred')]
         [System.Management.Automation.PSCredential] $Credential,
+        [Alias('CfgDir')]
         [string] $ConfigDir = 'configs',
+        [Alias('PingMs')]
         [int] $PingTimeoutMs = 3000,
         [int] $Port = 443,
         [switch] $Json,
+        [Alias('JsonCfg')]
         [switch] $JsonConfig,
+        [Alias('Dry')]
         [switch] $DryRun
     )
 

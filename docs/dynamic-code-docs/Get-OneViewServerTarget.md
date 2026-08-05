@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerTarget.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,16 +29,16 @@ Sends a query against the OneView /rest/server-hardware endpoint and returns a n
 
 | Parameter | Description |
 |-----------|-------------|
-| `-OneViewHost` | OneView appliance hostname or IP (e.g. oneview.ad.example.com). |
-| `-ServerIdentifier` | Server name, serial number, OneView resource name, iLO IP, or bay/enclosure positional id (e.g. "Enclosure1, Bay 3"). |
-| `-IdentifierType` | Hint for the search filter: Name, Serial, OneViewName, IloIp, EnclosureBay, Auto. Default Auto attempts each in turn. |
-| `-OneViewUser` | OneView username (used with -OneViewPassword). Never read from config or environment. |
-| `-OneViewPassword` | OneView password (used with -OneViewUser). Never read from config or environment. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP (e.g. oneview.ad.example.com). |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Server name, serial number, OneView resource name, iLO IP, or bay/enclosure positional id (e.g. "Enclosure1, Bay 3"). |
+| `-IdentifierType` _(Aliases: -IdTyp)_ | Hint for the search filter: Name, Serial, OneViewName, IloIp, EnclosureBay, Auto. Default Auto attempts each in turn. |
+| `-OneViewUser` _(Aliases: -OVUser)_ | OneView username (used with -OneViewPassword). Never read from config or environment. |
+| `-OneViewPassword` _(Aliases: -OVPwd)_ | OneView password (used with -OneViewUser). Never read from config or environment. |
 | `-Port` | OneView HTTPS port (default 443). |
-| `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
-| `-TimeoutSec` | Per-call timeout (default 30 s). |
-| `-MockResult` | Hashtable to return without making any HTTP calls. Used for tests. |
-| `-DryRun` | Print query without performing it. |
+| `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL cert verification (default true). |
+| `-TimeoutSec` _(Aliases: -Timeout)_ | Per-call timeout (default 30 s). |
+| `-MockResult` _(Aliases: -Mock)_ | Hashtable to return without making any HTTP calls. Used for tests. |
+| `-DryRun` _(Aliases: -Dry)_ | Print query without performing it. |
 
 <a name="examples"></a>
 

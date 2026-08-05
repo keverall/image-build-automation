@@ -45,13 +45,18 @@ function New-ScomMaintenanceScript {
     [CmdletBinding()]
     [OutputType([string])]
     param(
+        [Alias('Grp')]
         [Parameter(Mandatory = $false, Position = 0)][string] $GroupDisplayName,
+        [Alias('SrvrHosts')]
         [Parameter(Mandatory = $false)][string[]]    $ServerHostnames,
+        [Alias('EndTime')]
         [Parameter(Mandatory = $false)][string]      $EndTimeStr,
         [Parameter(Mandatory = $false)][string]      $Reason = 'PlannedOther',
         [Parameter(Mandatory, Position = 1)][string] $Comment,
         [ValidateSet('start', 'stop')]
+        [Alias('Op')]
         [Parameter(Mandatory = $false)][string]      $Operation = 'start',
+        [Alias('Cluster')]
         [Parameter(Mandatory = $false)][switch]      $UseClusterMode
     )
 

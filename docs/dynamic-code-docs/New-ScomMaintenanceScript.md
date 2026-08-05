@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-ScomMaintenanceScript.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,13 +29,13 @@ Build a PowerShell script for SCOM maintenance mode start/stop. Supports two mod
 
 | Parameter | Description |
 |-----------|-------------|
-| `-GroupDisplayName` | SCOM group display name (used in Group mode). |
-| `-ServerHostnames` | Array of server hostnames to resolve to SCOM class instances (used in Cluster mode). |
-| `-EndTimeStr` | Maintenance end time as an ISO-8601 / culture-invariant datetime string (used for start). |
+| `-GroupDisplayName` _(Aliases: -Grp)_ | SCOM group display name (used in Group mode). |
+| `-ServerHostnames` _(Aliases: -SrvrHosts)_ | Array of server hostnames to resolve to SCOM class instances (used in Cluster mode). |
+| `-EndTimeStr` _(Aliases: -EndTime)_ | Maintenance end time as an ISO-8601 / culture-invariant datetime string (used for start). |
 | `-Reason` | MaintenanceModeReason string: PlannedOther, PlannedHardwareInstallation, PlannedApplicationInstallation, etc. (default: PlannedOther). |
 | `-Comment` | Maintenance comment string. |
-| `-Operation` | 'start' or 'stop' (default: start). |
-| `-UseClusterMode` | Switch. When set, operates at Microsoft.Windows.Cluster class level and applies maintenance mode recursively to all cluster nodes. |
+| `-Operation` _(Aliases: -Op)_ | 'start' or 'stop' (default: start). |
+| `-UseClusterMode` _(Aliases: -Cluster)_ | Switch. When set, operates at Microsoft.Windows.Cluster class level and applies maintenance mode recursively to all cluster nodes. |
 
 <a name="examples"></a>
 

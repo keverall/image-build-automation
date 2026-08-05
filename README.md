@@ -59,6 +59,11 @@ Disconnect-OneView
 
 # 4. Enable maintenance mode
 Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod
+```
+
+> **Tip — short parameter aliases:** the OneView commands accept short aliases so they are faster to type. For example: `Get-OneViewConnectionStatus -SrvrId MXQ1234567 -IdTyp Serial` is equivalent to `Get-OneViewConnectionStatus -ServerIdentifier MXQ1234567 -IdentifierType Serial`. The long and short forms are interchangeable (see the [Automation Command Reference](docs/Automation/automation_commands.md#top) for the full alias table).
+
+```powershell
 
 # 5. Disable maintenance mode
 Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environment Prod

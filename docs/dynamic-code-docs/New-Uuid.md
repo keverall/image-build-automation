@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-Uuid.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,9 +29,9 @@ Creates a deterministic UUID (GUID) by computing SHA-256 hash of the server name
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ServerName` | Server hostname / identifier. |
-| `-Timestamp` | ISO-8601 timestamp (defaults to current UTC time). |
-| `-OutputPath` | Optional path to write the UUID to. |
+| `-ServerName` _(Aliases: -SrvrName)_ | Server hostname / identifier. |
+| `-Timestamp` _(Aliases: -Ts)_ | ISO-8601 timestamp (defaults to current UTC time). |
+| `-OutputPath` _(Aliases: -OutPath)_ | Optional path to write the UUID to. |
 
 <a name="examples"></a>
 

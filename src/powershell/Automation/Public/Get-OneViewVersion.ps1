@@ -63,10 +63,14 @@ function Get-OneViewVersion {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
+        [Alias('OVHost')]
         [string] $OneViewHost,
         [int]    $Port = 443,
+        [Alias('SkipCert')]
         [bool]   $SkipCertificateCheck = $true,
+        [Alias('Timeout')]
         [int]    $TimeoutSec = 15,
+        [Alias('Q')]
         [switch] $Quiet
     )
 

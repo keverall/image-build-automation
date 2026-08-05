@@ -75,14 +75,21 @@ function Invoke-IloRedfish {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)][ValidateSet('Mount','MountAndBoot','Boot','Reset','Eject','Status')][string] $Action,
+        [Alias('Ilo')]
         [Parameter(Mandatory)][string] $IloIp,
+        [Alias('IloU')]
         [string] $IloUser  = $null,
+        [Alias('IloP')]
         [string] $IloPassword = $null,
+        [Alias('Iso')]
         [string] $IsoUrl = $null,
         [int]    $CdDeviceId = 1,
+        [Alias('SkipCert')]
         [bool]   $SkipCertificateCheck = $true,
+        [Alias('Timeout')]
         [int]    $TimeoutSec = 30,
         [switch] $Force,
+        [Alias('Dry')]
         [switch] $DryRun
     )
 

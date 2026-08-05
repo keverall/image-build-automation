@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,9 +28,9 @@ Build a PowerShell script for HPE OneView maintenance mode operations.
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Appliance` | OneView appliance hostname or IP. |
-| `-ScopeName` | OneView scope name containing server hardware resources. |
-| `-Operation` | 'enable' or 'disable' maintenance mode. |
+| `-Appliance` _(Aliases: -Appl)_ | OneView appliance hostname or IP. |
+| `-ScopeName` _(Aliases: -Scope)_ | OneView scope name containing server hardware resources. |
+| `-Operation` _(Aliases: -Op)_ | 'enable' or 'disable' maintenance mode. |
 | `-Async` | Use -Async parameter for bulk operations (default: true). |
 | `-ModuleName` | PowerShell module name for HPE OneView (required). Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.1000 for OneView 10.00). See https://github.com/HewlettPackard/POSH-HPEOneView |
 

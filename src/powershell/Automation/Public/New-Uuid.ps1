@@ -39,8 +39,11 @@ Generate a deterministic UUID from server name + timestamp using SHA-256.
     [CmdletBinding()]
     [OutputType([string])]
     param(
+        [Alias('SrvrName')]
         [Parameter(Mandatory, Position = 0)][string] $ServerName,
+        [Alias('Ts')]
         [string] $Timestamp = $null,
+        [Alias('OutPath')]
         [string] $OutputPath = $null
     )
 

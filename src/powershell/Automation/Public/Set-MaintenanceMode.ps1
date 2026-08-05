@@ -16,17 +16,25 @@
 # this script without throwing parameter binding errors during module load.
 param(
     [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
+    [Alias('TgtId')]
     [Parameter(Position = 1)][string] $TargetId,
     [Parameter(Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
+    [Alias('Env')]
     [ValidateSet('Test', 'Prod')][string] $Environment,
+    [Alias('MgmtHost')]
     [string] $ManagementHost,
+    [Alias('Srl')]
     [string] $SerialNumber,
     [string] $Username,
+    [Alias('WaitSec')]
     [int] $PostDisableWaitSeconds = 120,
+    [Alias('CfgDir')]
     [string] $ConfigDir = 'configs',
     [string] $Start = $null,
     [string] $End = $null,
+    [Alias('Dry')]
     [switch] $DryRun,
+    [Alias('MockState')]
     [ValidateSet('enable', 'disable', 'partial')][string] $MockMaintenanceState = 'disable',
     [switch] $NoSchedule,
     [switch] $Json,
@@ -309,17 +317,25 @@ function Set-MaintenanceMode {
     [CmdletBinding()]
     param(
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
+        [Alias('TgtId')]
         [Parameter(Position = 1)][string] $TargetId,
         [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
+        [Alias('Env')]
         [ValidateSet('Test', 'Prod')][string] $Environment,
+        [Alias('MgmtHost')]
         [string] $ManagementHost,
+        [Alias('Srl')]
         [string] $SerialNumber,
         [string] $Username,
+        [Alias('WaitSec')]
         [ValidateRange(0, 3600)][int] $PostDisableWaitSeconds = 120,
+        [Alias('CfgDir')]
         [string] $ConfigDir = 'configs',
         [string] $Start = $null,
         [string] $End = $null,
+        [Alias('Dry')]
         [switch] $DryRun,
+        [Alias('MockState')]
         [ValidateSet('enable', 'disable', 'partial')][string] $MockMaintenanceState = 'disable',
         [switch] $NoSchedule
     )

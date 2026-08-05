@@ -18,7 +18,7 @@ Describe 'Get-OneViewConnectionStatus - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Get-OneViewConnectionStatus
-        foreach ($p in @('OneViewHost','ServerIdentifier','IdentifierType','Credential','OneViewUser','OneViewPassword','IncludeServerCount','MockResult','DryRun')) {
+        foreach ($p in @('OneViewHost','SrvrId','IdentifierType','Credential','OneViewUser','OneViewPassword','IncludeServerCount','MockResult','DryRun')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
@@ -81,8 +81,8 @@ Describe 'Get-OneViewConnectionStatus - parsing (mocked REST)' {
         $r.Error          | Should -Be $null
     }
 
-    It 'Resolves a server when -ServerIdentifier is supplied' {
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -ServerIdentifier 'A' -IdentifierType Serial
+    It 'Resolves a server when -SrvrId is supplied' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -SrvrId 'A' -IdentifierType Serial
         $r.Server              | Should -Not -Be $null
         $r.Server.name         | Should -Be 's1'
         $r.Server.serial_number| Should -Be 'A'
@@ -186,13 +186,16 @@ Describe 'Get-OneViewConnectionStatus - HPEOneView module session (parameterless
     }
 
     It 'Never invokes Connect-OVMgmt or Disconnect-OVMgmt (read-only check only)' {
+        if (-not (Get-Command Connect-OVMgmt -ErrorAction SilentlyContinue) -or
+            -not (Get-Command Disconnect-OVMgmt -ErrorAction SilentlyContinue)) {
+            Set-ItResult -Skipped -Because 'HPEOneView module not loaded in test environment; Connect-OVMgmt/Disconnect-OVMgmt unavailable to mock'
+        }
         try {
             $global:ConnectedSessions = @(
                 [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'token-abc'; Connected = $true }
             )
-            # The HPEOneView module is not loaded in tests; mock both cmdlets so
-            # any erroneous call would throw, proving the command never connects
-            # or disconnects an existing session.
+            # Mock both cmdlets so any erroneous call would throw, proving the command
+            # never connects or disconnects an existing session.
             InModuleScope Automation {
                 Mock Connect-OVMgmt    { throw 'Connect-OVMgmt was called erroneously' }
                 Mock Disconnect-OVMgmt { throw 'Disconnect-OVMgmt was called erroneously' }
@@ -232,7 +235,7 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
     }
 
     It 'Returns the server name for an active session (no -OneViewHost, no -Credential)' {
-        $r = Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial
+        $r = Get-OneViewConnectionStatus -SrvrId 'CZ22420JCM' -IdentifierType Serial
         $r.Connected       | Should -Be $true
         $r.SessionSource   | Should -Be 'HPEOneViewModule'
         $r.Server          | Should -Not -Be $null
@@ -242,7 +245,7 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
     }
 
     It 'Passes the session token (auth header) and X-API-Version on the server lookup' {
-        Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial | Out-Null
+        Get-OneViewConnectionStatus -SrvrId 'CZ22420JCM' -IdentifierType Serial | Out-Null
         InModuleScope Automation { $Script:LastFilterHeaders } | Should -Not -Be $null
         $h = InModuleScope Automation { $Script:LastFilterHeaders }
         $h['auth']         | Should -Be 'reused-token-xyz'

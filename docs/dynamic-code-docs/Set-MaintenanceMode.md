@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -37,18 +37,18 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 | Parameter | Description |
 |-----------|-------------|
 | `-Action` | 'enable', 'disable', or 'validate'. Default is 'enable'. |
-| `-TargetId` | Target identifier string (cluster ID or server name). Required. |
+| `-TargetId` _(Aliases: -TgtId)_ | Target identifier string (cluster ID or server name). Required. |
 | `-Mode` | 'scom' for SCOM-only or 'oneview' for HPE OpenView-only. SCOM manages Windows cluster objects; OpenView manages hardware directly. Required. |
-| `-Environment` | Environment selection: 'Test' or 'Prod'. Determines which hosts to connect to from connection_hosts.json. If not specified, reads from $env:ENVIRONMENT environment variable. Defaults to 'Prod' if neither is set. |
-| `-ManagementHost` | Optional override for management server/appliance hostname/IP. Takes precedence over environment config. For SCOM mode: overrides SCOM management server For OneView mode: overrides OneView appliance Can also be set via $env:MAINTENANCE_HOST |
-| `-SerialNumber` | Optional serial number for OneView mode (Marin's preference). Only valid when -Mode is 'oneview'. Will reject if used with SCOM mode. When provided, the script will look up the server by serial number in OneView. |
+| `-Environment` _(Aliases: -Env)_ | Environment selection: 'Test' or 'Prod'. Determines which hosts to connect to from connection_hosts.json. If not specified, reads from $env:ENVIRONMENT environment variable. Defaults to 'Prod' if neither is set. |
+| `-ManagementHost` _(Aliases: -MgmtHost)_ | Optional override for management server/appliance hostname/IP. Takes precedence over environment config. For SCOM mode: overrides SCOM management server For OneView mode: overrides OneView appliance Can also be set via $env:MAINTENANCE_HOST |
+| `-SerialNumber` _(Aliases: -Srl)_ | Optional serial number for OneView mode (Marin's preference). Only valid when -Mode is 'oneview'. Will reject if used with SCOM mode. When provided, the script will look up the server by serial number in OneView. |
 | `-Username` | Optional direct username parameter (for testing only). Not recommended for production use - use environment variables instead. For SCOM: overrides $env:SCOM_ADMIN_USER For OneView: overrides $env:ONEVIEW_USER |
-| `-PostDisableWaitSeconds` | Seconds to sleep after disabling SCOM maintenance mode to allow servers time to reboot and restart services before alerting resumes. Default is 120 (2 minutes). Set to 0 to skip the wait. |
-| `-ConfigDir` | Directory containing configuration files (default: 'configs'). |
+| `-PostDisableWaitSeconds` _(Aliases: -WaitSec)_ | Seconds to sleep after disabling SCOM maintenance mode to allow servers time to reboot and restart services before alerting resumes. Default is 120 (2 minutes). Set to 0 to skip the wait. |
+| `-ConfigDir` _(Aliases: -CfgDir)_ | Directory containing configuration files (default: 'configs'). |
 | `-Start` | Maintenance start datetime (UTC only). Supported formats: - 'now': Current UTC time (default for enable action) - Relative offset: '+Xhours', '+Xminutes', '+Xdays', '+Xseconds' Examples: '+1hour', '+30minutes', '+2days', '+3600seconds' - Absolute UTC: 'YYYY-MM-DD HH:MM' or 'YYYY-MM-DDTHH:MM:SS' Examples: '2026-06-11 22:00', '2026-06-11T22:00:00' IMPORTANT: All times are UTC. No local timezone conversion is performed. |
 | `-End` | Maintenance end datetime (UTC only). Same formats as Start. Required for 'enable' action. Examples: '+2hours', '2026-06-12 02:00', '2026-06-12T02:00:00' |
-| `-DryRun` | Simulate without making changes. Shows what would happen. |
-| `-MockMaintenanceState` | Dry-run only: mock validate status as 'enable', 'disable', or 'partial'. Default is 'disable'. |
+| `-DryRun` _(Aliases: -Dry)_ | Simulate without making changes. Shows what would happen. |
+| `-MockMaintenanceState` _(Aliases: -MockState)_ | Dry-run only: mock validate status as 'enable', 'disable', or 'partial'. Default is 'disable'. |
 | `-NoSchedule` | Do not create a Windows Scheduled Task for automatic disable at end time. |
 | `-Json` | Output as JSON for API/iRequest integration. |
 

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PreBuildValidation.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,9 +28,9 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ServerIdentifier` | Target server identifier (name, serial, OneView name, iLO IP, bay). |
-| `-OneViewHost` | OneView appliance hostname or IP. |
-| `-IloIp` | iLO IPv4 address / hostname for the target server. |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
+| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. |
 | `-IloCredential` | PSCredential for the iLO Redfish check. If omitted on a live run, the operator is prompted interactively. Never read from config or environment. |
 | `-IsoUrl` | HTTPS URL of the bootable ISO. |
 | `-ManagementPoint` | FQDN of the ConfigMgr Management Point. |
@@ -41,7 +41,7 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 | `-SkipIlo` | Skip the iLO credential / Redfish session check. |
 | `-SkipDpMp` | Skip the Distribution Point / Management Point reachability check. |
 | `-SkipIsoUrl` | Skip the ISO URL reachability check (use when the orchestrator will populate IsoUrl later, or when running offline). |
-| `-DryRun` | Validate inputs but skip network probes. |
+| `-DryRun` _(Aliases: -Dry)_ | Validate inputs but skip network probes. |
 
 <a name="examples"></a>
 

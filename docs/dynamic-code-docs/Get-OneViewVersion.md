@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewVersion.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,11 +29,11 @@ Local checks (always performed): * Loaded HPEOneView.*/HPOneView.* modules in th
 
 | Parameter | Description |
 |-----------|-------------|
-| `-OneViewHost` | Optional appliance hostname/IP. Defaults to the active session's appliance when one exists. Skips the appliance probe when unresolved. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | Optional appliance hostname/IP. Defaults to the active session's appliance when one exists. Skips the appliance probe when unresolved. |
 | `-Port` | OneView HTTPS port (default 443). |
-| `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
-| `-TimeoutSec` | Appliance probe timeout (default 15 s). |
-| `-Quiet` | Suppress the formatted console report; return only the hashtable. |
+| `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL cert verification (default true). |
+| `-TimeoutSec` _(Aliases: -Timeout)_ | Appliance probe timeout (default 15 s). |
+| `-Quiet` _(Aliases: -Q)_ | Suppress the formatted console report; return only the hashtable. |
 
 <a name="examples"></a>
 

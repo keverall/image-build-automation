@@ -63,13 +63,21 @@ function Update-Firmware {
     [CmdletBinding()]
     [OutputType([hashtable])]
 param(
+    [Alias('Cfg')]
     [Parameter(Mandatory = $false)][string] $Config     = 'configs\hpe_firmware_drivers_nov2025.json',
+    [Alias('Srvr')]
     [Parameter(Mandatory = $false)][string] $Server     = $null,
+    [Alias('Srl')]
     [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+    [Alias('OVHost')]
     [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
+    [Alias('SrvrList')]
     [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
+    [Alias('OutDir')]
     [Parameter(Mandatory = $false)][string] $OutputDir  = 'output\firmware',
+    [Alias('SkipDl')]
     [Parameter(Mandatory = $false)][switch] $SkipDownload,
+    [Alias('Dry')]
     [Parameter(Mandatory = $false)][switch] $DryRun
 )
     if ($SerialNumber) {

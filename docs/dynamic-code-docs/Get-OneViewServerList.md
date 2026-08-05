@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerList.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -30,16 +30,16 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 
 | Parameter | Description |
 |-----------|-------------|
-| `-OneViewHost` | OneView appliance hostname or IP (e.g. oneview.ad.example.com). If omitted, the command checks for an existing HPEOneView module session (Connect-OVMgmt) and uses that appliance automatically. |
-| `-OneViewUser` | OneView username (used with -OneViewPassword). Never read from config or environment. |
-| `-OneViewPassword` | OneView password (used with -OneViewUser). Never read from config or environment. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP (e.g. oneview.ad.example.com). If omitted, the command checks for an existing HPEOneView module session (Connect-OVMgmt) and uses that appliance automatically. |
+| `-OneViewUser` _(Aliases: -OVUser)_ | OneView username (used with -OneViewPassword). Never read from config or environment. |
+| `-OneViewPassword` _(Aliases: -OVPwd)_ | OneView password (used with -OneViewUser). Never read from config or environment. |
 | `-Port` | OneView HTTPS port (default 443). |
-| `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
-| `-TimeoutSec` | Per-call timeout (default 30 s). |
-| `-PageSize` | Servers fetched per page (default 100, max 1000). |
+| `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL cert verification (default true). |
+| `-TimeoutSec` _(Aliases: -Timeout)_ | Per-call timeout (default 30 s). |
+| `-PageSize` _(Aliases: -Page)_ | Servers fetched per page (default 100, max 1000). |
 | `-Filter` | Optional case-insensitive filter expression applied client-side: health:<status>   e.g. health:OK, health:Warning, health:Critical power:<state>     e.g. power:On, power:Off name:<substring>  e.g. name:PROD |
-| `-MockResult` | Hashtable to return without making any HTTP calls. Used for tests. |
-| `-DryRun` | Print the query without performing it. |
+| `-MockResult` _(Aliases: -Mock)_ | Hashtable to return without making any HTTP calls. Used for tests. |
+| `-DryRun` _(Aliases: -Dry)_ | Print the query without performing it. |
 
 <a name="examples"></a>
 
