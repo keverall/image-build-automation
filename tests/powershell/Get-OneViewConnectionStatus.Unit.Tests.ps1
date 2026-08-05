@@ -203,3 +203,49 @@ Describe 'Get-OneViewConnectionStatus - HPEOneView module session (parameterless
         }
     }
 }
+
+Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on every call' {
+    # Regression test for the bug where running with an active HPEOneView session (no
+    # -OneViewHost, no -Credential) returned no server name. The authenticated REST
+    # calls must carry the session token AND the mandatory X-API-Version header, otherwise
+    # OneView rejects the call, Connected stays $false, and the server is never resolved.
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession -MockWith {
+                [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'reused-token-xyz'; Connected = $true }
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/version*' } -MockWith {
+                @{ currentVersion = '10.00' }
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -notlike '*filter*' } -MockWith {
+                @{ total = 3; members = @() }
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -like '*filter*' } -MockWith {
+                param($Uri, $Headers)
+                # Capture the headers actually sent on the authenticated server lookup.
+                $Script:LastFilterHeaders = $Headers
+                @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'SRV-ACTIVE'; serialNumber = 'CZ22420JCM'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0' }
+                ) }
+            }
+        }
+    }
+
+    It 'Returns the server name for an active session (no -OneViewHost, no -Credential)' {
+        $r = Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial
+        $r.Connected       | Should -Be $true
+        $r.SessionSource   | Should -Be 'HPEOneViewModule'
+        $r.Server          | Should -Not -Be $null
+        $r.Server.name     | Should -Be 'SRV-ACTIVE'
+        $r.Server.serial_number | Should -Be 'CZ22420JCM'
+        $r.Server.resolved_by  | Should -Be 'Serial'
+    }
+
+    It 'Passes the session token (auth header) and X-API-Version on the server lookup' {
+        Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial | Out-Null
+        InModuleScope Automation { $Script:LastFilterHeaders } | Should -Not -Be $null
+        $h = InModuleScope Automation { $Script:LastFilterHeaders }
+        $h['auth']         | Should -Be 'reused-token-xyz'
+        "$($h['X-API-Version'])" | Should -Not -BeNullOrEmpty
+    }
+}
