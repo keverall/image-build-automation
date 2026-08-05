@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -30,17 +30,17 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | Parameter | Description |
 |-----------|-------------|
 | `-Method` | Deployment method (only 'redfish' supported). |
-| `-Server` | Deploy to a single named server only. Mutually exclusive with -SerialNumber. |
-| `-SerialNumber` | Deploy to a server identified by its HPE serial number. Resolved to the server hostname (and iLO IP) via OneView; requires -OneViewHost. |
-| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
-| `-ServerList` | Path to server_list.txt. Only used for -DryRun mock targeting. |
+| `-Server` _(Aliases: -Srvr)_ | Deploy to a single named server only. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` _(Aliases: -Srl)_ | Deploy to a server identified by its HPE serial number. Resolved to the server hostname (and iLO IP) via OneView; requires -OneViewHost. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-ServerList` _(Aliases: -SrvrList)_ | Path to server_list.txt. Only used for -DryRun mock targeting. |
 | `-IsoDir` | Directory containing bootable ISO packages. |
-| `-IsoUrl` | Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json joined with -RepoBaseUrl). |
-| `-ExternalIsoPath` | Path to a client-supplied ISO for deployment (skip package resolution). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives. When a local path is supplied: - If running as Administrator: Creates SMB share automatically - If NOT running as Administrator: Command will FAIL with instructions to either run as Administrator or obtain an SMB path from your admin When supplied, -IsoUrl is ignored and package resolution is skipped. For non-Administrator users, obtain the SMB path from your IT admin: - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone' - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso' |
-| `-RepoBaseUrl` | HTTPS base URL of the ISO repository. Combined with the bootable_iso filename from deployment_metadata.json to construct the full URL when -IsoUrl is not given. Also used when -ExternalIsoPath is a local file that needs to be copied. |
-| `-RepoLocalPath` | Local filesystem path of the ISO repository. Required when -ExternalIsoPath is a local file that needs to be copied to make it network-accessible. |
-| `-DryRun` | Simulate - no actual deployment. |
-| `-SkipConfirmation` | Skip the interactive confirmation prompt before deployment. |
+| `-IsoUrl` _(Aliases: -Iso)_ | Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json joined with -RepoBaseUrl). |
+| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip package resolution). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives. When a local path is supplied: - If running as Administrator: Creates SMB share automatically - If NOT running as Administrator: Command will FAIL with instructions to either run as Administrator or obtain an SMB path from your admin When supplied, -IsoUrl is ignored and package resolution is skipped. For non-Administrator users, obtain the SMB path from your IT admin: - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone' - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso' |
+| `-RepoBaseUrl` _(Aliases: -RepoUrl)_ | HTTPS base URL of the ISO repository. Combined with the bootable_iso filename from deployment_metadata.json to construct the full URL when -IsoUrl is not given. Also used when -ExternalIsoPath is a local file that needs to be copied. |
+| `-RepoLocalPath` _(Aliases: -RepoPath)_ | Local filesystem path of the ISO repository. Required when -ExternalIsoPath is a local file that needs to be copied to make it network-accessible. |
+| `-DryRun` _(Aliases: -Dry)_ | Simulate - no actual deployment. |
+| `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt before deployment. |
 
 <a name="examples"></a>
 

@@ -81,16 +81,25 @@ function Get-OneViewServerList {
         'PSAvoidUsingUsernameAndPasswordParams', '',
         Justification = 'Backwards-compatible fallback with sibling OneView commands; -Credential (PSCredential) is the preferred, secure entry point.')]
     param(
+        [Alias('OVHost')]
         [string] $OneViewHost,
+        [Alias('Cred')]
         [System.Management.Automation.PSCredential] $Credential,
+        [Alias('OVUser')]
         [string] $OneViewUser = $null,
+        [Alias('OVPwd')]
         [string] $OneViewPassword = $null,
         [int]    $Port = 443,
+        [Alias('SkipCert')]
         [bool]   $SkipCertificateCheck = $true,
+        [Alias('Timeout')]
         [int]    $TimeoutSec = 30,
+        [Alias('Page')]
         [int]    $PageSize = 100,
         [string] $Filter = $null,
+        [Alias('Mock')]
         [hashtable] $MockResult = $null,
+        [Alias('Dry')]
         [switch] $DryRun
     )
 

@@ -91,17 +91,28 @@ function Invoke-IsoDeploy {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory = $false)][ValidateSet('redfish')][string] $Method = 'redfish',
+        [Alias('Srvr')]
         [Parameter(Mandatory = $false)][string] $Server = $null,
+        [Alias('Srl')]
         [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Alias('OVHost')]
         [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
+        [Alias('Ilo')]
         [Parameter(Mandatory = $false)][string] $IloIp = $null,
+        [Alias('SrvrList')]
         [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
         [Parameter(Mandatory = $false)][string] $IsoDir = 'output\bootable_media',
+        [Alias('Iso')]
         [Parameter(Mandatory = $false)][string] $IsoUrl = $null,
+        [Alias('ExtIso')]
         [Parameter(Mandatory = $false)][string] $ExternalIsoPath = $null,
+        [Alias('RepoUrl')]
         [Parameter(Mandatory = $false)][string] $RepoBaseUrl = $null,
+        [Alias('RepoPath')]
         [Parameter(Mandatory = $false)][string] $RepoLocalPath = $null,
+        [Alias('Dry')]
         [Parameter(Mandatory = $false)][switch] $DryRun,
+        [Alias('SkipConf')]
         [Parameter(Mandatory = $false)][switch] $SkipConfirmation
     )
     # TERMINAL COMMAND: when the target is not supplied, prompt for it (interactive

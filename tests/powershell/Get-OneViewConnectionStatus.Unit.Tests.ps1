@@ -81,8 +81,8 @@ Describe 'Get-OneViewConnectionStatus - parsing (mocked REST)' {
         $r.Error          | Should -Be $null
     }
 
-    It 'Resolves a server when -ServerIdentifier is supplied' {
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -ServerIdentifier 'A' -IdentifierType Serial
+    It 'Resolves a server when -SrvrId is supplied' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -SrvrId 'A' -IdentifierType Serial
         $r.Server              | Should -Not -Be $null
         $r.Server.name         | Should -Be 's1'
         $r.Server.serial_number| Should -Be 'A'
@@ -232,7 +232,7 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
     }
 
     It 'Returns the server name for an active session (no -OneViewHost, no -Credential)' {
-        $r = Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial
+        $r = Get-OneViewConnectionStatus -SrvrId 'CZ22420JCM' -IdentifierType Serial
         $r.Connected       | Should -Be $true
         $r.SessionSource   | Should -Be 'HPEOneViewModule'
         $r.Server          | Should -Not -Be $null
@@ -242,7 +242,7 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
     }
 
     It 'Passes the session token (auth header) and X-API-Version on the server lookup' {
-        Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial | Out-Null
+        Get-OneViewConnectionStatus -SrvrId 'CZ22420JCM' -IdentifierType Serial | Out-Null
         InModuleScope Automation { $Script:LastFilterHeaders } | Should -Not -Be $null
         $h = InModuleScope Automation { $Script:LastFilterHeaders }
         $h['auth']         | Should -Be 'reused-token-xyz'

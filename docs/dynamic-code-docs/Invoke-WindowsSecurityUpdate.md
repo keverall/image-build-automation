@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-WindowsSecurity.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,14 +28,14 @@ Applies Windows security patches to a base ISO using DISM or PowerShell DISM equ
 
 | Parameter | Description |
 |-----------|-------------|
-| `-BaseIsoPath` | Path to the base Windows Server ISO file. |
-| `-Server` | Server hostname for output naming. Mutually exclusive with -SerialNumber. |
-| `-SerialNumber` | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires -OneViewHost. |
-| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
-| `-PatchesConfig` | Path to windows_patches.json (default: configs\windows_patches.json). |
-| `-OutputDir` | Output directory (default: output\patched). |
-| `-Method` | Patching method: 'dism' or 'powershell' (default: dism). |
-| `-DryRun` | Simulate without making changes. |
+| `-BaseIsoPath` _(Aliases: -BaseIso, -b)_ | Path to the base Windows Server ISO file. |
+| `-Server` _(Aliases: -ServerName, -s)_ | Server hostname for output naming. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` _(Aliases: -Srl)_ | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires -OneViewHost. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-PatchesConfig` _(Aliases: -p)_ | Path to windows_patches.json (default: configs\windows_patches.json). |
+| `-OutputDir` _(Aliases: -o)_ | Output directory (default: output\patched). |
+| `-Method` _(Aliases: -m)_ | Patching method: 'dism' or 'powershell' (default: dism). |
+| `-DryRun` _(Aliases: -Dry)_ | Simulate without making changes. |
 
 <a name="examples"></a>
 

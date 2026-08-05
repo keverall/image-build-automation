@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IloRedfish.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,15 +29,15 @@ Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â
 | Parameter | Description |
 |-----------|-------------|
 | `-Action` | Operation to perform. One of: Mount, MountAndBoot, Boot, Reset, Eject, Status. |
-| `-IloIp` | iLO IPv4 address or hostname. Required. |
-| `-IloUser` | iLO username. If omitted on a live run, prompted interactively. Never read from config or environment. |
-| `-IloPassword` | iLO password. If omitted on a live run, prompted interactively (secure input). Never read from config or environment. |
-| `-IsoUrl` | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
+| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address or hostname. Required. |
+| `-IloUser` _(Aliases: -IloU)_ | iLO username. If omitted on a live run, prompted interactively. Never read from config or environment. |
+| `-IloPassword` _(Aliases: -IloP)_ | iLO password. If omitted on a live run, prompted interactively (secure input). Never read from config or environment. |
+| `-IsoUrl` _(Aliases: -Iso)_ | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
 | `-CdDeviceId` | VirtualMedia device id (default 1). Enumerate via /redfish/v1/Managers/1/VirtualMedia. |
 | `-Force` | Required for destructive actions (MountAndBoot, Boot, Reset) to confirm intent. Read-only actions (Status, Eject without -Force) do not require this switch. |
-| `-SkipCertificateCheck` | Skip SSL cert verification (default true - iLO uses self-signed certs). |
-| `-TimeoutSec` | Per-call timeout (default 30 s). |
-| `-DryRun` | Print actions without performing them. |
+| `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL cert verification (default true - iLO uses self-signed certs). |
+| `-TimeoutSec` _(Aliases: -Timeout)_ | Per-call timeout (default 30 s). |
+| `-DryRun` _(Aliases: -Dry)_ | Print actions without performing them. |
 
 <a name="examples"></a>
 
