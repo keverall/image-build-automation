@@ -116,6 +116,7 @@ function Get-OneViewConnectionStatus {
     }
 
     $sessionToken = $null
+    $apiVersion   = $null
 
     if (-not $OneViewHost) {
         $activeSession = Get-OneViewActiveSession
@@ -179,6 +180,7 @@ function Get-OneViewConnectionStatus {
             if ($ver -and $ver.currentVersion) {
                 $result.Version = $ver.currentVersion
                 $result.ApplianceVersion = $ver.currentVersion
+                $apiVersion = _Get-OneViewApiVersion -Version $ver.currentVersion
                 _Test-OneViewVersionCompliance -Result $result -Version $ver.currentVersion -Appliance $OneViewHost
             }
             # Report exactly which HPEOneView PowerShell library serves the call so the
@@ -201,6 +203,9 @@ function Get-OneViewConnectionStatus {
         }
 
         # 2. Authentication - authenticated server-hardware probe
+        #    The active-session token (or the explicit -Credential) is passed as the
+        #    auth header on EVERY authenticated call, together with the mandatory
+        #    X-API-Version header (OneView rejects /rest/server-hardware without it).
         if ($result.Reachable) {
             try {
                 $probeParams = @{
@@ -210,8 +215,11 @@ function Get-OneViewConnectionStatus {
                     TimeoutSec           = $TimeoutSec
                     ErrorAction          = 'Stop'
                 }
-                if ($sessionToken) { $probeParams['Headers'] = @{ auth = $sessionToken } }
-                else               { $probeParams['Credential'] = $Credential }
+                if ($sessionToken) {
+                    $probeParams['Headers'] = _Get-OneViewRestHeaders -ApiVersion $apiVersion -AuthToken $sessionToken
+                } else {
+                    $probeParams['Headers'] = _Get-OneViewRestHeaders -ApiVersion $apiVersion -Credential $Credential
+                }
                 $probe = Invoke-RestMethod @probeParams
                 $result.Authenticated = $true
                 if ($IncludeServerCount) {
@@ -250,8 +258,11 @@ function Get-OneViewConnectionStatus {
                         TimeoutSec           = $TimeoutSec
                         ErrorAction          = 'Stop'
                     }
-                    if ($sessionToken) { $srvParams['Headers'] = @{ auth = $sessionToken } }
-                    else               { $srvParams['Credential'] = $Credential }
+                    if ($sessionToken) {
+                        $srvParams['Headers'] = _Get-OneViewRestHeaders -ApiVersion $apiVersion -AuthToken $sessionToken
+                    } else {
+                        $srvParams['Headers'] = _Get-OneViewRestHeaders -ApiVersion $apiVersion -Credential $Credential
+                    }
                     $resp = Invoke-RestMethod @srvParams
                     if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
                         if ($resp.members.Count -gt 1) {
@@ -288,6 +299,59 @@ function Get-OneViewConnectionStatus {
         $result.Error = "OneView connection status failed: $($_.Exception.Message)"
         return $result
     }
+}
+
+function _Get-OneViewApiVersion {
+    <#
+    .SYNOPSIS
+        Map an HPE OneView appliance version to its REST API version.
+    .DESCRIPTION
+        OneView's /rest/server-hardware (and most other) endpoints REQUIRE the
+        X-API-Version header. The value tracks the appliance major generation, so we
+        map the normalised major version to a safe minimum API version the appliance
+        will accept (OneView is backward-compatible, so sending the generation minimum
+        is accepted even when the appliance supports a newer API).
+    #>
+    param($Version)
+    $major = _Get-OneViewMajorVersion -Version $Version
+    if ($null -eq $major) { return $null }
+    switch ($major) {
+        10 { return 2400 }
+        9  { return 2000 }
+        8  { return 1000 }
+        7  { return 200 }
+        6  { return 120 }
+        default { return $null }
+    }
+}
+
+function _Get-OneViewRestHeaders {
+    <#
+    .SYNOPSIS
+        Build the header set for OneView REST calls, including the mandatory
+        X-API-Version header plus authentication (session token or Basic credential).
+    .DESCRIPTION
+        Raw Invoke-RestMethod calls against OneView must carry the X-API-Version header
+        (and Accept/Content-Type); omitting it causes the authenticated probe to fail so
+        the connection is reported as not connected and the server is never resolved.
+        Auth is supplied either as the active session token (auth header) or, for the
+        explicit -Credential path, as an HTTP Basic Authorization header.
+    #>
+    [CmdletBinding()]
+    param(
+        $ApiVersion,
+        $AuthToken,
+        [System.Management.Automation.PSCredential] $Credential
+    )
+    $h = @{ 'Accept' = 'application/json'; 'Content-Type' = 'application/json' }
+    if ($ApiVersion) { $h['X-API-Version'] = [string]$ApiVersion }
+    if ($AuthToken) {
+        $h['auth'] = $AuthToken
+    } elseif ($Credential) {
+        $pwd = $Credential.GetNetworkCredential().Password
+        $h['Authorization'] = 'Basic ' + [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($Credential.UserName):$pwd"))
+    }
+    return $h
 }
 
 function _Get-OneViewMajorVersion {
