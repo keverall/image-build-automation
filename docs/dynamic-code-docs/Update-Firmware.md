@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-Firmware.ps1
-generated: 2026-08-02
+generated: 2026-08-05
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,14 +29,14 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Config` | Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json). |
-| `-Server` | Build for a specific server only. Mutually exclusive with -SerialNumber. |
-| `-SerialNumber` | Build for a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
-| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
-| `-ServerList` | Path to server_list.txt. Only used for -DryRun mock targeting. |
-| `-OutputDir` | Output directory. |
-| `-SkipDownload` | Skip component download step. |
-| `-DryRun` | Simulate without executing. |
+| `-Config` _(Aliases: -Cfg)_ | Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json). |
+| `-Server` _(Aliases: -Srvr)_ | Build for a specific server only. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` _(Aliases: -Srl)_ | Build for a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-ServerList` _(Aliases: -SrvrList)_ | Path to server_list.txt. Only used for -DryRun mock targeting. |
+| `-OutputDir` _(Aliases: -OutDir)_ | Output directory. |
+| `-SkipDownload` _(Aliases: -SkipDl)_ | Skip component download step. |
+| `-DryRun` _(Aliases: -Dry)_ | Simulate without executing. |
 
 <a name="examples"></a>
 

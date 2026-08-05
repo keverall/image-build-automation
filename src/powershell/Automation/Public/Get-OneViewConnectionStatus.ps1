@@ -21,7 +21,7 @@ function Get-OneViewConnectionStatus {
              is online and responding.
           2. Authentication - GET /rest/server-hardware (authenticated) to confirm
              the supplied credentials are valid.
-        If -ServerIdentifier is supplied, the target server is also resolved and
+        If -SrvrId is supplied, the target server is also resolved and
         its power/health reported so you can see at a glance whether it is "connected".
 
     .PARAMETER OneViewHost
@@ -29,7 +29,7 @@ function Get-OneViewConnectionStatus {
         If omitted, the command checks for an existing HPEOneView module
         session (Connect-OVMgmt) and uses that appliance automatically.
 
-    .PARAMETER ServerIdentifier
+    .PARAMETER SrvrId
         Optional server name, serial number, iLO IP or bay position to look up.
 
     .PARAMETER IdentifierType
@@ -75,7 +75,7 @@ function Get-OneViewConnectionStatus {
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
 
     .EXAMPLE
-        Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
+        Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ1234567' -IdentifierType Serial
 
     .EXAMPLE
         Get-OneViewConnectionStatus
@@ -97,17 +97,28 @@ function Get-OneViewConnectionStatus {
         'PSAvoidUsingUsernameAndPasswordParams', '',
         Justification = 'Backwards-compatible fallback with sibling OneView commands; -Credential (PSCredential) is the preferred, secure entry point.')]
     param(
+        [Alias('OVHost')]
         [string] $OneViewHost,
-        [string] $ServerIdentifier = $null,
+        [Alias('ServerIdentifier')]
+        [string] $SrvrId = $null,
+        [Alias('IdTyp')]
         [ValidateSet('Auto','Name','Serial','OneViewName','IloIp','EnclosureBay')][string] $IdentifierType = 'Auto',
+        [Alias('Cred')]
         [System.Management.Automation.PSCredential] $Credential,
+        [Alias('OVUser')]
         [string] $OneViewUser = $null,
+        [Alias('OVPwd')]
         [string] $OneViewPassword = $null,
         [int]    $Port = 443,
+        [Alias('SkipCert')]
         [bool]   $SkipCertificateCheck = $true,
+        [Alias('Timeout')]
         [int]    $TimeoutSec = 30,
+        [Alias('SrvrCount')]
         [switch] $IncludeServerCount,
+        [Alias('Mock')]
         [hashtable] $MockResult = $null,
+        [Alias('Dry')]
         [switch] $DryRun
     )
 
@@ -139,7 +150,7 @@ function Get-OneViewConnectionStatus {
     }
 
     if ($DryRun) {
-        Write-Output "[DRY RUN] Get-OneViewConnectionStatus Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
+        Write-Output "[DRY RUN] Get-OneViewConnectionStatus Host=$OneViewHost Id=$SrvrId Type=$IdentifierType"
         return @{
             Success = $true; Connected = $true; Reachable = $true; Authenticated = $true
             Appliance = $OneViewHost; Version = $null; ServerCount = $null
@@ -236,18 +247,18 @@ function Get-OneViewConnectionStatus {
         $result.Connected = ($result.Reachable -and $result.Authenticated)
 
         # 3. Optional single-server lookup (reuses the same endpoint shape)
-        if ($result.Connected -and $ServerIdentifier) {
+        if ($result.Connected -and $SrvrId) {
             $typesToTry = if ($IdentifierType -eq 'Auto') {
                 @('Serial','IloIp','EnclosureBay','Name')
             } else { @($IdentifierType) }
 
             foreach ($t in $typesToTry) {
                 $filter = switch ($t) {
-                    'Name'         { "name='$ServerIdentifier'" }
-                    'OneViewName'  { "name='$ServerIdentifier'" }
-                    'Serial'       { "serialNumber='$ServerIdentifier'" }
-                    'IloIp'        { "mpIpAddresses='$ServerIdentifier'" }
-                    'EnclosureBay' { "position='$ServerIdentifier'" }
+                    'Name'         { "name='$SrvrId'" }
+                    'OneViewName'  { "name='$SrvrId'" }
+                    'Serial'       { "serialNumber='$SrvrId'" }
+                    'IloIp'        { "mpIpAddresses='$SrvrId'" }
+                    'EnclosureBay' { "position='$SrvrId'" }
                 }
                 $url = "$apiBase/server-hardware?filter=`"$filter`""
                 try {
@@ -266,7 +277,7 @@ function Get-OneViewConnectionStatus {
                     $resp = Invoke-RestMethod @srvParams
                     if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
                         if ($resp.members.Count -gt 1) {
-                            Write-Warning "Multiple servers match '$ServerIdentifier' via $t ($($resp.members.Count) matches). Using first; supply a more specific identifier to disambiguate."
+                            Write-Warning "Multiple servers match '$SrvrId' via $t ($($resp.members.Count) matches). Using first; supply a more specific identifier to disambiguate."
                         }
                         $srv = $resp.members[0]
                         $result.Server = @{
@@ -288,7 +299,7 @@ function Get-OneViewConnectionStatus {
                 }
             }
             if (-not $result.Server) {
-                $result.Server = @{ identifier = $ServerIdentifier; connected = $false; error = "Server '$ServerIdentifier' not found in OneView" }
+                $result.Server = @{ identifier = $SrvrId; connected = $false; error = "Server '$SrvrId' not found in OneView" }
             }
         }
 

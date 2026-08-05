@@ -22,7 +22,7 @@ function Test-PreBuildValidation {
         Returns a hashtable of named checks with pass/fail status.  Any failure
         marks the overall result as failed.
 
-    .PARAMETER ServerIdentifier
+    .PARAMETER SrvrId
         Target server identifier (name, serial, OneView name, iLO IP, bay).
 
     .PARAMETER OneViewHost
@@ -70,7 +70,7 @@ function Test-PreBuildValidation {
         [hashtable] with Success (bool) and Checks (ordered hashtable of check-name → {status, details}).
 
     .EXAMPLE
-        Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' `
+        Test-PreBuildValidation -SrvrId 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' -IloIp '192.168.1.101' `
             -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso' `
             -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com'
@@ -78,8 +78,11 @@ function Test-PreBuildValidation {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Alias('ServerIdentifier')]
+        [Parameter(Mandatory)][string] $SrvrId,
+        [Alias('OVHost')]
         [string] $OneViewHost,
+        [Alias('Ilo')]
         [string] $IloIp,
         [System.Management.Automation.PSCredential] $IloCredential,
         [string] $IsoUrl,
@@ -91,6 +94,7 @@ function Test-PreBuildValidation {
         [switch] $SkipIlo,
         [switch] $SkipDpMp,
         [switch] $SkipIsoUrl,
+        [Alias('Dry')]
         [switch] $DryRun
     )
 
@@ -108,7 +112,7 @@ function Test-PreBuildValidation {
 
     if (-not $SkipOneView -and $OneViewHost) {
         try {
-            $r = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -DryRun:$DryRun
+            $r = Get-OneViewServerTarget -OneViewHost $OneViewHost -SrvrId $SrvrId -DryRun:$DryRun
             _Set 'oneview_target' ($r.Success) ($r | ConvertTo-Json -Depth 6 -Compress)
         } catch { _Set 'oneview_target' $false $_.Exception.Message }
     } else {
@@ -180,18 +184,18 @@ function Test-PreBuildValidation {
         Ensure-DirectoryExists -Path $auditDir
         $entry = @{
             timestamp = Get-UtcTimestamp
-            server    = $ServerIdentifier
+            server    = $SrvrId
             event     = 'prebuild_validation'
             success   = $overallSuccess
             checks    = $checks
         }
-        Save-Json -Data $entry -Path (Join-Path $auditDir "prebuild_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json")
-        _Set 'audit_recorded' $true "prebuild_$ServerIdentifier logged"
+        Save-Json -Data $entry -Path (Join-Path $auditDir "prebuild_$($SrvrId)_$(Get-UtcFileTimestamp).json")
+        _Set 'audit_recorded' $true "prebuild_$SrvrId logged"
     } catch { _Set 'audit_recorded' $false $_.Exception.Message }
 
     return @{
         Success   = $overallSuccess
-        Server    = $ServerIdentifier
+        Server    = $SrvrId
         Timestamp = Get-UtcTimestamp
         Checks    = $checks
     }

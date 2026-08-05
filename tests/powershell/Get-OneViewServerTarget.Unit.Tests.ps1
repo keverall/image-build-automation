@@ -15,13 +15,13 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Get-OneViewServerTarget
-        foreach ($p in @('ServerIdentifier','OneViewHost','IdentifierType','MockResult','DryRun')) {
+        foreach ($p in @('SrvrId','OneViewHost','IdentifierType','MockResult','DryRun')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
 
     It 'Returns MockResult without network call' {
-        $r = Get-OneViewServerTarget -ServerIdentifier 'TEST' -MockResult @{
+        $r = Get-OneViewServerTarget -SrvrId 'TEST' -MockResult @{
             Success = $true; Server = 'TEST'; Details = @{ serial_number = 'MXQ0000' }
         }
         $r.Success          | Should -Be $true
@@ -32,7 +32,7 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
         $prevAuto = $env:AUTOMATED_MODE
         try {
             $env:AUTOMATED_MODE = 'true'
-            $r = Get-OneViewServerTarget -ServerIdentifier 'TEST'
+            $r = Get-OneViewServerTarget -SrvrId 'TEST'
             $r.Success | Should -Be $false
             $r.Error   | Should -Match 'OneViewHost'
         } finally {
@@ -41,13 +41,13 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
     }
 
     It 'DryRun succeeds' {
-        $r = Get-OneViewServerTarget -OneViewHost 'oneview.test.local' -ServerIdentifier 'TEST' -DryRun
+        $r = Get-OneViewServerTarget -OneViewHost 'oneview.test.local' -SrvrId 'TEST' -DryRun
         $r.Success | Should -Be $true
         $r.DryRun  | Should -Be $true
     }
 
     It 'Rejects unknown IdentifierType' {
-        { & Get-OneViewServerTarget -ServerIdentifier 'TEST' -IdentifierType 'Bogus' -ErrorAction SilentlyContinue } |
+        { & Get-OneViewServerTarget -SrvrId 'TEST' -IdentifierType 'Bogus' -ErrorAction SilentlyContinue } |
             Should -Throw
     }
 }
@@ -73,7 +73,7 @@ Describe 'Get-OneViewServerTarget - strict single-server matching (mocked REST)'
                 )}
             }
         }
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'DUP' -IdentifierType Serial -Credential $Script:TargetCred
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'DUP' -IdentifierType Serial -Credential $Script:TargetCred
         $r.Success | Should -Be $false
         $r.Error   | Should -Match 'Ambiguous'
     }
@@ -86,7 +86,7 @@ Describe 'Get-OneViewServerTarget - strict single-server matching (mocked REST)'
                 )}
             }
         }
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'UNIQUE' -IdentifierType Serial -Credential $Script:TargetCred
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'UNIQUE' -IdentifierType Serial -Credential $Script:TargetCred
         $r.Success              | Should -Be $true
         $r.Details.serial_number | Should -Be 'UNIQUE'
     }

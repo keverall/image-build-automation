@@ -15,14 +15,14 @@ Describe 'Start-PhysicalServerBuild - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Start-PhysicalServerBuild
-        foreach ($p in @('ServerIdentifier','OneViewHost','IloIp','SiteCode','ManagementPoint',
+        foreach ($p in @('SrvrId','OneViewHost','IloIp','SiteCode','ManagementPoint',
                          'DistributionPoint','RepoBaseUrl','DryRun','Mock')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
 
     It 'DryRun with everything skipped returns Success' {
-        $r = Start-PhysicalServerBuild -ServerIdentifier 'TEST' -DryRun `
+        $r = Start-PhysicalServerBuild -SrvrId 'TEST' -DryRun `
             -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
         $r.Success | Should -Be $true
         $r.server  | Should -Be 'TEST'

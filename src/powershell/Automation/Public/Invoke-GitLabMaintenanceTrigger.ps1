@@ -64,19 +64,29 @@ function Invoke-GitLabMaintenanceTrigger {
     #>
     [CmdletBinding()]
     param(
+        [Alias('TgtId')]
         [Parameter(Mandatory = $true)][string] $TargetId,
         [ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [string] $Start,
         [string] $End,
+        [Alias('CfgDir')]
         [string] $ConfigDir = 'configs',
+        [Alias('Dry')]
         [switch] $DryRun,
+        [Alias('GitUrl')]
         [string] $GitLabUrl = $env:GITLAB_URL,
+        [Alias('ProjId')]
         [string] $ProjectId = $env:GITLAB_PROJECT_ID,
+        [Alias('TrigTok')]
         [string] $TriggerToken = $env:GITLAB_TRIGGER_TOKEN,
         [string] $GitRef = 'main',
+        [Alias('CbUrl')]
         [string] $CallbackUrl = $env:MAINTENANCE_CALLBACK_URL,
+        [Alias('CbKey')]
         [string] $CallbackApiKey = $env:MAINTENANCE_API_KEY,
+        [Alias('Timeout')]
         [int] $TimeoutSeconds = 600,
+        [Alias('JobTok')]
         [string] $JobToken = $env:GITLAB_JOB_TOKEN
     )
 

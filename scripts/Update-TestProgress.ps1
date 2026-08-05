@@ -43,7 +43,7 @@
     Tester name for new OneView row (default: "<tester>").
 
 .PARAMETER OvAppliance
-    Appliance name for new OneView row (default: "HPEOpenview.1000").
+    Appliance name for new OneView row (default: "va-oneviewt-ap").
 
 .PARAMETER OvResult
     Result for new OneView row (default: "Pending").
@@ -244,7 +244,7 @@ if ($addOvRow) {
         -Prompt 'Tester' -Default '' -NonInteractive:$NonInteractive
 
     $OvAppliance = _PromptOrDefault -CurrentValue $OvAppliance `
-        -Prompt 'Appliance' -Default 'HPEOpenview.1000' -NonInteractive:$NonInteractive
+        -Prompt 'Appliance' -Default 'va-oneviewt-ap' -NonInteractive:$NonInteractive
 
     $OvResult = _PromptOrDefault -CurrentValue $OvResult `
         -Prompt 'Result' -Default 'Pending' -NonInteractive:$NonInteractive

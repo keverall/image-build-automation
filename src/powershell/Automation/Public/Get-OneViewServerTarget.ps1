@@ -33,7 +33,7 @@ function Get-OneViewServerTarget {
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
 
-    .PARAMETER ServerIdentifier
+    .PARAMETER SrvrId
         Server name, serial number, OneView resource name, iLO IP, or bay/enclosure
         positional id (e.g. "Enclosure1, Bay 3").
 
@@ -66,24 +66,34 @@ function Get-OneViewServerTarget {
         [hashtable] with Success, Server, Details, Error.
 
     .EXAMPLE
-        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'PROD-SERVER-01'
+        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'PROD-SERVER-01'
 
     .EXAMPLE
-        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
+        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ1234567' -IdentifierType Serial
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
+        [Alias('OVHost')]
         [string] $OneViewHost,
-        [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Alias('ServerIdentifier')]
+        [Parameter(Mandatory)][string] $SrvrId,
+        [Alias('IdTyp')]
         [ValidateSet('Auto','Name','Serial','OneViewName','IloIp','EnclosureBay')][string] $IdentifierType = 'Auto',
+        [Alias('Cred')]
         [System.Management.Automation.PSCredential] $Credential,
+        [Alias('OVUser')]
         [string] $OneViewUser = $null,
+        [Alias('OVPwd')]
         [string] $OneViewPassword = $null,
         [int]    $Port = 443,
+        [Alias('SkipCert')]
         [bool]   $SkipCertificateCheck = $true,
+        [Alias('Timeout')]
         [int]    $TimeoutSec = 30,
+        [Alias('Mock')]
         [hashtable] $MockResult = $null,
+        [Alias('Dry')]
         [switch] $DryRun
     )
 
@@ -92,10 +102,10 @@ function Get-OneViewServerTarget {
     }
 
     if ($DryRun) {
-        Write-Output "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
+        Write-Output "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$SrvrId Type=$IdentifierType"
         return @{
-            Success = $true; Server = $ServerIdentifier; DryRun = $true
-            Details = @{ oneview_host = $OneViewHost; identifier = $ServerIdentifier; type = $IdentifierType }
+            Success = $true; Server = $SrvrId; DryRun = $true
+            Details = @{ oneview_host = $OneViewHost; identifier = $SrvrId; type = $IdentifierType }
         }
     }
 
@@ -105,7 +115,7 @@ function Get-OneViewServerTarget {
     $sess = Resolve-OneViewSession -OneViewHost $OneViewHost -Credential $Credential `
         -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
     if (-not $sess.Success) {
-        return @{ Success = $false; Server = $ServerIdentifier; Error = $sess.Error }
+        return @{ Success = $false; Server = $SrvrId; Error = $sess.Error }
     }
     $OneViewHost  = $sess.OneViewHost
     $sessionToken = $sess.SessionToken
@@ -120,11 +130,11 @@ function Get-OneViewServerTarget {
     try {
         foreach ($t in $typesToTry) {
             $filter = switch ($t) {
-                'Name'         { "name='$ServerIdentifier'" }
-                'OneViewName'  { "name='$ServerIdentifier'" }
-                'Serial'       { "serialNumber='$ServerIdentifier'" }
-                'IloIp'        { "mpIpAddresses='$ServerIdentifier'" }
-                'EnclosureBay' { "position='$ServerIdentifier'" }
+                'Name'         { "name='$SrvrId'" }
+                'OneViewName'  { "name='$SrvrId'" }
+                'Serial'       { "serialNumber='$SrvrId'" }
+                'IloIp'        { "mpIpAddresses='$SrvrId'" }
+                'EnclosureBay' { "position='$SrvrId'" }
             }
             $url = "$apiBase/server-hardware?filter=`"$filter`""
             $resp = Invoke-RestMethod -Uri $url -Method Get `
@@ -139,8 +149,8 @@ function Get-OneViewServerTarget {
                     $matchedNames = ($resp.members | ForEach-Object { $_.name }) -join ', '
                     return @{
                         Success = $false
-                        Server  = $ServerIdentifier
-                        Error   = "Ambiguous target: '$ServerIdentifier' matched $($resp.members.Count) servers via $t ($matchedNames). Refusing to proceed - single-server operations require exactly one match. Supply a more specific identifier (e.g. serial number)."
+                        Server  = $SrvrId
+                        Error   = "Ambiguous target: '$SrvrId' matched $($resp.members.Count) servers via $t ($matchedNames). Refusing to proceed - single-server operations require exactly one match. Supply a more specific identifier (e.g. serial number)."
                     }
                 }
                 $srv = $resp.members[0]
@@ -159,14 +169,14 @@ function Get-OneViewServerTarget {
                 if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
                     return @{
                         Success = $false
-                        Server  = $ServerIdentifier
+                        Server  = $SrvrId
                         Error   = "Server health is $($details.health_status) - refusing to proceed"
                         Details = $details
                     }
                 }
                 $result = @{
                     Success = $true
-                    Server  = $ServerIdentifier
+                    Server  = $SrvrId
                     ResolvedBy = $t
                     Details = $details
                 }
@@ -176,14 +186,14 @@ function Get-OneViewServerTarget {
         }
         return @{
             Success = $false
-            Server  = $ServerIdentifier
-            Error   = "Server '$ServerIdentifier' not found in OneView (tried: $($typesToTry -join ','))"
+            Server  = $SrvrId
+            Error   = "Server '$SrvrId' not found in OneView (tried: $($typesToTry -join ','))"
         }
     }
     catch {
         return @{
             Success = $false
-            Server  = $ServerIdentifier
+            Server  = $SrvrId
             Error   = "OneView query failed: $($_.Exception.Message)"
         }
     }

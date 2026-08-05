@@ -120,16 +120,16 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-Environment` | No | `Test` or `Prod`. Only used with `-JsonConfig` (DryRun). | - |
-| `-ManagementHost` | No* | OneView appliance to connect to (server name or serial). REQUIRED for live runs; used verbatim - no config/env fallback. | - |
-| `-Credential` | No | `PSCredential` for the live connection (e.g. `(Get-Credential)`). If omitted, prompted interactively. | - |
-| `-ConfigDir` | No | Configuration directory | auto-resolved |
-| `-PingTimeoutMs` | No | TCP connect timeout (ms) | `3000` |
-| `-Json` | No | Output as JSON | - |
-| `-JsonConfig` | No | Resolve host from `connection_hosts.json` (DryRun only) | - |
-| `-DryRun` | No | Return mock data; config may be read | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-Environment` | `-Env` | No | `Test` or `Prod`. Only used with `-JsonConfig` (DryRun). | - |
+| `-ManagementHost` | `-MgmtHost` | No* | OneView appliance to connect to (server name or serial). REQUIRED for live runs; used verbatim - no config/env fallback. | - |
+| `-Credential` | `-Cred` | No | `PSCredential` for the live connection (e.g. `(Get-Credential)`). If omitted, prompted interactively. | - |
+| `-ConfigDir` | `-CfgDir` | No | Configuration directory | auto-resolved |
+| `-PingTimeoutMs` | `-PingMs` | No | TCP connect timeout (ms) | `3000` |
+| `-Json` | `-` | No | Output as JSON | - |
+| `-JsonConfig` | `-JsonCfg` | No | Resolve host from `connection_hosts.json` (DryRun only) | - |
+| `-DryRun` | `-Dry` | No | Return mock data; config may be read | - |
 
 \* `-ManagementHost` is required for a live (non-`-DryRun`) connectivity test.
 
@@ -178,34 +178,37 @@ Get-OneViewConnectionStatus
 
 ```powershell
 # Connectivity + appliance version + managed server count
-Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -Credential (Get-Credential) -IncludeServerCount
+Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -Credential (Get-Credential) -IncludeServerCount
 ```
 
 ```powershell
 # Specific server status by name
-Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier srv01
+Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -ServerIdentifier srv01
 ```
 
 ```powershell
 # Specific server status by serial number (resolved via OneView)
-Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier MXQ1234567 -IdentifierType Serial
+Get-OneViewConnectionStatus -OVHost va-oneviewt-ap -SrvrId MXQ1234567 -IdTyp Serial
 ```
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-OneViewHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
-| `-ServerIdentifier` | No | Optional server name, serial, iLO IP or bay to look up | - |
-| `-IdentifierType` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
-| `-Credential` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
-| `-OneViewUser` | No | OneView username (with `-OneViewPassword`) | prompt |
-| `-OneViewPassword` | No | OneView password (with `-OneViewUser`) | prompt |
-| `-Port` | No | OneView HTTPS port | `443` |
-| `-SkipCertificateCheck` | No | Skip SSL cert verification | `true` |
-| `-TimeoutSec` | No | Per-call timeout | `30` |
-| `-IncludeServerCount` | No | Include the total number of servers managed by OneView | - |
-| `-DryRun` | No | Print the checks without performing them | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
+| `-ServerIdentifier` | `-SrvrId` | No | Optional server name, serial, iLO IP or bay to look up | - |
+| `-IdentifierType` | `-IdTyp` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
+| `-Credential` | `-Cred` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
+| `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
+| `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
+| `-Port` | - | No | OneView HTTPS port | `443` |
+| `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification | `true` |
+| `-TimeoutSec` | `-Timeout` | No | Per-call timeout | `30` |
+| `-IncludeServerCount` | `-SrvrCount` | No | Include the total number of servers managed by OneView | - |
+| `-MockResult` | `-Mock` | No | Hashtable to return without making any HTTP calls (tests). | - |
+| `-DryRun` | `-Dry` | No | Print the checks without performing them | - |
+
+> **Short aliases:** every parameter above also has a short alias (e.g. `-SrvrId`, `-IdTyp`, `-OVHost`, `-Cred`). The long and short forms are interchangeable - the router, `request_types.json`, and existing automation continue to use the long names.
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
@@ -228,29 +231,29 @@ Get-OneViewServerList
 
 ```powershell
 # Full list of servers connected to the appliance
-Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Credential (Get-Credential)
+Get-OneViewServerList -OneViewHost va-oneviewt-ap -Credential (Get-Credential)
 ```
 
 ```powershell
 # Narrow to critical-health or powered-on servers
-Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'health:Critical'
-Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'power:On'
+Get-OneViewServerList -OneViewHost va-oneviewt-ap -Filter 'health:Critical'
+Get-OneViewServerList -OneViewHost va-oneviewt-ap -Filter 'power:On'
 ```
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-OneViewHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
-| `-Credential` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
-| `-OneViewUser` | No | OneView username (with `-OneViewPassword`) | prompt |
-| `-OneViewPassword` | No | OneView password (with `-OneViewUser`) | prompt |
-| `-Port` | No | OneView HTTPS port | `443` |
-| `-SkipCertificateCheck` | No | Skip SSL cert verification | `true` |
-| `-TimeoutSec` | No | Per-call timeout | `30` |
-| `-PageSize` | No | Servers fetched per page (max 1000) | `100` |
-| `-Filter` | No | `health:<status>` / `power:<state>` / `name:<substring>` | - |
-| `-DryRun` | No | Print the query without performing it | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
+| `-Credential` | `-Cred` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
+| `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
+| `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
+| `-Port` | `-` | No | OneView HTTPS port | `443` |
+| `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification | `true` |
+| `-TimeoutSec` | `-Timeout` | No | Per-call timeout | `30` |
+| `-PageSize` | `-Page` | No | Servers fetched per page (max 1000) | `100` |
+| `-Filter` | `-` | No | `health:<status>` / `power:<state>` / `name:<substring>` | - |
+| `-DryRun` | `-Dry` | No | Print the query without performing it | - |
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
@@ -422,37 +425,37 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-ServerIdentifier` | Yes | Server name, serial, OneView name, iLO IP, or bay | - |
-| `-OneViewHost` | No | OneView appliance hostname or IP | - |
-| `-IloIp` | No | Target iLO address or hostname | - |
-| `-ExpectedHostname` | No | Post-build hostname | `$ServerIdentifier` |
-| `-Domain` | No | AD domain for post-build check | - |
-| `-SiteCode` | No | ConfigMgr site code (e.g. `P01`) | - |
-| `-ManagementPoint` | No | ConfigMgr Management Point FQDN | - |
-| `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN | - |
-| `-SiteServer` | No | ConfigMgr site server FQDN (PSRemoting fallback) | - |
-| `-BootImageName` | No | Boot image name to embed | - |
-| `-TaskSequenceName` | No | Task sequence name (informational) | - |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository | - |
-| `-RepoLocalPath` | No | Local path mirrored to `-RepoBaseUrl` | - |
-| `-ExternalIsoPath` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-SkipIsoBuild` and `-SkipPublish` are implied. | - |
-| `-MonitorTimeoutSeconds` | No | Max monitoring duration | `7200` |
-| `-MonitorPollSeconds` | No | Poll interval | `30` |
-| `-SkipPreBuild` | No | Skip pre-build validation | - |
-| `-SkipIsoBuild` | No | Skip ISO creation | - |
-| `-SkipPublish` | No | Skip ISO publishing | - |
-| `-SkipOneView` | No | Skip OneView resolution | - |
-| `-SkipMount` | No | Skip iLO mount and boot | - |
-| `-SkipMonitor` | No | Skip installation monitoring | - |
-| `-SkipPostBuild` | No | Skip post-build validation | - |
-| `-SkipConfirmation` | No | Skip the interactive confirmation prompt before deployment. | - |
-| `-Mock` | No | Mock all calls (implies `-DryRun`) | - |
-| `-DryRun` | No | Validate and print plan only | - |
-| `-Force` | No | Allow destructive `ForceRestart` | - |
-| `-InMaintenanceWindow` | No | Acknowledge approved maintenance window | - |
-| `-AllowUnknownIsoUrl` | No | Skip ISO URL reachability check | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-ServerIdentifier` | `-SrvrId` | Yes | Server name, serial, OneView name, iLO IP, or bay | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP | - |
+| `-IloIp` | `-Ilo` | No | Target iLO address or hostname | - |
+| `-ExpectedHostname` | `-` | No | Post-build hostname | `$ServerIdentifier` |
+| `-Domain` | `-` | No | AD domain for post-build check | - |
+| `-SiteCode` | `-` | No | ConfigMgr site code (e.g. `P01`) | - |
+| `-ManagementPoint` | `-` | No | ConfigMgr Management Point FQDN | - |
+| `-DistributionPoint` | `-` | No | ConfigMgr Distribution Point FQDN | - |
+| `-SiteServer` | `-` | No | ConfigMgr site server FQDN (PSRemoting fallback) | - |
+| `-BootImageName` | `-` | No | Boot image name to embed | - |
+| `-TaskSequenceName` | `-` | No | Task sequence name (informational) | - |
+| `-RepoBaseUrl` | `-` | No | HTTPS base URL of the ISO repository | - |
+| `-RepoLocalPath` | `-` | No | Local path mirrored to `-RepoBaseUrl` | - |
+| `-ExternalIsoPath` | `-ExtIso` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-SkipIsoBuild` and `-SkipPublish` are implied. | - |
+| `-MonitorTimeoutSeconds` | `-` | No | Max monitoring duration | `7200` |
+| `-MonitorPollSeconds` | `-` | No | Poll interval | `30` |
+| `-SkipPreBuild` | `-` | No | Skip pre-build validation | - |
+| `-SkipIsoBuild` | `-` | No | Skip ISO creation | - |
+| `-SkipPublish` | `-` | No | Skip ISO publishing | - |
+| `-SkipOneView` | `-` | No | Skip OneView resolution | - |
+| `-SkipMount` | `-` | No | Skip iLO mount and boot | - |
+| `-SkipMonitor` | `-` | No | Skip installation monitoring | - |
+| `-SkipPostBuild` | `-` | No | Skip post-build validation | - |
+| `-SkipConfirmation` | `-SkipConf` | No | Skip the interactive confirmation prompt before deployment. | - |
+| `-Mock` | `-Mock` | No | Mock all calls (implies `-DryRun`) | - |
+| `-DryRun` | `-Dry` | No | Validate and print plan only | - |
+| `-Force` | `-` | No | Allow destructive `ForceRestart` | - |
+| `-InMaintenanceWindow` | `-` | No | Acknowledge approved maintenance window | - |
+| `-AllowUnknownIsoUrl` | `-` | No | Skip ISO URL reachability check | - |
 
 **Returns:** `[hashtable]` with `Success`, `Steps`, and `AuditFile`.
 
@@ -592,20 +595,20 @@ Invoke-IsoDeploy -DryRun
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-Method` | No | Deployment method (`redfish`) | `redfish` |
-| `-Server` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
-| `-SerialNumber` | No | Target a server by its HPE serial number; resolved to the hostname (and iLO IP) via OneView. Requires `-OneViewHost`. | - |
-| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-ServerList` | No | Path to server list | auto-resolved |
-| `-IsoDir` | No | Directory containing ISO packages | auto-resolved |
-| `-IsoUrl` | No | Override the ISO URL | - |
-| `-ExternalIsoPath` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-IsoUrl` is ignored and package resolution is skipped. For local paths, an SMB share is auto-created when run as Administrator. | - |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository. Unused by `-ExternalIsoPath` resolution (local files are shared via an auto-created SMB share instead). | - |
-| `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl`. Unused by `-ExternalIsoPath` resolution. | - |
-| `-SkipConfirmation` | No | Skip the interactive confirmation prompt before deployment. (Currently only enforced by `Start-PhysicalServerBuild`; ignored by `Invoke-IsoDeploy`.) | - |
-| `-DryRun` | No | Simulate only | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-Method` | `-` | No | Deployment method (`redfish`) | `redfish` |
+| `-Server` | `-Srvr` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | `-Srl` | No | Target a server by its HPE serial number; resolved to the hostname (and iLO IP) via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
+| `-ServerList` | `-SrvrList` | No | Path to server list | auto-resolved |
+| `-IsoDir` | `-` | No | Directory containing ISO packages | auto-resolved |
+| `-IsoUrl` | `-Iso` | No | Override the ISO URL | - |
+| `-ExternalIsoPath` | `-ExtIso` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-IsoUrl` is ignored and package resolution is skipped. For local paths, an SMB share is auto-created when run as Administrator. | - |
+| `-RepoBaseUrl` | `-RepoUrl` | No | HTTPS base URL of the ISO repository. Unused by `-ExternalIsoPath` resolution (local files are shared via an auto-created SMB share instead). | - |
+| `-RepoLocalPath` | `-RepoPath` | No | Local filesystem path mirrored to `-RepoBaseUrl`. Unused by `-ExternalIsoPath` resolution. | - |
+| `-SkipConfirmation` | `-SkipConf` | No | Skip the interactive confirmation prompt before deployment. (Currently only enforced by `Start-PhysicalServerBuild`; ignored by `Invoke-IsoDeploy`.) | - |
+| `-DryRun` | `-Dry` | No | Simulate only | - |
 
 ```powershell
 # Target by serial number (resolved via OneView)
@@ -638,15 +641,15 @@ Start-InstallMonitor
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-Server` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
-| `-SerialNumber` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
-| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-ServerList` | No | Path to server list | auto-resolved |
-| `-TimeoutSeconds` | No | Max monitoring duration | `7200` |
-| `-PollIntervalSeconds` | No | Seconds between polls | `30` |
-| `-OpsRampConfig` | No | Path to OpsRamp config - only read when explicitly passed | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-Server` | `-Srvr` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | `-Srl` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
+| `-ServerList` | `-SrvrList` | No | Path to server list | auto-resolved |
+| `-TimeoutSeconds` | `-Timeout` | No | Max monitoring duration | `7200` |
+| `-PollIntervalSeconds` | `-PollSec` | No | Seconds between polls | `30` |
+| `-OpsRampConfig` | `-OpsCfg` | No | Path to OpsRamp config - only read when explicitly passed | - |
 
 ```powershell
 # Target by serial number (resolved via OneView)
@@ -691,16 +694,16 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-Action` | Yes | `Mount`, `MountAndBoot`, `Boot`, `Reset`, `Eject`, `Status` | - |
-| `-IloIp` | Yes | iLO IPv4 address or hostname | - |
-| `-IloUser` | No | iLO username. Never read from config/env. | prompt |
-| `-IloPassword` | No | iLO password. Never read from config/env. | prompt |
-| `-IsoUrl` | No | HTTPS URL of the ISO (for `Mount`/`MountAndBoot`) | - |
-| `-CdDeviceId` | No | Virtual media device ID | `1` |
-| `-Force` | No | Confirm destructive actions | - |
-| `-DryRun` | No | Print actions without performing them | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-Action` | `-` | Yes | `Mount`, `MountAndBoot`, `Boot`, `Reset`, `Eject`, `Status` | - |
+| `-IloIp` | `-Ilo` | Yes | iLO IPv4 address or hostname | - |
+| `-IloUser` | `-IloU` | No | iLO username. Never read from config/env. | prompt |
+| `-IloPassword` | `-IloP` | No | iLO password. Never read from config/env. | prompt |
+| `-IsoUrl` | `-Iso` | No | HTTPS URL of the ISO (for `Mount`/`MountAndBoot`) | - |
+| `-CdDeviceId` | `-` | No | Virtual media device ID | `1` |
+| `-Force` | `-` | No | Confirm destructive actions | - |
+| `-DryRun` | `-Dry` | No | Print actions without performing them | - |
 
 **Returns:** `[hashtable]` with `Success`, `Action`, `IloIp`, `Details`, and `Error`.
 
@@ -730,16 +733,16 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-OneViewHost` | No | OneView appliance hostname or IP | - |
-| `-ServerIdentifier` | Yes | Server name, serial, iLO IP, or bay | - |
-| `-IdentifierType` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
-| `-Credential` | No | `PSCredential` for the connection. If omitted, prompted interactively. | env / CyberArk |
-| `-OneViewUser` | No | OneView username (with `-OneViewPassword`) | prompt |
-| `-OneViewPassword` | No | OneView password (with `-OneViewUser`) | prompt |
-| `-Port` | No | OneView HTTPS port | `443` |
-| `-DryRun` | No | Print query without performing it | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP | - |
+| `-ServerIdentifier` | `-SrvrId` | Yes | Server name, serial, iLO IP, or bay | - |
+| `-IdentifierType` | `-IdTyp` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
+| `-Credential` | `-Cred` | No | `PSCredential` for the connection. If omitted, prompted interactively. | env / CyberArk |
+| `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
+| `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
+| `-Port` | `-` | No | OneView HTTPS port | `443` |
+| `-DryRun` | `-Dry` | No | Print query without performing it | - |
 
 **Returns:** `[hashtable]` with `Success`, `Server`, `ResolvedBy`, `Details`, and `Error`.
 
@@ -767,21 +770,21 @@ Test-PreBuildValidation -ServerIdentifier srv01 -DryRun
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-ServerIdentifier` | Yes | Target server identifier | - |
-| `-OneViewHost` | No | OneView appliance hostname or IP | - |
-| `-IloIp` | No | Target iLO address | - |
-| `-IsoUrl` | No | HTTPS URL of the bootable ISO | - |
-| `-ManagementPoint` | No | ConfigMgr Management Point FQDN | - |
-| `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN | - |
-| `-BootImageName` | No | Boot image name to verify | - |
-| `-TaskSequenceName` | No | Task sequence name to verify | - |
-| `-SkipOneView` | No | Skip OneView target check | - |
-| `-SkipIlo` | No | Skip iLO credential check | - |
-| `-SkipDpMp` | No | Skip MP/DP reachability checks | - |
-| `-SkipIsoUrl` | No | Skip ISO URL reachability check | - |
-| `-DryRun` | No | Validate inputs, skip network probes | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-ServerIdentifier` | `-SrvrId` | Yes | Target server identifier | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP | - |
+| `-IloIp` | `-Ilo` | No | Target iLO address | - |
+| `-IsoUrl` | `-` | No | HTTPS URL of the bootable ISO | - |
+| `-ManagementPoint` | `-` | No | ConfigMgr Management Point FQDN | - |
+| `-DistributionPoint` | `-` | No | ConfigMgr Distribution Point FQDN | - |
+| `-BootImageName` | `-` | No | Boot image name to verify | - |
+| `-TaskSequenceName` | `-` | No | Task sequence name to verify | - |
+| `-SkipOneView` | `-` | No | Skip OneView target check | - |
+| `-SkipIlo` | `-` | No | Skip iLO credential check | - |
+| `-SkipDpMp` | `-` | No | Skip MP/DP reachability checks | - |
+| `-SkipIsoUrl` | `-` | No | Skip ISO URL reachability check | - |
+| `-DryRun` | `-Dry` | No | Validate inputs, skip network probes | - |
 
 **Returns:** `[hashtable]` with `Success`, `Server`, `Timestamp`, and `Checks`.
 
@@ -810,18 +813,18 @@ Test-PostBuildValidation -SerialNumber MXQ1234567 -OneViewHost oneview.ad.exampl
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-Hostname` | Yes* | Target server hostname. Mutually exclusive with `-SerialNumber`. | - |
-| `-SerialNumber` | No | Identify the server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
-| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-ExpectedHostname` | No | Expected hostname for cross-check | `$Hostname` |
-| `-Domain` | No | AD domain expected after build | - |
-| `-ExpectedOsVersion` | No | Expected OS version string | - |
-| `-SkipCmClient` | No | Skip ConfigMgr client checks | - |
-| `-SkipDrivers` | No | Skip HPE driver presence check | - |
-| `-SkipRemote` | No | Skip all WinRM-dependent checks | - |
-| `-DryRun` | No | Assume checks pass | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-Hostname` | `-` | Yes* | Target server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | `-Srl` | No | Identify the server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
+| `-ExpectedHostname` | `-` | No | Expected hostname for cross-check | `$Hostname` |
+| `-Domain` | `-` | No | AD domain expected after build | - |
+| `-ExpectedOsVersion` | `-` | No | Expected OS version string | - |
+| `-SkipCmClient` | `-` | No | Skip ConfigMgr client checks | - |
+| `-SkipDrivers` | `-` | No | Skip HPE driver presence check | - |
+| `-SkipRemote` | `-` | No | Skip all WinRM-dependent checks | - |
+| `-DryRun` | `-Dry` | No | Assume checks pass | - |
 
 \* `-Hostname` is required unless `-SerialNumber` is supplied.
 
@@ -851,16 +854,16 @@ Update-Firmware -DryRun
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-Config` | Yes (live) | Firmware manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
-| `-Server` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
-| `-SerialNumber` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
-| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-ServerList` | No | Path to server list | auto-resolved |
-| `-OutputDir` | No | Output directory | - |
-| `-SkipDownload` | No | Skip component download | - |
-| `-DryRun` | No | Simulate only | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-Config` | `-Cfg` | Yes (live) | Firmware manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
+| `-Server` | `-Srvr` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | `-Srl` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
+| `-ServerList` | `-SrvrList` | No | Path to server list | auto-resolved |
+| `-OutputDir` | `-OutDir` | No | Output directory | - |
+| `-SkipDownload` | `-SkipDl` | No | Skip component download | - |
+| `-DryRun` | `-Dry` | No | Simulate only | - |
 
 ```powershell
 # Target by serial number (resolved via OneView)
@@ -893,16 +896,16 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\isos\WinSrv2025.iso' -Server srv01
 
 **Parameters:**
 
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-BaseIsoPath` | Yes | Path to the base Windows Server ISO | - |
-| `-Server` | Yes | Server hostname for output naming. Mutually exclusive with `-SerialNumber`. | - |
-| `-SerialNumber` | No | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires `-OneViewHost`. | - |
-| `-OneViewHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-PatchesConfig` | Yes (live) | Patch manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
-| `-OutputDir` | No | Output directory | - |
-| `-Method` | No | Patching method: `dism` or `powershell` | `dism` |
-| `-DryRun` | No | Simulate only | - |
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-BaseIsoPath` | `-BaseIso` | Yes | Path to the base Windows Server ISO | - |
+| `-Server` | `-` | Yes | Server hostname for output naming. Mutually exclusive with `-SerialNumber`. | - |
+| `-SerialNumber` | `-Srl` | No | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires `-OneViewHost`. | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
+| `-PatchesConfig` | `-` | Yes (live) | Patch manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
+| `-OutputDir` | `-` | No | Output directory | - |
+| `-Method` | `-` | No | Patching method: `dism` or `powershell` | `dism` |
+| `-DryRun` | `-Dry` | No | Simulate only | - |
 
 ```powershell
 # Target by serial number (resolved via OneView)
