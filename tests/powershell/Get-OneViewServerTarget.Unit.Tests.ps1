@@ -15,7 +15,7 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Get-OneViewServerTarget
-        foreach ($p in @('ServerIdentifier','OneViewHost','IdentifierType','MockResult','DryRun')) {
+        foreach ($p in @('SrvrId','OneViewHost','IdentifierType','MockResult','DryRun')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }

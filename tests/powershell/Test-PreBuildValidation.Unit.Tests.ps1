@@ -15,7 +15,7 @@ Describe 'Test-PreBuildValidation - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Test-PreBuildValidation
-        foreach ($p in @('ServerIdentifier','OneViewHost','IloIp','IsoUrl','DryRun','SkipOneView','SkipIlo','SkipDpMp','SkipIsoUrl')) {
+        foreach ($p in @('SrvrId','OneViewHost','IloIp','IsoUrl','DryRun','SkipOneView','SkipIlo','SkipDpMp','SkipIsoUrl')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }

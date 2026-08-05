@@ -463,7 +463,6 @@ function Start-PhysicalServerBuild {
         [switch] $SkipMount,
         [switch] $SkipMonitor,
         [switch] $SkipPostBuild,
-        [Alias('Mock')]
         [switch] $Mock,
         [Alias('Dry')]
         [switch] $DryRun,
