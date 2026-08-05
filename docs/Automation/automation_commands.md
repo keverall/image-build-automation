@@ -178,17 +178,17 @@ Get-OneViewConnectionStatus
 
 ```powershell
 # Connectivity + appliance version + managed server count
-Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -Credential (Get-Credential) -IncludeServerCount
+Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -Credential (Get-Credential) -IncludeServerCount
 ```
 
 ```powershell
 # Specific server status by name
-Get-OneViewConnectionStatus -OneViewHost HPEOpenview.1000 -ServerIdentifier srv01
+Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -ServerIdentifier srv01
 ```
 
 ```powershell
 # Specific server status by serial number (resolved via OneView)
-Get-OneViewConnectionStatus -OVHost HPEOpenview.1000 -SrvrId MXQ1234567 -IdTyp Serial
+Get-OneViewConnectionStatus -OVHost va-oneviewt-ap -SrvrId MXQ1234567 -IdTyp Serial
 ```
 
 **Parameters:**
@@ -231,13 +231,13 @@ Get-OneViewServerList
 
 ```powershell
 # Full list of servers connected to the appliance
-Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Credential (Get-Credential)
+Get-OneViewServerList -OneViewHost va-oneviewt-ap -Credential (Get-Credential)
 ```
 
 ```powershell
 # Narrow to critical-health or powered-on servers
-Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'health:Critical'
-Get-OneViewServerList -OneViewHost HPEOpenview.1000 -Filter 'power:On'
+Get-OneViewServerList -OneViewHost va-oneviewt-ap -Filter 'health:Critical'
+Get-OneViewServerList -OneViewHost va-oneviewt-ap -Filter 'power:On'
 ```
 
 **Parameters:**
