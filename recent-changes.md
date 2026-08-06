@@ -21,6 +21,10 @@
       - [Fix](#fix)
       - [Repo context (AGENTS.md)](#repo-context-agentsmd)
       - [Verification](#verification)
+    - [4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)](#4-scom--oneview-maintenance-status-report-get-maintenancestatusreport)
+      - [Live discovery vs mock config](#live-discovery-vs-mock-config)
+      - [OneView host + serial/name linking](#oneview-host--serialname-linking)
+      - [Verification](#verification-1)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -149,3 +153,33 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 #### Verification
 
 - Ran `Configure-PhysicalBuild.Unit.Tests.ps1` + `Start-PhysicalServerBuild.Unit.Tests.ps1` directly → **9 passed, 0 failed**; the prompt now prints "Non-interactive / automated mode detected - deployment confirmation skipped (auto-cancelled)" instead of blocking.
+
+<a name="4-scom--oneview-maintenance-status-report-get-maintenancestatusreport"></a>
+
+### 4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-08-06 | Added `Get-MaintenanceStatusReport` linking SCOM + HPE OneView; live mode discovers clusters from the SCOM appliance (not the catalogue), `-OneViewHost` param, serial/name cross-link; catalogue used only for `-DryRun` mock | Kev Everall |
+
+<a name="live-discovery-vs-mock-config"></a>
+
+#### Live discovery vs mock config
+
+- **Live mode** discovers clusters/groups and their member servers from the **connected SCOM management group** (`Get-SCOMGroup` + `Get-SCOMClassInstance`), not from `clusters_catalogue.json`. In-memory mappings built from SCOM/OneView **API** calls are allowed.
+- **`-DryRun` / `-IncludeLive:$false`** uses `configs/clusters_catalogue.json` (and `servers_catalogue.oneview.json` for the SCOM↔OneView link) as mock data only — static config is never the source for live commands, per `AGENTS.md`.
+
+<a name="oneview-host--serialname-linking"></a>
+
+#### OneView host + serial/name linking
+
+- Added `-OneViewHost` (separate from `-ManagementHost` for SCOM); falls back to `-ManagementHost` when only that is supplied.
+- Each server is linked SCOM↔OneView **per server by name (serial where available)** via a live OneView server index; mock mode links from the dry config. Output includes `OneViewLinkMethod` (`Name` / `Serial` / `None` / `Catalogue`).
+- Emits CSV (default) with columns: cluster, server, SCOM maintenance mode + window, OneView maintenance mode + link method, power schedule (from catalogue enrichment), and `DataSource` (`Live` / `Partial-*` / `CatalogueOnly`). Read-only; degrades gracefully to `Unknown`.
+
+<a name="verification-1"></a>
+
+#### Verification
+
+- Parse-clean; `Get-MaintenanceStatusReport -IncludeLive:$false` returns 5 pure objects sourced from `configs/`, with `OneViewLinkMethod=Name` for servers present in `servers_catalogue.oneview.json`. Live SCOM discovery path confirmed correct by code review (cannot reach SCOM from this host).
+
