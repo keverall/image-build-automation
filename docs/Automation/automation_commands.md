@@ -329,7 +329,7 @@ Example generated names:
 
 The same `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso` name is what `Publish-BootIso` and `Invoke-IsoDeploy -IsoUrl` expect to reference in the repository.
 
-<a name="iso-path-requirements"></a>
+<a name="iso-path-requirements-no-local-drives"></a>
 
 ### ISO path requirements (no local drives)
 

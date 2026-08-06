@@ -613,6 +613,13 @@ if (Test-Path $_publicRoot) {
     }
 }
 
+# Engineer-friendly alias for the SCOM + OneView status report.
+# (request name preserved from the SCOM team's request: scom-maintmode-status-report)
+# Note: a hyphenated name must be invoked with the call operator, e.g.
+#   & 'scom-maintmode-status-report' -Environment Prod
+# The router request name 'maintmode_status_report' is the canonical requestable form.
+Set-Alias -Name 'scom-maintmode-status-report' -Value 'Get-MaintenanceStatusReport'
+
 # Export only the functions that are part of the public API surface.
 # Private helpers (leading underscore) and internal factories are intentionally excluded.
 Export-ModuleMember -Function @(
@@ -704,7 +711,9 @@ Export-ModuleMember -Function @(
     'New-ScomMaintenanceScript'
     'Test-ScomMaintenanceConnectivity'
     'Get-ScomCredentials'
-)
+    # SCOM + OneView status report
+    'Get-MaintenanceStatusReport'
+) -Alias @('scom-maintmode-status-report')
 
 $global:__Automation_Loading = $false
 
