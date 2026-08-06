@@ -30,16 +30,18 @@ OneView connections use a **persistent session model**. The session is establish
 
 ### Establishing a Connection
 
-Use `Test-ServerConnectivity` to verify connectivity and establish a persistent OneView session:
+Use `Connect-OneView` to verify connectivity and establish a persistent OneView session.  This is a convenience wrapper around `Test-ServerConnectivity`:
 
 ```powershell
 # Connect to OneView (session persists)
-Test-ServerConnectivity -ManagementHost va-oneviewt-01 -Credential (Get-Credential)
+Connect-OneView -ManagementHost va-oneviewt-01
 
 # Run OneView commands while the session is active
 Get-OneViewServerList
 Get-OneViewConnectionStatus
 ```
+
+For lower-level diagnostics (dry-run config validation, JSON output), use `Test-ServerConnectivity` directly.
 
 The session is stored in `$global:ConnectedSessions` and is automatically reused by other OneView commands (`Get-OneViewServerList`, `Get-OneViewConnectionStatus`, etc.) without requiring re-authentication.
 
@@ -63,7 +65,7 @@ The session is also automatically closed when the PowerShell session ends.
 
 ### Session Lifecycle
 
-1. **Connect**: `Test-ServerConnectivity` establishes the session
+1. **Connect**: `Connect-OneView` establishes the session (delegates to `Test-ServerConnectivity`)
 2. **Use**: OneView commands reuse the existing session automatically
 3. **Disconnect**: `Disconnect-OneView` closes the session (or it closes when PowerShell exits)
 

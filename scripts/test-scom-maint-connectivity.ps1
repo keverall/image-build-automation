@@ -34,7 +34,7 @@
     pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
 .EXAMPLE
-    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 #>
 
 [CmdletBinding()]

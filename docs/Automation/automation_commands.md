@@ -7,6 +7,7 @@
 - [Setup (One-Time)](#setup-one-time)
 - [Connectivity, Connection & Server Lookup](#connectivity-connection-server-lookup)
   - [Test OneView connectivity](#test-oneview-connectivity)
+  - [Connect to OneView](#connect-to-oneview)
   - [Disconnect from OneView](#disconnect-from-oneview)
   - [Get OneView connection status](#get-oneview-connection-status)
   - [Get OneView server list](#get-oneview-server-list)
@@ -14,10 +15,12 @@
   - [Validate build parameters](#validate-build-parameters)
 - [ISO Image Naming & SMB Shares](#iso-image-naming-smb-shares)
   - [Bootable ISO filename convention](#bootable-iso-filename-convention)
-  - [SMB / CIFS share naming for local ISO paths](#smb-cifs-share-naming-for-local-iso-paths)
+  - [ISO path requirements (no local drives)](#iso-path-requirements-no-local-drives)
 - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
+  - [Configure build (4-eye review)](#configure-build-4-eye-review)
   - [Full build (most common)](#full-build-most-common)
   - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
+  - [Build with firmware folders (post-OS-install)](#build-with-firmware-folders-post-os-install)
   - [Re-run after ISO already built (skip build phases)](#re-run-after-iso-already-built-skip-build-phases)
   - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
   - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
@@ -54,7 +57,7 @@
 
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
-> **Terminal command rules:** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - supply `-Credential`/user+password parameters or enter them when prompted.
+> **Terminal command rules:** live (non-`-DryRun`) runs are driven **only** by parameters passed on the command line or values entered at an interactive prompt. Config files, server lists, and environment-variable defaults are **`-DryRun`-only helpers** (except a file path you explicitly pass as a parameter). Credentials are never read from config, environment, or CyberArk - enter them interactively when prompted.
 
 ---
 
@@ -94,7 +97,7 @@ Pre-flight read-only checks. Safe to run during a change freeze. Start here - co
 
 ### Test OneView connectivity
 
-Combined network ping + authentication test for a OneView appliance. Read-only - safe during a change freeze. On a live run the command never reads config: the appliance host comes from `-ManagementHost` (used verbatim) and credentials come from `-Credential` or an interactive prompt. Config files are read **only** with `-DryRun`.
+Combined network ping + authentication test for a OneView appliance. Read-only - safe during a change freeze. On a live run the command never reads config: the appliance host comes from `-ManagementHost` (used verbatim) and credentials are entered at the interactive prompt. Config files are read **only** with `-DryRun`.
 
 **The OneView session established by this command persists in the current PowerShell session.** Use `Disconnect-OneView` to explicitly close the session when finished.
 
@@ -104,17 +107,7 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01
 ```
 
 ```powershell
-# LIVE: explicit host + supplied credential (no prompt)
-Test-ServerConnectivity -ManagementHost va-oneviewt-01 -Credential (Get-Credential)
-```
-
-```powershell
-# DRY-RUN using connection_hosts.json config (no real connection)
-Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
-```
-
-```powershell
-# DRY-RUN with explicit host (validates resolution only)
+# DRY-RUN: validate host resolution only - no real connection or changes
 Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 ```
 
@@ -122,20 +115,47 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 
 | Parameter | Aliases | Required | Description | Default |
 |-----------|---------|----------|-------------|---------|
-| `-Environment` | `-Env` | No | `Test` or `Prod`. Only used with `-JsonConfig` (DryRun). | - |
 | `-ManagementHost` | `-MgmtHost` | No* | OneView appliance to connect to (server name or serial). REQUIRED for live runs; used verbatim - no config/env fallback. | - |
-| `-Credential` | `-Cred` | No | `PSCredential` for the live connection (e.g. `(Get-Credential)`). If omitted, prompted interactively. | - |
-| `-ConfigDir` | `-CfgDir` | No | Configuration directory | auto-resolved |
-| `-PingTimeoutMs` | `-PingMs` | No | TCP connect timeout (ms) | `3000` |
-| `-Json` | `-` | No | Output as JSON | - |
-| `-JsonConfig` | `-JsonCfg` | No | Resolve host from `connection_hosts.json` (DryRun only) | - |
-| `-DryRun` | `-Dry` | No | Return mock data; config may be read | - |
+| `-DryRun` | `-Dry` | No | Return mock data; config may be read. | - |
 
 \* `-ManagementHost` is required for a live (non-`-DryRun`) connectivity test.
 
-**Returns:** `[hashtable]` with `Available`, `Mode` (`oneview`), `ManagementHost`, `Environment`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
+**Returns:** `[hashtable]` with `Available`, `Mode` (`oneview`), `ManagementHost`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
 
 **Note:** The OneView session persists after a successful connection. Use `Disconnect-OneView` to close it.
+
+---
+
+<a name="connect-to-oneview"></a>
+
+### Connect to OneView
+
+A user-friendly alias for `Test-ServerConnectivity`.  Validates network reachability and authenticates to the OneView appliance in a single step, leaving an active session for subsequent commands (`Get-OneViewServerList`, `Get-OneViewConnectionStatus`, etc.).
+
+On a live run the appliance host is taken verbatim from `-ManagementHost` and credentials are entered interactively at the prompt.  Config files are read **only** with `-DryRun` (no real connection is made).
+
+```powershell
+# LIVE: explicit host, credentials prompted interactively
+Connect-OneView -ManagementHost va-oneviewt-01
+```
+
+```powershell
+# DRY-RUN: validate host resolution only - no real connection or changes
+Connect-OneView -DryRun
+```
+
+**Parameters:**
+
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-ManagementHost` | `-MgmtHost` | No* | OneView appliance to connect to (server name or serial). REQUIRED for live runs; used verbatim - no config/env fallback. | - |
+| `-DryRun` | `-Dry` | No | Return mock data; config may be read. Use this to test code without connecting to an appliance or making changes. | - |
+
+\* `-ManagementHost` is required for a live (non-`-DryRun`) connection.
+
+**Returns:** `[hashtable]` with `Available`, `ManagementHost`, `AuthConnect`, `NetworkPing`, `Message`, and `Timestamp`.
+
+**Note:** `Connect-OneView` delegates to `Test-ServerConnectivity`, so the full network-ping + auth validation happens under the hood.  The OneView session persists after a successful connection.  Use `Disconnect-OneView` to close it.
 
 ---
 
@@ -143,7 +163,7 @@ Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
 
 ### Disconnect from OneView
 
-Closes the active HPE OneView session established by `Test-ServerConnectivity` or `Connect-OVMgmt`. Use this command when you are finished running OneView commands and want to explicitly close the connection.
+Closes the active HPE OneView session established by `Connect-OneView` / `Test-ServerConnectivity` or `Connect-OVMgmt`. Use this command when you are finished running OneView commands and want to explicitly close the connection.
 
 ```powershell
 # Disconnect from the current OneView session
@@ -172,13 +192,13 @@ Disconnect-OneView -Force
 Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. When run without parameters, the command checks for an existing OneView session (established via `Test-ServerConnectivity`) and uses that appliance automatically - no connect/disconnect. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the session token or supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health. If no session exists, the command returns an error telling you to connect first with `Test-ServerConnectivity -ManagementHost <oneview-appliance-host>`.
 
 ```powershell
-# Check current OneView session (no params needed if connected via Test-ServerConnectivity)
+# Check current OneView session (no params needed if connected via Connect-OneView)
 Get-OneViewConnectionStatus
 ```
 
 ```powershell
 # Connectivity + appliance version + managed server count
-Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -Credential (Get-Credential) -IncludeServerCount
+Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -IncludeServerCount
 ```
 
 ```powershell
@@ -198,17 +218,15 @@ Get-OneViewConnectionStatus -OVHost va-oneviewt-ap -SrvrId MXQ1234567 -IdTyp Ser
 | `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
 | `-ServerIdentifier` | `-SrvrId` | No | Optional server name, serial, iLO IP or bay to look up | - |
 | `-IdentifierType` | `-IdTyp` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
-| `-Credential` | `-Cred` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
 | `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
 | `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
-| `-Port` | - | No | OneView HTTPS port | `443` |
 | `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification | `true` |
 | `-TimeoutSec` | `-Timeout` | No | Per-call timeout | `30` |
 | `-IncludeServerCount` | `-SrvrCount` | No | Include the total number of servers managed by OneView | - |
 | `-MockResult` | `-Mock` | No | Hashtable to return without making any HTTP calls (tests). | - |
 | `-DryRun` | `-Dry` | No | Print the checks without performing them | - |
 
-> **Short aliases:** every parameter above also has a short alias (e.g. `-SrvrId`, `-IdTyp`, `-OVHost`, `-Cred`). The long and short forms are interchangeable - the router, `request_types.json`, and existing automation continue to use the long names.
+> **Short aliases:** every parameter above also has a short alias (e.g. `-SrvrId`, `-IdTyp`, `-OVHost`). The long and short forms are interchangeable - the router, `request_types.json`, and existing automation continue to use the long names.
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
@@ -222,7 +240,7 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 
 Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name.
 
-**Connection behaviour (shared helper):** An existing OneView connection always takes priority - if a session is already active, the command reuses it and never reconnects (reconnecting could drop the live session and cause incidents); if you supplied a different `-OneViewHost`, it warns you which appliance you are connected to and to run `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically - if you do not pass `-Credential`, you are prompted for username and password interactively (exactly like `Test-ServerConnectivity`). If there is no host and no active session, it returns an exception explaining there is none and how to connect. The session persists - this command never disconnects (only `Disconnect-OneView` does).
+**Connection behaviour (shared helper):** An existing OneView connection always takes priority - if a session is already active, the command reuses it and never reconnects (reconnecting could drop the live session and cause incidents); if you supplied a different `-OneViewHost`, it warns you which appliance you are connected to and to run `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity`). If there is no host and no active session, it returns an exception explaining there is none and how to connect. The session persists - this command never disconnects (only `Disconnect-OneView` does).
 
 ```powershell
 # Full list of servers from current HPEOneView session (no params needed if connected)
@@ -231,7 +249,7 @@ Get-OneViewServerList
 
 ```powershell
 # Full list of servers connected to the appliance
-Get-OneViewServerList -OneViewHost va-oneviewt-ap -Credential (Get-Credential)
+Get-OneViewServerList -OneViewHost va-oneviewt-ap
 ```
 
 ```powershell
@@ -245,10 +263,8 @@ Get-OneViewServerList -OneViewHost va-oneviewt-ap -Filter 'power:On'
 | Parameter | Aliases | Required | Description | Default |
 |-----------|---------|----------|-------------|---------|
 | `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
-| `-Credential` | `-Cred` | No | `PSCredential` for the connection. Never read from config/env. | prompt |
 | `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
 | `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
-| `-Port` | `-` | No | OneView HTTPS port | `443` |
 | `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification | `true` |
 | `-TimeoutSec` | `-Timeout` | No | Per-call timeout | `30` |
 | `-PageSize` | `-Page` | No | Servers fetched per page (max 1000) | `100` |
@@ -313,39 +329,27 @@ Example generated names:
 
 The same `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso` name is what `Publish-BootIso` and `Invoke-IsoDeploy -IsoUrl` expect to reference in the repository.
 
-<a name="smb-cifs-share-naming-for-local-iso-paths"></a>
+<a name="iso-path-requirements"></a>
 
-### SMB / CIFS share naming for local ISO paths
+### ISO path requirements (no local drives)
 
-The iLO BMC is a separate physical controller and **cannot** read local drives (`C:\`, `H:\`, ...) on your admin workstation. To deploy a local ISO, it must be reachable over the network as an SMB/CIFS share that the iLO can mount.
+The iLO BMC is a separate physical controller and **cannot** read local drives (`C:\`, `H:\`, ...) on your workstation. This module **does not** auto-create SMB shares and **never** requires Administrator privileges (regulated banking environment).
 
-When you pass a local `-ExternalIsoPath` and run as **Administrator**, the deploy commands auto-create the share:
+To deploy an ISO, always supply a network-accessible path:
 
-```powershell
-# Auto-created (Administrator only) - share name derived from the ISO directory
-New-SmbShare -Name 'isos_H__' -Path 'H:\' -ReadAccess 'Everyone'
-# UNC:  \\<COMPUTERNAME>\isos_H__\<file>.iso
-# CIFS: cifs://<COMPUTERNAME>/isos_H__/<file>.iso   <- what iLO mounts
-```
+| Format | Example | Notes |
+|--------|---------|-------|
+| HTTPS URL | `https://artifacts.internal.example.com/isos/win2025.iso` | iLO downloads directly — no auth prompt |
+| UNC/SMB path | `\\fileserver\isos\win2025.iso` | Converted to `cifs://` URL for iLO; ensure iLO can reach the share |
+| NFS path | `nfs://fileserver/export/win2025.iso` | iLO mounts via NFS; ensure iLO can reach the export |
+| Mapped drive | `H:\win2025.iso` (if H: maps to `\\fileserver\isos`) | Auto-resolved to UNC; only works if the drive is a mapped network drive, **not** a local drive |
 
-**Share name rule:** `isos_` + the ISO's parent directory with every non-alphanumeric character replaced by `_`, truncated to the first 20 characters. Examples:
-
-| Local ISO path | Auto-created share name | iLO CIFS URL |
-|---------------|-------------------------|--------------|
-| `H:\windows.iso` | `isos_H__` | `cifs://<COMPUTERNAME>/isos_H__/windows.iso` |
-| `C:\isos\winpe\boot.iso` | `isos_C_isos_winpe` (truncated) | `cifs://<COMPUTERNAME>/isos_C_isos_winpe/boot.iso` |
-
-If you are **not** running as Administrator, the command fails with instructions. Create the share yourself first:
+**Local paths (e.g. `H:\` on a local disk, `C:\isos\`) are not supported.** If you pass one, the command fails with an error directing you to supply an SMB/UNC or HTTPS path instead.
 
 ```powershell
-# Run as Administrator on the machine holding the ISO
-New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'
-```
-
-Then reference the UNC path directly (the `isos` share name is the conventional choice):
-
-```powershell
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\<COMPUTERNAME>\isos\windows.iso'
+# Correct — supply an already-shared path
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\fileserver\isos\win2025.iso'
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts.internal.example.com/isos/win2025.iso'
 ```
 
 > **Note:** `ReadAccess 'Everyone'` is applied by the auto-creation helper. In a regulated environment, replace it with a scoped account or IP restrictions as required by your security team.
@@ -356,9 +360,57 @@ Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\<COMPUTERNAME>\isos\windows.i
 
 ## Physical Server Build (End-to-End)
 
-The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, publish to HTTPS, OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, and audit logging. Supports two modes:
+The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, publish to HTTPS, OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, firmware update, and audit logging. Supports two modes:
 - **Build mode** (default): Builds a ConfigMgr bootable ISO, publishes it, deploys it.
 - **External ISO mode** (`-ExternalIsoPath`): Deploys a client-supplied ISO directly, skipping build and publish.
+
+<a name="configure-build-4-eye-review"></a>
+
+### Configure build (4-eye review)
+
+Use `Configure-PhysicalBuild` to review the full deployment plan before anything destructive happens. This command is **read-only** — it resolves server identity from OneView, validates ISO reachability, runs pre-build checks, and prints a comprehensive summary including all destructive actions that `Start-PhysicalServerBuild` would perform. Requires interactive confirmation (type `DEPLOY`) unless `-SkipConfirmation` is used.
+
+```powershell
+# Full 4-eye review with confirmation prompt
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local `
+    -RepoBaseUrl 'https://artifacts/isos/' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') -Domain corp.local
+```
+
+```powershell
+# Non-interactive (skip confirmation) — returns a plan hashtable that can be piped to Start-PhysicalBuild
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -ExternalIsoPath 'https://artifacts/isos/win2025.iso' -SkipConfirmation
+```
+
+**Parameters:**
+
+| Parameter | Aliases | Required | Description | Default |
+|-----------|---------|----------|-------------|---------|
+| `-ServerIdentifier` | `-SrvrId` | Yes | Target server identifier (hostname, serial, OneView name, iLO IP, bay) | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance hostname/IP for server resolution | - |
+| `-IloIp` | `-Ilo` | No | iLO IPv4 address / hostname | - |
+| `-IloCredential` | — | No | PSCredential for iLO Redfish check (prompted if omitted) | Interactive prompt |
+| `-ExpectedHostname` | — | No | Hostname expected after build | Defaults to `-ServerIdentifier` |
+| `-Domain` | — | No | AD domain to verify | - |
+| `-SiteCode` | — | No | ConfigMgr site code | - |
+| `-ManagementPoint` | — | No | ConfigMgr MP FQDN | - |
+| `-DistributionPoint` | — | No | ConfigMgr DP FQDN | - |
+| `-SiteServer` | — | No | ConfigMgr site server FQDN | - |
+| `-BootImageName` | — | No | ConfigMgr boot image name | - |
+| `-TaskSequenceName` | — | No | ConfigMgr task sequence name | - |
+| `-RepoBaseUrl` | — | No | HTTPS base URL of ISO repository | - |
+| `-RepoLocalPath` | — | No | Local filesystem path mirrored to RepoBaseUrl | - |
+| `-ExternalIsoPath` | `-ExtIso` | No | Client-supplied ISO (SMB/UNC or HTTPS; local paths not supported) | - |
+| `-FirmwareFolders` | `-FwDirs` | No | Firmware component source directories (string array) | @() |
+| `-FirmwareConfig` | — | No | Firmware manifest JSON path | - |
+| `-InMaintenanceWindow` | — | No | Acknowledge approved maintenance window | - |
+| `-SkipPreBuild` | — | No | Skip pre-build validation | - |
+| `-SkipOneView` | — | No | Skip OneView target resolution | - |
+| `-SkipIlo` | — | No | Skip iLO credential check | - |
+| `-SkipDpMp` | — | No | Skip MP/DP reachability check | - |
+| `-SkipIsoUrl` | — | No | Skip ISO URL reachability check | - |
+| `-Force` | — | No | Acknowledge server power state is On (informational only — no reboot performed) | - |
+| `-SkipConfirmation` | `-SkipConf` | No | Skip interactive confirmation prompt | - |
 
 <a name="full-build-most-common"></a>
 
@@ -374,6 +426,30 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 
 ```powershell
 Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -DryRun
+```
+
+<a name="build-with-firmware-folders-post-os-install"></a>
+
+### Build with firmware folders (post-OS-install)
+
+Specify firmware component source directories (e.g. from Marin) to be applied via HPE SUT after the OS build completes. The firmware ISO is built, mounted via iLO, and applied after post-build validation.
+
+```powershell
+Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local `
+    -InMaintenanceWindow -FirmwareFolders @('C:\fw\BIOS_v2.80', 'C:\fw\iLO5_v2.70', 'C:\fw\SmartArray')
+```
+
+```powershell
+# Using an external ISO with firmware folders
+Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 `
+    -ExternalIsoPath 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso' `
+    -InMaintenanceWindow -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+```
+
+```powershell
+# Apply firmware later if hardware engineer forgot to add it during the build
+Update-Firmware -Server srv01 -FirmwareFolders @('C:\fw\BIOS_v2.80')
 ```
 
 <a name="re-run-after-iso-already-built-skip-build-phases"></a>
@@ -414,8 +490,8 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 ```
 
 ```powershell
-# Deploy an external ISO from a local path (auto-creates an SMB share when run as Administrator)
-Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -ExternalIsoPath 'H:\windows.iso' -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
+# Deploy an external ISO from an HTTPS URL (local drive paths not supported)
+Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -ExternalIsoPath 'https://fileserver/isos/windows.iso' -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow
 ```
 
 ```powershell
@@ -713,7 +789,7 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 
 ### Resolve server target via OneView
 
-Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively when `-Credential` is not supplied. With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Invoke-IsoDeploy`, `Update-Firmware`, `Test-PostBuildValidation`, `Start-InstallMonitor`, `Start-PhysicalServerBuild`, etc.) all resolve through this module and inherit both behaviours.
+Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity` / `Connect-OneView`). With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Invoke-IsoDeploy`, `Update-Firmware`, `Test-PostBuildValidation`, `Start-InstallMonitor`, `Start-PhysicalServerBuild`, etc.) all resolve through this module and inherit both behaviours.
 
 ```powershell
 Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local
@@ -738,10 +814,8 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP | - |
 | `-ServerIdentifier` | `-SrvrId` | Yes | Server name, serial, iLO IP, or bay | - |
 | `-IdentifierType` | `-IdTyp` | No | `Auto`, `Name`, `Serial`, `OneViewName`, `IloIp`, `EnclosureBay` | `Auto` |
-| `-Credential` | `-Cred` | No | `PSCredential` for the connection. If omitted, prompted interactively. | env / CyberArk |
 | `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
 | `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
-| `-Port` | `-` | No | OneView HTTPS port | `443` |
 | `-DryRun` | `-Dry` | No | Print query without performing it | - |
 
 **Returns:** `[hashtable]` with `Success`, `Server`, `ResolvedBy`, `Details`, and `Error`.
@@ -864,10 +938,15 @@ Update-Firmware -DryRun
 | `-OutputDir` | `-OutDir` | No | Output directory | - |
 | `-SkipDownload` | `-SkipDl` | No | Skip component download | - |
 | `-DryRun` | `-Dry` | No | Simulate only | - |
+| `-FirmwareFolders` | `-FwDirs` | No | Additional firmware component source directories (array). Passed to `hpe_sut` via `--firmware-components`. Use when Marin provides firmware folders outside the standard manifest. | `-` |
+| `-SkipFirmware` | — | No | Skip the post-OS firmware update step (only on `Start-PhysicalServerBuild`). | - |
 
 ```powershell
 # Target by serial number (resolved via OneView)
 Update-Firmware -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
+
+# Include Marin-provided firmware component folders
+Update-Firmware -Server srv01 -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5', 'C:\fw\Storage')
 ```
 
 **Returns:** `[hashtable]` with `Success` and details.

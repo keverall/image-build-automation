@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ScomMaintenanceConnectivity.ps1
-generated: 2026-08-02
+generated: 2026-08-06
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,7 +28,7 @@ Phase 1: Network Ping - DNS resolution of the SCOM management server - TCP port 
 |-----------|-------------|
 | `-Environment` | 'Test' or 'Prod'. Informational for live runs. Host resolution from connection_hosts.json only happens with -JsonConfig AND -DryRun. |
 | `-ManagementHost` | SCOM management server to connect to (server name or serial). REQUIRED for a live run. Used verbatim - no config/env fallback - so only the host you specify is ever contacted. |
-| `-Credential` | PSCredential for the live connection (e.g. -Credential (Get-Credential)). If omitted on a live run, the command prompts interactively for username and password. Never read from config. |
+| `-Credential` | PSCredential for the live connection. If omitted on a live run, the command prompts interactively for username and password. Never read from config (e.g. connection_hosts.json). NOTE: Automated GitLab pipeline runs will source credentials from environment variables / CyberArk in a future release - not yet implemented for this release. |
 | `-ConfigDir` | Directory containing configuration files (default: 'configs'). Only used with -DryRun. |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000). |
 | `-Json` | If set, outputs the result as a JSON string instead of formatted text. |
@@ -78,9 +78,13 @@ Phase 1: Network Ping - DNS resolution of the SCOM management server - TCP port 
         the host you specify is ever contacted.
 
     .PARAMETER Credential
-        PSCredential for the live connection (e.g. -Credential (Get-Credential)).
-        If omitted on a live run, the command prompts interactively for username
-        and password. Never read from config.
+        PSCredential for the live connection. If omitted on a live run, the
+        command prompts interactively for username and password. Never read
+        from config (e.g. connection_hosts.json).
+
+        NOTE: Automated GitLab pipeline runs will source credentials from
+        environment variables / CyberArk in a future release - not yet
+        implemented for this release.
 
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs'). Only used

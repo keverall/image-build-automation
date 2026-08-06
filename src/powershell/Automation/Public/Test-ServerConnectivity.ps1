@@ -16,7 +16,7 @@ function Test-ServerConnectivity {
           - Measures latency in milliseconds
 
         Phase 2: Authentication Connect
-          - Prompts for username/password (or uses -Credential)
+          - Credentials are entered interactively at the prompt
           - Loads the HPE OneView PowerShell module
           - Performs a full authentication (Connect-OVMgmt)
           - Session persists for subsequent OneView commands
@@ -25,42 +25,22 @@ function Test-ServerConnectivity {
         SAFETY / COMPLIANCE (regulated EMIR environment):
           - On a live run, config files are NEVER read. The appliance host is
             taken verbatim from -ManagementHost and only that appliance is
-            contacted. Credentials are never taken from config - they are supplied
-            via -Credential or entered interactively.
+            contacted. Credentials are never read from config - they must be
+            entered at the interactive prompt.
           - Config files (connection_hosts.json, oneview_config.json) are read
             ONLY with -DryRun, for dry-run validation.
 
         Returns a structured hashtable with per-phase results and an overall
         Available boolean.
 
-    .PARAMETER Environment
-        'Test' or 'Prod'. Informational for live runs. Host resolution from
-        connection_hosts.json only happens with -JsonConfig AND -DryRun.
-
     .PARAMETER ManagementHost
         OneView appliance to connect to (server name or serial).
         REQUIRED for a live run. Used verbatim - no config/env fallback - so only
         the host you specify is ever contacted.
 
-    .PARAMETER Credential
-        PSCredential for the live connection (e.g. -Credential (Get-Credential)).
-        If omitted on a live run, the command prompts interactively for username
-        and password. Never read from config.
-
-    .PARAMETER ConfigDir
-        Directory containing configuration files (default: 'configs'). Only used
-        with -DryRun.
-
-    .PARAMETER PingTimeoutMs
-        TCP connect timeout in milliseconds (default: 3000).
-
-    .PARAMETER Json
-        If set, outputs the result as a JSON string instead of formatted text.
-
-    .PARAMETER JsonConfig
-        Reads the OneView appliance from configs/connection_hosts.json. ONLY
-        honoured together with -DryRun (config is for dry-run testing, never
-        live runs).
+        NOTE: Automated GitLab pipeline runs will source credentials from
+        environment variables / CyberArk in a future release - not yet
+        implemented for this release.
 
     .PARAMETER DryRun
         Simulate connectivity without actual network calls. Returns mock data to

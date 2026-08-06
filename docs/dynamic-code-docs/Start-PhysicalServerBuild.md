@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-generated: 2026-08-05
+generated: 2026-08-06
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,7 +28,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). Required. |
+| `-SrvrId` _(Aliases: -ServerIdentifier)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). Required. |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
 | `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. |
 | `-ExpectedHostname` | Expected post-build hostname. Defaults to ServerIdentifier. |
@@ -41,10 +41,13 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 | `-TaskSequenceName` | Optional task sequence name. |
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository (used by Publish-BootIso). |
 | `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl. |
-| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip build/publish). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives. When a local path is supplied: - If running as Administrator: Creates SMB share automatically - If NOT running as Administrator: Command will FAIL with instructions to either run as Administrator or obtain an SMB path from your admin When supplied, -SkipIsoBuild and -SkipPublish are implied. For non-Administrator users, obtain the SMB path from your IT admin: - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone' - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso' |
+| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip build/publish). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: NOT supported — iLO cannot access local drives. Supply an SMB/UNC or HTTPS path instead. This module never creates SMB shares or requires Administrator privileges (regulated banking env). IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives on the automation host. This module does NOT auto-create SMB shares and does NOT require Administrator privileges. Supply an already-shared path instead. When supplied, -SkipIsoBuild and -SkipPublish are implied. |
 | `-MonitorTimeoutSeconds` | Install monitor timeout (default 7200). |
 | `-MonitorPollSeconds` | Install monitor poll interval (default 30). |
-| `-Mock` _(Aliases: -Mock)_ | Run with mocked calls - no network calls are made; useful for CI smoke tests. When -Mock is set, all downstream steps run as if -DryRun was also set. |
+| `-SkipFirmware` | Skip the post-OS firmware update step. By default, if -FirmwareFolders are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked after post-build validation. |
+| `-FirmwareFolders` | Additional firmware component source directories (string array) passed to Update-Firmware for post-OS firmware updates via HPE SUT. Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') |
+| `-FirmwareConfig` | Path to a firmware manifest JSON passed to Update-Firmware. Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json' |
+| `-Mock` | Run with mocked calls - no network calls are made; useful for CI smoke tests. When -Mock is set, all downstream steps run as if -DryRun was also set. |
 | `-DryRun` _(Aliases: -Dry)_ | Validate inputs and print plan without performing any destructive action. |
 | `-Force` | Required for the destructive Reset action (ForceRestart) issued by Invoke-IloRedfish. Refuses to proceed without this switch when the server's iLO reports power state On. |
 | `-InMaintenanceWindow` | Acknowledge that the target server is in an approved maintenance window. Required when -Force is not supplied and the server is currently On. |
@@ -60,7 +63,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 ### Example 1
 
 ```powershell
-Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' ` -SiteServer 'cm01.ad.example.com' -BootImageName 'WinPE x64 - HPE' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com'
+Start-PhysicalServerBuild ` -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' ` -SiteServer 'cm01.ad.example.com' -BootImageName 'WinPE x64 - HPE' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com'
 ```
 
 <a name="original-comment-based-help"></a>
@@ -78,7 +81,7 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
         allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy
         against an already-built ISO).
 
-    .PARAMETER ServerIdentifier
+    .PARAMETER SrvrId
         Target server identifier (name, serial, OneView name, iLO IP, bay). Required.
 
     .PARAMETER OneViewHost
@@ -124,18 +127,16 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
           - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
           - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
           - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso')
-          - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share
-        
+          - Local path: NOT supported — iLO cannot access local drives. Supply
+            an SMB/UNC or HTTPS path instead. This module never creates SMB
+            shares or requires Administrator privileges (regulated banking env).
+
         IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'):
-          The iLO BMC cannot access local drives. When a local path is supplied:
-            - If running as Administrator: Creates SMB share automatically
-            - If NOT running as Administrator: Command will FAIL with instructions
-              to either run as Administrator or obtain an SMB path from your admin
-        
+          The iLO BMC cannot access local drives on the automation host. This
+          module does NOT auto-create SMB shares and does NOT require
+          Administrator privileges. Supply an already-shared path instead.
+
         When supplied, -SkipIsoBuild and -SkipPublish are implied.
-        For non-Administrator users, obtain the SMB path from your IT admin:
-          - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'
-          - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso'
 
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
@@ -150,6 +151,19 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
     .PARAMETER SkipMount
     .PARAMETER SkipMonitor
     .PARAMETER SkipPostBuild
+    .PARAMETER SkipFirmware
+        Skip the post-OS firmware update step. By default, if -FirmwareFolders
+        are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked
+        after post-build validation.
+
+    .PARAMETER FirmwareFolders
+        Additional firmware component source directories (string array) passed
+        to Update-Firmware for post-OS firmware updates via HPE SUT.
+        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+
+    .PARAMETER FirmwareConfig
+        Path to a firmware manifest JSON passed to Update-Firmware.
+        Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json'
 
     .PARAMETER Mock
         Run with mocked calls - no network calls are made; useful for CI smoke tests.
@@ -180,7 +194,7 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
 
     .EXAMPLE
         Start-PhysicalServerBuild `
-            -ServerIdentifier 'PROD-SERVER-01' `
+            -SrvrId 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
             -IloIp '192.168.1.101' `
             -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' `
