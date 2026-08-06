@@ -311,6 +311,23 @@ function Configure-PhysicalBuild {
 
     # ── Confirmation prompt ─────────────────────────────────────────────────
     if (-not $SkipConfirmation) {
+        # Never block on interactive input in automated / non-interactive runs
+        # (CI, `make test`, Pester). Auto-cancel with a clear reason instead.
+        $isAutomated = ($env:AUTOMATED_MODE -eq 'true') -or ($env:CI -eq 'true')
+        $isInteractive = ([Console]::IsInputRedirected -eq $false) -and ($Host.UI.RawUI -ne $null)
+        if ($isAutomated -or -not $isInteractive) {
+            Write-Host "`n  Non-interactive / automated mode detected - deployment confirmation skipped (auto-cancelled)." -ForegroundColor Yellow
+            return @{
+                Success          = $false
+                Cancelled        = $true
+                Server           = $ExpectedHostname
+                Reason           = "Non-interactive mode: operator confirmation required but input is not available"
+                ServerIdentity   = $serverIdentity
+                IsoUrl           = $isoUrl
+                ValidationChecks = if ($preBuildResult) { $preBuildResult.Checks } else { $null }
+            }
+        }
+
         Write-Host "  ╔════════════════════════════════════════════════════════╗" -ForegroundColor Red
         Write-Host "  ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║" -ForegroundColor Red
         Write-Host "  ║  This will ERASE ALL DATA on the target server and    ║" -ForegroundColor Red

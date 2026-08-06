@@ -160,6 +160,8 @@
         'New-ScomConnection'
         'New-ScomMaintenanceScript'
         'Test-ScomMaintenanceConnectivity'
+        # ── SCOM + OneView status report ──────────────────────────────────────
+        'Get-MaintenanceStatusReport'
     )
 
     # Cmdlets to export from this module
@@ -169,7 +171,10 @@
     VariablesToExport = @('LogDir')
 
     # Aliases to export from this module
-    AliasesToExport = @()
+    AliasesToExport = @(
+        # Engineer-friendly request name for the SCOM + OneView status report
+        'scom-maintmode-status-report'
+    )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess
     PrivateData = @{

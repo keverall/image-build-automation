@@ -16,6 +16,11 @@
       - [Key findings:](#key-findings)
       - [**Recommendations:**](#recommendations)
       - [Runbook alignment:](#runbook-alignment)
+    - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening--repo-testing-rules-agentsmd)
+      - [Root cause](#root-cause)
+      - [Fix](#fix)
+      - [Repo context (AGENTS.md)](#repo-context-agentsmd)
+      - [Verification](#verification)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -111,3 +116,36 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 #### Runbook alignment:  
 
 Per `runbook-requirements.md`, maintenance mode is a **separate operational concern** from the ISO build/deploy pipeline. The 2-command workflow (`Configure-PhysicalBuild` + `Start-PhysicalBuild`) does not include maintenance mode commands — they're standalone SCOM/OneView orchestration tools.
+
+<a name="3-mock-only-test-hardening--repo-testing-rules-agentsmd"></a>
+
+### 3) Mock-only test hardening + repo testing rules (AGENTS.md)
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-08-06 | Added `AGENTS.md` documenting mock-only testing rules; fixed `Configure-PhysicalBuild` confirmation to auto-cancel in non-interactive/automated mode so `make test` never blocks on `Read-Host` | Kev Everall |
+
+<a name="root-cause"></a>
+
+#### Root cause
+
+- `Configure-PhysicalBuild` only bypassed its `Type 'DEPLOY' to proceed` prompt via `-SkipConfirmation`. The 4th unit test relied on `$env:AUTOMATED_MODE = 'true'` to auto-cancel, but the code called `Read-Host` unconditionally → `make test` hung waiting for input.
+
+<a name="fix"></a>
+
+#### Fix
+
+- `src/powershell/Automation/Public/Configure-PhysicalBuild.ps1` confirmation block now auto-cancels (returns `Cancelled=$true`, `Success=$false`) when `AUTOMATED_MODE`/`CI` is set **or** stdin is not interactive — it can never block a test run.
+- `Start-PhysicalServerBuild` already skips its `Confirm-IsoDeployment` prompt under `-DryRun`, so its tests were unaffected.
+
+<a name="repo-context-agentsmd"></a>
+
+#### Repo context (AGENTS.md)
+
+- Created `AGENTS.md` at repo root capturing the mandatory testing rule: `make test` is **mock-only** — no interactive input (use `-DryRun`/`-SkipConfirmation` or set `AUTOMATED_MODE`/`CI`), no live SCOM/OneView/iLO connections, all parameters defaulted or sourced from `configs/*.json`, and destructive commands always exercised in `-DryRun`.
+
+<a name="verification"></a>
+
+#### Verification
+
+- Ran `Configure-PhysicalBuild.Unit.Tests.ps1` + `Start-PhysicalServerBuild.Unit.Tests.ps1` directly → **9 passed, 0 failed**; the prompt now prints "Non-interactive / automated mode detected - deployment confirmation skipped (auto-cancelled)" instead of blocking.
