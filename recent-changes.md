@@ -1,13 +1,41 @@
 # Change log:
 
-| Date | change description summary | author |  
-| --- | --- | --- |
+<a id="top"></a>
 
+## Table of Contents
+
+- [Change log:](#change-log)
+  - [Table of Contents](#table-of-contents)
+    - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation--2-command-workflow-runbook-aligned)
+      - [**1. `Configure-PhysicalBuild`** — new read-only 4-eye review command (`src/powershell/Automation/Public/Configure-PhysicalBuild.ps1`):](#1-configure-physicalbuild--new-read-only-4-eye-review-command-srcpowershellautomationpublicconfigure-physicalbuildps1)
+      - [**2. `Start-PhysicalServerBuild`** — the actual deploy (already existed, now has firmware support):](#2-start-physicalserverbuild--the-actual-deploy-already-existed-now-has-firmware-support)
+      - [Admin code removal](#admin-code-removal)
+      - [Tests: 488 passed, 0 failed, 1 pre-existing skip](#tests-488-passed-0-failed-1-pre-existing-skip)
+      - [Runbook alignment verification](#runbook-alignment-verification)
+    - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
+      - [Key findings:](#key-findings)
+      - [**Recommendations:**](#recommendations)
+      - [Runbook alignment:](#runbook-alignment)
+    - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening--repo-testing-rules-agentsmd)
+      - [Root cause](#root-cause)
+      - [Fix](#fix)
+      - [Repo context (AGENTS.md)](#repo-context-agentsmd)
+      - [Verification](#verification)
+    - [4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)](#4-scom--oneview-maintenance-status-report-get-maintenancestatusreport)
+      - [Live discovery vs mock config](#live-discovery-vs-mock-config)
+      - [OneView host + serial/name linking](#oneview-host--serialname-linking)
+      - [Verification](#verification-1)
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
 | 2026-08-06 | Command consolidation — 2-command workflow (runbook-aligned) | Kev Everall |
 
-### Command consolidation — 2-command workflow (runbook-aligned)
+<a name="command-consolidation-2-command-workflow-runbook-aligned"></a>
 
-####**1. `Configure-PhysicalBuild`** — new read-only 4-eye review command (`src/powershell/Automation/Public/Configure-PhysicalBuild.ps1`):
+### 1) Command consolidation — 2-command workflow (runbook-aligned)
+
+#### **1. `Configure-PhysicalBuild`** — new read-only 4-eye review command (`src/powershell/Automation/Public/Configure-PhysicalBuild.ps1`):
+
 - Resolves full server identity from OneView (hostname, serial, iLO IP, model, rack, OneView URI, maintenance mode)
 - Resolves ISO URL (from ConfigMgr build or external HTTPS/SMB path)
 - Runs `Test-PreBuildValidation` (OneView, iLO Redfish, ConfigMgr, network, ISO reachability)
@@ -16,27 +44,37 @@
 - Returns a structured plan hashtable that can be piped to `Start-PhysicalServerBuild`
 - **6 new Pester tests**, all pass
 
-####**2. `Start-PhysicalServerBuild`** — the actual deploy (already existed, now has firmware support):
+#### **2. `Start-PhysicalServerBuild`** — the actual deploy (already existed, now has firmware support):
+
 - Already has the confirmation step (`Confirm-IsoDeployment`)
 - Now accepts `-FirmwareFolders` (string array) + `-FirmwareConfig` + `-SkipFirmware`
 - Runs `Update-Firmware` post-OS-install when firmware folders are supplied
+`-FirmwareFolders` parameter (string array)
 
-### `-FirmwareFolders` parameter (string array)
 Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
+
 - Accepts multiple firmware component source directories from Marin
 - Passed to `hpe_sut` via `--firmware-components` flag
 - Usage: `-FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5', 'C:\fw\Storage')`
 - Hardware engineer can run standalone: `Update-Firmware -Server srv01 -FirmwareFolders @('C:\fw\BIOS_v2.80')`
 
-### Admin code removal
+<a name="admin-code-removal"></a>
+
+#### Admin code removal
+
 - Removed all `New-SmbShare`, `Get-SmbShare`, `WindowsPrincipal`/`IsInRole`, "Run as Administrator" logic from 3 files
 - Local drive paths now throw: "Supply -ExternalIsoPath as an SMB/UNC or HTTPS URL instead"
 - Updated `automation_commands.md` (SMB share section → ISO path requirements)
 - Regenerated all 204 dynamic-code-docs
 
-### Tests: 488 passed, 0 failed, 1 pre-existing skip
+<a name="tests-488-passed-0-failed-1-pre-existing-skip"></a>
 
-### Runbook alignment verification
+#### Tests: 488 passed, 0 failed, 1 pre-existing skip
+
+<a name="runbook-alignment-verification"></a>
+
+#### Runbook alignment verification
+
 | Runbook requirement | Covered by 2-command design |
 |---|---|
 | Target server identified in OneView | ✅ `Configure-PhysicalBuild` step 1 |
@@ -50,3 +88,98 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Firmware update post-OS | ✅ New `-FirmwareFolders` param |
 | Audit trail | ✅ Audit log in `$finally` block |
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
+
+<a name="2-maintenance-mode-progress-report-for-dl"></a>
+
+### 2) Maintenance mode progress report for DL
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-08-06 | Added docs/Maintenance-Mode/maint_mode_status.md to summarise the state and progress on maintenance mode commands and build | Kev Everall |
+
+<a name="key-findings"></a>
+
+#### Key findings:  
+
+- **67 maintenance mode tests, all passing** — across 8 test files covering SCOM + OneView enable/disable/validate
+- **Full feature coverage verified** — time formats, environment resolution, serial number lookup, scheduled tasks, DryRun, OpsRamp integration
+- **4 critical risks identified** for banking deployment:
+  1. **SCOM module dependency** — silently degrades with `Write-Warning` instead of failing fast
+  2. **Plain-text env var credentials** — needs CyberArk/Azure Key Vault integration
+  3. **Windows Task Scheduler** — blocked by AppLocker/CAS in banking (use `-NoSchedule`)
+  4. **Local catalogue lookup** for OneView serials — not live API resolution
+
+#### **Recommendations:**
+
+1. Pre-flight SCOM module availability check
+2. Secret vault integration for credentials
+3. `-Confirm` parameter for 4-eye validation on live enable/disable
+
+<a name="runbook-alignment"></a>
+
+#### Runbook alignment:  
+
+Per `runbook-requirements.md`, maintenance mode is a **separate operational concern** from the ISO build/deploy pipeline. The 2-command workflow (`Configure-PhysicalBuild` + `Start-PhysicalBuild`) does not include maintenance mode commands — they're standalone SCOM/OneView orchestration tools.
+
+<a name="3-mock-only-test-hardening--repo-testing-rules-agentsmd"></a>
+
+### 3) Mock-only test hardening + repo testing rules (AGENTS.md)
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-08-06 | Added `AGENTS.md` documenting mock-only testing rules; fixed `Configure-PhysicalBuild` confirmation to auto-cancel in non-interactive/automated mode so `make test` never blocks on `Read-Host` | Kev Everall |
+
+<a name="root-cause"></a>
+
+#### Root cause
+
+- `Configure-PhysicalBuild` only bypassed its `Type 'DEPLOY' to proceed` prompt via `-SkipConfirmation`. The 4th unit test relied on `$env:AUTOMATED_MODE = 'true'` to auto-cancel, but the code called `Read-Host` unconditionally → `make test` hung waiting for input.
+
+<a name="fix"></a>
+
+#### Fix
+
+- `src/powershell/Automation/Public/Configure-PhysicalBuild.ps1` confirmation block now auto-cancels (returns `Cancelled=$true`, `Success=$false`) when `AUTOMATED_MODE`/`CI` is set **or** stdin is not interactive — it can never block a test run.
+- `Start-PhysicalServerBuild` already skips its `Confirm-IsoDeployment` prompt under `-DryRun`, so its tests were unaffected.
+
+<a name="repo-context-agentsmd"></a>
+
+#### Repo context (AGENTS.md)
+
+- Created `AGENTS.md` at repo root capturing the mandatory testing rule: `make test` is **mock-only** — no interactive input (use `-DryRun`/`-SkipConfirmation` or set `AUTOMATED_MODE`/`CI`), no live SCOM/OneView/iLO connections, all parameters defaulted or sourced from `configs/*.json`, and destructive commands always exercised in `-DryRun`.
+
+<a name="verification"></a>
+
+#### Verification
+
+- Ran `Configure-PhysicalBuild.Unit.Tests.ps1` + `Start-PhysicalServerBuild.Unit.Tests.ps1` directly → **9 passed, 0 failed**; the prompt now prints "Non-interactive / automated mode detected - deployment confirmation skipped (auto-cancelled)" instead of blocking.
+
+<a name="4-scom--oneview-maintenance-status-report-get-maintenancestatusreport"></a>
+
+### 4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-08-06 | Added `Get-MaintenanceStatusReport` linking SCOM + HPE OneView; live mode discovers clusters from the SCOM appliance (not the catalogue), `-OneViewHost` param, serial/name cross-link; catalogue used only for `-DryRun` mock | Kev Everall |
+
+<a name="live-discovery-vs-mock-config"></a>
+
+#### Live discovery vs mock config
+
+- **Live mode** discovers clusters/groups and their member servers from the **connected SCOM management group** (`Get-SCOMGroup` + `Get-SCOMClassInstance`), not from `clusters_catalogue.json`. In-memory mappings built from SCOM/OneView **API** calls are allowed.
+- **`-DryRun` / `-IncludeLive:$false`** uses `configs/clusters_catalogue.json` (and `servers_catalogue.oneview.json` for the SCOM↔OneView link) as mock data only — static config is never the source for live commands, per `AGENTS.md`.
+
+<a name="oneview-host--serialname-linking"></a>
+
+#### OneView host + serial/name linking
+
+- Added `-OneViewHost` (separate from `-ManagementHost` for SCOM); falls back to `-ManagementHost` when only that is supplied.
+- Each server is linked SCOM↔OneView **per server by name (serial where available)** via a live OneView server index; mock mode links from the dry config. Output includes `OneViewLinkMethod` (`Name` / `Serial` / `None` / `Catalogue`).
+- Emits CSV (default) with columns: cluster, server, SCOM maintenance mode + window, OneView maintenance mode + link method, power schedule (from catalogue enrichment), and `DataSource` (`Live` / `Partial-*` / `CatalogueOnly`). Read-only; degrades gracefully to `Unknown`.
+
+<a name="verification-1"></a>
+
+#### Verification
+
+- Parse-clean; `Get-MaintenanceStatusReport -IncludeLive:$false` returns 5 pure objects sourced from `configs/`, with `OneViewLinkMethod=Name` for servers present in `servers_catalogue.oneview.json`. Live SCOM discovery path confirmed correct by code review (cannot reach SCOM from this host).
+
