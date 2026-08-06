@@ -119,7 +119,7 @@ Describe 'Get-OneViewConnectionStatus - version guard (HPEOneView.1000 / OneView
 
     It 'Does NOT warn when the module (major 10) is newer than the appliance (8200 = 8.20) - backward compatible' {
         InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = 8200 } }
-        $r = Get-OneViewConnectionStatus -OneViewHost 'va-oneviewt-01' -Credential $Script:TestCred -WarningAction SilentlyContinue
+        $r = Get-OneViewConnectionStatus -OneViewHost 'oneview.example.com' -Credential $Script:TestCred -WarningAction SilentlyContinue
         $r.Version          | Should -Be 8200
         $r.VersionCompliant | Should -Be $true
         $r.VersionWarning   | Should -Be $null

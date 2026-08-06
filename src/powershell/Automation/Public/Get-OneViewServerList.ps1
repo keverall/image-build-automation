@@ -21,7 +21,8 @@ function Get-OneViewServerList {
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
         If omitted, the command checks for an existing HPEOneView module
-        session (Connect-OVMgmt) and uses that appliance automatically.
+        session (Connect-OVMgmt); when one is active it is reused, otherwise a
+        clean "not connected" status is returned instead of prompting for a host.
 
     .PARAMETER OneViewUser
         OneView username (used with -OneViewPassword). Never read from config or environment.
@@ -65,7 +66,9 @@ function Get-OneViewServerList {
     .EXAMPLE
         Get-OneViewServerList
 
-        Uses an existing HPEOneView module session if available.
+        Runs without parameters: reuses an active OneView session if one exists
+        (Connect-OneView), otherwise returns Success=$false with a "not connected"
+        message instead of prompting for a host.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -123,16 +126,37 @@ function Get-OneViewServerList {
         return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true }
     }
 
-    # Resolve (or establish) a persistent OneView session via the shared helper.
-    # Supplying -OneViewHost connects and prompts for credentials when needed;
-    # omitting it reuses the current session. This command never disconnects.
-    $sess = Resolve-OneViewSession -OneViewHost $OneViewHost -Credential $Credential `
-        -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
-    if (-not $sess.Success) {
-        return @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
+    # ── Resolve the OneView session ──────────────────────────────────────────
+    # A bare invocation (no -OneViewHost) first checks the active connection. If a
+    # session established by Connect-OneView exists it is reused directly (no prompt);
+    # otherwise a clean "not connected" status is returned rather than prompting for a
+    # host/credentials (this mirrors Get-OneViewConnectionStatus / Get-OneViewVersion).
+    # When a host IS supplied it is connected (or an existing same-host session reused)
+    # via the shared helper. This command never disconnects.
+    $sessionToken = $null
+    if (-not $OneViewHost) {
+        $activeSession = Get-OneViewActiveSession
+        if ($activeSession) {
+            $OneViewHost  = $activeSession.Name
+            $sessionToken = $activeSession.SessionID
+        }
     }
-    $OneViewHost  = $sess.OneViewHost
-    $sessionToken = $sess.SessionToken
+
+    if (-not $OneViewHost) {
+        return @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
+    }
+
+    # Reuse the active session directly when we derived the host from it; otherwise
+    # let Resolve-OneViewSession connect (or reuse) via the shared helper.
+    if (-not $sessionToken) {
+        $sess = Resolve-OneViewSession -OneViewHost $OneViewHost -Credential $Credential `
+            -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
+        if (-not $sess.Success) {
+            return @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
+        }
+        $OneViewHost  = $sess.OneViewHost
+        $sessionToken = $sess.SessionToken
+    }
 
     $baseUrl = "https://$OneViewHost`:$Port"
     $apiBase = "$baseUrl/rest"

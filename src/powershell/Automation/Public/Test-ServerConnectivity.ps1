@@ -6,27 +6,43 @@
 function Test-ServerConnectivity {
     <#
     .SYNOPSIS
-        OneView-only network ping + authentication connectivity test.
+        OneView-only network ping + authentication connectivity STATUS CHECK.
         Read-only - safe during a change freeze.
 
     .DESCRIPTION
+        This command reports the connectivity of an HPE OneView appliance. It is
+        a STATUS CHECK, not a connect command - it NEVER prompts for a host or
+        credentials.
+
+          * Run with NO parameters: reports the ACTIVE OneView connection
+            (established by Connect-OneView). If nothing is connected it reports
+            "not connected" and returns - no prompt.
+          * Run with -ManagementHost <host>: checks THAT specific appliance only.
+
         Phase 1: Network Ping
           - DNS resolution of the OneView appliance
           - TCP port probe (HTTPS 443)
           - Measures latency in milliseconds
 
         Phase 2: Authentication Connect
-          - Credentials are entered interactively at the prompt
-          - Loads the HPE OneView PowerShell module
-          - Performs a full authentication (Connect-OVMgmt)
-          - Session persists for subsequent OneView commands
-          - No objects are modified
+          - If reusing the active session (no -ManagementHost, or -ManagementHost
+            matches the connected appliance) the existing session is reused - no
+            credentials are needed.
+          - Otherwise credentials come from -Credential, ONEVIEW_USER /
+            ONEVIEW_PASSWORD, or CyberArk. If none are available the auth phase is
+            skipped with a clear message (no prompt).
+          - Loads the HPE OneView PowerShell module and performs Connect-OVMgmt.
+          - Session persists for subsequent OneView commands.
+          - No objects are modified.
+
+        To actually CONNECT to an appliance, use Connect-OneView -ManagementHost
+        <host> (which prompts for credentials and establishes the session this
+        command then reports on).
 
         SAFETY / COMPLIANCE (regulated EMIR environment):
           - On a live run, config files are NEVER read. The appliance host is
-            taken verbatim from -ManagementHost and only that appliance is
-            contacted. Credentials are never read from config - they must be
-            entered at the interactive prompt.
+            taken verbatim from -ManagementHost (when supplied) and only that
+            appliance is contacted. Credentials are never read from config.
           - Config files (connection_hosts.json, oneview_config.json) are read
             ONLY with -DryRun, for dry-run validation.
 
@@ -34,13 +50,14 @@ function Test-ServerConnectivity {
         Available boolean.
 
     .PARAMETER ManagementHost
-        OneView appliance to connect to (server name or serial).
-        REQUIRED for a live run. Used verbatim - no config/env fallback - so only
-        the host you specify is ever contacted.
+        OneView appliance to check (server name or serial). Optional.
 
-        NOTE: Automated GitLab pipeline runs will source credentials from
-        environment variables / CyberArk in a future release - not yet
-        implemented for this release.
+        When OMITTED, the command reports the ACTIVE OneView connection
+        (established by Connect-OneView) and never prompts. When supplied it is
+        used verbatim - no config/env fallback - so only the host you specify is
+        ever contacted. Credentials are not prompted for: the active session is
+        reused when it matches, otherwise supply -Credential or configure
+        ONEVIEW_USER / ONEVIEW_PASSWORD.
 
     .PARAMETER DryRun
         Simulate connectivity without actual network calls. Returns mock data to
@@ -88,6 +105,7 @@ function Test-ServerConnectivity {
 
     $ErrorActionPreference = 'Continue'
     $Mode = 'oneview'
+    $reuseActiveSession = $false
     Initialize-Logging -LogFile 'connectivity.log' -CommandName 'Test-ServerConnectivity' -LogName "Test-ServerConnectivity-ManagementHost-$ManagementHost"
     $logger = Get-Logger 'Connectivity'
     # ── Resolve config directory ──────────────────────────────────────────────
@@ -116,25 +134,37 @@ function Test-ServerConnectivity {
         if ($JsonConfig) {
             Write-Warning "-JsonConfig is ignored for live tests. Config files are only read with -DryRun."
         }
-        if (-not $PSBoundParameters.ContainsKey('ManagementHost') -or -not $ManagementHost) {
-            $result = @{
-                Available      = $false
-                Mode           = $Mode
-                ManagementHost = $null
-                Environment    = $effectiveEnv
-                NetworkPing    = @{
-                    DnsResolved = $false
-                    Error       = "ManagementHost is required for a live connectivity test. Supply -ManagementHost <host> (server name or serial) or use -DryRun for config-based validation."
+        $resolvedHost = $null
+        if ($PSBoundParameters.ContainsKey('ManagementHost') -and $ManagementHost) {
+            # Host is taken verbatim from the command line - no config/env fallback.
+            $resolvedHost = $ManagementHost.Trim()
+        } else {
+            # No host supplied: this command is a STATUS CHECK of the active
+            # OneView connection established by Connect-OneView. It must NEVER
+            # prompt - it either reuses the active session or reports that there
+            # is no connection. To connect to an appliance, use
+            # Connect-OneView -ManagementHost <host> (server name or serial).
+            $active = Get-OneViewActiveSession
+            if ($active) {
+                $resolvedHost = $active.Name
+                $reuseActiveSession = $true
+            } else {
+                $result = @{
+                    Available      = $false
+                    Mode           = $Mode
+                    ManagementHost = $null
+                    Environment    = $effectiveEnv
+                    NetworkPing    = @{
+                        DnsResolved = $false
+                        Error       = "No active OneView connection. Connect first with Connect-OneView -ManagementHost <host> (server name or serial), or supply -ManagementHost to test a specific appliance."
+                    }
+                    AuthConnect    = @{ Connected = $false; Error = "Skipped - no active connection" }
+                    Timestamp      = Get-UtcTimestamp
                 }
-                AuthConnect    = @{ Connected = $false; Error = "Skipped - no management host" }
-                Timestamp      = Get-UtcTimestamp
+                if (-not $Json) { _Format-ConnectivityResult -Result $result }
+                return $result
             }
-            if (-not $Json) { _Format-ConnectivityResult -Result $result }
-            return $result
         }
-
-        # Host is taken verbatim from the command line - no config/env fallback.
-        $resolvedHost = $ManagementHost.Trim()
 
         # Sensible defaults for the live connection (no config file is read).
         $modeCfg = @{ module_name = 'HPEOneView.1000'; use_winrm = $false }
@@ -180,18 +210,18 @@ function Test-ServerConnectivity {
             }
         }
 
-        # 3. Interactive prompt (DryRun without explicit host / config)
+        # 3. Reuse the active connection when no host/config supplied. This
+        #    command never prompts - it only reports status.
         if (-not $resolvedHost) {
-            $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-            if (-not $isAutomated) {
-                Write-Host "Enter OneView appliance host (or press Enter to cancel): " -ForegroundColor Yellow -NoNewline
-                $promptedHost = Read-Host
-                if ($promptedHost) { $resolvedHost = $promptedHost.Trim() }
+            $active = Get-OneViewActiveSession
+            if ($active) {
+                $resolvedHost = $active.Name
+                $reuseActiveSession = $true
             }
         }
 
         if (-not $resolvedHost) {
-            $errorMsg = "No OneView appliance provided. Use -ManagementHost, -JsonConfig (DryRun), or set `$env:MAINTENANCE_HOST."
+            $errorMsg = "No OneView appliance provided. Use -ManagementHost, -JsonConfig (DryRun), or connect with Connect-OneView -ManagementHost <host>."
             $result = @{
                 Available      = $false
                 Mode           = $Mode
@@ -230,41 +260,26 @@ function Test-ServerConnectivity {
         if ($PSBoundParameters.ContainsKey('Credential') -and $Credential) {
             $resolvedUser = $Credential.UserName
             $resolvedSecurePass = $Credential.Password
+        } elseif ($reuseActiveSession) {
+            # The active session is already authenticated; Connect-OneViewSession
+            # reuses it without needing credentials. Never prompt.
         } else {
-            $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-            $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
-            if ($isInteractive) {
-                Write-Host "Enter OneView username for '$resolvedHost': " -ForegroundColor Yellow -NoNewline
-                $u = Read-Host
-                $securePass = Read-Host "Enter OneView password for '$resolvedHost': " -AsSecureString
-                if (-not $u) {
-                    $result = @{
-                        Available      = $false
-                        Mode           = $Mode
-                        ManagementHost = $resolvedHost
-                        Environment    = $effectiveEnv
-                        NetworkPing    = @{ DnsResolved = $false; Error = "No username supplied - aborting connectivity test." }
-                        AuthConnect    = @{ Connected = $false; Error = "Skipped - no credentials" }
-                        Timestamp      = Get-UtcTimestamp
-                    }
-                    if (-not $Json) { _Format-ConnectivityResult -Result $result }
-                    return $result
-                }
-                $resolvedUser = $u
-                $resolvedSecurePass = $securePass
-            } else {
-                $result = @{
-                    Available      = $false
-                    Mode           = $Mode
-                    ManagementHost = $resolvedHost
-                    Environment    = $effectiveEnv
-                    NetworkPing    = @{ DnsResolved = $false; Error = "Credentials required for a live test. Supply -Credential or run interactively." }
-                    AuthConnect    = @{ Connected = $false; Error = "Skipped - no credentials" }
-                    Timestamp      = Get-UtcTimestamp
-                }
-                if (-not $Json) { _Format-ConnectivityResult -Result $result }
-                return $result
+            # No credentials and not reusing an active session: authentication is
+            # impossible, so report a clear skip. This command must NEVER prompt
+            # for a username/password - to authenticate, connect with
+            # Connect-OneView -ManagementHost <host> (which prompts) or supply
+            # -Credential / ONEVIEW_USER + ONEVIEW_PASSWORD.
+            $result = @{
+                Available      = $false
+                Mode           = $Mode
+                ManagementHost = $resolvedHost
+                Environment    = $effectiveEnv
+                NetworkPing    = @{ DnsResolved = $false; Error = "No credentials available to authenticate against '$resolvedHost'." }
+                AuthConnect    = @{ Connected = $false; Error = "Skipped - no credentials. Connect with Connect-OneView -ManagementHost <host> or supply -Credential." }
+                Timestamp      = Get-UtcTimestamp
             }
+            if (-not $Json) { _Format-ConnectivityResult -Result $result }
+            return $result
         }
     }
 
@@ -398,7 +413,7 @@ function Test-ServerConnectivity {
 
     if (-not $pingResult.TcpPortOpen) {
         $authResult.Error = "Skipped - network ping failed"
-    } elseif (-not $resolvedUser -or -not $resolvedSecurePass) {
+    } elseif ((-not $resolvedUser -or -not $resolvedSecurePass) -and -not $reuseActiveSession) {
         if ($DryRun) {
             $authResult.Error = "Skipped - credentials not configured (set $userEnv / $passEnv)"
         } else {

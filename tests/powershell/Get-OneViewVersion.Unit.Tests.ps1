@@ -28,8 +28,8 @@ Describe 'Get-OneViewVersion - basic invocation' {
                 @{ currentVersion = 8200 }
             }
         }
-        $r = Get-OneViewVersion -OneViewHost 'va-oneviewt-01' -Quiet
-        $r.Appliance          | Should -Be 'va-oneviewt-01'
+        $r = Get-OneViewVersion -OneViewHost 'oneview.example.com' -Quiet
+        $r.Appliance          | Should -Be 'oneview.example.com'
         $r.ApplianceReachable | Should -Be $true
         $r.ApplianceVersion   | Should -Be 8200
     }

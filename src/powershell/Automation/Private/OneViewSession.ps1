@@ -304,11 +304,17 @@ function Get-OneViewActiveSession {
     }
 
     $candidates = @()
-    if ($global:ConnectedSessions) {
-        $candidates += $global:ConnectedSessions
-    }
+    # Prefer the session THIS module most recently established. Connect-OVMgmt
+    # appends every connection to the module-global $global:ConnectedSessions, so
+    # a stale session (e.g. from an earlier connection to a different appliance)
+    # would otherwise win over the host the operator just connected to and get
+    # reported back by Get-OneViewConnectionStatus. The module-tracked session is
+    # always the intended/most-recent one, so it must take priority.
     if ($script:ActiveOneViewSession) {
         $candidates += $script:ActiveOneViewSession
+    }
+    if ($global:ConnectedSessions) {
+        $candidates += $global:ConnectedSessions
     }
     if ($candidates.Count -eq 0) {
         return $null

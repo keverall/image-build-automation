@@ -55,6 +55,19 @@ Describe 'Get-OneViewServerList - basic invocation' {
         $r.Success | Should -Be $false
         $r.Error   | Should -Match 'Filter'
     }
+
+    It 'Bare invocation with no session returns not-connected (no prompt)' {
+        $prevAuto = $env:AUTOMATED_MODE
+        try {
+            $env:AUTOMATED_MODE = 'true'
+            InModuleScope Automation { Mock Get-OneViewActiveSession { $null } }
+            $r = Get-OneViewServerList
+            $r.Success | Should -Be $false
+            $r.Error   | Should -Match 'OneViewHost'
+        } finally {
+            if ($prevAuto) { $env:AUTOMATED_MODE = $prevAuto } else { $env:AUTOMATED_MODE = $null }
+        }
+    }
 }
 
 Describe 'Get-OneViewServerList - pagination & filtering (mocked REST)' {

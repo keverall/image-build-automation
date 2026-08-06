@@ -107,7 +107,7 @@ When `-DryRun` is specified, the function returns mock connectivity data without
 
 ```powershell
 # Mock successful connectivity check (OneView only)
-Test-ServerConnectivity -ManagementHost va-oneviewt-01 -DryRun
+Test-ServerConnectivity -ManagementHost oneview.example.com -DryRun
 ```
 
 **DryRun returns:**

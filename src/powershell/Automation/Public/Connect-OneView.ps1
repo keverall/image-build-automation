@@ -33,9 +33,9 @@ function Connect-OneView {
         are ready to connect and make changes.
 
     .EXAMPLE
-        Connect-OneView -ManagementHost va-oneviewt-01
+        Connect-OneView -ManagementHost oneview.example.com
 
-        Connect to the OneView appliance va-oneviewt-01.  Credentials are
+        Connect to the OneView appliance oneview.example.com.  Credentials are
         prompted for interactively.
 
     .EXAMPLE
@@ -63,22 +63,74 @@ function Connect-OneView {
         [Alias('MgmtHost')]
         [string] $ManagementHost,
 
-        [Alias('Dry')]
-        [switch] $DryRun
-    )
+    [Alias('Dry')]
+    [switch] $DryRun
+)
 
-    # Delegate to Test-ServerConnectivity, forwarding only the parameters
-    # Connect-OneView exposes.  All network validation, credential resolution,
-    # and session establishment happens inside Test-ServerConnectivity.
-    $params = @{
-        DryRun         = $DryRun
-        PingTimeoutMs  = 3000
-    }
-    if ($ManagementHost) {
-        $params['ManagementHost'] = $ManagementHost
-    }
+# Guard against a stray double-dash flag (e.g. `--DryRun`) being swallowed as
+# the management host. In PowerShell `--` means "end of parameters", so
+# `Connect-OneView --DryRun` binds "DryRun" to -ManagementHost and never sets
+# the actual -DryRun switch - which then prompts for credentials against a
+# bogus host. Reuse the shared helper (single source of truth) instead of
+# inlining the check in every command.
+Assert-ParameterNotFlag -Parameters $PSBoundParameters
 
-    $result = Test-ServerConnectivity @params
+# Connect-OneView is THE connect command: it establishes (and persists) an
+# authenticated OneView session. Test-ServerConnectivity is now a STATUS CHECK
+# that never prompts, so the connect-time prompting for the appliance host and
+# credentials lives here.
+$params = @{
+    DryRun        = $DryRun
+    PingTimeoutMs = 3000
+}
+
+if ($ManagementHost) {
+    $params['ManagementHost'] = $ManagementHost
+} elseif ($DryRun) {
+    # DryRun without an explicit host: resolve the default appliance from
+    # connection_hosts.json so validation is non-interactive. Test-ServerConnectivity
+    # reads config only with -DryRun, so this stays safe and compliant.
+    $params['JsonConfig'] = $true
+} else {
+    # Live connect with no host named: prompt for the appliance (interactive
+    # only - in automated mode / non-TTY this must fail fast rather than hang).
+    $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+    $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
+    if ($isInteractive) {
+        Write-Host "Enter OneView appliance host to connect to (or press Enter to cancel): " -ForegroundColor Yellow -NoNewline
+        $hostInput = Read-Host
+        if ($hostInput) { $ManagementHost = $hostInput.Trim(); $params['ManagementHost'] = $ManagementHost }
+    }
+    if (-not $ManagementHost) {
+        Write-Warning "Connect-OneView requires -ManagementHost (or run with -DryRun for config validation). No connection made."
+        return
+    }
+}
+
+# Resolve credentials for the live connection. Connect-OneView is the connect
+# command, so prompting for the password here is expected and is the operator's
+# explicit authorisation to connect to the named appliance. It only prompts when
+# interactive and no credential was supplied; in automated mode a -Credential or
+# ONEVIEW_USER / ONEVIEW_PASSWORD must be provided.
+if ($ManagementHost -and -not ($PSBoundParameters.ContainsKey('Credential') -and $Credential)) {
+    $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+    $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
+    if ($isInteractive) {
+        Write-Host "Enter OneView username for '$ManagementHost': " -ForegroundColor Yellow -NoNewline
+        $u = Read-Host
+        if ($u) {
+            $sp = Read-Host "Enter OneView password for '$ManagementHost': " -AsSecureString
+            $Credential = [System.Management.Automation.PSCredential]::new($u, $sp)
+            $params['Credential'] = $Credential
+        }
+    }
+    # If no credential is available after the interactive attempt (or in automated
+    # mode), Test-ServerConnectivity simply skips auth with a clear message.
+} elseif ($Credential) {
+    $params['Credential'] = $Credential
+}
+
+$result = Test-ServerConnectivity @params
 
     # Surface a clean message for the connection-focused use case.
     if ($result.Available) {

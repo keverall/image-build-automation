@@ -6,7 +6,7 @@
 
 - [**Current OneView Connected Automation Command testing status and progress Summary**](#current-oneview-connected-automation-command-testing-status-and-progress-summary)
 - [Major Bugs fixed log](#major-bugs-fixed-log)
-  - [1. Phantom proxy configuration on EWISMGMT-19](#1-phantom-proxy-configuration-on-ewismgmt-19)
+  - [1. Phantom proxy configuration on <mgmt-host>](#1-phantom-proxy-configuration-on-mgmt-host)
   - [2. Test-ServerConnectivity was disconnecting the OneView session after connecting](#2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting)
   - [3. Invoke-IsoDeploy Pester tests hanging on interactive prompts](#3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts)
   - [4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts](#4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts)
@@ -44,11 +44,11 @@
 
 **Date: 24/07/2026**
 
-<a name="1-phantom-proxy-configuration-on-ewismgmt-19"></a>
+<a name="1-phantom-proxy-configuration-on-mgmt-host"></a>
 
-### 1. Phantom proxy configuration on EWISMGMT-19
+### 1. Phantom proxy configuration on <mgmt-host>
 
-A proxy was mistakenly configured and assumed to be in use on the EWISMGMT-19 automation server.
+A proxy was mistakenly configured and assumed to be in use on the <mgmt-host> automation server.
 The server has no proxy — it sits behind a corporate firewall with direct connectivity. The phantom
 proxy configuration was removed.
 
@@ -99,7 +99,7 @@ automated test runs where no operator is present to provide input.
 
 **Module under test:** `Automation` PowerShell module (`src/powershell/Automation/Automation.psm1`)
 **OneView library:** `HPEOneView.1000` (OneView 10.x) via `Connect-OVMgmt` / `Disconnect-OVMgmt`
-**Test appliance:** `va-oneviewt-ap` (Test environment)
+**Test appliance:** `oneview.example.com` (Test environment)
 **Key commands:** `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Get-OneViewServerTarget`,
 `Invoke-IloRedfish`, `Start-InstallMonitor`, `Test-PostBuildValidation`, `Set-MaintenanceMode`,
 `Update-Firmware`.
@@ -107,7 +107,7 @@ automated test runs where no operator is present to provide input.
 **Standing rule — test BOTH identifiers:** Every command that targets a server MUST be executed
 **twice** — once by **server name** and once by **serial number** — to prove both resolution paths
 work. Where a test appears below, run the name variant and the serial variant (the serial variant
-also requires `-OneViewHost va-oneviewt-ap` so the appliance can resolve the serial to a host/iLO).
+also requires `-OneViewHost oneview.example.com` so the appliance can resolve the serial to a host/iLO).
 
 **Execution notes:**
 - All live calls require an approved **maintenance window** on the test appliance (the reboot/install
@@ -119,7 +119,7 @@ also requires `-OneViewHost va-oneviewt-ap` so the appliance can resolve the ser
   auto-creates the SMB share when run as Administrator (see `Invoke-IsoDeploy`/`-ExternalIsoPath`).
 
 **Column legend:** **Exp. Pass** = expected sign-off date (fill per schedule); **Act. Pass** = date/time
-the test last passed on `va-oneviewt-ap`; **Status** = `Planned`/`In Progress`/`Passed`/`Failed`/`Blocked`;
+the test last passed on `oneview.example.com`; **Status** = `Planned`/`In Progress`/`Passed`/`Failed`/`Blocked`;
 **Neg?** = `Y` for negative/edge/boundary tests; **ID-Type** = which identifier the row exercises
 (`Name` / `Serial` / `Both` / `—`).
 
@@ -144,7 +144,7 @@ Fixed. The root cause and resolution:
 
 **Verification** — File re-parses with no syntax errors under `pwsh`, and no `winhttp`/`Add-Type` references remain.
 
-**To deploy** — On the Windows server, re-import the module from the repo checkout (new PS7 session, or `Import-Module ...\Automation.psd1 -Force`) and re-run `Test-ServerConnectivity -ManagementHost va-oneviewt-01`. The `Status` should now report `AVAILABLE` with `Connected: Yes`.
+**To deploy** — On the Windows server, re-import the module from the repo checkout (new PS7 session, or `Import-Module ...\Automation.psd1 -Force`) and re-run `Test-ServerConnectivity -ManagementHost oneview.example.com`. The `Status` should now report `AVAILABLE` with `Connected: Yes`.
 
 I also corrected the stale project memory that claimed the module loads under PowerShell 5.1 — it runs under PS7, so no PS5.1 workarounds should be added going forward. If you want a broader sweep of the rest of the module for other PS5.1-isms, say the word and I'll run it.
 
@@ -188,7 +188,7 @@ The same plaintext-param pattern exists in the older Get-OneViewServerTarget.ps1
 ## Phase 0 — Environment Prerequisites (checklist before live run)
 
 - [ ] `HPEOneView.1000` PowerShell module installed (PS 7+)
-- [ ] `va-oneviewt-ap` reachable from the automation host
+- [ ] `oneview.example.com` reachable from the automation host
 - [ ] `PSCredential` for OneView available (env / CyberArk) — no plaintext
 - [ ] iLO creds available; target server iLO IP known
 - [ ] Local `.iso` staged for SMB auto-share (run as Administrator for share creation)
@@ -218,9 +218,9 @@ The same plaintext-param pattern exists in the older Get-OneViewServerTarget.ps1
   <tbody>
     <tr>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-01</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Connect &amp; authenticate to va-oneviewt-ap</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Connect &amp; authenticate to oneview.example.com</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">—</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -Credential $cred</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus -OneViewHost oneview.example.com -Credential $cred</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">1. Resolve creds as PSCredential. 2. Run.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Success</code>, <code style="background:#f4f4f4;color:#000000;">Reachable</code>, <code style="background:#f4f4f4;color:#000000;">Authenticated</code>, <code style="background:#f4f4f4;color:#000000;">Connected</code> all <code style="background:#f4f4f4;color:#000000;">$true</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -245,7 +245,7 @@ The same plaintext-param pattern exists in the older Get-OneViewServerTarget.ps1
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Connect via HPEOneView.1000 module &amp; disconnect cleanly</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">—</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Connect-OVMgmt</code> / <code style="background:#f4f4f4;color:#000000;">Disconnect-OVMgmt</code></td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">1. <code style="background:#f4f4f4;color:#000000;">Connect-OVMgmt -Hostname va-oneviewt-ap -Credential $cred</code>. 2. Confirm. 3. <code style="background:#f4f4f4;color:#000000;">Disconnect-OVMgmt</code>.</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">1. <code style="background:#f4f4f4;color:#000000;">Connect-OVMgmt -Hostname oneview.example.com -Credential $cred</code>. 2. Confirm. 3. <code style="background:#f4f4f4;color:#000000;">Disconnect-OVMgmt</code>.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Session established then released; no orphaned sessions</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">27/07/2026</td>
@@ -255,7 +255,7 @@ The same plaintext-param pattern exists in the older Get-OneViewServerTarget.ps1
   </tbody>
 </table>
 
-**OV-02 — Actual test output** (27/07/2026 15:55 UTC, appliance `va-oneviewt-01`):
+**OV-02 — Actual test output** (27/07/2026 15:55 UTC, appliance `oneview.example.com`):
 
 ```text
 Get-OneViewConnectionStatus    0  1m 2s 982ms  15:55:18
@@ -265,7 +265,7 @@ Name                           Value
 Reachable                      True
 Success                        True
 ServerCount
-Appliance                      va-oneviewt-01
+Appliance                      oneview.example.com
 Connected                      True
 Version                        8200
 Error
@@ -296,9 +296,9 @@ SessionSource                  HPEOneViewModule
   <tbody>
     <tr>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-04</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Retrieve full server list from va-oneviewt-ap</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Retrieve full server list from oneview.example.com</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">—</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerList -OneViewHost va-oneviewt-ap -Credential $cred</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerList -OneViewHost oneview.example.com -Credential $cred</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Run, inspect <code style="background:#f4f4f4;color:#000000;">Servers</code>.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Non-empty list; each entry carries name, serial, iLO IP</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -309,7 +309,7 @@ SessionSource                  HPEOneViewModule
   </tbody>
 </table>
 
-**OV-04 — Actual test output** (27/07/2026 15:55 UTC, appliance `va-oneviewt-01`):
+**OV-04 — Actual test output** (27/07/2026 15:55 UTC, appliance `oneview.example.com`):
 
 ```text
 
@@ -418,7 +418,7 @@ Error
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-07a</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Specific-server status — by server name</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Name</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -ServerIdentifier &lt;serverName&gt;</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier &lt;serverName&gt;</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Run.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Server</code> returned: <code style="background:#f4f4f4;color:#000000;">power_state</code>, <code style="background:#f4f4f4;color:#000000;">health_status</code>, <code style="background:#f4f4f4;color:#000000;">ilo_ip</code>, <code style="background:#f4f4f4;color:#000000;">enclosure_bay</code>, <code style="background:#f4f4f4;color:#000000;">resolved_by=Name</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -430,7 +430,7 @@ Error
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-07b</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Specific-server status — by serial number</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Serial</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus -OneViewHost va-oneviewt-ap -ServerIdentifier &lt;serial&gt; -IdentifierType Serial</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier &lt;serial&gt; -IdentifierType Serial</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Run with serial + <code style="background:#f4f4f4;color:#000000;">-OneViewHost</code>.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Same <code style="background:#f4f4f4;color:#000000;">Server</code> object; <code style="background:#f4f4f4;color:#000000;">resolved_by=Serial</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -442,7 +442,7 @@ Error
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-08a</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Server target resolution — by server name</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Name</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerTarget -ServerIdentifier &lt;serverName&gt; -OneViewHost va-oneviewt-ap</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerTarget -ServerIdentifier &lt;serverName&gt; -OneViewHost oneview.example.com</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Run.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Success</code>, correct <code style="background:#f4f4f4;color:#000000;">Server</code>, <code style="background:#f4f4f4;color:#000000;">ResolvedBy=Name</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -454,7 +454,7 @@ Error
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-08b</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Server target resolution — by serial number</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Serial</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerTarget -ServerIdentifier &lt;serial&gt; -OneViewHost va-oneviewt-ap -IdentifierType Serial</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Get-OneViewServerTarget -ServerIdentifier &lt;serial&gt; -OneViewHost oneview.example.com -IdentifierType Serial</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Run with serial.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Success</code>, correct <code style="background:#f4f4f4;color:#000000;">Server</code>, <code style="background:#f4f4f4;color:#000000;">ResolvedBy=Serial</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -643,7 +643,7 @@ Error
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-16</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Monitor reboot power-state transitions</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Both</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Start-InstallMonitor -Server &lt;serverName&gt;</code> and <code style="background:#f4f4f4;color:#000000;">-SerialNumber &lt;serial&gt; -OneViewHost va-oneviewt-ap</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Start-InstallMonitor -Server &lt;serverName&gt;</code> and <code style="background:#f4f4f4;color:#000000;">-SerialNumber &lt;serial&gt; -OneViewHost oneview.example.com</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Watch On → Off → On.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Correct completion/failure detection; <code style="background:#f4f4f4;color:#000000;">Success</code> for both identifier runs</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -702,7 +702,7 @@ Error
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-18b</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Confirm correct Windows image installed — by serial number</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Serial</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Test-PostBuildValidation -SerialNumber &lt;serial&gt; -OneViewHost va-oneviewt-ap -Domain &lt;dom&gt; -ExpectedOsVersion &lt;win&gt;</code></td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Test-PostBuildValidation -SerialNumber &lt;serial&gt; -OneViewHost oneview.example.com -Domain &lt;dom&gt; -ExpectedOsVersion &lt;win&gt;</code></td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Run post-build checks.</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Same checks pass; ISO now installed as the active Windows image</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -928,7 +928,7 @@ Error
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">OV-33</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Firmware update (dry-run then real)</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Both</td>
-      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Update-Firmware -OneViewHost va-oneviewt-ap</code> (<code style="background:#f4f4f4;color:#000000;">-Server</code>/<code style="background:#f4f4f4;color:#000000;">-SerialNumber</code>) <code style="background:#f4f4f4;color:#000000;">-DryRun</code> then apply</td>
+      <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;"><code style="background:#f4f4f4;color:#000000;">Update-Firmware -OneViewHost oneview.example.com</code> (<code style="background:#f4f4f4;color:#000000;">-Server</code>/<code style="background:#f4f4f4;color:#000000;">-SerialNumber</code>) <code style="background:#f4f4f4;color:#000000;">-DryRun</code> then apply</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Validate, then stage</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">Dry-run safe; apply yields valid result</td>
       <td style="border:1px solid #999999;padding:6px 10px;vertical-align:top;color:#000000;background:#ffffff;">N</td>
@@ -1008,14 +1008,14 @@ Error
 <!-- BEGIN:phase11-rows -->
 |Run #|Date/Time|Phase(s)|Tester|Appliance|Result|
 |---|---|---|---|---|---|
-|1|27/07/2026 18:55 UTC|Phases 1-10 (pending live execution)||va-oneviewt-ap|Pending|
-|2|24/07/2026 16:34 UTC|2|K Everall|va-oneviewt-ap|Success|
-|3|24/07/2026 16:34 UTC|Phase 1|K Everall|va-oneviewt-ap|Passed (95/95)|
-|4|27/07/2026 14:55 UTC|Phase 1|K Everall|va-oneviewt-01|Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).|
-|5|27/07/2026 17:00 UTC|Phase 1|K Everall|va-oneviewt-01|Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). Server list output correctly, test passed, version shown is incorrect as HPeOneView.840 version shown, will purge powershell env and fix|
-|6|31/07/2026 09:14 UTC|Phase 1|K Everall|va-oneviewt-01|NO TESTING TODAY AS THERE IS A FREEZE UNTIL 31/07/2026|
-|7| 02/08/2026 01:54 UTC |Phases 1-10|K Everall|va-oneviewt-ap|Passed (99/99)|
-| 8 | 02/08/2026 01:54 UTC | Phases 1-10 | Kev | va-oneviewt-ap | Pending |
+|1|27/07/2026 18:55 UTC|Phases 1-10 (pending live execution)||oneview.example.com|Pending|
+|2|24/07/2026 16:34 UTC|2|K Everall|oneview.example.com|Success|
+|3|24/07/2026 16:34 UTC|Phase 1|K Everall|oneview.example.com|Passed (95/95)|
+|4|27/07/2026 14:55 UTC|Phase 1|K Everall|oneview.example.com|Passed - Full connectivity verified: DNS resolved (203.0.113.10), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).|
+|5|27/07/2026 17:00 UTC|Phase 1|K Everall|oneview.example.com|Passed - Full connectivity verified: DNS resolved (203.0.113.10), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified). Server list output correctly, test passed, version shown is incorrect as HPeOneView.840 version shown, will purge powershell env and fix|
+|6|31/07/2026 09:14 UTC|Phase 1|K Everall|oneview.example.com|NO TESTING TODAY AS THERE IS A FREEZE UNTIL 31/07/2026|
+|7| 02/08/2026 01:54 UTC |Phases 1-10|K Everall|oneview.example.com|Passed (99/99)|
+| 8 | 02/08/2026 01:54 UTC | Phases 1-10 | Kev | oneview.example.com | Pending |
 <!-- END:phase11-rows -->
 
 <a name="phase-12-notes-for-the-delivery-lead"></a>
@@ -1028,4 +1028,4 @@ Error
 - **Both identifiers** (server name + serial number) are exercised for every server-scoped command
   (Phases 4, 5, 7, 8, 10) per the standing rule — serial runs also pass `-OneViewHost`.
 - Fill **Exp. Pass** against the project schedule; update **Act. Pass** + **Status** as each test is
-  executed on `va-oneviewt-ap` and evidenced in Phase 11.
+  executed on `oneview.example.com` and evidenced in Phase 11.

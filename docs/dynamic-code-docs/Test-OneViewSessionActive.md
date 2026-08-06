@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-08-06
+generated: 2026-08-10
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
