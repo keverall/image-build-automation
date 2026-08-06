@@ -63,22 +63,36 @@ function Connect-OneView {
         [Alias('MgmtHost')]
         [string] $ManagementHost,
 
-        [Alias('Dry')]
-        [switch] $DryRun
-    )
+    [Alias('Dry')]
+    [switch] $DryRun
+)
 
-    # Delegate to Test-ServerConnectivity, forwarding only the parameters
-    # Connect-OneView exposes.  All network validation, credential resolution,
-    # and session establishment happens inside Test-ServerConnectivity.
-    $params = @{
-        DryRun         = $DryRun
-        PingTimeoutMs  = 3000
-    }
-    if ($ManagementHost) {
-        $params['ManagementHost'] = $ManagementHost
-    }
+# Guard against a stray double-dash flag (e.g. `--DryRun`) being swallowed as
+# the management host. In PowerShell `--` means "end of parameters", so
+# `Connect-OneView --DryRun` binds "DryRun" to -ManagementHost and never sets
+# the actual -DryRun switch - which then prompts for credentials against a
+# bogus host. Reuse the shared helper (single source of truth) instead of
+# inlining the check in every command.
+Assert-ParameterNotFlag -Parameters $PSBoundParameters
 
-    $result = Test-ServerConnectivity @params
+# Delegate to Test-ServerConnectivity, forwarding only the parameters
+# Connect-OneView exposes.  All network validation, credential resolution,
+# and session establishment happens inside Test-ServerConnectivity.
+$params = @{
+    DryRun         = $DryRun
+    PingTimeoutMs  = 3000
+}
+if ($ManagementHost) {
+    $params['ManagementHost'] = $ManagementHost
+} elseif ($DryRun) {
+    # DryRun without an explicit host: resolve the default appliance from
+    # connection_hosts.json so validation is non-interactive. This matches the
+    # command's documented behaviour. Test-ServerConnectivity reads config only
+    # with -DryRun, so this stays safe and compliant.
+    $params['JsonConfig'] = $true
+}
+
+$result = Test-ServerConnectivity @params
 
     # Surface a clean message for the connection-focused use case.
     if ($result.Available) {

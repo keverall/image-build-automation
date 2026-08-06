@@ -584,6 +584,7 @@ $_privateOrder = @(
     'FileIO.ps1',       # Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult, Test-PathEx
     'PathResolver.ps1', # Get-ProjectRoot, Get-LogDirectory
     'Inventory.ps1',    # Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo
+    'ParameterValidation.ps1', # Assert-ParameterNotFlag (shared parameter-usage guard)
     'OneViewSession.ps1', # Get-OneViewActiveSession, Test-OneViewSessionActive (shared OneView session detection)
     'Logging.ps1',      # Initialize-Logging, Get-Logger
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)

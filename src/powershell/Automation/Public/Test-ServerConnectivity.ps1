@@ -116,25 +116,41 @@ function Test-ServerConnectivity {
         if ($JsonConfig) {
             Write-Warning "-JsonConfig is ignored for live tests. Config files are only read with -DryRun."
         }
-        if (-not $PSBoundParameters.ContainsKey('ManagementHost') -or -not $ManagementHost) {
-            $result = @{
-                Available      = $false
-                Mode           = $Mode
-                ManagementHost = $null
-                Environment    = $effectiveEnv
-                NetworkPing    = @{
-                    DnsResolved = $false
-                    Error       = "ManagementHost is required for a live connectivity test. Supply -ManagementHost <host> (server name or serial) or use -DryRun for config-based validation."
-                }
-                AuthConnect    = @{ Connected = $false; Error = "Skipped - no management host" }
-                Timestamp      = Get-UtcTimestamp
+        $resolvedHost = $null
+        if ($PSBoundParameters.ContainsKey('ManagementHost') -and $ManagementHost) {
+            # Host is taken verbatim from the command line - no config/env fallback.
+            $resolvedHost = $ManagementHost.Trim()
+        } else {
+            # Interactive fallback: prompt for the appliance host so an operator
+            # can simply run Connect-OneView and be asked for it, instead of
+            # having to remember the exact hostname/serial. This NEVER prompts in
+            # automated mode (AUTOMATED_MODE/CI) or where stdin is not a TTY -
+            # there it must fail fast rather than hang a runbook/CI job.
+            Assert-ParameterNotFlag -Parameters $PSBoundParameters
+            $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+            $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
+            if ($isInteractive) {
+                Write-Host "Enter OneView appliance host (or press Enter to cancel): " -ForegroundColor Yellow -NoNewline
+                $promptedHost = Read-Host
+                if ($promptedHost) { $resolvedHost = $promptedHost.Trim() }
             }
-            if (-not $Json) { _Format-ConnectivityResult -Result $result }
-            return $result
+            if (-not $resolvedHost) {
+                $result = @{
+                    Available      = $false
+                    Mode           = $Mode
+                    ManagementHost = $null
+                    Environment    = $effectiveEnv
+                    NetworkPing    = @{
+                        DnsResolved = $false
+                        Error       = "ManagementHost is required for a live connectivity test. Supply -ManagementHost <host> (server name or serial) or use -DryRun for config-based validation."
+                    }
+                    AuthConnect    = @{ Connected = $false; Error = "Skipped - no management host" }
+                    Timestamp      = Get-UtcTimestamp
+                }
+                if (-not $Json) { _Format-ConnectivityResult -Result $result }
+                return $result
+            }
         }
-
-        # Host is taken verbatim from the command line - no config/env fallback.
-        $resolvedHost = $ManagementHost.Trim()
 
         # Sensible defaults for the live connection (no config file is read).
         $modeCfg = @{ module_name = 'HPEOneView.1000'; use_winrm = $false }

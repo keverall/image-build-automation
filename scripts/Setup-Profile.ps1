@@ -54,7 +54,8 @@ param(
     [switch]$DryRun,
     [switch]$SkipTemplateCopy,
     [switch]$Merge,
-    [switch]$ForceOverwrite
+    [switch]$ForceOverwrite,
+    [string]$ProfileRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -96,6 +97,15 @@ $ProfileBlock = @"
 if (Test-Path `$automationModulePath) {
     Import-Module `$automationModulePath -WarningAction SilentlyContinue
 }
+
+# HPE OneView module (locked version, Windows-only) - pre-load so OneView
+# commands (Connect-OneView, Test-ServerConnectivity, etc.) are available the
+# moment a shell opens on Windows. Only HPEOneView.1000 is permitted; stray
+# versions (.820/.860) are rejected by Connect-OneViewSession's module guard.
+# Skipped on Linux/macOS where the HPEOneView module cannot load.
+if (`$IsWindows) {
+    Import-Module HPEOneView.1000 -ErrorAction SilentlyContinue
+}
 "@
 
 if (-not (Test-Path $AutomationModule)) {
@@ -107,6 +117,18 @@ Write-Color $Cyan "[setup] Configuring PowerShell profiles with Automation modul
 
 # ─── Determine platform-appropriate WIP template paths ───────────────────────
 $isWin = $IsWindows -or $null -eq $IsWindows
+
+# ─── ProfileRoot (test hook) ──────────────────────────────────────────────────
+# When -ProfileRoot is supplied, every live profile path is written under that
+# directory instead of the real user profile location. This lets the script be
+# exercised by tests without mutating the operator's actual $PROFILE.
+$profileBase = if ($ProfileRoot) {
+    $ProfileRoot
+} elseif ($isWin) {
+    $env:USERPROFILE
+} else {
+    $HOME
+}
 
 # Primary terminal profile template (Windows Terminal / pwsh console)
 $TerminalTemplate = if ($isWin) {
@@ -122,13 +144,13 @@ $LiveProfiles = @{}
 
 if ($isWin) {
     # PowerShell 7+ ("Core") profile location
-    $LiveProfiles['Terminal'] = Join-Path $env:USERPROFILE 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
-    $LiveProfiles['VsCode'] = Join-Path $env:USERPROFILE 'Documents\PowerShell\Microsoft.VSCode_profile.ps1'
+    $LiveProfiles['Terminal'] = Join-Path $profileBase 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
+    $LiveProfiles['VsCode'] = Join-Path $profileBase 'Documents\PowerShell\Microsoft.VSCode_profile.ps1'
     # Windows PowerShell 5.1 profile location (separate directory)
-    $LiveProfiles['Terminal51'] = Join-Path $env:USERPROFILE 'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
+    $LiveProfiles['Terminal51'] = Join-Path $profileBase 'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
 } else {
-    $LiveProfiles['Terminal'] = Join-Path $HOME '.config/powershell/Microsoft.PowerShell_profile.ps1'
-    $LiveProfiles['VsCode'] = Join-Path $HOME '.config/powershell/Microsoft.VSCode_profile.ps1'
+    $LiveProfiles['Terminal'] = Join-Path $profileBase '.config/powershell/Microsoft.PowerShell_profile.ps1'
+    $LiveProfiles['VsCode'] = Join-Path $profileBase '.config/powershell/Microsoft.VSCode_profile.ps1'
 }
 
 # ─── Utility: Smart merge profile with template, preserving user customizations ───
@@ -173,6 +195,7 @@ function Set-ContentProfilePair {
         $merged += " if (Test-Path `$automationModulePath) {`n"
         $merged += "     Import-Module `$automationModulePath -WarningAction SilentlyContinue`n"
         $merged += " }`n"
+        $merged += " if (`$IsWindows) { Import-Module HPEOneView.1000 -ErrorAction SilentlyContinue }`n"
         $merged | Set-Content $LivePath -Encoding UTF8
         Write-Color $Green "[setup] ✓ Added Automation module (existing customizations preserved)"
     } elseif ($ForceOverwrite) {
@@ -259,17 +282,18 @@ foreach ($key in @('Terminal', 'Terminal51', 'VsCode')) {
     }
 }
 
-# Also pick up $PROFILE in case it points somewhere unexpected
-if ($PROFILE -and ($ProfilePaths -notcontains $PROFILE) -and (Test-Path $PROFILE)) {
+# Also pick up $PROFILE in case it points somewhere unexpected.
+# Skipped when -ProfileRoot is set so tests never touch the real profile.
+if (-not $ProfileRoot -and $PROFILE -and ($ProfilePaths -notcontains $PROFILE) -and (Test-Path $PROFILE)) {
     $ProfilePaths += $PROFILE
 }
 
 if ($ProfilePaths.Count -eq 0) {
     Write-Color $Yellow "[setup] WARNING: No PowerShell profiles found. Creating default profile..."
     $DefaultProfile = if (($IsLinux -or $IsMacOS)) {
-        '~/.config/powershell/Microsoft.PowerShell_profile.ps1'
+        Join-Path $profileBase '.config/powershell/Microsoft.PowerShell_profile.ps1'
     } else {
-        Join-Path $env:USERPROFILE 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
+        Join-Path $profileBase 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
     }
     $ProfileDir = Split-Path $DefaultProfile -Parent
     if (-not (Test-Path $ProfileDir)) {
