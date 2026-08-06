@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/ci-security-check.ps1
-generated: 2026-08-02
+generated: 2026-08-06
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

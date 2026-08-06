@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-08-05
+generated: 2026-08-06
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -36,7 +36,7 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | `-ServerList` _(Aliases: -SrvrList)_ | Path to server_list.txt. Only used for -DryRun mock targeting. |
 | `-IsoDir` | Directory containing bootable ISO packages. |
 | `-IsoUrl` _(Aliases: -Iso)_ | Override the ISO URL (otherwise derived from bootable_iso in deployment_metadata.json joined with -RepoBaseUrl). |
-| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip package resolution). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives. When a local path is supplied: - If running as Administrator: Creates SMB share automatically - If NOT running as Administrator: Command will FAIL with instructions to either run as Administrator or obtain an SMB path from your admin When supplied, -IsoUrl is ignored and package resolution is skipped. For non-Administrator users, obtain the SMB path from your IT admin: - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone' - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso' |
+| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip package resolution). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: NOT supported — iLO cannot access local drives. Supply an SMB/UNC or HTTPS path instead. This module never creates SMB shares or requires Administrator privileges (regulated banking env). IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives on the automation host. This module does NOT auto-create SMB shares and does NOT require Administrator privileges. Supply an already-shared path instead. When supplied, -IsoUrl is ignored and package resolution is skipped. |
 | `-RepoBaseUrl` _(Aliases: -RepoUrl)_ | HTTPS base URL of the ISO repository. Combined with the bootable_iso filename from deployment_metadata.json to construct the full URL when -IsoUrl is not given. Also used when -ExternalIsoPath is a local file that needs to be copied. |
 | `-RepoLocalPath` _(Aliases: -RepoPath)_ | Local filesystem path of the ISO repository. Required when -ExternalIsoPath is a local file that needs to be copied to make it network-accessible. |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate - no actual deployment. |
@@ -106,18 +106,16 @@ Invoke-IsoDeploy -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.example.com' -
           - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
           - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
           - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso')
-          - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share
-        
+          - Local path: NOT supported — iLO cannot access local drives. Supply
+            an SMB/UNC or HTTPS path instead. This module never creates SMB
+            shares or requires Administrator privileges (regulated banking env).
+
         IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'):
-          The iLO BMC cannot access local drives. When a local path is supplied:
-            - If running as Administrator: Creates SMB share automatically
-            - If NOT running as Administrator: Command will FAIL with instructions
-              to either run as Administrator or obtain an SMB path from your admin
-        
+          The iLO BMC cannot access local drives on the automation host. This
+          module does NOT auto-create SMB shares and does NOT require
+          Administrator privileges. Supply an already-shared path instead.
+
         When supplied, -IsoUrl is ignored and package resolution is skipped.
-        For non-Administrator users, obtain the SMB path from your IT admin:
-          - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'
-          - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso'
 
     .PARAMETER RepoBaseUrl
         HTTPS base URL of the ISO repository. Combined with the bootable_iso filename

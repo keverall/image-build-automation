@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/test-scom-maint-connectivity.ps1
-generated: 2026-08-02
+generated: 2026-08-06
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -63,7 +63,7 @@ pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfi
 ### Example 3
 
 ```powershell
-pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
+pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 ```
 
 <a name="original-comment-based-help"></a>
@@ -102,7 +102,7 @@ pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-
     pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
 .EXAMPLE
-    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 ```
 
 ---

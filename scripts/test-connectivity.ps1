@@ -34,7 +34,7 @@
     pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)
+    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01'
 #>
 
 [CmdletBinding()]
