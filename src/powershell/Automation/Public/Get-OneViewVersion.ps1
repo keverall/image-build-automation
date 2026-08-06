@@ -58,7 +58,7 @@ function Get-OneViewVersion {
         Reports local module state and, if a session is active, the appliance version.
 
     .EXAMPLE
-        Get-OneViewVersion -OneViewHost va-oneviewt-01
+        Get-OneViewVersion -OneViewHost oneview.example.com
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]

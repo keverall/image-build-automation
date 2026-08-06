@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerList.ps1
-generated: 2026-08-06
+generated: 2026-08-10
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -30,7 +30,7 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 
 | Parameter | Description |
 |-----------|-------------|
-| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP (e.g. oneview.ad.example.com). If omitted, the command checks for an existing HPEOneView module session (Connect-OVMgmt) and uses that appliance automatically. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP (e.g. oneview.ad.example.com). If omitted, the command checks for an existing HPEOneView module session (Connect-OVMgmt); when one is active it is reused, otherwise a clean "not connected" status is returned instead of prompting for a host. |
 | `-OneViewUser` _(Aliases: -OVUser)_ | OneView username (used with -OneViewPassword). Never read from config or environment. |
 | `-OneViewPassword` _(Aliases: -OVPwd)_ | OneView password (used with -OneViewUser). Never read from config or environment. |
 | `-Port` | OneView HTTPS port (default 443). |
@@ -66,7 +66,7 @@ Get-OneViewServerList -OneViewHost 'oneview.ad.example.com' -Filter 'health:Crit
 ### Example 3
 
 ```powershell
-Get-OneViewServerList Uses an existing HPEOneView module session if available.
+Get-OneViewServerList Runs without parameters: reuses an active OneView session if one exists (Connect-OneView), otherwise returns Success=$false with a "not connected" message instead of prompting for a host.
 ```
 
 <a name="original-comment-based-help"></a>
@@ -85,7 +85,8 @@ Get-OneViewServerList Uses an existing HPEOneView module session if available.
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
         If omitted, the command checks for an existing HPEOneView module
-        session (Connect-OVMgmt) and uses that appliance automatically.
+        session (Connect-OVMgmt); when one is active it is reused, otherwise a
+        clean "not connected" status is returned instead of prompting for a host.
 
     .PARAMETER OneViewUser
         OneView username (used with -OneViewPassword). Never read from config or environment.
@@ -129,7 +130,9 @@ Get-OneViewServerList Uses an existing HPEOneView module session if available.
     .EXAMPLE
         Get-OneViewServerList
 
-        Uses an existing HPEOneView module session if available.
+        Runs without parameters: reuses an active OneView session if one exists
+        (Connect-OneView), otherwise returns Success=$false with a "not connected"
+        message instead of prompting for a host.
 ```
 
 ---

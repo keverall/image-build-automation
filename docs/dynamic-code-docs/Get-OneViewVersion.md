@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewVersion.ps1
-generated: 2026-08-06
+generated: 2026-08-10
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -52,7 +52,7 @@ Get-OneViewVersion Reports local module state and, if a session is active, the a
 ### Example 2
 
 ```powershell
-Get-OneViewVersion -OneViewHost va-oneviewt-01
+Get-OneViewVersion -OneViewHost oneview.example.com
 ```
 
 <a name="original-comment-based-help"></a>
@@ -106,7 +106,7 @@ Get-OneViewVersion -OneViewHost va-oneviewt-01
         Reports local module state and, if a session is active, the appliance version.
 
     .EXAMPLE
-        Get-OneViewVersion -OneViewHost va-oneviewt-01
+        Get-OneViewVersion -OneViewHost oneview.example.com
 ```
 
 ---

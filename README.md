@@ -48,7 +48,7 @@ Then use:
 
 ```powershell
 # 1. Connect to OneView and establish a persistent session
-Connect-OneView -ManagementHost va-oneviewt-01 -Environment Prod
+Connect-OneView -ManagementHost oneview.example.com -Environment Prod
 
 # 2. Run OneView commands while the session is active
 Get-OneViewServerList

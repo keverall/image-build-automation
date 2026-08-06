@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Connect-OneView.ps1
-generated: 2026-08-06
+generated: 2026-08-10
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -41,7 +41,7 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 ### Example 1
 
 ```powershell
-Connect-OneView -ManagementHost va-oneviewt-01 Connect to the OneView appliance va-oneviewt-01.  Credentials are prompted for interactively.
+Connect-OneView -ManagementHost oneview.example.com Connect to the OneView appliance oneview.example.com.  Credentials are prompted for interactively.
 ```
 
 <a name="example-2"></a>
@@ -86,9 +86,9 @@ Connect-OneView -DryRun Validate host resolution from config without connecting 
         are ready to connect and make changes.
 
     .EXAMPLE
-        Connect-OneView -ManagementHost va-oneviewt-01
+        Connect-OneView -ManagementHost oneview.example.com
 
-        Connect to the OneView appliance va-oneviewt-01.  Credentials are
+        Connect to the OneView appliance oneview.example.com.  Credentials are
         prompted for interactively.
 
     .EXAMPLE

@@ -1,0 +1,127 @@
+---
+source:  ./src/powershell/Automation/Public/Get-MaintenanceStatusReport.ps1
+generated: 2026-08-10
+auto_generated_by: scripts/Generate-PSDocs.ps1
+---
+
+# Get-MaintenanceStatusReport
+
+<a id="top"></a>
+
+## Table of Contents
+
+- [Description](#description)
+- [Parameters](#parameters)
+- [Examples](#examples)
+  - [Example 1](#example-1)
+  - [Example 2](#example-2)
+  - [Example 3](#example-3)
+- [Original Comment-Based Help](#original-comment-based-help)
+
+<a name="description"></a>
+
+## Description
+
+Discovers clusters/groups and their member servers from the connected SCOM management group (live), then for each server collects: - SCOM maintenance mode state + active maintenance window (start/end) - HPE OneView maintenance mode state (linked per server by name/serial) - The cluster power schedule (from catalogue enrichment; SCOM has none) Live SCOM/OneView queries degrade gracefully to 'Unknown' when unreachable. In -DryRun / -IncludeLive:$false the catalogue is used as mock data only.
+
+<a name="parameters"></a>
+
+## Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `-ConfigDir` _(Aliases: -Cfg)_ | Configuration directory (default: <project-root>/configs). |
+| `-Environment` _(Aliases: -Env)_ | Environment used to resolve management hosts (Test | Prod). Default: Prod, or $env:ENVIRONMENT when set. |
+| `-ManagementHost` _(Aliases: -Host, -MgmtHost)_ | Override the SCOM management server. Otherwise resolved from connection_hosts.json or $env:MAINTENANCE_HOST. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | Override the HPE OneView appliance (may differ from the SCOM host). When omitted, resolved from connection_hosts.json, then falls back to -ManagementHost if that was supplied. |
+| `-IncludeLive` _(Aliases: -Live)_ | Query live SCOM + OneView (default). Use -IncludeLive:$false for a catalogue-only mock report (no network calls) - used by tests. |
+| `-Format` | Output format: Csv (default, written to -Path), Json, or Table (console). |
+| `-Path` _(Aliases: -Out)_ | CSV output path. Defaults to generated/reports/MaintenanceStatusReport_<ts>.csv. |
+| `-DryRun` _(Aliases: -Dry)_ | Alias for -IncludeLive:$false - catalogue-only mock report, no connections. |
+
+<a name="examples"></a>
+
+## Examples
+
+<a name="example-1"></a>
+
+### Example 1
+
+```powershell
+Get-MaintenanceStatusReport -Environment Prod
+```
+
+<a name="example-2"></a>
+
+### Example 2
+
+```powershell
+Get-MaintenanceStatusReport -ManagementHost scom01.corp.local -OneViewHost oneview.corp.local
+```
+
+<a name="example-3"></a>
+
+### Example 3
+
+```powershell
+Invoke-RoutedRequest -RequestType 'maintmode_status_report' -Params @{ Environment = 'Prod' }
+```
+
+<a name="original-comment-based-help"></a>
+
+## Original Comment-Based Help
+
+```powershell
+.SYNOPSIS
+        Generate a read-only status report linking SCOM and HPE OneView for clusters.
+
+    .DESCRIPTION
+        Discovers clusters/groups and their member servers from the connected SCOM
+        management group (live), then for each server collects:
+          - SCOM maintenance mode state + active maintenance window (start/end)
+          - HPE OneView maintenance mode state (linked per server by name/serial)
+          - The cluster power schedule (from catalogue enrichment; SCOM has none)
+        Live SCOM/OneView queries degrade gracefully to 'Unknown' when unreachable.
+        In -DryRun / -IncludeLive:$false the catalogue is used as mock data only.
+
+    .PARAMETER ConfigDir
+        Configuration directory (default: <project-root>/configs).
+
+    .PARAMETER Environment
+        Environment used to resolve management hosts (Test | Prod). Default: Prod,
+        or $env:ENVIRONMENT when set.
+
+    .PARAMETER ManagementHost
+        Override the SCOM management server. Otherwise resolved from
+        connection_hosts.json or $env:MAINTENANCE_HOST.
+
+    .PARAMETER OneViewHost
+        Override the HPE OneView appliance (may differ from the SCOM host). When
+        omitted, resolved from connection_hosts.json, then falls back to
+        -ManagementHost if that was supplied.
+
+    .PARAMETER IncludeLive
+        Query live SCOM + OneView (default). Use -IncludeLive:$false for a
+        catalogue-only mock report (no network calls) - used by tests.
+
+    .PARAMETER Format
+        Output format: Csv (default, written to -Path), Json, or Table (console).
+
+    .PARAMETER Path
+        CSV output path. Defaults to generated/reports/MaintenanceStatusReport_<ts>.csv.
+
+    .PARAMETER DryRun
+        Alias for -IncludeLive:$false - catalogue-only mock report, no connections.
+
+    .EXAMPLE
+        Get-MaintenanceStatusReport -Environment Prod
+
+    .EXAMPLE
+        Get-MaintenanceStatusReport -ManagementHost scom01.corp.local -OneViewHost oneview.corp.local
+
+    .EXAMPLE
+        Invoke-RoutedRequest -RequestType 'maintmode_status_report' -Params @{ Environment = 'Prod' }
+```
+
+---
+*Auto-generated by `scripts/Generate-PSDocs.ps1` - do not edit manually.*

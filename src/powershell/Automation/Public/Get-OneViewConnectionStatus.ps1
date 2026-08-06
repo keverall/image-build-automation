@@ -17,12 +17,17 @@ function Get-OneViewConnectionStatus {
 
     .DESCRIPTION
         Performs two read-only checks against the OneView REST API:
-          1. Reachability - GET /rest/version (no auth) to confirm the appliance
-             is online and responding.
-          2. Authentication - GET /rest/server-hardware (authenticated) to confirm
-             the supplied credentials are valid.
+           1. Reachability - GET /rest/version (no auth) to confirm the appliance
+              is online and responding.
+           2. Authentication - GET /rest/server-hardware (authenticated) to confirm
+              the supplied credentials are valid.
         If -SrvrId is supplied, the target server is also resolved and
         its power/health reported so you can see at a glance whether it is "connected".
+
+        This command is a STATUS CHECK and NEVER prompts. Run with no parameters to
+        report the ACTIVE OneView connection established by Connect-OneView
+        (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance
+        instead. To actually connect, use Connect-OneView -ManagementHost <host>.
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).

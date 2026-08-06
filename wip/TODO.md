@@ -116,10 +116,10 @@ Authenticated                  False
 Reachable                      False
 Connected                      False
 
-   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01                                                                               0  16:55:44 Enter OneView username for 'va-oneviewt-01': adm_98253 
-Enter OneView password for 'va-oneviewt-01': : ************************ 
-2026-07-27 15:56:09 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
-2026-07-27 15:56:09 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 19ms) 
+   image-build-automation  Test-ServerConnectivity -ManagementHost oneview.example.com                                                                               0  16:55:44 Enter OneView username for 'oneview.example.com': <oneview-username> 
+Enter OneView password for 'oneview.example.com': : ************************ 
+2026-07-27 15:56:09 - Connectivity - INFO - DNS resolution for 'oneview.example.com': Resolved -> 203.0.113.10 
+2026-07-27 15:56:09 - Connectivity - INFO - TCP probe for 'oneview.example.com': Open (port 443, 19ms) 
 This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective 
 action including termination, civil and/or criminal penalties.
  
@@ -130,13 +130,13 @@ action including termination, civil and/or criminal penalties.
 
   Status:     AVAILABLE
   Mode:       oneview
-  Host:       va-oneviewt-01
+  Host:       oneview.example.com
   Environment:Prod 
   Timestamp:  2026-07-27T15:56:33.4130999Z
  
   --- Phase 1: Network Ping ---
     DNS:       Resolved
-    IP:        10.239.124.79 
+    IP:        203.0.113.10 
     TCP:       Open (port 443, 19ms)
 
   --- Phase 2: Auth Connect ---
@@ -145,15 +145,15 @@ action including termination, civil and/or criminal penalties.
 
 ==============================================
 
-2026-07-27 15:56:33 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True)
+2026-07-27 15:56:33 - Connectivity - INFO - Connectivity test for 'oneview.example.com' completed: Available=True (DNS=True, TCP=True, Auth=True)
 
 Name                           Value
 ----                           -----
 Available                      True
 Environment                    Prod
-ManagementHost                 va-oneviewt-01
+ManagementHost                 oneview.example.com
 Mode                           oneview
-NetworkPing                    {[Error, ], [Port, 443], [LatencyMs, 19], [IpAddress, 10.239.124.79]…}
+NetworkPing                    {[Error, ], [Port, 443], [LatencyMs, 19], [IpAddress, 203.0.113.10]…}
 Timestamp                      2026-07-27T15:56:33.4130999Z
 AuthConnect                    {[Error, ], [Connected, True], [Disconnected, False], [ModuleLoaded, True]}
 
@@ -161,7 +161,7 @@ AuthConnect                    {[Error, ], [Connected, True], [Disconnected, Fal
 Name                           Value 
 ----                           -----
 SessionSource                  HPEOneViewModule
-Appliance                      va-oneviewt-01
+Appliance                      oneview.example.com
 Reachable                      True
 Version                        8200
 Connected                      True

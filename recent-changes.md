@@ -4,33 +4,19 @@
 
 ## Table of Contents
 
-- [Change log:](#change-log)
-  - [Table of Contents](#table-of-contents)
-    - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation--2-command-workflow-runbook-aligned)
-      - [**1. `Configure-PhysicalBuild`** — new read-only 4-eye review command (`src/powershell/Automation/Public/Configure-PhysicalBuild.ps1`):](#1-configure-physicalbuild--new-read-only-4-eye-review-command-srcpowershellautomationpublicconfigure-physicalbuildps1)
-      - [**2. `Start-PhysicalServerBuild`** — the actual deploy (already existed, now has firmware support):](#2-start-physicalserverbuild--the-actual-deploy-already-existed-now-has-firmware-support)
-      - [Admin code removal](#admin-code-removal)
-      - [Tests: 488 passed, 0 failed, 1 pre-existing skip](#tests-488-passed-0-failed-1-pre-existing-skip)
-      - [Runbook alignment verification](#runbook-alignment-verification)
-    - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
-      - [Key findings:](#key-findings)
-      - [**Recommendations:**](#recommendations)
-      - [Runbook alignment:](#runbook-alignment)
-    - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening--repo-testing-rules-agentsmd)
-      - [Root cause](#root-cause)
-      - [Fix](#fix)
-      - [Repo context (AGENTS.md)](#repo-context-agentsmd)
-      - [Verification](#verification)
-    - [4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)](#4-scom--oneview-maintenance-status-report-get-maintenancestatusreport)
-      - [Live discovery vs mock config](#live-discovery-vs-mock-config)
-      - [OneView host + serial/name linking](#oneview-host--serialname-linking)
-      - [Verification](#verification-1)
+  - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation-2-command-workflow-runbook-aligned)
+  - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
+  - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening-repo-testing-rules-agentsmd)
+  - [4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)](#4-scom-oneview-maintenance-status-report-get-maintenancestatusreport)
+  - [5) Profile auto-load fix + Setup-Profile regression test (catches "Connect-OneView not recognized")](#5-profile-auto-load-fix-setup-profile-regression-test-catches-connect-oneview-not-recognized)
+  - [6) Parameter-usage guard + non-interactive `-DryRun` (`--DryRun`/`-DryRun`)](#6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
 | 2026-08-06 | Command consolidation — 2-command workflow (runbook-aligned) | Kev Everall |
+| 2026-08-06 | Parameter-usage guard + non-interactive `-DryRun` (rejected `Connect-OneView --DryRun`) | Kev Everall |
 
-<a name="command-consolidation-2-command-workflow-runbook-aligned"></a>
+<a name="1-command-consolidation-2-command-workflow-runbook-aligned"></a>
 
 ### 1) Command consolidation — 2-command workflow (runbook-aligned)
 
@@ -121,7 +107,7 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 
 Per `runbook-requirements.md`, maintenance mode is a **separate operational concern** from the ISO build/deploy pipeline. The 2-command workflow (`Configure-PhysicalBuild` + `Start-PhysicalBuild`) does not include maintenance mode commands — they're standalone SCOM/OneView orchestration tools.
 
-<a name="3-mock-only-test-hardening--repo-testing-rules-agentsmd"></a>
+<a name="3-mock-only-test-hardening-repo-testing-rules-agentsmd"></a>
 
 ### 3) Mock-only test hardening + repo testing rules (AGENTS.md)
 
@@ -154,7 +140,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - Ran `Configure-PhysicalBuild.Unit.Tests.ps1` + `Start-PhysicalServerBuild.Unit.Tests.ps1` directly → **9 passed, 0 failed**; the prompt now prints "Non-interactive / automated mode detected - deployment confirmation skipped (auto-cancelled)" instead of blocking.
 
-<a name="4-scom--oneview-maintenance-status-report-get-maintenancestatusreport"></a>
+<a name="4-scom-oneview-maintenance-status-report-get-maintenancestatusreport"></a>
 
 ### 4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)
 
@@ -183,3 +169,68 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - Parse-clean; `Get-MaintenanceStatusReport -IncludeLive:$false` returns 5 pure objects sourced from `configs/`, with `OneViewLinkMethod=Name` for servers present in `servers_catalogue.oneview.json`. Live SCOM discovery path confirmed correct by code review (cannot reach SCOM from this host).
 
+<a name="5-profile-auto-load-fix-setup-profile-regression-test-catches-connect-oneview-not-recognized"></a>
+
+### 5) Profile auto-load fix + Setup-Profile regression test (catches "Connect-OneView not recognized")
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-08-06 | `Setup-Profile.ps1` now injects the Automation module into the user profile (plus `HPEOneView.1000` guarded by `$IsWindows`); added `Setup-Profile.Tests.ps1` regression test that verifies a fresh shell resolves `Connect-OneView`, and wired it into `make automation-mode-tests` | Kev Everall |
+
+<a name="root-cause-profile"></a>
+
+#### Root cause
+
+- `Connect-OneView` (and all Automation commands) were "not recognized" in a fresh PowerShell window on the test server because the profile produced by `Setup-Profile.ps1` did not import the Automation module.
+- The existing `tests/powershell/Connect-OneView.Tests.ps1` could not catch this: it `Import-Module`s the module in `BeforeAll`, so the command is always present during the test. A test that pre-imports the module is *workless* for the "published but not working" failure mode.
+
+<a name="fix-profile"></a>
+
+#### Fix
+
+- `scripts/Setup-Profile.ps1` injected block now imports `Automation.psd1` on every platform, and pre-loads `HPEOneView.1000` inside `if ($IsWindows)` so it loads on the Windows test server but is safely skipped on Linux/macOS where that module cannot load.
+- Added a `-ProfileRoot` test hook so the script writes profiles under a temp dir instead of the operator's real `$PROFILE` (test-safe).
+- `make setup` (Makefile → `setup-runner.ps1` + `Setup-Profile.ps1`) installs the profile, so a new pwsh / VS Code terminal auto-loads `Connect-OneView`.
+
+<a name="verification-profile"></a>
+
+#### Verification
+
+- New `tests/powershell/Setup-Profile.Tests.ps1` (3 tests): asserts the generated profile imports the Automation module; asserts the OneView pre-load is `$IsWindows`-guarded; launches a fresh `pwsh` that sources the profile and verifies `Connect-OneView` resolves and runs `Connect-OneView -DryRun`. All 3 pass.
+- Added `Setup-Profile.Tests.ps1` to the `automation-mode-tests` runner (`scripts/run-automation-mode-tests.ps1`); `make automation-mode-tests` now reports **103 passed, 0 failed** (1 unrelated pre-existing skip). It is also auto-discovered by `make test`.
+
+<a name="6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun"></a>
+
+### 6) Parameter-usage guard + non-interactive `-DryRun` (`--DryRun`/`-DryRun`)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-06 | Rejected stray double-dash flags (e.g. `Connect-OneView --DryRun`) and made `-DryRun` non-interactive via a shared `Assert-ParameterNotFlag` helper | Kev Everall |
+
+<a name="root-cause-params"></a>
+
+#### Root cause
+
+- `Connect-OneView --DryRun` did not behave like the intended `-DryRun` switch. PowerShell treats `--` as "end of parameters", so the `DryRun` token was bound to `-ManagementHost` (value `--DryRun`) and the `-DryRun` switch was never set - causing the live path to prompt for credentials against a bogus appliance.
+- `Connect-OneView -DryRun` with no host still prompted for a host, i.e. a "dry run" was not fully non-interactive.
+- The guard existed as an inline `StartsWith('-')` check in `Connect-OneView` only, so the same class of mistake was not caught elsewhere.
+
+<a name="fix-params"></a>
+
+#### Fix
+
+- Added `src/powershell/Automation/Private/ParameterValidation.ps1` with the shared `Assert-ParameterNotFlag` helper. It rejects any bound string **value** that starts with `-` **or** matches one of the *caller command's own* declared parameter/alias names (introspected from the call stack). Parameter names/aliases and hostnames are never ambiguous, so this is safe and needs no per-command configuration.
+- Registered `ParameterValidation.ps1` in `Automation.psm1` `$_privateOrder` so every Public command can call it.
+- `Public/Connect-OneView.ps1` replaced its inline guard with `Assert-ParameterNotFlag -Parameters $PSBoundParameters`. `Test-ServerConnectivity` calls the same helper.
+- `Connect-OneView -DryRun` (no host) now forwards `-JsonConfig`, so `Test-ServerConnectivity` resolves the appliance from `configs/connection_hosts.json` and stays **non-interactive** (no host prompt). `-DryRun` never reads credentials and never makes a live connection, per the existing config-only rule.
+- `Test-ServerConnectivity` live branch now only prompts for a host when the session is **interactive** (real TTY and `AUTOMATED_MODE`/`CI` unset); under automation it fails fast with `ManagementHost is required` instead of hanging.
+
+<a name="verification-params"></a>
+
+#### Verification
+
+- `Connect-OneView --DryRun` -> rejected: `Invalid value for parameter -ManagementHost : '--DryRun'. It looks like a parameter flag ...` (no prompt, no credentials).
+- `Connect-OneView -ManagementHost -DryRun` -> rejected by PowerShell (`Missing an argument for parameter 'ManagementHost'`).
+- `Connect-OneView -DryRun` -> AVAILABLE [DRY-RUN], host resolved from config, non-interactive.
+- `Connect-OneView` (live, no host, `AUTOMATED_MODE=true`) -> fails fast with `ManagementHost is required`, no hang.
+- `make automation-mode-tests`: **103 passed, 0 failed**, 1 pre-existing skip; `scripts/lint.ps1` (PSScriptAnalyzer): 146 files, all checks passed.

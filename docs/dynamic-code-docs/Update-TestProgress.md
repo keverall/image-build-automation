@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/Update-TestProgress.ps1
-generated: 2026-08-06
+generated: 2026-08-10
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -41,7 +41,7 @@ Extracts test summary from the latest automation test log, prompts for test run 
 | `-AddOneViewRow` | Add a new Phase 11 execution evidence row to OneView test plan. |
 | `-OvPhases` | Phase(s) for new OneView row (default: "Phases 1-10"). |
 | `-OvTester` | Tester name for new OneView row (default: "<tester>"). |
-| `-OvAppliance` | Appliance name for new OneView row (default: "va-oneviewt-ap"). |
+| `-OvAppliance` | Appliance name for new OneView row (default: "oneview.example.com"). |
 | `-OvResult` | Result for new OneView row (default: "Pending"). |
 | `-ReportsDir` | Output directory for generated HTML reports (default: docs/Automation/Testing_Reports). |
 | `-SkipHtml` | Skip HTML regeneration (used by tests to keep runs hermetic). |
@@ -121,7 +121,7 @@ Non-interactive mode with explicit parameters.
     Tester name for new OneView row (default: "<tester>").
 
 .PARAMETER OvAppliance
-    Appliance name for new OneView row (default: "va-oneviewt-ap").
+    Appliance name for new OneView row (default: "oneview.example.com").
 
 .PARAMETER OvResult
     Result for new OneView row (default: "Pending").
