@@ -85,7 +85,7 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
-| 2026-08-06 | Added docs/maint-mode-status.md to summarise the state and progress on maintenance mode commands and build | Kev Everall |
+| 2026-08-06 | Added docs/Maintenance-Mode/maint_mode_status.md to summarise the state and progress on maintenance mode commands and build | Kev Everall |
 
 <a name="key-findings"></a>
 
