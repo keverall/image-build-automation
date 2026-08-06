@@ -380,11 +380,8 @@ For EU GDPR/EMIR regulated environments, consider:
 # OneView connectivity test using config file (Test environment)
 pwsh scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
-# Test with explicit appliance host (no config lookup)
+# Test with explicit appliance host (credentials prompted interactively)
 pwsh scripts/test-connectivity.ps1 -ManagementHost 'oneview-test.ad.example.com'
-
-# Test with explicit credential
-pwsh scripts/test-connectivity.ps1 -ManagementHost 'oneview-test.ad.example.com' -Credential (Get-Credential)
 ```
 
 Note: `Test-ServerConnectivity` is OneView-only. For SCOM connectivity, use `Test-ScomMaintenanceConnectivity`.

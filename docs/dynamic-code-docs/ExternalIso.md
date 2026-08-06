@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/ExternalIso.ps1
-generated: 2026-08-02
+generated: 2026-08-06
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,7 +18,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-The iLO virtual media controller requires network-accessible ISO sources. Supported formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Local file path: Auto-shared via an SMB share when run as Administrator (otherwise an existing SMB/HTTP path must be supplied) iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or 'C:\isos\win.iso'). The iLO BMC is a separate management controller on the physical server and cannot access local drives on your workstation. NOTE: This is a module-internal helper (defined once in Private/) and is dot-sourced into the module scope. It is intentionally not exported.
+The iLO virtual media controller requires network-accessible ISO sources. Supported formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Local file path: Not supported directly — iLO cannot reach local drives on the automation host. Supply an SMB/UNC or HTTPS path instead. This module never attempts to create SMB shares or requires Administrator privileges (regulated banking environments). iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or 'C:\isos\win.iso'). The iLO BMC is a separate management controller on the physical server and cannot access local drives on your workstation. Local paths are intentionally NOT auto-shared — this module never requires or attempts Administrator privileges. Supply an SMB/UNC, NFS, or HTTPS path instead. NOTE: This is a module-internal helper (defined once in Private/) and is dot-sourced into the module scope. It is intentionally not exported.
 
 <a name="parameters"></a>
 
@@ -44,12 +44,18 @@ The iLO virtual media controller requires network-accessible ISO sources. Suppor
       - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
       - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
       - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
-      - Local file path: Auto-shared via an SMB share when run as Administrator
-        (otherwise an existing SMB/HTTP path must be supplied)
+       - Local file path: Not supported directly — iLO cannot reach local
+         drives on the automation host. Supply an SMB/UNC or HTTPS path
+         instead. This module never attempts to create SMB shares or
+         requires Administrator privileges (regulated banking environments).
 
-    iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or
-    'C:\isos\win.iso'). The iLO BMC is a separate management controller on
-    the physical server and cannot access local drives on your workstation.
+     iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or
+     'C:\isos\win.iso'). The iLO BMC is a separate management controller on
+     the physical server and cannot access local drives on your workstation.
+
+     Local paths are intentionally NOT auto-shared — this module never
+     requires or attempts Administrator privileges. Supply an SMB/UNC,
+     NFS, or HTTPS path instead.
 
     NOTE: This is a module-internal helper (defined once in Private/) and is
     dot-sourced into the module scope. It is intentionally not exported.

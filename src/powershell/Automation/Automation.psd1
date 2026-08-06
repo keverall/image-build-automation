@@ -89,6 +89,7 @@
         'Set-MaintenanceMode'
         'Start-InstallMonitor'
         'Start-PhysicalServerBuild'
+        'Configure-PhysicalBuild'
         'Get-OneViewServerTarget'
         'Get-OneViewConnectionStatus'
         'Get-OneViewServerList'
@@ -112,6 +113,7 @@
         'Test-ServerConnectivity'
         'Test-ServerList'
         # ── OneView session management ──────────────────────────────────────────
+        'Connect-OneView'
         'Disconnect-OneView'
         # ── Config / credential helpers ─────────────────────────────────────────
         'Import-JsonConfig'

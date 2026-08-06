@@ -35,9 +35,10 @@ function Disconnect-OneView {
           Timestamp   [string] - UTC ISO 8601
 
     .NOTES
-        This command is the counterpart to Test-ServerConnectivity, which establishes
-        the persistent OneView session. The session is also automatically closed when
-        the PowerShell session ends.
+        This command is the counterpart to Connect-OneView (and the underlying
+        Test-ServerConnectivity), which establishes the persistent OneView
+        session. The session is also automatically closed when the PowerShell
+        session ends.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]

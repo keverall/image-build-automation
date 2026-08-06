@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-Firmware.ps1
-generated: 2026-08-05
+generated: 2026-08-06
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,6 +15,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Examples](#examples)
   - [Example 1](#example-1)
   - [Example 2](#example-2)
+  - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
 <a name="description"></a>
@@ -35,6 +36,7 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
 | `-ServerList` _(Aliases: -SrvrList)_ | Path to server_list.txt. Only used for -DryRun mock targeting. |
 | `-OutputDir` _(Aliases: -OutDir)_ | Output directory. |
+| `-FirmwareFolders` _(Aliases: -FwDirs)_ | Additional firmware component source directories (string array). These are local folder paths containing pre-downloaded HPE SUT component packages (e.g. '.spp' component folders or extracted firmware update packs). Each folder is passed to hpe_sut via the --firmware-components flag so SUT includes them alongside the manifest-specified components. Use this when Marin provides firmware component folders outside the standard manifest repository. Example: Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') |
 | `-SkipDownload` _(Aliases: -SkipDl)_ | Skip component download step. |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate without executing. |
 
@@ -56,6 +58,14 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv
 
 ```powershell
 Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
+```
+
+<a name="example-3"></a>
+
+### Example 3
+
+```powershell
+Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 ```
 
 <a name="original-comment-based-help"></a>
@@ -91,6 +101,18 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumbe
     .PARAMETER OutputDir
         Output directory.
 
+    .PARAMETER FirmwareFolders
+        Additional firmware component source directories (string array). These are
+        local folder paths containing pre-downloaded HPE SUT component packages
+        (e.g. '.spp' component folders or extracted firmware update packs).
+        Each folder is passed to hpe_sut via the --firmware-components flag so
+        SUT includes them alongside the manifest-specified components. Use this
+        when Marin provides firmware component folders outside the standard
+        manifest repository.
+
+        Example:
+          Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+
     .PARAMETER SkipDownload
         Skip component download step.
 
@@ -104,6 +126,8 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumbe
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
     .EXAMPLE
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
+    .EXAMPLE
+        Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 ```
 
 ---

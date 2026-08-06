@@ -64,16 +64,13 @@ function Get-SmbPathFromDriveLetter {
     if (-not $psDrive.DisplayRoot) {
         Write-Host "Drive $DriveLetter`: is a local drive, not a mapped network drive." -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "To find the SMB address, you have two options:" -ForegroundColor Cyan
+        Write-Host "  iLO cannot access local drives. This module does not create SMB" -ForegroundColor Yellow
+        Write-Host "  shares or require Administrator privileges (regulated banking" -ForegroundColor Yellow
+        Write-Host "  environment)." -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "1. If the drive is already shared on the network:" -ForegroundColor Gray
-        Write-Host "   Run: Get-SmbShare | Where-Object { \$_.Path -eq '$($psDrive.Root)' }" -ForegroundColor Gray
-        Write-Host "   Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\ShareName\file.iso'" -ForegroundColor Gray
-        Write-Host ""
-        Write-Host "2. Create a new SMB share for this drive:" -ForegroundColor Gray
-        Write-Host "   Run (as Administrator):" -ForegroundColor Gray
-        Write-Host "   New-SmbShare -Name 'isos' -Path '$($psDrive.Root)' -ReadAccess 'Everyone'" -ForegroundColor Gray
-        Write-Host "   Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\isos\file.iso'" -ForegroundColor Gray
+        Write-Host "  Supply the ISO via an already-shared path:" -ForegroundColor Cyan
+        Write-Host "    -ExternalIsoPath '\\fileserver\share\win2019.iso'" -ForegroundColor Gray
+        Write-Host "    -ExternalIsoPath 'https://fileserver/isos/win2019.iso'" -ForegroundColor Gray
         return $null
     }
 
@@ -96,7 +93,9 @@ function Resolve-ExternalIsoPath {
           - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
           - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
           - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
-          - Local file path: MUST be copied to a network share first
+          - Local file path: NOT supported — iLO cannot reach local drives.
+            Supply an SMB/UNC or HTTPS path instead. This module never creates
+            SMB shares or requires Administrator privileges.
 
         iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or
         'C:\isos\win.iso'). The iLO BMC is a separate management controller on
@@ -162,97 +161,34 @@ function Resolve-ExternalIsoPath {
             return $cifsUrl
         }
 
-        # It's a local drive - requires Administrator to create SMB share
+        # It's a local drive - not supported (iLO cannot access local drives,
+        # and this environment does not permit Administrator privileges)
         Write-Host ""
         Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Red
-        Write-Host "  ║  WARNING: Local Drive Path Detected                              ║" -ForegroundColor Red
+        Write-Host "  ║  ERROR: Local Drive Path Not Supported                           ║" -ForegroundColor Red
         Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Red
         Write-Host ""
         Write-Host "  Path: $IsoPath" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "  The iLO BMC is a separate physical controller on the server." -ForegroundColor Yellow
         Write-Host "  It CANNOT access local drives (H:\, C:\, etc.) on this machine." -ForegroundColor Yellow
+        Write-Host "  This module does not create SMB shares or require Administrator" -ForegroundColor Yellow
+        Write-Host "  privileges (regulated banking environment)." -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "  To use this ISO, you need an SMB (network share) path." -ForegroundColor Cyan
+        Write-Host "  Supply an already-shared ISO path instead:" -ForegroundColor Cyan
+        Write-Host "    -ExternalIsoPath '\\fileserver\share\win2019.iso'" -ForegroundColor Gray
+        Write-Host "    -ExternalIsoPath 'https://fileserver/isos/win2019.iso'" -ForegroundColor Gray
         Write-Host ""
-        
+
         if (-not (Test-Path $IsoPath)) {
             throw "ISO file not found: $IsoPath"
         }
-        
-        $fileInfo = Get-Item $IsoPath
-        $isoDirectory = Split-Path $IsoPath -Parent
-        $isoFileName = $fileInfo.Name
-        $computerName = $env:COMPUTERNAME
-        
-        # Check if running as Administrator
-        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-        
-        if ($isAdmin) {
-            # Auto-create SMB share
-            $shareName = "isos_" + ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Substring(0, [Math]::Min(20, ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Length))
-            
-            Write-Host "  [OK] Running as Administrator - creating SMB share automatically..." -ForegroundColor Green
-            Write-Host ""
-            Write-Host "  Share name:   $shareName" -ForegroundColor Gray
-            Write-Host "  Share path:   $isoDirectory" -ForegroundColor Gray
-            Write-Host "  Computer:     $computerName" -ForegroundColor Gray
-            
-            try {
-                $existingShare = Get-SmbShare -Name $shareName -ErrorAction SilentlyContinue
-                
-                if ($existingShare) {
-                    Write-Host "  [OK] Share already exists" -ForegroundColor Green
-                } else {
-                    New-SmbShare -Name $shareName -Path $isoDirectory -ReadAccess 'Everyone' -ErrorAction Stop | Out-Null
-                    Write-Host "  [OK] Share created successfully" -ForegroundColor Green
-                }
-                
-                $uncPath = "\\$computerName\$shareName\$isoFileName"
-                Write-Host "  [OK] UNC path: $uncPath" -ForegroundColor Green
-                
-                $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
-                Write-Host "  [OK] CIFS URL for iLO: $cifsUrl" -ForegroundColor Green
-                
-                return $cifsUrl
-                
-            } catch {
-                throw "Failed to create SMB share: $($_.Exception.Message)"
-            }
-        } else {
-            # Not running as Administrator - show instructions
-            Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
-            Write-Host "  ║  Administrator Privileges Required                               ║" -ForegroundColor Yellow
-            Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "  You are NOT running PowerShell as Administrator." -ForegroundColor Red
-            Write-Host "  Creating an SMB share requires Administrator privileges." -ForegroundColor Red
-            Write-Host ""
-            Write-Host "  OPTION 1: Run as Administrator (if you have access)" -ForegroundColor Cyan
-            Write-Host "    1. Close this PowerShell window" -ForegroundColor Gray
-            Write-Host "    2. Right-click PowerShell → Run as Administrator" -ForegroundColor Gray
-            Write-Host "    3. Re-run your command with the same local path" -ForegroundColor Gray
-            Write-Host ""
-            Write-Host "  OPTION 2: Ask your Administrator to create the share" -ForegroundColor Cyan
-            Write-Host "    Ask your IT admin to run this command on $computerName`:" -ForegroundColor Gray
-            Write-Host ""
-            Write-Host "    New-SmbShare -Name 'isos' -Path '$isoDirectory' -ReadAccess 'Everyone'" -ForegroundColor White
-            Write-Host ""
-            Write-Host "    Then use this SMB path in your command:" -ForegroundColor Gray
-            Write-Host "    -ExternalIsoPath '\\$computerName\isos\$isoFileName'" -ForegroundColor White
-            Write-Host ""
-            Write-Host "  OPTION 3: Use an existing SMB/HTTP path" -ForegroundColor Cyan
-            Write-Host "    If the ISO is already on a network share or web server, use that path:" -ForegroundColor Gray
-            Write-Host "    -ExternalIsoPath '\\fileserver\share\$isoFileName'" -ForegroundColor White
-            Write-Host "    -ExternalIsoPath 'https://webserver/isos/$isoFileName'" -ForegroundColor White
-            Write-Host ""
-            
-            throw "Local drive path '$IsoPath' requires Administrator privileges to create SMB share, or an existing SMB/HTTP path must be provided."
-        }
+
+        throw "Local drive path '$IsoPath' is not supported. Supply -ExternalIsoPath as an SMB/UNC (\\server\share\file.iso) or HTTPS URL instead. This module does not auto-create shares or require Administrator privileges."
     }
 
     # Unknown format
-    throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTTPS URL, NFS path, UNC/SMB path (\\server\share\file.iso), or local path with -RepoLocalPath/-RepoBaseUrl."
+    throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTTPS URL, NFS path, or UNC/SMB path (\\server\share\file.iso)."
 }
 
 function Confirm-IsoDeployment {
@@ -369,18 +305,16 @@ function Start-PhysicalServerBuild {
           - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
           - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
           - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso')
-          - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share
-        
+          - Local path: NOT supported — iLO cannot access local drives. Supply
+            an SMB/UNC or HTTPS path instead. This module never creates SMB
+            shares or requires Administrator privileges (regulated banking env).
+
         IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'):
-          The iLO BMC cannot access local drives. When a local path is supplied:
-            - If running as Administrator: Creates SMB share automatically
-            - If NOT running as Administrator: Command will FAIL with instructions
-              to either run as Administrator or obtain an SMB path from your admin
-        
+          The iLO BMC cannot access local drives on the automation host. This
+          module does NOT auto-create SMB shares and does NOT require
+          Administrator privileges. Supply an already-shared path instead.
+
         When supplied, -SkipIsoBuild and -SkipPublish are implied.
-        For non-Administrator users, obtain the SMB path from your IT admin:
-          - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'
-          - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso'
 
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
@@ -395,6 +329,19 @@ function Start-PhysicalServerBuild {
     .PARAMETER SkipMount
     .PARAMETER SkipMonitor
     .PARAMETER SkipPostBuild
+    .PARAMETER SkipFirmware
+        Skip the post-OS firmware update step. By default, if -FirmwareFolders
+        are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked
+        after post-build validation.
+
+    .PARAMETER FirmwareFolders
+        Additional firmware component source directories (string array) passed
+        to Update-Firmware for post-OS firmware updates via HPE SUT.
+        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+
+    .PARAMETER FirmwareConfig
+        Path to a firmware manifest JSON passed to Update-Firmware.
+        Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json'
 
     .PARAMETER Mock
         Run with mocked calls - no network calls are made; useful for CI smoke tests.
@@ -470,7 +417,10 @@ function Start-PhysicalServerBuild {
         [switch] $InMaintenanceWindow,
         [switch] $AllowUnknownIsoUrl,
         [Alias('SkipConf')]
-        [switch] $SkipConfirmation
+        [switch] $SkipConfirmation,
+        [string[]] $FirmwareFolders = @(),
+        [string] $FirmwareConfig = $null,
+        [switch] $SkipFirmware
     )
 
     if ($Mock -and -not $DryRun) {
@@ -616,6 +566,19 @@ function Start-PhysicalServerBuild {
             $r = Test-PostBuildValidation -Hostname $ExpectedHostname -Domain $Domain `
                 -DryRun:$DryRun
             _Step 'post_build_validation' $r
+        }
+
+        if (-not $SkipFirmware -and ($FirmwareFolders.Count -gt 0 -or $FirmwareConfig)) {
+            $fwParams = @{
+                Server   = $ExpectedHostname
+                OutputDir = 'output\firmware'
+                DryRun   = $DryRun
+            }
+            if ($FirmwareConfig)        { $fwParams.Config = $FirmwareConfig }
+            if ($FirmwareFolders.Count) { $fwParams.FirmwareFolders = $FirmwareFolders }
+            Write-Host "`n  Starting post-OS firmware update..." -ForegroundColor Cyan
+            $r = Update-Firmware @fwParams
+            _Step 'firmware_update' $r
         }
 
         return $overall

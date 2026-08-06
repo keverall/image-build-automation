@@ -40,7 +40,7 @@ Get-Command Set-MaintenanceMode
 
 ## What Gets Installed
 
-- **Automation module** auto-import (provides `Set-MaintenanceMode`, `Test-ServerConnectivity`, etc.)
+- **Automation module** auto-import (provides `Set-MaintenanceMode`, `Connect-OneView`, `Test-ServerConnectivity`, `Disconnect-OneView`, etc.)
 - **oh-my-posh** theme and **posh-git** for an enhanced terminal UX
 - Convenience wrapper `scripts/Setup-Profile.ps1` that wires the above into `$PROFILE`
 

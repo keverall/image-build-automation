@@ -619,6 +619,7 @@ Export-ModuleMember -Function @(
     # Orchestrator
     'Start-AutomationOrchestrator'
     'Start-PhysicalServerBuild'
+    'Configure-PhysicalBuild'
     # Control
     'New-CIPipelineCtrl'
     'New-IRequestCtrl'
@@ -657,6 +658,7 @@ Export-ModuleMember -Function @(
     'Test-ServerConnectivity'
     'Test-ServerList'
     # OneView session management
+    'Connect-OneView'
     'Disconnect-OneView'
     # Config / credential helpers
     'Import-JsonConfig'
