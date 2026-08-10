@@ -367,6 +367,17 @@ function Start-PhysicalServerBuild {
         operator must type 'YES' to confirm the deployment plan (server details, ISO,
         and actions). Use -SkipConfirmation for automated/unattended deployments.
 
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        destructive action. If it is OMITTED the command fails early with an
+        expressive, logged error and performs no action. If it does NOT match the
+        target, the build is aborted with no changes. When it matches, a destructive
+        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
+        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        'quickview.ilo03.alp'. This prevents accidentally overwriting a production
+        server when the client's test server lives on the production network.
+
     .RETURNS
         [hashtable] with Success, Steps (ordered list of step results), AuditFile.
 
@@ -420,12 +431,26 @@ function Start-PhysicalServerBuild {
         [switch] $SkipConfirmation,
         [string[]] $FirmwareFolders = @(),
         [string] $FirmwareConfig = $null,
-        [switch] $SkipFirmware
+        [switch] $SkipFirmware,
+        [string] $GuardRail = $null
     )
 
     if ($Mock -and -not $DryRun) {
         Write-Verbose "-Mock supplied - forcing DryRun behaviour for all downstream steps"
         $DryRun = $true
+    }
+
+    # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
+    # Fail early (graceful, logged) when omitted so we never overwrite an
+    # unapproved server on a shared/production network.
+    $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
+        -CommandName 'Start-PhysicalServerBuild' -ActionDescription 'physical server build'
+    if ($grCheck) {
+        $grCheck['server']      = $SrvrId
+        $grCheck['start_time']  = Get-UtcTimestamp
+        $grCheck['end_time']    = Get-UtcTimestamp
+        $grCheck['steps']       = @{}
+        return $grCheck
     }
 
     # ── Handle External ISO Path ──────────────────────────────────────────────
@@ -517,9 +542,29 @@ function Start-PhysicalServerBuild {
             }
         }
 
+        # ── Guard rail (build/deploy safety gate) ──────────────────────────────
+        # When -GuardRail is supplied, the resolved target server name MUST match
+        # the pattern before any destructive action. Resolved name prefers the
+        # OneView-resolved server name (incl. for serial lookups); falls back to
+        # the supplied identifier otherwise.
+        if ($GuardRail) {
+            $guardName   = if ($oneview -and $oneview.Details -and $oneview.Details.name) { $oneview.Details.name } else { $SrvrId }
+            $guardSerial = if ($oneview -and $oneview.Details -and $oneview.Details.serial_number) { $oneview.Details.serial_number } else { $null }
+            $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $guardName `
+                -SerialNumber $guardSerial -ApplianceName $OneViewHost `
+                -ActionDescription 'physical server build' -DryRun:$DryRun -SkipConfirmation:$SkipConfirmation
+            if (-not $guardOk) {
+                $overall['success'] = $false
+                $overall['guard_rail_blocked'] = $true
+                return $overall
+            }
+        }
+
         if (-not $SkipMount -and $IloIp -and $isoUrl) {
             # ── Confirmation Prompt ─────────────────────────────────────────────
-            if (-not $SkipConfirmation -and -not $DryRun) {
+            # When a -GuardRail was supplied it already performed the destructive
+            # confirmation inside Assert-GuardRail, so we skip the generic prompt.
+            if (-not $SkipConfirmation -and -not $DryRun -and -not $GuardRail) {
                 $confirmed = Confirm-IsoDeployment -SrvrId $SrvrId `
                     -IloIp $IloIp -IsoUrl $isoUrl -OneViewDetails $oneview.Details -DryRun:$DryRun
                 if (-not $confirmed) {

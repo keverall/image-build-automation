@@ -166,6 +166,44 @@ function Test-ServerConnectivity {
             }
         }
 
+        # Guard: never drop the live OneView session by connecting to a different
+        # appliance. If an active session exists for a DIFFERENT host, refuse and
+        # inform the operator - reconnecting may cause incidents. (Reuse of the
+        # same appliance is handled downstream by Connect-OneViewSession.)
+        if ($PSBoundParameters.ContainsKey('ManagementHost') -and $ManagementHost) {
+            $active = Get-OneViewActiveSession
+            if ($active) {
+                if ($active.Name -ne $resolvedHost) {
+                    # A live session exists for a DIFFERENT appliance - refuse to
+                    # switch (reconnecting may cause incidents). Operator must
+                    # Disconnect-OneView first.
+                    $result = @{
+                        Available      = $false
+                        Mode           = $Mode
+                        ManagementHost = $resolvedHost
+                        Environment    = $effectiveEnv
+                        NetworkPing    = @{
+                            DnsResolved = $false
+                            Error       = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$resolvedHost'."
+                        }
+                        AuthConnect    = @{
+                            Connected = $false
+                            Error     = "Skipped - already connected to '$($active.Name)'. Run Disconnect-OneView first to switch to '$resolvedHost'."
+                        }
+                        Timestamp      = Get-UtcTimestamp
+                    }
+                    if (-not $Json) { _Format-ConnectivityResult -Result $result }
+                    return $result
+                } else {
+                    # The supplied host matches the active session - reuse it (no
+                    # credentials needed). Without this, the live host path below
+                    # would force a fresh credential lookup and wrongly report
+                    # "no connection" even when already authenticated.
+                    $reuseActiveSession = $true
+                }
+            }
+        }
+
         # Sensible defaults for the live connection (no config file is read).
         $modeCfg = @{ module_name = 'HPEOneView.1000'; use_winrm = $false }
         $useWinRM = $false
@@ -250,9 +288,12 @@ function Test-ServerConnectivity {
     }
 
     # ── Resolve credentials ───────────────────────────────────────────────────
-    # LIVE run: credentials are NEVER read from config.  They must be supplied
-    # via -Credential or entered interactively, so the operator explicitly
-    # authorises the connection to the exact host they named.
+    # LIVE run: credentials are NEVER read from config.  Resolution order mirrors
+    # the help text and the bare (no-host) path, so the two are consistent:
+    #   1. -Credential (explicit, highest priority)
+    #   2. reusing the active OneView session when -ManagementHost matches it
+    #   3. ONEVIEW_USER / ONEVIEW_PASSWORD env, then CyberArk (Get-OneViewCredentials)
+    #   4. otherwise auth is skipped with a clear message - this command NEVER prompts.
     # DRYRUN: mock credentials - no real secret is required.
     $resolvedUser = $null
     $resolvedSecurePass = $null
@@ -264,22 +305,35 @@ function Test-ServerConnectivity {
             # The active session is already authenticated; Connect-OneViewSession
             # reuses it without needing credentials. Never prompt.
         } else {
-            # No credentials and not reusing an active session: authentication is
-            # impossible, so report a clear skip. This command must NEVER prompt
-            # for a username/password - to authenticate, connect with
-            # Connect-OneView -ManagementHost <host> (which prompts) or supply
-            # -Credential / ONEVIEW_USER + ONEVIEW_PASSWORD.
-            $result = @{
-                Available      = $false
-                Mode           = $Mode
-                ManagementHost = $resolvedHost
-                Environment    = $effectiveEnv
-                NetworkPing    = @{ DnsResolved = $false; Error = "No credentials available to authenticate against '$resolvedHost'." }
-                AuthConnect    = @{ Connected = $false; Error = "Skipped - no credentials. Connect with Connect-OneView -ManagementHost <host> or supply -Credential." }
-                Timestamp      = Get-UtcTimestamp
+            # No explicit -Credential and not reusing the active session: resolve the
+            # credential from ONEVIEW_USER / ONEVIEW_PASSWORD env or CyberArk (exactly
+            # as the help text promises). This keeps the host-supplied path consistent
+            # with the bare path - a connectivity check never prompts, it reuses any
+            # available credential before skipping auth as a last resort.
+            $ovCred = Get-OneViewCredentials
+            $resolvedUser = $ovCred[0]
+            $resolvedSecurePass = if ($ovCred[1]) {
+                ConvertTo-SecureString $ovCred[1] -AsPlainText -Force
+            } else { $null }
+
+            if (-not $resolvedUser -or -not $resolvedSecurePass) {
+                # Authentication is impossible and no credential is available
+                # anywhere (active session, env, CyberArk): skip auth with a clear
+                # message. This command must NEVER prompt - to authenticate, connect
+                # with Connect-OneView -ManagementHost <host> (which prompts) or
+                # supply -Credential / ONEVIEW_USER + ONEVIEW_PASSWORD.
+                $result = @{
+                    Available      = $false
+                    Mode           = $Mode
+                    ManagementHost = $resolvedHost
+                    Environment    = $effectiveEnv
+                    NetworkPing    = @{ DnsResolved = $false; Error = "No credentials available to authenticate against '$resolvedHost'." }
+                    AuthConnect    = @{ Connected = $false; Error = "Skipped - no credentials. Connect with Connect-OneView -ManagementHost <host> or supply -Credential / set ONEVIEW_USER + ONEVIEW_PASSWORD." }
+                    Timestamp      = Get-UtcTimestamp
+                }
+                if (-not $Json) { _Format-ConnectivityResult -Result $result }
+                return $result
             }
-            if (-not $Json) { _Format-ConnectivityResult -Result $result }
-            return $result
         }
     }
 

@@ -117,6 +117,14 @@ function Configure-PhysicalBuild {
         Skip the interactive confirmation prompt. When set, the function returns
         the plan hashtable without waiting for operator input.
 
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before the
+        build plan is even produced. If it is OMITTED the review is aborted early
+        with an expressive, logged error. If it does NOT match, the review is
+        aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        'quickview.ilo03.alp'.
+
     .RETURNS
         [hashtable] with Success, ServerIdentity, IsoDetails, FirmwareDetails,
         DestructiveActions, ValidationChecks, and Plan (for piping to Start-PhysicalBuild).
@@ -169,10 +177,18 @@ function Configure-PhysicalBuild {
         [switch] $SkipIsoUrl,
         [switch] $Force,
         [Alias('SkipConf')]
-        [switch] $SkipConfirmation
+        [switch] $SkipConfirmation,
+        [string] $GuardRail = $null
     )
 
     if (-not $ExpectedHostname) { $ExpectedHostname = $SrvrId }
+
+    # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
+    # Fail early (graceful, logged) when omitted so we never even produce a plan
+    # for an unapproved server on a shared/production network.
+    $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
+        -CommandName 'Configure-PhysicalBuild' -ActionDescription 'build plan review'
+    if ($grCheck) { return $grCheck }
 
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  Physical Build Configuration Review" -ForegroundColor Cyan
@@ -195,6 +211,27 @@ function Configure-PhysicalBuild {
     } else {
         Write-Host "`n[1/4] No OneViewHost or IloIp supplied" -ForegroundColor Yellow
         $serverIdentity = @{ name = $ExpectedHostname; identifier = $SrvrId }
+    }
+
+    # ── Guard rail (build/deploy safety gate, review-only) ────────────────────
+    # When -GuardRail is supplied, the resolved target name MUST match before we
+    # even show the deployment plan. -NonDestructive suppresses the destructive
+    # confirmation prompt (this command only reviews; Start-PhysicalServerBuild
+    # performs the actual overwrite).
+    if ($GuardRail) {
+        $guardName   = if ($serverIdentity -and $serverIdentity.name) { $serverIdentity.name } else { $ExpectedHostname }
+        $guardSerial = if ($serverIdentity -and $serverIdentity.serial_number) { $serverIdentity.serial_number } else { $null }
+        $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $guardName `
+            -SerialNumber $guardSerial -ApplianceName $OneViewHost `
+            -ActionDescription 'build plan review' -SkipConfirmation:$SkipConfirmation -NonDestructive
+        if (-not $guardOk) {
+            return @{
+                Success    = $false
+                Cancelled  = $true
+                Server     = $guardName
+                Reason     = "Guard rail mismatch: '$guardName' does not match guard pattern '$GuardRail'. No plan produced."
+            }
+        }
     }
 
     # ── 2. Resolve ISO URL ───────────────────────────────────────────────────

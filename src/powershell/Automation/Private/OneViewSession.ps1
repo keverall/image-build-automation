@@ -450,12 +450,20 @@ function Connect-OneViewSession {
     }
 
     $existing = Get-OneViewActiveSession
-    if ($existing -and $existing.Name -eq $Appliance) {
-        $result.Connected = $true
-        $result.ReusedSession = $true
-        $result.SessionId = $existing.SessionID
-        $script:ActiveOneViewSession = $existing
-        $script:ActiveOneViewModuleName = $pinned
+    if ($existing) {
+        if ($existing.Name -eq $Appliance) {
+            # Same appliance already connected: reuse the live session. Never drop
+            # it to reconnect - re-establishing could interrupt in-flight work.
+            $result.Connected = $true
+            $result.ReusedSession = $true
+            $result.SessionId = $existing.SessionID
+            $script:ActiveOneViewSession = $existing
+            $script:ActiveOneViewModuleName = $pinned
+            return $result
+        }
+        # An active session to a DIFFERENT appliance exists. Reconnecting to a new
+        # appliance would drop the live session and may cause incidents, so refuse.
+        $result.Error = "Already connected to OneView appliance '$($existing.Name)'. Cannot reconnect to '$Appliance' - doing so would drop the live session. Run Disconnect-OneView first to switch appliances."
         return $result
     }
 
@@ -617,7 +625,7 @@ function Resolve-OneViewSession {
         $result.ReusedSession = $true
 
         if ($OneViewHost -and $OneViewHost -ne $activeSession.Name) {
-            $result.Message = "Already connected to OneView appliance '$($activeSession.Name)'. Reusing that session instead of connecting to '$OneViewHost' (not reconnecting, to avoid dropping the live session). Run Disconnect-OneView first if you need to switch to '$OneViewHost'."
+            $result.Message = "Already connected to OneView appliance '$($activeSession.Name)'. Cannot reconnect to '$OneViewHost' - reusing the existing session (reconnecting would drop the live session). Run Disconnect-OneView first if you need to switch to '$OneViewHost'."
             Write-Warning $result.Message
         } else {
             $result.Message = "Reusing existing OneView session to '$($activeSession.Name)'. Use Disconnect-OneView to close it."

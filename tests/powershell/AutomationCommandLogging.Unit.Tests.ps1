@@ -74,7 +74,7 @@ Describe 'Logging is functional: commands initialise and write logs' {
         $rec = InModuleScope Automation {
             $script:_logCalls = [System.Collections.ArrayList]::new()
             Mock Initialize-Logging -MockWith { $script:_logCalls.Add([PSCustomObject]@{ File = $LogFile; Level = $Level }) | Out-Null }
-            try { Update-Firmware -Server 'srv1' -DryRun } catch { }
+            try { Update-Firmware -Server 'srv1' -GuardRail '.*' -DryRun } catch { }
             ,$script:_logCalls
         }
         ($rec | Where-Object { $_.File -eq 'firmware_updater.log' }) | Should -Not -BeNullOrEmpty

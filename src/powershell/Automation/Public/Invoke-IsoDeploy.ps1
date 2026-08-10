@@ -76,6 +76,16 @@ function Invoke-IsoDeploy {
     .PARAMETER SkipConfirmation
         Skip the interactive confirmation prompt before deployment.
 
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        deployment. If it is OMITTED the command fails early with an expressive,
+        logged error and performs no deployment. If it does NOT match the target,
+        the deployment is aborted with no changes. When it matches, a destructive
+        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
+        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        'quickview.ilo03.alp'.
+
     .RETURNS
         [hashtable] with Success, Server, Summary.
 
@@ -111,8 +121,17 @@ function Invoke-IsoDeploy {
         [Alias('Dry')]
         [Parameter(Mandatory = $false)][switch] $DryRun,
         [Alias('SkipConf')]
-        [Parameter(Mandatory = $false)][switch] $SkipConfirmation
+        [Parameter(Mandatory = $false)][switch] $SkipConfirmation,
+        [string] $GuardRail = $null
     )
+
+    # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
+    # Fail early (graceful, logged) when omitted so we never deploy to an
+    # unapproved server on a shared/production network.
+    $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
+        -CommandName 'Invoke-IsoDeploy' -ActionDescription 'ISO deployment'
+    if ($grCheck) { return $grCheck }
+
     # TERMINAL COMMAND: when the target is not supplied, prompt for it (interactive
     # runs only - suppressed under AUTOMATED_MODE, see AGENTS.md). The documented
     # behaviour for every command in automation_commands.md is to prompt for host
@@ -150,6 +169,20 @@ function Invoke-IsoDeploy {
         if ($resolved.IloIp) { Write-Verbose "Resolved serial '$SerialNumber' -> $Server (iLO $($resolved.IloIp))" }
         else { Write-Verbose "Resolved serial '$SerialNumber' -> $Server" }
     }
+
+    # ── Guard rail (build/deploy safety gate) ──────────────────────────────────
+    # When -GuardRail is supplied, the resolved target server name MUST match the
+    # pattern before any deployment. Applies to the single-server (or serial-
+    # resolved) path; bulk DeployAll has no single known target up front.
+    if ($GuardRail -and $Server) {
+        $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $Server `
+            -SerialNumber $SerialNumber -ApplianceName $OneViewHost `
+            -ActionDescription 'ISO deployment' -DryRun:$DryRun -SkipConfirmation:$SkipConfirmation
+        if (-not $guardOk) {
+            return @{ Success = $false; Error = "Guard rail rejected target '$Server' (guard: '$GuardRail'). No deployment performed." }
+        }
+    }
+
     if (-not $DryRun -and -not $Server) {
         return @{ Success = $false; Error = "Server or SerialNumber is required for non-dryrun ISO deployment" }
     }

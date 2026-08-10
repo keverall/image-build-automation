@@ -27,6 +27,47 @@ Describe 'Connect-OneView - Parameter Validation' {
     }
 }
 
+Describe 'Connect-OneView - Refuse to Reconnect an Active Session' {
+
+    BeforeAll {
+        # Simulate an active OneView session to a specific appliance.
+        $script:activeSession = [PSCustomObject]@{
+            Name      = 'oneview-active.ad.example.com'
+            Connected = $true
+            SessionID = 'active-session-id'
+        }
+        Mock -ModuleName Automation Get-OneViewActiveSession { return $script:activeSession }
+    }
+
+    It 'Should refuse to connect to a DIFFERENT appliance when already connected' {
+        Mock -ModuleName Automation Test-ServerConnectivity { return $null }
+        $result = Connect-OneView -ManagementHost 'oneview-other.ad.example.com'
+        $result.Available | Should -Be $false
+        $result.Message   | Should -Match 'Already connected'
+        $result.Message   | Should -Match 'oneview-active.ad.example.com'
+        # Must not attempt a (re)connection that would drop the live session.
+        Should -Invoke -ModuleName Automation Test-ServerConnectivity -Times 0 -Exactly
+    }
+
+    It 'Should reuse the active session (not reconnect) when given the SAME appliance' {
+        Mock -ModuleName Automation Test-ServerConnectivity {
+            param($ManagementHost, $PingTimeoutMs)
+            return @{
+                Available       = $true
+                Mode            = 'oneview'
+                ManagementHost  = $ManagementHost
+                Environment     = 'Prod'
+                NetworkPing     = @{ DnsResolved = $true; TcpPortOpen = $true }
+                AuthConnect     = @{ Connected = $true; Error = $null }
+                Timestamp       = '2026-01-01T00:00:00Z'
+            }
+        }
+        $result = Connect-OneView -ManagementHost 'oneview-active.ad.example.com'
+        $result.Message | Should -Match 'Already connected'
+        Should -Invoke -ModuleName Automation Test-ServerConnectivity -Times 1 -Exactly
+    }
+}
+
 Describe 'Connect-OneView - Delegation to Test-ServerConnectivity' {
 
     It 'Should return Available = false for an unreachable host (no credential supplied in automated mode)' {
