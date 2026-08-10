@@ -14,9 +14,17 @@ Describe 'Update-Firmware - basic invocation and parameter validation' {
         $cmd.Parameters.Keys | Should -Contain 'DryRun'
     }
 
-    It 'Accepts -DryRun switch without throwing' {
-        # Most functions accept -DryRun; calling with it should not throw immediately
-        { & Update-Firmware -DryRun -ErrorAction SilentlyContinue } | Should -Not -Throw
+    It 'Accepts -DryRun switch (with -GuardRail) without throwing' {
+        # Most functions accept -DryRun; calling with it should not throw immediately.
+        # -GuardRail is mandatory on build/deploy commands.
+        { & Update-Firmware -GuardRail '.*' -DryRun -ErrorAction SilentlyContinue } | Should -Not -Throw
+    }
+
+    It 'Fails early (graceful, logged) when -GuardRail is omitted' {
+        $r = & Update-Firmware -DryRun -ErrorAction SilentlyContinue
+        $r.Success | Should -Be $false
+        $r.GuardRailRequired | Should -Be $true
+        $r.Error | Should -Match 'GUARD RAIL REQUIRED'
     }
 
     It 'Rejects unknown parameters (strict mode)' {

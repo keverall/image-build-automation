@@ -107,6 +107,36 @@ if ($ManagementHost) {
     }
 }
 
+# ── Guard: never drop/replace an existing live OneView session ──────────────
+# Reconnecting (to the same or a different appliance) may disrupt in-flight
+# operations on the live session. If we are already connected we reuse the
+# active session and report it. A connection to a DIFFERENT appliance is
+# refused - run Disconnect-OneView first to switch. (-DryRun is exempt: it
+# performs no real connection and so cannot drop the live session.)
+$active = Get-OneViewActiveSession
+if ($active -and -not $DryRun) {
+    if ($ManagementHost -and $active.Name -ne $ManagementHost) {
+        Write-Warning "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$ManagementHost' - this would drop the live session. Run Disconnect-OneView first to switch appliances."
+        return @{
+            Available      = $false
+            Mode           = 'oneview'
+            ManagementHost = $ManagementHost
+            Environment    = $(if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { 'Prod' })
+            NetworkPing    = @{ DnsResolved = $false; Error = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$ManagementHost'." }
+            AuthConnect    = @{ Connected = $false; Error = "Skipped - already connected to '$($active.Name)'. Run Disconnect-OneView first to switch to '$ManagementHost'." }
+            Timestamp      = Get-UtcTimestamp
+            Message        = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$ManagementHost'."
+        }
+    }
+    # Same appliance (or no host supplied): reuse the live session, do not reconnect.
+    Write-Verbose "Already connected to OneView appliance '$($active.Name)'. Reusing the existing session (not reconnecting)."
+    $statusParams = @{ PingTimeoutMs = 3000 }
+    if ($ManagementHost) { $statusParams['ManagementHost'] = $ManagementHost }
+    $result = Test-ServerConnectivity @statusParams
+    $result.Message = "Already connected to OneView appliance '$($active.Name)'."
+    return $result
+}
+
 # Resolve credentials for the live connection. Connect-OneView is the connect
 # command, so prompting for the password here is expected and is the operator's
 # explicit authorisation to connect to the named appliance. It only prompts when

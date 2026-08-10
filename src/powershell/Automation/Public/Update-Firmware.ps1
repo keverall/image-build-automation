@@ -64,6 +64,14 @@ function Update-Firmware {
     .PARAMETER DryRun
         Simulate without executing.
 
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        firmware update. If it is OMITTED the command fails early with an expressive,
+        logged error and performs no update. If it does NOT match the target, the
+        update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches
+        server 'quickview.ilo03.alp'.
+
     .RETURNS
         [hashtable] with Success (bool) and details.
 
@@ -94,14 +102,34 @@ param(
     [Alias('Dry')]
     [Parameter(Mandatory = $false)][switch] $DryRun,
     [Alias('FwDirs')]
-    [Parameter(Mandatory = $false)][string[]] $FirmwareFolders = @()
+    [Parameter(Mandatory = $false)][string[]] $FirmwareFolders = @(),
+    [string] $GuardRail = $null
 )
+
+    # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
+    # Fail early (graceful, logged) when omitted so we never flash firmware to an
+    # unapproved server on a shared/production network.
+    $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
+        -CommandName 'Update-Firmware' -ActionDescription 'firmware update'
+    if ($grCheck) { return $grCheck }
+
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
         if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
         $Server = $resolved.Identifier
         Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
     }
+
+    # ── Guard rail (build/deploy safety gate) ──────────────────────────────────
+    if ($GuardRail -and $Server) {
+        $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $Server `
+            -SerialNumber $SerialNumber -ApplianceName $OneViewHost `
+            -ActionDescription 'firmware update' -DryRun:$DryRun -SkipConfirmation
+        if (-not $guardOk) {
+            return @{ Success = $false; Error = "Guard rail rejected target '$Server' (guard: '$GuardRail'). No firmware update performed." }
+        }
+    }
+
     if (-not $DryRun -and -not $Server) {
         throw "Server or SerialNumber is required for non-dryrun firmware update"
     }

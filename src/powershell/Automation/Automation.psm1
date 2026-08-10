@@ -587,6 +587,7 @@ $_privateOrder = @(
     'ParameterValidation.ps1', # Assert-ParameterNotFlag (shared parameter-usage guard)
     'OneViewSession.ps1', # Get-OneViewActiveSession, Test-OneViewSessionActive (shared OneView session detection)
     'Logging.ps1',      # Initialize-Logging, Get-Logger
+    'GuardRail.ps1',    # Assert-GuardRail (destructive-action safety gate for build/deploy)
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
     'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild)
@@ -692,6 +693,9 @@ Export-ModuleMember -Function @(
     'Test-ClusterDefinition'
     'New-ServerInfo'
     'Resolve-OneViewTarget'
+    # ISO path resolution (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild;
+    # exported so functional test harnesses can validate path->iLO URL conversion)
+    'Resolve-ExternalIsoPath'
     # Logging / audit / timestamps
     'Initialize-Logging'
     'Get-Logger'

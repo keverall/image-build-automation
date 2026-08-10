@@ -140,6 +140,9 @@
         'New-ServerInfo'
         'Test-ClusterDefinition'
         'Resolve-OneViewTarget'
+        # ISO path resolution (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild;
+        # exported so functional test harnesses can validate path->iLO URL conversion)
+        'Resolve-ExternalIsoPath'
         # ── Logging / audit / timestamps ────────────────────────────────────────
         'Get-Logger'
         'Get-LocalTimestamp'

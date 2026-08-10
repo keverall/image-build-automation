@@ -297,6 +297,59 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
             Should -Not -Throw
     }
 
+    It 'Should resolve credentials from ONEVIEW_USER/ONEVIEW_PASSWORD (no -Credential) instead of failing' {
+        # Host supplied but no -Credential: the bare path reuses an existing
+        # credential, so the host-supplied path must be consistent and resolve
+        # from ONEVIEW_USER/ONEVIEW_PASSWORD / CyberArk rather than reporting
+        # "no credentials supplied".
+        $origUser = $env:ONEVIEW_USER
+        $origPass = $env:ONEVIEW_PASSWORD
+        $listener = $null
+        $probePort = 18444
+        try {
+            $env:ONEVIEW_USER = 'svc-env'
+            $env:ONEVIEW_PASSWORD = 'env-pw'
+            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $probePort)
+            $listener.Start()
+            Mock -ModuleName Automation Connect-OneViewSession {
+                param($Appliance, $Credential)
+                return @{
+                    Connected     = $true
+                    ReusedSession = $false
+                    Appliance     = $Appliance
+                    SessionId     = 'mock-session'
+                    ModuleName    = 'HPEOneView.1000'
+                    Error         = $null
+                }
+            }
+            $result = Test-ServerConnectivity -ManagementHost 'localhost' -Port $probePort -PingTimeoutMs 2000
+            $result.NetworkPing.TcpPortOpen | Should -Be $true
+            $result.AuthConnect.Connected | Should -Be $true
+            Should -Invoke -ModuleName Automation Connect-OneViewSession -Times 1 -Exactly -ParameterFilter {
+                $Credential -is [System.Management.Automation.PSCredential] -and
+                $Credential.UserName -eq 'svc-env'
+            }
+        } finally {
+            if ($listener) { $listener.Stop() }
+            if ($origUser) { $env:ONEVIEW_USER = $origUser } else { $env:ONEVIEW_USER = $null }
+            if ($origPass) { $env:ONEVIEW_PASSWORD = $origPass } else { $env:ONEVIEW_PASSWORD = $null }
+        }
+    }
+
+    It 'Should refuse to reconnect to a DIFFERENT host when already connected' {
+        # A connectivity check must never drop the live session by connecting to
+        # another appliance. With an active session to one host and an explicit
+        # -ManagementHost pointing elsewhere, it should report "already connected".
+        Mock -ModuleName Automation Get-OneViewActiveSession {
+            return [PSCustomObject]@{ Name = 'oneview-active.ad.example.com'; Connected = $true; SessionID = 'sid' }
+        }
+        $result = Test-ServerConnectivity -ManagementHost 'oneview-other.ad.example.com' -PingTimeoutMs 500
+        $result.Available | Should -Be $false
+        $result.AuthConnect.Connected | Should -Be $false
+        $result.AuthConnect.Error | Should -Match 'already connected'
+        $result.NetworkPing.Error | Should -Match 'Already connected'
+    }
+
     It 'Should pass -Credential through to Phase 2 when network is available' {
         # When using a resolvable host with -Credential, the function should
         # attempt authentication (Phase 2). The auth will fail (no real OneView),
@@ -307,5 +360,41 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
         $result | Should -Not -BeNullOrEmpty
         $result.Mode | Should -Be 'oneview'
         $result.ManagementHost | Should -Be 'localhost'
+    }
+
+    It 'Should reuse the active session when -ManagementHost matches it (no credentials needed)' {
+        # Regression: supplying -ManagementHost that matches the active appliance
+        # must reuse the live session instead of forcing a fresh credential lookup
+        # and wrongly reporting "no connection".
+        Mock -ModuleName Automation Get-OneViewActiveSession {
+            return [PSCustomObject]@{ Name = 'localhost'; Connected = $true; SessionID = 'sid' }
+        }
+        $listener = $null
+        $probePort = 18445
+        try {
+            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $probePort)
+            $listener.Start()
+            Mock -ModuleName Automation Connect-OneViewSession {
+                param($Appliance, $Credential)
+                return @{
+                    Connected     = $true
+                    ReusedSession = $true
+                    Appliance     = $Appliance
+                    SessionId     = 'mock-session'
+                    ModuleName    = 'HPEOneView.1000'
+                    Error         = $null
+                }
+            }
+            # No -Credential, no ONEVIEW_* env: would previously fail in the
+            # credential-resolution branch. Now it should reuse the active session.
+            $result = Test-ServerConnectivity -ManagementHost 'localhost' -Port $probePort -PingTimeoutMs 2000
+            $result.Available | Should -Be $true
+            $result.AuthConnect.Connected | Should -Be $true
+            Should -Invoke -ModuleName Automation Connect-OneViewSession -Times 1 -Exactly -ParameterFilter {
+                $Appliance -eq 'localhost'
+            }
+        } finally {
+            if ($listener) { $listener.Stop() }
+        }
     }
 }
