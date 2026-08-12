@@ -144,8 +144,6 @@ when a request would go against best practice.
 - Collapsed multiple consecutive blank lines into a single blank line across all
   generated documentation.
 
-
-
 test results -
 
  image-build-automation  Test-ServerConnectivity                                     0  09:41:54 
@@ -170,7 +168,6 @@ test results -
     Error:     Skipped - no active connection  
 
 ============================================== 
-
 
 Name                           Value   
 ----                           -----   
@@ -204,7 +201,6 @@ Environment                    Prod
     Error:     Skipped - no credentials. Connect with Connect-OneView -ManagementHost <host> or supply -Credential / set ONEVIEW_USER + ONEVIEW_PASSWORD.
 
 ==============================================
-
 
 Name                           Value
 ----                           ----- 
@@ -246,7 +242,6 @@ Error                          No active OneView session. Use Test-ServerConnect
 Enter OneView password for 'va-oneviewt-01': : ****************** 
 This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective action including termination, civil and/or criminal penalties.
 
-
 ============================================== 
   OneView Server List (16 servers)
 ============================================== 
@@ -271,7 +266,6 @@ omg-qlikview-03ilo               CZ22420JCN       On        OK
 omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
-
 
 Name                           Value
 ----                           -----
@@ -305,7 +299,6 @@ omg-qlikview-03ilo               CZ22420JCN       On        OK
 omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
-
 
 Name                           Value 
 ----                           ----- 
@@ -427,7 +420,6 @@ Environment                    Prod
     Error:     Skipped - no credentials. Connect with Connect-OneView -ManagementHost <host> or supply -Credential / set ONEVIEW_USER + ONEVIEW_PASSWORD.
 
 ==============================================
-
 
 Name                           Value
 ----                           -----

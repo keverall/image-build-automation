@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-Firmware.ps1
-generated: 2026-08-10
+generated: 2026-08-13
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -39,6 +39,7 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 | `-FirmwareFolders` _(Aliases: -FwDirs)_ | Additional firmware component source directories (string array). These are local folder paths containing pre-downloaded HPE SUT component packages (e.g. '.spp' component folders or extracted firmware update packs). Each folder is passed to hpe_sut via the --firmware-components flag so SUT includes them alongside the manifest-specified components. Use this when Marin provides firmware component folders outside the standard manifest repository. Example: Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') |
 | `-SkipDownload` _(Aliases: -SkipDl)_ | Skip component download step. |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate without executing. |
+| `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any firmware update. If it is OMITTED the command fails early with an expressive, logged error and performs no update. If it does NOT match the target, the update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
 <a name="examples"></a>
 
@@ -118,6 +119,14 @@ Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\
 
     .PARAMETER DryRun
         Simulate without executing.
+
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        firmware update. If it is OMITTED the command fails early with an expressive,
+        logged error and performs no update. If it does NOT match the target, the
+        update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches
+        server 'quickview.ilo03.alp'.
 
     .RETURNS
         [hashtable] with Success (bool) and details.

@@ -75,6 +75,28 @@ function Connect-OneView {
 # inlining the check in every command.
 Assert-ParameterNotFlag -Parameters $PSBoundParameters
 
+# Common logging: each command writes to its own isolated log under
+# generated/logs/commands/Connect-OneView/, consistent with the other commands.
+Initialize-Logging -CommandName 'Connect-OneView' -LogName "Connect-OneView-Host-$($ManagementHost ?? 'unspecified')"
+$logger = Get-Logger 'Connect-OneView'
+$logger.Info("Connect-OneView invoked: ManagementHost='$ManagementHost' DryRun=$DryRun")
+# ── -DryRun is a CRITICAL-priority, first-checked guard ─────────────────────
+# Per project convention, -DryRun is ALWAYS mocking: it never connects and must
+# IGNORE every other parameter's live behaviour (no host prompt, no credential
+# prompt, no session touch). Check it first, before any host/credential handling,
+# so a -DryRun invocation can never reach an interactive prompt regardless of
+# parameter binding order (-ManagementHost/-Credential have no live effect).
+if ($DryRun) {
+    $targetForMsg = if ($ManagementHost) { " to '$ManagementHost'" } else { '' }
+    Write-Host ""; $logger.Info('')
+    $n1 = "NOTE: -DryRun was supplied. No real connection will be made$targetForMsg."
+    $logger.Info($n1); Write-Host $n1 -ForegroundColor Cyan
+    $n2 = "      Host reachability is validated against mock/config data only (HPE OneView module mocked)."
+    $logger.Info($n2); Write-Host $n2 -ForegroundColor Cyan
+    $n3 = "      Remove -DryRun to connect for real (you will be prompted for credentials)."
+    $logger.Info($n3); Write-Host $n3 -ForegroundColor Cyan
+}
+
 # Connect-OneView is THE connect command: it establishes (and persists) an
 # authenticated OneView session. Test-ServerConnectivity is now a STATUS CHECK
 # that never prompts, so the connect-time prompting for the appliance host and
@@ -137,27 +159,40 @@ if ($active -and -not $DryRun) {
     return $result
 }
 
-# Resolve credentials for the live connection. Connect-OneView is the connect
-# command, so prompting for the password here is expected and is the operator's
-# explicit authorisation to connect to the named appliance. It only prompts when
-# interactive and no credential was supplied; in automated mode a -Credential or
-# ONEVIEW_USER / ONEVIEW_PASSWORD must be provided.
-if ($ManagementHost -and -not ($PSBoundParameters.ContainsKey('Credential') -and $Credential)) {
-    $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
-    $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
-    if ($isInteractive) {
-        Write-Host "Enter OneView username for '$ManagementHost': " -ForegroundColor Yellow -NoNewline
-        $u = Read-Host
-        if ($u) {
-            $sp = Read-Host "Enter OneView password for '$ManagementHost': " -AsSecureString
-            $Credential = [System.Management.Automation.PSCredential]::new($u, $sp)
-            $params['Credential'] = $Credential
+# ── -DryRun is a CRITICAL-priority, first-checked guard ─────────────────────
+# Per project convention, -DryRun is ALWAYS mocking: it never connects and must
+# IGNORE every other parameter's live behaviour (no host prompt, no credential
+# prompt, no session touch). Check it first, before any host/credential handling,
+# so a -DryRun invocation can never reach an interactive prompt regardless of
+# parameter binding order (-ManagementHost/-Live/-Credential have no effect).
+if ($DryRun) {
+    $params['DryRun'] = $true
+    # (host resolution above already fed -ManagementHost through verbatim, or
+    #  enabled JsonConfig for the no-host case - both are read-only/mock-safe.)
+} else {
+    # Resolve credentials for the live connection. Connect-OneView is the connect
+    # command, so prompting for the password here is expected and is the
+    # operator's explicit authorisation to connect to the named appliance. It
+    # only prompts when interactive and no credential was supplied; in automated
+    # mode a -Credential or ONEVIEW_USER / ONEVIEW_PASSWORD must be provided.
+    if ($ManagementHost -and -not ($PSBoundParameters.ContainsKey('Credential') -and $Credential)) {
+        $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
+        $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
+        if ($isInteractive) {
+            Write-Host "Enter OneView username for '$ManagementHost': " -ForegroundColor Yellow -NoNewline
+            $u = Read-Host
+            if ($u) {
+                $sp = Read-Host "Enter OneView password for '$ManagementHost': " -AsSecureString
+                $Credential = [System.Management.Automation.PSCredential]::new($u, $sp)
+                $params['Credential'] = $Credential
+            }
         }
+        # If no credential is available after the interactive attempt (or in
+        # automated mode), Test-ServerConnectivity simply skips auth with a clear
+        # message.
+    } elseif ($Credential) {
+        $params['Credential'] = $Credential
     }
-    # If no credential is available after the interactive attempt (or in automated
-    # mode), Test-ServerConnectivity simply skips auth with a clear message.
-} elseif ($Credential) {
-    $params['Credential'] = $Credential
 }
 
 $result = Test-ServerConnectivity @params
@@ -178,5 +213,6 @@ $result = Test-ServerConnectivity @params
         $result.Message = "Connection to '$ManagementHost' failed: $detail"
     }
 
+    $logger.Info("Connect-OneView result: Available=$($result.Available) Message='$($result.Message)'")
     return $result
 }

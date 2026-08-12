@@ -1,41 +1,61 @@
 <#
-    testConnectAndList.ps1
-    ------------------------------------------------------------------
+.SYNOPSIS
     Functional / re-runnable test harness for the NON-DESTRUCTIVE OneView
-    connectivity, connection and server-lookup commands:
+    connectivity, connection and server-lookup commands.
 
-        Test-ServerConnectivity, Connect-OneView, Disconnect-OneView,
-        Get-OneViewConnectionStatus, Get-OneViewServerList,
-        Get-OneViewServerTarget, Get-OneViewVersion, Test-ServerList
+.DESCRIPTION
+    Exercises the read-only / connection-lifecycle commands against an appliance,
+    proving they fail gracefully without a session and succeed with one:
 
-    What it exercises
-    -----------------
-      * Running the commands WITHOUT an active OneView session -> they must
-        fail GRACEFULLY with a clear, correct message (never a raw crash).
-      * Connecting (real or -DryRun), then running the SAME commands WITH a
-        session -> they must report success / reachable / data.
-      * Disconnecting, then running again -> graceful failure returns.
-      * A matrix of parameter combinations (-OneViewHost, -Filter, -IncludeServerCount,
-        -IdentifierType serial, -DryRun, etc.).
+      Test-ServerConnectivity, Connect-OneView, Disconnect-OneView,
+      Get-OneViewConnectionStatus, Get-OneViewServerList,
+      Get-OneViewServerTarget, Get-OneViewVersion, Test-ServerList
 
-    Host handling
-    -------------
-      The host is taken from -ManagementHost / -OneViewHost (or prompted). No
-      server names are hard-coded. By default the script runs in SAFE mode:
-      connections are validated with -DryRun and live list commands use -DryRun
-      so nothing is contacted unless you pass -Live with real credentials.
+    * Running the commands WITHOUT an active OneView session -> they must fail
+      GRACEFULLY with a clear, correct message (never a raw crash).
+    * Connecting (real or -DryRun), then running the SAME commands WITH a session
+      -> they must report success / reachable / data.
+    * Disconnecting, then running again -> graceful failure returns.
+    * A matrix of parameter combinations (-OneViewHost, -Filter,
+      -IncludeServerCount, -IdentifierType serial, -DryRun, etc.).
 
-    Logging
-    -------
-      Full logging via the module's common logging commands
-      (Initialize-Logging / Get-Logger). Logs land in
-      generated/logs/commands/testConnectAndList/.
+    The host is taken from -ManagementHost / -OneViewHost (or prompted). No server
+    names are hard-coded. By default the script runs in SAFE mode: connections are
+    validated with -DryRun and live list commands use -DryRun, so nothing is
+    contacted unless you pass -Live with real credentials. Full logging is written
+    via the module's common logging commands (Initialize-Logging / Get-Logger)
+    under generated/logs/commands/testConnectAndList/.
 
-    Usage
-    -----
-      .\testConnectAndList.ps1 -ManagementHost oneview-test.ad.example.com
-      .\testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com -Live -Credential $cred
-      .\testConnectAndList.ps1   # prompts for the appliance host
+.PARAMETER ManagementHost
+    OneView appliance hostname or IP to test against (alias -MgmtHost). Prompted
+    if omitted.
+
+.PARAMETER OneViewHost
+    Alias of -ManagementHost (alias -OVHost).
+
+.PARAMETER Credential
+    PSCredential used for a live (-Live) connection. Prompted when -Live is set
+    and this is omitted.
+
+.PARAMETER Live
+    Perform a REAL connection using -Credential (or a prompt) instead of the
+    default -DryRun validation. Use only against an approved test appliance.
+
+.PARAMETER DryRun
+    Validate connectivity with -DryRun (this is the default-safe behaviour even
+    without -Live).
+
+.PARAMETER PingTimeoutMs
+    TCP connect timeout in milliseconds for reachability probes (default 3000).
+
+.EXAMPLE
+    .\testConnectAndList.ps1 -ManagementHost oneview-test.ad.example.com
+
+.EXAMPLE
+    .\testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com -Live -Credential $cred
+
+.EXAMPLE
+    .\testConnectAndList.ps1   # prompts for the appliance host
 #>
 
 [CmdletBinding()]
@@ -62,17 +82,11 @@ if (-not (Test-Path $modulePath)) {
 Import-Module $modulePath -Force -DisableNameChecking -WarningAction SilentlyContinue
 
 $hostArg = if ($ManagementHost) { $ManagementHost } elseif ($OneViewHost) { $OneViewHost } else { $null }
-if (-not $hostArg) {
-    $hostArg = Read-Host "Enter the OneView appliance host (server name or serial) to test against"
-}
-if (-not $hostArg) {
-    Write-Error "No OneView appliance host supplied. Aborting." -ErrorAction Stop
-}
 
 # ── Logging ──────────────────────────────────────────────────────────────────
-Initialize-Logging -CommandName 'testConnectAndList' -LogName "testConnectAndList-Host-$hostArg"
+Initialize-Logging -CommandName 'testConnectAndList' -LogName "testConnectAndList-Host-$($hostArg ?? 'unspecified')"
 $log = Get-Logger 'testConnectAndList'
-$log.Info("Starting testConnectAndList against appliance '$hostArg' (Live=$Live, DryRun=$DryRun)")
+$log.Info("Starting testConnectAndList (Host=$hostArg, Live=$Live, DryRun=$DryRun)")
 
 # ── Test bookkeeping ──────────────────────────────────────────────────────────
 $results = [System.Collections.ArrayList]::new()
@@ -85,8 +99,11 @@ function Record-Step {
 }
 
 # Run a scriptblock, capturing success/failure and a normalised result object.
-# $ExpectGracefulFail tells the harness that a thrown error / error-hashtable is
-# the CORRECT outcome (used for the "no connection" runs).
+# $ExpectGracefulFail tells the harness that an error / error-hashtable / no-crash
+# result is the CORRECT outcome (used for the "no connection" runs). A command is
+# considered to have failed "gracefully" as long as it did not produce a raw,
+# message-less crash: either it threw with a human-readable message, or it
+# returned a structured result (even a success-shaped one like a skipped probe).
 function Invoke-SafeStep {
     param(
         [string] $Name,
@@ -107,12 +124,21 @@ function Invoke-SafeStep {
                ($output -is [hashtable] -and $output.ContainsKey('Error') -and $output.Error)
 
     if ($ExpectGracefulFail) {
-        # A graceful failure is: it errored OR returned an error hashtable, AND it
-        # produced a human-readable message (not a raw stack trace crash).
-        $hasMessage = ($caught -and $caught.Exception.Message) -or
-                      ($output -is [hashtable] -and ($output.Error -or $output.Message))
-        Record-Step $Name ($errored -and $hasMessage) ("Graceful failure observed: " + (
-            if ($caught) { $caught.Exception.Message } else { ($output.Error ?? $output.Message) }))
+        # Graceful = no raw crash. Derive a human-readable detail from whichever
+        # result we have (thrown message, then error/result fields, then a summary).
+        $detail = if ($caught) {
+            "Graceful failure observed: $($caught.Exception.Message)"
+        } elseif ($output -is [hashtable]) {
+            $msg = $output.Error ?? $output.Message
+            if (-not $msg) { $msg = 'returned result without crashing' }
+            if ($output.Success -eq $false -or $output.Error) { "Graceful failure observed: $msg" }
+            else { "Graceful (no crash): $msg" }
+        } else {
+            $sum = if ($null -ne $output) { "output type: $($output.GetType().Name)" } else { 'no output' }
+            "Graceful (no crash): returned $sum"
+        }
+        $passed = ($null -ne $caught) -or ($null -ne $output)
+        Record-Step $Name $passed $detail
         return
     }
 
@@ -129,14 +155,36 @@ function Invoke-SafeStep {
     }
 }
 
-Write-Host "`n########## testConnectAndList : $hostArg ##########`n" -ForegroundColor Cyan
+# Shared DryRun notice: written to both the screen (Write-Host, real-time for
+# hardware-engineer users) AND the harness logger (so it is persisted in the
+# per-run log file alongside the STEP records). DRY: single helper, called first
+# and repeated after the summary.
+$useDryRun = [bool]$DryRun
+function Write-DryRunNotice {
+    if (-not $useDryRun) { return }
+    $target = if ($hostArg) { " to '$hostArg'" } else { ' (host resolved from config)' }
+    $lines = @(
+        "NOTE: -DryRun was supplied -> MOCK TEST ONLY. No real connection will be made$target."
+        "      Host reachability is validated against mock/config data (HPE OneView module mocked)."
+        "      Remove -DryRun to connect for real (you will be prompted for credentials);"
+        "      if the appliance is unreachable it stops early instead of continuing."
+    )
+    Write-Host ""
+    foreach ($l in $lines) { Write-Host $l -ForegroundColor Cyan; $log.Info($l) }
+    Write-Host ""
+}
+
+if ($useDryRun) {
+    Write-DryRunNotice
+    $log.Info("Running in -DryRun (mock) mode: no real connection will be made.")
+}
 
 # ── Phase 0: ensure we start disconnected ────────────────────────────────────
 Write-Host "`n--- Phase 0: ensure disconnected ---" -ForegroundColor Yellow
 try { Disconnect-OneView -Force -ErrorAction SilentlyContinue } catch { }
 $log.Info("Disconnected any existing session before starting")
 
-# ── Phase 1: WITHOUT a connection (must fail gracefully) ─────────────────────
+# ── Phase 1: WITHOUT a connection (must fail gracefully) ──────────────────────
 Write-Host "`n--- Phase 1: commands WITHOUT an active connection (expect graceful failure) ---" -ForegroundColor Yellow
 
 Invoke-SafeStep 'Test-ServerConnectivity (no session)' -ExpectGracefulFail $true -Script {
@@ -155,72 +203,143 @@ Invoke-SafeStep 'Get-OneViewVersion (no session)' -ExpectGracefulFail $true -Scr
     Get-OneViewVersion
 }
 
-# ── Phase 2: connect, then run WITH a connection ─────────────────────────────
-Write-Host "`n--- Phase 2: connect, then run WITH a session ---" -ForegroundColor Yellow
+# ── Phase 2: connect ──────────────────────────────────────────────────────────
+# -DryRun : validate host resolution only (mocked) via Connect-OneView -DryRun.
+# -Live   : real connection using -Credential (or a prompt).
+# default : real connection; the OneView modules prompt for credentials when
+#           none is supplied (interactive) or fail fast under AUTOMATED_MODE.
+$connectLabel = if ($useDryRun) { 'Connect-OneView (DryRun validation)' } else { 'Connect-OneView (LIVE)' }
+Write-Host "`n--- Phase 2: connect to appliance ---" -ForegroundColor Yellow
 
-if ($Live) {
-    if (-not $Credential) {
-        $Credential = Get-Credential -Message "OneView credentials for '$hostArg'"
+# -DryRun always mocks: it never establishes a real session - it resolves the
+# appliance from connection_hosts.json (or uses -ManagementHost verbatim) and
+# validates host resolution only. A live run (default or -Live) really connects;
+# with -ManagementHost it connects to that host (prompting for credentials when
+# none is supplied), without -ManagementHost Connect-OneView itself prompts for
+# the appliance host and credentials - exactly as the modules handle it.
+$connectLabel = if ($useDryRun) { 'Connect-OneView (DryRun validation)' } else { 'Connect-OneView (LIVE)' }
+$connectResult = $null
+$connectOk = $false
+try {
+    if ($useDryRun) {
+        $connectResult = if ($hostArg) { Connect-OneView -ManagementHost $hostArg -DryRun }
+                         else         { Connect-OneView -DryRun }
+    } else {
+        # Live: let the module prompt for host (when -ManagementHost is absent) and
+        # for credentials (when -Credential is absent) - same as the documented
+        # interactive behaviour of Connect-OneView.
+        if ($Credential) {
+            $connectResult = if ($hostArg) { Connect-OneView -ManagementHost $hostArg -Credential $Credential }
+                             else         { Connect-OneView -Credential $Credential }
+        } else {
+            $connectResult = if ($hostArg) { Connect-OneView -ManagementHost $hostArg }
+                             else         { Connect-OneView }
+        }
     }
-    Invoke-SafeStep 'Connect-OneView (LIVE)' -Script {
-        Connect-OneView -ManagementHost $hostArg -Credential $Credential
-    } -SuccessPredicate { param($r) $r.Available -eq $true }
-} else {
-    Invoke-SafeStep 'Connect-OneView (DryRun validation)' -Script {
-        Connect-OneView -ManagementHost $hostArg -DryRun
-    } -SuccessPredicate { param($r) $r.Available -eq $true }
+    $connectOk = ($connectResult -and $connectResult.Available) -eq $true
+} catch {
+    $connectOk = $false
+    $connectResult = @{ Available = $false; Error = $_.Exception.Message }
+}
+Record-Step $connectLabel $connectOk ("Available=$(($connectResult.Available)) ; $(($connectResult.Message ?? $connectResult.Error))")
+
+# Adopt whatever host the connect step actually resolved (DryRun config lookup
+# or a live interactive host entry) so the matrix below targets that appliance.
+$hostArg = $connectResult.ManagementHost ?? $hostArg
+
+# Re-initialize logging now that the host is resolved: the log file name, level,
+# and all subsequent entries (via a freshly-captured logger) reflect the actual
+# appliance contacted rather than the 'unspecified' placeholder used before the
+# connection was established. Get-Logger captures the log path at creation time
+# (see Logging.ps1), so we must re-call it to bind $log to the new path.
+Initialize-Logging -CommandName 'testConnectAndList' -LogName "testConnectAndList-Host-$($hostArg ?? 'unspecified')"
+$log = Get-Logger 'testConnectAndList'
+$log.Info("Starting testConnectAndList (Host=$hostArg, Live=$Live, DryRun=$DryRun)")
+Write-Host "`n########## testConnectAndList : $hostArg ##########`n" -ForegroundColor Cyan
+
+# A live run needs a real active session for the session-dependent phases. DryRun
+# is always mocked (no session), so the WITH-session commands below run with -DryRun.
+$connected = [bool](Get-OneViewActiveSession)
+
+if (-not $useDryRun -and -not $connected) {
+    # FAIL-FAST on a live run that could not establish a session - stop here
+    # instead of repeating "No active OneView session" for every command below.
+    Write-Host "`nNo active OneView session was established (Live=$Live, DryRun=$useDryRun, connected=$connected)." -ForegroundColor Red
+    Write-Host "Stopping early - the session-dependent command checks (Phase 2b/3/4) are skipped. Correct appliance reachability / credentials and re-run." -ForegroundColor Yellow
+    Record-Step 'Early stop (no live session)' $false "Live connection not established; skipping session-dependent phases."
+}
+if ($useDryRun -or $connected) {
+    # ── Phase 2b: WITH a connection (real session, or DryRun mocks) ──────────────────
+    Write-Host "`n--- Phase 2b: commands WITH a connection (or DryRun mocks) ---" -ForegroundColor Yellow
+
+    if ($useDryRun) {
+        Invoke-SafeStep 'Test-ServerConnectivity (DryRun)' -Script {
+            Test-ServerConnectivity -ManagementHost $hostArg -DryRun
+        } -SuccessPredicate { param($r) $r.ContainsKey('Available') }
+        Invoke-SafeStep 'Get-OneViewConnectionStatus (DryRun)' -Script {
+            Get-OneViewConnectionStatus -OneViewHost $hostArg -DryRun
+        } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+        Invoke-SafeStep 'Get-OneViewServerList (DryRun)' -Script {
+            Get-OneViewServerList -OneViewHost $hostArg -DryRun
+        } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+        Invoke-SafeStep 'Get-OneViewServerTarget (DryRun)' -Script {
+            Get-OneViewServerTarget -OneViewHost $hostArg -SrvrId $hostArg -DryRun
+        } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+        Invoke-SafeStep 'Get-OneViewVersion (DryRun)' -Script {
+            Get-OneViewVersion -OneViewHost $hostArg -DryRun
+        } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    } else {
+        Invoke-SafeStep 'Test-ServerConnectivity (session)' -Script {
+            Test-ServerConnectivity -PingTimeoutMs $PingTimeoutMs
+        } -SuccessPredicate { param($r) $r.ContainsKey('Available') }
+        Invoke-SafeStep 'Get-OneViewConnectionStatus (session)' -Script {
+            Get-OneViewConnectionStatus -IncludeServerCount
+        } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+        Invoke-SafeStep 'Get-OneViewServerList (session)' -Script {
+            Get-OneViewServerList
+        } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+        Invoke-SafeStep 'Get-OneViewServerTarget (session)' -Script {
+            Get-OneViewServerTarget -OneViewHost $hostArg -SrvrId $hostArg -DryRun
+        } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    }
+
+    # ── Phase 3: parameter combination matrix (all DryRun - safe, mocked) ───────────
+    Write-Host "`n--- Phase 3: parameter combination matrix ---" -ForegroundColor Yellow
+
+    Invoke-SafeStep 'Get-OneViewServerList -Filter health:Critical (DryRun)' -Script {
+        Get-OneViewServerList -OneViewHost $hostArg -Filter 'health:Critical' -DryRun
+    } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    Invoke-SafeStep 'Get-OneViewServerList -Filter power:On (DryRun)' -Script {
+        Get-OneViewServerList -OneViewHost $hostArg -Filter 'power:On' -DryRun
+    } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    Invoke-SafeStep 'Get-OneViewServerList -Filter name (DryRun)' -Script {
+        Get-OneViewServerList -OneViewHost $hostArg -Filter "name:$hostArg" -DryRun
+    } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    Invoke-SafeStep 'Get-OneViewConnectionStatus -ServerIdentifier by name (DryRun)' -Script {
+        Get-OneViewConnectionStatus -OneViewHost $hostArg -ServerIdentifier $hostArg -DryRun
+    } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    Invoke-SafeStep 'Get-OneViewServerTarget -IdentifierType Serial (DryRun)' -Script {
+        Get-OneViewServerTarget -OneViewHost $hostArg -SrvrId $hostArg -IdentifierType Serial -DryRun
+    } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    Invoke-SafeStep 'Get-OneViewVersion -OneViewHost (DryRun)' -Script {
+        Get-OneViewVersion -OneViewHost $hostArg -DryRun
+    } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+    Invoke-SafeStep 'Test-ServerList (validation)' -Script {
+        Test-ServerList
+    } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
+
+    # ── Phase 4: disconnect, then verify graceful failure again ─────────────────────
+    Write-Host "`n--- Phase 4: disconnect, then re-run WITHOUT a session ---" -ForegroundColor Yellow
+    try { Disconnect-OneView -Force -ErrorAction SilentlyContinue } catch { }
+    Invoke-SafeStep 'Get-OneViewServerList (after disconnect, expect graceful)' -ExpectGracefulFail $true -Script {
+        Get-OneViewServerList
+    }
+    Invoke-SafeStep 'Get-OneViewConnectionStatus (after disconnect, expect graceful)' -ExpectGracefulFail $true -Script {
+        Get-OneViewConnectionStatus
+    }
 }
 
-# With (or simulating) a session, the status/list commands should succeed.
-Invoke-SafeStep 'Test-ServerConnectivity (session)' -Script {
-    Test-ServerConnectivity -PingTimeoutMs $PingTimeoutMs
-} -SuccessPredicate { param($r) $r.ContainsKey('Available') }
-Invoke-SafeStep 'Get-OneViewConnectionStatus (session)' -Script {
-    Get-OneViewConnectionStatus -IncludeServerCount
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Get-OneViewConnectionStatus (DryRun, no host)' -Script {
-    Get-OneViewConnectionStatus -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Get-OneViewServerList (session)' -Script {
-    Get-OneViewServerList -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-
-# ── Phase 3: parameter combinations ──────────────────────────────────────────
-Write-Host "`n--- Phase 3: parameter combination matrix ---" -ForegroundColor Yellow
-
-Invoke-SafeStep 'Get-OneViewServerList -Filter health:Critical (DryRun)' -Script {
-    Get-OneViewServerList -OneViewHost $hostArg -Filter 'health:Critical' -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Get-OneViewServerList -Filter power:On (DryRun)' -Script {
-    Get-OneViewServerList -OneViewHost $hostArg -Filter 'power:On' -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Get-OneViewServerList -Filter name (DryRun)' -Script {
-    Get-OneViewServerList -OneViewHost $hostArg -Filter "name:$hostArg" -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Get-OneViewConnectionStatus -ServerIdentifier by name (DryRun)' -Script {
-    Get-OneViewConnectionStatus -OneViewHost $hostArg -ServerIdentifier $hostArg -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Get-OneViewServerTarget -IdentifierType Serial (DryRun)' -Script {
-    Get-OneViewServerTarget -OneViewHost $hostArg -SrvrId $hostArg -IdentifierType Serial -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Get-OneViewVersion -OneViewHost (DryRun)' -Script {
-    Get-OneViewVersion -OneViewHost $hostArg -DryRun
-} -SuccessPredicate { param($r) $r.ContainsKey('Success') }
-Invoke-SafeStep 'Test-ServerList (validation)' -Script {
-    Test-ServerList
-}
-
-# ── Phase 4: disconnect, then verify graceful failure again ──────────────────
-Write-Host "`n--- Phase 4: disconnect, then re-run WITHOUT a session ---" -ForegroundColor Yellow
-try { Disconnect-OneView -Force -ErrorAction SilentlyContinue } catch { }
-Invoke-SafeStep 'Get-OneViewServerList (after disconnect, expect graceful)' -ExpectGracefulFail $true -Script {
-    Get-OneViewServerList
-}
-Invoke-SafeStep 'Get-OneViewConnectionStatus (after disconnect, expect graceful)' -ExpectGracefulFail $true -Script {
-    Get-OneViewConnectionStatus
-}
-
-# ── Summary ──────────────────────────────────────────────────────────────────
+# ── Summary ────────────────────────────────────────────────────────────────────
 $passed = ($results | Where-Object { $_.Passed }).Count
 $failed = ($results | Where-Object { -not $_.Passed }).Count
 Write-Host "`n========== testConnectAndList SUMMARY ==========" -ForegroundColor Cyan
@@ -231,6 +350,12 @@ Write-Host "==================================================`n" -ForegroundCol
 $log.Info("testConnectAndList complete: total=$($results.Count) passed=$passed failed=$failed")
 $results | ForEach-Object { "$($_.Name)`t$($_.Passed)`t$($_.Detail)" } |
     Out-File -FilePath (Join-Path (Get-ProjectRoot) "generated/logs/commands/testConnectAndList/testConnectAndList_RESULTS_$(Get-UtcFileTimestamp).txt") -Encoding UTF8
+
+# ── -DryRun reminder (repeated after the summary so it isn't lost) ─────────────
+if ($useDryRun) {
+    Write-DryRunNotice
+    $log.Info("DryRun reminder: mock-only run completed - no real connection was made.")
+}
 
 if ($failed -gt 0) { exit 1 }
 exit 0
