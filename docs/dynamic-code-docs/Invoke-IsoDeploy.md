@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-08-10
+generated: 2026-08-13
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -41,6 +41,7 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | `-RepoLocalPath` _(Aliases: -RepoPath)_ | Local filesystem path of the ISO repository. Required when -ExternalIsoPath is a local file that needs to be copied to make it network-accessible. |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate - no actual deployment. |
 | `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt before deployment. |
+| `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any deployment. If it is OMITTED the command fails early with an expressive, logged error and performs no deployment. If it does NOT match the target, the deployment is aborted with no changes. When it matches, a destructive confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
 <a name="examples"></a>
 
@@ -131,6 +132,16 @@ Invoke-IsoDeploy -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.example.com' -
 
     .PARAMETER SkipConfirmation
         Skip the interactive confirmation prompt before deployment.
+
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        deployment. If it is OMITTED the command fails early with an expressive,
+        logged error and performs no deployment. If it does NOT match the target,
+        the deployment is aborted with no changes. When it matches, a destructive
+        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
+        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        'quickview.ilo03.alp'.
 
     .RETURNS
         [hashtable] with Success, Server, Summary.

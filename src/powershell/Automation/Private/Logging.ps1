@@ -153,7 +153,18 @@ function Get-Logger {
         [Parameter(Mandatory, Position = 0)][string] $Name
     )
     if (-not $script:_Configured) { Initialize-Logging }
-    $logger = [PSCustomObject]@{ Name = $Name }
+    # Capture the log file path / level at creation time. The methods below write
+    # to this captured path, NOT to the mutable $global:__AutomationLogPath
+    # re-read on every call. This keeps a logger's output isolated to the log
+    # that was active when it was created, so a nested command calling
+    # Initialize-Logging (which resets the global) cannot hijack the caller's log.
+    $logPath  = $global:__AutomationLogPath
+    $logLevel = $global:__AutomationLogLevel
+    $logger = [PSCustomObject]@{
+        Name     = $Name
+        LogFile  = $logPath
+        LogLevel = $logLevel
+    }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Info' -Value {
         param([string]$msg)
         $ts  = Get-LogTimestamp
@@ -161,7 +172,7 @@ function Get-Logger {
         # Use Write-Host (information stream) rather than Write-Output so log
         # lines are never collected into a command's return value / pipeline.
         Write-Host $line
-        if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
+        if ($this.LogFile) { $line | Add-Content $this.LogFile }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Warning' -Value {
         param([string]$msg)
@@ -170,7 +181,7 @@ function Get-Logger {
         # -WarningAction Continue keeps log writes non-terminating regardless of
         # the caller's $WarningPreference (e.g. when a command runs under -Stop).
         Write-Warning -Message $line -WarningAction Continue
-        if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
+        if ($this.LogFile) { $line | Add-Content $this.LogFile }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Error' -Value {
         param([string]$msg)
@@ -179,15 +190,15 @@ function Get-Logger {
         # -ErrorAction Continue keeps log writes non-terminating regardless of
         # the caller's $ErrorActionPreference (e.g. when a command runs under -Stop).
         Write-Error -Message $line -ErrorAction Continue
-        if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
+        if ($this.LogFile) { $line | Add-Content $this.LogFile }
     }
     Add-Member -InputObject $logger -MemberType ScriptMethod -Name 'Debug' -Value {
         param([string]$msg)
-        if ($global:__AutomationLogLevel -in @('Debug','Verbose')) {
+        if ($this.LogLevel -in @('Debug','Verbose')) {
             $ts  = Get-LogTimestamp
             $line = "$ts - $($this.Name) - DEBUG - $msg"
             Write-Verbose $line
-            if ($global:__AutomationLogPath) { $line | Add-Content $global:__AutomationLogPath }
+            if ($this.LogFile) { $line | Add-Content $this.LogFile }
         }
     }
     return $logger

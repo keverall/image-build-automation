@@ -48,6 +48,9 @@
   - [View the route map](#view-the-route-map)
   - [Control surface factories and runners](#control-surface-factories-and-runners)
   - [GitLab maintenance trigger](#gitlab-maintenance-trigger)
+- [Functional Test Harnesses](#functional-test-harnesses)
+  - [testConnectAndList](#testconnectandlist)
+  - [testBuildDeploy](#testbuilddeploy)
 - [Troubleshooting](#troubleshooting)
   - [Command not found](#command-not-found)
   - [Run setup again](#run-setup-again)
@@ -444,6 +447,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-ExternalIsoPath` | `-ExtIso` | No | Client-supplied ISO (SMB/UNC or HTTPS; local paths not supported) | - |
 | `-FirmwareFolders` | `-FwDirs` | No | Firmware component source directories (string array) | @() |
 | `-FirmwareConfig` | — | No | Firmware manifest JSON path | - |
+| `-GuardRail` | — | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before the build plan is even produced. Omitting it aborts early with an expressive, logged error. If it does not match, the review is aborted. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. | - |
 | `-InMaintenanceWindow` | — | No | Acknowledge approved maintenance window | - |
 | `-SkipPreBuild` | — | No | Skip pre-build validation | - |
 | `-SkipOneView` | — | No | Skip OneView target resolution | - |
@@ -558,6 +562,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 | `-RepoBaseUrl` | `-` | No | HTTPS base URL of the ISO repository | - |
 | `-RepoLocalPath` | `-` | No | Local path mirrored to `-RepoBaseUrl` | - |
 | `-ExternalIsoPath` | `-ExtIso` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-SkipIsoBuild` and `-SkipPublish` are implied. | - |
+| `-GuardRail` | — | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before any destructive action. Omitting it aborts early with an expressive, logged error and performs no action. If it does not match, the build is aborted. When it matches, a destructive confirmation (typing YES) is still required unless `-SkipConfirmation`/`-DryRun` are supplied. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. | - |
 | `-MonitorTimeoutSeconds` | `-` | No | Max monitoring duration | `7200` |
 | `-MonitorPollSeconds` | `-` | No | Poll interval | `30` |
 | `-SkipPreBuild` | `-` | No | Skip pre-build validation | - |
@@ -722,6 +727,7 @@ Invoke-IsoDeploy -DryRun
 | `-IsoDir` | `-` | No | Directory containing ISO packages | auto-resolved |
 | `-IsoUrl` | `-Iso` | No | Override the ISO URL | - |
 | `-ExternalIsoPath` | `-ExtIso` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-IsoUrl` is ignored and package resolution is skipped. For local paths, an SMB share is auto-created when run as Administrator. | - |
+| `-GuardRail` | — | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before any deployment. Omitting it aborts early with an expressive, logged error and performs no deployment. If it does not match, the deployment is aborted. When it matches, a destructive confirmation (typing YES) is still required unless `-SkipConfirmation`/`-DryRun` are supplied. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. | - |
 | `-RepoBaseUrl` | `-RepoUrl` | No | HTTPS base URL of the ISO repository. Unused by `-ExternalIsoPath` resolution (local files are shared via an auto-created SMB share instead). | - |
 | `-RepoLocalPath` | `-RepoPath` | No | Local filesystem path mirrored to `-RepoBaseUrl`. Unused by `-ExternalIsoPath` resolution. | - |
 | `-SkipConfirmation` | `-SkipConf` | No | Skip the interactive confirmation prompt before deployment. (Currently only enforced by `Start-PhysicalServerBuild`; ignored by `Invoke-IsoDeploy`.) | - |
@@ -980,6 +986,7 @@ Update-Firmware -DryRun
 | `-SkipDownload` | `-SkipDl` | No | Skip component download | - |
 | `-DryRun` | `-Dry` | No | Simulate only | - |
 | `-FirmwareFolders` | `-FwDirs` | No | Additional firmware component source directories (array). Passed to `hpe_sut` via `--firmware-components`. Use when Marin provides firmware folders outside the standard manifest. | `-` |
+| `-GuardRail` | — | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before any firmware update. Omitting it aborts early with an expressive, logged error and performs no update. If it does not match, the update is aborted. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. | - |
 | `-SkipFirmware` | — | No | Skip the post-OS firmware update step (only on `Start-PhysicalServerBuild`). | - |
 
 ```powershell
@@ -1134,6 +1141,53 @@ Run-GitLab -Params @{ TargetId = 'CLU-01'; Action = 'enable' }
 ```
 
 ---
+
+<a name="functional-test-harnesses"></a>
+
+## Functional Test Harnesses
+
+Two re-runnable, parameter-driven PowerShell scripts exercise the live commands
+end-to-end (safe by default — they validate with `-DryRun` and only perform live
+calls when you pass `-Live` with credentials). They take the host/server as
+parameters (or prompt when omitted) and write a full audit log via the module's
+common logging commands. Every command that emits log output initializes its own
+isolated log under `generated/logs/commands/<CommandName>/` via
+`Initialize-Logging` / `Get-Logger`, so a nested command's logging can never
+hijack (or truncate) its caller's log file — the log path is captured per
+logger at creation time. Read-only / connection commands are covered by this
+convention too (not just the documented write commands), so operator-facing
+notices such as the `-DryRun` "mock test only" banner are persisted alongside
+the step records. Both are documented in full under
+[`docs/dynamic-code-docs/testConnectAndList.md`](../dynamic-code-docs/testConnectAndList.md#top)
+and
+[`docs/dynamic-code-docs/testBuildDeploy.md`](../dynamic-code-docs/testBuildDeploy.md#top).
+
+<a name="testconnectandlist"></a>
+
+### testConnectAndList
+
+Non-destructive connectivity / connection / server-lookup harness. Proves every
+read-only command fails **gracefully** without a session and succeeds **with** one,
+and runs a parameter-combination matrix.
+
+```powershell
+pwsh scripts/testConnectAndList.ps1 -ManagementHost oneview-test.ad.example.com
+pwsh scripts/testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com -Live -Credential $cred
+```
+
+<a name="testbuilddeploy"></a>
+
+### testBuildDeploy
+
+Build/deploy pipeline harness with the **mandatory `-GuardRail`** safety gate.
+Validates ISO path → iLO-accessible URL conversion, firmware archive integrity,
+guard-rail match / non-match / omitted behaviour, the confirmation flow, and
+build/deploy variants — all under `-DryRun` unless `-Live` is supplied.
+
+```powershell
+pwsh scripts/testBuildDeploy.ps1 -ManagementHost oneview-test.ad.example.com -Server srv01 -GuardRail 'srv0'
+pwsh scripts/testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
+```
 
 <a name="troubleshooting"></a>
 

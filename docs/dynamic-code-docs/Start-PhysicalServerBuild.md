@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-generated: 2026-08-10
+generated: 2026-08-13
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -53,6 +53,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 | `-InMaintenanceWindow` | Acknowledge that the target server is in an approved maintenance window. Required when -Force is not supplied and the server is currently On. |
 | `-AllowUnknownIsoUrl` | Skip the head-verify check on the ISO URL during pre-build validation (use only when the build pipeline runs offline). |
 | `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt before deployment. By default, the operator must type 'YES' to confirm the deployment plan (server details, ISO, and actions). Use -SkipConfirmation for automated/unattended deployments. |
+| `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any destructive action. If it is OMITTED the command fails early with an expressive, logged error and performs no action. If it does NOT match the target, the build is aborted with no changes. When it matches, a destructive confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. This prevents accidentally overwriting a production server when the client's test server lives on the production network. |
 
 <a name="examples"></a>
 
@@ -188,6 +189,17 @@ Start-PhysicalServerBuild ` -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.
         Skip the interactive confirmation prompt before deployment. By default, the
         operator must type 'YES' to confirm the deployment plan (server details, ISO,
         and actions). Use -SkipConfirmation for automated/unattended deployments.
+
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        destructive action. If it is OMITTED the command fails early with an
+        expressive, logged error and performs no action. If it does NOT match the
+        target, the build is aborted with no changes. When it matches, a destructive
+        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
+        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        'quickview.ilo03.alp'. This prevents accidentally overwriting a production
+        server when the client's test server lives on the production network.
 
     .RETURNS
         [hashtable] with Success, Steps (ordered list of step results), AuditFile.

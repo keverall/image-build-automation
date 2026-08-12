@@ -127,7 +127,15 @@ function Get-OneViewConnectionStatus {
         [switch] $DryRun
     )
 
+    # Common logging: each command writes to its own isolated log under
+    # generated/logs/commands/Get-OneViewConnectionStatus/. Stored at script
+    # scope so the sibling helper _Test-OneViewVersionCompliance can share it
+    # (its `if ($logger)` already expects that).
+    Initialize-Logging -CommandName 'Get-OneViewConnectionStatus' -LogName "Get-OneViewConnectionStatus-Host-$($OneViewHost ?? 'unspecified')"
+    $script:logger = Get-Logger 'OneViewConnectivity'
+
     if ($MockResult) {
+        $logger.Info("Get-OneViewConnectionStatus returning MockResult")
         return $MockResult
     }
 
@@ -142,6 +150,7 @@ function Get-OneViewConnectionStatus {
         }
 
         if (-not $OneViewHost) {
+            $logger.Info("Get-OneViewConnectionStatus: no host and no active session - graceful failure")
             return @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = $script:ONEVIEW_NO_SESSION_MSG }
         }
     }
@@ -155,7 +164,8 @@ function Get-OneViewConnectionStatus {
     }
 
     if ($DryRun) {
-        Write-Output "[DRY RUN] Get-OneViewConnectionStatus Host=$OneViewHost Id=$SrvrId Type=$IdentifierType"
+        $msg = "[DRY RUN] Get-OneViewConnectionStatus Host=$OneViewHost Id=$SrvrId Type=$IdentifierType"
+        $logger.Info($msg); Write-Host $msg
         return @{
             Success = $true; Connected = $true; Reachable = $true; Authenticated = $true
             Appliance = $OneViewHost; Version = $null; ServerCount = $null
@@ -309,10 +319,12 @@ function Get-OneViewConnectionStatus {
         }
 
         $result.Success = $result.Connected
+        $logger.Info("Get-OneViewConnectionStatus result: Success=$($result.Success) Connected=$($result.Connected) Reachable=$($result.Reachable) Authenticated=$($result.Authenticated) Error='$($result.Error)'")
         return $result
     }
     catch {
         $result.Error = "OneView connection status failed: $($_.Exception.Message)"
+        $logger.Error($result.Error)
         return $result
     }
 }

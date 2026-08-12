@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Configure-PhysicalBuild.ps1
-generated: 2026-08-10
+generated: 2026-08-13
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -55,6 +55,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 | `-SkipIsoUrl` | Skip ISO URL reachability check. |
 | `-Force` | Acknowledge server power state is On (informational only — this command does not perform any reboot; included for parity with Start-PhysicalBuild). |
 | `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt. When set, the function returns the plan hashtable without waiting for operator input. |
+| `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before the build plan is even produced. If it is OMITTED the review is aborted early with an expressive, logged error. If it does NOT match, the review is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
 <a name="examples"></a>
 
@@ -175,6 +176,14 @@ Configure-PhysicalBuild -SrvrId 'srv01' -OneViewHost 'oneview.ad.example.com' -E
     .PARAMETER SkipConfirmation
         Skip the interactive confirmation prompt. When set, the function returns
         the plan hashtable without waiting for operator input.
+
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before the
+        build plan is even produced. If it is OMITTED the review is aborted early
+        with an expressive, logged error. If it does NOT match, the review is
+        aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        'quickview.ilo03.alp'.
 
     .RETURNS
         [hashtable] with Success, ServerIdentity, IsoDetails, FirmwareDetails,

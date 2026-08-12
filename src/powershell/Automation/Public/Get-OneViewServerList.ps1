@@ -106,7 +106,13 @@ function Get-OneViewServerList {
         [switch] $DryRun
     )
 
+    # Common logging: each command writes to its own isolated log under
+    # generated/logs/commands/Get-OneViewServerList/.
+    Initialize-Logging -CommandName 'Get-OneViewServerList' -LogName "Get-OneViewServerList-Host-$($OneViewHost ?? 'unspecified')"
+    $logger = Get-Logger 'OneViewServerList'
+
     if ($MockResult) {
+        $logger.Info("Get-OneViewServerList returning MockResult (filter=$Filter)")
         return $MockResult
     }
 
@@ -122,7 +128,8 @@ function Get-OneViewServerList {
     }
 
     if ($DryRun) {
-        Write-Output "[DRY RUN] Get-OneViewServerList Host=$OneViewHost Filter=$Filter"
+        $msg = "[DRY RUN] Get-OneViewServerList Host=$OneViewHost Filter=$Filter"
+        $logger.Info($msg); Write-Host $msg
         return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true }
     }
 
@@ -143,6 +150,7 @@ function Get-OneViewServerList {
     }
 
     if (-not $OneViewHost) {
+        $logger.Info("Get-OneViewServerList: no host and no active session - graceful failure")
         return @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
     }
 
@@ -152,6 +160,7 @@ function Get-OneViewServerList {
         $sess = Resolve-OneViewSession -OneViewHost $OneViewHost -Credential $Credential `
             -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
         if (-not $sess.Success) {
+            $logger.Info("Get-OneViewServerList: session resolution failed. Error='$($sess.Error)'")
             return @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
         }
         $OneViewHost  = $sess.OneViewHost
@@ -213,14 +222,17 @@ function Get-OneViewServerList {
             Error   = $null
         }
         _Format-ServerListResult -Result $result
+        $logger.Info("Get-OneViewServerList result: Success=$($result.Success) Count=$($result.Count)")
         return $result
     }
     catch {
+        $err = "OneView server list failed: $($_.Exception.Message)"
+        $logger.Error($err)
         return @{
             Success = $false
             Count   = 0
             Servers = @()
-            Error   = "OneView server list failed: $($_.Exception.Message)"
+            Error   = $err
         }
     }
 }

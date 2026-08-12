@@ -1,18 +1,18 @@
 <#
-    testBuildDeploy.ps1
-    ------------------------------------------------------------------
-    Functional / re-runnable test harness for the BUILD & DEPLOY pipeline:
+.SYNOPSIS
+    Functional / re-runnable test harness for the BUILD & DEPLOY pipeline and its
+    mandatory -GuardRail safety gate.
 
-        Configure-PhysicalBuild, Start-PhysicalServerBuild,
-        Invoke-IsoDeploy, Update-Firmware
+.DESCRIPTION
+    Exercises the build/deploy commands plus the ISO / firmware validation they rely on:
 
-    plus the supporting ISO / firmware validation that those commands rely on.
+      Configure-PhysicalBuild, Start-PhysicalServerBuild, Invoke-IsoDeploy, Update-Firmware
 
     What it exercises
     -----------------
       1. Connection check / connect-when-none (mirrors testConnectAndList).
-      2. Running build/deploy WITHOUT the mandatory -GuardRail -> early,
-         graceful, logged BLOCK (never an unguarded action).
+      2. Running build/deploy WITHOUT the mandatory -GuardRail -> early, graceful,
+         logged BLOCK (never an unguarded action).
       3. HPE OneView ISO file variants:
            * filename/UNC/HTTPS/NFS path -> resolved to an iLO-accessible URL
              (SMB conversion, shareability checks)
@@ -26,28 +26,65 @@
          -SkipConfirmation auto-cancels (no unconfirmed destructive action).
       7. Build/deploy VARIANTS (external ISO, firmware folders) under -DryRun.
 
-    Host / server handling
-    ----------------------
-      -ManagementHost / -OneViewHost = the OneView appliance.
-      -Server = the target server identifier (name / serial / iLO IP).
-      Nothing is hard-coded; both are prompted when omitted. By default the
-      script runs SAFE (connections validated with -DryRun, builds with -DryRun)
-      and only performs live calls when -Live is passed with credentials.
+    -ManagementHost / -OneViewHost is the OneView appliance and -Server is the target
+    server identifier (name / serial / iLO IP). Nothing is hard-coded; both are
+    prompted when omitted. By default the script runs SAFE (connections validated
+    with -DryRun, builds with -DryRun) and only performs live calls when -Live is
+    passed with credentials. Full logging is written via the module's common logging
+    commands (Initialize-Logging / Get-Logger) under
+    generated/logs/commands/testBuildDeploy/.
 
-    Logging
-    -------
-      Full logging via the module's common logging commands
-      (Initialize-Logging / Get-Logger). Logs land in
-      generated/logs/commands/testBuildDeploy/.
+.PARAMETER ManagementHost
+    OneView appliance hostname or IP (alias -MgmtHost). Prompted if omitted.
 
-    Usage
-    -----
-      .\testBuildDeploy.ps1 -ManagementHost oneview-test.ad.example.com -Server srv01
-      .\testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' `
-          -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
-      .\testBuildDeploy.ps1 -Live -ManagementHost ov.corp.local -Server srv01 `
-          -Credential $cred -IsoPath 'https://artifacts/isos/win.iso' -GuardRail 'srv0'
+.PARAMETER OneViewHost
+    Alias of -ManagementHost (alias -OVHost).
+
+.PARAMETER Server
+    Target server identifier (name / serial / iLO IP) to build or deploy. Prompted
+    if omitted.
+
+.PARAMETER SerialNumber
+    Resolve -Server from an HPE serial number via OneView.
+
+.PARAMETER IloIp
+    Target iLO address or hostname.
+
+.PARAMETER Credential
+    PSCredential for a live (-Live) connection. Prompted when -Live is set and
+    this is omitted.
+
+.PARAMETER IsoPath
+    Local or network ISO path to validate (existence + .iso + iLO shareability).
+
+.PARAMETER FirmwarePath
+    Local firmware archive (.zip/.cab/.tar/...) to validate.
+
+.PARAMETER GuardRail
+    CASE-INSENSITIVE REGEX the target server name must match. Supplied to every
+    build/deploy command so the safety gate is exercised (matches '.*' by default
+    when omitted here, which still satisfies the commands' mandatory requirement).
+
+.PARAMETER Live
+    Perform REAL connections / builds using -Credential instead of -DryRun
+    validation. Use only against an approved test appliance.
+
+.PARAMETER DryRun
+    Validate with -DryRun (default-safe behaviour even without -Live).
+
+.PARAMETER PingTimeoutMs
+    TCP connect timeout in milliseconds for reachability probes (default 3000).
+
+.EXAMPLE
+    .\testBuildDeploy.ps1 -ManagementHost oneview-test.ad.example.com -Server srv01
+
+.EXAMPLE
+    .\testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
+
+.EXAMPLE
+    .\testBuildDeploy.ps1 -Live -ManagementHost ov.corp.local -Server srv01 -Credential $cred -IsoPath 'https://artifacts/isos/win.iso' -GuardRail 'srv0'
 #>
+
 
 [CmdletBinding()]
 param(
