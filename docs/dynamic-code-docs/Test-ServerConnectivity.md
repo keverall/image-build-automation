@@ -18,7 +18,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-This command reports the connectivity of an HPE OneView appliance. It is a STATUS CHECK, not a connect command - it NEVER prompts for a host or credentials. * Run with NO parameters: reports the ACTIVE OneView connection (established by Connect-OneView). If nothing is connected it reports "not connected" and returns - no prompt. * Run with -ManagementHost <host>: checks THAT specific appliance only. Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe (HTTPS 443) - Measures latency in milliseconds Phase 2: Authentication Connect - If reusing the active session (no -ManagementHost, or -ManagementHost matches the connected appliance) the existing session is reused - no credentials are needed. - Otherwise credentials come from -Credential, ONEVIEW_USER / ONEVIEW_PASSWORD, or CyberArk. If none are available the auth phase is skipped with a clear message (no prompt). - Loads the HPE OneView PowerShell module and performs Connect-OVMgmt. - Session persists for subsequent OneView commands. - No objects are modified. To actually CONNECT to an appliance, use Connect-OneView -ManagementHost <host> (which prompts for credentials and establishes the session this command then reports on). SAFETY / COMPLIANCE (regulated EMIR environment): - On a live run, config files are NEVER read. The appliance host is taken verbatim from -ManagementHost (when supplied) and only that appliance is contacted. Credentials are never read from config. - Config files (connection_hosts.json, oneview_config.json) are read ONLY with -DryRun, for dry-run validation. Returns a structured hashtable with per-phase results and an overall Available boolean.
+This command reports the connectivity of an HPE OneView appliance. It is a STATUS CHECK, not a connect command - it NEVER prompts for a host or credentials. * Run with NO parameters: reports the ACTIVE OneView connection (established by Connect-OneView). If nothing is connected it reports "not connected" and returns - no prompt. * Run with -OneViewHost <host>: checks THAT specific appliance only. Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe (HTTPS 443) - Measures latency in milliseconds Phase 2: Authentication Connect - If reusing the active session (no -OneViewHost, or -OneViewHost matches the connected appliance) the existing session is reused - no credentials are needed. - Otherwise credentials come from -Credential, ONEVIEW_USER / ONEVIEW_PASSWORD, or CyberArk. If none are available the auth phase is skipped with a clear message (no prompt). - Loads the HPE OneView PowerShell module and performs Connect-OVMgmt. - Session persists for subsequent OneView commands. - No objects are modified. To actually CONNECT to an appliance, use Connect-OneView -OneViewHost <host> (which prompts for credentials and establishes the session this command then reports on). SAFETY / COMPLIANCE (regulated EMIR environment): - On a live run, config files are NEVER read. The appliance host is taken verbatim from -OneViewHost (when supplied) and only that appliance is contacted. Credentials are never read from config. - Config files (connection_hosts.json, oneview_config.json) are read ONLY with -DryRun, for dry-run validation. Returns a structured hashtable with per-phase results and an overall Available boolean.
 
 <a name="parameters"></a>
 
@@ -26,7 +26,7 @@ This command reports the connectivity of an HPE OneView appliance. It is a STATU
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ManagementHost` _(Aliases: -MgmtHost)_ | OneView appliance to check (server name or serial). Optional. When OMITTED, the command reports the ACTIVE OneView connection (established by Connect-OneView) and never prompts. When supplied it is used verbatim - no config/env fallback - so only the host you specify is ever contacted. Credentials are not prompted for: the active session is reused when it matches, otherwise supply -Credential or configure ONEVIEW_USER / ONEVIEW_PASSWORD. |
+| `-OneViewHost` _(Aliases: -OVHost, -MgmtHost)_ | OneView appliance to check (server name or serial). Optional. When OMITTED, the command reports the ACTIVE OneView connection (established by Connect-OneView) and never prompts. When supplied it is used verbatim - no config/env fallback - so only the host you specify is ever contacted. Credentials are not prompted for: the active session is reused when it matches, otherwise supply -Credential or configure ONEVIEW_USER / ONEVIEW_PASSWORD. |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate connectivity without actual network calls. Returns mock data to verify configuration resolution. Config files may be read for validation. |
 
 <a name="original-comment-based-help"></a>
@@ -46,7 +46,7 @@ This command reports the connectivity of an HPE OneView appliance. It is a STATU
           * Run with NO parameters: reports the ACTIVE OneView connection
             (established by Connect-OneView). If nothing is connected it reports
             "not connected" and returns - no prompt.
-          * Run with -ManagementHost <host>: checks THAT specific appliance only.
+          * Run with -OneViewHost <host>: checks THAT specific appliance only.
 
         Phase 1: Network Ping
           - DNS resolution of the OneView appliance
@@ -54,7 +54,7 @@ This command reports the connectivity of an HPE OneView appliance. It is a STATU
           - Measures latency in milliseconds
 
         Phase 2: Authentication Connect
-          - If reusing the active session (no -ManagementHost, or -ManagementHost
+          - If reusing the active session (no -OneViewHost, or -OneViewHost
             matches the connected appliance) the existing session is reused - no
             credentials are needed.
           - Otherwise credentials come from -Credential, ONEVIEW_USER /
@@ -64,13 +64,13 @@ This command reports the connectivity of an HPE OneView appliance. It is a STATU
           - Session persists for subsequent OneView commands.
           - No objects are modified.
 
-        To actually CONNECT to an appliance, use Connect-OneView -ManagementHost
+        To actually CONNECT to an appliance, use Connect-OneView -OneViewHost
         <host> (which prompts for credentials and establishes the session this
         command then reports on).
 
         SAFETY / COMPLIANCE (regulated EMIR environment):
           - On a live run, config files are NEVER read. The appliance host is
-            taken verbatim from -ManagementHost (when supplied) and only that
+            taken verbatim from -OneViewHost (when supplied) and only that
             appliance is contacted. Credentials are never read from config.
           - Config files (connection_hosts.json, oneview_config.json) are read
             ONLY with -DryRun, for dry-run validation.
@@ -78,7 +78,7 @@ This command reports the connectivity of an HPE OneView appliance. It is a STATU
         Returns a structured hashtable with per-phase results and an overall
         Available boolean.
 
-    .PARAMETER ManagementHost
+    .PARAMETER OneViewHost
         OneView appliance to check (server name or serial). Optional.
 
         When OMITTED, the command reports the ACTIVE OneView connection
@@ -96,7 +96,7 @@ This command reports the connectivity of an HPE OneView appliance. It is a STATU
         [hashtable] with keys:
           Available        [bool]   - overall pass/fail
           Mode             [string] - always 'oneview'
-          ManagementHost   [string]
+          OneViewHost   [string]
           Environment      [string]
           NetworkPing      [hashtable] - DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
           AuthConnect      [hashtable] - Connected, ModuleLoaded, Error

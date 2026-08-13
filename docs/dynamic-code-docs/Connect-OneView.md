@@ -21,7 +21,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-This is a connection-focused alias for Test-ServerConnectivity.  It validates network reachability and performs authentication in a single step, leaving an active OneView session available for subsequent commands (Get-OneViewServerList, Get-OneViewConnectionStatus, etc.). On a live run the appliance host is taken verbatim from -ManagementHost and credentials are entered interactively at the prompt.  Config files are never read during a live run. The OneView session persists for the remainder of the PowerShell session.  Use Disconnect-OneView to explicitly close it.
+This is a connection-focused alias for Test-ServerConnectivity.  It validates network reachability and performs authentication in a single step, leaving an active OneView session available for subsequent commands (Get-OneViewServerList, Get-OneViewConnectionStatus, etc.). On a live run the appliance host is taken verbatim from -OneViewHost and credentials are entered interactively at the prompt.  Config files are never read during a live run. The OneView session persists for the remainder of the PowerShell session.  Use Disconnect-OneView to explicitly close it.
 
 <a name="parameters"></a>
 
@@ -29,7 +29,7 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ManagementHost` _(Aliases: -MgmtHost)_ | OneView appliance hostname or IP address to connect to (server name or serial).  Required for a live (non-DryRun) connection.  Used verbatim - no config/env fallback. |
+| `-OneViewHost` _(Aliases: -OVHost, -MgmtHost)_ | OneView appliance hostname or IP address to connect to (server name or serial).  Required for a live (non-DryRun) connection.  Used verbatim - no config/env fallback. |
 | `-DryRun` _(Aliases: -Dry)_ | Validate host resolution only - no authentication is attempted and no real connection is made.  Host is resolved from connection_hosts.json (Test environment by default).  Safe for testing code without touching an appliance.  Remove -DryRun when you are ready to connect and make changes. |
 
 <a name="examples"></a>
@@ -41,7 +41,7 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 ### Example 1
 
 ```powershell
-Connect-OneView -ManagementHost oneview.example.com Connect to the OneView appliance oneview.example.com.  Credentials are prompted for interactively.
+Connect-OneView -OneViewHost oneview.example.com Connect to the OneView appliance oneview.example.com.  Credentials are prompted for interactively.
 ```
 
 <a name="example-2"></a>
@@ -66,14 +66,14 @@ Connect-OneView -DryRun Validate host resolution from config without connecting 
         step, leaving an active OneView session available for subsequent
         commands (Get-OneViewServerList, Get-OneViewConnectionStatus, etc.).
 
-        On a live run the appliance host is taken verbatim from -ManagementHost
+        On a live run the appliance host is taken verbatim from -OneViewHost
         and credentials are entered interactively at the prompt.  Config files
         are never read during a live run.
 
         The OneView session persists for the remainder of the PowerShell
         session.  Use Disconnect-OneView to explicitly close it.
 
-    .PARAMETER ManagementHost
+    .PARAMETER OneViewHost
         OneView appliance hostname or IP address to connect to (server name
         or serial).  Required for a live (non-DryRun) connection.  Used
         verbatim - no config/env fallback.
@@ -86,7 +86,7 @@ Connect-OneView -DryRun Validate host resolution from config without connecting 
         are ready to connect and make changes.
 
     .EXAMPLE
-        Connect-OneView -ManagementHost oneview.example.com
+        Connect-OneView -OneViewHost oneview.example.com
 
         Connect to the OneView appliance oneview.example.com.  Credentials are
         prompted for interactively.
@@ -100,7 +100,7 @@ Connect-OneView -DryRun Validate host resolution from config without connecting 
     .OUTPUTS
         [hashtable] - a connection result with keys:
             Available        [bool]   - connectivity and auth both succeeded
-            ManagementHost   [string] - the appliance contacted
+            OneViewHost   [string] - the appliance contacted
             AuthConnect      [hashtable] - authentication details
             NetworkPing      [hashtable] - network probe results
             Message          [string] - human-readable status

@@ -40,6 +40,7 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 | `-Filter` | Optional case-insensitive filter expression applied client-side: health:<status>   e.g. health:OK, health:Warning, health:Critical power:<state>     e.g. power:On, power:Off name:<substring>  e.g. name:PROD |
 | `-MockResult` _(Aliases: -Mock)_ | Hashtable to return without making any HTTP calls. Used for tests. |
 | `-DryRun` _(Aliases: -Dry)_ | Print the query without performing it. |
+| `-PassThru` _(Aliases: -PT)_ | By default the command only prints a human-readable table to the terminal and emits NO object to the pipeline (so the console is not cluttered with a raw hashtable/json dump). Pass -PassThru to also return the structured [hashtable] (Success, Count, Servers, Error) for use by scripts or the module Router. |
 
 <a name="examples"></a>
 
@@ -118,8 +119,16 @@ Get-OneViewServerList Runs without parameters: reuses an active OneView session 
     .PARAMETER DryRun
         Print the query without performing it.
 
+    .PARAMETER PassThru
+        By default the command only prints a human-readable table to the terminal
+        and emits NO object to the pipeline (so the console is not cluttered with a
+        raw hashtable/json dump). Pass -PassThru to also return the structured
+        [hashtable] (Success, Count, Servers, Error) for use by scripts or the
+        module Router.
+
     .RETURNS
-        [hashtable] with Success, Count, Servers (array of hashtables), Error.
+        Nothing by default (table printed to host). With -PassThru, a [hashtable]
+        with Success, Count, Servers (array of hashtables), Error.
 
     .EXAMPLE
         Get-OneViewServerList -OneViewHost 'oneview.ad.example.com'

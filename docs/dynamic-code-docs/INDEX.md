@@ -21,6 +21,7 @@ Generated: 2026-08-13
 - [_Execute](_Execute.md#top)
 - [_FileIO_DeepHashtable](_FileIO_DeepHashtable.md#top)
 - [_Flush](_Flush.md#top)
+- [_Format-ConnectionStatusResult](_Format-ConnectionStatusResult.md#top)
 - [_Format-ConnectivityResult](_Format-ConnectivityResult.md#top)
 - [_Format-IsoDeploySummary](_Format-IsoDeploySummary.md#top)
 - [_Format-ScomMaintenanceConnectivityResult](_Format-ScomMaintenanceConnectivityResult.md#top)

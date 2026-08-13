@@ -74,7 +74,7 @@ Describe 'Setup-Profile - a fresh shell that sources the profile can resolve Con
         $profile | Should -Exist
 
         # Source the generated profile in a brand-new pwsh (no module pre-imported)
-        # and verify the published command actually resolves and runs. -ManagementHost
+        # and verify the published command actually resolves and runs. -OneViewHost
         # is supplied so no interactive host prompt fires; -DryRun makes no real
         # connection. AUTOMATED_MODE is also set as belt-and-suspenders against any
         # credential prompt. The child is run as a job with a hard timeout so a hang
@@ -86,7 +86,7 @@ Describe 'Setup-Profile - a fresh shell that sources the profile can resolve Con
 `$cmd = Get-Command Connect-OneView -ErrorAction SilentlyContinue
 if (-not `$cmd) { Write-Output 'MISSING'; exit 2 }
 Write-Output 'RESOLVED'
-Connect-OneView -ManagementHost 'localhost' -DryRun | Out-Null
+Connect-OneView -OneViewHost 'localhost' -DryRun | Out-Null
 Write-Output 'DRYRUN_OK'
 "@ | Set-Content $checker
 
@@ -100,3 +100,4 @@ Write-Output 'DRYRUN_OK'
         $result | Should -Contain 'DRYRUN_OK'
     }
 }
+

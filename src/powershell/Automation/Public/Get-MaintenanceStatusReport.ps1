@@ -268,7 +268,7 @@ foreach (`$g in `$groups) {
     $ovIndex = $null
     if ($IncludeLive -and $ovMgr) {
         try {
-            $ovList = Get-OneViewServerList -OneViewHost $resolvedOvHost
+            $ovList = Get-OneViewServerList -OneViewHost $resolvedOvHost -PassThru
             if ($ovList.Success) {
                 $ovIndex = @{}
                 foreach ($s in $ovList.Servers) {

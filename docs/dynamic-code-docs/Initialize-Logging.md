@@ -42,7 +42,7 @@ Configures logging with specified log file path and level. By default creates ti
 ### Example 1
 
 ```powershell
-Initialize-Logging -LogFile 'automation.log' -Level 'Debug' Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-ManagementHost-va-ov-01'
+Initialize-Logging -LogFile 'automation.log' -Level 'Debug' Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-OneViewHost-va-ov-01'
 ```
 
 <a name="original-comment-based-help"></a>
@@ -88,7 +88,7 @@ Initialize-Logging -LogFile 'automation.log' -Level 'Debug' Initialize-Logging -
 
     .EXAMPLE
         Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
-        Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-ManagementHost-va-ov-01'
+        Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-OneViewHost-va-ov-01'
 ```
 
 ---
