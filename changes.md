@@ -10,9 +10,9 @@
   - [PowerShell](#powershell)
 - [Changes](#changes)
   - [2026-07-30 - OneView module pinning reworked to "latest installed on this server"](#2026-07-30-oneview-module-pinning-reworked-to-latest-installed-on-this-server)
-    - [2026-07-30 - Documentation tooling aligned between make docs and make fix-docs](#2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs)
-    - [2026-08-13 - OneView list/status commands print formatted tables](#2026-08-13--oneview-liststatus-commands-print-formatted-tables)
-    - [2026-08-13 - Standardized OneView host parameter on -OneViewHost](#2026-08-13--standardized-oneview-host-parameter-on--oneviewhost)
+  - [2026-07-30 - Documentation tooling aligned between make docs and make fix-docs](#2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs)
+  - [2026-08-13 - OneView list/status commands print formatted tables](#2026-08-13-oneview-liststatus-commands-print-formatted-tables)
+  - [2026-08-13 - Standardized OneView host parameter on -OneViewHost](#2026-08-13-standardized-oneview-host-parameter-on-oneviewhost)
 
 Standard, dated changelog for the `image-build-automation` repository. Major,
 user-facing changes are recorded here with dates. The **Standards** section
@@ -154,7 +154,7 @@ when a request would go against best practice.
 - Collapsed multiple consecutive blank lines into a single blank line across all
   generated documentation.
 
-<a name="2026-08-13--oneview-liststatus-commands-print-formatted-tables"></a>
+<a name="2026-08-13-oneview-liststatus-commands-print-formatted-tables"></a>
 
 ### 2026-08-13 - OneView list/status commands print formatted tables
 
@@ -176,7 +176,7 @@ when a request would go against best practice.
   object; all affected suites pass (`Get-OneViewServerList` 10/10,
   `Get-OneViewConnectionStatus` 17/17).
 
-<a name="2026-08-13--standardized-oneview-host-parameter-on--oneviewhost"></a>
+<a name="2026-08-13-standardized-oneview-host-parameter-on-oneviewhost"></a>
 
 ### 2026-08-13 - Standardized OneView host parameter on -OneViewHost
 
