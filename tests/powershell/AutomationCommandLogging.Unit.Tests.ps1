@@ -50,7 +50,7 @@ Describe 'Logging is functional: commands initialise and write logs' {
         $before = foreach ($d in $logDirs) {
             if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
-        Test-ServerConnectivity -ManagementHost 'test-ov.local' -DryRun
+        Test-ServerConnectivity -OneViewHost 'test-ov.local' -DryRun
         $after = foreach ($d in $logDirs) {
             if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
@@ -90,3 +90,4 @@ Describe 'Logging is functional: commands initialise and write logs' {
         ($rec | Where-Object { $_.File -eq 'windows_patcher.log' }) | Should -Not -BeNullOrEmpty
     }
 }
+

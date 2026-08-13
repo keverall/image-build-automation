@@ -54,8 +54,16 @@ function Get-OneViewServerList {
     .PARAMETER DryRun
         Print the query without performing it.
 
+    .PARAMETER PassThru
+        By default the command only prints a human-readable table to the terminal
+        and emits NO object to the pipeline (so the console is not cluttered with a
+        raw hashtable/json dump). Pass -PassThru to also return the structured
+        [hashtable] (Success, Count, Servers, Error) for use by scripts or the
+        module Router.
+
     .RETURNS
-        [hashtable] with Success, Count, Servers (array of hashtables), Error.
+        Nothing by default (table printed to host). With -PassThru, a [hashtable]
+        with Success, Count, Servers (array of hashtables), Error.
 
     .EXAMPLE
         Get-OneViewServerList -OneViewHost 'oneview.ad.example.com'
@@ -103,7 +111,9 @@ function Get-OneViewServerList {
         [Alias('Mock')]
         [hashtable] $MockResult = $null,
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [Alias('PT')]
+        [switch] $PassThru
     )
 
     # Common logging: each command writes to its own isolated log under
@@ -113,7 +123,8 @@ function Get-OneViewServerList {
 
     if ($MockResult) {
         $logger.Info("Get-OneViewServerList returning MockResult (filter=$Filter)")
-        return $MockResult
+        if ($PassThru) { return $MockResult }
+        return
     }
 
     # Parse -Filter into predicate components (validate before connecting)
@@ -123,14 +134,18 @@ function Get-OneViewServerList {
         elseif ($Filter -match '^power:(.+)$')   { $powerFilter = $Matches[1].Trim() }
         elseif ($Filter -match '^name:(.+)$')    { $nameFilter = $Matches[1].Trim() }
         else {
-            return @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<substring>." }
+            $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<substring>." }
+            if ($PassThru) { return $errMap }
+            Write-Host $errMap.Error -ForegroundColor Red
+            return
         }
     }
 
     if ($DryRun) {
         $msg = "[DRY RUN] Get-OneViewServerList Host=$OneViewHost Filter=$Filter"
         $logger.Info($msg); Write-Host $msg
-        return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true }
+        if ($PassThru) { return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true } }
+        return
     }
 
     # ── Resolve the OneView session ──────────────────────────────────────────
@@ -151,7 +166,10 @@ function Get-OneViewServerList {
 
     if (-not $OneViewHost) {
         $logger.Info("Get-OneViewServerList: no host and no active session - graceful failure")
-        return @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
+        $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
+        if ($PassThru) { return $errMap }
+        Write-Host $errMap.Error -ForegroundColor Red
+        return
     }
 
     # Reuse the active session directly when we derived the host from it; otherwise
@@ -161,7 +179,10 @@ function Get-OneViewServerList {
             -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
         if (-not $sess.Success) {
             $logger.Info("Get-OneViewServerList: session resolution failed. Error='$($sess.Error)'")
-            return @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
+            $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
+            if ($PassThru) { return $errMap }
+            Write-Host $errMap.Error -ForegroundColor Red
+            return
         }
         $OneViewHost  = $sess.OneViewHost
         $sessionToken = $sess.SessionToken
@@ -223,24 +244,37 @@ function Get-OneViewServerList {
         }
         _Format-ServerListResult -Result $result
         $logger.Info("Get-OneViewServerList result: Success=$($result.Success) Count=$($result.Count)")
-        return $result
+        # By default emit ONLY the formatted table (no raw hashtable/json dump to the
+        # terminal). Scripts/consumers opt in to the structured object with -PassThru.
+        if ($PassThru) { return $result }
+        return
     }
     catch {
         $err = "OneView server list failed: $($_.Exception.Message)"
         $logger.Error($err)
-        return @{
+        $errMap = @{
             Success = $false
             Count   = 0
             Servers = @()
             Error   = $err
         }
+        if ($PassThru) { return $errMap }
+        Write-Host $err -ForegroundColor Red
+        return
     }
 }
 
 function _Format-ServerListResult {
     param([hashtable]$Result)
 
-    if (-not $Result.Success -or $Result.Count -eq 0) { return }
+    if (-not $Result.Success) { return }
+
+    if ($Result.Count -eq 0) {
+        Write-Host ""
+        Write-Host "No servers matched the request." -ForegroundColor Yellow
+        Write-Host ""
+        return
+    }
 
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan

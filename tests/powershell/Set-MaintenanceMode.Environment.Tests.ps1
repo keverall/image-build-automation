@@ -84,14 +84,14 @@ Describe 'Set-MaintenanceMode - Environment Parameter Tests' {
 
 Describe 'Set-MaintenanceMode - Host Override Tests' {
     
-    Context 'ManagementHost parameter' {
+    Context 'OneViewHost parameter' {
         It 'Should accept custom host via parameter for SCOM mode' {
             $result = Set-MaintenanceMode `
                 -Action validate `
                 -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
-                -ManagementHost 'custom-server.test.local' `
+                -OneViewHost 'custom-server.test.local' `
                 -DryRun
             
             $result | Should -Not -BeNullOrEmpty
@@ -103,7 +103,7 @@ Describe 'Set-MaintenanceMode - Host Override Tests' {
                 -TargetId 'test-server-01' `
                 -Mode oneview `
                 -Environment Test `
-                -ManagementHost 'custom-oneview.test.local' `
+                -OneViewHost 'custom-oneview.test.local' `
                 -DryRun
             
             $result | Should -Not -BeNullOrEmpty
@@ -300,7 +300,7 @@ Describe 'Set-MaintenanceMode - Combined Parameter Tests' {
                 -TargetId 'CLU-CLUSTER-01' `
                 -Mode scom `
                 -Environment Prod `
-                -ManagementHost 'custom-server.local' `
+                -OneViewHost 'custom-server.local' `
                 -Username 'custom_admin' `
                 -DryRun
             
@@ -407,3 +407,4 @@ Describe 'Set-MaintenanceMode - Backward Compatibility Tests' {
 AfterAll {
     Remove-Module Automation -ErrorAction SilentlyContinue
 }
+

@@ -10,7 +10,7 @@
 
 # Standard message returned when no active OneView session exists and no
 # explicit -OneViewHost was supplied. Shared so callers stay consistent.
-$script:ONEVIEW_NO_SESSION_MSG = "No active OneView session. Use Test-ServerConnectivity -ManagementHost <oneview-appliance-host> to connect, or supply -OneViewHost."
+$script:ONEVIEW_NO_SESSION_MSG = "No active OneView session. Use Test-ServerConnectivity -OneViewHost <oneview-appliance-host> to connect, or supply -OneViewHost."
 
 # Module-scoped mirror of the active OneView session. The HPEOneView module holds
 # the connection itself (and may report "already connected"), but its session object

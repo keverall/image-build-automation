@@ -27,7 +27,7 @@ Describe 'Get-OneViewServerList - basic invocation' {
     It 'Returns MockResult without network call' {
         $r = Get-OneViewServerList -OneViewHost 'h' -MockResult @{
             Success = $true; Count = 2; Servers = @(@{ name = 's1' }, @{ name = 's2' }); Error = $null
-        }
+        } -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 2
     }
@@ -36,7 +36,7 @@ Describe 'Get-OneViewServerList - basic invocation' {
         $prevAuto = $env:AUTOMATED_MODE
         try {
             $env:AUTOMATED_MODE = 'true'
-            $r = Get-OneViewServerList -Credential $Script:TestCred
+            $r = Get-OneViewServerList -Credential $Script:TestCred -PassThru
             $r.Success | Should -Be $false
             $r.Error   | Should -Match 'OneViewHost'
         } finally {
@@ -45,13 +45,13 @@ Describe 'Get-OneViewServerList - basic invocation' {
     }
 
     It 'DryRun succeeds' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -DryRun
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -DryRun -PassThru
         $r.Success | Should -Be $true
         $r.DryRun  | Should -Be $true
     }
 
     It 'Rejects an unsupported -Filter' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'foo:bar'
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'foo:bar' -PassThru
         $r.Success | Should -Be $false
         $r.Error   | Should -Match 'Filter'
     }
@@ -61,7 +61,7 @@ Describe 'Get-OneViewServerList - basic invocation' {
         try {
             $env:AUTOMATED_MODE = 'true'
             InModuleScope Automation { Mock Get-OneViewActiveSession { $null } }
-            $r = Get-OneViewServerList
+            $r = Get-OneViewServerList -PassThru
             $r.Success | Should -Be $false
             $r.Error   | Should -Match 'OneViewHost'
         } finally {
@@ -95,20 +95,20 @@ Describe 'Get-OneViewServerList - pagination & filtering (mocked REST)' {
     }
 
     It 'Enumerates every page (Count = 3)' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 3
     }
 
     It 'Filters by health:Critical' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'health:Critical'
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'health:Critical' -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 1
         $r.Servers[0].name | Should -Be 's2'
     }
 
     It 'Filters by power:Off' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'power:Off'
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'power:Off' -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 1
         $r.Servers[0].name | Should -Be 's2'

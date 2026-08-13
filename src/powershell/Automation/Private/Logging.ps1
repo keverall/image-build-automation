@@ -87,7 +87,7 @@ function Initialize-Logging {
 
     .EXAMPLE
         Initialize-Logging -LogFile 'automation.log' -Level 'Debug'
-        Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-ManagementHost-va-ov-01'
+        Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-OneViewHost-va-ov-01'
     #>
     [CmdletBinding()]
     param(

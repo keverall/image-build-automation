@@ -27,7 +27,7 @@ function Get-OneViewConnectionStatus {
         This command is a STATUS CHECK and NEVER prompts. Run with no parameters to
         report the ACTIVE OneView connection established by Connect-OneView
         (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance
-        instead. To actually connect, use Connect-OneView -ManagementHost <host>.
+        instead. To actually connect, use Connect-OneView -OneViewHost <host>.
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
@@ -65,16 +65,20 @@ function Get-OneViewConnectionStatus {
     .PARAMETER DryRun
         Print the checks without performing them.
 
+    .PARAMETER PassThru
+        By default the command only prints a human-readable status summary to the
+        terminal and emits NO object to the pipeline (so the console is not cluttered
+        with a raw hashtable/json dump). Pass -PassThru to also return the structured
+        [hashtable] for use by scripts or the module Router.
+
     .RETURNS
-        [hashtable] with Success, Connected, Reachable, Authenticated, Appliance,
-        Version (appliance OneView version, e.g. 8200 = 8.20), ApplianceVersion (alias),
-        ServerCount (optional), Server (optional), SessionSource
-        ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise),
-        ModuleName (the HPEOneView PowerShell library that serves the call),
-        ModuleVersion, ModuleSource, VersionCompliant (bool: $true when the selected module's
-        major version is >= the appliance major, i.e. backward-compatible; $false when the
-        module is older than the appliance; $null when unknown) and VersionWarning (string
-        describing a version mismatch, or $null).
+        Nothing by default (summary printed to host). With -PassThru, a [hashtable]
+        with Success, Connected, Reachable, Authenticated, Appliance, Version
+        (appliance OneView version, e.g. 8200 = 8.20), ServerCount (optional),
+        Server (optional), SessionSource ('HPEOneViewModule' when reusing an active
+        session, 'Explicit' otherwise), ModuleName (the HPEOneView PowerShell library
+        that serves the call), ModuleVersion, ModuleSource, VersionCompliant (bool) and
+        VersionWarning (optional, present only on a mismatch).
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
@@ -124,7 +128,9 @@ function Get-OneViewConnectionStatus {
         [Alias('Mock')]
         [hashtable] $MockResult = $null,
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [Alias('PT')]
+        [switch] $PassThru
     )
 
     # Common logging: each command writes to its own isolated log under
@@ -136,7 +142,9 @@ function Get-OneViewConnectionStatus {
 
     if ($MockResult) {
         $logger.Info("Get-OneViewConnectionStatus returning MockResult")
-        return $MockResult
+        if ($PassThru) { return $MockResult }
+        _Format-ConnectionStatusResult -Result $MockResult
+        return
     }
 
     $sessionToken = $null
@@ -151,7 +159,10 @@ function Get-OneViewConnectionStatus {
 
         if (-not $OneViewHost) {
             $logger.Info("Get-OneViewConnectionStatus: no host and no active session - graceful failure")
-            return @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = $script:ONEVIEW_NO_SESSION_MSG }
+            $noConn = @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = $script:ONEVIEW_NO_SESSION_MSG }
+            if ($PassThru) { return $noConn }
+            _Format-ConnectionStatusResult -Result $noConn
+            return
         }
     }
 
@@ -166,12 +177,15 @@ function Get-OneViewConnectionStatus {
     if ($DryRun) {
         $msg = "[DRY RUN] Get-OneViewConnectionStatus Host=$OneViewHost Id=$SrvrId Type=$IdentifierType"
         $logger.Info($msg); Write-Host $msg
-        return @{
+        $dryMap = @{
             Success = $true; Connected = $true; Reachable = $true; Authenticated = $true
             Appliance = $OneViewHost; Version = $null; ServerCount = $null
             Server = $null; SessionSource = $(if ($sessionToken) { 'HPEOneViewModule' } else { 'Explicit' })
             DryRun = $true
         }
+        if ($PassThru) { return $dryMap }
+        _Format-ConnectionStatusResult -Result $dryMap
+        return
     }
 
     $baseUrl = "https://$OneViewHost`:$Port"
@@ -184,16 +198,11 @@ function Get-OneViewConnectionStatus {
         Authenticated  = $false
         Appliance      = $OneViewHost
         Version        = $null   # appliance OneView version (e.g. 8200 = 8.20)
-        ApplianceVersion = $null # explicit alias of Version
         VersionCompliant = $null
-        VersionWarning  = $null
         ModuleName     = $null   # HPEOneView PowerShell library that serves the call
         ModuleVersion  = $null
         ModuleSource   = $null   # 'LoadedSession' | 'Resolved' | $null
-        ServerCount    = $null
-        Server         = $null
         SessionSource  = $(if ($sessionToken) { 'HPEOneViewModule' } else { 'Explicit' })
-        Error          = $null
     }
 
     try {
@@ -205,7 +214,6 @@ function Get-OneViewConnectionStatus {
             $result.Reachable = $true
             if ($ver -and $ver.currentVersion) {
                 $result.Version = $ver.currentVersion
-                $result.ApplianceVersion = $ver.currentVersion
                 $apiVersion = _Get-OneViewApiVersion -Version $ver.currentVersion
                 _Test-OneViewVersionCompliance -Result $result -Version $ver.currentVersion -Appliance $OneViewHost
             }
@@ -320,13 +328,99 @@ function Get-OneViewConnectionStatus {
 
         $result.Success = $result.Connected
         $logger.Info("Get-OneViewConnectionStatus result: Success=$($result.Success) Connected=$($result.Connected) Reachable=$($result.Reachable) Authenticated=$($result.Authenticated) Error='$($result.Error)'")
-        return $result
+        if ($PassThru) { return $result }
+        _Format-ConnectionStatusResult -Result $result
+        return
     }
     catch {
         $result.Error = "OneView connection status failed: $($_.Exception.Message)"
         $logger.Error($result.Error)
-        return $result
+        if ($PassThru) { return $result }
+        _Format-ConnectionStatusResult -Result $result
+        return
     }
+}
+
+function _Format-ConnectionStatusResult {
+    <#
+    .SYNOPSIS
+        Render a concise, human-readable OneView connection status summary.
+        Blank/empty fields are suppressed so the terminal is never cluttered with
+        placeholder rows.
+    #>
+    param([hashtable]$Result)
+
+    if ($null -eq $Result) { return }
+
+    $header = if ($Result.Success) { 'CONNECTED' } else { 'NOT CONNECTED' }
+    $statusColor = if ($Result.Success) { 'Green' } else { 'Red' }
+    $dryTag = if ($Result.DryRun) { ' [DRY-RUN]' } else { '' }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  OneView Connection Status" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    Write-Host "  Status:    ${header}${dryTag}" -ForegroundColor $statusColor
+    if ($Result.Appliance) {
+        Write-Host "  Appliance: $($Result.Appliance)"
+    }
+    if ($null -ne $Result.Reachable) {
+        Write-Host "  Reachable: $($Result.Reachable)" -ForegroundColor $(if ($Result.Reachable) { 'Green' } else { 'Red' })
+    }
+    if ($null -ne $Result.Authenticated) {
+        Write-Host "  Auth:      $($Result.Authenticated)" -ForegroundColor $(if ($Result.Authenticated) { 'Green' } else { 'Red' })
+    }
+    if ($null -ne $Result.Version) {
+        Write-Host "  Version:   $($Result.Version)"
+    }
+    if ($Result.ModuleName) {
+        $modVer = if ($Result.ModuleVersion) { "  v$($Result.ModuleVersion)" } else { '' }
+        Write-Host "  Module:    $($Result.ModuleName)$modVer"
+        if ($Result.ModuleSource) { Write-Host "    Source:  $($Result.ModuleSource)" }
+    }
+    if ($null -ne $Result.VersionCompliant) {
+        $vc = if ($Result.VersionCompliant) { 'Compatible' } else { 'MISMATCH' }
+        $vcColor = if ($Result.VersionCompliant) { 'Green' } else { 'Red' }
+        Write-Host "  Mod Compat: $vc" -ForegroundColor $vcColor
+    }
+    if ($null -ne $Result.ServerCount) {
+        Write-Host "  Servers:   $($Result.ServerCount)"
+    }
+    if ($Result.SessionSource) {
+        Write-Host "  Session:   $($Result.SessionSource)"
+    }
+
+    if ($Result.Server) {
+        $s = $Result.Server
+        Write-Host ""
+        Write-Host "  --- Server ---" -ForegroundColor Yellow
+        if ($s.name)          { Write-Host "    Name:    $($s.name)" }
+        if ($s.serial_number) { Write-Host "    Serial:  $($s.serial_number)" }
+        if ($s.power_state)   {
+            Write-Host "    Power:   $($s.power_state)" -ForegroundColor $(if ($s.power_state -eq 'On') { 'Green' } else { 'Red' })
+        }
+        if ($s.health_status) {
+            Write-Host "    Health:  $($s.health_status)" -ForegroundColor $(switch -Wildcard ($s.health_status) {
+                '*OK*' { 'Green' }; '*Warning*' { 'Yellow' }; '*Critical*' { 'Red' }; default { 'Gray' } })
+        }
+        if ($s.ilo_ip)        { Write-Host "    iLO IP:  $($s.ilo_ip)" }
+        if ($s.error)         { Write-Host "    Error:   $($s.error)" -ForegroundColor Red }
+    }
+
+    if ($Result.VersionWarning) {
+        Write-Host ""
+        Write-Host "  WARNING: $($Result.VersionWarning)" -ForegroundColor Yellow
+    }
+    if ($Result.Error) {
+        Write-Host ""
+        Write-Host "  Error:   $($Result.Error)" -ForegroundColor Red
+    }
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 function _Get-OneViewApiVersion {

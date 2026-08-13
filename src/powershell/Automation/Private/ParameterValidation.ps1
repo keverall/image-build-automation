@@ -8,7 +8,7 @@
 #
 # Why this exists: in PowerShell, '--name' means "end of parameters", so a typo
 # like '--DryRun' is swallowed and bound as a LITERAL value to a string
-# parameter (e.g. -ManagementHost) instead of being rejected. For destructive
+# parameter (e.g. -OneViewHost) instead of being rejected. For destructive
 # OneView / MCM commands that must never act on a bogus value, this is unsafe.
 # This guard rejects any string parameter value that looks like a flag.
 

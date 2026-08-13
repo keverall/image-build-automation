@@ -10,7 +10,9 @@
   - [PowerShell](#powershell)
 - [Changes](#changes)
   - [2026-07-30 - OneView module pinning reworked to "latest installed on this server"](#2026-07-30-oneview-module-pinning-reworked-to-latest-installed-on-this-server)
-  - [2026-07-30 - Documentation tooling aligned between make docs and make fix-docs](#2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs)
+    - [2026-07-30 - Documentation tooling aligned between make docs and make fix-docs](#2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs)
+    - [2026-08-13 - OneView list/status commands print formatted tables](#2026-08-13--oneview-liststatus-commands-print-formatted-tables)
+    - [2026-08-13 - Standardized OneView host parameter on -OneViewHost](#2026-08-13--standardized-oneview-host-parameter-on--oneviewhost)
 
 Standard, dated changelog for the `image-build-automation` repository. Major,
 user-facing changes are recorded here with dates. The **Standards** section
@@ -74,7 +76,7 @@ when a request would go against best practice.
   `Connect-OneViewSession` now hard-errors on this combination.
 - **Make versions visible.** Every OneView call surfaces both the HPEOneView
   PowerShell module version used and the appliance OneView version connected to
-  (via `Test-ServerConnectivity -ManagementHost` and `Get-OneViewConnectionStatus`).
+  (via `Test-ServerConnectivity -OneViewHost` and `Get-OneViewConnectionStatus`).
 - **Credential & transport hygiene.** Never hard-code OneView/iLO credentials;
   source them from a secret store / pipeline secret vault. Prefer trusted TLS
   certificates over certificate-bypass (lab/test only) - runbook Security &
@@ -92,6 +94,14 @@ when a request would go against best practice.
 - **No dead code.** Remove helpers that are no longer referenced.
 - **Centralised session logic.** All OneView calls route through
   `Connect-OneViewSession`; shared session helpers live in `OneViewSession.ps1`.
+- **One canonical host parameter.** The OneView appliance host is always
+  `-OneViewHost` (alias `-OVHost`). The legacy `-ManagementHost` is retained only
+  as a deprecated alias on the OneView commands; the SCOM management-server host
+  in `Get-MaintenanceStatusReport`/`Test-ScomMaintenanceConnectivity` is a
+  distinct parameter and is unchanged.
+- **Human-readable terminal output.** Interactive commands print formatted
+  tables/lists, never a raw hashtable/json dump of the returned object. The
+  structured object is still available via `-PassThru` for scripts and the Router.
 - **Parse-safe module load.** Code must load cleanly under PowerShell 7 (the
   module's required runtime); no PS 5.1-specific workarounds.
 - **Redfish/REST consistency.** iLO and OneView operations follow the Redfish /
@@ -114,7 +124,7 @@ when a request would go against best practice.
 - Added a **hard guard** in `Connect-OneViewSession`: if the selected module's
   major version is **older** than the appliance's major version, the connection
   is refused with a clear error (the only unsupported combination).
-- `Test-ServerConnectivity -ManagementHost` and `Get-OneViewConnectionStatus`
+- `Test-ServerConnectivity -OneViewHost` and `Get-OneViewConnectionStatus`
   now report **both** the HPEOneView PowerShell module version used and the
   appliance OneView version connected to.
 - `Connect-OneViewSession` result gained `ModuleVersion` and `ApplianceVersion`.
@@ -144,342 +154,51 @@ when a request would go against best practice.
 - Collapsed multiple consecutive blank lines into a single blank line across all
   generated documentation.
 
-test results -
+<a name="2026-08-13--oneview-liststatus-commands-print-formatted-tables"></a>
 
- image-build-automation  Test-ServerConnectivity                                     0  09:41:54 
-============================================== 
-  OneView Connectivity Test
-============================================== 
+### 2026-08-13 - OneView list/status commands print formatted tables
 
-  Status:     UNAVAILABLE
-  Mode:       oneview
-  Host:       
-  Environment:Prod
-  Timestamp:  2026-08-11T08:42:18.6050975Z 
+- `Get-OneViewServerList` and `Get-OneViewConnectionStatus` now print a
+  **human-readable, formatted table** to the terminal instead of dumping the raw
+  returned hashtable/json. Blank fields and duplicate values are suppressed
+  (e.g. the redundant `ApplianceVersion`/`Version` pair and empty `Server`/
+  `ServerCount`/`VersionWarning`/`Error` rows). When a filtered server list is
+  empty, a single "No servers matched the request." line is shown.
+- Added a `-PassThru` switch (alias `-PT`) to both commands. By default they emit
+  only the formatted table and return nothing to the pipeline; `-PassThru`
+  returns the structured `[hashtable]` for scripts and the module Router. Internal
+  caller `Get-MaintenanceStatusReport` was updated to pass `-PassThru`.
+- `Get-OneViewConnectionStatus` gained a concise `_Format-ConnectionStatusResult`
+  summary (Status / Appliance / Reachable / Auth / Version / Module / Mod Compat /
+  Session, plus an optional Server block) mirroring the `Test-ServerConnectivity`
+  output style.
+- Unit tests for both commands were updated to assert against the `-PassThru`
+  object; all affected suites pass (`Get-OneViewServerList` 10/10,
+  `Get-OneViewConnectionStatus` 17/17).
 
-  --- Phase 1: Network Ping ---
-    DNS:       FAILED
-    TCP:       FAILED
-    Error:     No active OneView connection. Connect first with Connect-OneView -ManagementHost <host> (server name or serial), or supply -ManagementHost to test a specific appliance.
- 
-  --- Phase 2: Auth Connect ---
-    Module:    Not loaded
-    Connected: No
-    Error:     Skipped - no active connection  
+<a name="2026-08-13--standardized-oneview-host-parameter-on--oneviewhost"></a>
 
-============================================== 
+### 2026-08-13 - Standardized OneView host parameter on -OneViewHost
 
-Name                           Value   
-----                           -----   
-Mode                           oneview 
-Available                      False
-NetworkPing                    {[Error, No active OneView connection. Connect first with Connect-One… 
-Timestamp                      2026-08-11T08:42:18.6050975Z
-AuthConnect                    {[Connected, False], [Error, Skipped - no active connection]}
-ManagementHost
-Environment                    Prod
-
-   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01      0  09:42:18 
-============================================== 
-  OneView Connectivity Test
-============================================== 
-
-  Status:     UNAVAILABLE
-  Mode:       oneview
-  Host:       va-oneviewt-01
-  Environment:Prod
-  Timestamp:  2026-08-11T08:42:34.4115625Z     
-
-  --- Phase 1: Network Ping ---
-    DNS:       FAILED
-    TCP:       FAILED
-    Error:     No credentials available to authenticate against 'va-oneviewt-01'. 
-
-  --- Phase 2: Auth Connect ---
-    Module:    Not loaded
-    Connected: No
-    Error:     Skipped - no credentials. Connect with Connect-OneView -ManagementHost <host> or supply -Credential / set ONEVIEW_USER + ONEVIEW_PASSWORD.
-
-==============================================
-
-Name                           Value
-----                           ----- 
-Mode                           oneview
-Available                      False
-NetworkPing                    {[Error, No credentials available to authenticate against 'va-oneview… 
-Timestamp                      2026-08-11T08:42:34.4115625Z
-AuthConnect                    {[Connected, False], [Error, Skipped - no credentials. Connect with C… 
-ManagementHost                 va-oneviewt-01
-Environment                    Prod
-
-   image-build-automation                                                    0  1s 865ms  09:42:34    image-build-automation  Disconnect-OneView                                          0  09:42:34 WARNING: No active OneView session. Use Test-ServerConnectivity -ManagementHost <oneview-appliance-host> to connect, or supply -OneViewHost. Nothing to disconnect.
-
-Name                           Value
-----                           -----
-Success                        False
-Timestamp                      2026-08-11T08:43:07.1799497Z
-Message                        No active OneView session. Use Test-ServerConnectivity -ManagementHos… 
-
-   image-build-automation  Get-OneViewConnectionStatus                                 0  09:43:07  
-Name                           Value
-----                           -----
-Success                        False
-Authenticated                  False
-Connected                      False
-Error                          No active OneView session. Use Test-ServerConnectivity -ManagementHos… 
-Appliance
-Reachable                      False
-
-   image-build-automation  Get-OneViewServerList                                       0  09:43:43 
-Name                           Value
-----                           -----
-Success                        False
-Count                          0
-Servers                        {}
-Error                          No active OneView session. Use Test-ServerConnectivity -ManagementHos… 
-
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01           0  09:43:51 Enter OneView username for 'va-oneviewt-01': adm_98253 
-Enter OneView password for 'va-oneviewt-01': : ****************** 
-This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective action including termination, civil and/or criminal penalties.
-
-============================================== 
-  OneView Server List (16 servers)
-============================================== 
- 
-Server Name                      Serial Number    Power     Health      iLO IP          
----------------------------------------------------------------------------------------
-OMG-STARWAY-01ILO.AD.AIB.PRI     CZJ831052N       On        OK                          
-ALP-WISCLU-01ilo                 CZ3508PYS5       On        OK
-OMG-WISCLU-01ilo                 CZJ5500337       On        OK
-ALP-STARWAY-01ILO                CZJ831052R       On        OK
-gam-isechost-02-03ilo.ad.ad.pri  CZ29350B60       On        OK
-gamdmzhost-01-03ilo.AD.AIB.PRI   CZ29350B5Y       On        OK
-gamdmzhost-02-03ilo              CZ29350B5Z       On        OK
-gamisechost-01-03ilo.AD.AIB.PRI  CZ29350B61       On        Critical
-OMG-CONSTC2-02ilo                CZ2D3701LY       On        OK
-ALP-CONSTC1-01ilo                CZ2D3701LT       On        Warning                     
-ALP-CONSTC2-01ilo                CZ2D3701LV       On        Warning
-OMG-CONSTC1-02ilo                CZ2D3701LZ       On        Critical
-alp-qlikview-03ilo               CZ22420JCM       On        OK
-alp-qliksen-02ilo                CZ22420JCZ       On        OK
-omg-qlikview-03ilo               CZ22420JCN       On        OK
-omg-qliksen-02ilo                CZ22420JD0       On        OK
-
-==============================================
-
-Name                           Value
-----                           -----
-Success                        True
-Count                          16
-Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, OMG-WISCLU-01ilo, AL… 
-Error
-
-   image-build-automation  Get-OneViewServerList                             1m 6s 986ms  09:45:20 
-============================================== 
-  OneView Server List (16 servers)
-==============================================
- 
-Server Name                      Serial Number    Power     Health      iLO IP
----------------------------------------------------------------------------------------
-OMG-STARWAY-01ILO.AD.AIB.PRI     CZJ831052N       On        OK                          
-ALP-WISCLU-01ilo                 CZ3508PYS5       On        OK
-OMG-WISCLU-01ilo                 CZJ5500337       On        OK
-ALP-STARWAY-01ILO                CZJ831052R       On        OK
-gam-isechost-02-03ilo.ad.ad.pri  CZ29350B60       On        OK
-gamdmzhost-01-03ilo.AD.AIB.PRI   CZ29350B5Y       On        OK
-gamdmzhost-02-03ilo              CZ29350B5Z       On        OK
-gamisechost-01-03ilo.AD.AIB.PRI  CZ29350B61       On        Critical
-OMG-CONSTC2-02ilo                CZ2D3701LY       On        OK
-ALP-CONSTC1-01ilo                CZ2D3701LT       On        Warning
-ALP-CONSTC2-01ilo                CZ2D3701LV       On        Warning
-OMG-CONSTC1-02ilo                CZ2D3701LZ       On        Critical
-alp-qlikview-03ilo               CZ22420JCM       On        OK
-alp-qliksen-02ilo                CZ22420JCZ       On        OK
-omg-qlikview-03ilo               CZ22420JCN       On        OK
-omg-qliksen-02ilo                CZ22420JD0       On        OK
-
-==============================================
-
-Name                           Value 
-----                           ----- 
-Success                        True 
-Count                          16 
-Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, OMG-WISCLU-01ilo, AL… 
-Error
-
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01           0  10:26:12 
-============================================== 
-  OneView Server List (16 servers)
-==============================================
- 
-Server Name                      Serial Number    Power     Health      iLO IP
----------------------------------------------------------------------------------------
-OMG-STARWAY-01ILO.AD.AIB.PRI     CZJ831052N       On        OK
-ALP-WISCLU-01ilo                 CZ3508PYS5       On        OK
-OMG-WISCLU-01ilo                 CZJ5500337       On        OK
-ALP-STARWAY-01ILO                CZJ831052R       On        OK
-gam-isechost-02-03ilo.ad.ad.pri  CZ29350B60       On        OK
-gamdmzhost-01-03ilo.AD.AIB.PRI   CZ29350B5Y       On        OK
-gamdmzhost-02-03ilo              CZ29350B5Z       On        OK
-gamisechost-01-03ilo.AD.AIB.PRI  CZ29350B61       On        Critical
-OMG-CONSTC2-02ilo                CZ2D3701LY       On        OK
-ALP-CONSTC1-01ilo                CZ2D3701LT       On        Warning
-ALP-CONSTC2-01ilo                CZ2D3701LV       On        Warning
-OMG-CONSTC1-02ilo                CZ2D3701LZ       On        Critical
-alp-qlikview-03ilo               CZ22420JCM       On        OK
-alp-qliksen-02ilo                CZ22420JCZ       On        OK
-omg-qlikview-03ilo               CZ22420JCN       On        OK
-omg-qliksen-02ilo                CZ22420JD0       On        OK
-
-==============================================
- 
-
-Name                           Value
-----                           -----
-Success                        True
-Count                          16
-Servers                        {OMG-STARWAY-01ILO.AD.AIB.PRI, ALP-WISCLU-01ilo, OMG-WISCLU-01ilo, AL… 
-Error
-
-   image-build-automation  Get-OneViewConnectionStatus                                 0  10:26:17 
-Name                           Value 
-----                           -----
-ModuleSource                   LoadedSession
-Server
-VersionWarning
-Authenticated                  True
-ApplianceVersion               8200
-ModuleVersion                  10.0.4265.2221
-Version                        8200
-ServerCount
-Error
-Success                        True
-SessionSource                  HPEOneViewModule
-Reachable                      True
-Appliance                      va-oneviewt-01
-Connected                      True
-ModuleName                     HPEOneView.1000
-VersionCompliant               True
-
-   image-build-automation  Test-ServerConnectivity                                     0  10:26:23 2026-08-11 09:26:29 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79
-2026-08-11 09:26:29 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 14ms) 
-
-============================================== 
-  OneView Connectivity Test
-==============================================
-
-  Status:     AVAILABLE
-  Mode:       oneview
-  Host:       va-oneviewt-01
-  Environment:Prod
-  Timestamp:  2026-08-11T09:26:33.1044581Z
-
-  --- Phase 1: Network Ping ---
-    DNS:       Resolved
-    IP:        10.239.124.79
-    TCP:       Open (port 443, 14ms)
-
-  --- Phase 2: Auth Connect ---
-    Module:    Loaded
-    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server)
-    Connected: Yes (session active)
-
-==============================================
- 
-2026-08-11 09:26:33 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True)
-
-Name                           Value 
-----                           -----
-Mode                           oneview
-Available                      True
-NetworkPing                    {[TcpPortOpen, True], [IpAddress, 10.239.124.79], [Error, ], [Latency… 
-Timestamp                      2026-08-11T09:26:33.1044581Z
-AuthConnect                    {[Connected, True], [ModuleVersion, ], [ModuleLoaded, True], [Error, … 
-ManagementHost                 va-oneviewt-01
-Environment                    Prod
-
-   image-build-automation  Test-ServerConnectivity -ManagementHost va-oneviewt-01s 954ms  10:26:33 
-============================================== 
-  OneView Connectivity Test
-==============================================
-
-  Status:     UNAVAILABLE
-  Mode:       oneview
-  Host:       va-oneviewt-01
-  Environment:Prod
-  Timestamp:  2026-08-11T09:26:40.9548530Z
-
-  --- Phase 1: Network Ping ---
-    DNS:       FAILED
-    TCP:       FAILED
-    Error:     No credentials available to authenticate against 'va-oneviewt-01'.
-
-  --- Phase 2: Auth Connect ---
-    Module:    Not loaded
-    Connected: No
-    Error:     Skipped - no credentials. Connect with Connect-OneView -ManagementHost <host> or supply -Credential / set ONEVIEW_USER + ONEVIEW_PASSWORD.
-
-==============================================
-
-Name                           Value
-----                           -----
-Mode                           oneview 
-Available                      False
-NetworkPing                    {[Error, No credentials available to authenticate against 'va-oneview… 
-Timestamp                      2026-08-11T09:26:40.9548530Z
-AuthConnect                    {[Connected, False], [Error, Skipped - no credentials. Connect with C… 
-ManagementHost                 va-oneviewt-01
-Environment                    Prod
-
-   image-build-automation  Test-ServerConnectivity                               s 612ms  10:26:41 2026-08-11 09:49:17 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79
-2026-08-11 09:49:17 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 7ms) 
-
-============================================== 
-  OneView Connectivity Test
-==============================================
-
-  Status:     AVAILABLE
-  Mode:       oneview
-  Host:       va-oneviewt-01
-  Environment:Prod
-  Timestamp:  2026-08-11T09:49:18.0922940Z
-
-  --- Phase 1: Network Ping ---
-    DNS:       Resolved 
-    IP:        10.239.124.79
-    TCP:       Open (port 443, 7ms)
-
-  --- Phase 2: Auth Connect ---
-    Module:    Loaded
-    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server)
-    Connected: Yes (session active) 
-
-==============================================
-
-2026-08-11 09:49:18 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True)
-
-Name                           Value
-----                           -----
-Mode                           oneview
-Available                      True
-NetworkPing                    {[TcpPortOpen, True], [IpAddress, 10.239.124.79], [Error, ], [Latency… 
-Timestamp                      2026-08-11T09:49:18.0922940Z
-AuthConnect                    {[Connected, True], [ModuleVersion, ], [ModuleLoaded, True], [Error, … 
-ManagementHost                 va-oneviewt-01
-Environment                    Prod
-
-   image-build-automation  Test-ServerList                                      0  850ms  10:49:18 
-Name                           Value
-----                           -----
-Servers                        {server1.example.com, server2.example.com, server3.example.com, proli… 
-Success                        True
-
-   image-build-automation  Test-BuildParams -BaseIsoPath 'C:\isos\WinSrv2025.iso'      0  10:49:33 Base ISO not found: C:\isos\WinSrv2025.iso 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'          0  10:49:46    image-build-automation  Test-BuildParams -BaseIsoPath smb://vm-ewismgt-19/Kev/      0  10:50:07 Base ISO not found: smb://vm-ewismgt-19/Kev/ 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/'    0  10:58:05 
-Base ISO not found: smb://vm-ewismgt-19/Kev/ 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/WinSrv2025.iso'8 
-Base ISO not found: smb://vm-ewismgt-19/Kev/WinSrv2025.iso 
-   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/WinSrv2025.iso'    1 
-Base ISO not found: //vm-ewismgt-19/Kev/WinSrv2025.iso 
-   image-build-automation                                                              
+- The OneView appliance host is now the single canonical `-OneViewHost` parameter
+  (alias `-OVHost`) across `Test-ServerConnectivity`, `Connect-OneView`, and
+  `Set-MaintenanceMode`. The returned result key was also renamed
+  `ManagementHost` → `OneViewHost`.
+- The legacy `-ManagementHost` is retained **only as a deprecated alias** on those
+  three OneView commands, so existing scripts/tests keep working without breakage.
+  The SCOM management-server host in `Get-MaintenanceStatusReport` and
+  `Test-ScomMaintenanceConnectivity` is a distinct parameter and is unchanged.
+- Fixed a correctness bug in `Test-ServerConnectivity`: when a host was supplied
+  without an active session or credentials, it **early-returned with a fabricated
+  failed network result** ("DNS: FAILED / No credentials available") without ever
+  probing the network. The network phase (DNS/TCP) now always runs and reports
+  accurately; only the auth phase is skipped gracefully when no session/credential
+  is available. Supplying a host that matches the active session still reuses that
+  session (no credentials needed).
+- In-code help/strings and user-facing messages were updated to reference
+  `-OneViewHost` (e.g. `OneViewSession.ps1` no-session message,
+  `Get-OneViewConnectionStatus` connect hint, `Logging.ps1` example). Test suites
+  for the three commands were updated to `-OneViewHost` and pass
+  (`Connect-OneView` 6/6, `Test-ServerConnectivity` 38/38,
+  `Set-MaintenanceMode.Environment` 27/27). The whole module parses cleanly with
+  no duplicate parameter/alias definitions.

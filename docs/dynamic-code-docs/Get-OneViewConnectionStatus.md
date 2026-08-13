@@ -22,7 +22,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Performs two read-only checks against the OneView REST API: 1. Reachability - GET /rest/version (no auth) to confirm the appliance is online and responding. 2. Authentication - GET /rest/server-hardware (authenticated) to confirm the supplied credentials are valid. If -SrvrId is supplied, the target server is also resolved and its power/health reported so you can see at a glance whether it is "connected". This command is a STATUS CHECK and NEVER prompts. Run with no parameters to report the ACTIVE OneView connection established by Connect-OneView (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance instead. To actually connect, use Connect-OneView -ManagementHost <host>.
+Performs two read-only checks against the OneView REST API: 1. Reachability - GET /rest/version (no auth) to confirm the appliance is online and responding. 2. Authentication - GET /rest/server-hardware (authenticated) to confirm the supplied credentials are valid. If -SrvrId is supplied, the target server is also resolved and its power/health reported so you can see at a glance whether it is "connected". This command is a STATUS CHECK and NEVER prompts. Run with no parameters to report the ACTIVE OneView connection established by Connect-OneView (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance instead. To actually connect, use Connect-OneView -OneViewHost <host>.
 
 <a name="parameters"></a>
 
@@ -41,6 +41,7 @@ Performs two read-only checks against the OneView REST API: 1. Reachability - GE
 | `-IncludeServerCount` _(Aliases: -SrvrCount)_ | Include the total number of servers managed by OneView. |
 | `-MockResult` _(Aliases: -Mock)_ | Hashtable to return without making any HTTP calls. Used for tests. |
 | `-DryRun` _(Aliases: -Dry)_ | Print the checks without performing them. |
+| `-PassThru` _(Aliases: -PT)_ | By default the command only prints a human-readable status summary to the terminal and emits NO object to the pipeline (so the console is not cluttered with a raw hashtable/json dump). Pass -PassThru to also return the structured [hashtable] for use by scripts or the module Router. |
 
 <a name="examples"></a>
 
@@ -91,7 +92,7 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
         This command is a STATUS CHECK and NEVER prompts. Run with no parameters to
         report the ACTIVE OneView connection established by Connect-OneView
         (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance
-        instead. To actually connect, use Connect-OneView -ManagementHost <host>.
+        instead. To actually connect, use Connect-OneView -OneViewHost <host>.
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
@@ -129,16 +130,20 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
     .PARAMETER DryRun
         Print the checks without performing them.
 
+    .PARAMETER PassThru
+        By default the command only prints a human-readable status summary to the
+        terminal and emits NO object to the pipeline (so the console is not cluttered
+        with a raw hashtable/json dump). Pass -PassThru to also return the structured
+        [hashtable] for use by scripts or the module Router.
+
     .RETURNS
-        [hashtable] with Success, Connected, Reachable, Authenticated, Appliance,
-        Version (appliance OneView version, e.g. 8200 = 8.20), ApplianceVersion (alias),
-        ServerCount (optional), Server (optional), SessionSource
-        ('HPEOneViewModule' when reusing an active session, 'Explicit' otherwise),
-        ModuleName (the HPEOneView PowerShell library that serves the call),
-        ModuleVersion, ModuleSource, VersionCompliant (bool: $true when the selected module's
-        major version is >= the appliance major, i.e. backward-compatible; $false when the
-        module is older than the appliance; $null when unknown) and VersionWarning (string
-        describing a version mismatch, or $null).
+        Nothing by default (summary printed to host). With -PassThru, a [hashtable]
+        with Success, Connected, Reachable, Authenticated, Appliance, Version
+        (appliance OneView version, e.g. 8200 = 8.20), ServerCount (optional),
+        Server (optional), SessionSource ('HPEOneViewModule' when reusing an active
+        session, 'Explicit' otherwise), ModuleName (the HPEOneView PowerShell library
+        that serves the call), ModuleVersion, ModuleSource, VersionCompliant (bool) and
+        VersionWarning (optional, present only on a mismatch).
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'

@@ -13,14 +13,14 @@ function Connect-OneView {
         step, leaving an active OneView session available for subsequent
         commands (Get-OneViewServerList, Get-OneViewConnectionStatus, etc.).
 
-        On a live run the appliance host is taken verbatim from -ManagementHost
+        On a live run the appliance host is taken verbatim from -OneViewHost
         and credentials are entered interactively at the prompt.  Config files
         are never read during a live run.
 
         The OneView session persists for the remainder of the PowerShell
         session.  Use Disconnect-OneView to explicitly close it.
 
-    .PARAMETER ManagementHost
+    .PARAMETER OneViewHost
         OneView appliance hostname or IP address to connect to (server name
         or serial).  Required for a live (non-DryRun) connection.  Used
         verbatim - no config/env fallback.
@@ -33,7 +33,7 @@ function Connect-OneView {
         are ready to connect and make changes.
 
     .EXAMPLE
-        Connect-OneView -ManagementHost oneview.example.com
+        Connect-OneView -OneViewHost oneview.example.com
 
         Connect to the OneView appliance oneview.example.com.  Credentials are
         prompted for interactively.
@@ -47,7 +47,7 @@ function Connect-OneView {
     .OUTPUTS
         [hashtable] - a connection result with keys:
             Available        [bool]   - connectivity and auth both succeeded
-            ManagementHost   [string] - the appliance contacted
+            OneViewHost   [string] - the appliance contacted
             AuthConnect      [hashtable] - authentication details
             NetworkPing      [hashtable] - network probe results
             Message          [string] - human-readable status
@@ -60,8 +60,8 @@ function Connect-OneView {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Alias('MgmtHost')]
-        [string] $ManagementHost,
+        [Alias('OVHost','MgmtHost')]
+        [string] $OneViewHost,
 
     [Alias('Dry')]
     [switch] $DryRun
@@ -69,7 +69,7 @@ function Connect-OneView {
 
 # Guard against a stray double-dash flag (e.g. `--DryRun`) being swallowed as
 # the management host. In PowerShell `--` means "end of parameters", so
-# `Connect-OneView --DryRun` binds "DryRun" to -ManagementHost and never sets
+# `Connect-OneView --DryRun` binds "DryRun" to -OneViewHost and never sets
 # the actual -DryRun switch - which then prompts for credentials against a
 # bogus host. Reuse the shared helper (single source of truth) instead of
 # inlining the check in every command.
@@ -77,17 +77,17 @@ Assert-ParameterNotFlag -Parameters $PSBoundParameters
 
 # Common logging: each command writes to its own isolated log under
 # generated/logs/commands/Connect-OneView/, consistent with the other commands.
-Initialize-Logging -CommandName 'Connect-OneView' -LogName "Connect-OneView-Host-$($ManagementHost ?? 'unspecified')"
+Initialize-Logging -CommandName 'Connect-OneView' -LogName "Connect-OneView-Host-$($OneViewHost ?? 'unspecified')"
 $logger = Get-Logger 'Connect-OneView'
-$logger.Info("Connect-OneView invoked: ManagementHost='$ManagementHost' DryRun=$DryRun")
+$logger.Info("Connect-OneView invoked: OneViewHost='$OneViewHost' DryRun=$DryRun")
 # ── -DryRun is a CRITICAL-priority, first-checked guard ─────────────────────
 # Per project convention, -DryRun is ALWAYS mocking: it never connects and must
 # IGNORE every other parameter's live behaviour (no host prompt, no credential
 # prompt, no session touch). Check it first, before any host/credential handling,
 # so a -DryRun invocation can never reach an interactive prompt regardless of
-# parameter binding order (-ManagementHost/-Credential have no live effect).
+# parameter binding order (-OneViewHost/-Credential have no live effect).
 if ($DryRun) {
-    $targetForMsg = if ($ManagementHost) { " to '$ManagementHost'" } else { '' }
+    $targetForMsg = if ($OneViewHost) { " to '$OneViewHost'" } else { '' }
     Write-Host ""; $logger.Info('')
     $n1 = "NOTE: -DryRun was supplied. No real connection will be made$targetForMsg."
     $logger.Info($n1); Write-Host $n1 -ForegroundColor Cyan
@@ -106,8 +106,8 @@ $params = @{
     PingTimeoutMs = 3000
 }
 
-if ($ManagementHost) {
-    $params['ManagementHost'] = $ManagementHost
+if ($OneViewHost) {
+    $params['OneViewHost'] = $OneViewHost
 } elseif ($DryRun) {
     # DryRun without an explicit host: resolve the default appliance from
     # connection_hosts.json so validation is non-interactive. Test-ServerConnectivity
@@ -121,10 +121,10 @@ if ($ManagementHost) {
     if ($isInteractive) {
         Write-Host "Enter OneView appliance host to connect to (or press Enter to cancel): " -ForegroundColor Yellow -NoNewline
         $hostInput = Read-Host
-        if ($hostInput) { $ManagementHost = $hostInput.Trim(); $params['ManagementHost'] = $ManagementHost }
+        if ($hostInput) { $OneViewHost = $hostInput.Trim(); $params['OneViewHost'] = $OneViewHost }
     }
-    if (-not $ManagementHost) {
-        Write-Warning "Connect-OneView requires -ManagementHost (or run with -DryRun for config validation). No connection made."
+    if (-not $OneViewHost) {
+        Write-Warning "Connect-OneView requires -OneViewHost (or run with -DryRun for config validation). No connection made."
         return
     }
 }
@@ -137,23 +137,23 @@ if ($ManagementHost) {
 # performs no real connection and so cannot drop the live session.)
 $active = Get-OneViewActiveSession
 if ($active -and -not $DryRun) {
-    if ($ManagementHost -and $active.Name -ne $ManagementHost) {
-        Write-Warning "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$ManagementHost' - this would drop the live session. Run Disconnect-OneView first to switch appliances."
+    if ($OneViewHost -and $active.Name -ne $OneViewHost) {
+        Write-Warning "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost' - this would drop the live session. Run Disconnect-OneView first to switch appliances."
         return @{
             Available      = $false
             Mode           = 'oneview'
-            ManagementHost = $ManagementHost
+            OneViewHost = $OneViewHost
             Environment    = $(if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { 'Prod' })
-            NetworkPing    = @{ DnsResolved = $false; Error = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$ManagementHost'." }
-            AuthConnect    = @{ Connected = $false; Error = "Skipped - already connected to '$($active.Name)'. Run Disconnect-OneView first to switch to '$ManagementHost'." }
+            NetworkPing    = @{ DnsResolved = $false; Error = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost'." }
+            AuthConnect    = @{ Connected = $false; Error = "Skipped - already connected to '$($active.Name)'. Run Disconnect-OneView first to switch to '$OneViewHost'." }
             Timestamp      = Get-UtcTimestamp
-            Message        = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$ManagementHost'."
+            Message        = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost'."
         }
     }
     # Same appliance (or no host supplied): reuse the live session, do not reconnect.
     Write-Verbose "Already connected to OneView appliance '$($active.Name)'. Reusing the existing session (not reconnecting)."
     $statusParams = @{ PingTimeoutMs = 3000 }
-    if ($ManagementHost) { $statusParams['ManagementHost'] = $ManagementHost }
+    if ($OneViewHost) { $statusParams['OneViewHost'] = $OneViewHost }
     $result = Test-ServerConnectivity @statusParams
     $result.Message = "Already connected to OneView appliance '$($active.Name)'."
     return $result
@@ -164,10 +164,10 @@ if ($active -and -not $DryRun) {
 # IGNORE every other parameter's live behaviour (no host prompt, no credential
 # prompt, no session touch). Check it first, before any host/credential handling,
 # so a -DryRun invocation can never reach an interactive prompt regardless of
-# parameter binding order (-ManagementHost/-Live/-Credential have no effect).
+# parameter binding order (-OneViewHost/-Live/-Credential have no effect).
 if ($DryRun) {
     $params['DryRun'] = $true
-    # (host resolution above already fed -ManagementHost through verbatim, or
+    # (host resolution above already fed -OneViewHost through verbatim, or
     #  enabled JsonConfig for the no-host case - both are read-only/mock-safe.)
 } else {
     # Resolve credentials for the live connection. Connect-OneView is the connect
@@ -175,14 +175,14 @@ if ($DryRun) {
     # operator's explicit authorisation to connect to the named appliance. It
     # only prompts when interactive and no credential was supplied; in automated
     # mode a -Credential or ONEVIEW_USER / ONEVIEW_PASSWORD must be provided.
-    if ($ManagementHost -and -not ($PSBoundParameters.ContainsKey('Credential') -and $Credential)) {
+    if ($OneViewHost -and -not ($PSBoundParameters.ContainsKey('Credential') -and $Credential)) {
         $isAutomated = [System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true'
         $isInteractive = [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected -and -not $isAutomated
         if ($isInteractive) {
-            Write-Host "Enter OneView username for '$ManagementHost': " -ForegroundColor Yellow -NoNewline
+            Write-Host "Enter OneView username for '$OneViewHost': " -ForegroundColor Yellow -NoNewline
             $u = Read-Host
             if ($u) {
-                $sp = Read-Host "Enter OneView password for '$ManagementHost': " -AsSecureString
+                $sp = Read-Host "Enter OneView password for '$OneViewHost': " -AsSecureString
                 $Credential = [System.Management.Automation.PSCredential]::new($u, $sp)
                 $params['Credential'] = $Credential
             }
@@ -199,7 +199,7 @@ $result = Test-ServerConnectivity @params
 
     # Surface a clean message for the connection-focused use case.
     if ($result.Available) {
-        $result.Message = "Connected to OneView appliance '$ManagementHost'."
+        $result.Message = "Connected to OneView appliance '$OneViewHost'."
     } elseif ($DryRun) {
         $result.Message = "Dry-run validation completed (no live connection made)."
     } else {
@@ -210,9 +210,10 @@ $result = Test-ServerConnectivity @params
         } else {
             'Unknown failure'
         }
-        $result.Message = "Connection to '$ManagementHost' failed: $detail"
+        $result.Message = "Connection to '$OneViewHost' failed: $detail"
     }
 
     $logger.Info("Connect-OneView result: Available=$($result.Available) Message='$($result.Message)'")
     return $result
 }
+
