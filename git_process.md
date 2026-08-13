@@ -1,11 +1,27 @@
 # Git Process — how we avoid rebase hell
 
+<a id="top"></a>
+
+## Table of Contents
+
+- [TL;DR — the 4 golden rules](#tldr-the-4-golden-rules)
+- [Remotes](#remotes)
+- [One-time machine setup (prod VDI, test server, this workspace)](#one-time-machine-setup-prod-vdi-test-server-this-workspace)
+- [Daily work — on prod VDI (github)](#daily-work-on-prod-vdi-github)
+- [Sync to the test server (mirror github → gitstash)](#sync-to-the-test-server-mirror-github-gitstash)
+- [One-time recovery on the test server (after a sync / divergence)](#one-time-recovery-on-the-test-server-after-a-sync-divergence)
+- [`.md` / `.ps1` showing as modified for no reason?](#md-ps1-showing-as-modified-for-no-reason)
+- [Troubleshooting](#troubleshooting)
+- [Quick reference card](#quick-reference-card)
+
 > **Audience:** keverall (prod VDI, test server, this workspace).
 > **Problem this solves:** `git pull` on the test server used to trigger long manual
 > rebases / broken history when syncing Bitbucket/Stash ↔ GitHub. This doc makes
 > pulls safe and gives a one-command recovery.
 
 ---
+
+<a name="tldr-the-4-golden-rules"></a>
 
 ## TL;DR — the 4 golden rules
 
@@ -20,6 +36,8 @@
 
 ---
 
+<a name="remotes"></a>
+
 ## Remotes
 
 | Name      | URL                                                        | Used by            |
@@ -32,6 +50,8 @@ The test server has no internet (port 80 blocked) — git was remapped to port 4
 to reach `gitstash`. That's a network thing; it does not affect this process.
 
 ---
+
+<a name="one-time-machine-setup-prod-vdi-test-server-this-workspace"></a>
 
 ## One-time machine setup (prod VDI, test server, this workspace)
 
@@ -47,6 +67,8 @@ diverge. Without it you get the long manual rebases.
 (Optional, to apply everywhere on a machine: `git config --global pull.ff only`.)
 
 ---
+
+<a name="daily-work-on-prod-vdi-github"></a>
 
 ## Daily work — on prod VDI (github)
 
@@ -70,6 +92,8 @@ git push github --force-with-lease feature/srvrid-parameter-rename
 
 ---
 
+<a name="sync-to-the-test-server-mirror-github-gitstash"></a>
+
 ## Sync to the test server (mirror github → gitstash)
 
 After you finish a feature (or any time you want the test server updated), push the
@@ -88,6 +112,8 @@ git push gitstash --mirror
 Only use `--mirror` if you really want Stash to be an exact copy of your local refs.
 
 ---
+
+<a name="one-time-recovery-on-the-test-server-after-a-sync-divergence"></a>
 
 ## One-time recovery on the test server (after a sync / divergence)
 
@@ -108,6 +134,8 @@ requires manual conflict resolution.
 
 ---
 
+<a name="md-ps1-showing-as-modified-for-no-reason"></a>
+
 ## `.md` / `.ps1` showing as modified for no reason?
 
 That was Windows `core.autocrlf` flipping LF↔CRLF. Fixed repo-wide by
@@ -122,6 +150,8 @@ Do **not** commit those "changes" — they're line-ending noise, not real edits.
 
 ---
 
+<a name="troubleshooting"></a>
+
 ## Troubleshooting
 
 | Symptom                                                  | Fix                                                        |
@@ -133,6 +163,8 @@ Do **not** commit those "changes" — they're line-ending noise, not real edits.
 | `git pull` opens an editor / creates a merge commit      | `git config pull.ff only` was not set — set it and re-pull|
 
 ---
+
+<a name="quick-reference-card"></a>
 
 ## Quick reference card
 
