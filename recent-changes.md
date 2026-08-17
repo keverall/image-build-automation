@@ -132,7 +132,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 #### Repo context (AGENTS.md)
 
-- Created `AGENTS.md` at repo root capturing the mandatory testing rule: `make test` is **mock-only** — no interactive input (use `-DryRun`/`-SkipConfirmation` or set `AUTOMATED_MODE`/`CI`), no live SCOM/OneView/iLO connections, all parameters defaulted or sourced from `configs/*.json`, and destructive commands always exercised in `-DryRun`.
+- Created `AGENTS.md` at repo root capturing the mandatory testing rules: `make test` must be safe to execute anywhere; tests are written and maintained using the functional unit-test scripts under `make test`; when a test uses mocking, it must avoid interactive input, never connect to live systems, default or source parameters from `configs/*.json`, and run destructive commands in `-DryRun`.
 
 <a name="verification"></a>
 

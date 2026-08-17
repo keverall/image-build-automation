@@ -228,6 +228,7 @@ function _Publish-Result {
 
           * -Json     -> emit the result as a JSON string on the success stream
           * -PassThru -> also return the raw object on the success stream
+          * -Quiet    -> suppress the human-readable report (caller handles display)
           * -CustomView { param($r) ... } -> use a rich, command-specific renderer
 
         Use -PassThru (or capture into a variable) for scripting; use -Json for
@@ -239,6 +240,7 @@ function _Publish-Result {
         [string] $Title,
         [switch] $Json,
         [switch] $PassThru,
+        [switch] $Quiet,
         [scriptblock] $CustomView,
         [int] $Depth = 6
     )
@@ -248,10 +250,12 @@ function _Publish-Result {
         return
     }
 
-    if ($CustomView) {
-        & $CustomView $Result
-    } else {
-        _Format-HumanReadable -InputObject $Result -Title $Title
+    if (-not $Quiet) {
+        if ($CustomView) {
+            & $CustomView $Result
+        } else {
+            _Format-HumanReadable -InputObject $Result -Title $Title
+        }
     }
 
     if ($PassThru) { return $Result }
