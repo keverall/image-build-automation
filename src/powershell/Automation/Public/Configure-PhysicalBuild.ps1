@@ -190,6 +190,28 @@ function Configure-PhysicalBuild {
         -CommandName 'Configure-PhysicalBuild' -ActionDescription 'build plan review'
     if ($grCheck) { return $grCheck }
 
+    # ── Parameter validation with actionable error messages ───────────────────
+    # Build mode (no -ExternalIsoPath) needs ConfigMgr endpoints to build the
+    # bootable ISO. External ISO mode and fully-skipped review mode don't.
+    if (-not $ExternalIsoPath -and -not $SkipPreBuild) {
+        $missing = @()
+        if (-not $SiteCode)          { $missing += '-SiteCode (ConfigMgr site code, e.g. P01)' }
+        if (-not $ManagementPoint)   { $missing += '-ManagementPoint (ConfigMgr MP FQDN, e.g. mp01.corp.local)' }
+        if (-not $DistributionPoint) { $missing += '-DistributionPoint (ConfigMgr DP FQDN, e.g. dp01.corp.local)' }
+        if (-not $BootImageName) {
+            $missing += '-BootImageName (ConfigMgr boot image name, e.g. "WinPE x64 - HPE")'
+        }
+        if ($missing.Count -gt 0) {
+            $msg = "PRE-BUILD VALIDATION requires ConfigMgr parameters. Missing: $($missing -join '; '). " +
+                   "Either supply these parameters, use -SkipPreBuild to skip validation, " +
+                   "or use -ExternalIsoPath 'https://...' to deploy a client-supplied ISO."
+            $logger = Get-Logger 'Configure-PhysicalBuild'
+            $logger.Error($msg)
+            Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
+            return @{ Success = $false; Error = $msg; Server = $SrvrId }
+        }
+    }
+
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  Physical Build Configuration Review" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan

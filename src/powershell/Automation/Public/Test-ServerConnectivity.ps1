@@ -112,13 +112,13 @@ function Test-ServerConnectivity {
         [Alias('PingMs')]
         [int] $PingTimeoutMs = 3000,
         [int] $Port = 443,
-        [switch] $Json,
         [Alias('JsonCfg')]
         [switch] $JsonConfig,
         [Alias('Dry')]
         [switch] $DryRun,
         [Alias('PT')]
-        [switch] $PassThru
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     $ErrorActionPreference = 'Continue'
@@ -179,7 +179,7 @@ function Test-ServerConnectivity {
                     AuthConnect    = @{ Connected = $false; Error = "Skipped - no active connection" }
                     Timestamp      = Get-UtcTimestamp
                 }
-                return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
+                return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
             }
         }
 
@@ -209,7 +209,7 @@ function Test-ServerConnectivity {
                         }
                         Timestamp      = Get-UtcTimestamp
                     }
-                    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
+                    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
                 } else {
                     # The supplied host matches the active session - reuse it (no
                     # credentials needed). Without this, the live host path below
@@ -259,7 +259,7 @@ function Test-ServerConnectivity {
                         Timestamp      = Get-UtcTimestamp
                         DryRun         = $true
                     }
-                    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
+                    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
                 }
         }
 
@@ -285,7 +285,7 @@ function Test-ServerConnectivity {
                 Timestamp      = Get-UtcTimestamp
                 DryRun         = $true
             }
-            return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
+            return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
 
         # Load OneView config (DryRun only).
@@ -497,7 +497,7 @@ function Test-ServerConnectivity {
     $logger.Info("Connectivity test for '$resolvedHost' completed: Available=$available " +
         "(DNS=$($pingResult.DnsResolved), TCP=$($pingResult.TcpPortOpen), Auth=$($authResult.Connected))")
 
-    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
+    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
 }
 
 # ── Result emission ───────────────────────────────────────────────────────────
@@ -512,15 +512,17 @@ function _Emit-ConnectivityResult {
         dump on the terminal / in logs), with -Json / -PassThru for data
         consumers. The rich, command-specific _Format-ConnectivityResult view
         is supplied as the -CustomView so the connectivity report keeps its
-        familiar layout.
+        familiar layout. Pass -Quiet to suppress the report when the caller
+        will handle display itself.
     #>
     param(
         [hashtable] $Result,
         [switch] $Json,
-        [switch] $PassThru
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
-    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -CustomView {
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
         param($r)
         _Format-ConnectivityResult -Result $r
     }

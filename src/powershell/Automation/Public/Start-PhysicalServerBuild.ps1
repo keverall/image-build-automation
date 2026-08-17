@@ -453,6 +453,31 @@ function Start-PhysicalServerBuild {
         return $grCheck
     }
 
+    # ── Parameter validation with actionable error messages ───────────────────
+    # Build mode (no -ExternalIsoPath) needs ConfigMgr endpoints to build/publish
+    # the bootable ISO. External ISO mode skips those steps entirely.
+    if (-not $ExternalIsoPath) {
+        $needsConfigMgr = -not $SkipIsoBuild -or -not $SkipPreBuild
+        if ($needsConfigMgr) {
+            $missing = @()
+            if (-not $SiteCode)          { $missing += '-SiteCode (ConfigMgr site code, e.g. P01)' }
+            if (-not $ManagementPoint)   { $missing += '-ManagementPoint (ConfigMgr MP FQDN, e.g. mp01.corp.local)' }
+            if (-not $DistributionPoint) { $missing += '-DistributionPoint (ConfigMgr DP FQDN, e.g. dp01.corp.local)' }
+            if (-not $SkipIsoBuild -and -not $BootImageName) {
+                $missing += '-BootImageName (ConfigMgr boot image name, e.g. "WinPE x64 - HPE")'
+            }
+            if ($missing.Count -gt 0) {
+                $msg = "BUILD MODE requires ConfigMgr parameters. Missing: $($missing -join '; '). " +
+                       "Either supply these parameters, or use -ExternalIsoPath 'https://...' to " +
+                       "deploy a client-supplied ISO directly (skipping ConfigMgr build/publish)."
+                $logger = Get-Logger 'Start-PhysicalServerBuild'
+                $logger.Error($msg)
+                Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
+                return @{ Success = $false; Error = $msg; Server = $SrvrId }
+            }
+        }
+    }
+
     # ── Handle External ISO Path ──────────────────────────────────────────────
     if ($ExternalIsoPath) {
         Write-Host "`n========================================" -ForegroundColor Cyan

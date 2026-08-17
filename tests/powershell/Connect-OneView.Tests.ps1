@@ -62,7 +62,7 @@ Describe 'Connect-OneView - Refuse to Reconnect an Active Session' {
                 Timestamp       = '2026-01-01T00:00:00Z'
             }
         }
-        $result = Connect-OneView -OneViewHost 'oneview-active.ad.example.com'
+        $result = Connect-OneView -OneViewHost 'oneview-active.ad.example.com' -PassThru
         $result.Message | Should -Match 'Already connected'
         Should -Invoke -ModuleName Automation Test-ServerConnectivity -Times 1 -Exactly
     }
@@ -71,7 +71,7 @@ Describe 'Connect-OneView - Refuse to Reconnect an Active Session' {
 Describe 'Connect-OneView - Delegation to Test-ServerConnectivity' {
 
     It 'Should return Available = false for an unreachable host (no credential supplied in automated mode)' {
-        $result = Connect-OneView -OneViewHost '192.0.2.1'
+        $result = Connect-OneView -OneViewHost '192.0.2.1' -PassThru
         $result.Available | Should -Be $false
         $result.Message   | Should -Match 'failed'
     }
@@ -91,7 +91,7 @@ Describe 'Connect-OneView - Delegation to Test-ServerConnectivity' {
             }
         }
 
-        $result = Connect-OneView -OneViewHost 'localhost'
+        $result = Connect-OneView -OneViewHost 'localhost' -PassThru
         $result.Available | Should -Be $true
         $result.Message    | Should -Match 'Connected to'
 
