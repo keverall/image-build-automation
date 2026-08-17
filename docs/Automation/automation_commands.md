@@ -362,11 +362,24 @@ Test-ServerList
 
 ### Validate build parameters
 
+Reuses the shared `Resolve-ExternalIsoPath` helper to convert a network-share Windows ISO image path into the network address the iLO BMC mounts as virtual media, then verifies the file is present and usable as a boot ISO. On success it returns the resolved iLO URL (the `IsoUrl` below) so you can pass it straight to a deploy command - no longer an empty/blank result. Local drive paths (`C:\`, `H:\` on a local disk) are rejected because iLO cannot reach local drives.
+
 ```powershell
-Test-BuildParams -BaseIsoPath 'C:\isos\WinSrv2025.iso'
+# UNC/SMB share - resolved to a cifs:// URL iLO can mount
+Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'
 ```
 
-**Returns:** `[string[]]` - empty if valid, error messages otherwise.
+```powershell
+# HTTPS URL is used directly by iLO
+Test-BuildParams -BaseIsoPath 'https://artifacts/isos/WinSrv2025.iso'
+```
+
+```powershell
+# Validate the path format only (skip checking the file exists)
+Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' -DryRun
+```
+
+**Returns:** `[hashtable]` with `Success`, `BaseIsoPath`, `IsoUrl` (resolved cifs://, https://, or nfs:// address iLO uses), `ResolvedPath`, and `Errors` (array; empty when valid). On success `IsoUrl` holds the converted share address.
 
 ---
 
@@ -691,76 +704,49 @@ Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
 
 ### Deploy ISOs to servers
 
-Mounts the ISO on the server's iLO via Redfish, sets the one-time boot override, and reboots the server to begin installation. This is the command that actually reboots the server and kicks off the OS install.
+**DESTRUCTIVE.** Mounts the ISO via iLO Redfish, sets one-time boot override, and **reboots the server to install Windows**. The server will wipe its local disks.
+
+`-ExternalIsoPath` accepts:
+- `https://...` — used directly
+- `\\server\share\file.iso` — converted to `cifs://` for iLO
+- `nfs://server/export/file.iso` — used directly
+- `Mapped drive` (`H:\file.iso` where `H:` maps to a UNC share) — auto-resolved to UNC, then `cifs://`
+
+Local drive paths (`C:\`, `H:\` on local disk) are **not supported**. iLO cannot access local drives, and this module does not create SMB shares.
 
 ```powershell
-# Deploy by server hostname
-Invoke-IsoDeploy -Server srv01 -IsoUrl 'https://artifacts/isos/WinSrv2025_v1.0.iso'
-```
-
-#### Deploy an external ISO (HTTP/HTTPS, UNC/SMB, NFS, or local path)
-
-```powershell
-# Deploy from a network share (auto-converted to CIFS URL for iLO)
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso'
-```
-
-```powershell
-# Deploy from an HTTP URL (used directly)
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts/isos/WinSrv2025.iso'
+# Destructive deploy - reboots server, installs OS (requires -GuardRail + confirmation)
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -GuardRail 'srv01'
 ```
 
 ```powershell
-# Deploy from a local path - auto-creates an SMB share if running as Administrator
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'H:\windows.iso'
+# HTTPS URL (used directly by iLO)
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts/isos/WinSrv2025.iso' -GuardRail 'srv01'
 ```
 
-#### Deploy by serial number (resolved via OneView)
-
 ```powershell
-Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
+# By serial number (resolved via OneView)
+Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso' -GuardRail '.*'
 ```
 
-#### Deploy by serial number with external ISO
-
 ```powershell
-Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -ExternalIsoPath 'H:\custom.iso'
-```
-
-#### Bulk deploy to all servers
-
-```powershell
-Invoke-IsoDeploy
-```
-
-#### Dry run - see what would deploy
-
-```powershell
-Invoke-IsoDeploy -DryRun
+# Dry run - validates paths and targeting, no reboot
+Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts/isos/win2025.iso' -DryRun -GuardRail 'srv01'
 ```
 
 **Parameters:**
 
-| Parameter | Aliases | Required | Description | Default |
-|-----------|---------|----------|-------------|---------|
-| `-Method` | `-` | No | Deployment method (`redfish`) | `redfish` |
-| `-Server` | `-Srvr` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
-| `-SerialNumber` | `-Srl` | No | Target a server by its HPE serial number; resolved to the hostname (and iLO IP) via OneView. Requires `-OneViewHost`. | - |
-| `-OneViewHost` | `-OVHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-ServerList` | `-SrvrList` | No | Path to server list | auto-resolved |
-| `-IsoDir` | `-` | No | Directory containing ISO packages | auto-resolved |
-| `-IsoUrl` | `-Iso` | No | Override the ISO URL | - |
-| `-ExternalIsoPath` | `-ExtIso` | No | Client-supplied ISO path (HTTP/HTTPS, UNC/SMB, NFS, or local file). When supplied, `-IsoUrl` is ignored and package resolution is skipped. For local paths, an SMB share is auto-created when run as Administrator. | - |
-| `-GuardRail` | — | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before any deployment. Omitting it aborts early with an expressive, logged error and performs no deployment. If it does not match, the deployment is aborted. When it matches, a destructive confirmation (typing YES) is still required unless `-SkipConfirmation`/`-DryRun` are supplied. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. | - |
-| `-RepoBaseUrl` | `-RepoUrl` | No | HTTPS base URL of the ISO repository. Unused by `-ExternalIsoPath` resolution (local files are shared via an auto-created SMB share instead). | - |
-| `-RepoLocalPath` | `-RepoPath` | No | Local filesystem path mirrored to `-RepoBaseUrl`. Unused by `-ExternalIsoPath` resolution. | - |
-| `-SkipConfirmation` | `-SkipConf` | No | Skip the interactive confirmation prompt before deployment. (Currently only enforced by `Start-PhysicalServerBuild`; ignored by `Invoke-IsoDeploy`.) | - |
-| `-DryRun` | `-Dry` | No | Simulate only | - |
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `-Server` | No* | Single server hostname. Mutually exclusive with `-SerialNumber`. |
+| `-SerialNumber` | No* | HPE serial number; resolved to hostname/iLO IP via OneView. Requires `-OneViewHost`. |
+| `-OneViewHost` | No | OneView appliance for serial resolution. |
+| `-IsoUrl` | No | HTTPS URL of the bootable ISO. |
+| `-ExternalIsoPath` | No | Client-supplied ISO path. Accepts HTTP/HTTPS, UNC/SMB (`\\server\share\file.iso`), NFS, or mapped network drives. Local drive paths not supported. When supplied, `-IsoUrl` is ignored. |
+| `-GuardRail` | Yes | **MANDATORY.** Case-insensitive regex the target server name must match. If omitted or mismatched, deployment is blocked. When matched, a destructive confirmation (type `YES`) is still required unless `-SkipConfirmation` or `-DryRun`. |
+| `-DryRun` | No | Simulate only - validates paths and targeting, no reboot. |
 
-```powershell
-# Target by serial number (resolved via OneView)
-Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
-```
+\* Either `-Server` or `-SerialNumber` is required for live runs.
 
 **Returns:** `[hashtable]` with `Success`, `Server`, and `Summary`.
 
