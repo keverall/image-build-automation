@@ -42,7 +42,7 @@
 
 ```powershell
 # Test OneView connectivity (explicit host)
-Test-ServerConnectivity -ManagementHost 'oneview-test.ad.example.com'
+Test-ServerConnectivity -OneViewHost 'oneview-test.ad.example.com'
 
 # Resolve host from connection_hosts.json for an environment
 Test-ServerConnectivity -Environment Test -JsonConfig
@@ -73,7 +73,7 @@ Test-ServerConnectivity -Environment Test -JsonConfig
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-ManagementHost` | Optional* | OneView appliance hostname (required for live runs) |
+| `-OneViewHost` | Optional* | OneView appliance hostname (required for live runs) |
 | `-Environment` | Optional | `Test` or `Prod`; used with `-JsonConfig` to resolve the host |
 | `-Credential` | Optional | `PSCredential` for the connection; prompted interactively if omitted |
 | `-JsonConfig` | Switch | Resolve host from `configs/connection_hosts.json` |
@@ -91,10 +91,10 @@ Test-ServerConnectivity -Environment Test -JsonConfig
 
 ```powershell
 # Basic connectivity test
-Test-ServerConnectivity -ManagementHost 'oneview.ad.example.com'
+Test-ServerConnectivity -OneViewHost 'oneview.ad.example.com'
 
 # JSON output for automation
-Test-ServerConnectivity -ManagementHost 'oneview.ad.example.com' -Json | ConvertFrom-Json
+Test-ServerConnectivity -OneViewHost 'oneview.ad.example.com' -Json | ConvertFrom-Json
 
 # DryRun - verify configuration without network calls
 Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
@@ -211,7 +211,7 @@ Set-MaintenanceMode -Action enable -SerialNumber MXQ1234567 -Mode oneview ...
 | `-SerialNumber` | Optional** | Hardware serial (OneView only; rejected for SCOM) |
 | `-Mode` | **Required** | `scom` or `oneview` |
 | `-Environment` | Optional | `Test` or `Prod` (default: `$env:ENVIRONMENT`, then `Prod`) |
-| `-ManagementHost` | Optional | Override management server/appliance |
+| `-OneViewHost` | Optional | Override management server/appliance |
 | `-Start` / `-End` | Optional | Maintenance window (UTC); `-End` defaults from config for enable |
 | `-PostDisableWaitSeconds` | Optional | Wait after SCOM disable (default: 120, 0 to skip) |
 | `-Username` | Optional | Direct username (testing only) |
@@ -232,7 +232,7 @@ Default output is human-readable (audit header, per-server maintenance status). 
 
 ## Host Resolution Priority
 
-1. `-ManagementHost` parameter (explicit override)
+1. `-OneViewHost` parameter (explicit override)
 2. `$env:MAINTENANCE_HOST` environment variable
 3. `configs/connection_hosts.json` (`environments` → `Test`/`Prod` → `scom.management_server` or `oneview.appliance`)
 

@@ -379,7 +379,7 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 | Area | Description | Test File |
 |------|-------------|----------|
 | Environment parameter | Test/Prod environment selection | Set-MaintenanceMode.Environment.Tests.ps1 |
-| Host override | ManagementHost parameter and env var | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Host override | OneViewHost parameter and env var | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Credential parameters | Username parameter | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Relative time formats | +Xhours, +Xminutes, +Xdays, +Xseconds | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Absolute time formats | YYYY-MM-DD HH:MM, ISO 8601 | Set-MaintenanceMode.Environment.Tests.ps1 |
@@ -456,7 +456,7 @@ Before deploying maintenance mode changes:
 - [ ] **Configuration valid** - `pwsh scripts/validate-maintenance-config.ps1`
 - [ ] **Test environment works** - `-Environment Test -DryRun`
 - [ ] **Prod environment works** - `-Environment Prod -DryRun`
-- [ ] **Host override works** - `-ManagementHost backup-server.local`
+- [ ] **Host override works** - `-OneViewHost backup-server.local`
 - [ ] **Relative time formats work** - `-Start now -End +1hour`
 - [ ] **Absolute time formats work** - `-Start 2025-01-15T10:00:00Z -End 2025-01-15T12:00:00Z`
 - [ ] **Serial number lookup works** - Only OneView mode, requires real OneView server
@@ -499,7 +499,7 @@ Before deploying maintenance mode changes:
 - Per-object status with ACK/NACK details
 
 **Environment Resolution:**
-1. `-ManagementHost` parameter (highest priority)
+1. `-OneViewHost` parameter (highest priority)
 2. `$env:MAINTENANCE_HOST` environment variable
 3. `connection_hosts.json` → Environment config
 
@@ -546,7 +546,7 @@ Set-MaintenanceMode `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
     -Environment Prod `
-    -ManagementHost backup-scom.local `
+    -OneViewHost backup-scom.local `
     -DryRun`
 ```
 

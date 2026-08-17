@@ -26,7 +26,7 @@
          -SkipConfirmation auto-cancels (no unconfirmed destructive action).
       7. Build/deploy VARIANTS (external ISO, firmware folders) under -DryRun.
 
-    -ManagementHost / -OneViewHost is the OneView appliance and -Server is the target
+    -OneViewHost is the OneView appliance and -Server is the target
     server identifier (name / serial / iLO IP). Nothing is hard-coded; both are
     prompted when omitted. By default the script runs SAFE (connections validated
     with -DryRun, builds with -DryRun) and only performs live calls when -Live is
@@ -34,11 +34,8 @@
     commands (Initialize-Logging / Get-Logger) under
     generated/logs/commands/testBuildDeploy/.
 
-.PARAMETER ManagementHost
-    OneView appliance hostname or IP (alias -MgmtHost). Prompted if omitted.
-
 .PARAMETER OneViewHost
-    Alias of -ManagementHost (alias -OVHost).
+    OneView appliance hostname or IP (alias -OVHost). Prompted if omitted.
 
 .PARAMETER Server
     Target server identifier (name / serial / iLO IP) to build or deploy. Prompted
@@ -76,20 +73,18 @@
     TCP connect timeout in milliseconds for reachability probes (default 3000).
 
 .EXAMPLE
-    .\testBuildDeploy.ps1 -ManagementHost oneview-test.ad.example.com -Server srv01
+    .\testBuildDeploy.ps1 -OneViewHost oneview-test.ad.example.com -Server srv01
 
 .EXAMPLE
     .\testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
 
 .EXAMPLE
-    .\testBuildDeploy.ps1 -Live -ManagementHost ov.corp.local -Server srv01 -Credential $cred -IsoPath 'https://artifacts/isos/win.iso' -GuardRail 'srv0'
+    .\testBuildDeploy.ps1 -Live -OneViewHost ov.corp.local -Server srv01 -Credential $cred -IsoPath 'https://artifacts/isos/win.iso' -GuardRail 'srv0'
 #>
 
 
 [CmdletBinding()]
 param(
-    [Alias('MgmtHost')]
-    [string] $ManagementHost,
     [Alias('OVHost')]
     [string] $OneViewHost,
     [string] $Server,
@@ -114,7 +109,7 @@ if (-not (Test-Path $modulePath)) {
 }
 Import-Module $modulePath -Force -DisableNameChecking -WarningAction SilentlyContinue
 
-$hostArg = if ($ManagementHost) { $ManagementHost } elseif ($OneViewHost) { $OneViewHost } else { $null }
+$hostArg = if ($OneViewHost) { $OneViewHost } else { $null }
 if (-not $hostArg) { $hostArg = Read-Host "Enter the OneView appliance host (server name or serial)" }
 if (-not $Server)  { $Server  = Read-Host "Enter the TARGET server identifier to build/deploy (name, serial or iLO IP)" }
 if (-not $hostArg -or -not $Server) {
@@ -149,10 +144,10 @@ Record-Step 'Connectivity status reported' ($null -ne $connStatus) ("Available=$
 if ($Live) {
     if (-not $Credential) { $Credential = Get-Credential -Message "OneView credentials for '$hostArg'" }
     Record-Step 'Connect-OneView (LIVE)' $true "Attempting live connect to '$hostArg'"
-    $conn = Connect-OneView -ManagementHost $hostArg -Credential $Credential
+    $conn = Connect-OneView -OneViewHost $hostArg -Credential $Credential
     Record-Step 'Connect-OneView result' ($conn.Available -eq $true) ("Available=$($conn.Available)")
 } else {
-    $conn = Connect-OneView -ManagementHost $hostArg -DryRun
+    $conn = Connect-OneView -OneViewHost $hostArg -DryRun
     Record-Step 'Connect-OneView (DryRun validation)' ($conn.Available -eq $true) "DryRun validation of '$hostArg'"
 }
 

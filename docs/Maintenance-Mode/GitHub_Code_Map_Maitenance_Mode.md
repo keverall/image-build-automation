@@ -83,7 +83,7 @@ This phase performs read-only connectivity checks against the **OneView applianc
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-ManagementHost` | Optional* | OneView appliance hostname (required for live runs) |
+| `-OneViewHost` | Optional* | OneView appliance hostname (required for live runs) |
 | `-Environment` | Optional | `Test` or `Prod`; used with `-JsonConfig` to resolve the host |
 | `-Credential` | Optional | `PSCredential` for the connection; prompted if omitted |
 | `-JsonConfig` | Switch | Resolve host from `configs/connection_hosts.json` |
@@ -279,7 +279,7 @@ After signon, the command identifies exactly which infrastructure objects will b
 **Environment host resolution**: [`Lines 657–699`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L657-L699)
 - [`Lines 666–672`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L666-L672): Environment priority - parameter > `$env:ENVIRONMENT` > `'Prod'`
 - [`Lines 677–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L677-L692): Host resolution from `connection_hosts.json` → SCOM management server or OneView appliance
-- [`Lines 680–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L680-L692): Override via `-ManagementHost` or `$env:MAINTENANCE_HOST`
+- [`Lines 680–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L680-L692): Override via `-OneViewHost` or `$env:MAINTENANCE_HOST`
 
 ---
 

@@ -99,7 +99,7 @@ SCOM: 4/4 success
 | `-Start` | No | Maintenance window start time | `now` |
 | `-End` | No | Maintenance window end time | `+2hours` |
 | `-DryRun` | No | Simulate only | `false` |
-| `-ManagementHost` | No | Override management server hostname | - |
+| `-OneViewHost` | No | Override management server hostname | - |
 | `-SerialNumber` | No | OneView: look up server by serial number | - |
 
 <a name="examples"></a>

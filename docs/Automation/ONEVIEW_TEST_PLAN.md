@@ -144,7 +144,7 @@ Fixed. The root cause and resolution:
 
 **Verification** — File re-parses with no syntax errors under `pwsh`, and no `winhttp`/`Add-Type` references remain.
 
-**To deploy** — On the Windows server, re-import the module from the repo checkout (new PS7 session, or `Import-Module ...\Automation.psd1 -Force`) and re-run `Test-ServerConnectivity -ManagementHost oneview.example.com`. The `Status` should now report `AVAILABLE` with `Connected: Yes`.
+**To deploy** — On the Windows server, re-import the module from the repo checkout (new PS7 session, or `Import-Module ...\Automation.psd1 -Force`) and re-run `Test-ServerConnectivity -OneViewHost oneview.example.com`. The `Status` should now report `AVAILABLE` with `Connected: Yes`.
 
 I also corrected the stale project memory that claimed the module loads under PowerShell 5.1 — it runs under PS7, so no PS5.1 workarounds should be added going forward. If you want a broader sweep of the rest of the module for other PS5.1-isms, say the word and I'll run it.
 

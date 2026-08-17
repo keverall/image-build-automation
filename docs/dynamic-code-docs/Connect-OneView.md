@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Connect-OneView.ps1
-generated: 2026-08-13
+generated: 2026-08-17
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,7 +29,7 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 
 | Parameter | Description |
 |-----------|-------------|
-| `-OneViewHost` _(Aliases: -OVHost, -MgmtHost)_ | OneView appliance hostname or IP address to connect to (server name or serial).  Required for a live (non-DryRun) connection.  Used verbatim - no config/env fallback. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP address to connect to (server name or serial).  Required for a live (non-DryRun) connection.  Used verbatim - no config/env fallback. |
 | `-DryRun` _(Aliases: -Dry)_ | Validate host resolution only - no authentication is attempted and no real connection is made.  Host is resolved from connection_hosts.json (Test environment by default).  Safe for testing code without touching an appliance.  Remove -DryRun when you are ready to connect and make changes. |
 
 <a name="examples"></a>

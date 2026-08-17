@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/testConnectAndList.ps1
-generated: 2026-08-13
+generated: 2026-08-17
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,7 +18,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Exercises the read-only / connection-lifecycle commands against an appliance, proving they fail gracefully without a session and succeed with one: Test-ServerConnectivity, Connect-OneView, Disconnect-OneView, Get-OneViewConnectionStatus, Get-OneViewServerList, Get-OneViewServerTarget, Get-OneViewVersion, Test-ServerList * Running the commands WITHOUT an active OneView session -> they must fail GRACEFULLY with a clear, correct message (never a raw crash). * Connecting (real or -DryRun), then running the SAME commands WITH a session -> they must report success / reachable / data. * Disconnecting, then running again -> graceful failure returns. * A matrix of parameter combinations (-OneViewHost, -Filter, -IncludeServerCount, -IdentifierType serial, -DryRun, etc.). The host is taken from -ManagementHost / -OneViewHost (or prompted). No server names are hard-coded. By default the script runs in SAFE mode: connections are validated with -DryRun and live list commands use -DryRun, so nothing is contacted unless you pass -Live with real credentials. Full logging is written via the module's common logging commands (Initialize-Logging / Get-Logger) under generated/logs/commands/testConnectAndList/.
+Exercises the read-only / connection-lifecycle commands against an appliance, proving they fail gracefully without a session and succeed with one: Test-ServerConnectivity, Connect-OneView, Disconnect-OneView, Get-OneViewConnectionStatus, Get-OneViewServerList, Get-OneViewServerTarget, Get-OneViewVersion, Test-ServerList * Running the commands WITHOUT an active OneView session -> they must fail GRACEFULLY with a clear, correct message (never a raw crash). * Connecting (real or -DryRun), then running the SAME commands WITH a session -> they must report success / reachable / data. * Disconnecting, then running again -> graceful failure returns. * A matrix of parameter combinations (-OneViewHost, -Filter, -IncludeServerCount, -IdentifierType serial, -DryRun, etc.). The host is taken from -OneViewHost (or prompted). No server names are hard-coded. By default the script runs in SAFE mode: connections are validated with -DryRun and live list commands use -DryRun, so nothing is contacted unless you pass -Live with real credentials. Full logging is written via the module's common logging commands (Initialize-Logging / Get-Logger) under generated/logs/commands/testConnectAndList/.
 
 <a name="parameters"></a>
 
@@ -26,8 +26,7 @@ Exercises the read-only / connection-lifecycle commands against an appliance, pr
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ManagementHost` | OneView appliance hostname or IP to test against (alias -MgmtHost). Prompted if omitted. |
-| `-OneViewHost` | Alias of -ManagementHost (alias -OVHost). |
+| `-OneViewHost` | OneView appliance hostname or IP to test against (alias -OVHost). Prompted if omitted. |
 | `-Credential` | PSCredential used for a live (-Live) connection. Prompted when -Live is set and this is omitted. |
 | `-Live` | Perform a REAL connection using -Credential (or a prompt) instead of the default -DryRun validation. Use only against an approved test appliance. |
 | `-DryRun` | Validate connectivity with -DryRun (this is the default-safe behaviour even without -Live). |
@@ -58,19 +57,16 @@ Exercises the read-only / connection-lifecycle commands against an appliance, pr
     * A matrix of parameter combinations (-OneViewHost, -Filter,
       -IncludeServerCount, -IdentifierType serial, -DryRun, etc.).
 
-    The host is taken from -ManagementHost / -OneViewHost (or prompted). No server
+    The host is taken from -OneViewHost (or prompted). No server
     names are hard-coded. By default the script runs in SAFE mode: connections are
     validated with -DryRun and live list commands use -DryRun, so nothing is
     contacted unless you pass -Live with real credentials. Full logging is written
     via the module's common logging commands (Initialize-Logging / Get-Logger)
     under generated/logs/commands/testConnectAndList/.
 
-.PARAMETER ManagementHost
-    OneView appliance hostname or IP to test against (alias -MgmtHost). Prompted
-    if omitted.
-
 .PARAMETER OneViewHost
-    Alias of -ManagementHost (alias -OVHost).
+    OneView appliance hostname or IP to test against (alias -OVHost). Prompted
+    if omitted.
 
 .PARAMETER Credential
     PSCredential used for a live (-Live) connection. Prompted when -Live is set
@@ -88,7 +84,7 @@ Exercises the read-only / connection-lifecycle commands against an appliance, pr
     TCP connect timeout in milliseconds for reachability probes (default 3000).
 
 .EXAMPLE
-    .\testConnectAndList.ps1 -ManagementHost oneview-test.ad.example.com
+    .\testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com
 
 .EXAMPLE
     .\testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com -Live -Credential $cred

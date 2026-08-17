@@ -19,19 +19,16 @@
     * A matrix of parameter combinations (-OneViewHost, -Filter,
       -IncludeServerCount, -IdentifierType serial, -DryRun, etc.).
 
-    The host is taken from -ManagementHost / -OneViewHost (or prompted). No server
+    The host is taken from -OneViewHost (or prompted). No server
     names are hard-coded. By default the script runs in SAFE mode: connections are
     validated with -DryRun and live list commands use -DryRun, so nothing is
     contacted unless you pass -Live with real credentials. Full logging is written
     via the module's common logging commands (Initialize-Logging / Get-Logger)
     under generated/logs/commands/testConnectAndList/.
 
-.PARAMETER ManagementHost
-    OneView appliance hostname or IP to test against (alias -MgmtHost). Prompted
-    if omitted.
-
 .PARAMETER OneViewHost
-    Alias of -ManagementHost (alias -OVHost).
+    OneView appliance hostname or IP to test against (alias -OVHost). Prompted
+    if omitted.
 
 .PARAMETER Credential
     PSCredential used for a live (-Live) connection. Prompted when -Live is set
@@ -49,7 +46,7 @@
     TCP connect timeout in milliseconds for reachability probes (default 3000).
 
 .EXAMPLE
-    .\testConnectAndList.ps1 -ManagementHost oneview-test.ad.example.com
+    .\testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com
 
 .EXAMPLE
     .\testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com -Live -Credential $cred
@@ -60,8 +57,6 @@
 
 [CmdletBinding()]
 param(
-    [Alias('MgmtHost')]
-    [string] $ManagementHost,
     [Alias('OVHost')]
     [string] $OneViewHost,
     [System.Management.Automation.PSCredential] $Credential,
@@ -81,7 +76,7 @@ if (-not (Test-Path $modulePath)) {
 }
 Import-Module $modulePath -Force -DisableNameChecking -WarningAction SilentlyContinue
 
-$hostArg = if ($ManagementHost) { $ManagementHost } elseif ($OneViewHost) { $OneViewHost } else { $null }
+$hostArg = if ($OneViewHost) { $OneViewHost } else { $null }
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 Initialize-Logging -CommandName 'testConnectAndList' -LogName "testConnectAndList-Host-$($hostArg ?? 'unspecified')"
@@ -212,27 +207,27 @@ $connectLabel = if ($useDryRun) { 'Connect-OneView (DryRun validation)' } else {
 Write-Host "`n--- Phase 2: connect to appliance ---" -ForegroundColor Yellow
 
 # -DryRun always mocks: it never establishes a real session - it resolves the
-# appliance from connection_hosts.json (or uses -ManagementHost verbatim) and
+# appliance from connection_hosts.json (or uses -OneViewHost verbatim) and
 # validates host resolution only. A live run (default or -Live) really connects;
-# with -ManagementHost it connects to that host (prompting for credentials when
-# none is supplied), without -ManagementHost Connect-OneView itself prompts for
+# with -OneViewHost it connects to that host (prompting for credentials when
+# none is supplied), without -OneViewHost Connect-OneView itself prompts for
 # the appliance host and credentials - exactly as the modules handle it.
 $connectLabel = if ($useDryRun) { 'Connect-OneView (DryRun validation)' } else { 'Connect-OneView (LIVE)' }
 $connectResult = $null
 $connectOk = $false
 try {
     if ($useDryRun) {
-        $connectResult = if ($hostArg) { Connect-OneView -ManagementHost $hostArg -DryRun }
+        $connectResult = if ($hostArg) { Connect-OneView -OneViewHost $hostArg -DryRun }
                          else         { Connect-OneView -DryRun }
     } else {
-        # Live: let the module prompt for host (when -ManagementHost is absent) and
+        # Live: let the module prompt for host (when -OneViewHost is absent) and
         # for credentials (when -Credential is absent) - same as the documented
         # interactive behaviour of Connect-OneView.
         if ($Credential) {
-            $connectResult = if ($hostArg) { Connect-OneView -ManagementHost $hostArg -Credential $Credential }
+            $connectResult = if ($hostArg) { Connect-OneView -OneViewHost $hostArg -Credential $Credential }
                              else         { Connect-OneView -Credential $Credential }
         } else {
-            $connectResult = if ($hostArg) { Connect-OneView -ManagementHost $hostArg }
+            $connectResult = if ($hostArg) { Connect-OneView -OneViewHost $hostArg }
                              else         { Connect-OneView }
         }
     }
@@ -245,7 +240,7 @@ Record-Step $connectLabel $connectOk ("Available=$(($connectResult.Available)) ;
 
 # Adopt whatever host the connect step actually resolved (DryRun config lookup
 # or a live interactive host entry) so the matrix below targets that appliance.
-$hostArg = $connectResult.ManagementHost ?? $hostArg
+$hostArg = $connectResult.OneViewHost ?? $hostArg
 
 # Re-initialize logging now that the host is resolved: the log file name, level,
 # and all subsequent entries (via a freshly-captured logger) reflect the actual
@@ -274,7 +269,7 @@ if ($useDryRun -or $connected) {
 
     if ($useDryRun) {
         Invoke-SafeStep 'Test-ServerConnectivity (DryRun)' -Script {
-            Test-ServerConnectivity -ManagementHost $hostArg -DryRun
+            Test-ServerConnectivity -OneViewHost $hostArg -DryRun
         } -SuccessPredicate { param($r) $r.ContainsKey('Available') }
         Invoke-SafeStep 'Get-OneViewConnectionStatus (DryRun)' -Script {
             Get-OneViewConnectionStatus -OneViewHost $hostArg -DryRun

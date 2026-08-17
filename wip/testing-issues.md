@@ -1,6 +1,48 @@
 # Testing Issues
 
+<a id="top"></a>
+
+## Table of Contents
+
+- [Friday 14 Aug 14:33](#friday-14-aug-1433)
+  - [Test-ServerConnectivity](#test-serverconnectivity)
+  - [  image-build-automation  Test-ServerConnectivity -ManagementHost oneview.example.com Test-ServerConnectivity: A parameter cannot be found that matches parameter name 'ManagementHost'.](#image-build-automation-test-serverconnectivity-managementhost-oneviewexamplecom-test-serverconnectivity-a-parameter-cannot-be-found-that-matches-parameter-name-managementhost)
+  - [  image-build-automation  Test-ServerConnectivity -OneViewHost oneview.example.com    ](#image-build-automation-test-serverconnectivity-oneviewhost-oneviewexamplecom)
+  - [###   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01                        0 ](#image-build-automation-connect-oneview-oneviewhost-va-oneviewt-01-0)
+  - [###   image-build-automation  $cred = Get-Credential   ](#image-build-automation-cred-get-credential)
+  - [###   image-build-automation  Test-ServerConnectivity  ](#image-build-automation-test-serverconnectivity)
+  - [  image-build-automation  Test-ServerConnectivity  -OneViewHost va-oneviewt-01        ](#image-build-automation-test-serverconnectivity-oneviewhost-va-oneviewt-01)
+  - [  image-build-automation  Get-OneViewConnectionStatus](#image-build-automation-get-oneviewconnectionstatus)
+  - [  image-build-automation  Get-OneViewConnectionStatus -OVHost va-oneviewt-01](#image-build-automation-get-oneviewconnectionstatus-ovhost-va-oneviewt-01)
+  - [  image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 ](#image-build-automation-get-oneviewconnectionstatus-oneviewhost-va-oneviewt-01)
+  - [  image-build-automation  Get-OneViewConnectionStatus                             ](#image-build-automation-get-oneviewconnectionstatus-1)
+  - [  image-build-automation  Get-OneViewConnectionStatus -IncludeServerCount](#image-build-automation-get-oneviewconnectionstatus-includeservercount)
+  - [  image-build-automation  Get-OneViewServerList](#image-build-automation-get-oneviewserverlist)
+  - [  image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01](#image-build-automation-get-oneviewserverlist-oneviewhost-va-oneviewt-01)
+  - [  image-build-automation  Test-ServerList](#image-build-automation-test-serverlist)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'###   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/WinSrv2025.iso'   ](#image-build-automation-test-buildparams-baseisopath-ywin2019autoiso-image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevwinsrv2025iso)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/WinSrv2019.iso' ](#image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevwinsrv2019iso)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/WIN2019Auto.iso' ](#image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevwin2019autoiso)
+  - [  image-build-automation  ls  '//vm-ewismgt-19/Kev/WIN2019Auto.iso'  ](#image-build-automation-ls-vm-ewismgt-19kevwin2019autoiso)
+  - [  image-build-automation  ls  '//vm-ewismgt-19/'](#image-build-automation-ls-vm-ewismgt-19)
+  - [  image-build-automation  ls  '//vm-ewismgt-19/*'                                                      0  10:34:](#image-build-automation-ls-vm-ewismgt-19-0-1034)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'](#image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kev)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/*'](#image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kev-1)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/W      0  10:35:IN2019Auto.iso'          ](#image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevw-0-1035in2019autoiso)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath 'Y:age-build-autom\Drivers for Windows ISO\FC-14.4.624.0-1'   0  ](#image-build-automation-test-buildparams-baseisopath-yage-build-automdrivers-for-windows-isofc-1446240-1-0)
+  - [  image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\Drivers for Windows ISO\FC-14.4.624.0-1\*'   ](#image-build-automation-test-buildparams-baseisopath-ydrivers-for-windows-isofc-1446240-1)
+  - [  image-build-automation  Configure-PhysicalBuild -ServerIdentifier alp-qlikview-03ilo -OneViewHo624.0-1', 'Y:\Dst va-oneviewt-01 -ExpectedHostname -ExternalIsoPath '/vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drif type 'System.vers') -GuardRail  'qlikview-03ilo'                                                                 ](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewho6240-1-ydst-va-oneviewt-01-expectedhostname-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drif-type-systemvers-guardrail-qlikview-03ilo)
+  - [  image-build-automation  Configure-PhysicalBuild -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath '/vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo)
+  - [  image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath '//vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo-1)
+  - [  image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath '//vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'  ](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo-2)
+  - [  image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'smb://vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-smbvm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo)
+  - [   image-build-automation Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'Y:\WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-ywin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo)
+
+<a name="friday-14-aug-1433"></a>
+
 ## Friday 14 Aug 14:33
+
+<a name="test-serverconnectivity"></a>
 
 ### Test-ServerConnectivity
 
@@ -27,7 +69,6 @@
 
 ============================================== 
 
-
 Name                           Value 
 ----                           ----- 
 OneViewHost
@@ -39,10 +80,16 @@ NetworkPing                    {[Error, No active OneView connection. Connect fi
 AuthConnect                    {[Error, Skipped - no active connection], [Connected, False]}
 ```
 
+<a name="image-build-automation-test-serverconnectivity-managementhost-oneviewexamplecom-test-serverconnectivity-a-parameter-cannot-be-found-that-matches-parameter-name-managementhost"></a>
+
 ###   image-build-automation  Test-ServerConnectivity -ManagementHost oneview.example.com Test-ServerConnectivity: A parameter cannot be found that matches parameter name 'ManagementHost'.
 
 ```text
+
+<a name="image-build-automation-test-serverconnectivity-oneviewhost-oneviewexamplecom"></a>
+
 ###   image-build-automation  Test-ServerConnectivity -OneViewHost oneview.example.com    
+
 2026-08-14 09:17:45 - Connectivity - INFO - DNS resolution for 'oneview.example.com': FAILED - DNSr 'oneview.example.com': No such host is known.
 2026-08-14 09:17:45 - Connectivity - INFO - TCP probe for 'oneview.example.com': FAILED - DNS resoeview.example.com': No such host is known.
 
@@ -81,6 +128,8 @@ NetworkPing                    {[Port, ], [Error, DNS resolution failed for 'one
 AuthConnect                    {[Error, Skipped - network ping failed], [Disconnected, False], [Co
 ```
 
+<a name="image-build-automation-connect-oneview-oneviewhost-va-oneviewt-01-0"></a>
+
 ### ###   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01                        0 
 
 ```text
@@ -91,7 +140,6 @@ Enter OneView password for 'va-oneviewt-01': : ******************
 2026-08-14 09:20:06 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.23
 2026-08-14 09:20:06 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 26ms) 
 This management appliance is a company owned asset and provided for the exclusive use of authorizeized use or abuse of this system may lead to corrective action including termination, civil and/or
-
 
 ============================================== 
   OneView Connectivity Test
@@ -131,6 +179,7 @@ Timestamp                      2026-08-14T09:20:56.8382030Z
 AuthConnect                    {[Error, ], [Disconnected, False], [Connected, True], [ModuleVersio
 ```
 
+<a name="image-build-automation-cred-get-credential"></a>
 
 ### ###   image-build-automation  $cred = Get-Credential   
 
@@ -139,6 +188,8 @@ PowerShell credential request
 Enter your credentials.       
 User: adm_98253 
 Password for user adm_98253: ****************** 
+
+<a name="image-build-automation-test-serverconnectivity"></a>
 
 ### ###   image-build-automation  Test-ServerConnectivity  
 
@@ -179,6 +230,8 @@ Timestamp                      2026-08-14T09:27:01.3532173Z
 NetworkPing                    {[Port, 443], [Error, ], [LatencyMs, 4], [DnsResolved, True]…}
 AuthConnect                    {[Error, ], [Disconnected, False], [Connected, True], [ModuleVersio
 ```
+
+<a name="image-build-automation-test-serverconnectivity-oneviewhost-va-oneviewt-01"></a>
 
 ###   image-build-automation  Test-ServerConnectivity  -OneViewHost va-oneviewt-01        
 
@@ -221,6 +274,8 @@ NetworkPing                    {[Port, 443], [Error, ], [LatencyMs, 4], [DnsReso
 AuthConnect                    {[Error, ], [Disconnected, False], [Connected, True], [ModuleVersio
 ```
 
+<a name="image-build-automation-get-oneviewconnectionstatus"></a>
+
 ###   image-build-automation  Get-OneViewConnectionStatus
 
 ```text
@@ -242,6 +297,8 @@ AuthConnect                    {[Error, ], [Disconnected, False], [Connected, Tr
  
 ==============================================
 ```
+
+<a name="image-build-automation-get-oneviewconnectionstatus-ovhost-va-oneviewt-01"></a>
 
 ###   image-build-automation  Get-OneViewConnectionStatus -OVHost va-oneviewt-01
 
@@ -267,6 +324,8 @@ AuthConnect                    {[Error, ], [Disconnected, False], [Connected, Tr
 ==============================================
 ```
 
+<a name="image-build-automation-get-oneviewconnectionstatus-oneviewhost-va-oneviewt-01"></a>
+
 ###   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 
 
 ```text
@@ -291,6 +350,8 @@ AuthConnect                    {[Error, ], [Disconnected, False], [Connected, Tr
 ============================================== 
 ```
 
+<a name="image-build-automation-get-oneviewconnectionstatus-1"></a>
+
 ###   image-build-automation  Get-OneViewConnectionStatus                             
 
 ```text
@@ -312,6 +373,8 @@ AuthConnect                    {[Error, ], [Disconnected, False], [Connected, Tr
 
 ==============================================
 ```
+
+<a name="image-build-automation-get-oneviewconnectionstatus-includeservercount"></a>
 
 ###   image-build-automation  Get-OneViewConnectionStatus -IncludeServerCount
 
@@ -335,6 +398,8 @@ AuthConnect                    {[Error, ], [Disconnected, False], [Connected, Tr
 
 ==============================================
 ```
+
+<a name="image-build-automation-get-oneviewserverlist"></a>
 
 ###   image-build-automation  Get-OneViewServerList
 
@@ -367,8 +432,9 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 2026-08-14 09:29:51 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=
 ```
 
-###   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01
+<a name="image-build-automation-get-oneviewserverlist-oneviewhost-va-oneviewt-01"></a>
 
+###   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01
 
 ```text
 ============================================== 
@@ -399,6 +465,8 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 2026-08-14 09:30:54 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=
 ```
 
+<a name="image-build-automation-test-serverlist"></a>
+
 ###   image-build-automation  Test-ServerList
 
 ```text
@@ -408,11 +476,15 @@ Servers                        {server1.example.com, server2.example.com, server
 Success                        True
  ```
 
+<a name="image-build-automation-test-buildparams-baseisopath-ywin2019autoiso-image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevwinsrv2025iso"></a>
+
 ###   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'###   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/WinSrv2025.iso'   
 
 ```text
 Base ISO not found: //vm-ewismgt-19/Kev/WinSrv2025.iso 
 ```
+
+<a name="image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevwinsrv2019iso"></a>
 
 ###   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/WinSrv2019.iso' 
 
@@ -420,8 +492,11 @@ Base ISO not found: //vm-ewismgt-19/Kev/WinSrv2025.iso
 Base ISO not found: //vm-ewismgt-19/Kev/WinSrv2019.iso 
 ```
 
+<a name="image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevwin2019autoiso"></a>
+
 ###   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/WIN2019Auto.iso' 
 
+<a name="image-build-automation-ls-vm-ewismgt-19kevwin2019autoiso"></a>
 
 ###   image-build-automation  ls  '//vm-ewismgt-19/Kev/WIN2019Auto.iso'  
 
@@ -431,11 +506,15 @@ Base ISO not found: //vm-ewismgt-19/Kev/WinSrv2019.iso
 Mode                 LastWriteTime         Length Name
  ```
 
+<a name="image-build-automation-ls-vm-ewismgt-19"></a>
+
 ###   image-build-automation  ls  '//vm-ewismgt-19/'
 
 ```text
       0  10:34:23 Get-ChildItem: Cannot find path '//vm-ewismgt-19/' because it does not exist.    
 ```
+
+<a name="image-build-automation-ls-vm-ewismgt-19-0-1034"></a>
 
 ###   image-build-automation  ls  '//vm-ewismgt-19/*'                                                      0  10:34:
 
@@ -449,27 +528,38 @@ Mode                 LastWriteTime         Length Name
 -a---          29/06/2022    16:54     5102354432 WIN2019Auto.iso
  ```
 
+<a name="image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kev"></a>
+
 ###   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'
+
  
  ```text
       0  10:35:21 Base ISO not found: //vm-ewismgt-19/Kev/                                               0  10:35:
 
+<a name="image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kev-1"></a>
+
 ###   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/*'
 
+<a name="image-build-automation-test-buildparams-baseisopath-vm-ewismgt-19kevw-0-1035in2019autoiso"></a>
 
 ###   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/W      0  10:35:IN2019Auto.iso'          
 
+<a name="image-build-automation-test-buildparams-baseisopath-yage-build-automdrivers-for-windows-isofc-1446240-1-0"></a>
 
 ###   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:age-build-autom\Drivers for Windows ISO\FC-14.4.624.0-1'   0  
 
 Base ISO not found: Y:\Drivers for Windows r Windows ISO\FISO\FC-14.4.624.0-1                                                                                 -1\*' 0  
 ```
 
+<a name="image-build-automation-test-buildparams-baseisopath-ydrivers-for-windows-isofc-1446240-1"></a>
+
 ###   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\Drivers for Windows ISO\FC-14.4.624.0-1\*'   
 
 ```text
 10:38:28 Base ISO not found: Y:\Drivers for WindowsISO\FC-14.4.624.0-1\*                 st va-oneviewt-
 ```
+
+<a name="image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewho6240-1-ydst-va-oneviewt-01-expectedhostname-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drif-type-systemvers-guardrail-qlikview-03ilo"></a>
 
 ###   image-build-automation  Configure-PhysicalBuild -ServerIdentifier alp-qlikview-03ilo -OneViewHo624.0-1', 'Y:\Dst va-oneviewt-01 -ExpectedHostname -ExternalIsoPath '/vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drif type 'System.vers') -GuardRail  'qlikview-03ilo'                                                                 
 
@@ -478,6 +568,7 @@ Host 'va-onevie
 Configure-PhysicalBuild: Missing an argument for parameter 'ExpectedHostname'. Specify a parameter o for Windows ISf type 'System.String' and try again.
 ```
 
+<a name="image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo"></a>
 
 ###   image-build-automation  Configure-PhysicalBuild -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath '/vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'
 
@@ -507,6 +598,8 @@ Line |
      | NFS path, or UNC/SMB path (\\server\share\file.iso).
 ```
 
+<a name="image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo-1"></a>
+
 ###   image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath '//vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'
 
 ```text
@@ -534,6 +627,8 @@ Line |
      | Unsupported ISO path format: '//vm-ewismgt-19/Kev/WIN2019Auto.iso'. Expected HTTP/HTTPS URL, NFS path, or UNC/SMB     
      | path (\\server\share\file.iso).
 ```
+
+<a name="image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo-2"></a>
 
 ###   image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath '//vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'  
 
@@ -563,6 +658,8 @@ Line |
      | path (\\server\share\file.iso).
 ```
 
+<a name="image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-smbvm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo"></a>
+
 ###   image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'smb://vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'
 
 ```text
@@ -591,7 +688,9 @@ Line |
      | path (\\server\share\file.iso).
 ```
 
-###   image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'Y:\WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'
+<a name="image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-ywin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo"></a>
+
+###    image-build-automation Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'Y:\WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'
 
 ```text
 ========================================

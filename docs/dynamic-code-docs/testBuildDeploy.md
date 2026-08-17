@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/testBuildDeploy.ps1
-generated: 2026-08-13
+generated: 2026-08-17
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,7 +18,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Exercises the build/deploy commands plus the ISO / firmware validation they rely on: Configure-PhysicalBuild, Start-PhysicalServerBuild, Invoke-IsoDeploy, Update-Firmware What it exercises ----------------- 1. Connection check / connect-when-none (mirrors testConnectAndList). 2. Running build/deploy WITHOUT the mandatory -GuardRail -> early, graceful, logged BLOCK (never an unguarded action). 3. HPE OneView ISO file variants: * filename/UNC/HTTPS/NFS path -> resolved to an iLO-accessible URL (SMB conversion, shareability checks) * a supplied local ISO path is validated (exists, is an .iso) 4. Firmware archive validation (exists, valid zip/cab/tar). 5. The -GuardRail SAFETY GATE across all four commands: * omitted      -> blocked (GUARD RAIL REQUIRED) * non-matching -> blocked (mismatch) * matching     -> proceeds (DryRun / SkipConfirmation) 6. Confirmation flow: a matched guard in an automated run with no -SkipConfirmation auto-cancels (no unconfirmed destructive action). 7. Build/deploy VARIANTS (external ISO, firmware folders) under -DryRun. -ManagementHost / -OneViewHost is the OneView appliance and -Server is the target server identifier (name / serial / iLO IP). Nothing is hard-coded; both are prompted when omitted. By default the script runs SAFE (connections validated with -DryRun, builds with -DryRun) and only performs live calls when -Live is passed with credentials. Full logging is written via the module's common logging commands (Initialize-Logging / Get-Logger) under generated/logs/commands/testBuildDeploy/.
+Exercises the build/deploy commands plus the ISO / firmware validation they rely on: Configure-PhysicalBuild, Start-PhysicalServerBuild, Invoke-IsoDeploy, Update-Firmware What it exercises ----------------- 1. Connection check / connect-when-none (mirrors testConnectAndList). 2. Running build/deploy WITHOUT the mandatory -GuardRail -> early, graceful, logged BLOCK (never an unguarded action). 3. HPE OneView ISO file variants: * filename/UNC/HTTPS/NFS path -> resolved to an iLO-accessible URL (SMB conversion, shareability checks) * a supplied local ISO path is validated (exists, is an .iso) 4. Firmware archive validation (exists, valid zip/cab/tar). 5. The -GuardRail SAFETY GATE across all four commands: * omitted      -> blocked (GUARD RAIL REQUIRED) * non-matching -> blocked (mismatch) * matching     -> proceeds (DryRun / SkipConfirmation) 6. Confirmation flow: a matched guard in an automated run with no -SkipConfirmation auto-cancels (no unconfirmed destructive action). 7. Build/deploy VARIANTS (external ISO, firmware folders) under -DryRun. -OneViewHost is the OneView appliance and -Server is the target server identifier (name / serial / iLO IP). Nothing is hard-coded; both are prompted when omitted. By default the script runs SAFE (connections validated with -DryRun, builds with -DryRun) and only performs live calls when -Live is passed with credentials. Full logging is written via the module's common logging commands (Initialize-Logging / Get-Logger) under generated/logs/commands/testBuildDeploy/.
 
 <a name="parameters"></a>
 
@@ -26,8 +26,7 @@ Exercises the build/deploy commands plus the ISO / firmware validation they rely
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ManagementHost` | OneView appliance hostname or IP (alias -MgmtHost). Prompted if omitted. |
-| `-OneViewHost` | Alias of -ManagementHost (alias -OVHost). |
+| `-OneViewHost` | OneView appliance hostname or IP (alias -OVHost). Prompted if omitted. |
 | `-Server` | Target server identifier (name / serial / iLO IP) to build or deploy. Prompted if omitted. |
 | `-SerialNumber` | Resolve -Server from an HPE serial number via OneView. |
 | `-IloIp` | Target iLO address or hostname. |
@@ -71,7 +70,7 @@ Exercises the build/deploy commands plus the ISO / firmware validation they rely
          -SkipConfirmation auto-cancels (no unconfirmed destructive action).
       7. Build/deploy VARIANTS (external ISO, firmware folders) under -DryRun.
 
-    -ManagementHost / -OneViewHost is the OneView appliance and -Server is the target
+    -OneViewHost is the OneView appliance and -Server is the target
     server identifier (name / serial / iLO IP). Nothing is hard-coded; both are
     prompted when omitted. By default the script runs SAFE (connections validated
     with -DryRun, builds with -DryRun) and only performs live calls when -Live is
@@ -79,11 +78,8 @@ Exercises the build/deploy commands plus the ISO / firmware validation they rely
     commands (Initialize-Logging / Get-Logger) under
     generated/logs/commands/testBuildDeploy/.
 
-.PARAMETER ManagementHost
-    OneView appliance hostname or IP (alias -MgmtHost). Prompted if omitted.
-
 .PARAMETER OneViewHost
-    Alias of -ManagementHost (alias -OVHost).
+    OneView appliance hostname or IP (alias -OVHost). Prompted if omitted.
 
 .PARAMETER Server
     Target server identifier (name / serial / iLO IP) to build or deploy. Prompted
@@ -121,13 +117,13 @@ Exercises the build/deploy commands plus the ISO / firmware validation they rely
     TCP connect timeout in milliseconds for reachability probes (default 3000).
 
 .EXAMPLE
-    .\testBuildDeploy.ps1 -ManagementHost oneview-test.ad.example.com -Server srv01
+    .\testBuildDeploy.ps1 -OneViewHost oneview-test.ad.example.com -Server srv01
 
 .EXAMPLE
     .\testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
 
 .EXAMPLE
-    .\testBuildDeploy.ps1 -Live -ManagementHost ov.corp.local -Server srv01 -Credential $cred -IsoPath 'https://artifacts/isos/win.iso' -GuardRail 'srv0'
+    .\testBuildDeploy.ps1 -Live -OneViewHost ov.corp.local -Server srv01 -Credential $cred -IsoPath 'https://artifacts/isos/win.iso' -GuardRail 'srv0'
 ```
 
 ---

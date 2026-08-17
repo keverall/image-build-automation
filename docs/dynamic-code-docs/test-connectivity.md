@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/test-connectivity.ps1
-generated: 2026-08-13
+generated: 2026-08-17
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -22,7 +22,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Wrapper around the Test-ServerConnectivity module command. This is a STATUS CHECK, not a connect command - it NEVER prompts for a host or credentials. Run with no parameters to report the ACTIVE OneView connection (established by Connect-OneView); supply -ManagementHost to check a SPECIFIC appliance. To actually connect, use Connect-OneView -ManagementHost <host>.
+Wrapper around the Test-ServerConnectivity module command. This is a STATUS CHECK, not a connect command - it NEVER prompts for a host or credentials. Run with no parameters to report the ACTIVE OneView connection (established by Connect-OneView); supply -OneViewHost to check a SPECIFIC appliance. To actually connect, use Connect-OneView -OneViewHost <host>.
 
 <a name="parameters"></a>
 
@@ -31,7 +31,7 @@ Wrapper around the Test-ServerConnectivity module command. This is a STATUS CHEC
 | Parameter | Description |
 |-----------|-------------|
 | `-Environment` | Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig. |
-| `-ManagementHost` | Override OneView appliance hostname (highest priority). Optional - omit to report the active Connect-OneView session. |
+| `-OneViewHost` | Override OneView appliance hostname (highest priority). Optional - omit to report the active Connect-OneView session. |
 | `-Credential` | PSCredential for the live connection. If omitted, the active session is reused (when it matches) or ONEVIEW_USER / ONEVIEW_PASSWORD / CyberArk are used. This command never prompts. |
 | `-JsonConfig` | Use configs/connection_hosts.json to resolve the appliance (DryRun only). |
 | `-Json` | Output as JSON |
@@ -55,7 +55,7 @@ pwsh -File scripts/test-connectivity.ps1
 ### Example 2
 
 ```powershell
-pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'oneview.example.com'
+pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
 ```
 
 <a name="example-3"></a>
@@ -78,13 +78,13 @@ pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
     Wrapper around the Test-ServerConnectivity module command. This is a STATUS
     CHECK, not a connect command - it NEVER prompts for a host or credentials.
     Run with no parameters to report the ACTIVE OneView connection (established
-    by Connect-OneView); supply -ManagementHost to check a SPECIFIC appliance.
-    To actually connect, use Connect-OneView -ManagementHost <host>.
+    by Connect-OneView); supply -OneViewHost to check a SPECIFIC appliance.
+    To actually connect, use Connect-OneView -OneViewHost <host>.
 
 .PARAMETER Environment
     Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
-.PARAMETER ManagementHost
+.PARAMETER OneViewHost
     Override OneView appliance hostname (highest priority). Optional - omit to
     report the active Connect-OneView session.
 
@@ -109,7 +109,7 @@ pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
     pwsh -File scripts/test-connectivity.ps1
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'oneview.example.com'
+    pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
 
 .EXAMPLE
     pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun

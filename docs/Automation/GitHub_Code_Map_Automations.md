@@ -608,7 +608,7 @@ Skip switches: `-SkipCmClient`, `-SkipDrivers`, `-SkipRemote`
 Read-only connectivity test safe during change freezes (694 lines):
 - **Phase 1: Network Ping** - DNS resolution + TCP port probe at [L446–497](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#446-497)
 - **Phase 2: Auth Connect** - Full authentication via OneView module. **Session persists** for subsequent commands - use `Disconnect-OneView` to close explicitly at [L502–585](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#502-585)
-- Host resolution: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `connection_hosts.json` → interactive prompt
+- Host resolution: `-OneViewHost` → `$env:MAINTENANCE_HOST` → `connection_hosts.json` → interactive prompt
 - `-DryRun` returns mock data at [L393](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#393)
 - `-Json` for API integration at [L598](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#598)
 
