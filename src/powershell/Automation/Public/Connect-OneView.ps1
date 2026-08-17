@@ -60,7 +60,7 @@ function Connect-OneView {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Alias('OVHost','MgmtHost')]
+        [Alias('OVHost')]
         [string] $OneViewHost,
 
     [Alias('Dry')]
@@ -154,7 +154,7 @@ if ($active -and -not $DryRun) {
     Write-Verbose "Already connected to OneView appliance '$($active.Name)'. Reusing the existing session (not reconnecting)."
     $statusParams = @{ PingTimeoutMs = 3000 }
     if ($OneViewHost) { $statusParams['OneViewHost'] = $OneViewHost }
-    $result = Test-ServerConnectivity @statusParams
+    $result = Test-ServerConnectivity @statusParams -PassThru
     $result.Message = "Already connected to OneView appliance '$($active.Name)'."
     return $result
 }
@@ -195,7 +195,7 @@ if ($DryRun) {
     }
 }
 
-$result = Test-ServerConnectivity @params
+$result = Test-ServerConnectivity @params -PassThru
 
     # Surface a clean message for the connection-focused use case.
     if ($result.Available) {

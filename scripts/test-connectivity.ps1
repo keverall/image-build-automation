@@ -10,13 +10,13 @@
     Wrapper around the Test-ServerConnectivity module command. This is a STATUS
     CHECK, not a connect command - it NEVER prompts for a host or credentials.
     Run with no parameters to report the ACTIVE OneView connection (established
-    by Connect-OneView); supply -ManagementHost to check a SPECIFIC appliance.
-    To actually connect, use Connect-OneView -ManagementHost <host>.
+    by Connect-OneView); supply -OneViewHost to check a SPECIFIC appliance.
+    To actually connect, use Connect-OneView -OneViewHost <host>.
 
 .PARAMETER Environment
     Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
-.PARAMETER ManagementHost
+.PARAMETER OneViewHost
     Override OneView appliance hostname (highest priority). Optional - omit to
     report the active Connect-OneView session.
 
@@ -41,7 +41,7 @@
     pwsh -File scripts/test-connectivity.ps1
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'oneview.example.com'
+    pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
 
 .EXAMPLE
     pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
@@ -50,7 +50,7 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Test', 'Prod')][string]$Environment = 'Prod',
-    [string]$ManagementHost,
+    [string]$OneViewHost,
     [System.Management.Automation.PSCredential]$Credential,
     [switch]$JsonConfig,
     [switch]$Json,
@@ -84,7 +84,7 @@ $connParams = @{
 }
 
 if ($Environment)    { $connParams['Environment'] = $Environment }
-if ($ManagementHost) { $connParams['ManagementHost'] = $ManagementHost }
+if ($OneViewHost) { $connParams['OneViewHost'] = $OneViewHost }
 if ($Credential)    { $connParams['Credential'] = $Credential }
 if ($JsonConfig)     { $connParams['JsonConfig'] = $true }
 if ($Json)           { $connParams['Json'] = $true }

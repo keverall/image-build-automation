@@ -21,7 +21,7 @@ param(
     [Parameter(Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
     [Alias('Env')]
     [ValidateSet('Test', 'Prod')][string] $Environment,
-        [Alias('OVHost','MgmtHost')]
+        [Alias('OVHost')]
         [string] $OneViewHost,
     [Alias('Srl')]
     [string] $SerialNumber,
@@ -322,7 +322,7 @@ function Set-MaintenanceMode {
         [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
         [Alias('Env')]
         [ValidateSet('Test', 'Prod')][string] $Environment,
-        [Alias('OVHost','MgmtHost')]
+        [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('Srl')]
         [string] $SerialNumber,

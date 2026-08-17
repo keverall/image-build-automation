@@ -63,7 +63,22 @@ function Test-ServerConnectivity {
         Simulate connectivity without actual network calls. Returns mock data to
         verify configuration resolution. Config files may be read for validation.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+        When omitted, the command writes a human-readable report to the host
+        (terminal / transcript / logs) and does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Test-ServerConnectivity -PassThru`, for scripting.
+
     .RETURNS
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
         [hashtable] with keys:
           Available        [bool]   - overall pass/fail
           Mode             [string] - always 'oneview'
@@ -72,6 +87,7 @@ function Test-ServerConnectivity {
           NetworkPing      [hashtable] - DnsResolved, IpAddress, TcpPortOpen, Port, LatencyMs, Error
           AuthConnect      [hashtable] - Connected, ModuleLoaded, Error
           Timestamp        [string]   - UTC ISO 8601
+        With -Json, a JSON [string] representation of the same data.
 
     .NOTES
         The OneView session established by this command persists in the current
@@ -87,7 +103,7 @@ function Test-ServerConnectivity {
     param(
         [Alias('Env')]
         [ValidateSet('Test', 'Prod')][string] $Environment,
-        [Alias('OVHost','MgmtHost')]
+        [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('Cred')]
         [System.Management.Automation.PSCredential] $Credential,
@@ -100,7 +116,9 @@ function Test-ServerConnectivity {
         [Alias('JsonCfg')]
         [switch] $JsonConfig,
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [Alias('PT')]
+        [switch] $PassThru
     )
 
     $ErrorActionPreference = 'Continue'
@@ -161,8 +179,7 @@ function Test-ServerConnectivity {
                     AuthConnect    = @{ Connected = $false; Error = "Skipped - no active connection" }
                     Timestamp      = Get-UtcTimestamp
                 }
-                if (-not $Json) { _Format-ConnectivityResult -Result $result }
-                return $result
+                return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
             }
         }
 
@@ -192,8 +209,7 @@ function Test-ServerConnectivity {
                         }
                         Timestamp      = Get-UtcTimestamp
                     }
-                    if (-not $Json) { _Format-ConnectivityResult -Result $result }
-                    return $result
+                    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
                 } else {
                     # The supplied host matches the active session - reuse it (no
                     # credentials needed). Without this, the live host path below
@@ -240,12 +256,11 @@ function Test-ServerConnectivity {
                     Environment    = $effectiveEnv
                     NetworkPing    = @{ DnsResolved = $false; Error = $errorMsg }
                     AuthConnect    = @{ Connected = $false; Error = "Skipped - no management host" }
-                    Timestamp      = Get-UtcTimestamp
-                    DryRun         = $true
+                        Timestamp      = Get-UtcTimestamp
+                        DryRun         = $true
+                    }
+                    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
                 }
-                if (-not $Json) { _Format-ConnectivityResult -Result $result }
-                return $result
-            }
         }
 
         # 3. Reuse the active connection when no host/config supplied. This
@@ -270,8 +285,7 @@ function Test-ServerConnectivity {
                 Timestamp      = Get-UtcTimestamp
                 DryRun         = $true
             }
-            if (-not $Json) { _Format-ConnectivityResult -Result $result }
-            return $result
+            return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
         }
 
         # Load OneView config (DryRun only).
@@ -364,11 +378,8 @@ function Test-ServerConnectivity {
             }
         }
 
-        if (-not $Json) {
-            _Format-ConnectivityResult -Result $mockResult
-        }
         $logger.Info("Connectivity test for '$resolvedHost' completed (DryRun): Available=$($mockResult.Available), Mode=$($mockResult.Mode)")
-        return $mockResult
+        return (_Emit-ConnectivityResult -Result $mockResult -Json:$Json -PassThru:$PassThru)
     }
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -483,14 +494,36 @@ function Test-ServerConnectivity {
         Timestamp      = Get-UtcTimestamp
     }
 
-    if (-not $Json) {
-        _Format-ConnectivityResult -Result $result
-    }
-
     $logger.Info("Connectivity test for '$resolvedHost' completed: Available=$available " +
         "(DNS=$($pingResult.DnsResolved), TCP=$($pingResult.TcpPortOpen), Auth=$($authResult.Connected))")
 
-    return $result
+    return (_Emit-ConnectivityResult -Result $result -Json:$Json -PassThru:$PassThru)
+}
+
+# ── Result emission ───────────────────────────────────────────────────────────
+function _Emit-ConnectivityResult {
+    <#
+    .SYNOPSIS
+        Emits the connectivity result via the shared, DRY _Publish-Result helper.
+
+    .DESCRIPTION
+        Delegates to _Publish-Result so behaviour is identical across all
+        commands: a human-readable report by default (no truncated hashtable
+        dump on the terminal / in logs), with -Json / -PassThru for data
+        consumers. The rich, command-specific _Format-ConnectivityResult view
+        is supplied as the -CustomView so the connectivity report keeps its
+        familiar layout.
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -CustomView {
+        param($r)
+        _Format-ConnectivityResult -Result $r
+    }
 }
 
 # ── Output formatting ─────────────────────────────────────────────────────────

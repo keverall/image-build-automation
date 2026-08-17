@@ -84,14 +84,14 @@ This phase performs read-only connectivity checks against the **OneView applianc
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `-Environment` | Optional | `Test` or `Prod` (default: `Prod`). Only used with `-JsonConfig` (DryRun). |
-| `-ManagementHost` | Optional* | OneView appliance hostname (server name or serial). REQUIRED for live runs; used verbatim. |
+| `-OneViewHost` | Optional* | OneView appliance hostname (server name or serial). REQUIRED for live runs; used verbatim. |
 | `-Credential` | Optional | `PSCredential` for the live connection. If omitted, prompted interactively. |
 | `-ConfigDir` | Optional | Config file directory (default: `configs`) |
 | `-PingTimeoutMs` | Optional | TCP timeout in ms (default: 3000) |
 | `-Json` | Switch | Output as JSON for automation |
 | `-DryRun` | Switch | Test configuration without network calls |
 
-\* `-ManagementHost` is required for a live (non-`-DryRun`) connectivity test.
+\* `-OneViewHost` is required for a live (non-`-DryRun`) connectivity test.
 
 **Full `param()` block**: [`Lines 7-17`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L7-L17)
 **Function `param()` block**: [`Lines 223-234`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#L223-L234)
@@ -107,7 +107,7 @@ When `-DryRun` is specified, the function returns mock connectivity data without
 
 ```powershell
 # Mock successful connectivity check (OneView only)
-Test-ServerConnectivity -ManagementHost oneview.example.com -DryRun
+Test-ServerConnectivity -OneViewHost oneview.example.com -DryRun
 ```
 
 **DryRun returns:**
@@ -286,7 +286,7 @@ After signon, the command identifies exactly which infrastructure objects will b
 **Environment host resolution**: [`Lines 657–699`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L657-L699)
 - [`Lines 666–672`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L666-L672): Environment priority - parameter > `$env:ENVIRONMENT` > `'Prod'`
 - [`Lines 677–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L677-L692): Host resolution from `connection_hosts.json` → SCOM management server or OneView appliance
-- [`Lines 680–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L680-L692): Override via `-ManagementHost` or `$env:MAINTENANCE_HOST`
+- [`Lines 680–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L680-L692): Override via `-OneViewHost` or `$env:MAINTENANCE_HOST`
 
 ---
 

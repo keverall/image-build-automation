@@ -587,6 +587,7 @@ $_privateOrder = @(
     'ParameterValidation.ps1', # Assert-ParameterNotFlag (shared parameter-usage guard)
     'OneViewSession.ps1', # Get-OneViewActiveSession, Test-OneViewSessionActive (shared OneView session detection)
     'Logging.ps1',      # Initialize-Logging, Get-Logger
+    'OutputFormatter.ps1', # _Publish-Result, _Format-HumanReadable (shared DRY output rendering)
     'GuardRail.ps1',    # Assert-GuardRail (destructive-action safety gate for build/deploy)
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory

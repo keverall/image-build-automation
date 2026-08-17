@@ -100,9 +100,9 @@ Pre-flight read-only checks. Safe to run during a change freeze. Start here - co
 
 ### Test OneView connectivity
 
-Read-only connectivity STATUS CHECK for a OneView appliance - safe during a change freeze. **This command never prompts for a host or credentials.** Run with no parameters to report the ACTIVE OneView connection (established by `Connect-OneView`); supply `-ManagementHost` to check a SPECIFIC appliance only. Reachability probes DNS/TCP; authentication reuses the active session (when it matches) or uses `-Credential` / `ONEVIEW_USER` + `ONEVIEW_PASSWORD` - it never asks for a username or password.
+Read-only connectivity STATUS CHECK for a OneView appliance - safe during a change freeze. **This command never prompts for a host or credentials.** Run with no parameters to report the ACTIVE OneView connection (established by `Connect-OneView`); supply `-OneViewHost` to check a SPECIFIC appliance only. Reachability probes DNS/TCP; authentication reuses the active session (when it matches) or uses `-Credential` / `ONEVIEW_USER` + `ONEVIEW_PASSWORD` - it never asks for a username or password.
 
-**To actually connect**, use `Connect-OneView -ManagementHost <host>` (which prompts for credentials and establishes the session this command reports on).
+**To actually connect**, use `Connect-OneView -OneViewHost <host>` (which prompts for credentials and establishes the session this command reports on).
 
 **The OneView session established by `Connect-OneView` persists in the current PowerShell session.** Use `Disconnect-OneView` to explicitly close the session when finished.
 
@@ -113,24 +113,24 @@ Test-ServerConnectivity
 
 ```powershell
 # STATUS: check a specific appliance only
-Test-ServerConnectivity -ManagementHost oneview.example.com
+Test-ServerConnectivity -OneViewHost oneview.example.com
 ```
 
 ```powershell
 # DRY-RUN: validate host resolution only - no real connection or changes
-Test-ServerConnectivity -ManagementHost oneview.example.com -DryRun
+Test-ServerConnectivity -OneViewHost oneview.example.com -DryRun
 ```
 
 **Parameters:**
 
 | Parameter | Aliases | Required | Description | Default |
 |-----------|---------|----------|-------------|---------|
-| `-ManagementHost` | `-MgmtHost` | No | OneView appliance to check (server name or serial). Omit to report the active `Connect-OneView` session; supply to check a specific appliance verbatim (no config/env fallback). | - |
+| `-OneViewHost` | `-OVHost` | No | OneView appliance to check (server name or serial). Omit to report the active `Connect-OneView` session; supply to check a specific appliance verbatim (no config/env fallback). | - |
 | `-DryRun` | `-Dry` | No | Return mock data; config may be read. | - |
 
 No host is required - without one the command reports the active connection.
 
-**Returns:** `[hashtable]` with `Available`, `Mode` (`oneview`), `ManagementHost`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
+**Returns:** `[hashtable]` with `Available`, `Mode` (`oneview`), `OneViewHost`, `NetworkPing`, `AuthConnect`, and `Timestamp`.
 
 **Note:** The OneView session persists after a successful connection. Use `Disconnect-OneView` to close it.
 
@@ -142,24 +142,24 @@ No host is required - without one the command reports the active connection.
 
 A user-friendly alias for `Test-ServerConnectivity`.  Validates network reachability and authenticates to the OneView appliance in a single step, leaving an active session for subsequent commands (`Get-OneViewServerList`, `Get-OneViewConnectionStatus`, etc.).
 
-On a live run the appliance host is taken verbatim from `-ManagementHost` and credentials are entered interactively at the prompt.  Config files are read **only** with `-DryRun` (no real connection is made).
+On a live run the appliance host is taken verbatim from `-OneViewHost` and credentials are entered interactively at the prompt.  Config files are read **only** with `-DryRun` (no real connection is made).
 
 ```powershell
 # LIVE: connect to a specific appliance (credentials prompted interactively)
-Connect-OneView -ManagementHost oneview.example.com
+Connect-OneView -OneViewHost oneview.example.com
 ```
 
 ```powershell
 # LIVE + NON-INTERACTIVE: supply a PSCredential so nothing is prompted
 # (used by runbooks / CI where AUTOMATED_MODE is set)
 $cred = Get-Credential
-Connect-OneView -ManagementHost oneview.example.com -Credential $cred
+Connect-OneView -OneViewHost oneview.example.com -Credential $cred
 ```
 
 ```powershell
 # BARE (no params) on a live run: Connect-OneView needs a target, so it
 # prompts for the appliance host (interactive) - or, in automated mode /
-# non-TTY, warns "Connect-OneView requires -ManagementHost" and makes no
+# non-TTY, warns "Connect-OneView requires -OneViewHost" and makes no
 # connection. Prefer the explicit form above.
 Connect-OneView
 ```
@@ -171,8 +171,8 @@ Connect-OneView
 Connect-OneView -DryRun
 ```
 
-> **Supplying `-ManagementHost` vs not:** a live connection *requires* a target
-> appliance. With `-ManagementHost` the command connects to exactly that host
+> **Supplying `-OneViewHost` vs not:** a live connection *requires* a target
+> appliance. With `-OneViewHost` the command connects to exactly that host
 > (prompting for credentials, or taking `-Credential` in automation). Without it,
 > `Connect-OneView` cannot connect on a live run - it either prompts for the host
 > (interactive) or warns and exits (automated). `-DryRun` is the exception: with
@@ -182,13 +182,13 @@ Connect-OneView -DryRun
 
 | Parameter | Aliases | Required | Description | Default |
 |-----------|---------|----------|-------------|---------|
-| `-ManagementHost` | `-MgmtHost` | No* | OneView appliance to connect to (server name or serial). REQUIRED for live runs; used verbatim - no config/env fallback. | - |
+| `-OneViewHost` | `-OVHost` | No* | OneView appliance to connect to (server name or serial). REQUIRED for live runs; used verbatim - no config/env fallback. | - |
 | `-Credential` | `-Cred` | No | `PSCredential` for the live connection. If omitted, credentials are prompted interactively (live run, interactive only). Supply this for non-interactive / automation runs. | prompt (interactive) |
 | `-DryRun` | `-Dry` | No | Return mock data; config may be read. Use this to test code without connecting to an appliance or making changes. | - |
 
-\* `-ManagementHost` is required for a live (non-`-DryRun`) connection.
+\* `-OneViewHost` is required for a live (non-`-DryRun`) connection.
 
-**Returns:** `[hashtable]` with `Available`, `ManagementHost`, `AuthConnect`, `NetworkPing`, `Message`, and `Timestamp`.
+**Returns:** `[hashtable]` with `Available`, `OneViewHost`, `AuthConnect`, `NetworkPing`, `Message`, and `Timestamp`.
 
 **Note:** `Connect-OneView` delegates to `Test-ServerConnectivity`, so the full network-ping + auth validation happens under the hood.  The OneView session persists after a successful connection.  Use `Disconnect-OneView` to close it.
 
@@ -224,7 +224,7 @@ Disconnect-OneView -Force
 
 ### Get OneView connection status
 
-Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. **This command never prompts.** When run without parameters, the command checks for an existing OneView session (established via `Connect-OneView`) and uses that appliance automatically - no connect/disconnect. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the session token or supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health. If no session exists, the command returns an error telling you to connect first with `Connect-OneView -ManagementHost <oneview-appliance-host>`.
+Quick reachability + authentication check against a OneView appliance, with optional per-server status. Read-only - safe during a change freeze. **This command never prompts.** When run without parameters, the command checks for an existing OneView session (established via `Connect-OneView`) and uses that appliance automatically - no connect/disconnect. Reachability probes `GET /rest/version` (no auth); authentication probes `GET /rest/server-hardware` with the session token or supplied credentials. Use `-ServerIdentifier` to also report a single server's power/health. If no session exists, the command returns an error telling you to connect first with `Connect-OneView -OneViewHost <oneview-appliance-host>`.
 
 ```powershell
 # BARE: no params - reports the ACTIVE OneView session (from Connect-OneView).
@@ -1171,7 +1171,7 @@ read-only command fails **gracefully** without a session and succeeds **with** o
 and runs a parameter-combination matrix.
 
 ```powershell
-pwsh scripts/testConnectAndList.ps1 -ManagementHost oneview-test.ad.example.com
+pwsh scripts/testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com
 pwsh scripts/testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com -Live -Credential $cred
 ```
 
@@ -1185,7 +1185,7 @@ guard-rail match / non-match / omitted behaviour, the confirmation flow, and
 build/deploy variants — all under `-DryRun` unless `-Live` is supplied.
 
 ```powershell
-pwsh scripts/testBuildDeploy.ps1 -ManagementHost oneview-test.ad.example.com -Server srv01 -GuardRail 'srv0'
+pwsh scripts/testBuildDeploy.ps1 -OneViewHost oneview-test.ad.example.com -Server srv01 -GuardRail 'srv0'
 pwsh scripts/testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
 ```
 

@@ -34,7 +34,7 @@ Use `Connect-OneView` to verify connectivity and establish a persistent OneView 
 
 ```powershell
 # Connect to OneView (session persists)
-Connect-OneView -ManagementHost oneview.example.com
+Connect-OneView -OneViewHost oneview.example.com
 
 # Run OneView commands while the session is active
 Get-OneViewServerList

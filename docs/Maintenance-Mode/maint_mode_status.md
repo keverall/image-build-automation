@@ -81,7 +81,7 @@
 - ✅ ISO 8601: `-Start '2026-06-11T22:00:00'`
 - ✅ Default duration (4 hours if `-End` omitted)
 - ✅ Environment-based host resolution (`Test` / `Prod`)
-- ✅ Host override (`-ManagementHost` / `$env:MAINTENANCE_HOST`)
+- ✅ Host override (`-OneViewHost` / `$env:MAINTENANCE_HOST`)
 - ✅ OneView serial-number lookup (`-SerialNumber`)
 - ✅ Scheduled task auto-creation (Windows Task Scheduler)
 - ✅ `-NoSchedule` to skip task creation

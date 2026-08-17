@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/lint.ps1
-generated: 2026-08-13
+generated: 2026-08-17
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

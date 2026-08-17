@@ -61,7 +61,7 @@ Set-MaintenanceMode `
     -TargetId <cluster-id> `
     -Mode <scom|oneview> `
     [-Environment <Test|Prod>] `
-    [-ManagementHost <hostname>] `
+    [-OneViewHost <hostname>] `
     [-Username <username>] `
     [-PostDisableWaitSeconds <seconds>] `
     [-ConfigDir <path>] `
@@ -76,7 +76,7 @@ Set-MaintenanceMode `
 ### New Parameters Explained
 
 - **`-Environment`**: Specifies which environment to connect to (Test or Prod). If not provided, reads from `ENVIRONMENT` environment variable, defaults to `Prod`.
-- **`-ManagementHost`**: Optional override for management server/appliance hostname/IP. Works for both SCOM and OneView modes.
+- **`-OneViewHost`**: Optional override for management server/appliance hostname/IP. Works for both SCOM and OneView modes.
 - **`-Username`**: Optional direct username parameter (for testing only; not recommended for production).
 
 <a name="configuration-files"></a>
@@ -227,7 +227,7 @@ For passwords:
 ### Set-MaintenanceMode
 
 For SCOM and OneView in `Set-MaintenanceMode`:
-1. `-ManagementHost` parameter
+1. `-OneViewHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. `connection_hosts.json` based on `-Environment` parameter
 4. Error if not configured
@@ -239,13 +239,13 @@ For SCOM and OneView in `Set-MaintenanceMode`:
 For the OneView appliance in `Test-ServerConnectivity` (OneView-only):
 
 **With `-JsonConfig` switch:**
-1. `-ManagementHost` parameter
+1. `-OneViewHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. `connection_hosts.json` based on `-Environment` parameter
 4. Error if not configured
 
 **Without `-JsonConfig` switch (default):**
-1. `-ManagementHost` parameter
+1. `-OneViewHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. Interactive prompt for host (if `AUTOMATED_MODE` is not `true`)
 4. Error if not configured
@@ -290,7 +290,7 @@ Set-MaintenanceMode `
     -TargetId "CLU-CLUSTER-01" `
     -Mode scom `
     -Environment Prod `
-    -ManagementHost "backup-scom.example.com"
+    -OneViewHost "backup-scom.example.com"
 ```
 
 <a name="example-3-test-mode-with-interactive-credentials"></a>
@@ -381,7 +381,7 @@ For EU GDPR/EMIR regulated environments, consider:
 pwsh scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
 # Test with explicit appliance host (credentials prompted interactively)
-pwsh scripts/test-connectivity.ps1 -ManagementHost 'oneview-test.ad.example.com'
+pwsh scripts/test-connectivity.ps1 -OneViewHost 'oneview-test.ad.example.com'
 ```
 
 Note: `Test-ServerConnectivity` is OneView-only. For SCOM connectivity, use `Test-ScomMaintenanceConnectivity`.
@@ -397,18 +397,18 @@ The `Test-ServerConnectivity` function supports `-JsonConfig` to resolve the One
 Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
 
 # Explicit host (required for live runs without -JsonConfig)
-Test-ServerConnectivity -ManagementHost 'oneview-test.ad.example.com'
+Test-ServerConnectivity -OneViewHost 'oneview-test.ad.example.com'
 ```
 
 **Host Resolution Order for Test-ServerConnectivity:**
 
 With `-JsonConfig`:
-1. `-ManagementHost` parameter
+1. `-OneViewHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. `connection_hosts.json` based on `-Environment`
 
 Without `-JsonConfig`:
-1. `-ManagementHost` parameter
+1. `-OneViewHost` parameter
 2. `$env:MAINTENANCE_HOST`
 3. Interactive prompt (if not in automated mode)
 

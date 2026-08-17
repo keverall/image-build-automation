@@ -31,21 +31,21 @@ Describe 'Test-ServerConnectivity - Parameter Validation' {
 Describe 'Test-ServerConnectivity - Host Resolution' {
 
     It 'Should resolve host from connection_hosts.json for OneView Test environment with -JsonConfig (-DryRun)' {
-        $result = Test-ServerConnectivity -Environment Test -JsonConfig -DryRun -PingTimeoutMs 1
+        $result = Test-ServerConnectivity -Environment Test -JsonConfig -DryRun -PingTimeoutMs 1 -PassThru
         $result.Mode | Should -Be 'oneview'
         $result.Environment | Should -Be 'Test'
         $result.OneViewHost | Should -Not -BeNullOrEmpty
     }
 
     It 'Should resolve host from connection_hosts.json for OneView Prod environment with -JsonConfig (-DryRun)' {
-        $result = Test-ServerConnectivity -Environment Prod -JsonConfig -DryRun -PingTimeoutMs 1
+        $result = Test-ServerConnectivity -Environment Prod -JsonConfig -DryRun -PingTimeoutMs 1 -PassThru
         $result.Mode | Should -Be 'oneview'
         $result.Environment | Should -Be 'Prod'
         $result.OneViewHost | Should -Not -BeNullOrEmpty
     }
 
     It 'Should use OneViewHost override when provided' {
-        $result = Test-ServerConnectivity -OneViewHost 'override-server.local' -DryRun -PingTimeoutMs 1
+        $result = Test-ServerConnectivity -OneViewHost 'override-server.local' -DryRun -PingTimeoutMs 1 -PassThru
         $result.OneViewHost | Should -Be 'override-server.local'
     }
 
@@ -53,7 +53,7 @@ Describe 'Test-ServerConnectivity - Host Resolution' {
         $original = $env:ENVIRONMENT
         try {
             $env:ENVIRONMENT = 'Test'
-            $result = Test-ServerConnectivity -JsonConfig -DryRun -PingTimeoutMs 1
+            $result = Test-ServerConnectivity -JsonConfig -DryRun -PingTimeoutMs 1 -PassThru
             $result.Environment | Should -Be 'Test'
         } finally {
             $env:ENVIRONMENT = $original
@@ -64,7 +64,7 @@ Describe 'Test-ServerConnectivity - Host Resolution' {
         $original = $env:ENVIRONMENT
         try {
             $env:ENVIRONMENT = $null
-            $result = Test-ServerConnectivity -JsonConfig -DryRun -PingTimeoutMs 1
+            $result = Test-ServerConnectivity -JsonConfig -DryRun -PingTimeoutMs 1 -PassThru
             $result.Environment | Should -Be 'Prod'
         } finally {
             $env:ENVIRONMENT = $original
@@ -75,7 +75,7 @@ Describe 'Test-ServerConnectivity - Host Resolution' {
         $original = $env:AUTOMATED_MODE
         try {
             $env:AUTOMATED_MODE = 'true'
-            $result = Test-ServerConnectivity -PingTimeoutMs 1
+            $result = Test-ServerConnectivity -PingTimeoutMs 1 -PassThru
             $result.Available | Should -Be $false
             $result.OneViewHost | Should -Be $null
         } finally {
@@ -87,7 +87,7 @@ Describe 'Test-ServerConnectivity - Host Resolution' {
 Describe 'Test-ServerConnectivity - Result Structure' {
 
     BeforeAll {
-        $result = Test-ServerConnectivity -OneViewHost 'nonexistent.invalid.test' -PingTimeoutMs 500 -Credential $cred
+        $result = Test-ServerConnectivity -OneViewHost 'nonexistent.invalid.test' -PingTimeoutMs 500 -Credential $cred -PassThru
     }
 
     It 'Should return a hashtable' {
@@ -154,13 +154,13 @@ Describe 'Test-ServerConnectivity - Result Structure' {
 Describe 'Test-ServerConnectivity - Unreachable Host' {
 
     It 'Should report OneView as unavailable for unreachable host' {
-        $result = Test-ServerConnectivity -OneViewHost '192.0.2.1' -PingTimeoutMs 500 -Credential $cred
+        $result = Test-ServerConnectivity -OneViewHost '192.0.2.1' -PingTimeoutMs 500 -Credential $cred -PassThru
         $result.Available | Should -Be $false
         $result.NetworkPing.TcpPortOpen | Should -Be $false
     }
 
     It 'Should report DNS failure for nonexistent domain' {
-        $result = Test-ServerConnectivity -OneViewHost 'this-does-not-exist-zzz.invalid' -PingTimeoutMs 500 -Credential $cred
+        $result = Test-ServerConnectivity -OneViewHost 'this-does-not-exist-zzz.invalid' -PingTimeoutMs 500 -Credential $cred -PassThru
         $result.NetworkPing.DnsResolved | Should -Be $false
         $result.NetworkPing.Error | Should -Match 'DNS'
     }
@@ -169,7 +169,7 @@ Describe 'Test-ServerConnectivity - Unreachable Host' {
 Describe 'Test-ServerConnectivity - Missing Config' {
 
     It 'Should handle missing config directory gracefully' {
-        $result = Test-ServerConnectivity -ConfigDir '/tmp/nonexistent-configs' -OneViewHost '192.0.2.1' -PingTimeoutMs 100 -DryRun
+        $result = Test-ServerConnectivity -ConfigDir '/tmp/nonexistent-configs' -OneViewHost '192.0.2.1' -PingTimeoutMs 100 -DryRun -PassThru
         $result.Available | Should -Be $true
         $result.OneViewHost | Should -Be '192.0.2.1'
         $result.DryRun | Should -Be $true
@@ -179,7 +179,7 @@ Describe 'Test-ServerConnectivity - Missing Config' {
 Describe 'Test-ServerConnectivity - DryRun' {
 
     It 'Should return mock data for OneView DryRun with -JsonConfig' {
-        $result = Test-ServerConnectivity -Environment Prod -JsonConfig -DryRun
+        $result = Test-ServerConnectivity -Environment Prod -JsonConfig -DryRun -PassThru
         $result.DryRun | Should -Be $true
         $result.Available | Should -Be $true
         $result.Mode | Should -Be 'oneview'
@@ -187,32 +187,32 @@ Describe 'Test-ServerConnectivity - DryRun' {
     }
 
     It 'Should include OneView module in MockData' {
-        $result = Test-ServerConnectivity -Environment Prod -JsonConfig -DryRun
+        $result = Test-ServerConnectivity -Environment Prod -JsonConfig -DryRun -PassThru
         $result.MockData | Should -Not -BeNullOrEmpty
         $result.MockData.PowerShellModule | Should -Be 'HPEOneView.1000'
         $result.MockData.TargetPorts | Should -Contain 443
     }
 
     It 'Should include credential env vars in MockData' {
-        $result = Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
+        $result = Test-ServerConnectivity -Environment Test -JsonConfig -DryRun -PassThru
         $result.MockData.CredentialUserEnv | Should -Be 'ONEVIEW_USER'
         $result.MockData.CredentialPassEnv | Should -Be 'ONEVIEW_PASSWORD'
     }
 
     It 'Should resolve host from config in DryRun mode with -JsonConfig' {
-        $result = Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
+        $result = Test-ServerConnectivity -Environment Test -JsonConfig -DryRun -PassThru
         $result.OneViewHost | Should -Not -BeNullOrEmpty
         $result.Environment | Should -Be 'Test'
     }
 
     It 'Should respect OneViewHost override in DryRun mode' {
-        $result = Test-ServerConnectivity -OneViewHost 'override-server.local' -DryRun
+        $result = Test-ServerConnectivity -OneViewHost 'override-server.local' -DryRun -PassThru
         $result.OneViewHost | Should -Be 'override-server.local'
         $result.DryRun | Should -Be $true
     }
 
     It 'Should not require network access in DryRun mode' {
-        $result = Test-ServerConnectivity -OneViewHost 'nonexistent.invalid.test' -DryRun
+        $result = Test-ServerConnectivity -OneViewHost 'nonexistent.invalid.test' -DryRun -PassThru
         $result.DryRun | Should -Be $true
         $result.Available | Should -Be $true
         $result.NetworkPing.DnsResolved | Should -Be $true
@@ -226,7 +226,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
         # With explicit -Credential, the function should reach Phase 2 and attempt
         # Connect-OneViewSession. Since the host is unreachable, TCP will fail and
         # auth will be skipped - but the credential was accepted and processed.
-        $result = Test-ServerConnectivity -OneViewHost '192.0.2.1' -PingTimeoutMs 500 -Credential $script:cred
+        $result = Test-ServerConnectivity -OneViewHost '192.0.2.1' -PingTimeoutMs 500 -Credential $script:cred -PassThru
         $result.Available | Should -Be $false
         # TCP fails for unreachable host, so auth is skipped - but the credential
         # was accepted (no "credentials required" error)
@@ -239,7 +239,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
         $original = $env:AUTOMATED_MODE
         try {
             $env:AUTOMATED_MODE = 'true'
-            $result = Test-ServerConnectivity -OneViewHost '192.0.2.1' -PingTimeoutMs 500
+            $result = Test-ServerConnectivity -OneViewHost '192.0.2.1' -PingTimeoutMs 500 -PassThru
             $result.Available | Should -Be $false
             $result.AuthConnect.Connected | Should -Be $false
             $result.AuthConnect.Error | Should -Match 'Skipped|credentials'
@@ -274,7 +274,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
                 }
             }
 
-            $result = Test-ServerConnectivity -OneViewHost 'localhost' -Port $probePort -PingTimeoutMs 2000 -Credential $script:cred
+            $result = Test-ServerConnectivity -OneViewHost 'localhost' -Port $probePort -PingTimeoutMs 2000 -Credential $script:cred -PassThru
 
             $result.NetworkPing.TcpPortOpen | Should -Be $true
             $result.AuthConnect.Connected | Should -Be $true
@@ -322,7 +322,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
                     Error         = $null
                 }
             }
-            $result = Test-ServerConnectivity -OneViewHost 'localhost' -Port $probePort -PingTimeoutMs 2000
+            $result = Test-ServerConnectivity -OneViewHost 'localhost' -Port $probePort -PingTimeoutMs 2000 -PassThru
             $result.NetworkPing.TcpPortOpen | Should -Be $true
             $result.AuthConnect.Connected | Should -Be $true
             Should -Invoke -ModuleName Automation Connect-OneViewSession -Times 1 -Exactly -ParameterFilter {
@@ -343,7 +343,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
         Mock -ModuleName Automation Get-OneViewActiveSession {
             return [PSCustomObject]@{ Name = 'oneview-active.ad.example.com'; Connected = $true; SessionID = 'sid' }
         }
-        $result = Test-ServerConnectivity -OneViewHost 'oneview-other.ad.example.com' -PingTimeoutMs 500
+        $result = Test-ServerConnectivity -OneViewHost 'oneview-other.ad.example.com' -PingTimeoutMs 500 -PassThru
         $result.Available | Should -Be $false
         $result.AuthConnect.Connected | Should -Be $false
         $result.AuthConnect.Error | Should -Match 'already connected'
@@ -354,7 +354,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
         # When using a resolvable host with -Credential, the function should
         # attempt authentication (Phase 2). The auth will fail (no real OneView),
         # but the credential was processed.
-        $result = Test-ServerConnectivity -OneViewHost 'localhost' -PingTimeoutMs 1000 -Credential $script:cred
+        $result = Test-ServerConnectivity -OneViewHost 'localhost' -PingTimeoutMs 1000 -Credential $script:cred -PassThru
         # localhost resolves and may have port 443 closed, so auth may be skipped
         # The key is that the credential was accepted (no parameter binding error)
         $result | Should -Not -BeNullOrEmpty
@@ -387,7 +387,7 @@ Describe 'Test-ServerConnectivity - Credential Flow' {
             }
             # No -Credential, no ONEVIEW_* env: would previously fail in the
             # credential-resolution branch. Now it should reuse the active session.
-            $result = Test-ServerConnectivity -OneViewHost 'localhost' -Port $probePort -PingTimeoutMs 2000
+            $result = Test-ServerConnectivity -OneViewHost 'localhost' -Port $probePort -PingTimeoutMs 2000 -PassThru
             $result.Available | Should -Be $true
             $result.AuthConnect.Connected | Should -Be $true
             Should -Invoke -ModuleName Automation Connect-OneViewSession -Times 1 -Exactly -ParameterFilter {
