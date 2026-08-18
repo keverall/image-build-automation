@@ -35,7 +35,7 @@ function Configure-PhysicalBuild {
         This command performs NO destructive actions — no ISO attach, no
         reboot, no firmware update. It is read-only / dry-run only.
 
-    .PARAMETER SrvrId
+    .PARAMETER ServerIdentifier
         Target server identifier (hostname, serial, OneView name, iLO IP, bay).
 
     .PARAMETER OneViewHost
@@ -131,7 +131,7 @@ function Configure-PhysicalBuild {
 
     .EXAMPLE
         Configure-PhysicalBuild `
-            -SrvrId 'PROD-SERVER-01' `
+            -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
             -IloIp '192.168.1.101' `
             -SiteCode 'P01' `
@@ -142,13 +142,13 @@ function Configure-PhysicalBuild {
             -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 
     .EXAMPLE
-        Configure-PhysicalBuild -SrvrId 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
+        Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Alias('ServerIdentifier')]
-        [Parameter(Mandatory)][string] $SrvrId,
+        [Alias('SrvrId')]
+        [Parameter(Mandatory)][string] $ServerIdentifier,
         [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('Ilo')]
@@ -181,7 +181,7 @@ function Configure-PhysicalBuild {
         [string] $GuardRail = $null
     )
 
-    if (-not $ExpectedHostname) { $ExpectedHostname = $SrvrId }
+    if (-not $ExpectedHostname) { $ExpectedHostname = $ServerIdentifier }
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
     # Fail early (graceful, logged) when omitted so we never even produce a plan
@@ -208,7 +208,7 @@ function Configure-PhysicalBuild {
             $logger = Get-Logger 'Configure-PhysicalBuild'
             $logger.Error($msg)
             Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
-            return @{ Success = $false; Error = $msg; Server = $SrvrId }
+            return @{ Success = $false; Error = $msg; Server = $ServerIdentifier }
         }
     }
 
@@ -220,7 +220,7 @@ function Configure-PhysicalBuild {
     $serverIdentity = $null
     if (-not $SkipOneView -and $OneViewHost) {
         Write-Host "`n[1/4] Resolving server identity from OneView..." -ForegroundColor Yellow
-        $ov = Get-OneViewServerTarget -OneViewHost $OneViewHost -SrvrId $SrvrId -DryRun:$true
+        $ov = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -DryRun:$true
         if ($ov.Success) {
             $serverIdentity = $ov.Details
             Write-Host "  [OK] Server resolved" -ForegroundColor Green
@@ -229,10 +229,10 @@ function Configure-PhysicalBuild {
         }
     } elseif ($IloIp) {
         Write-Host "`n[1/4] OneView skipped — using iLO IP directly" -ForegroundColor Yellow
-        $serverIdentity = @{ ilo_ip = $IloIp; name = $ExpectedHostname; identifier = $SrvrId }
+        $serverIdentity = @{ ilo_ip = $IloIp; name = $ExpectedHostname; identifier = $ServerIdentifier }
     } else {
         Write-Host "`n[1/4] No OneViewHost or IloIp supplied" -ForegroundColor Yellow
-        $serverIdentity = @{ name = $ExpectedHostname; identifier = $SrvrId }
+        $serverIdentity = @{ name = $ExpectedHostname; identifier = $ServerIdentifier }
     }
 
     # ── Guard rail (build/deploy safety gate, review-only) ────────────────────
@@ -279,7 +279,7 @@ function Configure-PhysicalBuild {
     Write-Host "`n[3/4] Running pre-build validation..." -ForegroundColor Yellow
     $preBuildResult = $null
     if (-not $SkipPreBuild) {
-        $preBuildResult = Test-PreBuildValidation -SrvrId $SrvrId `
+        $preBuildResult = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
             -OneViewHost $OneViewHost -IloIp $IloIp `
             -IloCredential $IloCredential `
             -IsoUrl $isoUrl `
@@ -306,7 +306,7 @@ function Configure-PhysicalBuild {
     # Server identity block
     Write-Host "`n  ─ SERVER IDENTITY ─" -ForegroundColor Yellow
     Write-Host "  Target:          $($ExpectedHostname)" -ForegroundColor White
-    Write-Host "  Identifier:      $($SrvrId)" -ForegroundColor Gray
+    Write-Host "  Identifier:      $($ServerIdentifier)" -ForegroundColor Gray
     if ($serverIdentity) {
         Write-Host "  Serial:          $($serverIdentity.serial_number    ?? 'unknown')" -ForegroundColor White
         Write-Host "  Model:           $($serverIdentity.model          ?? 'unknown')" -ForegroundColor Gray
@@ -416,7 +416,7 @@ function Configure-PhysicalBuild {
     return @{
         Success             = $true
         Server              = $ExpectedHostname
-        ServerIdentifier    = $SrvrId
+        ServerIdentifier    = $ServerIdentifier
         ServerIdentity      = $serverIdentity
         IsoUrl              = $isoUrl
         ExternalIsoPath     = $ExternalIsoPath

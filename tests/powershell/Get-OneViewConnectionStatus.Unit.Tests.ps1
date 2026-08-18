@@ -21,7 +21,7 @@ Describe 'Get-OneViewConnectionStatus - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Get-OneViewConnectionStatus
-        foreach ($p in @('OneViewHost','Credential','OneViewUser','OneViewPassword','SrvrId','IdentifierType','IncludeServerCount','MockResult','DryRun','PassThru')) {
+        foreach ($p in @('OneViewHost','Credential','OneViewUser','OneViewPassword','ServerIdentifier','IdentifierType','IncludeServerCount','MockResult','DryRun','PassThru')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }

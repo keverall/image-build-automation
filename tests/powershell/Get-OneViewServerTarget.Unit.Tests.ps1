@@ -15,7 +15,7 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Get-OneViewServerTarget
-        foreach ($p in @('SrvrId','OneViewHost','IdentifierType','MockResult','DryRun')) {
+        foreach ($p in @('ServerIdentifier','OneViewHost','IdentifierType','MockResult','DryRun')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
@@ -89,5 +89,54 @@ Describe 'Get-OneViewServerTarget - strict single-server matching (mocked REST)'
         $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'UNIQUE' -IdentifierType Serial -Credential $Script:TargetCred
         $r.Success              | Should -Be $true
         $r.Details.serial_number | Should -Be 'UNIQUE'
+    }
+}
+
+Describe 'Get-OneViewServerTarget - parameter aliases & single-parameter targeting' {
+    BeforeAll {
+        $Script:TargetCred = [System.Management.Automation.PSCredential]::new(
+            'admin', (ConvertTo-SecureString 'test-password' -AsPlainText -Force))
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                $member = [pscustomobject]@{ name = 'PROD-SRV-01'; serialNumber = 'MXQ1234567'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0' }
+                if ($Uri -like "*name='PROD-SRV-01'*") { return @{ count = 1; members = @($member) } }
+                if ($Uri -like "*serialNumber='MXQ1234567'*") { return @{ count = 1; members = @($member) } }
+                return @{ count = 0; members = @() }
+            }
+        }
+    }
+
+    It 'Exposes canonical -ServerIdentifier (alias -SrvrId) and -IdentifierType (alias -IdTyp)' {
+        $cmd = Get-Command Get-OneViewServerTarget
+        $cmd.Parameters.ContainsKey('ServerIdentifier') | Should -Be $true
+        $cmd.Parameters['ServerIdentifier'].Aliases -contains 'SrvrId' | Should -Be $true
+        $cmd.Parameters.ContainsKey('IdentifierType') | Should -Be $true
+        $cmd.Parameters['IdentifierType'].Aliases -contains 'IdTyp' | Should -Be $true
+    }
+
+    It 'Resolves via canonical -ServerIdentifier -IdentifierType Serial' {
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial -Credential $Script:TargetCred
+        $r.Success | Should -Be $true
+        $r.ResolvedBy | Should -Be 'Serial'
+        $r.Details.serial_number | Should -Be 'MXQ1234567'
+    }
+
+    It 'Resolves via short aliases -SrvrId -IdTyp (proves aliases bind)' {
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'MXQ1234567' -IdTyp Serial -Credential $Script:TargetCred
+        $r.Success | Should -Be $true
+        $r.ResolvedBy | Should -Be 'Serial'
+        $r.Details.serial_number | Should -Be 'MXQ1234567'
+    }
+
+    It 'Resolves with a single -ServerIdentifier (Auto detects Name)' {
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'PROD-SRV-01' -Credential $Script:TargetCred
+        $r.Success | Should -Be $true
+        $r.ResolvedBy | Should -Be 'Name'
+        $r.Details.name | Should -Be 'PROD-SRV-01'
+    }
+
+    It 'Rejects the invalid -SrvId alias (typo, missing r)' {
+        { & Get-OneViewServerTarget -SrvId 'X' -ErrorAction Stop } | Should -Throw
     }
 }

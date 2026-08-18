@@ -199,7 +199,7 @@ function Confirm-IsoDeployment {
     [CmdletBinding()]
     [OutputType([bool])]
     param(
-        [string] $SrvrId,
+        [string] $ServerIdentifier,
         [string] $IloIp,
         [string] $IsoUrl,
         [hashtable] $OneViewDetails,
@@ -222,7 +222,7 @@ function Confirm-IsoDeployment {
             Write-Host "  Enclosure:   $($OneViewDetails.enclosure_name) Bay $($OneViewDetails.enclosure_bay)" -ForegroundColor White
         }
     } else {
-        Write-Host "  Identifier: $SrvrId" -ForegroundColor White
+        Write-Host "  Identifier: $ServerIdentifier" -ForegroundColor White
         Write-Host "  iLO IP:     $IloIp" -ForegroundColor White
     }
 
@@ -259,7 +259,7 @@ function Start-PhysicalServerBuild {
         allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy
         against an already-built ISO).
 
-    .PARAMETER SrvrId
+    .PARAMETER ServerIdentifier
         Target server identifier (name, serial, OneView name, iLO IP, bay). Required.
 
     .PARAMETER OneViewHost
@@ -383,7 +383,7 @@ function Start-PhysicalServerBuild {
 
     .EXAMPLE
         Start-PhysicalServerBuild `
-            -SrvrId 'PROD-SERVER-01' `
+            -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
             -IloIp '192.168.1.101' `
             -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' `
@@ -394,8 +394,8 @@ function Start-PhysicalServerBuild {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Alias('ServerIdentifier')]
-        [Parameter(Mandatory)][string] $SrvrId,
+        [Alias('SrvrId')]
+        [Parameter(Mandatory)][string] $ServerIdentifier,
         [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('Ilo')]
@@ -446,7 +446,7 @@ function Start-PhysicalServerBuild {
     $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
         -CommandName 'Start-PhysicalServerBuild' -ActionDescription 'physical server build'
     if ($grCheck) {
-        $grCheck['server']      = $SrvrId
+        $grCheck['server']      = $ServerIdentifier
         $grCheck['start_time']  = Get-UtcTimestamp
         $grCheck['end_time']    = Get-UtcTimestamp
         $grCheck['steps']       = @{}
@@ -473,7 +473,7 @@ function Start-PhysicalServerBuild {
                 $logger = Get-Logger 'Start-PhysicalServerBuild'
                 $logger.Error($msg)
                 Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
-                return @{ Success = $false; Error = $msg; Server = $SrvrId }
+                return @{ Success = $false; Error = $msg; Server = $ServerIdentifier }
             }
         }
     }
@@ -507,10 +507,10 @@ function Start-PhysicalServerBuild {
         }
     }
 
-    if (-not $ExpectedHostname) { $ExpectedHostname = $SrvrId }
+    if (-not $ExpectedHostname) { $ExpectedHostname = $ServerIdentifier }
 
     $overall = [ordered]@{}
-    $overall['server'] = $SrvrId
+    $overall['server'] = $ServerIdentifier
     $overall['start_time'] = Get-UtcTimestamp
     $overall['steps'] = [ordered]@{}
 
@@ -545,7 +545,7 @@ function Start-PhysicalServerBuild {
         }
 
         if (-not $SkipPreBuild) {
-            $r = Test-PreBuildValidation -SrvrId $SrvrId `
+            $r = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
                 -OneViewHost $OneViewHost -IloIp $IloIp `
                 -IsoUrl $isoUrl `
                 -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
@@ -559,7 +559,7 @@ function Start-PhysicalServerBuild {
         $oneview = $null
         if (-not $SkipOneView -and $OneViewHost) {
             $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
-                -SrvrId $SrvrId -DryRun:$DryRun
+                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun
             _Step 'oneview_target' $r
             $oneview = $r
             if ($r.Details -and $r.Details.ilo_ip -and -not $IloIp) {
@@ -573,7 +573,7 @@ function Start-PhysicalServerBuild {
         # OneView-resolved server name (incl. for serial lookups); falls back to
         # the supplied identifier otherwise.
         if ($GuardRail) {
-            $guardName   = if ($oneview -and $oneview.Details -and $oneview.Details.name) { $oneview.Details.name } else { $SrvrId }
+            $guardName   = if ($oneview -and $oneview.Details -and $oneview.Details.name) { $oneview.Details.name } else { $ServerIdentifier }
             $guardSerial = if ($oneview -and $oneview.Details -and $oneview.Details.serial_number) { $oneview.Details.serial_number } else { $null }
             $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $guardName `
                 -SerialNumber $guardSerial -ApplianceName $OneViewHost `
@@ -590,7 +590,7 @@ function Start-PhysicalServerBuild {
             # When a -GuardRail was supplied it already performed the destructive
             # confirmation inside Assert-GuardRail, so we skip the generic prompt.
             if (-not $SkipConfirmation -and -not $DryRun -and -not $GuardRail) {
-                $confirmed = Confirm-IsoDeployment -SrvrId $SrvrId `
+                $confirmed = Confirm-IsoDeployment -ServerIdentifier $ServerIdentifier `
                     -IloIp $IloIp -IsoUrl $isoUrl -OneViewDetails $oneview.Details -DryRun:$DryRun
                 if (-not $confirmed) {
                     $overall['success'] = $false
@@ -667,7 +667,7 @@ function Start-PhysicalServerBuild {
         try {
             $auditDir = Join-Path (Get-ProjectRoot) 'generated/logs/audit'
             Ensure-DirectoryExists -Path $auditDir
-            $overall['audit_file'] = Join-Path $auditDir "build_$($SrvrId)_$(Get-UtcFileTimestamp).json"
+            $overall['audit_file'] = Join-Path $auditDir "build_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json"
             Save-Json -Data $overall -Path $overall['audit_file']
         } catch { Write-Warning "Audit log write failed: $($_.Exception.Message)" }
     }
