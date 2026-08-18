@@ -4,8 +4,8 @@
 
 ## Table of Contents
 
-- [Setup (One-Time)](#setup-one-time)
 - [How the commands fit together](#how-the-commands-fit-together)
+- [Setup (One-Time)](#setup-one-time)
 - [Connectivity, Connection & Server Lookup](#connectivity-connection-server-lookup)
   - [Test OneView connectivity](#test-oneview-connectivity)
   - [Connect to OneView](#connect-to-oneview)

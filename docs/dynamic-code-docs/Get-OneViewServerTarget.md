@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerTarget.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -30,7 +30,7 @@ Sends a query against the OneView /rest/server-hardware endpoint and returns a n
 | Parameter | Description |
 |-----------|-------------|
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP (e.g. oneview.ad.example.com). |
-| `-SrvrId` _(Aliases: -ServerIdentifier)_ | Server name, serial number, OneView resource name, iLO IP, or bay/enclosure positional id (e.g. "Enclosure1, Bay 3"). |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Server name, serial number, OneView resource name, iLO IP, or bay/enclosure positional id (e.g. "Enclosure1, Bay 3"). |
 | `-IdentifierType` _(Aliases: -IdTyp)_ | Hint for the search filter: Name, Serial, OneViewName, IloIp, EnclosureBay, Auto. Default Auto attempts each in turn. |
 | `-OneViewUser` _(Aliases: -OVUser)_ | OneView username (used with -OneViewPassword). Never read from config or environment. |
 | `-OneViewPassword` _(Aliases: -OVPwd)_ | OneView password (used with -OneViewUser). Never read from config or environment. |
@@ -49,7 +49,7 @@ Sends a query against the OneView /rest/server-hardware endpoint and returns a n
 ### Example 1
 
 ```powershell
-Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'PROD-SERVER-01'
+Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'PROD-SERVER-01'
 ```
 
 <a name="example-2"></a>
@@ -57,7 +57,7 @@ Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'PROD-SERV
 ### Example 2
 
 ```powershell
-Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ1234567' -IdentifierType Serial
+Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
 ```
 
 <a name="original-comment-based-help"></a>
@@ -85,7 +85,7 @@ Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ123456
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
 
-    .PARAMETER SrvrId
+    .PARAMETER ServerIdentifier
         Server name, serial number, OneView resource name, iLO IP, or bay/enclosure
         positional id (e.g. "Enclosure1, Bay 3").
 
@@ -118,10 +118,10 @@ Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ123456
         [hashtable] with Success, Server, Details, Error.
 
     .EXAMPLE
-        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'PROD-SERVER-01'
+        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'PROD-SERVER-01'
 
     .EXAMPLE
-        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ1234567' -IdentifierType Serial
+        Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
 ```
 
 ---

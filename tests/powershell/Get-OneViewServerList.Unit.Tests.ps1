@@ -114,3 +114,53 @@ Describe 'Get-OneViewServerList - pagination & filtering (mocked REST)' {
         $r.Servers[0].name | Should -Be 's2'
     }
 }
+
+Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                if ($Uri -match 'start=(\d+)') { $s = [int]$Matches[1] } else { $s = 0 }
+                if ($s -eq 0) {
+                    return @{ total = 3; members = @(
+                        [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0' },
+                        [pscustomobject]@{ name = 's2'; serialNumber = 'B'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0' }
+                    )}
+                } else {
+                    return @{ total = 3; members = @(
+                        [pscustomobject]@{ name = 's3'; serialNumber = 'C'; model = 'DL380'; powerState = 'On'; status = 'Warning'; mpIpAddresses = @('10.0.0.3'); enclosureName = 'Enc1'; position = 'Bay 3'; uri = '/rest/z'; romVersion = '1.0' }
+                    )}
+                }
+            }
+        }
+    }
+
+    It 'Substring name filter (s) matches all three' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s' -PassThru
+        $r.Success | Should -Be $true
+        $r.Count   | Should -Be 3
+    }
+
+    It 'Substring name filter narrows to s1' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s1' -PassThru
+        $r.Count | Should -Be 1
+        $r.Servers[0].name | Should -Be 's1'
+    }
+
+    It 'Wildcard name filter s1* narrows to s1' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s1*' -PassThru
+        $r.Count | Should -Be 1
+        $r.Servers[0].name | Should -Be 's1'
+    }
+
+    It 'Single-char wildcard s? matches all three' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s?' -PassThru
+        $r.Count | Should -Be 3
+    }
+
+    It 'Health filter still works (Critical -> s2)' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'health:Critical' -PassThru
+        $r.Count | Should -Be 1
+        $r.Servers[0].name | Should -Be 's2'
+    }
+}
