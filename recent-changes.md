@@ -20,6 +20,7 @@
   - [14) Repo hygiene: LF normalization + git workflow docs](#14-repo-hygiene-lf-normalization-git-workflow-docs)
   - [15) Testing-issues documentation (OneView connectivity)](#15-testing-issues-documentation-oneview-connectivity)
   - [16) Docs anchor fix — navigable `id` anchors for `make docs` / `make fix-docs`](#16-docs-anchor-fix-navigable-id-anchors-for-make-docs-make-fix-docs)
+  - [17) `Get-OneViewConnectionStatus` session-reuse guard (no reconnect)](#17-get-oneviewconnectionstatus-session-reuse-guard-no-reconnect)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -496,3 +497,32 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - Ran `make fix-docs` after the fix: **83/83 markdown files pass**, 0 failures.
 - `wip/testing-issues.md` (the file that originally showed the bug): **0 `<a name=…>` anchors, 0 duplicate `id` slugs, 0 unresolved TOC links, 0 anchors trapped inside code fences, 0 MD012 runs.** The reported duplicate pair is now a single navigable `<a id="connect-oneview-oneviewhost-va-oneviewt-01-0"></a>`.
+
+<a id="17-get-oneviewconnectionstatus-session-reuse-guard-no-reconnect"></a>
+
+### 17) Get-OneViewConnectionStatus session-reuse guard (no reconnect)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-18 | Fixed `Get-OneViewConnectionStatus` to reuse the live OneView session (never reconnect) so `-OneViewHost` for the already-connected appliance reports status without a 401; also corrected the empty-string auth error message | Kev Everall |
+
+<a name="root-cause-17"></a>
+
+#### Root cause
+
+- `Get-OneViewConnectionStatus` only consulted `Get-OneViewActiveSession` inside `if (-not $OneViewHost)`. Supplying `-OneViewHost` (even for the already-connected appliance) skipped the active-session lookup, so `$sessionToken` stayed `$null` and, with no `-Credential` on hand, the authenticated `/rest/server-hardware` probe was sent with no auth header → `401 (Unauthorized)`.
+- The failure message interpolated the empty `$OneViewUser`, producing `OneView authentication failed for ''` — masking the real cause (no token/credential, not a bad password).
+
+<a name="fix-17"></a>
+
+#### Fix
+
+- `Get-OneViewConnectionStatus` now consults `Get-OneViewActiveSession` **unconditionally**. If a live session exists it reuses the session token and never reconnects — matching the "existing connection always wins" guard already used by `Resolve-OneViewSession` / `Connect-OneViewSession`. Same appliance is silent reuse; a different appliance reuses the active session and warns (run `Disconnect-OneView` first to switch). Only when no session is active and `-OneViewHost` is supplied does it fall through to an explicit credentialed connect.
+- Corrected the auth-failure message: it now reports the session-auth path, the `-Credential` username, or "no active session and no credentials supplied" — never an empty `''`.
+
+<a name="verification-17"></a>
+
+#### Verification
+
+- `Get-OneViewConnectionStatus.Unit.Tests.ps1`: **23 passed, 0 failed**, including two new regression tests — reuses the active session when `-OneViewHost` matches the connected appliance (no reconnect, no 401), and reuses the active session even when `-OneViewHost` differs (guard: never reconnect).
+- `Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01` against a live session now shows connection/server info exactly like a second bare run, with no 401.
