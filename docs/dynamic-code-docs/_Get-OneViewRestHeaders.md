@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Raw Invoke-RestMethod calls against OneView must carry the X-API-Version header (and Accept/Content-Type); omitting it causes the authenticated probe to fail so the connection is reported as not connected and the server is never resolved. Auth is supplied either as the active session token (auth header) or, for the explicit -Credential path, as an HTTP Basic Authorization header.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

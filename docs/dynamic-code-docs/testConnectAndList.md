@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Exercises the read-only / connection-lifecycle commands against an appliance, proving they fail gracefully without a session and succeed with one: Test-ServerConnectivity, Connect-OneView, Disconnect-OneView, Get-OneViewConnectionStatus, Get-OneViewServerList, Get-OneViewServerTarget, Get-OneViewVersion, Test-ServerList * Running the commands WITHOUT an active OneView session -> they must fail GRACEFULLY with a clear, correct message (never a raw crash). * Connecting (real or -DryRun), then running the SAME commands WITH a session -> they must report success / reachable / data. * Disconnecting, then running again -> graceful failure returns. * A matrix of parameter combinations (-OneViewHost, -Filter, -IncludeServerCount, -IdentifierType serial, -DryRun, etc.). The host is taken from -OneViewHost (or prompted). No server names are hard-coded. By default the script runs in SAFE mode: connections are validated with -DryRun and live list commands use -DryRun, so nothing is contacted unless you pass -Live with real credentials. Full logging is written via the module's common logging commands (Initialize-Logging / Get-Logger) under generated/logs/commands/testConnectAndList/.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -32,7 +32,7 @@ Exercises the read-only / connection-lifecycle commands against an appliance, pr
 | `-DryRun` | Validate connectivity with -DryRun (this is the default-safe behaviour even without -Live). |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds for reachability probes (default 3000). |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 By default it writes a human-readable report (via _Format-HumanReadable, or a command-supplied -CustomView) and returns NOTHING on the success stream, so the operator never sees a truncated raw hashtable dump in the terminal or logs. * -Json     -> emit the result as a JSON string on the success stream * -PassThru -> also return the raw object on the success stream * -Quiet    -> suppress the human-readable report (caller handles display) * -CustomView { param($r) ... } -> use a rich, command-specific renderer Use -PassThru (or capture into a variable) for scripting; use -Json for API / redirection consumers.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

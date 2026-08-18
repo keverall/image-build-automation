@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Lets any OneView automation task accept EITHER a server name or a serial number. In BOTH cases the target is resolved to its OneView server record (hostname + iLO IP) via Get-OneViewServerTarget, so destructive operations always deploy to / reboot / build the confirmed OneView server and never a free-floating name.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -33,11 +33,11 @@ Lets any OneView automation task accept EITHER a server name or a serial number.
 | `-OneViewHost` | OneView appliance hostname or IP. Required to resolve EITHER a serial or a server name, because both must be confirmed against OneView. |
 | `-DryRun` | Resolve without performing a real OneView query. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -45,7 +45,7 @@ Lets any OneView automation task accept EITHER a server name or a serial number.
 Resolve-OneViewTarget -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

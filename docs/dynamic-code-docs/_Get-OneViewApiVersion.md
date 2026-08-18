@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 OneView's /rest/server-hardware (and most other) endpoints REQUIRE the X-API-Version header. The value tracks the appliance major generation, so we map the normalised major version to a safe minimum API version the appliance will accept (OneView is backward-compatible, so sending the generation minimum is accepted even when the appliance supports a newer API).
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

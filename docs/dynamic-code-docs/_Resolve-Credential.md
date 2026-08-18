@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Core credential resolver: env var → CyberArk CLI → REST → default.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -32,7 +32,7 @@ Core credential resolver: env var → CyberArk CLI → REST → default.
 | `-Default` | Fallback value when env var and CyberArk are both absent. |
 | `-Required` | Throw when resolution fails entirely. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

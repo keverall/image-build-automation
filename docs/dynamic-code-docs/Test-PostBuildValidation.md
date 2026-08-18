@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Connects over WinRM to the freshly-built server and verifies the post-build state.  Returns a hashtable of named checks.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -39,11 +39,11 @@ Connects over WinRM to the freshly-built server and verifies the post-build stat
 | `-SkipRemote` | Skip all WinRM-dependent checks (only do local / metadata validation). |
 | `-DryRun` _(Aliases: -Dry)_ | Skip WinRM probes - assume checks pass. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -51,7 +51,7 @@ Connects over WinRM to the freshly-built server and verifies the post-build stat
 Test-PostBuildValidation -Hostname 'srv01.ad.example.com' -Domain 'ad.example.com' -ExpectedOsVersion '10.0.20348'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

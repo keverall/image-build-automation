@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Single source of truth for the logging helper and for the placement of the document "top" anchor (<a id="top"></a>). Previously this logic was duplicated across validate-docs-links.ps1, bitbucket-md-anchor-toc.ps1 and Generate-GitStash-MdToc.ps1, which let the two Makefile targets (docs vs fix-docs) drift apart. Centralising it here keeps every doc script consistent. Follows the repository convention for shared modules: a *.Common.ps1 file that defines functions (function-mode) so it can be dot-sourced or imported.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

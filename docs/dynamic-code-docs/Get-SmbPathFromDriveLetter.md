@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Helper function to find the SMB address of a mapped drive. Useful when you have a file on a mapped drive (e.g. H:\windows.iso) and need to find the UNC path for iLO virtual media.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,11 +31,11 @@ Helper function to find the SMB address of a mapped drive. Useful when you have 
 |-----------|-------------|
 | `-DriveLetter` | The drive letter to resolve (e.g. 'H', 'Z'). |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -43,7 +43,7 @@ Helper function to find the SMB address of a mapped drive. Useful when you have 
 Get-SmbPathFromDriveLetter -DriveLetter 'H' # Returns: \\fileserver\isos
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -51,7 +51,7 @@ Get-SmbPathFromDriveLetter -DriveLetter 'H' # Returns: \\fileserver\isos
 # Find the full UNC path for a file on H:\ $uncBase = Get-SmbPathFromDriveLetter -DriveLetter 'H' $fullUnc = Join-Path $uncBase 'windows.iso' # Returns: \\fileserver\isos\windows.iso
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Falls back to zeroes / 'N/A' duration when the block is not found. The Result string is 'Passed (p/t)' only when Failed=0 and Passed=Total, otherwise 'Failed (p/t passed, f failed)'.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

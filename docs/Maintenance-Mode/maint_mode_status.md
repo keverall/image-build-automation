@@ -29,7 +29,7 @@
 
 ---
 
-<a name="1-overview"></a>
+<a id="1-overview"></a>
 
 ## 1. Overview
 
@@ -44,7 +44,7 @@
 
 ---
 
-<a name="2-test-coverage"></a>
+<a id="2-test-coverage"></a>
 
 ## 2. Test Coverage
 
@@ -60,7 +60,7 @@
 | `Test-ScomMaintenanceConnectivity.ps1` | 1 | 1 | 0 | 0 |
 | **Total** | **67** | **67** | **0** | **0** |
 
-<a name="full-test-suite-all-modules"></a>
+<a id="full-test-suite-all-modules"></a>
 
 ### Full test suite (all modules)
 
@@ -68,11 +68,11 @@
 
 ---
 
-<a name="3-feature-coverage"></a>
+<a id="3-feature-coverage"></a>
 
 ## 3. Feature Coverage
 
-<a name="enable-action"></a>
+<a id="enable-action"></a>
 
 ### Enable action
 
@@ -88,7 +88,7 @@
 - ✅ `-DryRun` simulation
 - ✅ OpsRamp metric/alert emission
 
-<a name="disable-action"></a>
+<a id="disable-action"></a>
 
 ### Disable action
 
@@ -97,7 +97,7 @@
 - ✅ Post-disable stabilization wait (`-PostDisableWaitSeconds`, default 120s, 0 to skip)
 - ✅ `-DryRun` simulation
 
-<a name="validate-action"></a>
+<a id="validate-action"></a>
 
 ### Validate action
 
@@ -107,7 +107,7 @@
 - ✅ Serial number resolution for OneView
 - ✅ Hostname lookup in SCOM clusters
 
-<a name="environment-configuration"></a>
+<a id="environment-configuration"></a>
 
 ### Environment configuration
 
@@ -122,11 +122,11 @@
 
 ---
 
-<a name="4-critical-gaps-risks"></a>
+<a id="4-critical-gaps-risks"></a>
 
 ## 4. Critical Gaps / Risks
 
-<a name="scom-powershell-module-dependency"></a>
+<a id="scom-powershell-module-dependency"></a>
 
 ### ⚠️ SCOM PowerShell module dependency
 
@@ -135,7 +135,7 @@
 - **In banking environment:** SCOM management server may not be reachable from the automation host
 - **Mitigation needed:** Pre-flight check for SCOM module availability; fail fast with clear error if SCOM mode requested but module unavailable
 
-<a name="credential-handling-env-vars-vs-secure-vault"></a>
+<a id="credential-handling-env-vars-vs-secure-vault"></a>
 
 ### ⚠️ Credential handling — env vars vs. secure vault
 
@@ -144,7 +144,7 @@
 - **Banking requirement:** Production should use a secret vault (CyberArk, Azure Key Vault)
 - **Status:** Not yet implemented — documented as future work in AGENTS.md
 
-<a name="scheduled-task-creation"></a>
+<a id="scheduled-task-creation"></a>
 
 ### ⚠️ Scheduled task creation
 
@@ -153,7 +153,7 @@
 - **Banking environment:** Task Scheduler likely blocked by AppLocker/CAS
 - **Mitigation:** `-NoSchedule` flag available; recommend always use in banking
 
-<a name="oneview-serial-number-lookup"></a>
+<a id="oneview-serial-number-lookup"></a>
 
 ### ⚠️ OneView serial number lookup
 
@@ -162,7 +162,7 @@
 - **Impact:** Live mode may attempt SCOM operations against a name that doesn't exist in SCOM
 - **Status:** Documented as known limitation — catalogue must be kept current
 
-<a name="scom-group-resolution"></a>
+<a id="scom-group-resolution"></a>
 
 ### ⚠️ SCOM group resolution
 
@@ -173,7 +173,7 @@
 
 ---
 
-<a name="5-runbook-alignment"></a>
+<a id="5-runbook-alignment"></a>
 
 ## 5. Runbook Alignment
 
@@ -188,7 +188,7 @@ Per `docs/Automation/runbook-requirements.md`:
 
 ---
 
-<a name="6-recent-changes-last-7-days"></a>
+<a id="6-recent-changes-last-7-days"></a>
 
 ## 6. Recent Changes (last 7 days)
 
@@ -201,7 +201,7 @@ Per `docs/Automation/runbook-requirements.md`:
 
 ---
 
-<a name="7-recommendations-for-delivery-lead"></a>
+<a id="7-recommendations-for-delivery-lead"></a>
 
 ## 7. Recommendations for Delivery Lead
 

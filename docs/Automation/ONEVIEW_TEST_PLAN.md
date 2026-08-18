@@ -30,7 +30,7 @@
 <p class="report-run-date"><strong>Run date:</strong> 02/08/2026 01:54 UTC</p>
 <!-- END:run-date -->
 
-<a name="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
+<a id="current-oneview-connected-automation-command-testing-status-and-progress-summary"></a>
 
 ## **Current OneView Connected Automation Command testing status and progress Summary**
 
@@ -38,13 +38,13 @@
 - **y**
 <!-- END:oneview-status-summary -->
 
-<a name="major-bugs-fixed-log"></a>
+<a id="major-bugs-fixed-log"></a>
 
 ## Major Bugs fixed log
 
 **Date: 24/07/2026**
 
-<a name="1-phantom-proxy-configuration-on-mgmt-host"></a>
+<a id="1-phantom-proxy-configuration-on-mgmt-host"></a>
 
 ### 1. Phantom proxy configuration on <mgmt-host>
 
@@ -56,7 +56,7 @@ The proxy environment variables (`HTTP_PROXY`, etc.) had persisted because Power
 variables are stored as Windows credentials and survived process restarts. A dedicated PowerShell
 cleanup script was written to purge the stale proxy env vars from the system.
 
-<a name="2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting"></a>
+<a id="2-test-serverconnectivity-was-disconnecting-the-oneview-session-after-connecting"></a>
 
 ### 2. Test-ServerConnectivity was disconnecting the OneView session after connecting
 
@@ -69,7 +69,7 @@ cavernous mess of related connectivity and session-handling design flaws across 
 command set, requiring significant rework and retesting of Windows and HPEOneView connectivity
 logic across all commands.
 
-<a name="3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts"></a>
+<a id="3-invoke-isodeploy-pester-tests-hanging-on-interactive-prompts"></a>
 
 ### 3. Invoke-IsoDeploy Pester tests hanging on interactive prompts
 
@@ -81,7 +81,7 @@ where no operator is present.
 `AfterAll`), matching the pattern used by other test files. This suppresses the interactive
 `Read-Host` prompts, allowing the tests to run non-interactively. All 3 tests now pass in 309ms.
 
-<a name="4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts"></a>
+<a id="4-test-serverconnectivity-pester-tests-hanging-on-interactive-credential-prompts"></a>
 
 ### 4. Test-ServerConnectivity Pester tests hanging on interactive credential prompts
 
@@ -123,7 +123,7 @@ the test last passed on `oneview.example.com`; **Status** = `Planned`/`In Progre
 **Neg?** = `Y` for negative/edge/boundary tests; **ID-Type** = which identifier the row exercises
 (`Name` / `Serial` / `Both` / `—`).
 
-<a name="5-ripgrep-json-record-exceeded-65536-bytes-exception"></a>
+<a id="5-ripgrep-json-record-exceeded-65536-bytes-exception"></a>
 
 ### 5. Ripgrep JSON record exceeded 65536 bytes exception
 
@@ -161,7 +161,7 @@ Fixed:
 ✅ All files parse clean. and have been successfully retested.
 ```
 
-<a name="6-credential-handling-security-hardened"></a>
+<a id="6-credential-handling-security-hardened"></a>
 
 ### 6. Credential handling security hardened
 
@@ -183,7 +183,7 @@ The same plaintext-param pattern exists in the older Get-OneViewServerTarget.ps1
 
 ---
 
-<a name="phase-0-environment-prerequisites-checklist-before-live-run"></a>
+<a id="phase-0-environment-prerequisites-checklist-before-live-run"></a>
 
 ## Phase 0 — Environment Prerequisites (checklist before live run)
 
@@ -196,7 +196,7 @@ The same plaintext-param pattern exists in the older Get-OneViewServerTarget.ps1
 - [ ] Approved maintenance window on the test appliance
 - [ ] `Start-InstallMonitor` timeout/poll tuned for the test server
 
-<a name="phase-1-connectivity-must-pass-before-anything-else"></a>
+<a id="phase-1-connectivity-must-pass-before-anything-else"></a>
 
 ## Phase 1 — Connectivity (must pass before anything else)
 
@@ -274,7 +274,7 @@ Authenticated                  True
 SessionSource                  HPEOneViewModule
 ```
 
-<a name="phase-2-get-server-list"></a>
+<a id="phase-2-get-server-list"></a>
 
 ## Phase 2 — Get Server List
 
@@ -347,7 +347,7 @@ Count                          16
 Error
 ```
 
-<a name="phase-3-information-on-servers-connected-to-this-oneview"></a>
+<a id="phase-3-information-on-servers-connected-to-this-oneview"></a>
 
 ## Phase 3 — Information on Servers Connected to this OneView
 
@@ -394,7 +394,7 @@ Error
   </tbody>
 </table>
 
-<a name="phase-4-information-on-a-specific-server-both-identifiers"></a>
+<a id="phase-4-information-on-a-specific-server-both-identifiers"></a>
 
 ## Phase 4 — Information on a Specific Server (BOTH identifiers)
 
@@ -465,7 +465,7 @@ Error
   </tbody>
 </table>
 
-<a name="phase-5-assign-iso-file-to-server-for-install-both-identifiers"></a>
+<a id="phase-5-assign-iso-file-to-server-for-install-both-identifiers"></a>
 
 ## Phase 5 — Assign ISO File to Server for Install (BOTH identifiers)
 
@@ -536,7 +536,7 @@ Error
   </tbody>
 </table>
 
-<a name="phase-6-smb-name-generation-local-drive-and-network-drive"></a>
+<a id="phase-6-smb-name-generation-local-drive-and-network-drive"></a>
 
 ## Phase 6 — SMB Name Generation (local drive AND network drive)
 
@@ -595,7 +595,7 @@ Error
   </tbody>
 </table>
 
-<a name="phase-7-reboot-server-both-identifiers"></a>
+<a id="phase-7-reboot-server-both-identifiers"></a>
 
 ## Phase 7 — Reboot Server (BOTH identifiers)
 
@@ -654,7 +654,7 @@ Error
   </tbody>
 </table>
 
-<a name="phase-8-post-reboot-verification-sleep-then-confirm-connected-correct-windows-image"></a>
+<a id="phase-8-post-reboot-verification-sleep-then-confirm-connected-correct-windows-image"></a>
 
 ## Phase 8 — Post-Reboot Verification (sleep, then confirm connected + correct Windows image)
 
@@ -725,7 +725,7 @@ Error
   </tbody>
 </table>
 
-<a name="phase-9-negative-edge-boundary-tests"></a>
+<a id="phase-9-negative-edge-boundary-tests"></a>
 
 ## Phase 9 — Negative, Edge & Boundary Tests
 
@@ -892,7 +892,7 @@ Error
   </tbody>
 </table>
 
-<a name="phase-10-other-critical-tests-setup-automation-hpeoneview-package"></a>
+<a id="phase-10-other-critical-tests-setup-automation-hpeoneview-package"></a>
 
 ## Phase 10 — Other Critical Tests (Setup-Automation HPEOneView Package)
 
@@ -1001,7 +1001,7 @@ Error
 
 ---
 
-<a name="phase-11-test-run-summary-filled-per-cycle"></a>
+<a id="phase-11-test-run-summary-filled-per-cycle"></a>
 
 ## Phase 11 — Test Run Summary (filled per cycle)
 
@@ -1018,7 +1018,7 @@ Error
 | 8 | 02/08/2026 01:54 UTC | Phases 1-10 | Kev | oneview.example.com | Pending |
 <!-- END:phase11-rows -->
 
-<a name="phase-12-notes-for-the-delivery-lead"></a>
+<a id="phase-12-notes-for-the-delivery-lead"></a>
 
 ## Phase 12 — Notes for the Delivery Lead
 

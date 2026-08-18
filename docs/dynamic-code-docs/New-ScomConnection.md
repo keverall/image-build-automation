@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Returns a PowerShell command string that creates an SCOM management-group connection and emits the SCOM server version for downstream routing.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -30,11 +30,11 @@ Returns a PowerShell command string that creates an SCOM management-group connec
 |-----------|-------------|
 | `-ManagementServer` | SCOM management server hostname / IP. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -42,7 +42,7 @@ Returns a PowerShell command string that creates an SCOM management-group connec
 $script = New-ScomConnection -ManagementServer 'scom01.corp.local'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

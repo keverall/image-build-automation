@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 This command reports the connectivity of an HPE OneView appliance. It is a STATUS CHECK, not a connect command - it NEVER prompts for a host or credentials. * Run with NO parameters: reports the ACTIVE OneView connection (established by Connect-OneView). If nothing is connected it reports "not connected" and returns - no prompt. * Run with -OneViewHost <host>: checks THAT specific appliance only. Phase 1: Network Ping - DNS resolution of the OneView appliance - TCP port probe (HTTPS 443) - Measures latency in milliseconds Phase 2: Authentication Connect - If reusing the active session (no -OneViewHost, or -OneViewHost matches the connected appliance) the existing session is reused - no credentials are needed. - Otherwise credentials come from -Credential, ONEVIEW_USER / ONEVIEW_PASSWORD, or CyberArk. If none are available the auth phase is skipped with a clear message (no prompt). - Loads the HPE OneView PowerShell module and performs Connect-OVMgmt. - Session persists for subsequent OneView commands. - No objects are modified. To actually CONNECT to an appliance, use Connect-OneView -OneViewHost <host> (which prompts for credentials and establishes the session this command then reports on). SAFETY / COMPLIANCE (regulated EMIR environment): - On a live run, config files are NEVER read. The appliance host is taken verbatim from -OneViewHost (when supplied) and only that appliance is contacted. Credentials are never read from config. - Config files (connection_hosts.json, oneview_config.json) are read ONLY with -DryRun, for dry-run validation. Returns a structured hashtable with per-phase results and an overall Available boolean.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,7 +31,7 @@ This command reports the connectivity of an HPE OneView appliance. It is a STATU
 | `-Json` | Emit the result as a JSON string on the success stream (for API integration / redirection) instead of the human-readable report. When omitted, the command writes a human-readable report to the host (terminal / transcript / logs) and does NOT dump a raw hashtable. |
 | `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Test-ServerConnectivity -PassThru`, for scripting. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

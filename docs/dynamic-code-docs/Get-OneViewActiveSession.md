@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Inspects the global $global:ConnectedSessions collection and the module-tracked $script:ActiveOneViewSession. Only returns a session established by the locked module (Resolve-PinnedOneViewModule); a session from a stray install (e.g. HPEOneView.840/.820) is never reused, so OneView calls cannot run against the wrong library.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

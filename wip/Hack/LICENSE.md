@@ -9,7 +9,7 @@ The work in the DejaVu project was committed to the public domain.
 
 Bitstream Vera Sans Mono Copyright 2003 Bitstream Inc. and licensed under the Bitstream Vera License with Reserved Font Names "Bitstream" and "Vera"
 
-<a name="mit-license"></a>
+<a id="mit-license"></a>
 
 ### MIT License
 
@@ -33,7 +33,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-<a name="bitstream-vera-license"></a>
+<a id="bitstream-vera-license"></a>
 
 ### BITSTREAM VERA LICENSE
 

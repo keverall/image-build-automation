@@ -18,13 +18,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Wrapper around the Test-ServerConnectivity module command. This is a STATUS CHECK, not a connect command - it NEVER prompts for a host or credentials. Run with no parameters to report the ACTIVE OneView connection (established by Connect-OneView); supply -OneViewHost to check a SPECIFIC appliance. To actually connect, use Connect-OneView -OneViewHost <host>.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -38,11 +38,11 @@ Wrapper around the Test-ServerConnectivity module command. This is a STATUS CHEC
 | `-DryRun` | Simulate connectivity without actual network calls |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -50,7 +50,7 @@ Wrapper around the Test-ServerConnectivity module command. This is a STATUS CHEC
 pwsh -File scripts/test-connectivity.ps1
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -58,7 +58,7 @@ pwsh -File scripts/test-connectivity.ps1
 pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -66,7 +66,7 @@ pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
 pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -15,7 +15,7 @@
 > automation is **HPE OneView**. This document covers the OneView cmdlets exported
 > by the Automation module.
 
-<a name="session-management"></a>
+<a id="session-management"></a>
 
 ## Session Management
 
@@ -30,7 +30,7 @@ Get-OneViewConnectionStatus
 Disconnect-OneView
 ```
 
-<a name="version-and-information"></a>
+<a id="version-and-information"></a>
 
 ## Version and Information
 
@@ -39,7 +39,7 @@ Disconnect-OneView
 Get-OneViewVersion -OneViewHost oneview.ad.example.com
 ```
 
-<a name="server-queries"></a>
+<a id="server-queries"></a>
 
 ## Server Queries
 
@@ -51,7 +51,7 @@ Get-OneViewServerList -OneViewHost oneview.ad.example.com
 Get-OneViewServerTarget -OneViewHost oneview.ad.example.com -ServerIdentifier MXQ1234567
 ```
 
-<a name="maintenance"></a>
+<a id="maintenance"></a>
 
 ## Maintenance
 
@@ -63,7 +63,7 @@ New-OneViewMaintenanceScript -Appliance oneview.ad.example.com -ScopeName MyScop
 Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test
 ```
 
-<a name="quick-health-check"></a>
+<a id="quick-health-check"></a>
 
 ## Quick Health Check
 
@@ -72,7 +72,7 @@ Get-OneViewConnectionStatus
 Get-OneViewVersion -OneViewHost oneview.ad.example.com
 ```
 
-<a name="notes"></a>
+<a id="notes"></a>
 
 ## Notes
 

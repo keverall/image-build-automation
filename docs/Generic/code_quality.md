@@ -21,7 +21,7 @@ Automated code quality, linting, and security scanning for PowerShell scripts in
 
 ---
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
@@ -36,11 +36,11 @@ All reports are archived as build artifacts.
 
 ---
 
-<a name="psscriptanalyzer-powershell-linter"></a>
+<a id="psscriptanalyzer-powershell-linter"></a>
 
 ## PSScriptAnalyzer (PowerShell Linter)
 
-<a name="command"></a>
+<a id="command"></a>
 
 ### Command
 
@@ -54,7 +54,7 @@ pwsh -File scripts/setup-runner.ps1
 Invoke-ScriptAnalyzer -Path 'src\powershell\Automation' -Recurse -Severity Error,Warning -OutputFormat Json
 ```
 
-<a name="key-rules"></a>
+<a id="key-rules"></a>
 
 ### Key Rules
 
@@ -68,7 +68,7 @@ Invoke-ScriptAnalyzer -Path 'src\powershell\Automation' -Recurse -Severity Error
 
 ---
 
-<a name="gitleaks-secret-detection"></a>
+<a id="gitleaks-secret-detection"></a>
 
 ## Gitleaks (Secret Detection)
 
@@ -80,7 +80,7 @@ gitleaks detect --source=. --report-format json --no-banner
 
 ---
 
-<a name="quality-gates"></a>
+<a id="quality-gates"></a>
 
 ## Quality Gates
 
@@ -91,7 +91,7 @@ gitleaks detect --source=. --report-format json --no-banner
 
 ---
 
-<a name="local-development"></a>
+<a id="local-development"></a>
 
 ## Local Development
 
@@ -109,7 +109,7 @@ gitleaks detect --source=. --report-format json --no-banner
 
 ---
 
-<a name="quick-reference-common-quality-rules"></a>
+<a id="quick-reference-common-quality-rules"></a>
 
 ## Quick Reference: Common Quality Rules
 
@@ -137,11 +137,11 @@ Set-StrictMode -Version Latest
 
 ---
 
-<a name="handling-findings"></a>
+<a id="handling-findings"></a>
 
 ## Handling Findings
 
-<a name="psscriptanalyzer-error-findings"></a>
+<a id="psscriptanalyzer-error-findings"></a>
 
 ### PSScriptAnalyzer `Error` Findings
 
@@ -150,7 +150,7 @@ These are blocking - fix before merging:
 - **`AvoidUsingConvertToSecureStringWithPlainText`**: Replace literal passwords with `Get-Credential`, `Get-Secret`, or environment variables.
 - **`AvoidUsingInvokeExpression`**: Refactor; pass a `[ScriptBlock]` parameter instead of raw string.
 
-<a name="gitleaks-secrets"></a>
+<a id="gitleaks-secrets"></a>
 
 ### Gitleaks Secrets
 
@@ -163,7 +163,7 @@ These are blocking - fix before merging:
 
 ---
 
-<a name="see-also"></a>
+<a id="see-also"></a>
 
 ## See Also
 

@@ -26,13 +26,13 @@
 - [Validation](#validation)
 - [Risks](#risks)
 
-<a name="goal"></a>
+<a id="goal"></a>
 
 ## Goal
 
 Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bootable media workflow matching `runbook-requirements.md`. The automation will create a ConfigMgr WinPE boot ISO, query HPE OneView for target server identity, mount the ISO via iLO Redfish virtual media, force one-time boot, and monitor the OS deployment.
 
-<a name="key-design-decisions"></a>
+<a id="key-design-decisions"></a>
 
 ## Key Design Decisions
 
@@ -44,7 +44,7 @@ Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bo
 | Firmware/patch code | Relocate from `New-IsoBuild` into standalone `Update-Firmware.ps1` | Preserve for future use; not part of the ConfigMgr workflow |
 | Terminology | No "patching", no "firmware in ISO". Use "OSD", "bootable media", "task sequence", "image deployment" | Bladelogic handles patching; this code is for new server builds only |
 
-<a name="scope-boundary"></a>
+<a id="scope-boundary"></a>
 
 ## Scope Boundary
 
@@ -66,11 +66,11 @@ Replace the current DSC/DISM-based custom ISO build approach with a ConfigMgr bo
 - HPE hardware assembly/rack-and-stack (Hardware Engineer)
 - OneView server inventory maintenance (OneView Admin)
 
-<a name="implementation-tasks-ordered"></a>
+<a id="implementation-tasks-ordered"></a>
 
 ## Implementation Tasks (Ordered)
 
-<a name="task-1-add-redfish-ilo-integration-module"></a>
+<a id="task-1-add-redfish-ilo-integration-module"></a>
 
 ### Task 1: Add Redfish iLO integration module
 
@@ -105,7 +105,7 @@ All Redfish calls reuse the existing `Get-IloCredentials` function and the exist
 
 ---
 
-<a name="task-2-iso-https-publishing-mechanism"></a>
+<a id="task-2-iso-https-publishing-mechanism"></a>
 
 ### Task 2: ISO HTTPS publishing mechanism
 
@@ -130,7 +130,7 @@ Publish the ConfigMgr bootable ISO to an HTTPS endpoint that iLO can reach:
 
 ---
 
-<a name="task-3-oneview-server-targeting"></a>
+<a id="task-3-oneview-server-targeting"></a>
 
 ### Task 3: OneView server targeting
 
@@ -151,7 +151,7 @@ Uses the bundled `HPEOneView.1000` module or direct REST API (with the existing 
 
 ---
 
-<a name="task-4-pre-build-validation"></a>
+<a id="task-4-pre-build-validation"></a>
 
 ### Task 4: Pre-build validation
 
@@ -170,7 +170,7 @@ Returns a hashtable of checks with pass/fail status.
 
 ---
 
-<a name="task-5-post-build-validation"></a>
+<a id="task-5-post-build-validation"></a>
 
 ### Task 5: Post-build validation
 
@@ -188,7 +188,7 @@ Implementation of the runbook's post-build validation checklist:
 
 ---
 
-<a name="task-6-rewrite-new-isobuild-for-configmgr-bootable-media"></a>
+<a id="task-6-rewrite-new-isobuild-for-configmgr-bootable-media"></a>
 
 ### Task 6: Rewrite `New-IsoBuild` for ConfigMgr bootable media
 
@@ -227,7 +227,7 @@ Replace the current firmware-DISM logic with ConfigMgr `New-CMBootableMedia`:
 
 ---
 
-<a name="task-7-relocate-firmwarepatch-code"></a>
+<a id="task-7-relocate-firmwarepatch-code"></a>
 
 ### Task 7: Relocate firmware/patch code
 
@@ -241,7 +241,7 @@ Remove `Build-ForServer` private function from `New-IsoBuild` - relocate its fir
 
 ---
 
-<a name="task-8-end-to-end-orchestrator"></a>
+<a id="task-8-end-to-end-orchestrator"></a>
 
 ### Task 8: End-to-end orchestrator
 
@@ -263,7 +263,7 @@ Every step logs to the existing audit infrastructure (`AuditLogger`).
 
 ---
 
-<a name="task-9-add-new-request-types-to-routing"></a>
+<a id="task-9-add-new-request-types-to-routing"></a>
 
 ### Task 9: Add new request types to routing
 
@@ -305,7 +305,7 @@ Add new request types:
 
 ---
 
-<a name="task-10-update-configmgr-configuration"></a>
+<a id="task-10-update-configmgr-configuration"></a>
 
 ### Task 10: Update ConfigMgr configuration
 
@@ -330,7 +330,7 @@ Configuration for ConfigMgr connectivity:
 
 ---
 
-<a name="task-11-update-module-manifest-and-exports"></a>
+<a id="task-11-update-module-manifest-and-exports"></a>
 
 ### Task 11: Update module manifest and exports
 
@@ -346,7 +346,7 @@ Add to `FunctionsToExport`:
 
 ---
 
-<a name="task-12-unit-tests"></a>
+<a id="task-12-unit-tests"></a>
 
 ### Task 12: Unit tests
 
@@ -363,7 +363,7 @@ Create Pester unit tests for all new functions:
 
 ---
 
-<a name="task-13-update-existing-invoke-isodeploy-for-redfish"></a>
+<a id="task-13-update-existing-invoke-isodeploy-for-redfish"></a>
 
 ### Task 13: Update existing `Invoke-IsoDeploy` for Redfish
 
@@ -377,7 +377,7 @@ Create Pester unit tests for all new functions:
 
 ---
 
-<a name="task-14-renameremove-patching-terminology"></a>
+<a id="task-14-renameremove-patching-terminology"></a>
 
 ### Task 14: Rename/remove patching terminology
 
@@ -390,7 +390,7 @@ Create Pester unit tests for all new functions:
 
 ---
 
-<a name="file-change-summary"></a>
+<a id="file-change-summary"></a>
 
 ## File Change Summary
 
@@ -413,7 +413,7 @@ Create Pester unit tests for all new functions:
 
 **Total: ~1,700 lines across 14 files**
 
-<a name="validation"></a>
+<a id="validation"></a>
 
 ## Validation
 
@@ -425,7 +425,7 @@ Create Pester unit tests for all new functions:
    - `Start-PhysicalServerBuild -ServerIdentifier 'PROD-SERVER-01' -DryRun` → validates full flow without side effects
    - Single real server build with monitoring
 
-<a name="risks"></a>
+<a id="risks"></a>
 
 ## Risks
 

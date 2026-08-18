@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Applies Windows security patches to a base ISO using DISM or PowerShell DISM equivalent, creating a patched ISO ready for deployment. Reads patch manifest from windows_patches.json and downloads/applies MSU packages to the mounted ISO image.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -37,11 +37,11 @@ Applies Windows security patches to a base ISO using DISM or PowerShell DISM equ
 | `-Method` _(Aliases: -m)_ | Patching method: 'dism' or 'powershell' (default: dism). |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate without making changes. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -49,7 +49,7 @@ Applies Windows security patches to a base ISO using DISM or PowerShell DISM equ
 Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01' -DryRun
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

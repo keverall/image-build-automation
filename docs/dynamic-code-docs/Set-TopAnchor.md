@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 This is the canonical implementation used by both `make docs` and `make fix-docs`. It is idempotent: any existing top anchor is stripped and re-inserted in the canonical position, and runs of blank lines are collapsed to a single blank so the result stays MD012-compliant.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -29,7 +29,7 @@ This is the canonical implementation used by both `make docs` and `make fix-docs
 | `-Lines` | Markdown content as an array of lines (in-memory use). Returns the updated array. |
 | `-File` | A markdown file. The file is rewritten unless -DryRun is supplied. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -15,17 +15,17 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Processes iRequest form data to enable or disable cluster maintenance mode. Maps cluster_id and action to orchestrator request types.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -33,7 +33,7 @@ Processes iRequest form data to enable or disable cluster maintenance mode. Maps
 Run-IRequest -FormData @{ cluster_id = 'CLUSTER01'; action = 'enable' }
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

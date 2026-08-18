@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Production automation must run on the Bank's Windows estate (HPE OneView / SCOM are Windows-oriented, and the vendored HPEOneView.1000 module is not guaranteed to load on PowerShell 7 for Linux). The CI pipeline, however, may execute on Linux or Windows runners depending on what DevOps provisions. This helper answers two questions so the rest of the pipeline can branch: 1. Is this job running on a Windows runner or a Linux/macOS runner? Detection prefers PowerShell's built-in $IsWindows / $IsLinux, falls back to the `uname` command (the method DevOps asked us to use so the behaviour is explicit and visible in job logs), and finally inspects $env:OS. 2. What is the branch/target this job is validating? Surfaces the CI branch / merge-request ref so import logic and test selection can differ between the default branch and feature branches if required. It also exposes Import-AutomationModule, which imports the project's Automation module and *gracefully* degrades on a non-Windows runner: the HPEOneView module targets Windows, so on Linux the import may fail. Rather than letting every pipeline job crash, Import-AutomationModule: - on Windows: fails the job if the module will not import (FailOnLinux:false is the default for Windows). - on non-Windows: warns, records the limitation, and returns $false so the caller can skip module-dependent steps instead of aborting the whole pipeline. Set -FailOnUnsupported to force a hard failure. Dot-source this file from a runner script:
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

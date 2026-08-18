@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Exercises the build/deploy commands plus the ISO / firmware validation they rely on: Configure-PhysicalBuild, Start-PhysicalServerBuild, Invoke-IsoDeploy, Update-Firmware What it exercises ----------------- 1. Connection check / connect-when-none (mirrors testConnectAndList). 2. Running build/deploy WITHOUT the mandatory -GuardRail -> early, graceful, logged BLOCK (never an unguarded action). 3. HPE OneView ISO file variants: * filename/UNC/HTTPS/NFS path -> resolved to an iLO-accessible URL (SMB conversion, shareability checks) * a supplied local ISO path is validated (exists, is an .iso) 4. Firmware archive validation (exists, valid zip/cab/tar). 5. The -GuardRail SAFETY GATE across all four commands: * omitted      -> blocked (GUARD RAIL REQUIRED) * non-matching -> blocked (mismatch) * matching     -> proceeds (DryRun / SkipConfirmation) 6. Confirmation flow: a matched guard in an automated run with no -SkipConfirmation auto-cancels (no unconfirmed destructive action). 7. Build/deploy VARIANTS (external ISO, firmware folders) under -DryRun. -OneViewHost is the OneView appliance and -Server is the target server identifier (name / serial / iLO IP). Nothing is hard-coded; both are prompted when omitted. By default the script runs SAFE (connections validated with -DryRun, builds with -DryRun) and only performs live calls when -Live is passed with credentials. Full logging is written via the module's common logging commands (Initialize-Logging / Get-Logger) under generated/logs/commands/testBuildDeploy/.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -38,7 +38,7 @@ Exercises the build/deploy commands plus the ISO / firmware validation they rely
 | `-DryRun` | Validate with -DryRun (default-safe behaviour even without -Live). |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds for reachability probes (default 3000). |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

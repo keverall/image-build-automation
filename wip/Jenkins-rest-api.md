@@ -18,7 +18,7 @@ Because this server is running inside a strict corporate network with no interne
 Here is the exact architecture and code required to make this work.
 ------------------------------
 
-<a name="step-1-configure-pipeline-variables"></a>
+<a id="step-1-configure-pipeline-variables"></a>
 
 ## Step 1: Configure Pipeline Variables
 
@@ -38,7 +38,7 @@ Before sending data via API, you must configure a CI pipeline that knows how to 
 
 ------------------------------
 
-<a name="step-2-generate-a-pipeline-trigger-token"></a>
+<a id="step-2-generate-a-pipeline-trigger-token"></a>
 
 ## Step 2: Generate a Pipeline Trigger Token
 
@@ -51,7 +51,7 @@ The CI system requires a trigger token for authentication instead of your raw co
 
 ------------------------------
 
-<a name="step-3-triggering-ci-from-irequest-the-api-call"></a>
+<a id="step-3-triggering-ci-from-irequest-the-api-call"></a>
 
 ## Step 3: Triggering CI from iRequest (The API Call)
 
@@ -88,7 +88,7 @@ $Body = @{
 Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x-www-form-urlencoded'
 ```
 
-<a name="how-the-workflow-passes-data"></a>
+<a id="how-the-workflow-passes-data"></a>
 
 ## How the workflow passes data:
 
@@ -96,7 +96,7 @@ Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x
    2. The iRequest workflow engine executes the HTTP POST script natively behind the scenes.
    3. Your local CI instance accepts the payload, extracts the variables, and launches your backend PowerShell script to do the work.
 
-<a name="to-trigger-your-specific-scom-script-through-the-ci-rest-api-from-irequest-you-must-use-the-trigger-pipeline-endpoint"></a>
+<a id="to-trigger-your-specific-scom-script-through-the-ci-rest-api-from-irequest-you-must-use-the-trigger-pipeline-endpoint"></a>
 
 ## To trigger your specific SCOM script through the CI REST API from iRequest, you must use the trigger pipeline endpoint.
 
@@ -104,7 +104,7 @@ This allows iRequest to send a web request that triggers your CI pipeline to run
 
 ------------------------------
 
-<a name="step-2-the-irequest-api-command-powershell-payload"></a>
+<a id="step-2-the-irequest-api-command-powershell-payload"></a>
 
 ## Step 2: The iRequest API Command (PowerShell Payload)
 
@@ -148,7 +148,7 @@ Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x
 
 ------------------------------
 
-<a name="step-3-raw-curl-format-if-irequest-cannot-use-powershell"></a>
+<a id="step-3-raw-curl-format-if-irequest-cannot-use-powershell"></a>
 
 ## Step 3: Raw Curl Format (If iRequest cannot use PowerShell)
 
@@ -163,7 +163,7 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
      --data-urlencode "variables[Reason]=Planned OS Patching via iRequest"
 ```
 
-<a name="critical-security-notice-for-scom-scripts"></a>
+<a id="critical-security-notice-for-scom-scripts"></a>
 
 ## ⚠️ Critical Security Notice for SCOM Scripts
 

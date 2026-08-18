@@ -11,7 +11,7 @@ Since your target environment is a unified Windows Test Jumpbox containing CI, S
 Instead, you use the CI pipeline as your API Gateway.
 ------------------------------
 
-<a name="the-architecture-how-they-interact"></a>
+<a id="the-architecture-how-they-interact"></a>
 
 ## The Architecture: How They Interact
 
@@ -21,13 +21,13 @@ iRequest -   HTTPS POST   → CI Pipeline -   Native Execution   → PowerShell 
 
 ------------------------------
 
-<a name="the-3-ways-to-connect-irequest-to-your-powershell-code"></a>
+<a id="the-3-ways-to-connect-irequest-to-your-powershell-code"></a>
 
 ## The 3 Ways to Connect iRequest to Your PowerShell Code
 
 Depending on how iRequest is configured by your identity/portal team, you will use one of these three standard connection protocols: [1]
 
-<a name="option-a-the-ci-web-api-the-easiest-safest-way"></a>
+<a id="option-a-the-ci-web-api-the-easiest-safest-way"></a>
 
 ## Option A: The CI Web API (The Easiest & Safest Way)
 

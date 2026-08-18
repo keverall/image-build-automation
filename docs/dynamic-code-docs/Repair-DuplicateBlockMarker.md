@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Guards against a past regression where an END marker line was duplicated (e.g. two consecutive '<!-- END:run-date -->' lines), which corrupts the document structure for future edits. Consecutive identical marker lines are collapsed to a single line. Handles both LF and CRLF line endings.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

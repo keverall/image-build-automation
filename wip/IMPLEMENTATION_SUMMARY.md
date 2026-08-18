@@ -24,11 +24,11 @@
 - [Backward Compatibility](#backward-compatibility)
 - [Security Notes for Regulated Environments](#security-notes-for-regulated-environments)
 
-<a name="changes-made"></a>
+<a id="changes-made"></a>
 
 ## Changes Made
 
-<a name="1-new-configuration-file-configsconnection_hostsjson"></a>
+<a id="1-new-configuration-file-configsconnection_hostsjson"></a>
 
 ### 1. New Configuration File: `configs/connection_hosts.json`
 
@@ -36,7 +36,7 @@
 - Includes SCOM management servers and OneView appliances per environment
 - Contains group IDs and scope names for each environment
 
-<a name="2-template-credentials-file-env"></a>
+<a id="2-template-credentials-file-env"></a>
 
 ### 2. Template Credentials File: `.env`
 
@@ -44,7 +44,7 @@
 - Documents all required credentials and optional overrides
 - Provides examples for both SCOM and OneView connections
 
-<a name="3-updated-script-srcpowershellautomationpublicset-maintenancemodeps1"></a>
+<a id="3-updated-script-srcpowershellautomationpublicset-maintenancemodeps1"></a>
 
 ### 3. Updated Script: `src/powershell/Automation/Public/Set-MaintenanceMode.ps1`
 
@@ -83,7 +83,7 @@ Priority order:
 - `Test-ScomConnection`: Validates SCOM management server connectivity
 - `Test-OneViewConnection`: Validates OneView appliance connectivity
 
-<a name="4-test-script-scriptstest-maintenance-connectionps1"></a>
+<a id="4-test-script-scriptstest-maintenance-connectionps1"></a>
 
 ### 4. Test Script: `scripts/test-maintenance-connection.ps1`
 
@@ -92,7 +92,7 @@ Priority order:
 - Supports dry-run validation mode
 - Displays detailed connection information
 
-<a name="5-documentation-docsmaintenance-mode-environment-configmd"></a>
+<a id="5-documentation-docsmaintenance-mode-environment-configmd"></a>
 
 ### 5. Documentation: `docs/maintenance-mode-environment-config.md`
 
@@ -102,11 +102,11 @@ Priority order:
 - Migration guide from old config format
 - Troubleshooting section
 
-<a name="key-features"></a>
+<a id="key-features"></a>
 
 ## Key Features
 
-<a name="security-enhancements"></a>
+<a id="security-enhancements"></a>
 
 ### Security Enhancements
 
@@ -116,7 +116,7 @@ Priority order:
 ✅ Connection pre-flight checks  
 ✅ Support for CyberArk integration (future enhancement)  
 
-<a name="flexibility"></a>
+<a id="flexibility"></a>
 
 ### Flexibility
 
@@ -125,7 +125,7 @@ Priority order:
 ✅ Backward compatible with existing configs  
 ✅ Works in both interactive and automated modes  
 
-<a name="compliance-ready"></a>
+<a id="compliance-ready"></a>
 
 ### Compliance Ready
 
@@ -134,11 +134,11 @@ Priority order:
 ✅ Connection validation prevents accidental operations  
 ✅ Detailed error messages for troubleshooting  
 
-<a name="usage-examples"></a>
+<a id="usage-examples"></a>
 
 ## Usage Examples
 
-<a name="example-1-production-with-environment-variable"></a>
+<a id="example-1-production-with-environment-variable"></a>
 
 ### Example 1: Production with environment variable
 
@@ -150,7 +150,7 @@ $env:SCOM_ADMIN_PASSWORD = "secure_pass"
 Set-MaintenanceMode -Action enable -TargetId "CLU-CLUSTER-01" -Mode scom
 ```
 
-<a name="example-2-test-with-parameter-override"></a>
+<a id="example-2-test-with-parameter-override"></a>
 
 ### Example 2: Test with parameter override
 
@@ -163,7 +163,7 @@ Set-MaintenanceMode `
     -ManagementHost "backup-scom.test.local"
 ```
 
-<a name="example-3-interactive-testing"></a>
+<a id="example-3-interactive-testing"></a>
 
 ### Example 3: Interactive testing
 
@@ -171,7 +171,7 @@ Set-MaintenanceMode `
 pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRun
 ```
 
-<a name="testing-checklist"></a>
+<a id="testing-checklist"></a>
 
 ## Testing Checklist
 
@@ -186,7 +186,7 @@ pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRu
 - [ ] Integration tests with real SCOM/OneView (requires access)
 - [ ] Jenkins pipeline integration tested
 
-<a name="next-steps"></a>
+<a id="next-steps"></a>
 
 ## Next Steps
 
@@ -197,7 +197,7 @@ pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRu
 5. **CyberArk Integration**: Implement direct CyberArk lookups as alternative credential source
 6. **Monitoring**: Add metrics for connection success/failure rates
 
-<a name="files-modified"></a>
+<a id="files-modified"></a>
 
 ## Files Modified
 
@@ -220,7 +220,7 @@ pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRu
 5. `/home/keverall/repos/image-build-automation/docs/maintenance-mode-environment-config.md` (NEW)
    - Complete documentation
 
-<a name="backward-compatibility"></a>
+<a id="backward-compatibility"></a>
 
 ## Backward Compatibility
 
@@ -230,7 +230,7 @@ All changes are **backward compatible**:
 - Old single-host configs still supported
 - Default behavior unchanged when parameters not provided
 
-<a name="security-notes-for-regulated-environments"></a>
+<a id="security-notes-for-regulated-environments"></a>
 
 ## Security Notes for Regulated Environments
 

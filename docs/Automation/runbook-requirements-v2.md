@@ -32,13 +32,13 @@
   - [Example file naming and versioning standard](#example-file-naming-and-versioning-standard)
 - [Source Note](#source-note)
 
-<a name="purpose"></a>
+<a id="purpose"></a>
 
 ## Purpose
 
 This runbook defines the standard process for automating the build of physical HPE servers using Microsoft Configuration Manager (ConfigMgr / MECM) and HPE OneView, with HPE iLO virtual media used as the remote boot mechanism where PXE boot is not available. The design supports HPE ProLiant rack servers and HPE Synergy compute modules.
 
-<a name="scope"></a>
+<a id="scope"></a>
 
 ## Scope
 
@@ -48,7 +48,7 @@ This runbook defines the standard process for automating the build of physical H
 - Use HPE iLO Redfish / virtual media operations to mount bootable media, set one-time boot, and start the build.
 - Support both interactive operations and automation through scripts or pipelines.
 
-<a name="assumptions-and-design-principles"></a>
+<a id="assumptions-and-design-principles"></a>
 
 ## Assumptions and Design Principles
 
@@ -60,7 +60,7 @@ This runbook defines the standard process for automating the build of physical H
 - No PXE service is available on the deployment network.
 - The target server can reach the required Configuration Manager infrastructure during build when using dynamic boot media.
 
-<a name="references"></a>
+<a id="references"></a>
 
 ## References
 
@@ -72,7 +72,7 @@ This runbook defines the standard process for automating the build of physical H
 - [HPE OneView REST API Reference](https://support.hpe.com/docs/display/public/dp00006616en_us/index.html)
 - [HPE Redfish examples – mount virtual media ISO, change boot order, and reboot server.](https://servermanagementportal.ext.hpe.com/docs/redfishclients/python-redfish-library/examples)
 
-<a name="roles-and-responsibilities"></a>
+<a id="roles-and-responsibilities"></a>
 
 ## Roles and Responsibilities
 
@@ -84,7 +84,7 @@ This runbook defines the standard process for automating the build of physical H
 | Security / IAM | Provide and govern service account permissions and secret storage | Prefer secret vault / pipeline secrets; avoid hard-coded credentials. |
 | Change Manager | Approve production builds and maintain CRQ traceability where required. | Recommended for controlled environments. |
 
-<a name="high-level-architecture"></a>
+<a id="high-level-architecture"></a>
 
 ## High-Level Architecture
 
@@ -104,11 +104,11 @@ The automation pattern uses Configuration Manager to generate bootable OSD media
 7. Task sequence partitions disk, applies operating system, installs drivers and ConfigMgr client, and performs post-install actions.
 8.  Server reboots to the newly deployed operating system and final validation is completed.
 
-<a name="prerequisites"></a>
+<a id="prerequisites"></a>
 
 ## Prerequisites
 
-<a name="technical-prerequisites"></a>
+<a id="technical-prerequisites"></a>
 
 ### Technical prerequisites
 
@@ -121,7 +121,7 @@ The automation pattern uses Configuration Manager to generate bootable OSD media
 - HPE iLO credentials with rights to perform virtual media and power operations.
 - Secure location to host bootable ISO (preferably HTTPS).
 
-<a name="access-prerequisites"></a>
+<a id="access-prerequisites"></a>
 
 ### Access prerequisites
 
@@ -130,7 +130,7 @@ The automation pattern uses Configuration Manager to generate bootable OSD media
 - Access to Configuration Manager site drive / PowerShell context sufficient to create task sequence media.
 - Administrative access on the system used to create ConfigMgr media.
 
-<a name="media-strategy"></a>
+<a id="media-strategy"></a>
 
 ## Media Strategy
 
@@ -140,11 +140,11 @@ Preferred approach: use Configuration Manager bootable media (ISO) mounted over 
 - Alternative: Stand-alone media – suitable where network access to MP/DP is restricted during build; includes task sequence and content locally.
 - Less preferred: Prestaged media – more appropriate for factory / preloaded disk scenarios than for remote iLO-led imaging.
 
-<a name="standard-operating-procedure"></a>
+<a id="standard-operating-procedure"></a>
 
 ## Standard Operating Procedure
 
-<a name="prepare-or-update-the-windows-server-build-in-configuration-manager"></a>
+<a id="prepare-or-update-the-windows-server-build-in-configuration-manager"></a>
 
 ### Prepare or update the Windows Server build in Configuration Manager
 
@@ -159,7 +159,7 @@ Preferred approach: use Configuration Manager bootable media (ISO) mounted over 
 New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd -Path "\\fileserver\osdmedia\WinSrv2025_BootMedia.iso" -AllowUnknownMachine -AllowUnattended -BootImage $BootImage -DistributionPoint $DistributionPoint -ManagementPoint $ManagementPoint -MediaPassword $MediaPassword -Force
 ```
 
-<a name="create-bootable-media-iso"></a>
+<a id="create-bootable-media-iso"></a>
 
 ### Create bootable media ISO
 
@@ -173,7 +173,7 @@ New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd -Path "\\fileserver\osdm
    5. that network path/smb address is reachable by iLO virtual media.  
 4. Version the ISO according to the OSD release standard (for example: WinSrv2025_HPE_BootableMedia_v1.7.iso).  
 
-<a name="publish-the-iso-for-ilo-consumption"></a>
+<a id="publish-the-iso-for-ilo-consumption"></a>
 
 ### Publish the ISO for iLO consumption
 
@@ -194,7 +194,7 @@ New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd -Path "\\fileserver\osdm
 GET https://<oneview-appliance>/rest/server-hardware?filter="name='<ServerName>'"
 ```
 
-<a name="mount-iso-via-hpe-ilo-and-force-one-time-boot"></a>
+<a id="mount-iso-via-hpe-ilo-and-force-one-time-boot"></a>
 
 ### Mount ISO via HPE iLO and force one-time boot
 
@@ -212,7 +212,7 @@ PATCH /redfish/v1/Systems/1   { BootSourceOverrideEnabled: "Once", BootSourceOve
 POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 ```
 
-<a name="task-sequence-execution"></a>
+<a id="task-sequence-execution"></a>
 
 ### Task sequence execution
 
@@ -225,11 +225,11 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 7. The system reboots into the installed operating system.
 8. Post-build validation is completed and the build record is updated.
 
-<a name="validation-checklist"></a>
+<a id="validation-checklist"></a>
 
 ## Validation Checklist
 
-<a name="pre-build-validation"></a>
+<a id="pre-build-validation"></a>
 
 ### Pre-build validation
 
@@ -242,7 +242,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - iLO credentials verified.
 - Configuration / change record created where required.
 
-<a name="in-build-validation"></a>
+<a id="in-build-validation"></a>
 
 ### In-build validation
 
@@ -254,7 +254,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - OS image apply completes successfully.
 - Task sequence reaches final restart with no blocking errors.
 
-<a name="post-build-validation"></a>
+<a id="post-build-validation"></a>
 
 ### Post-build validation
 
@@ -267,7 +267,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - RDP / PowerShell / management agents operational.
 - Build outcome captured in operational records.
 
-<a name="rollback-recovery-procedure"></a>
+<a id="rollback-recovery-procedure"></a>
 
 ## Rollback / Recovery Procedure
 
@@ -276,7 +276,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 3. If the wrong server was selected, stop the workflow immediately, eject media, cancel the change, and follow incident / change procedures.
 4. If iLO virtual media operations fail, validate device index, iLO generation, ISO accessibility, and Redfish permission scope.
 
-<a name="troubleshooting-guide"></a>
+<a id="troubleshooting-guide"></a>
 
 ## Troubleshooting Guide
 
@@ -289,7 +289,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 | OS installs but post-build steps fail	Package/app content issue; | domain join issue; variable problem | Review task sequence logs and validate packages, credentials, and variables. |
 | Wrong target server built | Target validation failure | Stop process immediately and invoke incident/change process; improve pre-check controls. |
 
-<a name="security-and-control-requirements"></a>
+<a id="security-and-control-requirements"></a>
 
 ## Security and Control Requirements
 
@@ -300,11 +300,11 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - Prefer trusted TLS certificates over certificate bypass methods used only in lab/testing.
 - Maintain audit logs showing who initiated the build, which server was targeted, which ISO was used, and the final outcome.
 
-<a name="appendix-a-sample-automation-components"></a>
+<a id="appendix-a-sample-automation-components"></a>
 
 ## Appendix A: Sample Automation Components
 
-<a name="sample-workflow-components"></a>
+<a id="sample-workflow-components"></a>
 
 ### Sample workflow components
 
@@ -313,7 +313,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - Invoke-iLO-BootFromIso.ps1 – mounts ISO through Redfish, sets boot override, and restarts server.
 - Start-PhysicalServerBuild.ps1 – wrapper/orchestrator script used manually or from a pipeline.
 
-<a name="example-file-naming-and-versioning-standard"></a>
+<a id="example-file-naming-and-versioning-standard"></a>
 
 ### Example file naming and versioning standard
 
@@ -321,7 +321,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - Task Sequence: TS - WinSrv2025 - HPE - <Role>
 - Build record ID: OSD-<YYYYMMDD>-<Sequence>
 
-<a name="source-note"></a>
+<a id="source-note"></a>
 
 ## Source Note
 

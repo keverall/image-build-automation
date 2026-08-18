@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Get the appropriate log directory based on context (testing vs production).
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -28,7 +28,7 @@ Get the appropriate log directory based on context (testing vs production).
 |-----------|-------------|
 | `-Category` | Log category: 'test', 'audit', 'regulatory', 'build_reports', or 'production' (default). |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -12,10 +12,10 @@
   - [6) Parameter-usage guard + non-interactive `-DryRun` (`--DryRun`/`-DryRun`)](#6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun)
   - [7) OneView live-session guard + GuardRail (destructive-action gate)](#7-oneview-live-session-guard-guardrail-destructive-action-gate)
   - [8) Automated live testing harness + captured test results](#8-automated-live-testing-harness-captured-test-results)
-  - [9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul](#9-parameter-rename-managementhost-to-oneviewhost-get-oneviewconnectionstatus-overhaul)
+  - [9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul](#9-parameter-rename-managementhost-oneviewhost-get-oneviewconnectionstatus-overhaul)
   - [10) Shared output formatting + `Connect-OneView` rewrite + runbook v2](#10-shared-output-formatting-connect-oneview-rewrite-runbook-v2)
-  - [11) `Test-BuildParams` / `_Validate-Request` hardening](#11-test-buildparams-validate-request-hardening)
-  - [12) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`](#12-parameter-rename-srvrid-to-serveridentifier-wildcard-filtering-in-get-oneviewserverlist)
+  - [11) `Test-BuildParams` / `_Validate-Request` hardening](#11-test-buildparams-_validate-request-hardening)
+  - [12) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`](#12-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist)
   - [13) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests](#13-connect-oneview-converttowildcardregex-docs-alias-inventory-tests)
   - [14) Repo hygiene: LF normalization + git workflow docs](#14-repo-hygiene-lf-normalization-git-workflow-docs)
   - [15) Testing-issues documentation (OneView connectivity)](#15-testing-issues-documentation-oneview-connectivity)
@@ -25,7 +25,7 @@
 | 2026-08-06 | Command consolidation — 2-command workflow (runbook-aligned) | Kev Everall |
 | 2026-08-06 | Parameter-usage guard + non-interactive `-DryRun` (rejected `Connect-OneView --DryRun`) | Kev Everall |
 
-<a name="1-command-consolidation-2-command-workflow-runbook-aligned"></a>
+<a id="1-command-consolidation-2-command-workflow-runbook-aligned"></a>
 
 ### 1) Command consolidation — 2-command workflow (runbook-aligned)
 
@@ -84,7 +84,7 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Audit trail | ✅ Audit log in `$finally` block |
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
 
-<a name="2-maintenance-mode-progress-report-for-dl"></a>
+<a id="2-maintenance-mode-progress-report-for-dl"></a>
 
 ### 2) Maintenance mode progress report for DL
 
@@ -116,7 +116,7 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 
 Per `runbook-requirements.md`, maintenance mode is a **separate operational concern** from the ISO build/deploy pipeline. The 2-command workflow (`Configure-PhysicalBuild` + `Start-PhysicalBuild`) does not include maintenance mode commands — they're standalone SCOM/OneView orchestration tools.
 
-<a name="3-mock-only-test-hardening-repo-testing-rules-agentsmd"></a>
+<a id="3-mock-only-test-hardening-repo-testing-rules-agentsmd"></a>
 
 ### 3) Mock-only test hardening + repo testing rules (AGENTS.md)
 
@@ -149,7 +149,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - Ran `Configure-PhysicalBuild.Unit.Tests.ps1` + `Start-PhysicalServerBuild.Unit.Tests.ps1` directly → **9 passed, 0 failed**; the prompt now prints "Non-interactive / automated mode detected - deployment confirmation skipped (auto-cancelled)" instead of blocking.
 
-<a name="4-scom-oneview-maintenance-status-report-get-maintenancestatusreport"></a>
+<a id="4-scom-oneview-maintenance-status-report-get-maintenancestatusreport"></a>
 
 ### 4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)
 
@@ -178,7 +178,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - Parse-clean; `Get-MaintenanceStatusReport -IncludeLive:$false` returns 5 pure objects sourced from `configs/`, with `OneViewLinkMethod=Name` for servers present in `servers_catalogue.oneview.json`. Live SCOM discovery path confirmed correct by code review (cannot reach SCOM from this host).
 
-<a name="5-profile-auto-load-fix-setup-profile-regression-test-catches-connect-oneview-not-recognized"></a>
+<a id="5-profile-auto-load-fix-setup-profile-regression-test-catches-connect-oneview-not-recognized"></a>
 
 ### 5) Profile auto-load fix + Setup-Profile regression test (catches "Connect-OneView not recognized")
 
@@ -208,7 +208,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - New `tests/powershell/Setup-Profile.Tests.ps1` (3 tests): asserts the generated profile imports the Automation module; asserts the OneView pre-load is `$IsWindows`-guarded; launches a fresh `pwsh` that sources the profile and verifies `Connect-OneView` resolves and runs `Connect-OneView -DryRun`. All 3 pass.
 - Added `Setup-Profile.Tests.ps1` to the `automation-mode-tests` runner (`scripts/run-automation-mode-tests.ps1`); `make automation-mode-tests` now reports **103 passed, 0 failed** (1 unrelated pre-existing skip). It is also auto-discovered by `make test`.
 
-<a name="6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun"></a>
+<a id="6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun"></a>
 
 ### 6) Parameter-usage guard + non-interactive `-DryRun` (`--DryRun`/`-DryRun`)
 
@@ -244,7 +244,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - `Connect-OneView` (live, no host, `AUTOMATED_MODE=true`) -> fails fast with `ManagementHost is required`, no hang.
 - `make automation-mode-tests`: **103 passed, 0 failed**, 1 pre-existing skip; `scripts/lint.ps1` (PSScriptAnalyzer): 146 files, all checks passed.
 
-<a name="7-oneview-live-session-guard-guardrail-destructive-action-gate"></a>
+<a id="7-oneview-live-session-guard-guardrail-destructive-action-gate"></a>
 
 ### 7) OneView live-session guard + GuardRail (destructive-action gate)
 
@@ -273,7 +273,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `Connect-OneView` to a second appliance while connected → `Already connected to OneView appliance '…'. Cannot reconnect … Run Disconnect-OneView first` (no drop). `Assert-GuardRail` with a non-matching name aborts with `GUARD RAIL MISMATCH - ACTION BLOCKED` and zero changes. New/updated unit tests pass under `make test`.
 
-<a name="8-automated-live-testing-harness-captured-test-results"></a>
+<a id="8-automated-live-testing-harness-captured-test-results"></a>
 
 ### 8) Automated live testing harness + captured test results
 
@@ -294,7 +294,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `test results 11-08-2026` appended a dated results section to `changes.md` documenting the 2026-08-11 live run (connectivity, server list, build/deploy smoke checks).
 
-<a name="9-parameter-rename-managementhost-to-oneviewhost-get-oneviewconnectionstatus-overhaul"></a>
+<a id="9-parameter-rename-managementhost-oneviewhost-get-oneviewconnectionstatus-overhaul"></a>
 
 ### 9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul
 
@@ -322,7 +322,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `Get-OneViewConnectionStatus` renders the new summary; `-PassThru` returns the object; all renamed parameters resolve in unit tests (`Connect-OneView`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Set-MaintenanceMode`, `Test-ServerConnectivity`, `Setup-Profile`) — pass under `make test`.
 
-<a name="10-shared-output-formatting-connect-oneview-rewrite-runbook-v2"></a>
+<a id="10-shared-output-formatting-connect-oneview-rewrite-runbook-v2"></a>
 
 ### 10) Shared output formatting + `Connect-OneView` rewrite + runbook v2
 
@@ -355,7 +355,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `Connect-OneView -DryRun` returns the structured result; `-Json` emits a compact JSON string; `-PassThru` returns the hashtable; `_Format-ConnectivityResult`/`_Format-HumanReadable` exercised by the updated `Connect-OneView.Tests.ps1`. `make test` green.
 
-<a name="11-test-buildparams-validate-request-hardening"></a>
+<a id="11-test-buildparams-_validate-request-hardening"></a>
 
 ### 11) `Test-BuildParams` / `_Validate-Request` hardening
 
@@ -376,7 +376,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'` → `Success=$true`, `IsoUrl='cifs://fileserver/isos/WinSrv2025.iso'`; `https://…` resolves to `https://…`; local-drive paths fail validation. `Validators` unit tests pass.
 
-<a name="12-parameter-rename-srvrid-to-serveridentifier-wildcard-filtering-in-get-oneviewserverlist"></a>
+<a id="12-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist"></a>
 
 ### 12) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`
 
@@ -403,7 +403,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `Get-OneViewServerList -Filter 'name:PROD-*'` matches `PROD-SRV-01`; `health:*Warning*` matches warning states; `power:On` filters by power; `name:PROD` substring-matches; an invalid filter returns the `Unsupported -Filter` error. `Get-OneViewServerTarget.Unit.Tests.ps1` (51 lines added) and the renamed-parameter tests pass.
 
-<a name="13-connect-oneview-converttowildcardregex-docs-alias-inventory-tests"></a>
+<a id="13-connect-oneview-converttowildcardregex-docs-alias-inventory-tests"></a>
 
 ### 13) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests
 
@@ -430,7 +430,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `OneViewAliasInventory.Unit.Tests.ps1` parses the documented alias table and asserts each alias resolves on the real command; failures surface a missing alias immediately. Passes under `make test`.
 
-<a name="14-repo-hygiene-lf-normalization-git-workflow-docs"></a>
+<a id="14-repo-hygiene-lf-normalization-git-workflow-docs"></a>
 
 ### 14) Repo hygiene: LF normalization + git workflow docs
 
@@ -450,7 +450,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - Added `git_process.md` describing a rebase-hell-free flow: `pull.ff only`, a Stash mirror, and a one-`reset` recovery path; later expanded for clarity/structure. (The standalone file was subsequently consolidated/removed in favour of the in-repo guidance — see §15 — leaving `.gitattributes` as the durable change.)
 
-<a name="15-testing-issues-documentation-oneview-connectivity"></a>
+<a id="15-testing-issues-documentation-oneview-connectivity"></a>
 
 ### 15) Testing-issues documentation (OneView connectivity)
 

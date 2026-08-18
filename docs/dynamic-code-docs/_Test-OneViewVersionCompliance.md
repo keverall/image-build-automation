@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Populates $Result.VersionCompliant and $Result.VersionWarning. The newest HPEOneView module is backward-compatible with older appliances, so a module whose major version is >= the appliance major version is compatible (VersionCompliant = $true). Only a module OLDER than the appliance (module major < appliance major) is a genuine risk and is flagged. Because automation pins the latest module installed on the server, the module is virtually always newer than or equal to the appliance.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

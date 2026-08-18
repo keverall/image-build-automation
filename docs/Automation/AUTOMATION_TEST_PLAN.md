@@ -20,7 +20,7 @@
 <p class="report-run-date"><strong>Run date:</strong> 02/08/2026 01:54 UTC</p>
 <!-- END:run-date -->
 
-<a name="how-to-execute-runner-reference"></a>
+<a id="how-to-execute-runner-reference"></a>
 
 ## How to execute (runner reference):
 
@@ -64,7 +64,7 @@
 
 ---
 
-<a name="1-iso-build-patching-deployment-and-monitoring"></a>
+<a id="1-iso-build-patching-deployment-and-monitoring"></a>
 
 ## 1. ISO Build, Patching, Deployment and Monitoring
 
@@ -163,7 +163,7 @@
   </tbody>
 </table>
 
-<a name="2-oneview-and-ilo-connectivity-targeting"></a>
+<a id="2-oneview-and-ilo-connectivity-targeting"></a>
 
 ## 2. OneView and iLO Connectivity / Targeting
 
@@ -273,7 +273,7 @@
   </tbody>
 </table>
 
-<a name="3-prepost-build-validation"></a>
+<a id="3-prepost-build-validation"></a>
 
 ## 3. Pre/Post Build Validation
 
@@ -339,7 +339,7 @@
   </tbody>
 </table>
 
-<a name="4-maintenance-mode-oneview-scom"></a>
+<a id="4-maintenance-mode-oneview-scom"></a>
 
 ## 4. Maintenance Mode (OneView / SCOM)
 
@@ -449,7 +449,7 @@
   </tbody>
 </table>
 
-<a name="5-orchestration-routing-and-utility"></a>
+<a id="5-orchestration-routing-and-utility"></a>
 
 ## 5. Orchestration, Routing and Utility
 
@@ -537,7 +537,7 @@
   </tbody>
 </table>
 
-<a name="6-shared-infrastructure-modules"></a>
+<a id="6-shared-infrastructure-modules"></a>
 
 ## 6. Shared / Infrastructure Modules
 
@@ -671,7 +671,7 @@
 
 ---
 
-<a name="7-test-run-summary-filled-per-cycle"></a>
+<a id="7-test-run-summary-filled-per-cycle"></a>
 
 ## 7. Test Run Summary (filled per cycle)
 
@@ -690,7 +690,7 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 | 8 | 02/08/2026 01:54:37 UTC | Full Automation suite — `make automation-mode-tests` (all 99 automated regression unit test scenarios above) | Ran manually on terminal | Passed (99/99) | fix gitlab hopefully |
 <!-- END:automation-evidence-rows -->
 
-<a name="run-log"></a>
+<a id="run-log"></a>
 
 ### Run log
 
@@ -712,7 +712,7 @@ Latest Full test run output (from `make test` / `make automation-mode-tests`):
  Duration      : 3.15s
 ```
 
-<a name="8-coverage-gaps-action-items-for-the-team"></a>
+<a id="8-coverage-gaps-action-items-for-the-team"></a>
 
 ## 8. Coverage Gaps (action items for the team)
 
@@ -723,7 +723,7 @@ These commands are documented but **lack automated test files** and need new Pes
 - `Invoke-PowerShellScript` (AT-ORC-05)
 - `Invoke-PowerShellWinRM` (AT-ORC-06)
 
-<a name="9-notes-for-the-delivery-lead"></a>
+<a id="9-notes-for-the-delivery-lead"></a>
 
 ## 9. Notes for the Delivery Lead
 

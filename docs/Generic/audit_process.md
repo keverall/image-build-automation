@@ -39,7 +39,7 @@
   - [maintenance_<action>_<cluster>_<timestamp>.json](#maintenance_action_cluster_timestampjson)
 - [Change History](#change-history)
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
@@ -47,11 +47,11 @@ This document describes the comprehensive audit process for the HPE ProLiant Win
 
 All scripts use the centralized **`AuditLogger`** class for audit logging. Audit logs are written to both per-action files and a master line-delimited JSON log.
 
-<a name="audit-trail-structure"></a>
+<a id="audit-trail-structure"></a>
 
 ## Audit Trail Structure
 
-<a name="log-files"></a>
+<a id="log-files"></a>
 
 ### Log Files
 
@@ -84,7 +84,7 @@ All scripts use the centralized **`AuditLogger`** class for audit logging. Audit
 - `logs/scan_reports/<target>_scan_<timestamp>.json`
 - Vulnerability findings with CVE IDs, severity, remediation
 
-<a name="what-gets-audited"></a>
+<a id="what-gets-audited"></a>
 
 ## What Gets Audited?
 
@@ -133,7 +133,7 @@ Every script in this repository uses the `AuditLogger` class or `_log_step()` me
    - Scheduled task creation/removal
    - Start/end timestamps and computed duration
 
-<a name="audit-entry-format-structured-json"></a>
+<a id="audit-entry-format-structured-json"></a>
 
 ## Audit Entry Format (Structured JSON)
 
@@ -176,7 +176,7 @@ For maintenance operations, the record is more comprehensive:
 }
 ```
 
-<a name="log-retention"></a>
+<a id="log-retention"></a>
 
 ## Log Retention
 
@@ -188,11 +188,11 @@ For maintenance operations, the record is more comprehensive:
 - **Database/External**: OpsRamp retains metrics/alerts per organizational policy
 - **Archive**: Monthly ZIP archives moved to `logs/archive/`
 
-<a name="audit-report-generation"></a>
+<a id="audit-report-generation"></a>
 
 ## Audit Report Generation
 
-<a name="daily-summary-report"></a>
+<a id="daily-summary-report"></a>
 
 ### Daily Summary Report
 
@@ -203,7 +203,7 @@ Generated at midnight (or next build):
 - Errors: list of any errors encountered with step context
 - Performance: build duration, download times
 
-<a name="weekly-compliance-report"></a>
+<a id="weekly-compliance-report"></a>
 
 ### Weekly Compliance Report
 
@@ -214,7 +214,7 @@ Generated at midnight (or next build):
 - OpsRamp metrics trend: build success rate, installation success rate
 - Scan compliance: % servers with critical vulnerabilities = 0
 
-<a name="monthly-audit-summary"></a>
+<a id="monthly-audit-summary"></a>
 
 ### Monthly Audit Summary
 
@@ -223,11 +223,11 @@ Generated at midnight (or next build):
 - License compliance: HPE SUT usage, Windows licensing
 - Recommendations: upgrade firmware, patch cycles, server decommission
 
-<a name="accessing-audit-data"></a>
+<a id="accessing-audit-data"></a>
 
 ## Accessing Audit Data
 
-<a name="local-development"></a>
+<a id="local-development"></a>
 
 ### Local Development
 
@@ -251,7 +251,7 @@ cat output/results/build_result_server1_20251114_103045.json | jq .
 cat logs/monitoring_sessions/monitor_server1_*.json | jq '.ilo_events[]'
 ```
 
-<a name="opsramp-dashboards"></a>
+<a id="opsramp-dashboards"></a>
 
 ### OpsRamp Dashboards
 
@@ -260,7 +260,7 @@ cat logs/monitoring_sessions/monitor_server1_*.json | jq '.ilo_events[]'
 - **Security Dashboard**: Vulnerability counts by severity, patch compliance
 - **Audit Dashboard**: Timeline view of all actions, filtered by server/date
 
-<a name="github-actions-ui"></a>
+<a id="github-actions-ui"></a>
 
 ### GitHub Actions UI
 
@@ -268,11 +268,11 @@ cat logs/monitoring_sessions/monitor_server1_*.json | jq '.ilo_events[]'
 - Artifacts: Download logs and ISOs from each run
 - Status badges: README can display last build status, build duration
 
-<a name="audit-integrity"></a>
+<a id="audit-integrity"></a>
 
 ## Audit Integrity
 
-<a name="tamper-protection"></a>
+<a id="tamper-protection"></a>
 
 ### Tamper Protection
 
@@ -281,7 +281,7 @@ cat logs/monitoring_sessions/monitor_server1_*.json | jq '.ilo_events[]'
 - Checksums for generated ISOs (SHA256 stored in build logs)
 - Digital signatures for compliance reports (GPG/PGP optional)
 
-<a name="data-integrity-verification"></a>
+<a id="data-integrity-verification"></a>
 
 ### Data Integrity Verification
 
@@ -291,7 +291,7 @@ sha256sum output/firmware/server1_20251114.iso
 # Compare with value in build_result_*.json
 ```
 
-<a name="audit-log-rotation"></a>
+<a id="audit-log-rotation"></a>
 
 ### Audit Log Rotation
 
@@ -310,11 +310,11 @@ Cron job (or scheduled task) handles rotation:
 find generated/logs/audit/ -name "*.log.*" -mtime +30 -exec mv {} generated/logs/archive/ \;
 ```
 
-<a name="compliance-and-governance"></a>
+<a id="compliance-and-governance"></a>
 
 ## Compliance and Governance
 
-<a name="regulatory-alignment"></a>
+<a id="regulatory-alignment"></a>
 
 ### Regulatory Alignment
 
@@ -323,7 +323,7 @@ find generated/logs/audit/ -name "*.log.*" -mtime +30 -exec mv {} generated/logs
 - **HIPAA**: Access logs (who deployed what and when) with user context
 - **GDPR**: Server identifiers (UUIDs) pseudonymized; no PII in logs
 
-<a name="access-controls"></a>
+<a id="access-controls"></a>
 
 ### Access Controls
 
@@ -332,7 +332,7 @@ find generated/logs/audit/ -name "*.log.*" -mtime +30 -exec mv {} generated/logs
 - OpsRamp: RBAC (role-based access control) for dashboards and reports
 - Secrets: stored in GitHub Secrets or vault (HashiCorp Vault, Azure Key Vault)
 
-<a name="anomaly-detection"></a>
+<a id="anomaly-detection"></a>
 
 ### Anomaly Detection
 
@@ -342,11 +342,11 @@ Monitor for:
 - Unauthorized iLO access attempts (via WinRM/iLO logs)
 - Unexpected metric spikes (CPU, memory) during installation
 
-<a name="troubleshooting-with-audit-data"></a>
+<a id="troubleshooting-with-audit-data"></a>
 
 ## Troubleshooting with Audit Data
 
-<a name="scenario-build-failed-for-server-x"></a>
+<a id="scenario-build-failed-for-server-x"></a>
 
 ### Scenario: Build Failed for Server X
 
@@ -357,7 +357,7 @@ Steps:
 4. Review HPE SUT output (if available in logs)
 5. Check network logs for HPE repository access
 
-<a name="scenario-installation-stuck-at-60"></a>
+<a id="scenario-installation-stuck-at-60"></a>
 
 ### Scenario: Installation Stuck at 60%
 
@@ -368,7 +368,7 @@ Steps:
 4. Correlate with OpsRamp alert history (was there an iLO connection loss?)
 5. Check server console via iLO remote console for manual inspection
 
-<a name="scenario-vulnerability-found-post-install"></a>
+<a id="scenario-vulnerability-found-post-install"></a>
 
 ### Scenario: Vulnerability Found Post-Install
 
@@ -379,7 +379,7 @@ Steps:
 4. Verify patch actually installed (check `winrm_progress` from build time)
 5. Determine if false positive or needs patch update to config
 
-<a name="scenario-maintenance-window-did-not-auto-disable"></a>
+<a id="scenario-maintenance-window-did-not-auto-disable"></a>
 
 ### Scenario: Maintenance Window Did Not Auto-Disable
 
@@ -390,7 +390,7 @@ Steps:
 4. Review script exit code in task history; any errors logged to `generated/logs/audit/maintenance_audit.log`
 5. Manually run disable via PowerShell or scheduled task invocation
 
-<a name="best-practices"></a>
+<a id="best-practices"></a>
 
 ## Best Practices
 
@@ -403,11 +403,11 @@ Steps:
 7. **Monitor log growth**: implement retention policies; archive old data to S3/Blob
 8. **Query structured logs with `jq`**: leverage JSON format for filtering and aggregation
 
-<a name="appendix-log-file-schemas"></a>
+<a id="appendix-log-file-schemas"></a>
 
 ## Appendix: Log File Schemas
 
-<a name="maintenance_auditlog-line-delimited-json"></a>
+<a id="maintenance_auditlog-line-delimited-json"></a>
 
 ### maintenance_audit.log (line-delimited JSON)
 
@@ -416,7 +416,7 @@ Steps:
 {"timestamp":"...", "action":"maintenance_disable", "cluster_id":"...", ...}
 ```
 
-<a name="build_result_json"></a>
+<a id="build_result_json"></a>
 
 ### build_result_*.json
 
@@ -437,7 +437,7 @@ Steps:
 }
 ```
 
-<a name="monitor_json"></a>
+<a id="monitor_json"></a>
 
 ### monitor_*.json
 
@@ -459,7 +459,7 @@ Steps:
 }
 ```
 
-<a name="maintenance_action_cluster_timestampjson"></a>
+<a id="maintenance_action_cluster_timestampjson"></a>
 
 ### maintenance_<action>_<cluster>_<timestamp>.json
 
@@ -483,7 +483,7 @@ Steps:
 }
 ```
 
-<a name="change-history"></a>
+<a id="change-history"></a>
 
 ## Change History
 

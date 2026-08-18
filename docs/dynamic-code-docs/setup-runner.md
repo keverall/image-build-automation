@@ -15,17 +15,17 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Fully offline-capable setup script that installs required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS) and binary tools (Oh My Posh, GNU make, checkmake). Bundled copies live in scripts/modules/; if absent it attempts a PSGallery download via Save-Module with no admin rights needed.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -33,7 +33,7 @@ Fully offline-capable setup script that installs required PowerShell modules (Pe
 pwsh -File scripts/setup-runner.ps1
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

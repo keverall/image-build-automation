@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Replaces the previous ci-security-check.ps1, which had three defects that made it unfit as a regulatory control: 1. It scanned only 'src/powershell', ignoring 'scripts/' - which contains the CyberArk bootstrap and the GitLab maintenance triggers. 2. It gated on -Severity Error only. Every security rule in PSScriptAnalyzer emits Warning, so the gate could never fire. 3. It explicitly excluded PSAvoidUsingInvokeExpression, PSAvoidUsingConvertToSecureStringWithPlainText and PSAvoidUsingUsernameAndPasswordParams - the exact rules that detect the highest-severity defects in this repository. Naive secret grepping has been removed. GitLab native Secret Detection (Gitleaks) runs as a separate pipeline job and is authoritative; duplicating it here with a 'password|secret|key|token' substring match produced only unactionable warnings that were never gated on. Findings are matched against .security-baseline.json. A baselined finding is an explicitly risk-accepted exception carrying an owner, a justification and an expiry date. Expired exceptions are re-raised as active findings, so the baseline cannot be used to bury a finding indefinitely.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -33,11 +33,11 @@ Replaces the previous ci-security-check.ps1, which had three defects that made i
 | `-FailOn` | Minimum severity that fails the build in 'enforce' mode. |
 | `-UpdateBaseline` | Regenerate .security-baseline.json from the current findings. Intended for the initial baselining exercise only; the resulting file must be reviewed and have owners and expiry dates set before it is committed. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -45,7 +45,7 @@ Replaces the previous ci-security-check.ps1, which had three defects that made i
 pwsh -File scripts/ci-security-check.ps1 -Mode report
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -53,7 +53,7 @@ pwsh -File scripts/ci-security-check.ps1 -Mode report
 pwsh -File scripts/ci-security-check.ps1 -Mode enforce -FailOn Warning
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
