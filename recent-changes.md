@@ -465,3 +465,34 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `docs: add detailed testing issues documentation for OneView connectivity tests` introduced `wip/testing-issues.md` (694 lines) logging live-connectivity failures, environment/config gaps, and remediation ideas for the OneView test surface.
 - A later commit extended the same working file with further findings (843 lines added), keeping the investigation trail in one place under `wip/` rather than fragmenting it across commit messages.
+
+<a id="16-docs-anchor-fix-navigable-id-anchors-make-fix-docs"></a>
+
+### 16) Docs anchor fix — navigable `id` anchors for `make docs` / `make fix-docs`
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-18 | Fixed `make docs` / `make fix-docs` (`add-anchors`) so generated TOC anchors use `<a id="…">` (navigable on GitHub / VS Code) instead of the deprecated `<a name="…">`, and stopped the generator from re-stacking a duplicate `id`+`name` anchor on re-runs | Kev Everall |
+
+<a name="root-cause-16"></a>
+
+#### Root cause
+
+- `scripts/bitbucket-md-anchor-toc.ps1` (via the shared `scripts/Docs.Common.ps1`) emitted heading anchors as `<a name="…"></a>` and `Test-TocValidity` expected that exact `name` form.
+- GitHub and the VS Code Markdown preview ignore the `name` attribute for in-page navigation, so every TOC link (`](#slug)`) failed to jump — the table of contents did not work.
+- `Remove-ExistingAnchors` only stripped `<a name="…">` lines, never `<a id="…">`. A second run (or any `id`-based edit) therefore left the old `id` anchor in place and re-added a `name` anchor above it, producing duplicate `<a id="…"></a>` + `<a name="…"></a>` pairs and MD012 (multiple-blank-line) churn.
+
+<a name="fix-16"></a>
+
+#### Fix
+
+- `scripts/Docs.Common.ps1` (`Build-CanonicalContent`, ~line 245): emit `<a id="…"></a>` instead of `<a name="…"></a>`. The slug algorithm (`Get-Anchor`) was already GitHub / VS Code-compatible, so only the attribute needed to change.
+- `scripts/Docs.Common.ps1` (`Remove-ExistingAnchors`, ~line 181): the anchor-stripping regex now matches both forms — `^<a (?:name|id)="[^"]*"></a>$` — so a regeneration fully replaces prior anchors instead of stacking duplicates.
+- `scripts/bitbucket-md-anchor-toc.ps1` (`Test-TocValidity`, ~line 134): the expected anchor tag is now `<a id="…"></a>`, so the validator accepts (rather than rejects) the corrected form.
+
+<a name="verification-16"></a>
+
+#### Verification
+
+- Ran `make fix-docs` after the fix: **83/83 markdown files pass**, 0 failures.
+- `wip/testing-issues.md` (the file that originally showed the bug): **0 `<a name=…>` anchors, 0 duplicate `id` slugs, 0 unresolved TOC links, 0 anchors trapped inside code fences, 0 MD012 runs.** The reported duplicate pair is now a single navigable `<a id="connect-oneview-oneviewhost-va-oneviewt-01-0"></a>`.
