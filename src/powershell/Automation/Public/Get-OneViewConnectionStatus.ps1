@@ -150,20 +150,29 @@ function Get-OneViewConnectionStatus {
     $sessionToken = $null
     $apiVersion   = $null
 
-    if (-not $OneViewHost) {
-        $activeSession = Get-OneViewActiveSession
-        if ($activeSession) {
-            $OneViewHost = $activeSession.Name
-            $sessionToken = $activeSession.SessionID
-        }
-
+    # Reuse any live OneView session instead of reconnecting. Reconnecting an already
+    # active session can drop in-flight work and, with no credential on hand, produces a
+    # 401 because the auth header is built with no token/credential. This mirrors the
+    # "existing connection always wins" guard used by Resolve-OneViewSession /
+    # Connect-OneViewSession: when a session is active we reuse it and NEVER attempt a
+    # fresh connect. Supplying -OneViewHost for the same appliance is a no-op that simply
+    # reports the live session; supplying it for a different appliance also reuses the
+    # active session (run Disconnect-OneView first to switch appliances).
+    $activeSession = Get-OneViewActiveSession
+    if ($activeSession) {
         if (-not $OneViewHost) {
-            $logger.Info("Get-OneViewConnectionStatus: no host and no active session - graceful failure")
-            $noConn = @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = $script:ONEVIEW_NO_SESSION_MSG }
-            if ($PassThru) { return $noConn }
-            _Format-ConnectionStatusResult -Result $noConn
-            return
+            $OneViewHost = $activeSession.Name
+        } elseif ($OneViewHost -ne $activeSession.Name) {
+            Write-Warning "Active OneView session is to '$($activeSession.Name)'; reusing it instead of reconnecting to '$OneViewHost'."
+            $OneViewHost = $activeSession.Name
         }
+        $sessionToken = $activeSession.SessionID
+    } elseif (-not $OneViewHost) {
+        $logger.Info("Get-OneViewConnectionStatus: no host and no active session - graceful failure")
+        $noConn = @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = $script:ONEVIEW_NO_SESSION_MSG }
+        if ($PassThru) { return $noConn }
+        _Format-ConnectionStatusResult -Result $noConn
+        return
     }
 
     # TERMINAL COMMAND: credentials come ONLY from -Credential or
@@ -262,7 +271,13 @@ function Get-OneViewConnectionStatus {
                 }
             } catch {
                 $result.Authenticated = $false
-                $errMsg = if ($sessionToken) { "OneView session authentication failed" } else { "OneView authentication failed for '$OneViewUser'" }
+                $errMsg = if ($sessionToken) {
+                    "OneView session authentication failed"
+                } elseif ($Credential) {
+                    "OneView authentication failed for '$($Credential.UserName)'"
+                } else {
+                    "OneView authentication failed (no active session and no credentials supplied)"
+                }
                 $result.Error = "$errMsg`: $($_.Exception.Message)"
             }
         }

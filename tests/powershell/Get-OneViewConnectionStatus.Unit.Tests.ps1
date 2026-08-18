@@ -254,6 +254,24 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
         $h['auth']         | Should -Be 'reused-token-xyz'
         "$($h['X-API-Version'])" | Should -Not -BeNullOrEmpty
     }
+
+    It 'Reuses the active session when -OneViewHost matches the connected appliance (no reconnect, no 401)' {
+        # Regression: with an active session and -OneViewHost = the connected appliance,
+        # the command must reuse the session token instead of attempting an unauthenticated
+        # reconnect (which previously 401'd and reported "authentication failed for ''").
+        $r = Get-OneViewConnectionStatus -OneViewHost 'ov-session.local' -PassThru
+        $r.Connected      | Should -Be $true
+        $r.Authenticated  | Should -Be $true
+        $r.Appliance      | Should -Be 'ov-session.local'
+        $r.SessionSource  | Should -Be 'HPEOneViewModule'
+    }
+
+    It 'Reuses the active session even when -OneViewHost differs (guard: never reconnect)' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'different.local' -PassThru -WarningAction SilentlyContinue
+        $r.Connected      | Should -Be $true
+        $r.Appliance      | Should -Be 'ov-session.local'   # reports the ACTIVE appliance, not the requested one
+        $r.SessionSource  | Should -Be 'HPEOneViewModule'
+    }
 }
 
 Describe 'Get-OneViewConnectionStatus - parameter aliases' {
