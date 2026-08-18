@@ -255,3 +255,43 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
         "$($h['X-API-Version'])" | Should -Not -BeNullOrEmpty
     }
 }
+
+Describe 'Get-OneViewConnectionStatus - parameter aliases' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'reused-token-xyz'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/version*' } -MockWith { @{ currentVersion = '10.00' } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -notlike '*filter*' } -MockWith { @{ total = 3; members = @() } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -like '*filter*' } -MockWith {
+                @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'SRV-X'; serialNumber = 'CZ22420JCM'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0' }
+                ) }
+            }
+        }
+    }
+
+    It 'Exposes canonical -ServerIdentifier (alias -SrvrId) and -IdentifierType (alias -IdTyp)' {
+        $cmd = Get-Command Get-OneViewConnectionStatus
+        $cmd.Parameters.ContainsKey('ServerIdentifier') | Should -Be $true
+        $cmd.Parameters['ServerIdentifier'].Aliases -contains 'SrvrId' | Should -Be $true
+        $cmd.Parameters.ContainsKey('IdentifierType') | Should -Be $true
+        $cmd.Parameters['IdentifierType'].Aliases -contains 'IdTyp' | Should -Be $true
+    }
+
+    It 'Resolves a server via short aliases -SrvrId -IdTyp (proves aliases bind)' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -SrvrId 'CZ22420JCM' -IdTyp Serial -PassThru
+        $r.Server | Should -Not -Be $null
+        $r.Server.serial_number | Should -Be 'CZ22420JCM'
+        $r.Server.resolved_by | Should -Be 'Serial'
+    }
+
+    It 'Resolves with a single -ServerIdentifier (Auto detects Serial)' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -ServerIdentifier 'CZ22420JCM' -PassThru
+        $r.Server | Should -Not -Be $null
+        $r.Server.serial_number | Should -Be 'CZ22420JCM'
+    }
+
+    It 'Rejects the invalid -SrvId alias (typo, missing r)' {
+        { & Get-OneViewConnectionStatus -SrvId 'X' -ErrorAction Stop } | Should -Throw
+    }
+}

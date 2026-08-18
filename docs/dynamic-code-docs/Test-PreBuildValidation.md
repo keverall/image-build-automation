@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PreBuildValidation.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,7 +28,7 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 
 | Parameter | Description |
 |-----------|-------------|
-| `-SrvrId` _(Aliases: -ServerIdentifier)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
 | `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. |
 | `-IloCredential` | PSCredential for the iLO Redfish check. If omitted on a live run, the operator is prompted interactively. Never read from config or environment. |
@@ -52,7 +52,7 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 ### Example 1
 
 ```powershell
-Test-PreBuildValidation -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' -IloIp '192.168.1.101' ` -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso' ` -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com'
+Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' -IloIp '192.168.1.101' ` -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso' ` -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com'
 ```
 
 <a name="original-comment-based-help"></a>
@@ -68,7 +68,7 @@ Test-PreBuildValidation -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.exam
         Returns a hashtable of named checks with pass/fail status.  Any failure
         marks the overall result as failed.
 
-    .PARAMETER SrvrId
+    .PARAMETER ServerIdentifier
         Target server identifier (name, serial, OneView name, iLO IP, bay).
 
     .PARAMETER OneViewHost
@@ -116,7 +116,7 @@ Test-PreBuildValidation -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.exam
         [hashtable] with Success (bool) and Checks (ordered hashtable of check-name → {status, details}).
 
     .EXAMPLE
-        Test-PreBuildValidation -SrvrId 'PROD-SERVER-01' `
+        Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' -IloIp '192.168.1.101' `
             -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso' `
             -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com'

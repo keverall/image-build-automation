@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewConnectionStatus.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -22,7 +22,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Performs two read-only checks against the OneView REST API: 1. Reachability - GET /rest/version (no auth) to confirm the appliance is online and responding. 2. Authentication - GET /rest/server-hardware (authenticated) to confirm the supplied credentials are valid. If -SrvrId is supplied, the target server is also resolved and its power/health reported so you can see at a glance whether it is "connected". This command is a STATUS CHECK and NEVER prompts. Run with no parameters to report the ACTIVE OneView connection established by Connect-OneView (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance instead. To actually connect, use Connect-OneView -OneViewHost <host>.
+Performs two read-only checks against the OneView REST API: 1. Reachability - GET /rest/version (no auth) to confirm the appliance is online and responding. 2. Authentication - GET /rest/server-hardware (authenticated) to confirm the supplied credentials are valid. If -ServerIdentifier is supplied, the target server is also resolved and its power/health reported so you can see at a glance whether it is "connected". This command is a STATUS CHECK and NEVER prompts. Run with no parameters to report the ACTIVE OneView connection established by Connect-OneView (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance instead. To actually connect, use Connect-OneView -OneViewHost <host>.
 
 <a name="parameters"></a>
 
@@ -31,7 +31,7 @@ Performs two read-only checks against the OneView REST API: 1. Reachability - GE
 | Parameter | Description |
 |-----------|-------------|
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP (e.g. oneview.ad.example.com). If omitted, the command checks for an existing HPEOneView module session (Connect-OVMgmt) and uses that appliance automatically. |
-| `-SrvrId` _(Aliases: -ServerIdentifier)_ | Optional server name, serial number, iLO IP or bay position to look up. |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Optional server name, serial number, iLO IP or bay position to look up. |
 | `-IdentifierType` _(Aliases: -IdTyp)_ | Hint for the server search filter: Name, Serial, OneViewName, IloIp, EnclosureBay, Auto. Default Auto attempts each in turn. |
 | `-OneViewUser` _(Aliases: -OVUser)_ | OneView username (used with -OneViewPassword). Never read from config or environment. |
 | `-OneViewPassword` _(Aliases: -OVPwd)_ | OneView password (used with -OneViewUser). Never read from config or environment. |
@@ -60,7 +60,7 @@ Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
 ### Example 2
 
 ```powershell
-Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ1234567' -IdentifierType Serial
+Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
 ```
 
 <a name="example-3"></a>
@@ -86,7 +86,7 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
               is online and responding.
            2. Authentication - GET /rest/server-hardware (authenticated) to confirm
               the supplied credentials are valid.
-        If -SrvrId is supplied, the target server is also resolved and
+        If -ServerIdentifier is supplied, the target server is also resolved and
         its power/health reported so you can see at a glance whether it is "connected".
 
         This command is a STATUS CHECK and NEVER prompts. Run with no parameters to
@@ -99,7 +99,7 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
         If omitted, the command checks for an existing HPEOneView module
         session (Connect-OVMgmt) and uses that appliance automatically.
 
-    .PARAMETER SrvrId
+    .PARAMETER ServerIdentifier
         Optional server name, serial number, iLO IP or bay position to look up.
 
     .PARAMETER IdentifierType
@@ -149,7 +149,7 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
 
     .EXAMPLE
-        Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -SrvrId 'MXQ1234567' -IdentifierType Serial
+        Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
 
     .EXAMPLE
         Get-OneViewConnectionStatus

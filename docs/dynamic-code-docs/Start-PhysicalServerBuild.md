@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -28,7 +28,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 
 | Parameter | Description |
 |-----------|-------------|
-| `-SrvrId` _(Aliases: -ServerIdentifier)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). Required. |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). Required. |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
 | `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. |
 | `-ExpectedHostname` | Expected post-build hostname. Defaults to ServerIdentifier. |
@@ -64,7 +64,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 ### Example 1
 
 ```powershell
-Start-PhysicalServerBuild ` -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' ` -SiteServer 'cm01.ad.example.com' -BootImageName 'WinPE x64 - HPE' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com'
+Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' ` -SiteServer 'cm01.ad.example.com' -BootImageName 'WinPE x64 - HPE' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com'
 ```
 
 <a name="original-comment-based-help"></a>
@@ -82,7 +82,7 @@ Start-PhysicalServerBuild ` -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.
         allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy
         against an already-built ISO).
 
-    .PARAMETER SrvrId
+    .PARAMETER ServerIdentifier
         Target server identifier (name, serial, OneView name, iLO IP, bay). Required.
 
     .PARAMETER OneViewHost
@@ -206,7 +206,7 @@ Start-PhysicalServerBuild ` -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.
 
     .EXAMPLE
         Start-PhysicalServerBuild `
-            -SrvrId 'PROD-SERVER-01' `
+            -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
             -IloIp '192.168.1.101' `
             -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' `

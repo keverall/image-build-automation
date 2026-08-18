@@ -37,6 +37,64 @@
   - [  image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath '//vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'  ](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-vm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo-2)
   - [  image-build-automation  Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'smb://vm-ewismgt-19/Kev/WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-smbvm-ewismgt-19kevwin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo)
   - [   image-build-automation Configure-PhysicalBuild  -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'Y:\WIN2019Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail  'qlikview-03ilo'](#image-build-automation-configure-physicalbuild-serveridentifier-alp-qlikview-03ilo-oneviewhost-va-oneviewt-01-expectedhostname-alp-qlikview-03ilo-externalisopath-ywin2019autoiso-firmwarefolders-ydrivers-for-windows-isofc-1446240-1-ydrivers-for-windows-isomr216i-a-win19drivers-guardrail-qlikview-03ilo)
+- [Tuesday 18th August](#tuesday-18th-august)
+  - [Test-ServerConnectivity                   0  15:45:10 ](#test-serverconnectivity-0-154510)
+  - [Test-ServerConnectivity  -OneViewHost va-oneviewt-01](#test-serverconnectivity-oneviewhost-va-oneviewt-01)
+  - [Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'](#test-buildparams-baseisopath-ywin2019autoiso)
+  - [Connect-OneView](#connect-oneview)
+  - [Get-OneViewConnectionStatus](#get-oneviewconnectionstatus)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01](#get-oneviewserverlist-oneviewhost-va-oneviewt-01)
+  - [Get-OneViewConnectionStatus -IncludeServerCount](#get-oneviewconnectionstatus-includeservercount)
+  - [Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 ](#get-oneviewconnectionstatus-oneviewhost-va-oneviewt-01)
+  - [Get-OneViewConnectionStatus](#get-oneviewconnectionstatus-1)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'health:Warning'](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-healthwarning)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:Off' ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-poweroff)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-1)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -SrvrId CZ22420JCM -IdType Serial ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-srvrid-cz22420jcm-idtype-serial)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerId CZ22420JCM -IdType Serial ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-serverid-cz22420jcm-idtype-serial)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCM -IdType Serial](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcm-idtype-serial)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCM -IdType Serial](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcm-idtype-serial-1)
+  - [Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier srv01](#get-oneviewconnectionstatus-oneviewhost-oneviewexamplecom-serveridentifier-srv01)
+  - [Get-OneViewConnectionStatus -ServerIdentifier srv01 -ServerIdentifier CZ22420JCM -IdType Serial00 ](#get-oneviewconnectionstatus-serveridentifier-srv01-serveridentifier-cz22420jcm-idtype-serial00)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCM -IdType Serial ](#get-oneviewconnectionstatus-serveridentifier-cz22420jcm-idtype-serial)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCM -IdentifierType Serial ](#get-oneviewconnectionstatus-serveridentifier-cz22420jcm-identifiertype-serial)
+  - [Get-OneViewConnectionStatus -ServerIdentifier omg-qlikview-03ilo -IdentifierType OneViewName](#get-oneviewconnectionstatus-serveridentifier-omg-qlikview-03ilo-identifiertype-oneviewname)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial](#get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-serial)
+  - [Get-OneViewServerList](#get-oneviewserverlist)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01  ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-2)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-3)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCN -IdentifierType Serial](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcn-identifiertype-serial)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 ServerIdentifier CZ22420JCN -IdentifierType Serial  ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcn-identifiertype-serial-1)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial ](#get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-serial-1)
+  - [Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCN -IdentifierType Serial](#get-oneviewconnectionstatus-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcn-identifiertype-serial)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial ](#get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-serial-2)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Auto](#get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-auto)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType](#get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype)
+  - [Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN](#get-oneviewconnectionstatus-serveridentifier-cz22420jcn)
+  - [Get-OneViewConnectionStatus -ServerIdentifier alp-qlikview-03ilo  ](#get-oneviewconnectionstatus-serveridentifier-alp-qlikview-03ilo)
+  - [Get-OneViewServerList -ServerIdentifier alp-qlikview-03ilo](#get-oneviewserverlist-serveridentifier-alp-qlikview-03ilo)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:Off'                 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-poweroff-1)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:On'                  0  17:45:07 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-poweron-0-174507)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:*qlikview-03ilo'      0  17:45:20 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameqlikview-03ilo-0-174520)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03ilo'       0  17:50:27 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameqlikview-03ilo-0-175027)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03'          0  17:50:59 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameqlikview-03-0-175059)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:ALP'](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-namealp)
+  - [OneViewServerList  ](#oneviewserverlist)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:alp'                  0  17:51:51 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-namealp-0-175151)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:omg'                  0  17:52:04 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameomg-0-175204)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:ilo'                  0  17:52:58 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameilo-0-175258)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:03ilo'                0  17:53:36 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-name03ilo-0-175336)
+  - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:0*ilo'                0  17:53:53 ](#get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-name0ilo-0-175353)
+  - [Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'                                    0  17:54:36   ](#test-buildparams-baseisopath-ywin2019autoiso-0-175436)
+  - [Test-BuildParams -BaseIsoPath '//Hnascifsprd6/roi1/BKCWISAPPS/KevinE'                 0  18:06:51  ](#test-buildparams-baseisopath-hnascifsprd6roi1bkcwisappskevine-0-180651)
+  - [Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE'            0  18:08:13 ](#test-buildparams-baseisopath-cifshnascifsprd6roi1bkcwisappskevine-0-180813)
+  - [Test-BuildParams -BaseIsoPath 'Y:\jjWIN2019Auto.iso'                                  0  18:08:36   ](#test-buildparams-baseisopath-yjjwin2019autoiso-0-180836)
+  - [Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso'8:09:15 ](#test-buildparams-baseisopath-cifshnascifsprd6roi1bkcwisappskevinewin2019autoiso80915)
+  - [Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/'                                  8:09:29 ](#test-buildparams-baseisopath-smbvm-ewismgt-19kev-80929)
+  - [Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/Win2019Auto.iso'               0  18:10:37 ](#test-buildparams-baseisopath-smbvm-ewismgt-19kevwin2019autoiso-0-181037)
+  - [Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/Win2019Auto.iso'                   0  18:11:10 ](#test-buildparams-baseisopath-vm-ewismgt-19kevwin2019autoiso-0-181110)
+  - [Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'                                  0  18:11:56 ](#test-buildparams-baseisopath-vm-ewismgt-19kev-0-181156)
+  - [Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso'  ](#test-buildparams-baseisopath-cifshnascifsprd6roi1bkcwisappskevinewin2019autoiso)
 
 <a name="friday-14-aug-1433"></a>
 
@@ -789,12 +847,17 @@ Reason                         Operator did not confirm with 'DEPLOY'
 Server                         alp-qlikview-03ilo
 Success                        False
 IsoUrl                         cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE                                  …
+```
+
+<a name="tuesday-18th-august"></a>
 
 ## Tuesday 18th August
 
-```text
-   image-build-automation  Test-ServerConnectivity                   0  15:45:10 
+<a name="test-serverconnectivity-0-154510"></a>
 
+### Test-ServerConnectivity                   0  15:45:10 
+
+```text
 ============================================== 
   OneView Connectivity Test
 ============================================== 
@@ -817,8 +880,14 @@ name or serial), or supply -OneViewHost to test a specific appliance.
     Error:     Skipped - no active connection  
 
 ============================================== 
+```
 
-   image-build-automation  Test-ServerConnectivity  -OneViewHost va-oneviewt-01              0  15:46:01 2026-08-18 14:46:37 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+<a name="test-serverconnectivity-oneviewhost-va-oneviewt-01"></a>
+
+### Test-ServerConnectivity  -OneViewHost va-oneviewt-01
+
+```text
+2026-08-18 14:46:37 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
 2026-08-18 14:46:37 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 12ms) 
 2026-08-18 14:46:37 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=False (DNS=True, TCP=True, Auth=False)
 
@@ -844,7 +913,14 @@ name or serial), or supply -OneViewHost to test a specific appliance.
  
 ==============================================
 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'                          8   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+```
+
+<a name="test-buildparams-baseisopath-ywin2019autoiso"></a>
+
+### Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'
+
+```text
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
   [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
 \WIN2019Auto.iso
   [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
@@ -857,8 +933,14 @@ ResolvedPath                   Y:\WIN2019Auto.iso
 Success                        True
 Errors                         {}
 BaseIsoPath                    Y:\WIN2019Auto.iso
+```
 
-   image-build-automation  ^C                                                                0  15:47:46    image-build-automation  Connect-OneView                                                   0  15:52:44 2026-08-18 14:52:56 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='' DryRun=False PassThru=False Json=False
+<a name="connect-oneview"></a>
+
+### Connect-OneView
+
+```text
+15:52:44 2026-08-18 14:52:56 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='' DryRun=False PassThru=False Json=False
 Enter OneView appliance host to connect to (or press Enter to cancel): va-oneviewt-01 
 Enter OneView username for 'va-oneviewt-01': adm_98253 
 Enter OneView password for 'va-oneviewt-01': : ****************** 
@@ -893,7 +975,14 @@ r criminal penalties.
 
 ==============================================
 
-   image-build-automation  Get-OneViewConnectionStatus                         0  1m 19s 418ms  15:54:15 
+```
+
+<a name="get-oneviewconnectionstatus"></a>
+
+### Get-OneViewConnectionStatus
+
+```text
+
 2026-08-18 14:57:37 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ============================================== 
@@ -912,7 +1001,13 @@ r criminal penalties.
 
 ==============================================
 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01                                     0  15:57:37 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01
+
+```text
 ============================================== 
   OneView Server List (16 servers)
 ============================================== 
@@ -939,7 +1034,15 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 ==============================================
 
 2026-08-18 14:58:16 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=16 
-   image-build-automation  Get-OneViewConnectionStatus -IncludeServerCount                                       0  15:58:16 2026-08-18 14:58:31 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+
+```
+
+<a name="get-oneviewconnectionstatus-includeservercount"></a>
+
+### Get-OneViewConnectionStatus -IncludeServerCount
+
+```text
+2026-08-18 14:58:31 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ============================================== 
   OneView Connection Status
@@ -958,7 +1061,14 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
 
-   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01                               0  15:58:31 2026-08-18 14:58:44 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=False Connected=False Reachable=True Authenticated=False Error='OneView authentication failed for '': Response status code does not indicate success: 401 (Unauthorized).'
+```
+
+<a name="get-oneviewconnectionstatus-oneviewhost-va-oneviewt-01"></a>
+
+### Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 
+
+```text
+2026-08-18 14:58:44 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=False Connected=False Reachable=True Authenticated=False Error='OneView authentication failed for '': Response status code does not indicate success: 401 (Unauthorized).'
 
 ============================================== 
   OneView Connection Status
@@ -978,7 +1088,15 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
 
-   image-build-automation  Get-OneViewConnectionStatus                                                           0  15:58:44 2026-08-18 14:58:56 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+```
+
+<a name="get-oneviewconnectionstatus-1"></a>
+
+### Get-OneViewConnectionStatus
+
+```text
+
+026-08-18 14:58:56 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ==============================================
   OneView Connection Status
@@ -996,7 +1114,13 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'health:Warning'            0  15:58:57 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-healthwarning"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'health:Warning'
+
+```text
 ==============================================
   OneView Server List (3 servers)
 ==============================================
@@ -1010,11 +1134,25 @@ ALP-CONSTC2-01ilo  CZ2D3701LV       On        Warning
 ==============================================
 
 2026-08-18 14:59:48 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=3
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:Off'                 0  15:59:49 
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-poweroff"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:Off' 
+
+```text
 No servers matched the request. 
  
 2026-08-18 15:00:14 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=0
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-1"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 
+
+```text
  
 ============================================== 
   OneView Server List (16 servers)
@@ -1042,11 +1180,50 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 ==============================================
  
 2026-08-18 15:00:38 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=16 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -SrvrId CZ22420JCM -IdType Serial   0  16:00:38 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'SrvrId'. 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerId CZ22420JCM -IdType Serial 1  16:01:47 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerId'. 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCM -IdType Serial2:08 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerIdentifier'. 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCM -IdType Serial3:01 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerIdentifier'. 
-   image-build-automation  Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier srv01  1  16:03:55 2026-08-18 15:04:00 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=False Connected=False Reachable=False Authenticated=False Error='OneView appliance 'oneview.example.com' is not reachable: The requested name is valid, but no data of the requested type was found. (oneview.example.com:443)'
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-srvrid-cz22420jcm-idtype-serial"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -SrvrId CZ22420JCM -IdType Serial 
+
+```text
+16:00:38 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'SrvrId'. 
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-serverid-cz22420jcm-idtype-serial"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerId CZ22420JCM -IdType Serial 
+
+```text
+16:01:47 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerId'. 
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcm-idtype-serial"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCM -IdType Serial
+
+```text
+Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerIdentifier'. 
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcm-idtype-serial-1"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCM -IdType Serial
+
+```text
+Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerIdentifier'. 
+```
+
+<a name="get-oneviewconnectionstatus-oneviewhost-oneviewexamplecom-serveridentifier-srv01"></a>
+
+### Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier srv01
+
+```text
+16:03:55 2026-08-18 15:04:00 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=False Connected=False Reachable=False Authenticated=False Error='OneView appliance 'oneview.example.com' is not reachable: The requested name is valid, but no data of the requested type was found. (oneview.example.com:443)'
 
 ==============================================
   OneView Connection Status
@@ -1062,9 +1239,30 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
 
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier srv01 -ServerIdentifier CZ22420JCM -IdType Serial00 Get-OneViewConnectionStatus: Cannot bind parameter because parameter 'SrvrId' is specified more than once. To provide multiple values to parameters that can accept multiple values, use the array syntax. For example, "-parameter value1,value2,value3".      
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCM -IdType Serial                        36 Get-OneViewConnectionStatus: A parameter cannot be found that matches parameter name 'IdType'. 
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCM -IdentifierType Serial       1  16:04:58 2026-08-18 15:05:28 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-srv01-serveridentifier-cz22420jcm-idtype-serial00"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier srv01 -ServerIdentifier CZ22420JCM -IdType Serial00 
+
+```text
+Get-OneViewConnectionStatus: Cannot bind parameter because parameter 'SrvrId' is specified more than once. To provide multiple values to parameters that can accept multiple values, use the array syntax. For example, "-parameter value1,value2,value3".      
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcm-idtype-serial"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCM -IdType Serial 
+
+```text
+Get-OneViewConnectionStatus: A parameter cannot be found that matches parameter name 'IdType'. 
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcm-identifiertype-serial"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCM -IdentifierType Serial 
+
+```text
+16:04:58 2026-08-18 15:05:28 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ==============================================
   OneView Connection Status
@@ -1088,7 +1286,14 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
  
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier omg-qlikview-03ilo -IdentifierType OneViewName05:28 2026-08-18 15:06:42 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-omg-qlikview-03ilo-identifiertype-oneviewname"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier omg-qlikview-03ilo -IdentifierType OneViewName
+
+```text
+2026-08-18 15:06:42 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
  
 ==============================================
   OneView Connection Status
@@ -1112,7 +1317,13 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
 
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial             06:42 2026-08-18 15:07:56 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-serial"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial
+
+```text             06:42 2026-08-18 15:07:56 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ==============================================
   OneView Connection Status
@@ -1136,7 +1347,13 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 
 ==============================================
 
-   image-build-automation  Get-OneViewServerList                                                                        7:56 
+```
+
+<a name="get-oneviewserverlist"></a>
+
+### Get-OneViewServerList
+
+```text
 ==============================================
   OneView Server List (16 servers)
 ==============================================
@@ -1163,7 +1380,13 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 ==============================================
  
 2026-08-18 16:30:22 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=16
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01                                            0:22 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-2"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01  
+
+```text
 ==============================================
   OneView Server List (16 servers)
 ==============================================
@@ -1190,7 +1413,13 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 ==============================================
  
 2026-08-18 16:31:04 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=16 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01                                     0  17:31:04  
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-3"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01
+
+```text
 ==============================================
   OneView Server List (16 servers)
 ==============================================
@@ -1217,14 +1446,32 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 ==============================================
 
 2026-08-18 16:37:15 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=16
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCN -IdentifierType Serial
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcn-identifiertype-serial"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCN -IdentifierType Serial
+
+```text
 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerIdentifier'. 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 ServerIdentifier CZ22420JCN -IdentifierType Serial  
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcn-identifiertype-serial-1"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 ServerIdentifier CZ22420JCN -IdentifierType Serial  
+
+```text
  
 PowerShell credential request 
 Enter your credentials.
 Password for user ServerIdentifier:
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial 
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-serial-1"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial 
+
+```text
 2026-08-18 16:40:21 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ==============================================
@@ -1249,7 +1496,13 @@ Password for user ServerIdentifier:
  
 ==============================================
 
-   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCN -IdentifierType Serial
+```
+
+<a name="get-oneviewconnectionstatus-oneviewhost-va-oneviewt-01-serveridentifier-cz22420jcn-identifiertype-serial"></a>
+
+### Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -ServerIdentifier CZ22420JCN -IdentifierType Serial
+
+```text
 2026-08-18 16:41:09 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=False Connected=False Reachable=True Authenticated=False Error='OneView authentication failed for '': Response status code does not indicate success: 401 (Unauthorized).'
 
 ==============================================
@@ -1269,8 +1522,14 @@ Password for user ServerIdentifier:
   Error:   OneView authentication failed for '': Response status code does not indicate success: 401 (Unauthorized).
 
 ==============================================
- 
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial 
+
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-serial-2"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Serial 
+
+```text
 2026-08-18 16:42:03 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ==============================================
@@ -1295,7 +1554,15 @@ Password for user ServerIdentifier:
 
 ==============================================
  
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Auto         0  17:42:04 2026-08-18 16:42:14 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype-auto"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType Auto
+
+```text
+
+17:42:04 2026-08-18 16:42:14 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
  
 ==============================================
   OneView Connection Status
@@ -1318,9 +1585,23 @@ Password for user ServerIdentifier:
     Health:  OK
 
 ==============================================
- 
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType              0  17:42:15 Get-OneViewConnectionStatus: Missing an argument for parameter 'IdentifierType'. Specify a parameter of type 'System.String' and try again.
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN                              1  17:42:24 2026-08-18 16:42:31 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcn-identifiertype"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN -IdentifierType
+
+```text              
+17:42:15 Get-OneViewConnectionStatus: Missing an argument for parameter 'IdentifierType'. Specify a parameter of type 'System.String' and try again.
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-cz22420jcn"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier CZ22420JCN
+
+```text                             
+17:42:24 2026-08-18 16:42:31 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ============================================== 
   OneView Connection Status
@@ -1344,7 +1625,14 @@ Password for user ServerIdentifier:
 
 ==============================================
 
-   image-build-automation  Get-OneViewConnectionStatus -ServerIdentifier alp-qlikview-03ilo                      0  17:42:31 2026-08-18 16:43:03 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
+```
+
+<a name="get-oneviewconnectionstatus-serveridentifier-alp-qlikview-03ilo"></a>
+
+### Get-OneViewConnectionStatus -ServerIdentifier alp-qlikview-03ilo  
+
+```text
+17:42:31 2026-08-18 16:43:03 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Success=True Connected=True Reachable=True Authenticated=True Error=''
 
 ==============================================
   OneView Connection Status
@@ -1368,13 +1656,30 @@ Password for user ServerIdentifier:
 
 ==============================================
 
-   image-build-automation  Get-OneViewServerList -ServerIdentifier alp-qlikview-03ilo                            0  17:43:03 Get-OneViewServerList: A parameter cannot be found that matches parameter name 'ServerIdentifier'. 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:Off'                 
+```
+
+<a name="get-oneviewserverlist-serveridentifier-alp-qlikview-03ilo"></a>
+
+### Get-OneViewServerList -ServerIdentifier alp-qlikview-03ilo
+
+```text
+erList: A parameter cannot be found that matches parameter name 'ServerIdentifier'. 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-poweroff-1"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:Off'                 
 
 No servers matched the request.
  
 2026-08-18 16:45:07 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=0 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:On'                  0  17:45:07 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-poweron-0-174507"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:On'                  0  17:45:07 
+
+```text
 ==============================================
   OneView Server List (16 servers)
 ==============================================
@@ -1401,11 +1706,23 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 ==============================================
 
 2026-08-18 16:45:20 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=16
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:*qlikview-03ilo'      0  17:45:20 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameqlikview-03ilo-0-174520"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:*qlikview-03ilo'      0  17:45:20 
+
+```text
 No servers matched the request. 
  
 2026-08-18 16:50:27 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=0
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03ilo'       0  17:50:27 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameqlikview-03ilo-0-175027"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03ilo'       0  17:50:27 
+
+```text
 ============================================== 
   OneView Server List (2 servers)
 ==============================================
@@ -1418,7 +1735,14 @@ omg-qlikview-03ilo  CZ22420JCN       On        OK
 ==============================================
 
 2026-08-18 16:50:59 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=2
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03'          0  17:50:59 
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameqlikview-03-0-175059"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03'          0  17:50:59 
+
+```text
 ============================================== 
   OneView Server List (2 servers)
 ==============================================
@@ -1431,7 +1755,15 @@ omg-qlikview-03ilo  CZ22420JCN       On        OK
 ==============================================
 
 2026-08-18 16:51:21 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=2 
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:ALP'                  0  17:51:21 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-namealp"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:ALP'
+
+```text
+
+0  17:51:21 
 ============================================== 
   OneView Server List (6 servers)
 ==============================================
@@ -1447,8 +1779,25 @@ alp-qliksen-02ilo   CZ22420JCZ       On        OK
 
 ============================================== 
 
-2026-08-18 16:51:51 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=6
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:alp'                  0  17:51:51 
+2026-08-18 16:51:51 - 
+
+```
+
+<a name="oneviewserverlist"></a>
+
+### OneViewServerList  
+
+```text
+
+- INFO - Get-OneViewServerList result: Success=True Count=6
+
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-namealp-0-175151"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:alp'                  0  17:51:51 
+
+```text
 ============================================== 
   OneView Server List (6 servers)
 ==============================================
@@ -1465,7 +1814,13 @@ alp-qliksen-02ilo   CZ22420JCZ       On        OK
 ==============================================
 
 2026-08-18 16:52:04 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=6
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:omg'                  0  17:52:04 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameomg-0-175204"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:omg'                  0  17:52:04 
+
+```text
 ============================================== 
   OneView Server List (6 servers)
 ==============================================
@@ -1482,7 +1837,13 @@ omg-qliksen-02ilo             CZ22420JD0       On        OK
 ==============================================
  
 2026-08-18 16:52:58 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=6
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:ilo'                  0  17:52:58 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-nameilo-0-175258"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:ilo'                  0  17:52:58 
+
+```text
 ============================================== 
   OneView Server List (16 servers)
 ==============================================
@@ -1509,7 +1870,13 @@ omg-qliksen-02ilo                CZ22420JD0       On        OK
 ==============================================
 
 2026-08-18 16:53:36 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=16
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:03ilo'                0  17:53:36 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-name03ilo-0-175336"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:03ilo'                0  17:53:36 
+
+```text
 ============================================== 
   OneView Server List (6 servers)
 ==============================================
@@ -1526,11 +1893,24 @@ omg-qlikview-03ilo               CZ22420JCN       On        OK
 ==============================================
 
 2026-08-18 16:53:52 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=6
-   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:0*ilo'                0  17:53:53 
+```
+
+<a name="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-name0ilo-0-175353"></a>
+
+### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:0*ilo'                0  17:53:53 
+
+```text
 No servers matched the request. 
 
 2026-08-18 16:54:36 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=0
-   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'                                    0  17:54:36   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+```
+
+<a name="test-buildparams-baseisopath-ywin2019autoiso-0-175436"></a>
+
+### Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'                                    0  17:54:36   
+
+```text
+[INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
   [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
 \WIN2019Auto.iso
   [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
@@ -1544,7 +1924,13 @@ Success                        True
 Errors                         {}
 BaseIsoPath                    Y:\WIN2019Auto.iso
 
-   image-build-automation  Test-BuildParams -BaseIsoPath '//Hnascifsprd6/roi1/BKCWISAPPS/KevinE'                 0  18:06:51  
+```
+
+<a name="test-buildparams-baseisopath-hnascifsprd6roi1bkcwisappskevine-0-180651"></a>
+
+### Test-BuildParams -BaseIsoPath '//Hnascifsprd6/roi1/BKCWISAPPS/KevinE'                 0  18:06:51  
+
+```text
 Name                           Value
 ----                           -----
 IsoUrl
@@ -1553,7 +1939,13 @@ Success                        False
 Errors                         {Unsupported ISO path format: '//Hnascifsprd6/roi1/BKCWISAPPS/KevinE'. Expected HTTP/HTTPS URL,… 
 BaseIsoPath                    //Hnascifsprd6/roi1/BKCWISAPPS/KevinE
 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE'            0  18:08:13 
+```
+
+<a name="test-buildparams-baseisopath-cifshnascifsprd6roi1bkcwisappskevine-0-180813"></a>
+
+### Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE'            0  18:08:13 
+
+```text
 Name                           Value
 ----                           ----- 
 IsoUrl
@@ -1562,7 +1954,14 @@ Success                        False
 Errors                         {Unsupported ISO path format: 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE'. Expected HTTP/HTTPS… 
 BaseIsoPath                    cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\jjWIN2019Auto.iso'                                  0  18:08:36   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+```
+
+<a name="test-buildparams-baseisopath-yjjwin2019autoiso-0-180836"></a>
+
+### Test-BuildParams -BaseIsoPath 'Y:\jjWIN2019Auto.iso'                                  0  18:08:36   
+
+```text
+[INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
   [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
 \jjWIN2019Auto.iso
   [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
@@ -1576,7 +1975,13 @@ Success                        False
 Errors                         {Base ISO not found or not accessible: Y:\jjWIN2019Auto.iso}
 BaseIsoPath                    Y:\jjWIN2019Auto.iso 
 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso'8:09:15 
+```
+
+<a name="test-buildparams-baseisopath-cifshnascifsprd6roi1bkcwisappskevinewin2019autoiso80915"></a>
+
+### Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso'8:09:15 
+
+```text
 Name                           Value
 ----                           -----
 IsoUrl
@@ -1585,7 +1990,13 @@ Success                        False
 Errors                         {Unsupported ISO path format: 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso'. Exp… 
 BaseIsoPath                    cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso 
  
-   image-build-automation  Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/'                                  8:09:29 
+```
+
+<a name="test-buildparams-baseisopath-smbvm-ewismgt-19kev-80929"></a>
+
+### Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/'                                  8:09:29 
+
+```text
 Name                           Value
 ----                           -----
 IsoUrl
@@ -1594,7 +2005,12 @@ Success                        False
 Errors                         {Unsupported ISO path format: 'smb://vm-ewismgt-19/Kev/'. Expected HTTP/HTTPS URL, NFS path, or… 
 BaseIsoPath                    smb://vm-ewismgt-19/Kev/
 
-   image-build-automation  Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/Win2019Auto.iso'               0  18:10:37 
+```
+
+<a name="test-buildparams-baseisopath-smbvm-ewismgt-19kevwin2019autoiso-0-181037"></a>
+
+### Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/Win2019Auto.iso'               0  18:10:37 
+
 Name                           Value
 ----                           -----
 IsoUrl
@@ -1603,7 +2019,13 @@ Success                        False
 Errors                         {Unsupported ISO path format: 'smb://vm-ewismgt-19/Kev/Win2019Auto.iso'. Expected HTTP/HTTPS UR… 
 BaseIsoPath                    smb://vm-ewismgt-19/Kev/Win2019Auto.iso
 
-   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/Win2019Auto.iso'                   0  18:11:10 
+```
+
+<a name="test-buildparams-baseisopath-vm-ewismgt-19kevwin2019autoiso-0-181110"></a>
+
+### Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/Win2019Auto.iso'                   0  18:11:10 
+
+```text
 Name                           Value
 ----                           -----
 IsoUrl
@@ -1612,7 +2034,13 @@ Success                        False
 Errors                         {Unsupported ISO path format: '//vm-ewismgt-19/Kev/Win2019Auto.iso'. Expected HTTP/HTTPS URL, N… 
 BaseIsoPath                    //vm-ewismgt-19/Kev/Win2019Auto.iso
 
-   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'                                  0  18:11:56 
+```
+
+<a name="test-buildparams-baseisopath-vm-ewismgt-19kev-0-181156"></a>
+
+### Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'                                  0  18:11:56 
+
+```text
 Name                           Value
 ----                           -----
 IsoUrl
@@ -1621,7 +2049,14 @@ Success                        False
 Errors                         {Unsupported ISO path format: '//vm-ewismgt-19/Kev/'. Expected HTTP/HTTPS URL, NFS path, or UNC… 
 BaseIsoPath                    //vm-ewismgt-19/Kev/
 
-   image-build-automation  Test-BuildParams -BaseIsoPath                                                         0  18:12:11 <-/10>                                                                                 <History(10)>
+```
+
+<a name="test-buildparams-baseisopath-cifshnascifsprd6roi1bkcwisappskevinewin2019autoiso"></a>
+
+### Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso'  
+
+```text
+10>                                                                                 <History(10)>
 > Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'                                     [History]
 > Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/Win2019Auto.iso'                      [History]
 > Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/Win2019Auto.iso'                  [History]

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Configure-PhysicalBuild.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -29,7 +29,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 
 | Parameter | Description |
 |-----------|-------------|
-| `-SrvrId` _(Aliases: -ServerIdentifier)_ | Target server identifier (hostname, serial, OneView name, iLO IP, bay). |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (hostname, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
 | `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server (if known). |
 | `-IloCredential` | PSCredential for the iLO Redfish check. If omitted, prompted interactively. |
@@ -66,7 +66,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 ### Example 1
 
 ```powershell
-Configure-PhysicalBuild ` -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' ` -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -Domain 'ad.example.com' ` -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+Configure-PhysicalBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' ` -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -Domain 'ad.example.com' ` -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 ```
 
 <a name="example-2"></a>
@@ -74,7 +74,7 @@ Configure-PhysicalBuild ` -SrvrId 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.ex
 ### Example 2
 
 ```powershell
-Configure-PhysicalBuild -SrvrId 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
+Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
 ```
 
 <a name="original-comment-based-help"></a>
@@ -95,7 +95,7 @@ Configure-PhysicalBuild -SrvrId 'srv01' -OneViewHost 'oneview.ad.example.com' -E
         This command performs NO destructive actions — no ISO attach, no
         reboot, no firmware update. It is read-only / dry-run only.
 
-    .PARAMETER SrvrId
+    .PARAMETER ServerIdentifier
         Target server identifier (hostname, serial, OneView name, iLO IP, bay).
 
     .PARAMETER OneViewHost
@@ -191,7 +191,7 @@ Configure-PhysicalBuild -SrvrId 'srv01' -OneViewHost 'oneview.ad.example.com' -E
 
     .EXAMPLE
         Configure-PhysicalBuild `
-            -SrvrId 'PROD-SERVER-01' `
+            -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
             -IloIp '192.168.1.101' `
             -SiteCode 'P01' `
@@ -202,7 +202,7 @@ Configure-PhysicalBuild -SrvrId 'srv01' -OneViewHost 'oneview.ad.example.com' -E
             -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 
     .EXAMPLE
-        Configure-PhysicalBuild -SrvrId 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
+        Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
 ```
 
 ---

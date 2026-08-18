@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,7 +17,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Delegates to _Publish-Result so behaviour is identical across all commands: a human-readable report by default (no truncated hashtable dump on the terminal / in logs), with -Json / -PassThru for data consumers. The rich, command-specific _Format-ConnectivityResult view is supplied as the -CustomView so the connectivity report keeps its familiar layout.
+Delegates to _Publish-Result so behaviour is identical across all commands: a human-readable report by default (no truncated hashtable dump on the terminal / in logs), with -Json / -PassThru for data consumers. The rich, command-specific _Format-ConnectivityResult view is supplied as the -CustomView so the connectivity report keeps its familiar layout. Pass -Quiet to suppress the report when the caller will handle display itself.
 
 <a name="original-comment-based-help"></a>
 
@@ -33,7 +33,8 @@ Delegates to _Publish-Result so behaviour is identical across all commands: a hu
         dump on the terminal / in logs), with -Json / -PassThru for data
         consumers. The rich, command-specific _Format-ConnectivityResult view
         is supplied as the -CustomView so the connectivity report keeps its
-        familiar layout.
+        familiar layout. Pass -Quiet to suppress the report when the caller
+        will handle display itself.
 ```
 
 ---

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OutputFormatter.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,7 +17,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-By default it writes a human-readable report (via _Format-HumanReadable, or a command-supplied -CustomView) and returns NOTHING on the success stream, so the operator never sees a truncated raw hashtable dump in the terminal or logs. * -Json     -> emit the result as a JSON string on the success stream * -PassThru -> also return the raw object on the success stream * -CustomView { param($r) ... } -> use a rich, command-specific renderer Use -PassThru (or capture into a variable) for scripting; use -Json for API / redirection consumers.
+By default it writes a human-readable report (via _Format-HumanReadable, or a command-supplied -CustomView) and returns NOTHING on the success stream, so the operator never sees a truncated raw hashtable dump in the terminal or logs. * -Json     -> emit the result as a JSON string on the success stream * -PassThru -> also return the raw object on the success stream * -Quiet    -> suppress the human-readable report (caller handles display) * -CustomView { param($r) ... } -> use a rich, command-specific renderer Use -PassThru (or capture into a variable) for scripting; use -Json for API / redirection consumers.
 
 <a name="original-comment-based-help"></a>
 
@@ -35,6 +35,7 @@ By default it writes a human-readable report (via _Format-HumanReadable, or a co
 
           * -Json     -> emit the result as a JSON string on the success stream
           * -PassThru -> also return the raw object on the success stream
+          * -Quiet    -> suppress the human-readable report (caller handles display)
           * -CustomView { param($r) ... } -> use a rich, command-specific renderer
 
         Use -PassThru (or capture into a variable) for scripting; use -Json for

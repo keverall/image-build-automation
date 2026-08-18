@@ -1,10 +1,10 @@
 ---
-source:  ./scripts/validate-docs-links.ps1
+source:  ./src/powershell/Automation/Public/Connect-OneView.ps1
 generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
-# Get-RelativeLink
+# _Complete-ConnectOneViewResult
 
 <a id="top"></a>
 
@@ -17,7 +17,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Gets relative link.
+Adds the connection-focused Message to a connectivity result and handles display / conditional return for Connect-OneView.
 
 <a name="original-comment-based-help"></a>
 
@@ -25,7 +25,8 @@ Gets relative link.
 
 ```powershell
 .SYNOPSIS
-        Gets relative link.
+        Adds the connection-focused Message to a connectivity result and
+        handles display / conditional return for Connect-OneView.
 ```
 
 ---

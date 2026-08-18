@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-BuildParams.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,13 +14,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Examples](#examples)
   - [Example 1](#example-1)
+  - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
 <a name="description"></a>
 
 ## Description
 
-Checks that required build prerequisites are met, such as verifying the base Windows ISO file exists at the specified path. Returns an empty array on success or an array of error messages describing validation failures.
+Takes a Windows ISO image path, resolves it to the network address the iLO BMC can mount as virtual media (a UNC/SMB share becomes a cifs:// URL, HTTPS and NFS URLs are used directly, and a mapped network drive is expanded to its UNC share), and verifies the file is present and usable as a boot ISO. On success the resolved iLO URL is returned (IsoUrl) so callers can pass it straight to a deploy command. On failure the Errors array describes what is wrong. Local drive paths (C:\, etc.) are rejected because the iLO BMC cannot reach local drives on the automation host.
 
 <a name="parameters"></a>
 
@@ -28,8 +29,8 @@ Checks that required build prerequisites are met, such as verifying the base Win
 
 | Parameter | Description |
 |-----------|-------------|
-| `-BaseIsoPath` | Path to the base Windows ISO (required for ISO builds). |
-| `-DryRun` | Whether the run is a dry run (no additional validation required). |
+| `-BaseIsoPath` | Path to the base Windows ISO (required for ISO builds). Accepts a UNC/SMB share (\\server\share\file.iso), an HTTPS/NFS URL, or a mapped network drive (H:\file.iso that maps to a network share). Local drive paths are not supported by iLO. |
+| `-DryRun` | Resolve and validate the path format without checking that the file exists. |
 
 <a name="examples"></a>
 
@@ -40,7 +41,15 @@ Checks that required build prerequisites are met, such as verifying the base Win
 ### Example 1
 
 ```powershell
-$errors = Test-BuildParams -BaseIsoPath 'C:\ISOs\server2022.iso'
+$r = Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' # $r.Success -> $true ; $r.IsoUrl -> 'cifs://fileserver/isos/WinSrv2025.iso'
+```
+
+<a name="example-2"></a>
+
+### Example 2
+
+```powershell
+$r = Test-BuildParams -BaseIsoPath 'https://artifacts/isos/WinSrv2025.iso' # $r.Success -> $true ; $r.IsoUrl -> 'https://artifacts/isos/WinSrv2025.iso'
 ```
 
 <a name="original-comment-based-help"></a>
@@ -49,21 +58,35 @@ $errors = Test-BuildParams -BaseIsoPath 'C:\ISOs\server2022.iso'
 
 ```powershell
 .SYNOPSIS
-        Validate build parameters and return a list of validation errors (empty = valid).
+        Validate the base Windows ISO path and resolve the iLO boot URL.
 
     .DESCRIPTION
-        Checks that required build prerequisites are met, such as verifying the base
-        Windows ISO file exists at the specified path. Returns an empty array on
-        success or an array of error messages describing validation failures.
+        Takes a Windows ISO image path, resolves it to the network address the iLO
+        BMC can mount as virtual media (a UNC/SMB share becomes a cifs:// URL, HTTPS
+        and NFS URLs are used directly, and a mapped network drive is expanded to its
+        UNC share), and verifies the file is present and usable as a boot ISO.
+
+        On success the resolved iLO URL is returned (IsoUrl) so callers can pass it
+        straight to a deploy command. On failure the Errors array describes what is
+        wrong. Local drive paths (C:\, etc.) are rejected because the iLO BMC cannot
+        reach local drives on the automation host.
 
     .PARAMETER BaseIsoPath
-        Path to the base Windows ISO (required for ISO builds).
+        Path to the base Windows ISO (required for ISO builds). Accepts a UNC/SMB
+        share (\\server\share\file.iso), an HTTPS/NFS URL, or a mapped network drive
+        (H:\file.iso that maps to a network share). Local drive paths are not
+        supported by iLO.
 
     .PARAMETER DryRun
-        Whether the run is a dry run (no additional validation required).
+        Resolve and validate the path format without checking that the file exists.
 
     .EXAMPLE
-        $errors = Test-BuildParams -BaseIsoPath 'C:\ISOs\server2022.iso'
+        $r = Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'
+        # $r.Success -> $true ; $r.IsoUrl -> 'cifs://fileserver/isos/WinSrv2025.iso'
+
+    .EXAMPLE
+        $r = Test-BuildParams -BaseIsoPath 'https://artifacts/isos/WinSrv2025.iso'
+        # $r.Success -> $true ; $r.IsoUrl -> 'https://artifacts/isos/WinSrv2025.iso'
 ```
 
 ---

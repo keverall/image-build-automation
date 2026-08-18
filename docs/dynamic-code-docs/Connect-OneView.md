@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Connect-OneView.ps1
-generated: 2026-08-17
+generated: 2026-08-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -31,6 +31,8 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 |-----------|-------------|
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP address to connect to (server name or serial).  Required for a live (non-DryRun) connection.  Used verbatim - no config/env fallback. |
 | `-DryRun` _(Aliases: -Dry)_ | Validate host resolution only - no authentication is attempted and no real connection is made.  Host is resolved from connection_hosts.json (Test environment by default).  Safe for testing code without touching an appliance.  Remove -DryRun when you are ready to connect and make changes. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. |
 
 <a name="examples"></a>
 
@@ -85,6 +87,16 @@ Connect-OneView -DryRun Validate host resolution from config without connecting 
         testing code without touching an appliance.  Remove -DryRun when you
         are ready to connect and make changes.
 
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump.
+
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of
+        the human-readable report.
+
     .EXAMPLE
         Connect-OneView -OneViewHost oneview.example.com
 
@@ -98,12 +110,16 @@ Connect-OneView -DryRun Validate host resolution from config without connecting 
         any changes.  Use this to test code safely.
 
     .OUTPUTS
-        [hashtable] - a connection result with keys:
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with keys:
             Available        [bool]   - connectivity and auth both succeeded
             OneViewHost   [string] - the appliance contacted
             AuthConnect      [hashtable] - authentication details
             NetworkPing      [hashtable] - network probe results
             Message          [string] - human-readable status
+            Timestamp        [string] - UTC ISO 8601
+        With -Json, a JSON [string] representation of the same data.
 
     .NOTES
         This command is the counterpart to Disconnect-OneView.  Internally it
