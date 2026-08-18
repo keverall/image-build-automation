@@ -16,13 +16,19 @@ function Get-OneViewServerList {
     .DESCRIPTION
         Queries GET /rest/server-hardware across all pages and returns a normalised
         list of servers (name, serial, model, power state, health, iLO IP, enclosure).
-        Supports an optional -Filter to narrow the result by health or power state.
+        Supports an optional -Filter to narrow the result by health, power state, or
+        name (substring/wildcard match).
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
         If omitted, the command checks for an existing HPEOneView module
         session (Connect-OVMgmt); when one is active it is reused, otherwise a
         clean "not connected" status is returned instead of prompting for a host.
+
+    .PARAMETER Credential
+        PSCredential for authentication. Preferred, non-interactive entry point
+        (sourced from a secret store). Falls back to -OneViewUser/-OneViewPassword
+        or an interactive prompt when omitted. Never read from config or environment.
 
     .PARAMETER OneViewUser
         OneView username (used with -OneViewPassword). Never read from config or environment.
@@ -34,19 +40,29 @@ function Get-OneViewServerList {
         OneView HTTPS port (default 443).
 
     .PARAMETER SkipCertificateCheck
-        Skip SSL cert verification (default true).
+        Skip SSL certificate verification for the REST calls that fetch the list.
+        Most OneView appliances in lab/test use a self-signed or internal-CA
+        certificate, so the default is $true. Only relevant while a NEW connection
+        is being established - when an active session is reused it has no effect.
+        Set to $false only against an appliance presenting a fully trusted cert.
 
     .PARAMETER TimeoutSec
-        Per-call timeout (default 30 s).
+        Per-call timeout (default 30 s) for each paginated REST request. Only
+        relevant while a NEW connection is established or when fetching very
+        large fleets over a slow link; the default is fine for normal use.
 
     .PARAMETER PageSize
         Servers fetched per page (default 100, max 1000).
 
     .PARAMETER Filter
-        Optional case-insensitive filter expression applied client-side:
-          health:<status>   e.g. health:OK, health:Warning, health:Critical
-          power:<state>     e.g. power:On, power:Off
-          name:<substring>  e.g. name:PROD
+        Optional client-side filter. Matching is case-insensitive and, by default,
+        a SUBSTRING match, so partial values still match (health:Critical matches
+        "Critical", name:PROD matches "PROD-SRV-01"). The name/power/health values
+        also accept PowerShell-style wildcards:
+          health:<value>   e.g. health:Critical, health:*Warning*
+          power:<value>     e.g. power:On, power:Off
+          name:<value>     e.g. name:PROD (substring), name:PROD-* (wildcard),
+                            name:srv-0? (single-char wildcard)
 
     .PARAMETER MockResult
         Hashtable to return without making any HTTP calls. Used for tests.
@@ -127,14 +143,16 @@ function Get-OneViewServerList {
         return
     }
 
-    # Parse -Filter into predicate components (validate before connecting)
-    $healthFilter = $null; $powerFilter = $null; $nameFilter = $null
+    # Parse -Filter into predicate regexes (validate before connecting).
+    # Matching is case-insensitive; substring-by-default with PowerShell-style
+    # wildcards (*, ?) supported via the shared converter.
+    $healthRegex = $null; $powerRegex = $null; $nameRegex = $null
     if ($Filter) {
-        if ($Filter -match '^health:(.+)$')     { $healthFilter = $Matches[1].Trim() }
-        elseif ($Filter -match '^power:(.+)$')   { $powerFilter = $Matches[1].Trim() }
-        elseif ($Filter -match '^name:(.+)$')    { $nameFilter = $Matches[1].Trim() }
+        if ($Filter -match '^health:(.+)$')     { $healthRegex = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^power:(.+)$')   { $powerRegex  = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^name:(.+)$')    { $nameRegex   = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
         else {
-            $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<substring>." }
+            $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<value>." }
             if ($PassThru) { return $errMap }
             Write-Host $errMap.Error -ForegroundColor Red
             return
@@ -227,9 +245,9 @@ function Get-OneViewServerList {
                     oneview_uri    = $srv.uri
                     rom_version    = $srv.romVersion
                 }
-                if ($healthFilter -and ($entry.health_status -notmatch [regex]::Escape($healthFilter))) { continue }
-                if ($powerFilter  -and ($entry.power_state  -notmatch [regex]::Escape($powerFilter)))  { continue }
-                if ($nameFilter   -and ($entry.name         -notmatch [regex]::Escape($nameFilter)))   { continue }
+                if ($healthRegex -and -not $healthRegex.IsMatch($entry.health_status)) { continue }
+                if ($powerRegex  -and -not $powerRegex.IsMatch($entry.power_state))    { continue }
+                if ($nameRegex   -and -not $nameRegex.IsMatch($entry.name))           { continue }
                 $servers.Add($entry)
             }
 
@@ -262,6 +280,29 @@ function Get-OneViewServerList {
         Write-Host $err -ForegroundColor Red
         return
     }
+}
+
+function _ConvertToWildcardRegex {
+    <#
+    .SYNOPSIS
+        Convert a PowerShell-style wildcard pattern to an anchored, case-insensitive
+        regex that matches the pattern ANYWHERE in the target (substring-by-default).
+
+    .DESCRIPTION
+        '*' becomes '.*' (any run of chars) and '?' becomes '.' (a single char);
+        every other character is regex-escaped. The result is wrapped with '.*' on
+        both sides so a bare substring (e.g. 'PROD') still matches, while explicit
+        wildcards (e.g. 'PROD-*', 'srv-0?') are honoured.
+    #>
+    param([string] $Pattern)
+
+    $sb = [System.Text.StringBuilder]::new()
+    foreach ($ch in $Pattern.ToCharArray()) {
+        if ($ch -eq '*')      { $sb.Append('.*') | Out-Null }
+        elseif ($ch -eq '?')  { $sb.Append('.')  | Out-Null }
+        else                  { $sb.Append([regex]::Escape([string]$ch)) | Out-Null }
+    }
+    return ".*$($sb.ToString()).*"
 }
 
 function _Format-ServerListResult {

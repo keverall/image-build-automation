@@ -270,7 +270,11 @@ Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier s
 
 ```powershell
 # Specific server status by serial number (resolved via OneView)
-Get-OneViewConnectionStatus -OVHost oneview.example.com -SrvrId MXQ1234567 -IdTyp Serial
+Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier MXQ1234567 -IdentifierType Serial
+
+# SAME RESULT with a single parameter - -IdentifierType defaults to Auto and
+# detects the serial automatically, so you never need to specify the type:
+Get-OneViewConnectionStatus -OneViewHost oneview.example.com -ServerIdentifier MXQ1234567
 ```
 
 > **Supplying `-OneViewHost` vs not:** with no parameters the command reports the
@@ -295,7 +299,11 @@ Get-OneViewConnectionStatus -OVHost oneview.example.com -SrvrId MXQ1234567 -IdTy
 | `-MockResult` | `-Mock` | No | Hashtable to return without making any HTTP calls (tests). | - |
 | `-DryRun` | `-Dry` | No | Print the checks without performing them | - |
 
-> **Short aliases:** every parameter above also has a short alias (e.g. `-SrvrId`, `-IdTyp`, `-OVHost`). The long and short forms are interchangeable - the router, `request_types.json`, and existing automation continue to use the long names.
+> **Short aliases:** the long (canonical) parameter names are `-OneViewHost`, `-ServerIdentifier`, `-IdentifierType`, etc.; every one also has a short alias (e.g. `-OVHost`, `-SrvrId`, `-IdTyp`). The long and short forms are interchangeable - the router, `request_types.json`, and existing automation continue to use the long names.
+
+> **One-parameter targeting:** `-IdentifierType` defaults to `Auto`, which tries Name, Serial, OneViewName, iLO IP, then EnclosureBay in turn. So `-ServerIdentifier <value>` (or its alias `-SrvrId <value>`) alone resolves the server - you do **not** need to pass `-IdentifierType`. The explicit type is only required to disambiguate when a value could match more than one form.
+
+> **Note:** the short alias is `-SrvrId` (with the **`r`**). `-SrvId` (without the `r`) is NOT a valid parameter.
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
@@ -327,18 +335,29 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'health:Critical'
 Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'power:On'
 ```
 
+```powershell
+# Narrow by partial / wildcard server name (substring AND * / ? wildcards)
+Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:PROD'
+Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:PROD-*'
+Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:srv-0?'
+```
+
 **Parameters:**
 
 | Parameter | Aliases | Required | Description | Default |
 |-----------|---------|----------|-------------|---------|
 | `-OneViewHost` | `-OVHost` | No | OneView appliance hostname or IP. Falls back to active HPEOneView module session if omitted. | - |
+| `-Credential` | `-Cred` | No | `PSCredential` for authentication. Preferred, non-interactive entry point (sourced from a secret store). | - |
 | `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
 | `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
-| `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification | `true` |
-| `-TimeoutSec` | `-Timeout` | No | Per-call timeout | `30` |
+| `-Port` | - | No | OneView HTTPS port | `443` |
+| `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification. Most appliances use a self-signed/internal-CA cert, so default is `$true`. Only relevant while a NEW connection is established; has no effect when reusing an active session. | `true` |
+| `-TimeoutSec` | `-Timeout` | No | Per-call REST timeout. Only relevant while establishing a NEW connection or for very large fleets over a slow link; `30` is fine for normal use. | `30` |
 | `-PageSize` | `-Page` | No | Servers fetched per page (max 1000) | `100` |
-| `-Filter` | `-` | No | `health:<status>` / `power:<state>` / `name:<substring>` | - |
+| `-Filter` | `-` | No | Client-side filter. Case-insensitive **substring** by default, with PowerShell-style `*`/`?` wildcards supported: `health:<value>`, `power:<value>`, `name:<value>` (e.g. `name:PROD`, `name:PROD-*`, `name:srv-0?`). | - |
+| `-MockResult` | `-Mock` | No | Hashtable to return without making any HTTP calls (tests). | - |
 | `-DryRun` | `-Dry` | No | Print the query without performing it | - |
+| `-PassThru` | `-PT` | No | Also return the structured `[hashtable]` (by default only a table is printed). | - |
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
@@ -874,6 +893,8 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-OneViewUser` | `-OVUser` | No | OneView username (with `-OneViewPassword`) | prompt |
 | `-OneViewPassword` | `-OVPwd` | No | OneView password (with `-OneViewUser`) | prompt |
 | `-DryRun` | `-Dry` | No | Print query without performing it | - |
+
+> **One-parameter targeting:** `-IdentifierType` defaults to `Auto`, which tries Name, Serial, OneViewName, iLO IP, then EnclosureBay in turn. So `-ServerIdentifier <value>` (or its alias `-SrvrId <value>`) alone resolves the server - you do **not** need to pass `-IdentifierType`. The explicit type is only required to disambiguate when a value could match more than one form.
 
 **Returns:** `[hashtable]` with `Success`, `Server`, `ResolvedBy`, `Details`, and `Error`.
 

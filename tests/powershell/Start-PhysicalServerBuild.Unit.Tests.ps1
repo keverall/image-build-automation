@@ -15,7 +15,7 @@ Describe 'Start-PhysicalServerBuild - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Start-PhysicalServerBuild
-        foreach ($p in @('SrvrId','OneViewHost','IloIp','SiteCode','ManagementPoint',
+        foreach ($p in @('ServerIdentifier','OneViewHost','IloIp','SiteCode','ManagementPoint',
                          'DistributionPoint','RepoBaseUrl','DryRun','Mock')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
