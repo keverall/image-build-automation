@@ -10,6 +10,15 @@
   - [4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)](#4-scom-oneview-maintenance-status-report-get-maintenancestatusreport)
   - [5) Profile auto-load fix + Setup-Profile regression test (catches "Connect-OneView not recognized")](#5-profile-auto-load-fix-setup-profile-regression-test-catches-connect-oneview-not-recognized)
   - [6) Parameter-usage guard + non-interactive `-DryRun` (`--DryRun`/`-DryRun`)](#6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun)
+  - [7) OneView live-session guard + GuardRail (destructive-action gate)](#7-oneview-live-session-guard-guardrail-destructive-action-gate)
+  - [8) Automated live testing harness + captured test results](#8-automated-live-testing-harness-captured-test-results)
+  - [9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul](#9-parameter-rename-managementhost-to-oneviewhost-get-oneviewconnectionstatus-overhaul)
+  - [10) Shared output formatting + `Connect-OneView` rewrite + runbook v2](#10-shared-output-formatting-connect-oneview-rewrite-runbook-v2)
+  - [11) `Test-BuildParams` / `_Validate-Request` hardening](#11-test-buildparams-validate-request-hardening)
+  - [12) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`](#12-parameter-rename-srvrid-to-serveridentifier-wildcard-filtering-in-get-oneviewserverlist)
+  - [13) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests](#13-connect-oneview-converttowildcardregex-docs-alias-inventory-tests)
+  - [14) Repo hygiene: LF normalization + git workflow docs](#14-repo-hygiene-lf-normalization-git-workflow-docs)
+  - [15) Testing-issues documentation (OneView connectivity)](#15-testing-issues-documentation-oneview-connectivity)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -234,3 +243,224 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - `Connect-OneView -DryRun` -> AVAILABLE [DRY-RUN], host resolved from config, non-interactive.
 - `Connect-OneView` (live, no host, `AUTOMATED_MODE=true`) -> fails fast with `ManagementHost is required`, no hang.
 - `make automation-mode-tests`: **103 passed, 0 failed**, 1 pre-existing skip; `scripts/lint.ps1` (PSScriptAnalyzer): 146 files, all checks passed.
+
+<a name="7-oneview-live-session-guard-guardrail-destructive-action-gate"></a>
+
+### 7) OneView live-session guard + GuardRail (destructive-action gate)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-10 | Added a live OneView session guard (never drop/reconnect an active session) and a `GuardRail` regex gate that blocks build/deploy actions unless the resolved target server name matches, plus automated live test scripts (`testBuildDeploy.ps1`, `testConnectAndList.ps1`) | Kev Everall |
+
+<a name="live-session-guard"></a>
+
+#### Live Oneylive session guard
+
+- `Connect-OneView` and `Connect-OneViewSession` now refuse to **reconnect to a different appliance** while a live session is active — re-establishing would drop the in-flight connection and risk incidents. They instead reuse the existing session for the same appliance (`-DryRun` is exempt, as it never makes a real connection).
+- New `Private/GuardRail.ps1` with `Assert-GuardRail`: a case-insensitive **regex** matched against the resolved server name that aborts with no changes on mismatch (e.g. `-GuardRail 'test\-srv'`). Destructive confirmation (type `YES`) is still required unless `-SkipConfirmation`/`-DryRun`, or the run is automated (auto-cancels unless `-SkipConfirmation`).
+- Wired into `Configure-PhysicalBuild`, `Start-PhysicalServerBuild`, `Invoke-IsoDeploy`, `Update-Firmware`, and `Test-ServerConnectivity` so a typo/wrong serial can never overwrite a production server with a Windows ISO + firmware.
+
+<a name="automated-live-scripts"></a>
+
+#### Automated live scripts
+
+- Added `scripts/testBuildDeploy.ps1` (273 lines) and `scripts/testConnectAndList.ps1` (236 lines) to exercise connect/list/build paths against a live appliance without manual stepping.
+- `Automation.psd1` + `Automation.psm1` register `GuardRail.ps1`; new `Test-ServerConnectivity.Tests.ps1` (89 lines) and extra `Connect-OneView` / `Configure-PhysicalBuild` / `Start-PhysicalServerBuild` / `Update-Firmware` / `Invoke-IsoDeploy` unit tests.
+
+<a name="verification-7"></a>
+
+#### Verification
+
+- `Connect-OneView` to a second appliance while connected → `Already connected to OneView appliance '…'. Cannot reconnect … Run Disconnect-OneView first` (no drop). `Assert-GuardRail` with a non-matching name aborts with `GUARD RAIL MISMATCH - ACTION BLOCKED` and zero changes. New/updated unit tests pass under `make test`.
+
+<a name="8-automated-live-testing-harness-captured-test-results"></a>
+
+### 8) Automated live testing harness + captured test results
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-12 | Added an automated live-testing harness and captured a dated run of OneView connectivity/build results into `changes.md` | Kev Everall |
+
+<a name="harness"></a>
+
+#### Harness
+
+- `add automated live testing` introduces the scaffolding that drives the live scripts from §7 against a real appliance and records outcomes, so repeated runs are reproducible rather than manual.
+- Updated `docs/Automation/automation_commands.md` with the live-test workflow and regenerated the affected `docs/dynamic-code-docs/*` pages to match current function signatures.
+
+<a name="captured-results"></a>
+
+#### Captured results
+
+- `test results 11-08-2026` appended a dated results section to `changes.md` documenting the 2026-08-11 live run (connectivity, server list, build/deploy smoke checks).
+
+<a name="9-parameter-rename-managementhost-to-oneviewhost-get-oneviewconnectionstatus-overhaul"></a>
+
+### 9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-13 | Renamed the OneView connectivity parameter from `-ManagementHost` to `-OneViewHost` across commands and tests; rewrote `Get-OneViewConnectionStatus` with a `_Format-ConnectionStatusResult` renderer and `-PassThru` | Kev Everall |
+
+<a name="rename"></a>
+
+#### Parameter rename `ManagementHost` → `OneViewHost`
+
+- Applied consistently in `Connect-OneView`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Set-MaintenanceMode`, `Test-ServerConnectivity`, `Get-MaintenanceStatusReport`, the `OneViewSession`/`ParameterValidation`/`Logging` private helpers, and all corresponding `*.Tests.ps1` + `dynamic-code-docs` pages.
+- This aligns OneView connectivity commands with the SCOM-vs-OneView host distinction introduced earlier (see §4/§6) and removes confusion between the SCOM management host and the HPE OneView appliance.
+
+<a name="connection-status-overhaul"></a>
+
+#### `Get-OneViewConnectionStatus` overhaul
+
+- Rewrote the command (138 lines changed) to emit a concise, colour-coded status summary via new `Private/_Format-ConnectionStatusResult`: appliance OneView version, server count, per-server power/health, session source (`HPEOneViewModule` when reusing an active session vs `Explicit`), and module name.
+- Added `-PassThru` to return the structured result on the success stream; trimmed `changes.md` (the old sprawling change notes) down by ~400 lines in the same commit.
+
+<a name="verification-9"></a>
+
+#### Verification
+
+- `Get-OneViewConnectionStatus` renders the new summary; `-PassThru` returns the object; all renamed parameters resolve in unit tests (`Connect-OneView`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Set-MaintenanceMode`, `Test-ServerConnectivity`, `Setup-Profile`) — pass under `make test`.
+
+<a name="10-shared-output-formatting-connect-oneview-rewrite-runbook-v2"></a>
+
+### 10) Shared output formatting + `Connect-OneView` rewrite + runbook v2
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-17 | Added `OutputFormatter.ps1` shared renderers + `_Publish-Result`; rewrote `Connect-OneView` to a status-check with `-Json`/`-PassThru` and a `_Format-ConnectivityResult` view; added `docs/Automation/runbook-requirements-v2.md` | Kev Everall |
+
+<a name="output-formatter"></a>
+
+#### Shared output formatting (`OutputFormatter.ps1`)
+
+- `_ConvertTo-FriendlyLabel` (code key → human-readable label), `_Test-IsScalar`, `_Stringify-Cell`, `_Render-KeyValue` (nested structures), `_Format-TableFromObjects`, `_Format-HumanReadable` (recursive indented lists/tables), and `_Publish-Result` (centralized result emission with JSON + custom-view options). Documented each in `docs/dynamic-code-docs/`.
+
+<a name="connect-oneview-rewrite"></a>
+
+#### `Connect-OneView` rewrite
+
+- Now behaves as a **connectivity status check** rather than a bare connect: validates the host from `configs/connection_hosts.json` (`-JsonConfig`) so it stays non-interactive, reuses an active session via the §7 guard, and renders via new `_Format-ConnectivityResult`.
+- Added `-PassThru` (return the structured `[hashtable]`) and `-Json` (emit a `ConvertTo-Json -Depth 6 -Compress` string) so the result is machine-consumable in pipelines/automation.
+
+<a name="runbook-v2"></a>
+
+#### Runbook requirements v2
+
+- Added `docs/Automation/runbook-requirements-v2.md` (331 lines) capturing the revised, runbook-aligned requirements; refreshed `automation_commands.md` to match the new parameter/output shapes.
+
+<a name="verification-10"></a>
+
+#### Verification
+
+- `Connect-OneView -DryRun` returns the structured result; `-Json` emits a compact JSON string; `-PassThru` returns the hashtable; `_Format-ConnectivityResult`/`_Format-HumanReadable` exercised by the updated `Connect-OneView.Tests.ps1`. `make test` green.
+
+<a name="11-test-buildparams-validate-request-hardening"></a>
+
+### 11) `Test-BuildParams` / `_Validate-Request` hardening
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-17 | `Test-BuildParams` now validates and resolves the base ISO path to an iLO boot URL (rejecting local drives) and returns a structured result; `_Validate-Request` + `Validators` tests hardened | Kev Everall |
+
+<a name="root-cause-11"></a>
+
+#### Change
+
+- `Test-BuildParams` shifted from "return a list of error strings" to "validate the base Windows ISO path and **resolve the iLO boot URL**". It now accepts a UNC/SMB or HTTPS path and produces a structured result (`Success`, `IsoUrl` → `cifs://…` or `https://…`), explicitly **rejecting local drive paths** on the automation host (consistent with the §1 admin-code-removal rule).
+- `_Validate-Request` tightened its checks; `Validators.Unit.Tests.ps1` expanded (32 lines) to cover the new resolution behaviour. `automation_commands.md` regenerated to reflect the revised contract.
+
+<a name="verification-11"></a>
+
+#### Verification
+
+- `Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'` → `Success=$true`, `IsoUrl='cifs://fileserver/isos/WinSrv2025.iso'`; `https://…` resolves to `https://…`; local-drive paths fail validation. `Validators` unit tests pass.
+
+<a name="12-parameter-rename-srvrid-to-serveridentifier-wildcard-filtering-in-get-oneviewserverlist"></a>
+
+### 12) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-18 | Renamed `-SrvrId` → `-ServerIdentifier` across commands/tests for consistency; `Get-OneViewServerList` gained a `-Filter` supporting PowerShell-style wildcards for name/health/power | Kev Everall |
+
+<a name="rename-12"></a>
+
+#### Parameter rename `SrvrId` → `ServerIdentifier`
+
+- Reverted the earlier abbreviation (see `8f71040` "abbreviate OneView command parameters") in favour of the explicit, self-documenting `-ServerIdentifier` across `Configure-PhysicalBuild`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Get-OneViewServerTarget`, `Start-PhysicalServerBuild`, `Test-PreBuildValidation`, their unit tests, and `automation_commands.md`.
+
+<a name="wildcard-filtering"></a>
+
+#### Wildcard filtering in `Get-OneViewServerList`
+
+- New `-Filter` parses `health:<value>` / `power:<value>` / `name:<value>` into case-insensitive predicate regexes validated before connecting. Matching is **substring-by-default** (e.g. `health:Critical`, `name:PROD`) and honours PowerShell wildcards (`*`, `?`) via the shared `_ConvertToWildcardRegex` (e.g. `name:PROD-*`, `name:srv-0?`).
+- `_ConvertToWildcardRegex` (anchored, case-insensitive) lives alongside the command; unsupported filter forms return a clear `Unsupported -Filter …` error with no connection attempted.
+
+<a name="verification-12"></a>
+
+#### Verification
+
+- `Get-OneViewServerList -Filter 'name:PROD-*'` matches `PROD-SRV-01`; `health:*Warning*` matches warning states; `power:On` filters by power; `name:PROD` substring-matches; an invalid filter returns the `Unsupported -Filter` error. `Get-OneViewServerTarget.Unit.Tests.ps1` (51 lines added) and the renamed-parameter tests pass.
+
+<a name="13-connect-oneview-converttowildcardregex-docs-alias-inventory-tests"></a>
+
+### 13) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-18 | Documented `Connect-OneView`'s connectivity result handling (`_Complete-ConnectOneViewResult`) and `_ConvertToWildcardRegex`; added `OneViewAliasInventory.Unit.Tests.ps1` to verify documented aliases exist in parameter metadata | Kev Everall |
+
+<a name="docs-13"></a>
+
+#### Documentation
+
+- Added `docs/dynamic-code-docs/_Complete-ConnectOneViewResult.md` describing `Connect-OneView`'s connectivity result object, and `_ConvertToWildcardRegex.md` describing the PowerShell-wildcard → regex conversion used by the §12 filter.
+- `automation_commands.md` and `runbook-requirements-v2.md` refreshed to match current signatures.
+
+<a name="alias-inventory-tests"></a>
+
+#### Alias inventory tests
+
+- New `tests/powershell/OneViewAliasInventory.Unit.Tests.ps1` validates that **every documented custom alias is present in the command's parameter metadata**, closing the gap between docs and implementation so an alias documented in `automation_commands.md` can never silently disappear from the code.
+
+<a name="verification-13"></a>
+
+#### Verification
+
+- `OneViewAliasInventory.Unit.Tests.ps1` parses the documented alias table and asserts each alias resolves on the real command; failures surface a missing alias immediately. Passes under `make test`.
+
+<a name="14-repo-hygiene-lf-normalization-git-workflow-docs"></a>
+
+### 14) Repo hygiene: LF normalization + git workflow docs
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-13 | Added `.gitattributes` to normalise line endings (stop `.md`/`.ps1` churn across Stash/GitHub) and documented the rebase-hell-free git workflow in `git_process.md` | Kev Everall |
+
+<a name="line-endings"></a>
+
+#### Line-ending normalization
+
+- Added `.gitattributes` with `*.md`/`*.ps1` (and related text) set to `eol=lf` so cross-platform editors and the Stash↔GitHub mirror stop generating meaningless whole-file diffs on every commit.
+
+<a name="git-workflow-docs"></a>
+
+#### Git workflow docs (`git_process.md`)
+
+- Added `git_process.md` describing a rebase-hell-free flow: `pull.ff only`, a Stash mirror, and a one-`reset` recovery path; later expanded for clarity/structure. (The standalone file was subsequently consolidated/removed in favour of the in-repo guidance — see §15 — leaving `.gitattributes` as the durable change.)
+
+<a name="15-testing-issues-documentation-oneview-connectivity"></a>
+
+### 15) Testing-issues documentation (OneView connectivity)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-14 | Added `wip/testing-issues.md` capturing detailed OneView connectivity test issues and ongoing investigation notes | Kev Everall |
+
+<a name="scope"></a>
+
+#### Scope
+
+- `docs: add detailed testing issues documentation for OneView connectivity tests` introduced `wip/testing-issues.md` (694 lines) logging live-connectivity failures, environment/config gaps, and remediation ideas for the OneView test surface.
+- A later commit extended the same working file with further findings (843 lines added), keeping the investigation trail in one place under `wip/` rather than fragmenting it across commit messages.
