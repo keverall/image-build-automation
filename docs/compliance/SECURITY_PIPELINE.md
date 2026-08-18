@@ -21,7 +21,7 @@ infrastructure. It treats the pipeline itself as an in-scope ICT system.
 
 ---
 
-<a name="1-what-the-pipeline-now-does"></a>
+<a id="1-what-the-pipeline-now-does"></a>
 
 ## 1. What the pipeline now does
 
@@ -48,7 +48,7 @@ Secret Detection (Gitleaks) **is** available on all tiers and runs a
 
 ---
 
-<a name="2-remediation-posture-report-only-enforce"></a>
+<a id="2-remediation-posture-report-only-enforce"></a>
 
 ## 2. Remediation posture (report-only → enforce)
 
@@ -76,7 +76,7 @@ commitment.**
 
 ---
 
-<a name="3-the-security-baseline-how-exceptions-work"></a>
+<a id="3-the-security-baseline-how-exceptions-work"></a>
 
 ## 3. The security baseline — how exceptions work
 
@@ -99,7 +99,7 @@ Regenerate after a legitimate fix: `pwsh -File scripts/ci-security-check.ps1
 
 ---
 
-<a name="4-findings-that-block-an-emir-review-code-remediation-separate-program"></a>
+<a id="4-findings-that-block-an-emir-review-code-remediation-separate-program"></a>
 
 ## 4. Findings that block an EMIR review (code remediation — separate program)
 
@@ -122,7 +122,7 @@ must be tracked as their own change program.
 
 ---
 
-<a name="5-supply-chain-hardening-still-required-before-production"></a>
+<a id="5-supply-chain-hardening-still-required-before-production"></a>
 
 ## 5. Supply-chain hardening still required before production
 
@@ -135,7 +135,7 @@ must be tracked as their own change program.
 
 ---
 
-<a name="6-retention"></a>
+<a id="6-retention"></a>
 
 ## 6. Retention
 

@@ -26,7 +26,7 @@
 
 ---
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
@@ -53,14 +53,14 @@ iRequest / ServiceNow / Jira
 
 ---
 
-<a name="step-1-pipeline-configuration-gitlab-ciyml"></a>
+<a id="step-1-pipeline-configuration-gitlab-ciyml"></a>
 
 ## Step 1 - Pipeline configuration (`.gitlab-ci.yml`)
 
 Pipeline jobs are defined as code in `.gitlab-ci.yml` and committed to the
 same repository as the automation scripts.
 
-<a name="required-file"></a>
+<a id="required-file"></a>
 
 ### Required file
 
@@ -90,7 +90,7 @@ maintenance-mode:
     - pwsh -File ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
 ```
 
-<a name="cicd-variables-project-defaults-override-source"></a>
+<a id="cicd-variables-project-defaults-override-source"></a>
 
 ### CI/CD Variables (project defaults / override source)
 
@@ -110,7 +110,7 @@ Set in **GitLab > Project Settings > CI/CD > Variables** (`/settings/ci_cd`).
 Variables passed directly in the trigger API payload override the values set
 in the CI/CD Variables UI for that invocation only.
 
-<a name="gitlab-ci-entry-point-script"></a>
+<a id="gitlab-ci-entry-point-script"></a>
 
 ### GitLab CI entry-point script
 
@@ -144,7 +144,7 @@ generated/logs/audit/maintenance_<CI_JOB_ID>_error.json    # on unhandled except
 
 ---
 
-<a name="step-2-generate-a-pipeline-trigger-token"></a>
+<a id="step-2-generate-a-pipeline-trigger-token"></a>
 
 ## Step 2 - Generate a Pipeline Trigger Token
 
@@ -164,11 +164,11 @@ required in both `Send-GitLabMaintenanceRequest.ps1` and any manual curl test.
 
 ---
 
-<a name="step-3-triggering-from-irequest"></a>
+<a id="step-3-triggering-from-irequest"></a>
 
 ## Step 3 - Triggering from iRequest
 
-<a name="rest-endpoint"></a>
+<a id="rest-endpoint"></a>
 
 ### REST endpoint
 
@@ -191,7 +191,7 @@ General > Advanced > Project ID**.
 The `ref` parameter specifies the branch or tag the pipeline runs against
 (`main` in most cases).
 
-<a name="powershell-payload-irequest-powershell-engine"></a>
+<a id="powershell-payload-irequest-powershell-engine"></a>
 
 ### PowerShell payload (iRequest PowerShell engine)
 
@@ -218,7 +218,7 @@ $Body = @{
 Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x-www-form-urlencoded'
 ```
 
-<a name="curl-payload-linux-style-webhook-runner"></a>
+<a id="curl-payload-linux-style-webhook-runner"></a>
 
 ### curl payload (Linux-style webhook runner)
 
@@ -234,7 +234,7 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
 
 ---
 
-<a name="powershell-helper-send-gitlabmaintenancerequest"></a>
+<a id="powershell-helper-send-gitlabmaintenancerequest"></a>
 
 ### PowerShell helper - `Send-GitLabMaintenanceRequest`
 
@@ -274,7 +274,7 @@ To run without blocking (fire-and-forget), pass `$null` for `-CallbackUrl`:
 Send-GitLabMaintenanceRequest -Action enable -TargetId CLU-CLUSTER-01 -CallbackUrl $null
 ```
 
-<a name="control-layer-integration-recommended"></a>
+<a id="control-layer-integration-recommended"></a>
 
 ### Control-layer integration (recommended)
 
@@ -290,7 +290,7 @@ $ctrl = New-GitLabCtrl -Params @{ TargetId = 'CLU-CLUSTER-01'; Action = 'enable'
 $result = $ctrl | Run-GitLab
 ```
 
-<a name="dry-run-mode"></a>
+<a id="dry-run-mode"></a>
 
 ### Dry-run mode
 
@@ -304,7 +304,7 @@ Send-GitLabMaintenanceRequest -Action enable -TargetId 'CLU-CLUSTER-01' -DryRun
 
 ---
 
-<a name="completion-callbacks"></a>
+<a id="completion-callbacks"></a>
 
 ## Completion callbacks
 
@@ -332,7 +332,7 @@ For iRequest callbacks, set the `X-API-Key` header from
 
 ---
 
-<a name="pipeline-status-polling-via-the-gitlab-api"></a>
+<a id="pipeline-status-polling-via-the-gitlab-api"></a>
 
 ## Pipeline status polling via the GitLab API
 
@@ -367,7 +367,7 @@ Status values: `created`, `waiting_for_resource`, `preparing`, `pending`,
 
 ---
 
-<a name="cluster-configuration"></a>
+<a id="cluster-configuration"></a>
 
 ## Cluster configuration
 
@@ -393,7 +393,7 @@ making any subsystem calls.
 
 ---
 
-<a name="comparison-with-legacy-ci-systems"></a>
+<a id="comparison-with-legacy-ci-systems"></a>
 
 ## Comparison with legacy CI systems
 
@@ -409,7 +409,7 @@ making any subsystem calls.
 
 ---
 
-<a name="network-requirements"></a>
+<a id="network-requirements"></a>
 
 ## Network requirements
 
@@ -425,7 +425,7 @@ in PowerShell, `--insecure` in curl).
 
 ---
 
-<a name="error-reference-callers"></a>
+<a id="error-reference-callers"></a>
 
 ## Error reference - callers
 

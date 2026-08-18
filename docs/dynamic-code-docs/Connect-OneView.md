@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 This is a connection-focused alias for Test-ServerConnectivity.  It validates network reachability and performs authentication in a single step, leaving an active OneView session available for subsequent commands (Get-OneViewServerList, Get-OneViewConnectionStatus, etc.). On a live run the appliance host is taken verbatim from -OneViewHost and credentials are entered interactively at the prompt.  Config files are never read during a live run. The OneView session persists for the remainder of the PowerShell session.  Use Disconnect-OneView to explicitly close it.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -34,11 +34,11 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 | `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. |
 | `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -46,7 +46,7 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 Connect-OneView -OneViewHost oneview.example.com Connect to the OneView appliance oneview.example.com.  Credentials are prompted for interactively.
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -54,7 +54,7 @@ Connect-OneView -OneViewHost oneview.example.com Connect to the OneView applianc
 Connect-OneView -DryRun Validate host resolution from config without connecting or making any changes.  Use this to test code safely.
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

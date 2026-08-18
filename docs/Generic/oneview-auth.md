@@ -20,13 +20,13 @@
 
 Configure `Set-MaintenanceMode` (HPE OneView hardware-level maintenance mode). OneView manages individual server hardware via iLO - see [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between OneView maintenance mode and iLO maintenance mode.
 
-<a name="oneview-session-management"></a>
+<a id="oneview-session-management"></a>
 
 ## OneView Session Management
 
 OneView connections use a **persistent session model**. The session is established once and remains active for subsequent commands until explicitly closed.
 
-<a name="establishing-a-connection"></a>
+<a id="establishing-a-connection"></a>
 
 ### Establishing a Connection
 
@@ -45,7 +45,7 @@ For lower-level diagnostics (dry-run config validation, JSON output), use `Test-
 
 The session is stored in `$global:ConnectedSessions` and is automatically reused by other OneView commands (`Get-OneViewServerList`, `Get-OneViewConnectionStatus`, etc.) without requiring re-authentication.
 
-<a name="closing-the-connection"></a>
+<a id="closing-the-connection"></a>
 
 ### Closing the Connection
 
@@ -61,7 +61,7 @@ Disconnect-OneView -Force
 
 The session is also automatically closed when the PowerShell session ends.
 
-<a name="session-lifecycle"></a>
+<a id="session-lifecycle"></a>
 
 ### Session Lifecycle
 
@@ -71,7 +71,7 @@ The session is also automatically closed when the PowerShell session ends.
 
 This model avoids repeated authentication overhead and aligns with the HPE OneView PowerShell module's session management.
 
-<a name="required-secrets-cyberark-safe-hpe-oneview"></a>
+<a id="required-secrets-cyberark-safe-hpe-oneview"></a>
 
 ## Required Secrets (CyberArk Safe: `HPE-OneView`)
 
@@ -80,11 +80,11 @@ This model avoids repeated authentication overhead and aligns with the HPE OneVi
 | `ONEVIEW_USER` | OneView appliance admin username |
 | `ONEVIEW_PASSWORD` | OneView appliance admin password |
 
-<a name="configuration-files"></a>
+<a id="configuration-files"></a>
 
 ## Configuration Files
 
-<a name="configsoneview_configjson"></a>
+<a id="configsoneview_configjson"></a>
 
 ### `configs/oneview_config.json`
 
@@ -105,7 +105,7 @@ This model avoids repeated authentication overhead and aligns with the HPE OneVi
 }
 ```
 
-<a name="configsservers_catalogueoneviewjson"></a>
+<a id="configsservers_catalogueoneviewjson"></a>
 
 ### `configs/servers_catalogue.oneview.json`
 
@@ -130,13 +130,13 @@ This model avoids repeated authentication overhead and aligns with the HPE OneVi
 }
 ```
 
-<a name="gitlab-ci-integration"></a>
+<a id="gitlab-ci-integration"></a>
 
 ## GitLab CI Integration
 
 In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job before any maintenance operations. 
 
-<a name="required-gitlab-cicd-variables-masked"></a>
+<a id="required-gitlab-cicd-variables-masked"></a>
 
 ### Required GitLab CI/CD Variables (Masked)
 
@@ -145,7 +145,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 | `CYBERARK_CCP_URL` | CyberArk AIM Web Service URL | `https://cyberark-ccp:443/AIMWebService/API/Accounts` |
 | `CYBERARK_APP_ID` | Application ID registered in CyberArk | `ci` |
 
-<a name="how-it-works"></a>
+<a id="how-it-works"></a>
 
 ### How it works
 
@@ -155,7 +155,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 4. Subsequent maintenance jobs source `secrets.env` to set environment variables
 5. `Set-MaintenanceMode` reads these variables via `Get-OneViewCredentials`
 
-<a name="manual-testing"></a>
+<a id="manual-testing"></a>
 
 ### Manual Testing
 
@@ -168,7 +168,7 @@ $env:ONEVIEW_PASSWORD = 'SecurePassword123!'
 pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "https://cyberark-ccp:443/AIMWebService/API/Accounts" -AppId "ci"
 ```
 
-<a name="setup-script"></a>
+<a id="setup-script"></a>
 
 ## Setup Script
 

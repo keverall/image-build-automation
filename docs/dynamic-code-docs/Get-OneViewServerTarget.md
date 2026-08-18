@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Sends a query against the OneView /rest/server-hardware endpoint and returns a normalized hashtable describing the server.  Validates health (must be OK) and tolerates power state Off or On. STRICT SINGLE-SERVER: this command must resolve to exactly one server. A query that matches more than one server is a hard failure (Success=$false) rather than a warning - it never silently picks the first match, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). Connection to the appliance is handled by the shared Resolve-OneViewSession helper (prompts for the host/credentials when needed) and the session persists; this command never disconnects.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -40,11 +40,11 @@ Sends a query against the OneView /rest/server-hardware endpoint and returns a n
 | `-MockResult` _(Aliases: -Mock)_ | Hashtable to return without making any HTTP calls. Used for tests. |
 | `-DryRun` _(Aliases: -Dry)_ | Print query without performing it. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -52,7 +52,7 @@ Sends a query against the OneView /rest/server-hardware endpoint and returns a n
 Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'PROD-SERVER-01'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -60,7 +60,7 @@ Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 
 Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

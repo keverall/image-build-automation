@@ -18,13 +18,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Queries GET /rest/server-hardware across all pages and returns a normalised list of servers (name, serial, model, power state, health, iLO IP, enclosure). Supports an optional -Filter to narrow the result by health, power state, or name (substring/wildcard match).
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -43,11 +43,11 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 | `-DryRun` _(Aliases: -Dry)_ | Print the query without performing it. |
 | `-PassThru` _(Aliases: -PT)_ | By default the command only prints a human-readable table to the terminal and emits NO object to the pipeline (so the console is not cluttered with a raw hashtable/json dump). Pass -PassThru to also return the structured [hashtable] (Success, Count, Servers, Error) for use by scripts or the module Router. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -55,7 +55,7 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 Get-OneViewServerList -OneViewHost 'oneview.ad.example.com'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -63,7 +63,7 @@ Get-OneViewServerList -OneViewHost 'oneview.ad.example.com'
 Get-OneViewServerList -OneViewHost 'oneview.ad.example.com' -Filter 'health:Critical'
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -71,7 +71,7 @@ Get-OneViewServerList -OneViewHost 'oneview.ad.example.com' -Filter 'health:Crit
 Get-OneViewServerList Runs without parameters: reuses an active OneView session if one exists (Connect-OneView), otherwise returns Success=$false with a "not connected" message instead of prompting for a host.
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

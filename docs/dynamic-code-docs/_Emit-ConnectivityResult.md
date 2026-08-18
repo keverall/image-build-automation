@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Delegates to _Publish-Result so behaviour is identical across all commands: a human-readable report by default (no truncated hashtable dump on the terminal / in logs), with -Json / -PassThru for data consumers. The rich, command-specific _Format-ConnectivityResult view is supplied as the -CustomView so the connectivity report keeps its familiar layout. Pass -Quiet to suppress the report when the caller will handle display itself.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

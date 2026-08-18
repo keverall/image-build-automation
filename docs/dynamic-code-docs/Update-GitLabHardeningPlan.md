@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Records an execution-evidence row in docs/Automation/GITLAB_HARDENING_TEST_PLAN.md for a pipeline run that exercised the EMIR/DORA hardening controls (GitLab native Secret Detection, SAST, the PSScriptAnalyzer security gate, code coverage, dependency/container scanning, runner-OS detection). It also records the test-unit coverage figure, then regenerates the timestamped HTML snapshot in docs/Automation/Testing_Reports/ (same convention as the Automation and OneView plans, so the GitLab plan appears alongside them as evidence). The script mirrors Update-TestProgress.ps1 and shares its pure helpers (scripts/TestProgress.Common.ps1). It can be driven interactively via `make gitlab-hardening-update` or non-interactively from the GitLab compliance-evidence job via environment variables. Env vars (non-interactive): GH_REASON       - reason/ref for the run (ticket, MR) GH_PIPELINEJOB  - pipeline or job identifier GH_ENV          - environment (e.g. "GitLab CI", "Bank GitLab - UAT") GH_RESULT       - Pass / Fail / Partial GH_NOTES        - free-text reference notes GH_COVERAGE     - coverage percentage measured this run GH_THRESHOLD    - coverage threshold (e.g. "70") GH_ENFORCED     - "report" | "enforce" GH_ADD_ROW      - "1" to append an evidence row (default: refresh date only) GH_ADD_COV_ROW  - "1" to append a coverage row
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -29,7 +29,7 @@ Records an execution-evidence row in docs/Automation/GITLAB_HARDENING_TEST_PLAN.
 | `-PlanPath` | Path to GITLAB_HARDENING_TEST_PLAN.md. |
 | `-SkipHtml` | Skip HTML regeneration (used by tests to stay hermetic). |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

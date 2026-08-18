@@ -24,13 +24,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 9](#example-9)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a logical cluster defined in clusters_catalogue.json. Supports immediate enable/disable as well as scheduled windows with automatic disable via Windows Task Scheduler. Integrates with OpsRamp for metric/alert emission and can send email notifications.  The function is the PowerShell implementation. All datetime values are UTC only. Local time conversion is not performed.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -52,11 +52,11 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 | `-NoSchedule` | Do not create a Windows Scheduled Task for automatic disable at end time. |
 | `-Json` | Output as JSON for API/iRequest integration. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -64,7 +64,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # Validate configuration without making changes Set-MaintenanceMode -Action validate -TargetId 'CLU-CLUSTER-01' -Mode scom
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -72,7 +72,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # Enable maintenance in Test environment with relative time Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom -Environment Test -Start 'now' -End '+2hours'
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -80,7 +80,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # Enable maintenance in Prod environment with absolute UTC time Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -Start '2026-06-11 22:00' -End '2026-06-12 02:00'
 ```
 
-<a name="example-4"></a>
+<a id="example-4"></a>
 
 ### Example 4
 
@@ -88,7 +88,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # Disable maintenance with custom stabilization wait Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -PostDisableWaitSeconds 60
 ```
 
-<a name="example-5"></a>
+<a id="example-5"></a>
 
 ### Example 5
 
@@ -96,7 +96,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # Use host override for emergency maintenance Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Environment Prod -OneViewHost 'backup-server.local' -Start 'now' -End '+4hours'
 ```
 
-<a name="example-6"></a>
+<a id="example-6"></a>
 
 ### Example 6
 
@@ -104,7 +104,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # Dry run to test configuration Set-MaintenanceMode -Action enable -TargetId 'TEST-CLUSTER-01' -Mode scom -Environment Test -Start 'now' -End '+1hour' -DryRun
 ```
 
-<a name="example-7"></a>
+<a id="example-7"></a>
 
 ### Example 7
 
@@ -112,7 +112,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # OneView single server maintenance Set-MaintenanceMode -Action enable -TargetId 'server01.ad.example.com' -Mode oneview -Environment Test -Start 'now' -End '+1hour'
 ```
 
-<a name="example-8"></a>
+<a id="example-8"></a>
 
 ### Example 8
 
@@ -120,7 +120,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # OneView with serial number (Marin's preference) Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' -Environment Test -Start 'now' -End '+1hour'
 ```
 
-<a name="example-9"></a>
+<a id="example-9"></a>
 
 ### Example 9
 
@@ -128,7 +128,7 @@ Orchestrates maintenance-mode operations across SCOM 2015 and HPE OpenView for a
 # SCOM single server (no CLU- prefix) Set-MaintenanceMode -Action enable -TargetId 'myserver01' -Mode scom -Environment Prod -Start 'now' -End '+2hours'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

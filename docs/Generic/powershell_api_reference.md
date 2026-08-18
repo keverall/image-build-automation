@@ -24,7 +24,7 @@
 - [Running Tests](#running-tests)
 - [See Also](#see-also)
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
@@ -32,7 +32,7 @@
 
 ---
 
-<a name="requirements"></a>
+<a id="requirements"></a>
 
 ## Requirements
 
@@ -50,7 +50,7 @@ Optional modules:
 
 ---
 
-<a name="directory-layout"></a>
+<a id="directory-layout"></a>
 
 ## Directory Layout
 
@@ -66,11 +66,11 @@ hpe-windows-iso-automation/
 
 ---
 
-<a name="quick-start"></a>
+<a id="quick-start"></a>
 
 ## Quick Start
 
-<a name="import-the-module"></a>
+<a id="import-the-module"></a>
 
 ### Import the Module
 
@@ -78,7 +78,7 @@ hpe-windows-iso-automation/
 Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 ```
 
-<a name="auto-generated-documentation"></a>
+<a id="auto-generated-documentation"></a>
 
 ### Auto-Generated Documentation
 
@@ -88,7 +88,7 @@ A complete reference for all PowerShell cmdlets is auto-generated and available 
 docs\dynamic-code-docs\INDEX.md
 ---
 
-<a name="generate-a-deterministic-uuid"></a>
+<a id="generate-a-deterministic-uuid"></a>
 
 ### Generate a Deterministic UUID
 
@@ -96,7 +96,7 @@ docs\dynamic-code-docs\INDEX.md
 New-Uuid -ServerName 'srv01.corp.local'
 ```
 
-<a name="build-configmgr-bootable-media-iso"></a>
+<a id="build-configmgr-bootable-media-iso"></a>
 
 ### Build ConfigMgr Bootable Media ISO
 
@@ -105,7 +105,7 @@ New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' `
     -DistributionPoint 'dp01.ad.example.com' -BootImageName 'WinPE x64 - HPE'
 ```
 
-<a name="deploy-isos-via-ilo-redfish"></a>
+<a id="deploy-isos-via-ilo-redfish"></a>
 
 ### Deploy ISOs via iLO Redfish
 
@@ -113,7 +113,7 @@ New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' `
 Invoke-IsoDeploy -Method redfish -Server 'srv01.corp.local' -DryRun
 ```
 
-<a name="physical-server-build"></a>
+<a id="physical-server-build"></a>
 
 ### Physical Server Build
 
@@ -125,7 +125,7 @@ Start-PhysicalServerBuild -ServerIdentifier 'PROD-SERVER-01' `
     -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com' -DryRun
 ```
 
-<a name="maintenance-mode"></a>
+<a id="maintenance-mode"></a>
 
 ### Maintenance Mode
 
@@ -151,7 +151,7 @@ Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' `
 
 For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md#top).
 
-<a name="physical-server-build-workflow"></a>
+<a id="physical-server-build-workflow"></a>
 
 ## Physical Server Build Workflow
 
@@ -172,7 +172,7 @@ See [Automation Command Reference](../Automation/automation_commands.md#top) for
 
 ---
 
-<a name="orchestrator-api-reference"></a>
+<a id="orchestrator-api-reference"></a>
 
 ## Orchestrator API Reference
 
@@ -185,7 +185,7 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 | Route table | `$script:RouteMap` |
 | Request validator | `_Validate-Request` |
 
-<a name="request-types"></a>
+<a id="request-types"></a>
 
 ### Request Types
 
@@ -210,7 +210,7 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 | `publish_iso` | `Publish-BootIso` | `IsoPath` |
 | `ilo_redfish_mount` | `Invoke-IloRedfish` | `Action`, `IloIp` |
 
-<a name="orchestrator-signature"></a>
+<a id="orchestrator-signature"></a>
 
 ### Orchestrator Signature
 
@@ -218,7 +218,7 @@ The orchestrator/routing layer is the **primary programmatic entry point** for a
 $result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
 ```
 
-<a name="common-return-schema"></a>
+<a id="common-return-schema"></a>
 
 ### Common Return Schema
 
@@ -240,7 +240,7 @@ $result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
 }
 ```
 
-<a name="request-flow"></a>
+<a id="request-flow"></a>
 
 ### Request Flow
 
@@ -268,7 +268,7 @@ Result envelope  ──► Orchestrator stamps RequestType + Timestamp  ──�
 
 ---
 
-<a name="running-tests"></a>
+<a id="running-tests"></a>
 
 ## Running Tests
 
@@ -292,7 +292,7 @@ See [testing.md](testing.md#top) for the full Pester guide.
 
 ---
 
-<a name="see-also"></a>
+<a id="see-also"></a>
 
 ## See Also
 

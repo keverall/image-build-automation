@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.txt, resolves the bootable ISO under -IsoDir, and delegates the actual virtual-media mount + boot to Invoke-IloRedfish.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -43,11 +43,11 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt before deployment. |
 | `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any deployment. If it is OMITTED the command fails early with an expressive, logged error and performs no deployment. If it does NOT match the target, the deployment is aborted with no changes. When it matches, a destructive confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -55,7 +55,7 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -63,7 +63,7 @@ Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinS
 Invoke-IsoDeploy -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.example.com' -ExternalIsoPath 'H:\windows.iso' -RepoLocalPath 'C:\osdrepo' -RepoBaseUrl 'https://artifacts/isos'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Scans generated/logs and generated/output directories for log files. Groups logs by type (based on filename pattern) and removes excess files beyond the configured maximum (default: 10 per type). Also removes legacy redundant log files (pester-log.txt, pester.log). Skips coverage report files and .gitkeep files.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -30,11 +30,11 @@ Scans generated/logs and generated/output directories for log files. Groups logs
 |-----------|-------------|
 | `-MaxLogsToKeep` | Maximum number of log files to keep per type (default: 10) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -42,7 +42,7 @@ Scans generated/logs and generated/output directories for log files. Groups logs
 pwsh -File scripts/prune-logs.ps1
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

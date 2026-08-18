@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Standalone script executed by GitLab CI/CD pipelines to perform maintenance mode operations. Wraps Set-MaintenanceMode with GitLab-specific context, logging, and callback support. Outputs results as JSON artifacts and sends web callbacks on completion. Integrates with GitLab pipeline variables for configuration.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -44,11 +44,11 @@ Standalone script executed by GitLab CI/CD pipelines to perform maintenance mode
 | `-CALLBACK_URL` | URL for completion callback (from MAINTENANCE_CALLBACK_URL) |
 | `-CALLBACK_API_KEY` | API key for callback authentication (from MAINTENANCE_API_KEY) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -56,7 +56,7 @@ Standalone script executed by GitLab CI/CD pipelines to perform maintenance mode
 pwsh -File scripts/gitlab/Invoke-GitLabMaintenance.ps1 -ACTION enable -CLUSTER_ID 'CLUSTER01'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -64,7 +64,7 @@ pwsh -File scripts/gitlab/Invoke-GitLabMaintenance.ps1 -ACTION enable -CLUSTER_I
 pwsh -File scripts/gitlab/Invoke-GitLabMaintenance.ps1 -ACTION validate -CLUSTER_ID 'CLUSTER01' -DRY_RUN
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -28,7 +28,7 @@ history (`git log`).
 > and is excluded from documentation. This root `changes.md` is the canonical
 > changelog.
 
-<a name="standards"></a>
+<a id="standards"></a>
 
 ## Standards
 
@@ -38,7 +38,7 @@ aligned with the automation HPE OneView requirements in
 physical HPE server build automation). They are the yardstick used to advise
 when a request would go against best practice.
 
-<a name="devops"></a>
+<a id="devops"></a>
 
 ### DevOps
 
@@ -57,7 +57,7 @@ when a request would go against best practice.
   runbook's Security & Control Requirements); production builds follow approval /
   CRQ traceability where required.
 
-<a name="hpe-oneview"></a>
+<a id="hpe-oneview"></a>
 
 ### HPE OneView
 
@@ -82,7 +82,7 @@ when a request would go against best practice.
   certificates over certificate-bypass (lab/test only) - runbook Security &
   Control Requirements.
 
-<a name="powershell"></a>
+<a id="powershell"></a>
 
 ### PowerShell
 
@@ -108,11 +108,11 @@ when a request would go against best practice.
   REST patterns documented in the runbook (e.g. virtual-media insert, boot-source
   override, reset).
 
-<a name="changes"></a>
+<a id="changes"></a>
 
 ## Changes
 
-<a name="2026-07-30-oneview-module-pinning-reworked-to-latest-installed-on-this-server"></a>
+<a id="2026-07-30-oneview-module-pinning-reworked-to-latest-installed-on-this-server"></a>
 
 ### 2026-07-30 - OneView module pinning reworked to "latest installed on this server"
 
@@ -138,7 +138,7 @@ when a request would go against best practice.
   `Get-OneViewModuleStatus`. All OneView automation tests now pass (99/99) on
   Linux without segfaulting.
 
-<a name="2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs"></a>
+<a id="2026-07-30-documentation-tooling-aligned-between-make-docs-and-make-fix-docs"></a>
 
 ### 2026-07-30 - Documentation tooling aligned between make docs and make fix-docs
 
@@ -154,7 +154,7 @@ when a request would go against best practice.
 - Collapsed multiple consecutive blank lines into a single blank line across all
   generated documentation.
 
-<a name="2026-08-13-oneview-liststatus-commands-print-formatted-tables"></a>
+<a id="2026-08-13-oneview-liststatus-commands-print-formatted-tables"></a>
 
 ### 2026-08-13 - OneView list/status commands print formatted tables
 
@@ -176,7 +176,7 @@ when a request would go against best practice.
   object; all affected suites pass (`Get-OneViewServerList` 10/10,
   `Get-OneViewConnectionStatus` 17/17).
 
-<a name="2026-08-13-standardized-oneview-host-parameter-on-oneviewhost"></a>
+<a id="2026-08-13-standardized-oneview-host-parameter-on-oneviewhost"></a>
 
 ### 2026-08-13 - Standardized OneView host parameter on -OneViewHost
 

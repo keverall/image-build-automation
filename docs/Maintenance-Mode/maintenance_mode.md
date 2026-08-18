@@ -31,7 +31,7 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 
 ---
 
-<a name="flow"></a>
+<a id="flow"></a>
 
 ## Flow
 
@@ -43,7 +43,7 @@ Features include audit logging, OpsRamp telemetry, email notifications, and auto
 
 ---
 
-<a name="architecture"></a>
+<a id="architecture"></a>
 
 ## Architecture
 
@@ -69,7 +69,7 @@ iRequest or manual call (Set-MaintenanceMode)
 
 ---
 
-<a name="high-level-flow"></a>
+<a id="high-level-flow"></a>
 
 ## High-Level Flow
 
@@ -80,13 +80,13 @@ iRequest or manual call (Set-MaintenanceMode)
 
 ---
 
-<a name="functionality"></a>
+<a id="functionality"></a>
 
 ## Functionality
 
 ---
 
-<a name="scheduled-automatic-disable"></a>
+<a id="scheduled-automatic-disable"></a>
 
 ### Scheduled Automatic Disable
 
@@ -94,7 +94,7 @@ When enable is called without `-NoSchedule`, a one-shot OS task is created to ru
 
 ---
 
-<a name="audit-logging"></a>
+<a id="audit-logging"></a>
 
 ### Audit Logging
 
@@ -102,7 +102,7 @@ Every run writes a timestamped JSON file and appends one JSON line to a master l
 
 ---
 
-<a name="opsramp-integration"></a>
+<a id="opsramp-integration"></a>
 
 ### OpsRamp Integration
 
@@ -110,7 +110,7 @@ On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1
 
 ---
 
-<a name="environment-variables"></a>
+<a id="environment-variables"></a>
 
 ### Environment Variables
 
@@ -125,7 +125,7 @@ On enable/disable (non-dry-run): publish per-server metric `maintenance.mode` (1
 
 ---
 
-<a name="configuration-files"></a>
+<a id="configuration-files"></a>
 
 ### Configuration Files
 
@@ -144,7 +144,7 @@ Configuration lives in JSON files under `configs/`, plus one optional plain-text
 
 ---
 
-<a name="error-handling"></a>
+<a id="error-handling"></a>
 
 ### Error Handling
 
@@ -152,7 +152,7 @@ No automatic rollback is performed on partial failure (e.g., some servers succee
 
 ---
 
-<a name="timezone-and-scheduling"></a>
+<a id="timezone-and-scheduling"></a>
 
 ### Timezone and Scheduling
 
@@ -160,7 +160,7 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 
 ---
 
-<a name="security-considerations"></a>
+<a id="security-considerations"></a>
 
 ## Security Considerations
 
@@ -170,7 +170,7 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 
 ---
 
-<a name="troubleshooting"></a>
+<a id="troubleshooting"></a>
 
 ## Troubleshooting
 
@@ -184,7 +184,7 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 
 ---
 
-<a name="future-enhancements"></a>
+<a id="future-enhancements"></a>
 
 ## Future Enhancements
 
@@ -194,11 +194,11 @@ All datetime values are UTC only; no local timezone conversion is performed. Sup
 
 ---
 
-<a name="testing"></a>
+<a id="testing"></a>
 
 ## Testing
 
-<a name="maintenance-mode-test-runner"></a>
+<a id="maintenance-mode-test-runner"></a>
 
 ### Maintenance Mode Test Runner
 
@@ -220,7 +220,7 @@ Each test file contains BDD-style Pester `Describe`/`Context`/`It` blocks coveri
 
 ---
 
-<a name="change-history"></a>
+<a id="change-history"></a>
 
 ## Change History
 

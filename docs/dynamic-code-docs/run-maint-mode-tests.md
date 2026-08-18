@@ -15,17 +15,17 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Executes high-priority Pester tests for maintenance mode operations: - Test-ServerConnectivity.Tests.ps1 (connectivity validation - runs first) - Set-MaintenanceMode.Validation.Tests.ps1 - Set-MaintenanceMode.Enable.Tests.ps1 - Set-MaintenanceMode.Disable.Tests.ps1 Tests are ordered logically: connectivity checks first, then maintenance operations. Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/{environment}/maint_mode_tests_*.log Exits with code 1 if any tests fail.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -33,7 +33,7 @@ Executes high-priority Pester tests for maintenance mode operations: - Test-Serv
 pwsh -File scripts/run-maint-mode-tests.ps1
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

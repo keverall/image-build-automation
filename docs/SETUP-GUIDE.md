@@ -11,7 +11,7 @@
 - [Troubleshooting](#troubleshooting)
 - [Next Steps](#next-steps)
 
-<a name="quick-start-5-minutes"></a>
+<a id="quick-start-5-minutes"></a>
 
 ## Quick Start (5 Minutes)
 
@@ -36,7 +36,7 @@ Get-Command Set-MaintenanceMode
 
 ---
 
-<a name="what-gets-installed"></a>
+<a id="what-gets-installed"></a>
 
 ## What Gets Installed
 
@@ -46,7 +46,7 @@ Get-Command Set-MaintenanceMode
 
 ---
 
-<a name="manual-setup-if-make-setup-fails"></a>
+<a id="manual-setup-if-make-setup-fails"></a>
 
 ## Manual Setup (if `make setup` fails)
 
@@ -75,7 +75,7 @@ Reload after editing:
 
 ---
 
-<a name="uninstall"></a>
+<a id="uninstall"></a>
 
 ## Uninstall
 
@@ -85,7 +85,7 @@ pwsh -File scripts/Setup-Profile.ps1 -Uninstall
 
 ---
 
-<a name="troubleshooting"></a>
+<a id="troubleshooting"></a>
 
 ## Troubleshooting
 
@@ -98,7 +98,7 @@ pwsh -File scripts/Setup-Profile.ps1 -Uninstall
 
 ---
 
-<a name="next-steps"></a>
+<a id="next-steps"></a>
 
 ## Next Steps
 

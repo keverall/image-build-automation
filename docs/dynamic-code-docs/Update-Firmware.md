@@ -18,13 +18,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the reference implementation automation.cli.update_firmware_drivers module.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -41,11 +41,11 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 | `-DryRun` _(Aliases: -Dry)_ | Simulate without executing. |
 | `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any firmware update. If it is OMITTED the command fails early with an expressive, logged error and performs no update. If it does NOT match the target, the update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -53,7 +53,7 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -61,7 +61,7 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv
 Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -69,7 +69,7 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumbe
 Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

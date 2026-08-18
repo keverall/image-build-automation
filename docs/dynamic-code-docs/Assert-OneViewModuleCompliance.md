@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Returns Ok=$true when no other HPEOneView.*/HPOneView.* module is loaded and the intended $ModuleName matches the locked module (Resolve-PinnedOneViewModule). A non-compliant/loaded module holds cmdlets like Connect-OVMgmt, so importing the locked module alongside it is unsafe - Remove-OtherOneViewModules must run first.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -28,7 +28,7 @@ Returns Ok=$true when no other HPEOneView.*/HPOneView.* module is loaded and the
 |-----------|-------------|
 | `-ModuleName` | The module the caller intends to import. Omit to just validate the session against the locked module. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

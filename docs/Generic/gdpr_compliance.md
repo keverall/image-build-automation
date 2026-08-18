@@ -22,19 +22,19 @@
 - [Compliance Checklist](#compliance-checklist)
 - [Contact](#contact)
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
 This document outlines the GDPR (General Data Protection Regulation) compliance measures implemented in the HPE ProLiant Windows Server ISO Automation repository for the EU Bank client.
 
-<a name="data-protection-by-design-and-default"></a>
+<a id="data-protection-by-design-and-default"></a>
 
 ## Data Protection by Design and Default
 
 The automation pipeline has been designed with data protection principles at its core:
 
-<a name="1-data-minimization-article-51c"></a>
+<a id="1-data-minimization-article-51c"></a>
 
 ### 1. Data Minimization (Article 5(1)(c))
 
@@ -51,7 +51,7 @@ The automation pipeline has been designed with data protection principles at its
 - No application data from target servers
 - No network traffic content
 
-<a name="2-purpose-limitation-article-51b"></a>
+<a id="2-purpose-limitation-article-51b"></a>
 
 ### 2. Purpose Limitation (Article 5(1)(b))
 
@@ -63,7 +63,7 @@ All data collected is used solely for:
 
 Data is not repurposed for marketing, profiling, or unrelated analytics.
 
-<a name="3-storage-limitation-article-51e"></a>
+<a id="3-storage-limitation-article-51e"></a>
 
 ### 3. Storage Limitation (Article 5(1)(e))
 
@@ -78,7 +78,7 @@ Data is not repurposed for marketing, profiling, or unrelated analytics.
 - CI master/agent nodes configured with EU-based storage
 - No cross-border data transfers outside EEA without appropriate safeguards (Standard Contractual Clauses)
 
-<a name="4-integrity-confidentiality-article-51f"></a>
+<a id="4-integrity-confidentiality-article-51f"></a>
 
 ### 4. Integrity & Confidentiality (Article 5(1)(f))
 
@@ -90,7 +90,7 @@ Data is not repurposed for marketing, profiling, or unrelated analytics.
 - Container isolation: Each build runs in isolated workspace
 - Access controls: CI agents run with least-privilege service accounts
 
-<a name="personal-data-processing"></a>
+<a id="personal-data-processing"></a>
 
 ## Personal Data Processing
 
@@ -105,7 +105,7 @@ Data is not repurposed for marketing, profiling, or unrelated analytics.
 
 Since we process zero personal data, most GDPR obligations (data subject rights, consent, etc.) do not apply.
 
-<a name="lawful-basis-for-processing-article-6"></a>
+<a id="lawful-basis-for-processing-article-6"></a>
 
 ## Lawful Basis for Processing (Article 6)
 
@@ -115,13 +115,13 @@ Specifically:
 - **Legitimate interest:** The Bank has a legitimate interest in automating server provisioning to ensure security, compliance, and operational efficiency.
 - **Contractual necessity:** Automation is required by the Bank's IT infrastructure contracts and service level agreements.
 
-<a name="data-subject-rights"></a>
+<a id="data-subject-rights"></a>
 
 ## Data Subject Rights
 
 As this system does not process personal data, data subject rights (access, rectification, erasure, restriction, portability, objection) are not applicable. However, the Bank's Data Protection Officer (DPO) may request audit logs and data processing records at any time.
 
-<a name="data-protection-impact-assessment-dpia"></a>
+<a id="data-protection-impact-assessment-dpia"></a>
 
 ## Data Protection Impact Assessment (DPIA)
 
@@ -132,7 +132,7 @@ As this system does not process personal data, data subject rights (access, rect
 
 **Conclusion:** Full DPIA not required, but this statement serves as documentation of the assessment.
 
-<a name="data-breach-notification"></a>
+<a id="data-breach-notification"></a>
 
 ## Data Breach Notification
 
@@ -146,7 +146,7 @@ In the unlikely event of a breach involving this automation:
 - Container escape compromising host or other builds
 - Log injection attacks (unlikely given non-personal data)
 
-<a name="international-data-transfers"></a>
+<a id="international-data-transfers"></a>
 
 ## International Data Transfers
 
@@ -154,7 +154,7 @@ In the unlikely event of a breach involving this automation:
 - External APIs (HPE, OpsRamp) may process data outside EEA; ensure they have adequacy decisions or SCCs in place
 - No personal data is transferred; technical data only
 
-<a name="third-party-processors"></a>
+<a id="third-party-processors"></a>
 
 ## Third-Party Processors
 
@@ -167,7 +167,7 @@ In the unlikely event of a breach involving this automation:
 
 All processors must comply with Bank's third-party risk management requirements.
 
-<a name="data-controller-responsibilities"></a>
+<a id="data-controller-responsibilities"></a>
 
 ## Data Controller Responsibilities
 
@@ -178,7 +178,7 @@ The Bank (as data controller) is responsible for:
 - Maintaining documentation of this assessment
 - Responding to DPO inquiries
 
-<a name="records-of-processing-activities-ropa"></a>
+<a id="records-of-processing-activities-ropa"></a>
 
 ## Records of Processing Activities (ROPA)
 
@@ -193,7 +193,7 @@ Entry for this system:
 - **Data transfers:** To HPE, OpsRamp (non-EEA possible), see table above
 - **DPIA:** Not required (low risk)
 
-<a name="compliance-checklist"></a>
+<a id="compliance-checklist"></a>
 
 ## Compliance Checklist
 
@@ -212,7 +212,7 @@ Entry for this system:
 - [x] Documentation reviewed by DPO (pending)
 - [ ] Annual privacy review scheduled
 
-<a name="contact"></a>
+<a id="contact"></a>
 
 ## Contact
 

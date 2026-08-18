@@ -19,13 +19,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 4](#example-4)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Parses a Markdown file and generates a clickable Table of Contents based on headings. Optionally injects HTML anchor tags to ensure compatibility with Bitbucket and other renderers. Supports pipeline input, in-place updates, or writing to a new output file.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -37,11 +37,11 @@ Parses a Markdown file and generates a clickable Table of Contents based on head
 | `-MaxDepth` | Maximum heading depth to include (default: 3 = ###). |
 | `-NoAnchors` | Do not inject <a name="..."> anchor tags. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -49,7 +49,7 @@ Parses a Markdown file and generates a clickable Table of Contents based on head
 Generate-GitStash-MdToc -Path docs\file.md
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -57,7 +57,7 @@ Generate-GitStash-MdToc -Path docs\file.md
 Generate-GitStash-MdToc docs\file.md -InPlace
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -65,7 +65,7 @@ Generate-GitStash-MdToc docs\file.md -InPlace
 Get-ChildItem docs\*.md | Generate-GitStash-MdToc -InPlace
 ```
 
-<a name="example-4"></a>
+<a id="example-4"></a>
 
 ### Example 4
 
@@ -73,7 +73,7 @@ Get-ChildItem docs\*.md | Generate-GitStash-MdToc -InPlace
 Generate-GitStash-MdToc docs\file.md -MaxDepth 4 -Verbose
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -22,7 +22,7 @@ This directory holds all configuration for the automation pipeline. **Secrets ar
 
 > **Test/mock fixtures only — never used by live commands.** Every file in `configs/` is a *mock/test fixture*. **Live (terminal and pipeline) commands do NOT read these files.** Live commands are driven entirely by **command parameters** and a small set of documented environment variables (`ONEVIEW_USER`, `ONEVIEW_PASSWORD`, `ONEVIEW_MODULE_NAME`, `MAINTENANCE_HOST`, `HPE_DOWNLOAD_USER`, `SMTP_USER`, `OPSRAMP_*`). In particular, `oneview_config.json`'s `appliance`, `module_name`, and `credentials` are example values used only by unit tests and mocks — the live HPEOneView module is resolved automatically from the appliance's version (or the `ONEVIEW_MODULE_NAME` override) and is **never** taken from this file.
 
-<a name="summary-table"></a>
+<a id="summary-table"></a>
 
 ## Summary Table
 
@@ -46,7 +46,7 @@ This directory holds all configuration for the automation pipeline. **Secrets ar
 
 ---
 
-<a name="clusters_cataloguejson"></a>
+<a id="clusters_cataloguejson"></a>
 
 ## clusters_catalogue.json
 
@@ -90,7 +90,7 @@ Defines logical clusters, their member servers, SCOM groups, iLO endpoints, OneV
 
 ---
 
-<a name="servers_catalogueoneviewjson"></a>
+<a id="servers_catalogueoneviewjson"></a>
 
 ## servers_catalogue.oneview.json
 
@@ -113,7 +113,7 @@ OneView-centric server catalogue used for serial-number lookups.
 
 ---
 
-<a name="connection_hostsjson"></a>
+<a id="connection_hostsjson"></a>
 
 ## connection_hosts.json
 
@@ -138,7 +138,7 @@ Host resolution priority: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `con
 
 ---
 
-<a name="scom_configjson"></a>
+<a id="scom_configjson"></a>
 
 ## scom_config.json
 
@@ -177,7 +177,7 @@ Host resolution priority: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `con
 
 ---
 
-<a name="oneview_configjson"></a>
+<a id="oneview_configjson"></a>
 
 ## oneview_config.json
 
@@ -201,7 +201,7 @@ Host resolution priority: `-ManagementHost` → `$env:MAINTENANCE_HOST` → `con
 
 ---
 
-<a name="configmgr_configjson"></a>
+<a id="configmgr_configjson"></a>
 
 ## configmgr_config.json
 
@@ -224,7 +224,7 @@ Example/mock data only. In real builds these values are passed as runtime parame
 
 ---
 
-<a name="hpe_firmware_drivers_nov2025json"></a>
+<a id="hpe_firmware_drivers_nov2025json"></a>
 
 ## hpe_firmware_drivers_nov2025.json
 
@@ -259,7 +259,7 @@ HPE Smart Update Tools (SUT) repository and component manifest.
 
 ---
 
-<a name="windows_patchesjson"></a>
+<a id="windows_patchesjson"></a>
 
 ## windows_patches.json
 
@@ -288,7 +288,7 @@ Security update set applied via DISM offline patching.
 
 ---
 
-<a name="request_typesjson"></a>
+<a id="request_typesjson"></a>
 
 ## request_types.json
 
@@ -325,7 +325,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
 
 ---
 
-<a name="email_distribution_listsjson"></a>
+<a id="email_distribution_listsjson"></a>
 
 ## email_distribution_lists.json
 
@@ -353,7 +353,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
 
 ---
 
-<a name="opsramp_configjson"></a>
+<a id="opsramp_configjson"></a>
 
 ## opsramp_config.json
 
@@ -379,7 +379,7 @@ Authoritative map of automation request types to PowerShell handlers and CI stag
 
 ---
 
-<a name="environment-variable-cheat-sheet"></a>
+<a id="environment-variable-cheat-sheet"></a>
 
 ## Environment Variable Cheat Sheet
 

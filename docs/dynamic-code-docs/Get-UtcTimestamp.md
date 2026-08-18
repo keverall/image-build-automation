@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Returns current UTC timestamp in ISO 8601 format.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

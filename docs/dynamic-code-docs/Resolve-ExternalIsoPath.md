@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 The iLO virtual media controller requires network-accessible ISO sources. Supported formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Local file path: NOT supported — iLO cannot reach local drives. Supply an SMB/UNC or HTTPS path instead. This module never creates SMB shares or requires Administrator privileges. iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or 'C:\isos\win.iso'). The iLO BMC is a separate management controller on the physical server and cannot access local drives on your workstation.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -30,7 +30,7 @@ The iLO virtual media controller requires network-accessible ISO sources. Suppor
 | `-RepoLocalPath` | Local filesystem path of the ISO repository (for copying local files). |
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository (for constructing the accessible URL). |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

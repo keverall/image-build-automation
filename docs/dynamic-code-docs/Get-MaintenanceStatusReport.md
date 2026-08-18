@@ -18,13 +18,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Discovers clusters/groups and their member servers from the connected SCOM management group (live), then for each server collects: - SCOM maintenance mode state + active maintenance window (start/end) - HPE OneView maintenance mode state (linked per server by name/serial) - The cluster power schedule (from catalogue enrichment; SCOM has none) Live SCOM/OneView queries degrade gracefully to 'Unknown' when unreachable. In -DryRun / -IncludeLive:$false the catalogue is used as mock data only.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -39,11 +39,11 @@ Discovers clusters/groups and their member servers from the connected SCOM manag
 | `-Path` _(Aliases: -Out)_ | CSV output path. Defaults to generated/reports/MaintenanceStatusReport_<ts>.csv. |
 | `-DryRun` _(Aliases: -Dry)_ | Alias for -IncludeLive:$false - catalogue-only mock report, no connections. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -51,7 +51,7 @@ Discovers clusters/groups and their member servers from the connected SCOM manag
 Get-MaintenanceStatusReport -Environment Prod
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -59,7 +59,7 @@ Get-MaintenanceStatusReport -Environment Prod
 Get-MaintenanceStatusReport -ManagementHost scom01.corp.local -OneViewHost oneview.corp.local
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -67,7 +67,7 @@ Get-MaintenanceStatusReport -ManagementHost scom01.corp.local -OneViewHost onevi
 Invoke-RoutedRequest -RequestType 'maintmode_status_report' -Params @{ Environment = 'Prod' }
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

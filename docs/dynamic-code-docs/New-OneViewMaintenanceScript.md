@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Build a PowerShell script for HPE OneView maintenance mode operations.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -34,11 +34,11 @@ Build a PowerShell script for HPE OneView maintenance mode operations.
 | `-Async` | Use -Async parameter for bulk operations (default: true). |
 | `-ModuleName` | PowerShell module name for HPE OneView (required). Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.1000 for OneView 10.00). See https://github.com/HewlettPackard/POSH-HPEOneView |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -46,7 +46,7 @@ Build a PowerShell script for HPE OneView maintenance mode operations.
 $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'Production_Cluster_01' -Operation enable -ModuleName 'HPEOneView.1000'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

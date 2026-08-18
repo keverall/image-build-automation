@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Configures logging with specified log file path and level. By default creates timestamped log files in generated/logs/testing or generated/logs/production. When -CommandName is supplied the log is written to a dedicated per-command folder so every command's run history stays isolated (critical logs are never pruned early or lost in a shared, mixed folder): generated/logs/commands/<CommandName>/<LogName|CommandName>_<isotimestamp>_<level>.log -CommandName is optional: when omitted on the Get-Logger auto-init path (no -LogFile either), it is auto-derived from the PowerShell call stack as the innermost Verb-Noun command frame, so any command that logs through Get-Logger gets an isolated log automatically. All filenames carry an ISO-8601 UTC timestamp (e.g. 2026-07-22T15-03-27Z), never a unix epoch.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -33,11 +33,11 @@ Configures logging with specified log file path and level. By default creates ti
 | `-LogName` | Optional explicit base name for the log file (e.g. include significant parameters such as the target host). Used verbatim for the filename stem. |
 | `-Level` | Minimum log level: Verbose, Debug, Information, Warning, or Error (default: Information) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -45,7 +45,7 @@ Configures logging with specified log file path and level. By default creates ti
 Initialize-Logging -LogFile 'automation.log' -Level 'Debug' Initialize-Logging -CommandName 'Test-ServerConnectivity' -LogName 'Test-ServerConnectivity-OneViewHost-va-ov-01'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -33,11 +33,11 @@ This document provides a complete map of all code locations hit by the `Set-Main
 
 ---
 
-<a name="1-entry-points-user-interface"></a>
+<a id="1-entry-points-user-interface"></a>
 
 ## 1. Entry Points & User Interface
 
-<a name="powershell-profile-functions"></a>
+<a id="powershell-profile-functions"></a>
 
 ### PowerShell Profile Functions
 
@@ -49,11 +49,11 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 
 ---
 
-<a name="2-core-implementation"></a>
+<a id="2-core-implementation"></a>
 
 ## 2. Core Implementation
 
-<a name="main-function"></a>
+<a id="main-function"></a>
 
 ### Main Function
 
@@ -69,11 +69,11 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 
 ---
 
-<a name="3-scom-integration"></a>
+<a id="3-scom-integration"></a>
 
 ## 3. SCOM Integration
 
-<a name="scommanager-class"></a>
+<a id="scommanager-class"></a>
 
 ### SCOMManager Class
 
@@ -103,11 +103,11 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 
 ---
 
-<a name="4-hpe-oneview-integration"></a>
+<a id="4-hpe-oneview-integration"></a>
 
 ## 4. HPE OneView Integration
 
-<a name="oneviewclient-class"></a>
+<a id="oneviewclient-class"></a>
 
 ### OneViewClient Class
 
@@ -136,11 +136,11 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 
 ---
 
-<a name="5-email-notifications"></a>
+<a id="5-email-notifications"></a>
 
 ## 5. Email Notifications
 
-<a name="emailnotifier-class"></a>
+<a id="emailnotifier-class"></a>
 
 ### EmailNotifier Class
 
@@ -152,25 +152,25 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 
 ---
 
-<a name="6-helper-functions"></a>
+<a id="6-helper-functions"></a>
 
 ## 6. Helper Functions
 
-<a name="datetime-parsing"></a>
+<a id="datetime-parsing"></a>
 
 ### Datetime Parsing
 
 - **`_Parse-Datetime`**: [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1285)
   - Supports: `now`, `+Xhours`, `+Xminutes`, `+Xdays`, `YYYY-MM-DD HH:MM`
 
-<a name="scheduling"></a>
+<a id="scheduling"></a>
 
 ### Scheduling
 
 - **`_Compute-NextWorkStart`**: Line 1332 - Calculate next maintenance window end time
 - **`_Compute-DefaultEnd`**: Line 1321 - Default end time calculation
 
-<a name="audit-logging"></a>
+<a id="audit-logging"></a>
 
 ### Audit & Logging
 
@@ -179,7 +179,7 @@ Set-MaintenanceMode -Action <enable|disable|validate> -TargetId <cluster-id> -Mo
 
 ---
 
-<a name="7-configuration-files"></a>
+<a id="7-configuration-files"></a>
 
 ## 7. Configuration Files
 
@@ -194,11 +194,11 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="8-module-loading-routing"></a>
+<a id="8-module-loading-routing"></a>
 
 ## 8. Module Loading & Routing
 
-<a name="module-structure"></a>
+<a id="module-structure"></a>
 
 ### Module Structure
 
@@ -207,7 +207,7 @@ All configurations loaded from `configs/` directory:
   - Lines 424-429: Public script loading (alphabetical)
   - Line 449: `Set-MaintenanceMode` export
 
-<a name="request-router"></a>
+<a id="request-router"></a>
 
 ### Request Router
 
@@ -216,11 +216,11 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="9-testing-validation"></a>
+<a id="9-testing-validation"></a>
 
 ## 9. Testing & Validation
 
-<a name="test-scripts"></a>
+<a id="test-scripts"></a>
 
 ### Test Scripts
 
@@ -228,7 +228,7 @@ All configurations loaded from `configs/` directory:
 - **Configuration validation**: [`validate-maintenance-config.ps1`](../../scripts/validate-maintenance-config.ps1)
 - **Test runner**: [`run-maintenance-tests.ps1`](../../scripts/run-maintenance-tests.ps1)
 
-<a name="test-files"></a>
+<a id="test-files"></a>
 
 ### Test Files
 
@@ -236,7 +236,7 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="11-documentation-references"></a>
+<a id="11-documentation-references"></a>
 
 ## 11. Documentation References
 
@@ -249,7 +249,7 @@ All configurations loaded from `configs/` directory:
 
 ---
 
-<a name="10-execution-flow-summary"></a>
+<a id="10-execution-flow-summary"></a>
 
 ## 10. Execution Flow Summary
 
@@ -282,7 +282,7 @@ Set-MaintenanceMode (Public/Set-MaintenanceMode.ps1:174)
 
 ---
 
-<a name="quick-navigation-for-clients"></a>
+<a id="quick-navigation-for-clients"></a>
 
 ## Quick Navigation for Clients
 

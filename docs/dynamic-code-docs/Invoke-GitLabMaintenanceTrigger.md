@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Router handler that initiates GitLab CI/CD pipeline for maintenance operations. Wraps Send-GitLabMaintenanceRequest to enable, disable, or validate maintenance mode via GitLab pipelines instead of direct execution.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -44,11 +44,11 @@ Router handler that initiates GitLab CI/CD pipeline for maintenance operations. 
 | `-TimeoutSeconds` _(Aliases: -Timeout)_ | Timeout for waiting on pipeline completion (default: 600) |
 | `-JobToken` _(Aliases: -JobTok)_ | GitLab job token for API access (from GITLAB_JOB_TOKEN) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -56,7 +56,7 @@ Router handler that initiates GitLab CI/CD pipeline for maintenance operations. 
 Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'enable' -Start '2024-01-01T00:00:00Z' -End '2024-01-01T06:00:00Z'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -64,7 +64,7 @@ Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'enable' -Start '2
 Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'disable' -DryRun
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

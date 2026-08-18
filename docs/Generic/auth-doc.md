@@ -12,7 +12,7 @@
 
 Configuration and secrets for `Set-MaintenanceMode`. All secrets stored in CyberArk vault `pas.example.com`. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the distinction between SCOM, OneView, and iLO.
 
-<a name="quick-reference"></a>
+<a id="quick-reference"></a>
 
 ## Quick Reference
 
@@ -23,21 +23,21 @@ Configuration and secrets for `Set-MaintenanceMode`. All secrets stored in Cyber
 
 **Note:** The codebase defines `OpenView` safe (legacy) and `HPE-OneView` safe (current). Use `HPE-OneView` for new implementations.
 
-<a name="documentation"></a>
+<a id="documentation"></a>
 
 ## Documentation
 
 - [SCOM Configuration](scom-auth.md#top) - Cluster-level maintenance mode
 - [OneView Configuration](oneview-auth.md#top) - Hardware-level maintenance mode (via iLO)
 
-<a name="working-config-files"></a>
+<a id="working-config-files"></a>
 
 ## Working Config Files
 
 - `configs/scom_config.working.json` - SCOM working configuration template
 - `configs/oneview_config.working.json` - OneView working configuration template
 
-<a name="gitlab-ci-integration"></a>
+<a id="gitlab-ci-integration"></a>
 
 ## GitLab CI Integration
 
@@ -50,7 +50,7 @@ Set these **Masked** variables in GitLab CI/CD Settings → Variables:
 
 The `cyberark-bootstrap` job fetches secrets and makes them available to downstream jobs.
 
-<a name="usage"></a>
+<a id="usage"></a>
 
 ## Usage
 

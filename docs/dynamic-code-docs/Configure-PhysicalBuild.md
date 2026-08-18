@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Gathers full server identity from OneView, resolves the ISO URL, runs pre-build validation, and prints a comprehensive summary of all destructive actions that will be performed. Designed for a second operator to review and approve before Start-PhysicalBuild is run. This command performs NO destructive actions — no ISO attach, no reboot, no firmware update. It is read-only / dry-run only.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -57,11 +57,11 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 | `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt. When set, the function returns the plan hashtable without waiting for operator input. |
 | `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before the build plan is even produced. If it is OMITTED the review is aborted early with an expressive, logged error. If it does NOT match, the review is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -69,7 +69,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 Configure-PhysicalBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' ` -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -Domain 'ad.example.com' ` -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -77,7 +77,7 @@ Configure-PhysicalBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'one
 Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

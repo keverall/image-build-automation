@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Render a concise, human-readable OneView connection status summary. Blank/empty fields are suppressed so the terminal is never cluttered with placeholder rows.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

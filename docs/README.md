@@ -18,7 +18,7 @@ Complete documentation for the PowerShell automation module (`src/powershell/Aut
 
 ---
 
-<a name="repository-structure"></a>
+<a id="repository-structure"></a>
 
 ## Repository Structure
 
@@ -36,7 +36,7 @@ image-build-automation/
 
 ---
 
-<a name="quick-start"></a>
+<a id="quick-start"></a>
 
 ## Quick Start
 
@@ -47,11 +47,11 @@ image-build-automation/
 
 ---
 
-<a name="document-index"></a>
+<a id="document-index"></a>
 
 ## Document Index
 
-<a name="core-documentation"></a>
+<a id="core-documentation"></a>
 
 ### Core Documentation
 
@@ -65,7 +65,7 @@ image-build-automation/
 | [Code Quality & Security](Generic/code_quality.md#top) | PSScriptAnalyzer, gitleaks - configuration, usage, CI pipeline integration |
 | [GitLab CI/CD Integration](Generic/gitlab.md#top) | REST API pipeline triggers, webhook configuration, polling |
 
-<a name="physical-server-build-runbooks"></a>
+<a id="physical-server-build-runbooks"></a>
 
 ### Physical Server Build & Runbooks
 
@@ -76,7 +76,7 @@ image-build-automation/
 | [Automation Command Reference](Automation/automation_commands.md#top) | Command-level reference for the physical server build functions |
 | [PowerShell API Reference](Generic/powershell_api_reference.md#top) | Orchestrator and workflow overview for the physical server build |
 
-<a name="maintenance-mode-scheduling"></a>
+<a id="maintenance-mode-scheduling"></a>
 
 ### Maintenance Mode & Scheduling
 
@@ -86,7 +86,7 @@ image-build-automation/
 | [Maintenance Mode Environment Config](Maintenance-Mode/maintenance-mode-environment-config.md#top) | Environment variable configuration for maintenance mode |
 | [Maintenance Mode Code Map](Maintenance-Mode/Code_Map_Maitenance_Mode.md#top) | Complete code map with links to all mm command functionality |
 
-<a name="integration-authentication"></a>
+<a id="integration-authentication"></a>
 
 ### Integration & Authentication
 
@@ -99,7 +99,7 @@ image-build-automation/
 | [Audit Process](Generic/audit_process.md#top) | Audit trail and compliance process |
 | [GDPR Compliance](Generic/gdpr_compliance.md#top) | GDPR compliance documentation |
 
-<a name="developer-resources"></a>
+<a id="developer-resources"></a>
 
 ### Developer Resources
 
@@ -110,7 +110,7 @@ image-build-automation/
 
 ---
 
-<a name="contributing"></a>
+<a id="contributing"></a>
 
 ## Contributing
 

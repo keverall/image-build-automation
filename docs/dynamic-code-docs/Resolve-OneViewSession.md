@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Resolution order: 0. Existing connection ALWAYS wins: - If any OneView session is already connected it is reused and the function NEVER reconnects - dropping a live session could cause incidents. This takes priority even over an explicitly supplied -OneViewHost; when the requested host differs from the connected appliance the operator is warned to Disconnect-OneView first if they want to switch. The connected appliance name is returned in Message. 1. Host resolution (only when nothing is connected): - If -OneViewHost is supplied it is used verbatim; otherwise the operator is prompted. If no host is supplied and nothing is connected, a descriptive error is returned. 2. Credential resolution (only when connecting): - -Credential, then -OneViewUser/-OneViewPassword, then an interactive prompt, then the env/CyberArk resolver for non-interactive automation. 3. Connect: - Connect-OneViewSession (the sole caller of Connect-OVMgmt) establishes a persistent session that later commands reuse. The session persists until it times out, the PowerShell session closes, or Disconnect-OneView is called.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,7 +31,7 @@ Resolution order: 0. Existing connection ALWAYS wins: - If any OneView session i
 | `-OneViewUser` | OneView username (used with -OneViewPassword when -Credential is absent). |
 | `-OneViewPassword` | OneView password (used with -OneViewUser when -Credential is absent). |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

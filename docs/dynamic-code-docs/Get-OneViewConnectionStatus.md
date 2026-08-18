@@ -18,13 +18,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Performs two read-only checks against the OneView REST API: 1. Reachability - GET /rest/version (no auth) to confirm the appliance is online and responding. 2. Authentication - GET /rest/server-hardware (authenticated) to confirm the supplied credentials are valid. If -ServerIdentifier is supplied, the target server is also resolved and its power/health reported so you can see at a glance whether it is "connected". This command is a STATUS CHECK and NEVER prompts. Run with no parameters to report the ACTIVE OneView connection established by Connect-OneView (Get-OneViewActiveSession). Supply -OneViewHost to check a SPECIFIC appliance instead. To actually connect, use Connect-OneView -OneViewHost <host>.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -43,11 +43,11 @@ Performs two read-only checks against the OneView REST API: 1. Reachability - GE
 | `-DryRun` _(Aliases: -Dry)_ | Print the checks without performing them. |
 | `-PassThru` _(Aliases: -PT)_ | By default the command only prints a human-readable status summary to the terminal and emits NO object to the pipeline (so the console is not cluttered with a raw hashtable/json dump). Pass -PassThru to also return the structured [hashtable] for use by scripts or the module Router. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -55,7 +55,7 @@ Performs two read-only checks against the OneView REST API: 1. Reachability - GE
 Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -63,7 +63,7 @@ Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
 Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -71,7 +71,7 @@ Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com' -ServerIdentif
 Get-OneViewConnectionStatus Uses an existing HPEOneView module session if available. Returns Connected=$false if no session is active.
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

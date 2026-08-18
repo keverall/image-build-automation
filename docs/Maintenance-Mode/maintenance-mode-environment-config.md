@@ -41,17 +41,17 @@
   - [From Old Config Format](#from-old-config-format)
 - [Future Enhancements](#future-enhancements)
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
 The maintenance mode scripts now support environment-based host selection with optional credential overrides. This allows you to manage different environments (Test, Prod) with separate SCOM and OneView appliances while maintaining security in regulated banking environments.
 
-<a name="new-parameters"></a>
+<a id="new-parameters"></a>
 
 ## New Parameters
 
-<a name="set-maintenancemode-function"></a>
+<a id="set-maintenancemode-function"></a>
 
 ### Set-MaintenanceMode Function
 
@@ -71,7 +71,7 @@ Set-MaintenanceMode `
     [-NoSchedule]
 ```
 
-<a name="new-parameters-explained"></a>
+<a id="new-parameters-explained"></a>
 
 ### New Parameters Explained
 
@@ -79,11 +79,11 @@ Set-MaintenanceMode `
 - **`-OneViewHost`**: Optional override for management server/appliance hostname/IP. Works for both SCOM and OneView modes.
 - **`-Username`**: Optional direct username parameter (for testing only; not recommended for production).
 
-<a name="configuration-files"></a>
+<a id="configuration-files"></a>
 
 ## Configuration Files
 
-<a name="1-connection_hostsjson"></a>
+<a id="1-connection_hostsjson"></a>
 
 ### 1. connection_hosts.json
 
@@ -122,7 +122,7 @@ This file defines environment-specific connection settings:
 
 **To add new environments:** Copy an existing environment block and modify the hostnames/group IDs.
 
-<a name="2-clusters_cataloguejson"></a>
+<a id="2-clusters_cataloguejson"></a>
 
 ### 2. clusters_catalogue.json
 
@@ -149,7 +149,7 @@ Defines cluster IDs, server lists, and group mappings for maintenance operations
 - List all servers belonging to the cluster
 - Specify the SCOM group name for SCOM mode
 
-<a name="3-servers_catalogueoneviewjson"></a>
+<a id="3-servers_catalogueoneviewjson"></a>
 
 ### 3. servers_catalogue.oneview.json
 
@@ -174,7 +174,7 @@ Defines OneView server definitions with serial numbers:
 - Include serial numbers for OneView lookups
 - Map server keys to OneView display names
 
-<a name="4-env-file"></a>
+<a id="4-env-file"></a>
 
 ### 4. .env File
 
@@ -202,7 +202,7 @@ MAINTENANCE_HOST=
 
 **Email override:** `maintenance_distribution_list.txt` lives at the **repository root** (not in `configs/`); one email per line, takes precedence over `configs/email_distribution_lists.json`.
 
-<a name="credential-resolution-order"></a>
+<a id="credential-resolution-order"></a>
 
 ## Credential Resolution Order
 
@@ -218,11 +218,11 @@ For passwords:
 2. **Interactive secure prompt** (masked input)
 3. **Error**
 
-<a name="host-resolution-order"></a>
+<a id="host-resolution-order"></a>
 
 ## Host Resolution Order
 
-<a name="set-maintenancemode"></a>
+<a id="set-maintenancemode"></a>
 
 ### Set-MaintenanceMode
 
@@ -232,7 +232,7 @@ For SCOM and OneView in `Set-MaintenanceMode`:
 3. `connection_hosts.json` based on `-Environment` parameter
 4. Error if not configured
 
-<a name="test-serverconnectivity"></a>
+<a id="test-serverconnectivity"></a>
 
 ### Test-ServerConnectivity
 
@@ -250,7 +250,7 @@ For the OneView appliance in `Test-ServerConnectivity` (OneView-only):
 3. Interactive prompt for host (if `AUTOMATED_MODE` is not `true`)
 4. Error if not configured
 
-<a name="connection-validation"></a>
+<a id="connection-validation"></a>
 
 ## Connection Validation
 
@@ -262,11 +262,11 @@ Before executing maintenance mode operations, the script:
 
 This prevents silent failures and provides clear error messages.
 
-<a name="usage-examples"></a>
+<a id="usage-examples"></a>
 
 ## Usage Examples
 
-<a name="example-1-use-environment-config-recommended"></a>
+<a id="example-1-use-environment-config-recommended"></a>
 
 ### Example 1: Use environment config (recommended)
 
@@ -280,7 +280,7 @@ $env:SCOM_ADMIN_PASSWORD = "secure_password"
 Set-MaintenanceMode -Action enable -TargetId "CLU-CLUSTER-01" -Mode scom
 ```
 
-<a name="example-2-override-host-for-specific-environment"></a>
+<a id="example-2-override-host-for-specific-environment"></a>
 
 ### Example 2: Override host for specific environment
 
@@ -293,7 +293,7 @@ Set-MaintenanceMode `
     -OneViewHost "backup-scom.example.com"
 ```
 
-<a name="example-3-test-mode-with-interactive-credentials"></a>
+<a id="example-3-test-mode-with-interactive-credentials"></a>
 
 ### Example 3: Test mode with interactive credentials
 
@@ -306,7 +306,7 @@ Set-MaintenanceMode `
     -Environment Test
 ```
 
-<a name="example-4-using-env-file"></a>
+<a id="example-4-using-env-file"></a>
 
 ### Example 4: Using .env file
 
@@ -317,7 +317,7 @@ source .env  # or load via script
 pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom
 ```
 
-<a name="example-5-automatedjenkins-usage"></a>
+<a id="example-5-automatedjenkins-usage"></a>
 
 ### Example 5: Automated/jenkins usage
 
@@ -334,11 +334,11 @@ withCredentials([
 }
 ```
 
-<a name="gdpremir-banking-environment-compliance"></a>
+<a id="gdpremir-banking-environment-compliance"></a>
 
 ## GDPR/EMIR Banking Environment Compliance
 
-<a name="security-controls-implemented"></a>
+<a id="security-controls-implemented"></a>
 
 ### Security Controls Implemented
 
@@ -348,7 +348,7 @@ withCredentials([
 ✅ **Connection validation** - Pre-flight checks prevent accidental operations  
 ✅ **Parameter overrides** - Flexibility for emergency scenarios  
 
-<a name="additional-controls-required-for-production"></a>
+<a id="additional-controls-required-for-production"></a>
 
 ### Additional Controls Required for Production
 
@@ -368,11 +368,11 @@ For EU GDPR/EMIR regulated environments, consider:
 
 5. **Audit Trail Forwarding**: Send logs to SIEM for compliance monitoring
 
-<a name="testing"></a>
+<a id="testing"></a>
 
 ## Testing
 
-<a name="run-connection-test"></a>
+<a id="run-connection-test"></a>
 
 ### Run Connection Test
 
@@ -386,7 +386,7 @@ pwsh scripts/test-connectivity.ps1 -OneViewHost 'oneview-test.ad.example.com'
 
 Note: `Test-ServerConnectivity` is OneView-only. For SCOM connectivity, use `Test-ScomMaintenanceConnectivity`.
 
-<a name="test-serverconnectivity-jsonconfig-parameter"></a>
+<a id="test-serverconnectivity-jsonconfig-parameter"></a>
 
 ### Test-ServerConnectivity - JsonConfig Parameter
 
@@ -412,7 +412,7 @@ Without `-JsonConfig`:
 2. `$env:MAINTENANCE_HOST`
 3. Interactive prompt (if not in automated mode)
 
-<a name="run-connection-test-legacy-script"></a>
+<a id="run-connection-test-legacy-script"></a>
 
 ### Run Connection Test (Legacy Script)
 
@@ -424,7 +424,7 @@ pwsh scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom -DryRu
 pwsh scripts/test-maintenance-connection.ps1 -Environment Prod -Mode oneview -DryRun
 ```
 
-<a name="validate-configuration"></a>
+<a id="validate-configuration"></a>
 
 ### Validate Configuration
 
@@ -437,23 +437,23 @@ $env:ENVIRONMENT = "Test"
 pwsh -Command "& { . src/powershell/Automation/Automation.psm1; Write-Output 'Config loaded successfully' }"
 ```
 
-<a name="troubleshooting"></a>
+<a id="troubleshooting"></a>
 
 ## Troubleshooting
 
-<a name="issue-scom-host-not-configured-for-environment-test"></a>
+<a id="issue-scom-host-not-configured-for-environment-test"></a>
 
 ### Issue: "SCOM host not configured for environment 'Test'"
 
 **Solution:** Add Test environment to `connection_hosts.json` or set `$env:MAINTENANCE_HOST` env var.
 
-<a name="issue-missing-credentials-username-password"></a>
+<a id="issue-missing-credentials-username-password"></a>
 
 ### Issue: "Missing credentials: username, password"
 
 **Solution:** Set environment variables or run interactively to be prompted.
 
-<a name="issue-failed-to-connect-to-scom-management-server"></a>
+<a id="issue-failed-to-connect-to-scom-management-server"></a>
 
 ### Issue: "Failed to connect to SCOM management server"
 
@@ -463,7 +463,7 @@ pwsh -Command "& { . src/powershell/Automation/Automation.psm1; Write-Output 'Co
 - SCOM management group is accessible
 - Firewall rules allow WinRM/RPC traffic
 
-<a name="issue-interactive-prompt-doesnt-appear"></a>
+<a id="issue-interactive-prompt-doesnt-appear"></a>
 
 ### Issue: Interactive prompt doesn't appear
 
@@ -471,11 +471,11 @@ pwsh -Command "& { . src/powershell/Automation/Automation.psm1; Write-Output 'Co
 
 **Solution:** Set `AUTOMATED_MODE=false` or provide credentials via env vars.
 
-<a name="migration-guide"></a>
+<a id="migration-guide"></a>
 
 ## Migration Guide
 
-<a name="from-old-config-format"></a>
+<a id="from-old-config-format"></a>
 
 ### From Old Config Format
 
@@ -508,7 +508,7 @@ New: Multi-environment in `connection_hosts.json`
 
 **Backward Compatibility:** Old config files still work. New `connection_hosts.json` takes precedence when environment parameter is used.
 
-<a name="future-enhancements"></a>
+<a id="future-enhancements"></a>
 
 ## Future Enhancements
 

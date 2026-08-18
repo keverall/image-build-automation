@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Checks the cluster catalogue JSON file for the specified TargetId and validates that required fields (servers, scom_group, ilo_addresses) are present. Returns a hashtable with Success and Cluster properties on success, or Success=false with Error on failure. This function is intended for SCOM mode requests only. It validates that the supplied TargetId is a cluster ID (not a server name) and that the cluster definition has the correct structure in the catalogue. OneView mode requests should NOT call this function - they use OneViewClient.ResolveTarget() instead to validate server names or scopes against the OneView appliance.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,11 +31,11 @@ Checks the cluster catalogue JSON file for the specified TargetId and validates 
 | `-TargetId` | Cluster identifier string. Must be a cluster ID as defined in clusters_catalogue.json. Server names are not accepted - use OneViewClient.ResolveTarget() for OneView server validation. |
 | `-CataloguePath` | Path to clusters_catalogue.json (default: configs\clusters_catalogue.json). |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -43,7 +43,7 @@ Checks the cluster catalogue JSON file for the specified TargetId and validates 
 $def = Test-ClusterId -TargetId 'CLU-CLUSTER-01'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Copies the correct WIP profile template to the live profile location (platform-aware: windowspsprofile.ps1 on Windows, psprofile.ps1 on Linux/macOS, vscodeprofile.ps1 for the VS Code profile), then injects the Automation module import block (with the machine-specific absolute path) into the live profile(s). Can be run from anywhere - uses the script's repo root as the base path.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -34,11 +34,11 @@ Copies the correct WIP profile template to the live profile location (platform-a
 | `-Uninstall` | Remove the Automation module block from profiles instead of installing. |
 | `-DryRun` | Simulate changes without actually modifying profile files. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -46,7 +46,7 @@ Copies the correct WIP profile template to the live profile location (platform-a
 pwsh -File scripts/Setup-Profile.ps1 pwsh -File scripts/Setup-Profile.ps1 -SkipTemplateCopy pwsh -File scripts/Setup-Profile.ps1 -Uninstall pwsh -File scripts/Setup-Profile.ps1 -Merge
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

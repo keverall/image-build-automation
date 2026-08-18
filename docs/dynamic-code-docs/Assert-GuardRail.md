@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 -GuardRail is MANDATORY on the build/deploy commands. On shared/production networks (where the client's test server lives alongside production servers) a guard rail is the only thing that stops a Windows ISO + firmware overwrite from hitting the wrong machine. If the operator omits it, this fails EARLY with an expressive, logged message and returns an error hashtable so the caller gets a clean result instead of an unguarded action.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -30,7 +30,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 | `-CommandName` | The owning command (used for logging + the error text). |
 | `-ActionDescription` | Human-readable description of the action being gated. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Validates OneView setup by checking: - HPEOneView.Xxx PowerShell module availability (only ONE version allowed) - ONEVIEW_USER and ONEVIEW_PASSWORD environment variables - OneView configuration file (oneview_config.json) existence Displays warnings if components are missing but doesn't fail execution.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,11 +31,11 @@ Validates OneView setup by checking: - HPEOneView.Xxx PowerShell module availabi
 |-----------|-------------|
 | `-ConfigDir` | Directory containing configuration files (default: 'configs') |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -43,7 +43,7 @@ Validates OneView setup by checking: - HPEOneView.Xxx PowerShell module availabi
 pwsh -File scripts/setup-oneview.ps1
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -51,7 +51,7 @@ pwsh -File scripts/setup-oneview.ps1
 pwsh -File scripts/setup-oneview.ps1 -ConfigDir './configs'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

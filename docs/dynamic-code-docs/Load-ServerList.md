@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Load server list from a text file (format: hostname[,ipmi_ip[,ilo_ip]]).
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,11 +31,11 @@ Load server list from a text file (format: hostname[,ipmi_ip[,ilo_ip]]).
 | `-Path` | Path to server_list.txt. |
 | `-IncludeDetails` | Return [ServerInfo] objects when $true, plain strings when $false (default). |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -43,7 +43,7 @@ Load server list from a text file (format: hostname[,ipmi_ip[,ilo_ip]]).
 $servers = Load-ServerList 'configs\server_list.txt' -IncludeDetails
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

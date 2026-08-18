@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Validates connection to maintenance mode infrastructure (SCOM or OneView) using environment-based host selection from connection_hosts.json. Loads .env file if present, builds parameters, and executes validation against Set-MaintenanceMode function.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -34,11 +34,11 @@ Validates connection to maintenance mode infrastructure (SCOM or OneView) using 
 | `-Username` | Override username for authentication |
 | `-ManagementHost` | Override management server/appliance hostname |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -46,7 +46,7 @@ Validates connection to maintenance mode infrastructure (SCOM or OneView) using 
 pwsh -File scripts/test-maintenance-connection.ps1 -Environment Test -Mode scom
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

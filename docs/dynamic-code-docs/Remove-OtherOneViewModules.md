@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Guarantees only the pinned module's cmdlets (Connect-OVMgmt, etc.) are in scope, so a stray install (e.g. HPEOneView.840/.820) cannot be used instead of the locked version. Also drops sessions established by removed modules.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

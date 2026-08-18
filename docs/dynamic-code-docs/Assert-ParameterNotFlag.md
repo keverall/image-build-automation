@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Iterates the command's bound parameters and throws a clear, actionable error if any string value starts with '-' (e.g. '--DryRun' or '-DryRun' passed where a real value was expected). This catches the "end-of-parameters" swallowing trap and prevents a destructive command from proceeding with a bogus host/serial/name.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -28,7 +28,7 @@ Iterates the command's bound parameters and throws a clear, actionable error if 
 |-----------|-------------|
 | `-Parameters` | The command's $PSBoundParameters hashtable. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

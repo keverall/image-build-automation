@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Creates scripts/run-coverage.ps1, which .gitlab-ci.yml referenced but which did not exist. The reference was masked because every job that used the test template overrode the 'script' block, so the missing file was never invoked - the declared COVERAGE_THRESHOLD of 70 was therefore never applied to anything. This script produces: - Cobertura XML  : consumed by GitLab for MR coverage annotation - JUnit XML      : consumed by GitLab for the MR test report widget - A stdout line matching the pipeline's coverage regex Exits non-zero if any test fails, or if line coverage is below -Threshold while -EnforceThreshold is set.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -32,11 +32,11 @@ Creates scripts/run-coverage.ps1, which .gitlab-ci.yml referenced but which did 
 | `-Threshold` | Minimum line coverage percentage. |
 | `-EnforceThreshold` | Fail the run when coverage is below -Threshold. Omitted during the remediation window so that coverage is measured and reported before it is gated. See docs/compliance/SECURITY_PIPELINE.md. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -44,7 +44,7 @@ Creates scripts/run-coverage.ps1, which .gitlab-ci.yml referenced but which did 
 pwsh -File scripts/run-coverage.ps1 -Threshold 70
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -52,7 +52,7 @@ pwsh -File scripts/run-coverage.ps1 -Threshold 70
 pwsh -File scripts/run-coverage.ps1 -Threshold 70 -EnforceThreshold
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
