@@ -20,7 +20,11 @@
   - [14) Repo hygiene: LF normalization + git workflow docs](#14-repo-hygiene-lf-normalization-git-workflow-docs)
   - [15) Testing-issues documentation (OneView connectivity)](#15-testing-issues-documentation-oneview-connectivity)
   - [16) Docs anchor fix — navigable `id` anchors for `make docs` / `make fix-docs`](#16-docs-anchor-fix-navigable-id-anchors-for-make-docs-make-fix-docs)
-  - [17) `Get-OneViewConnectionStatus` session-reuse guard (no reconnect)](#17-get-oneviewconnectionstatus-session-reuse-guard-no-reconnect)
+  - [17) Get-OneViewConnectionStatus session-reuse guard (no reconnect)](#17-get-oneviewconnectionstatus-session-reuse-guard-no-reconnect)
+  - [18) Universal ISO/firmware path resolver fix (DRY consolidation)](#18-universal-isofirmware-path-resolver-fix-dry-consolidation)
+  - [19) Test-BuildParams firmware-location validation](#19-test-buildparams-firmware-location-validation)
+  - [20) Command documentation clarity — functionality + safe/destructive](#20-command-documentation-clarity-functionality-safedestructive)
+  - [21) Command documentation clarity — firmware/security/utility + repository corrections](#21-command-documentation-clarity-firmwaresecurityutility-repository-corrections)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -526,3 +530,110 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `Get-OneViewConnectionStatus.Unit.Tests.ps1`: **23 passed, 0 failed**, including two new regression tests — reuses the active session when `-OneViewHost` matches the connected appliance (no reconnect, no 401), and reuses the active session even when `-OneViewHost` differs (guard: never reconnect).
 - `Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01` against a live session now shows connection/server info exactly like a second bare run, with no 401.
+
+<a id="18-universal-isofirmware-path-resolver-fix-dry-consolidation"></a>
+
+### 18) Universal ISO/firmware path resolver fix (DRY consolidation)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-19 | Fixed `Resolve-ExternalIsoPath` to accept HTTPS, NFS, `cifs://`, `smb://`, UNC (backslash + forward slash) and mapped network drives; removed duplicate copies from `Invoke-IsoDeploy.ps1` and `Start-PhysicalServerBuild.ps1` so every command resolves paths through one shared helper | Kev Everall |
+
+<a name="root-cause-18"></a>
+
+#### Root cause
+
+- `Resolve-ExternalIsoPath` only matched `^https?://`, `^nfs://`, backslash `^\\\\` UNC, and `^[A-Za-z]:\\` mapped drives. Forward-slash UNC (`//server/share/file.iso`) — which Windows/PowerShell treat as identical to `\\server\share\file.iso` — plus `cifs://` and `smb://` (the schemes the tool itself emits/implies) were rejected, so `Test-BuildParams`/deploy commands failed with "Unsupported ISO path format" for those inputs.
+- The resolver was **defined three times** (once in `Private/ExternalIso.ps1` and duplicated in `Invoke-IsoDeploy.ps1` and `Start-PhysicalServerBuild.ps1`), so behaviour could drift between commands.
+
+<a name="fix-18"></a>
+
+#### Fix
+
+- Single canonical `Resolve-ExternalIsoPath` in `Private/ExternalIso.ps1` now accepts: `http(s)://`, `nfs://`, `cifs://` (used directly, round-trips the emitted scheme), `smb://` (normalised to `cifs://`), UNC with **either** `\\` or `//`, and mapped network drives (expanded to their UNC, then `cifs://`). Local drives (`C:\`, or a letter mapped to a local disk) are rejected. `Get-SmbPathFromDriveLetter` is now defined once alongside it.
+- Deleted the two duplicate `Resolve-ExternalIsoPath` + `Get-SmbPathFromDriveLetter` copies; all four ISO/deploy commands (`Test-BuildParams`, `Configure-PhysicalBuild`, `Start-PhysicalServerBuild`, `Invoke-IsoDeploy`) now call the shared helper — eliminating the DRY violation.
+
+<a name="verification-18"></a>
+
+#### Verification
+
+- `//server/share/file.iso`, `cifs://server/share/file.iso`, `smb://server/share/file.iso` now resolve to `cifs://server/share/file.iso`; `\\server\share\file.iso` continues to work; mapped drives expand to their UNC; local drives fail with the "not supported" error.
+- `grep -rn "function Resolve-ExternalIsoPath"` returns exactly one definition; all command call sites resolve through it.
+
+<a id="19-test-buildparams-firmware-location-validation"></a>
+
+### 19) Test-BuildParams firmware-location validation
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-19 | `Test-BuildParams` now validates firmware component locations (`-FirmwareFolders`) through the same shared resolver as the ISO, and skips local existence checks for URL locations | Kev Everall |
+
+<a name="change-19"></a>
+
+#### Change
+
+- Added `-FirmwareFolders` (string array) to `Test-BuildParams`. Each location is resolved via the shared `Resolve-ExternalIsoPath` and (unless `-DryRun`, and unless it is a URL) checked for existence with `Test-PathEx`.
+- Result now includes `FirmwareResults` — a per-location `{ Location, ResolvedUrl, Exists, Error }` array — alongside the existing `IsoUrl`/`Errors`. Success requires zero errors across ISO and firmware.
+- Existence checks are skipped for `http(s)://`, `nfs://`, `cifs://`, `smb://` URLs (which `Test-Path` cannot probe) — the iLO/SUT fetches them at mount time.
+
+<a name="verification-19"></a>
+
+#### Verification
+
+- `Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' -FirmwareFolders @('\\fileserver\fw\BIOS','H:\fw\iLO5')` validates ISO and both firmware locations through one code path; URL locations resolve without a spurious "not found" error.
+
+<a id="20-command-documentation-clarity-functionality-safedestructive"></a>
+
+### 20) Command documentation clarity — functionality + safe/destructive
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-19 | Added concise "What it does" / Destructive annotations for `Start-InstallMonitor`, `Invoke-IloRedfish`, `Get-OneViewServerTarget`, `Test-PreBuildValidation`; added a "Safe vs destructive commands" callout; expanded the ISO path-requirements table to all accepted formats; updated `-ExternalIsoPath` help/parameter notes; regenerated `docs/dynamic-code-docs` | Kev Everall |
+
+<a name="change-20"></a>
+
+#### Change
+
+- `automation_commands.md`: added a "⚠ Safe vs destructive commands" callout (non-destructive vs destructive, with the mandatory `-GuardRail` gate and a zero-risk pre-flight sequence) immediately after *How the commands fit together*.
+- Added scannable "What it does" bullet lists (incl. `Destructive: true/false`) for `Start-InstallMonitor`, `Invoke-IloRedfish` (per-action), `Get-OneViewServerTarget`, and `Test-PreBuildValidation` (previously undocumented).
+- Expanded the ISO path-requirements table to all seven accepted formats (`https://`, `nfs://`, UNC backslash, UNC forward slash, `cifs://`, `smb://`, mapped drive) with a "point at the file, not the share" note.
+- Updated the `-ExternalIsoPath` parameter/help text in `Invoke-IsoDeploy.ps1`, `Start-PhysicalServerBuild.ps1`, `Configure-PhysicalBuild.ps1` and the doc tables to list every accepted format.
+- Regenerated `docs/dynamic-code-docs/` (218 files) from the updated code comments.
+
+<a name="verification-20"></a>
+
+#### Verification
+
+- `docs/Automation/automation_commands.md` contains the safe/destructive callout and the per-command "What it does" blocks; `make gen-docs` regenerates `docs/dynamic-code-docs/` cleanly.
+
+<a id="21-command-documentation-clarity-firmwaresecurityutility-repository-corrections"></a>
+
+### 21) Command documentation clarity — firmware/security/utility + repository corrections
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-19 | Clarified `Update-Firmware`, `Invoke-WindowsSecurityUpdate`, `Invoke-PowerShellScript`, `Invoke-OpsRampClient` ("What it does" / Destructive) and corrected obsolete ISO-repository references (ISOs/firmware now hosted on network shares, not an HTTPS repo) | Kev Everall |
+
+<a name="change-21"></a>
+
+#### Change — command clarity
+
+- **`Update-Firmware`** (doc heading "Build firmware ISO"): clarified it flashes **HPE hardware firmware only** (BIOS, iLO, Smart Array, NIC, drivers) via HPE SUT — **not** Windows OS security patches (BladeLogic's job on the live OS) — and marked **Destructive: TRUE** (flashes + reboots, gated by mandatory `-GuardRail`).
+- **`Invoke-WindowsSecurityUpdate`** (doc heading "Patch Windows ISO with security updates"): clarified it patches the **ISO image offline** (DISM), **not** a live server; **Destructive: FALSE for servers** (writes a patched ISO file only). Live OS security patching remains BladeLogic's responsibility.
+- **`Invoke-PowerShellScript`**: clarified it runs an arbitrary script string locally (or via `Invoke-PowerShellWinRM`); **Destructive: DEPENDS ON THE SCRIPT** — neutral wrapper, run only reviewed scripts.
+- **`Invoke-OpsRampClient`**: clarified it is an OpsRamp monitoring/ITSM integration factory (+ `Invoke-OpsRamp` connectivity test); **Destructive: FALSE**.
+
+<a name="change-21-repo"></a>
+
+#### Change — obsolete ISO-repository references
+
+- Per the updated environment (no ISO repository; ISOs and firmware held on network shares), the docs no longer assume a mandatory HTTPS repository:
+  - `Publish-BootIso` is documented as **optional** — only needed when hosting ISOs on an HTTPS repository; otherwise supply the ISO directly from a network share via `-ExternalIsoPath`.
+  - `-RepoBaseUrl` / `-RepoLocalPath` parameter descriptions now state they apply **only when hosting on an HTTPS repo**; otherwise the ISO is supplied directly from a network share.
+  - The "full runbook workflow" and bootable-ISO-filename notes were reworded from "the repository" to "the share/repository where the ISO is hosted".
+
+<a name="verification-21"></a>
+
+#### Verification
+
+- `automation_commands.md` shows the four commands' "What it does"/Destructive annotations and the softened repository language; no remaining mandatory-repository assumption remains for ISO sourcing.

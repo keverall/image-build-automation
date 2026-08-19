@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-generated: 2026-08-18
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -41,7 +41,7 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 | `-TaskSequenceName` | Optional task sequence name. |
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository (used by Publish-BootIso). |
 | `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl. |
-| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip build/publish). Accepts the following formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso') - Local path: NOT supported — iLO cannot access local drives. Supply an SMB/UNC or HTTPS path instead. This module never creates SMB shares or requires Administrator privileges (regulated banking env). IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives on the automation host. This module does NOT auto-create SMB shares and does NOT require Administrator privileges. Supply an already-shared path instead. When supplied, -SkipIsoBuild and -SkipPublish are implied. |
+| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip build/publish). Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - UNC/SMB path (backslash): Converted to CIFS URL (e.g. '\\server\share\win.iso') - UNC/SMB path (forward slash): Same as above (e.g. '//server/share/win.iso') - CIFS/SMB URL: Used directly, round-trips the emitted URL (e.g. 'cifs://server/share/win.iso') - SMB URL alias: Normalised to cifs:// (e.g. 'smb://server/share/win.iso') - Mapped drive: Auto-resolved to its UNC share if mapped to a network drive (e.g. 'H:\win.iso') - Local path: NOT supported — iLO cannot access local drives. Supply an SMB/UNC, CIFS/SMB URL, or HTTPS path instead. This module never creates SMB shares or requires Administrator privileges (regulated banking env). IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives on the automation host. This module does NOT auto-create SMB shares and does NOT require Administrator privileges. Supply an already-shared path instead. When supplied, -SkipIsoBuild and -SkipPublish are implied. |
 | `-MonitorTimeoutSeconds` | Install monitor timeout (default 7200). |
 | `-MonitorPollSeconds` | Install monitor poll interval (default 30). |
 | `-SkipFirmware` | Skip the post-OS firmware update step. By default, if -FirmwareFolders are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked after post-build validation. |
@@ -123,13 +123,16 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
 
     .PARAMETER ExternalIsoPath
         Path to a client-supplied ISO for deployment (skip build/publish).
-        Accepts the following formats:
+        Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts:
           - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
-          - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
           - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
-          - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso')
+          - UNC/SMB path (backslash): Converted to CIFS URL (e.g. '\\server\share\win.iso')
+          - UNC/SMB path (forward slash): Same as above (e.g. '//server/share/win.iso')
+          - CIFS/SMB URL: Used directly, round-trips the emitted URL (e.g. 'cifs://server/share/win.iso')
+          - SMB URL alias: Normalised to cifs:// (e.g. 'smb://server/share/win.iso')
+          - Mapped drive: Auto-resolved to its UNC share if mapped to a network drive (e.g. 'H:\win.iso')
           - Local path: NOT supported — iLO cannot access local drives. Supply
-            an SMB/UNC or HTTPS path instead. This module never creates SMB
+            an SMB/UNC, CIFS/SMB URL, or HTTPS path instead. This module never creates SMB
             shares or requires Administrator privileges (regulated banking env).
 
         IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'):
