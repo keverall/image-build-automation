@@ -1,6 +1,6 @@
 ---
-source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-08-18
+source:  ./src/powershell/Automation/Private/ExternalIso.ps1
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -12,16 +12,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 - [Description](#description)
 - [Parameters](#parameters)
-- [Examples](#examples)
-  - [Example 1](#example-1)
-  - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
 <a id="description"></a>
 
 ## Description
 
-Helper function to find the SMB address of a mapped drive. Useful when you have a file on a mapped drive (e.g. H:\windows.iso) and need to find the UNC path for iLO virtual media.
+Helper used by Resolve-ExternalIsoPath to find the SMB address of a mapped drive. Returns the UNC root (e.g. '\\fileserver\isos') or throws if the drive is local or does not exist.
 
 <a id="parameters"></a>
 
@@ -30,26 +27,6 @@ Helper function to find the SMB address of a mapped drive. Useful when you have 
 | Parameter | Description |
 |-----------|-------------|
 | `-DriveLetter` | The drive letter to resolve (e.g. 'H', 'Z'). |
-
-<a id="examples"></a>
-
-## Examples
-
-<a id="example-1"></a>
-
-### Example 1
-
-```powershell
-Get-SmbPathFromDriveLetter -DriveLetter 'H' # Returns: \\fileserver\isos
-```
-
-<a id="example-2"></a>
-
-### Example 2
-
-```powershell
-# Find the full UNC path for a file on H:\ $uncBase = Get-SmbPathFromDriveLetter -DriveLetter 'H' $fullUnc = Join-Path $uncBase 'windows.iso' # Returns: \\fileserver\isos\windows.iso
-```
 
 <a id="original-comment-based-help"></a>
 
@@ -60,22 +37,12 @@ Get-SmbPathFromDriveLetter -DriveLetter 'H' # Returns: \\fileserver\isos
         Resolve a Windows drive letter to its UNC/SMB path (if it's a mapped network drive).
 
     .DESCRIPTION
-        Helper function to find the SMB address of a mapped drive. Useful when you have
-        a file on a mapped drive (e.g. H:\windows.iso) and need to find the UNC path
-        for iLO virtual media.
+        Helper used by Resolve-ExternalIsoPath to find the SMB address of a mapped drive.
+        Returns the UNC root (e.g. '\\fileserver\isos') or throws if the drive is local
+        or does not exist.
 
     .PARAMETER DriveLetter
         The drive letter to resolve (e.g. 'H', 'Z').
-
-    .EXAMPLE
-        Get-SmbPathFromDriveLetter -DriveLetter 'H'
-        # Returns: \\fileserver\isos
-
-    .EXAMPLE
-        # Find the full UNC path for a file on H:\
-        $uncBase = Get-SmbPathFromDriveLetter -DriveLetter 'H'
-        $fullUnc = Join-Path $uncBase 'windows.iso'
-        # Returns: \\fileserver\isos\windows.iso
 ```
 
 ---

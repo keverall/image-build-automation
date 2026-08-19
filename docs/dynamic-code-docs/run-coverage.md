@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/run-coverage.ps1
-generated: 2026-08-18
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

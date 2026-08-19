@@ -78,8 +78,10 @@ function Configure-PhysicalBuild {
         Local filesystem path mirrored to RepoBaseUrl.
 
     .PARAMETER ExternalIsoPath
-        Use a client-supplied ISO instead of building one. Must be an
-        SMB/UNC or HTTPS path (local paths not supported).
+        Use a client-supplied ISO instead of building one. Resolved by the single
+        shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path
+        (incl. '//server/share'), a 'cifs://'/'smb://' URL, an HTTPS/NFS URL, or a
+        mapped network drive. Local paths are not supported.
 
     .PARAMETER FirmwareFolders
         Firmware component source directories that will be applied post-OS-install.
