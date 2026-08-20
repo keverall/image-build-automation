@@ -21,7 +21,7 @@ Describe 'Publish-BootIso - basic invocation' {
     }
 
     It 'Fails when IsoPath does not exist' {
-        $r = Publish-BootIso -IsoPath '/tmp/nonexistent.iso' -RepoBaseUrl 'https://example.com/isos/'
+        $r = Publish-BootIso -IsoPath '/tmp/nonexistent.iso' -RepoBaseUrl 'https://example.com/isos/' -PassThru -Quiet
         $r.Success | Should -Be $false
         $r.Error    | Should -Match 'not found'
     }
@@ -31,7 +31,7 @@ Describe 'Publish-BootIso - basic invocation' {
         Set-Content -Path $tmpIso -Value 'MOCKISO' -Encoding UTF8
         $env:ISO_REPO_BASE_URL = $null
         try {
-            $r = Publish-BootIso -IsoPath $tmpIso
+            $r = Publish-BootIso -IsoPath $tmpIso -PassThru -Quiet
             $r.Success | Should -Be $false
             $r.Error    | Should -Match 'RepoBaseUrl'
         } finally { Remove-Item $tmpIso -Force -ErrorAction SilentlyContinue }
@@ -41,7 +41,7 @@ Describe 'Publish-BootIso - basic invocation' {
         $tmpIso = Join-Path ([System.IO.Path]::GetTempPath()) "test_$(Get-Random).iso"
         Set-Content -Path $tmpIso -Value 'MOCKISO' -Encoding UTF8
         try {
-            $r = Publish-BootIso -IsoPath $tmpIso -RepoBaseUrl 'https://example.com/isos/' -DryRun
+            $r = Publish-BootIso -IsoPath $tmpIso -RepoBaseUrl 'https://example.com/isos/' -DryRun -PassThru -Quiet
             $r.Success  | Should -Be $true
             $r.DryRun   | Should -Be $true
             $r.PublicUrl | Should -Match 'test_'

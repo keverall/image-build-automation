@@ -54,8 +54,26 @@ function Test-PostBuildValidation {
     .PARAMETER DryRun
         Skip WinRM probes - assume checks pass.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Test-PostBuildValidation -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success (bool), Checks, AuditFile.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success (bool), Hostname, Timestamp, Checks, AuditFile.
+        With -Json, a JSON [string] representation of the same data.
 
     .EXAMPLE
         Test-PostBuildValidation -Hostname 'srv01.ad.example.com' -Domain 'ad.example.com' -ExpectedOsVersion '10.0.20348'
@@ -75,11 +93,15 @@ function Test-PostBuildValidation {
         [switch] $SkipDrivers,
         [switch] $SkipRemote,
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        if (-not $resolved.Success) { return (_Publish-Result -Result @{ Success = $false; Error = $resolved.Error } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         $Hostname = $resolved.Identifier
         if (-not $ExpectedHostname) { $ExpectedHostname = $Hostname }
         Write-Verbose "Resolved serial '$SerialNumber' -> $Hostname"
@@ -100,8 +122,7 @@ function Test-PostBuildValidation {
     if ($SkipRemote) {
         _Set 'remote_checks_skipped' $true 'Skipped by parameter'
         $result = @{ Success = $true; Hostname = $Hostname; Checks = $checks }
-        _Format-PostBuildResult -Result $result
-        return $result
+        return (_Emit-PostBuildResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     $winrmReachable = $false
@@ -196,8 +217,26 @@ $rdp  = Get-Service -Name TermService -ErrorAction SilentlyContinue
         Checks    = $checks
         AuditFile = $auditFile
     }
-    _Format-PostBuildResult -Result $result
-    return $result
+    return (_Emit-PostBuildResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+}
+
+function _Emit-PostBuildResult {
+    <#
+    .SYNOPSIS
+        Emits the post-build validation result via the shared, DRY
+        _Publish-Result helper (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-PostBuildResult -Result $r
+    }
 }
 
 function _Format-PostBuildResult {

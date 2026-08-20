@@ -76,8 +76,28 @@ function New-IsoBuild {
     .PARAMETER DryRun
         Validate inputs and print plan without creating the ISO.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report. When omitted, the command writes a
+        human-readable report to the host (terminal / transcript / logs) and
+        does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = New-IsoBuild -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, IsoPath, IsoUrl (if -RepoBaseUrl given), Metadata.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success, IsoPath, Metadata. With -Json, a JSON
+        [string] representation of the same data.
 
     .EXAMPLE
         New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' `
@@ -103,7 +123,11 @@ function New-IsoBuild {
         [bool]   $AllowUnattended = $true,
         [bool]   $SkipCertificateCheck = $true,
         [string] $MockIsoPath = $null,
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     Initialize-Logging -LogFile 'iso_build.log' -CommandName 'New-IsoBuild'
@@ -151,14 +175,14 @@ function New-IsoBuild {
         $result.Mocked   = $true
         $result.Metadata.bootable_iso = Split-Path $OutputPath -Leaf
         Save-Json -Data $result.Metadata -Path (Join-Path (Split-Path $OutputPath -Parent) 'deployment_metadata.json')
-        return $result
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     if ($DryRun) {
         Write-Output "[DRY RUN] New-IsoBuild → $OutputPath"
         $result.DryRun = $true
         $result.Success = $true
-        return $result
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     try {
@@ -170,7 +194,7 @@ function New-IsoBuild {
 
         if (-not $context.Available) {
             $result.Error = $context.Error
-            return $result
+            return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
 
         if ($context.Mode -eq 'Remote') {
@@ -230,7 +254,7 @@ function New-IsoBuild {
 
         if (-not (Test-Path $OutputPath -PathType Leaf)) {
             $result.Error = "New-CMBootableMedia reported success but ISO not found at $OutputPath"
-            return $result
+            return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
 
         $result.Success  = $true
@@ -240,11 +264,11 @@ function New-IsoBuild {
         $metaDir = Split-Path $OutputPath -Parent
         Save-Json -Data $result.Metadata -Path (Join-Path $metaDir 'deployment_metadata.json')
 
-        return $result
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {
         $result.Error = $_.Exception.Message
-        return $result
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 }
 

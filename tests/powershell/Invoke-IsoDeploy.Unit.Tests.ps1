@@ -27,7 +27,7 @@ Describe 'Invoke-IsoDeploy - basic invocation and parameter validation' {
     }
 
     It 'Fails early (graceful, logged) when -GuardRail is omitted' {
-        $r = & Invoke-IsoDeploy -DryRun -ErrorAction SilentlyContinue
+        $r = & Invoke-IsoDeploy -DryRun -ErrorAction SilentlyContinue -PassThru -Quiet
         $r.Success | Should -Be $false
         $r.GuardRailRequired | Should -Be $true
         $r.Error | Should -Match 'GUARD RAIL REQUIRED'

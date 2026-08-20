@@ -22,7 +22,7 @@ Describe 'Start-PhysicalServerBuild - basic invocation' {
     }
 
     It 'DryRun with everything skipped returns Success' {
-        $r = Start-PhysicalServerBuild -SrvrId 'TEST' -GuardRail '.*' -DryRun `
+        $r = Start-PhysicalServerBuild -SrvrId 'TEST' -GuardRail '.*' -DryRun -PassThru -Quiet `
             -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
         $r.Success | Should -Be $true
         $r.server  | Should -Be 'TEST'
@@ -30,7 +30,7 @@ Describe 'Start-PhysicalServerBuild - basic invocation' {
     }
 
     It 'Fails early (graceful, logged) when -GuardRail is omitted' {
-        $r = Start-PhysicalServerBuild -SrvrId 'TEST' -DryRun `
+        $r = Start-PhysicalServerBuild -SrvrId 'TEST' -DryRun -PassThru -Quiet `
             -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
         $r.Success | Should -Be $false
         $r.GuardRailRequired | Should -Be $true

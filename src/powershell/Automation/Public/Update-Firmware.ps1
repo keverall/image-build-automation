@@ -72,8 +72,28 @@ function Update-Firmware {
         update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches
         server 'quickview.ilo03.alp'.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report. When omitted, the command writes a
+        human-readable report to the host (terminal / transcript / logs) and
+        does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Update-Firmware -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success (bool) and details.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success, Total, Succeeded, Results. With -Json, a JSON
+        [string] representation of the same data.
 
     .EXAMPLE
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
@@ -103,7 +123,11 @@ param(
     [Parameter(Mandatory = $false)][switch] $DryRun,
     [Alias('FwDirs')]
     [Parameter(Mandatory = $false)][string[]] $FirmwareFolders = @(),
-    [string] $GuardRail = $null
+    [string] $GuardRail = $null,
+    [switch] $Json,
+    [Alias('PT')]
+    [switch] $PassThru,
+    [switch] $Quiet
 )
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
@@ -111,11 +135,11 @@ param(
     # unapproved server on a shared/production network.
     $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
         -CommandName 'Update-Firmware' -ActionDescription 'firmware update'
-    if ($grCheck) { return $grCheck }
+    if ($grCheck) { return (_Publish-Result -Result $grCheck -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
 
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        if (-not $resolved.Success) { return (_Publish-Result -Result @{ Success = $false; Error = $resolved.Error } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         $Server = $resolved.Identifier
         Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
     }
@@ -126,7 +150,7 @@ param(
             -SerialNumber $SerialNumber -ApplianceName $OneViewHost `
             -ActionDescription 'firmware update' -DryRun:$DryRun -SkipConfirmation
         if (-not $guardOk) {
-            return @{ Success = $false; Error = "Guard rail rejected target '$Server' (guard: '$GuardRail'). No firmware update performed." }
+            return (_Publish-Result -Result @{ Success = $false; Error = "Guard rail rejected target '$Server' (guard: '$GuardRail'). No firmware update performed." } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
     }
 
@@ -137,7 +161,7 @@ param(
     # -Config, or under -DryRun (config is a dry-run helper). A live run must not
     # silently read the default manifest path (see AGENTS.md).
     if (-not $DryRun -and -not $PSBoundParameters.ContainsKey('Config')) {
-        return @{ Success = $false; Error = "A firmware manifest is required for a live run. Supply -Config <path-to-manifest.json> explicitly. The default config path is only used with -DryRun." }
+        return (_Publish-Result -Result @{ Success = $false; Error = "A firmware manifest is required for a live run. Supply -Config <path-to-manifest.json> explicitly. The default config path is only used with -DryRun." } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     Initialize-Logging -LogFile 'firmware_updater.log' -CommandName 'Update-Firmware'
     try {
@@ -151,11 +175,10 @@ param(
         Ensure-DirectoryExists -Path $resDir
         foreach ($r in $results) { Save-Json -Data $r -Path (Join-Path $resDir "firmware_result_$($r['server']).json") }
         $result = @{ Success = ($okCount -eq $servers.Count); Total = $servers.Count; Succeeded = $okCount; Results = $results }
-        _Format-FirmwareResult -Result $result
-        return $result
+        return (_Emit-FirmwareResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {
-        return @{ Success = $false; Error = $_.Exception.Message }
+        return (_Publish-Result -Result @{ Success = $false; Error = $_.Exception.Message } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 }
 
@@ -200,6 +223,26 @@ function _Format-FirmwareResult {
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
+}
+
+# ── Result emission ───────────────────────────────────────────────────────────
+function _Emit-FirmwareResult {
+    <#
+    .SYNOPSIS
+        Emits the firmware build result via the shared, DRY _Publish-Result
+        helper (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-FirmwareResult -Result $r
+    }
 }
 
 

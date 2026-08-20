@@ -21,7 +21,7 @@ Describe 'Update-Firmware - basic invocation and parameter validation' {
     }
 
     It 'Fails early (graceful, logged) when -GuardRail is omitted' {
-        $r = & Update-Firmware -DryRun -ErrorAction SilentlyContinue
+        $r = & Update-Firmware -DryRun -ErrorAction SilentlyContinue -PassThru -Quiet
         $r.Success | Should -Be $false
         $r.GuardRailRequired | Should -Be $true
         $r.Error | Should -Match 'GUARD RAIL REQUIRED'

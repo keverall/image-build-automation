@@ -211,8 +211,29 @@ function Start-PhysicalServerBuild {
         'quickview.ilo03.alp'. This prevents accidentally overwriting a production
         server when the client's test server lives on the production network.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+        When omitted, the command writes a human-readable report to the host
+        (terminal / transcript / logs) and does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Start-PhysicalServerBuild -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, Steps (ordered list of step results), AuditFile.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success (bool), Steps (ordered list of step
+        results), and AuditFile (string). With -Json, a JSON [string]
+        representation of the same data.
 
     .EXAMPLE
         Start-PhysicalServerBuild `
@@ -265,7 +286,11 @@ function Start-PhysicalServerBuild {
         [string[]] $FirmwareFolders = @(),
         [string] $FirmwareConfig = $null,
         [switch] $SkipFirmware,
-        [string] $GuardRail = $null
+        [string] $GuardRail = $null,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     if ($Mock -and -not $DryRun) {
@@ -283,7 +308,7 @@ function Start-PhysicalServerBuild {
         $grCheck['start_time']  = Get-UtcTimestamp
         $grCheck['end_time']    = Get-UtcTimestamp
         $grCheck['steps']       = @{}
-        return $grCheck
+        return (_Publish-Result -Result $grCheck -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # ── Parameter validation with actionable error messages ───────────────────
@@ -306,7 +331,7 @@ function Start-PhysicalServerBuild {
                 $logger = Get-Logger 'Start-PhysicalServerBuild'
                 $logger.Error($msg)
                 Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
-                return @{ Success = $false; Error = $msg; Server = $ServerIdentifier }
+                return (_Publish-Result -Result @{ Success = $false; Error = $msg; Server = $ServerIdentifier } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
             }
         }
     }
@@ -364,15 +389,15 @@ function Start-PhysicalServerBuild {
             $r = New-IsoBuild -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
                 -DistributionPoint $DistributionPoint -BootImageName $BootImageName `
                 -TaskSequenceName $TaskSequenceName -SiteServer $SiteServer `
-                -DryRun:$DryRun
+                -DryRun:$DryRun -PassThru
             _Step 'iso_build' $r
             $isoPath = $r.IsoPath
-            if (-not $r.Success -and -not $DryRun) { return $overall }
+            if (-not $r.Success -and -not $DryRun) { return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         }
 
         if (-not $SkipPublish -and $isoPath -and $RepoBaseUrl) {
             $r = Publish-BootIso -IsoPath $isoPath -RepoBaseUrl $RepoBaseUrl `
-                -RepoLocalPath $RepoLocalPath -DryRun:$DryRun
+                -RepoLocalPath $RepoLocalPath -DryRun:$DryRun -PassThru
             _Step 'publish_iso' $r
             if ($r.Success) { $isoUrl = $r.PublicUrl }
         }
@@ -386,7 +411,7 @@ function Start-PhysicalServerBuild {
                 -SkipIsoUrl:([string]::IsNullOrEmpty($isoUrl) -or $AllowUnknownIsoUrl) `
                 -DryRun:$DryRun
             _Step 'pre_build_validation' $r
-            if (-not $r.Success -and -not $DryRun) { return $overall }
+            if (-not $r.Success -and -not $DryRun) { return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         }
 
         $oneview = $null
@@ -414,7 +439,7 @@ function Start-PhysicalServerBuild {
             if (-not $guardOk) {
                 $overall['success'] = $false
                 $overall['guard_rail_blocked'] = $true
-                return $overall
+                return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
             }
         }
 
@@ -428,7 +453,7 @@ function Start-PhysicalServerBuild {
                 if (-not $confirmed) {
                     $overall['success'] = $false
                     $overall['cancelled_by_user'] = $true
-                    return $overall
+                    return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
                 }
             }
 
@@ -442,7 +467,7 @@ function Start-PhysicalServerBuild {
                         PowerState = $powerState
                     }
                     $overall['success'] = $false
-                    return $overall
+                    return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
                 }
                 _Step 'ilo_maintenance_guard' @{
                     Success = $true; PowerState = $powerState
@@ -454,20 +479,21 @@ function Start-PhysicalServerBuild {
                 -DryRun:$DryRun -Force:($Force -or $DryRun)
             _Step 'ilo_mount_and_boot' $r
             if ($r.Success -and -not $DryRun) { $isoMounted = $true }
-            if (-not $r.Success -and -not $DryRun) { return $overall }
+            if (-not $r.Success -and -not $DryRun) { return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         }
 
         if (-not $SkipMonitor) {
             $r = Start-InstallMonitor -Server $ExpectedHostname `
                 -TimeoutSeconds $MonitorTimeoutSeconds `
                 -PollIntervalSeconds $MonitorPollSeconds `
+                -PassThru `
                 -ErrorAction SilentlyContinue
             _Step 'install_monitor' $r
         }
 
         if (-not $SkipPostBuild) {
             $r = Test-PostBuildValidation -Hostname $ExpectedHostname -Domain $Domain `
-                -DryRun:$DryRun
+                -DryRun:$DryRun -PassThru
             _Step 'post_build_validation' $r
         }
 
@@ -480,11 +506,11 @@ function Start-PhysicalServerBuild {
             if ($FirmwareConfig)        { $fwParams.Config = $FirmwareConfig }
             if ($FirmwareFolders.Count) { $fwParams.FirmwareFolders = $FirmwareFolders }
             Write-Host "`n  Starting post-OS firmware update..." -ForegroundColor Cyan
-            $r = Update-Firmware @fwParams
+            $r = Update-Firmware @fwParams -PassThru
             _Step 'firmware_update' $r
         }
 
-        return $overall
+        return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     finally {
         $overall['end_time'] = Get-UtcTimestamp
