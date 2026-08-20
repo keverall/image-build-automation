@@ -95,6 +95,7 @@
   - [Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/Win2019Auto.iso'                   0  18:11:10 ](#test-buildparams-baseisopath-vm-ewismgt-19kevwin2019autoiso-0-181110)
   - [Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'                                  0  18:11:56 ](#test-buildparams-baseisopath-vm-ewismgt-19kev-0-181156)
   - [Test-BuildParams -BaseIsoPath 'cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WIN2019Auto.iso'  ](#test-buildparams-baseisopath-cifshnascifsprd6roi1bkcwisappskevinewin2019autoiso)
+- [Thursday 20th Auguest](#thursday-20th-auguest)
 
 <a id="friday-14-aug-1433"></a>
 
@@ -2068,6 +2069,8 @@ BaseIsoPath                    //vm-ewismgt-19/Kev/
 > Test-BuildParams -BaseIsoPath 'Y:\Drivers for Windows ISO\FC-14.4.624.0-1\*'             [History]
 ```
 
+<a id="thursday-20th-auguest"></a>
+
 ## Thursday 20th Auguest
 
 ```text
@@ -2965,7 +2968,6 @@ GuardRailRequired              True
   Command : Configure-PhysicalBuild
   Action  : build plan review
   Fix     : supply -GuardRail '<regex>' matching the approved target server(s). 
-
 
 Name                           Value
 ----                           -----

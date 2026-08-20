@@ -260,7 +260,7 @@ function Get-OneViewServerList {
             Servers = $servers.ToArray()
             Error   = $null
         }
-        _Format-ServerListResult -Result $result
+        _Format-OneViewServerListResult -Result $result
         $logger.Info("Get-OneViewServerList result: Success=$($result.Success) Count=$($result.Count)")
         # By default emit ONLY the formatted table (no raw hashtable/json dump to the
         # terminal). Scripts/consumers opt in to the structured object with -PassThru.
@@ -305,7 +305,7 @@ function _ConvertToWildcardRegex {
     return ".*$($sb.ToString()).*"
 }
 
-function _Format-ServerListResult {
+function _Format-OneViewServerListResult {
     param([hashtable]$Result)
 
     if (-not $Result.Success) { return }
