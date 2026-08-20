@@ -191,9 +191,9 @@ AuthConnect                    {[Error, Skipped - network ping failed], [Disconn
 ### Connect-OneView -OneViewHost va-oneviewt-01                        0 
 
 ```text
-C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\commands\Connect-OneView 
+C:\Users\[REDACTED]\products\repos\image-build-automation\generated\logs\commands\Connect-OneView 
 2026-08-14 09:19:41 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-0
-Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView username for 'va-oneviewt-01': [REDACTED] 
 Enter OneView password for 'va-oneviewt-01': : ****************** 
 2026-08-14 09:20:06 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.23
 2026-08-14 09:20:06 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 26ms) 
@@ -244,8 +244,8 @@ AuthConnect                    {[Error, ], [Disconnected, False], [Connected, Tr
 ```text                                      0  1m 
 PowerShell credential request 
 Enter your credentials.       
-User: adm_98253 
-Password for user adm_98253: ****************** 
+User: [REDACTED] 
+Password for user [REDACTED]: ****************** 
 
 ```
 
@@ -650,7 +650,7 @@ Configure-PhysicalBuild: Missing an argument for parameter 'ExpectedHostname'. S
   Appliance     : va-oneviewt-01
 
 [2/4] Resolving ISO...
-Exception: C:\Users\adm_98253\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
+Exception: C:\Users\[REDACTED]\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
 Line |
  191 |      throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTT …
      |      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -680,7 +680,7 @@ Line |
   Appliance     : va-oneviewt-01
 
 [2/4] Resolving ISO...
-Exception: C:\Users\adm_98253\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
+Exception: C:\Users\[REDACTED]\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
 Line | 
  191 |      throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTT …
      |      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -710,7 +710,7 @@ Line |
   Appliance     : va-oneviewt-01
 
 [2/4] Resolving ISO...
-Exception: C:\Users\adm_98253\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
+Exception: C:\Users\[REDACTED]\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
 Line | 
  191 |      throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTT …
      |      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -740,7 +740,7 @@ Line |
   Appliance     : va-oneviewt-01 
 
 [2/4] Resolving ISO...
-Exception: C:\Users\adm_98253\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
+Exception: C:\Users\[REDACTED]\products\repos\image-build-automation\src\powershell\Automation\Public\Start-PhysicalServerBuild.ps1:191:5
 Line | 
  191 |      throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTT … 
      |      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
@@ -944,7 +944,7 @@ BaseIsoPath                    Y:\WIN2019Auto.iso
 ```text
 15:52:44 2026-08-18 14:52:56 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='' DryRun=False PassThru=False Json=False
 Enter OneView appliance host to connect to (or press Enter to cancel): va-oneviewt-01 
-Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView username for 'va-oneviewt-01': [REDACTED] 
 Enter OneView password for 'va-oneviewt-01': : ****************** 
 2026-08-18 14:53:26 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
 2026-08-18 14:53:26 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 7ms) 
