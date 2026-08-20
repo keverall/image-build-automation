@@ -2067,3 +2067,921 @@ BaseIsoPath                    //vm-ewismgt-19/Kev/
 > Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'                                       [History]
 > Test-BuildParams -BaseIsoPath 'Y:\Drivers for Windows ISO\FC-14.4.624.0-1\*'             [History]
 ```
+
+## Thursday 20th Auguest
+
+```text
+
+No active OneView session. Use Test-ServerConnectivity -OneViewHost <oneview-appliance-hos> to connect, or supply -OneViewHost.
+   image-build-automation  Get-OneViewServerList  
+2026-08-20 15:36:59 - OneViewServerList - INFO - Get-OneViewServerList: no host and no actve session - graceful failure
+No active OneView session. Use Test-ServerConnectivity -OneViewHost <oneview-appliance-hos> to connect, or supply -OneViewHost.
+   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01      0  16:36:59 2026-08-20 15:37:08 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-onviewt-01' DryRun=False PassThru=False Json=False
+Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ****************** 
+2026-08-20 15:37:27 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved > 10.239.124.79
+2026-08-20 15:37:28 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443 40ms)
+This management appliance is a company owned asset and provided for the exclusive use of athorized personnel. Unauthorized use or abuse of this system may lead to corrective action
+including termination, civil and/or criminal penalties.
+ 
+2026-08-20 15:38:18 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completd: Available=True (DNS=True, TCP=True, Auth=True)
+2026-08-20 15:38:18 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Connected to OneView appliance 'va-oneviewt-01'.'
+
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01 
+  Environment:Prod
+  Timestamp:  2026-08-20T15:38:18.4147101Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved 
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 40ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000  v10.0.4265.2221 (module used for all OneView calls
+on this server)
+    Appliance OneView version: 8200
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01s 551ms  16:38:18 2026-08-20 15:40:15 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-onviewt-01' DryRun=False PassThru=False Json=False
+2026-08-20 15:40:15 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved > 10.239.124.79
+2026-08-20 15:40:15 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443 4ms)
+2026-08-20 15:40:19 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completd: Available=True (DNS=True, TCP=True, Auth=True)
+2026-08-20 15:40:19 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+2026-08-20 15:40:19 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+
+==============================================
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-08-20T15:40:19.0016141Z
+
+  --- Phase 1: Network Ping --- 
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 4ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server) 
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  Get-OneViewServerList                      s 314ms  16:40:19 
+============================================== 
+  Server List Validation
+==============================================
+
+  Status:   VALID
+  File:     
+  Servers:  16
+
+  --- Servers --- 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+
+==============================================
+
+2026-08-20 15:40:42 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=16
+   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'nae:0*ilo'
+
+============================================== 
+  Server List Validation
+==============================================
+
+  Status:   VALID
+  File:     
+  Servers:  16
+
+  --- Servers ---
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+
+==============================================
+
+2026-08-20 15:40:50 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=16
+   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -IncldeServerCount
+2026-08-20 15:40:58 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Sucess=True Connected=True Reachable=True Authenticated=True Error=''
+
+==============================================
+  OneView Connection Status
+==============================================
+
+  Status:    CONNECTED
+  Appliance: va-oneviewt-01 
+  Reachable: True
+  Auth:      True
+  Version:   8200 
+  Module:    HPEOneView.1000  v10.0.4265.2221
+    Source:  LoadedSession
+  Mod Compat: Compatible
+  Servers:   16 
+  Session:   HPEOneViewModule
+
+============================================== 
+
+   image-build-automation  Get-OneViewServerList  
+
+============================================== 
+  Server List Validation
+==============================================
+ 
+  Status:   VALID
+  File:     
+  Servers:  16
+
+  --- Servers ---
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+
+==============================================
+
+2026-08-20 15:41:23 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=16
+   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01      
+2026-08-20 15:41:31 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Sucess=True Connected=True Reachable=True Authenticated=True Error=''
+
+==============================================
+  OneView Connection Status
+==============================================
+
+  Status:    CONNECTED 
+  Appliance: va-oneviewt-01
+  Reachable: True
+  Auth:      True
+  Version:   8200
+  Module:    HPEOneView.1000  v10.0.4265.2221
+    Source:  LoadedSession
+  Mod Compat: Compatible
+  Session:   HPEOneViewModule
+ 
+==============================================
+ 
+   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -ServrIdentifier CZ22420JCN -IdentifierType Serial
+2026-08-20 15:41:40 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Sucess=True Connected=True Reachable=True Authenticated=True Error=''
+
+==============================================
+  OneView Connection Status
+==============================================
+
+  Status:    CONNECTED
+  Appliance: va-oneviewt-01
+  Reachable: True
+  Auth:      True 
+  Version:   8200
+  Module:    HPEOneView.1000  v10.0.4265.2221
+    Source:  LoadedSession
+  Mod Compat: Compatible
+  Session:   HPEOneViewModule
+
+  --- Server ---
+    Name:    omg-qlikview-03ilo
+    Serial:  CZ22420JCN
+    Power:   On 
+    Health:  OK
+
+==============================================
+
+   image-build-automation  Disconnect-OneView 
+Successfully disconnected from OneView appliance. 
+Success: True 
+Timestamp: 2026-08-20T15:41:47.9165533Z 
+Message: Successfully disconnected from OneView appliance. 
+   image-build-automation  Get-OneViewConnectionStatus 
+2026-08-20 15:42:00 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus: no host an no active session - graceful failure
+
+==============================================
+  OneView Connection Status
+==============================================
+
+  Status:    NOT CONNECTED
+  Reachable: False
+  Auth:      False
+
+  Error:   No active OneView session. Use Test-ServerConnectivity -OneViewHost <oneview-apliance-host> to connect, or supply -OneViewHost.
+
+==============================================
+
+   image-build-automation  Test-ServerConnectivity 
+
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:
+  Environment:Prod
+  Timestamp:  2026-08-20T15:42:09.2558329Z 
+
+  --- Phase 1: Network Ping ---
+    DNS:       FAILED
+    TCP:       FAILED
+    Error:     No active OneView connection. Connect first with Connect-OneView -OneViewHot <host> (server name or serial), or supply -OneViewHost to test a specific appliance.    
+
+  --- Phase 2: Auth Connect ---
+    Module:    Not loaded
+    Connected: No
+    Error:     Skipped - no active connection 
+
+==============================================
+
+   image-build-automation  Test-ServerConnectivity -OneViewHost oneview.example.com     
+2026-08-20 15:42:25 - Connectivity - INFO - DNS resolution for 'oneview.example.com': FAILD - DNS resolution failed for 'oneview.example.com': No such host is known.
+2026-08-20 15:42:25 - Connectivity - INFO - TCP probe for 'oneview.example.com': FAILED - NS resolution failed for 'oneview.example.com': No such host is known.
+2026-08-20 15:42:25 - Connectivity - INFO - Connectivity test for 'oneview.example.com' copleted: Available=False (DNS=False, TCP=False, Auth=False)
+
+==============================================
+  OneView Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       oneview.example.com
+  Environment:Prod
+  Timestamp:  2026-08-20T15:42:25.7023728Z
+ 
+  --- Phase 1: Network Ping ---
+    DNS:       FAILED
+    TCP:       FAILED
+    Error:     DNS resolution failed for 'oneview.example.com': No such host is known.    
+
+  --- Phase 2: Auth Connect ---
+    Module:    Not loaded
+    Connected: No 
+    Error:     Skipped - network ping failed
+
+==============================================
+ 
+   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'nae:0*ilo'^C
+   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01      0  16:42:36 2026-08-20 15:42:40 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-onviewt-01' DryRun=False PassThru=False Json=False
+Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : ****************** 
+2026-08-20 15:43:09 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved > 10.239.124.79
+2026-08-20 15:43:09 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443 38ms)
+This management appliance is a company owned asset and provided for the exclusive use of athorized personnel. Unauthorized use or abuse of this system may lead to corrective action
+including termination, civil and/or criminal penalties.
+ 
+2026-08-20 15:43:11 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completd: Available=True (DNS=True, TCP=True, Auth=True)
+2026-08-20 15:43:11 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Connected to OneView appliance 'va-oneviewt-01'.'
+
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01 
+  Environment:Prod
+  Timestamp:  2026-08-20T15:43:11.4838068Z 
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved 
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 38ms) 
+
+  --- Phase 2: Auth Connect --- 
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000  v10.0.4265.2221 (module used for all OneView calls
+on this server)
+    Appliance OneView version: 8200
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  Test-ServerConnectivity -OneViewHost oneview.example.com3:12 
+============================================== 
+  OneView Connectivity Test
+============================================== 
+
+  Status:     UNAVAILABLE
+  Mode:       oneview
+  Host:       oneview.example.com
+  Environment:Prod
+  Timestamp:  2026-08-20T15:43:23.3213072Z     
+
+  --- Phase 1: Network Ping ---
+    DNS:       FAILED
+    TCP:       FAILED
+    Error:     Already connected to OneView appliance 'va-oneviewt-01'. Cannot reconnect t 'oneview.example.com'.
+ 
+  --- Phase 2: Auth Connect --- 
+    Module:    Not loaded
+    Connected: No
+    Error:     Skipped - already connected to 'va-oneviewt-01'. Run Disconnect-OneView firt to switch to 'oneview.example.com'.
+
+==============================================
+
+   image-build-automation  Test-ServerList -MgmtHost va-oneviewt-01                3:23 Test-ServerList: A parameter cannot be found that matches parameter name 'MgmtHost'. 
+   image-build-automation  Test-ServerList                                  1  16:43:34 
+============================================== 
+  Server List Validation
+============================================== 
+
+  Status:   VALID
+  File:     configs\server_list.txt
+  Servers:  5
+
+  --- Servers ---
+    - server1.example.com
+    - server2.example.com 
+    - server3.example.com 
+    - proliant-server-01
+    - proliant-server-02
+
+==============================================
+
+   image-build-automation  Test-ServerConnectivity -OneViewHost va-oneviewt-01          2026-08-20 15:44:22 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved > 10.239.124.79
+2026-08-20 15:44:22 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443 4ms)
+2026-08-20 15:44:23 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completd: Available=True (DNS=True, TCP=True, Auth=True)
+
+==============================================
+  OneView Connectivity Test
+==============================================
+ 
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod 
+  Timestamp:  2026-08-20T15:44:23.4767216Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 4ms)
+
+  --- Phase 2: Auth Connect --- 
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server) 
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  Connect-OneView -OneViewHost oneview.example.comms  16:44:23 2026-08-20 15:45:15 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='oneviw.example.com' DryRun=False PassThru=False Json=False
+WARNING: Already connected to OneView appliance 'va-oneviewt-01'. Cannot reconnect to 'oneiew.example.com' - this would drop the live session. Run Disconnect-OneView first to switc appliances.
+2026-08-20 15:45:15 - Connect-OneView - INFO - Connect-OneView result: Available=False Mesage='Already connected to OneView appliance 'va-oneviewt-01'. Cannot reconnect to 'oneviewexample.com'.'
+ 
+============================================== 
+  OneView Connectivity Test
+==============================================
+
+  Status:     UNAVAILABLE
+  Mode:       oneview 
+  Host:       oneview.example.com
+  Environment:Prod
+  Timestamp:  2026-08-20T15:45:15.5044290Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       FAILED
+    TCP:       FAILED
+    Error:     Already connected to OneView appliance 'va-oneviewt-01'. Cannot reconnect t 'oneview.example.com'.
+
+  --- Phase 2: Auth Connect ---
+    Module:    Not loaded
+    Connected: No
+    Error:     Skipped - already connected to 'va-oneviewt-01'. Run Disconnect-OneView firt to switch to 'oneview.example.com'.
+
+==============================================
+
+   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01      0  16:45:15 2026-08-20 15:45:35 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-onviewt-01' DryRun=False PassThru=False Json=False
+2026-08-20 15:45:35 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved > 10.239.124.79
+2026-08-20 15:45:35 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443 6ms)
+2026-08-20 15:45:35 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completd: Available=True (DNS=True, TCP=True, Auth=True)
+2026-08-20 15:45:35 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+2026-08-20 15:45:35 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+
+==============================================
+  OneView Connectivity Test
+==============================================
+ 
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01 
+  Environment:Prod
+  Timestamp:  2026-08-20T15:45:35.7484814Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 6ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server) 
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  Connect-OneView                           0  741ms  16:45:35 2026-08-20 15:45:51 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='' Dryun=False PassThru=False Json=False
+Enter OneView appliance host to connect to (or press Enter to cancel): va-oneviewt-01 
+2026-08-20 15:46:01 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved > 10.239.124.79
+2026-08-20 15:46:01 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443 4ms)
+2026-08-20 15:46:02 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completd: Available=True (DNS=True, TCP=True, Auth=True)
+2026-08-20 15:46:02 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+2026-08-20 15:46:02 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+
+==============================================
+  OneView Connectivity Test
+==============================================
+ 
+  Status:     AVAILABLE 
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-08-20T15:46:02.5412868Z
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 4ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server) 
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  Connect-OneView                       0  11s 150ms  16:46:02 2026-08-20 15:46:21 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='' Dryun=False PassThru=False Json=False
+Enter OneView appliance host to connect to (or press Enter to cancel): va-oneviewt-01 
+2026-08-20 15:46:33 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved > 10.239.124.79
+2026-08-20 15:46:33 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443 4ms)
+2026-08-20 15:46:34 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completd: Available=True (DNS=True, TCP=True, Auth=True)
+2026-08-20 15:46:34 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+2026-08-20 15:46:34 - Connect-OneView - INFO - Connect-OneView result: Available=True Messge='Already connected to OneView appliance 'va-oneviewt-01'.'
+ 
+==============================================
+  OneView Connectivity Test
+==============================================
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-08-20T15:46:34.1350420Z
+
+  --- Phase 1: Network Ping --- 
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 4ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server) 
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01 -ServerIdentifier
+omg-qlikview-03ilo
+Connect-OneView: A parameter cannot be found that matches parameter name 'ServerIdentifier.
+   image-build-automation  Connect-OneView -OneViewHost va-oneviewt-01 -ServerIdentifier
+omg-alikview-03ilo
+Connect-OneView: A parameter cannot be found that matches parameter name 'ServerIdentifier.
+   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -ServrIdentifier omg-alikview-03ilo
+2026-08-20 15:57:26 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Sucess=True Connected=True Reachable=True Authenticated=True Error=''
+
+==============================================
+  OneView Connection Status
+==============================================
+
+  Status:    CONNECTED
+  Appliance: va-oneviewt-01
+  Reachable: True 
+  Auth:      True
+  Version:   8200
+  Module:    HPEOneView.1000  v10.0.4265.2221
+    Source:  LoadedSession
+  Mod Compat: Compatible
+  Session:   HPEOneViewModule
+
+  --- Server ---
+    Error:   Server 'omg-alikview-03ilo' not found in OneView 
+ 
+==============================================
+
+   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -ServrIdentifier omg-qlikview-03ilo
+2026-08-20 15:58:33 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Sucess=True Connected=True Reachable=True Authenticated=True Error=''
+
+==============================================
+  OneView Connection Status
+==============================================
+
+  Status:    CONNECTED
+  Appliance: va-oneviewt-01
+  Reachable: True 
+  Auth:      True
+  Version:   8200
+  Module:    HPEOneView.1000  v10.0.4265.2221
+    Source:  LoadedSession
+  Mod Compat: Compatible
+  Session:   HPEOneViewModule
+
+  --- Server ---
+    Name:    omg-qlikview-03ilo
+    Serial:  CZ22420JCN
+    Power:   On
+    Health:  OK 
+ 
+==============================================
+
+   image-build-automation  Get-OneViewConnectionStatus -OneViewHost va-oneviewt-01 -ServrIdentifier CZ22420JCN        
+2026-08-20 15:58:59 - OneViewConnectivity - INFO - Get-OneViewConnectionStatus result: Sucess=True Connected=True Reachable=True Authenticated=True Error=''
+
+============================================== 
+  OneView Connection Status
+==============================================
+ 
+  Status:    CONNECTED 
+  Appliance: va-oneviewt-01
+  Reachable: True
+  Auth:      True
+  Version:   8200
+  Module:    HPEOneView.1000  v10.0.4265.2221
+    Source:  LoadedSession
+  Mod Compat: Compatible
+  Session:   HPEOneViewModule
+
+  --- Server ---
+    Name:    omg-qlikview-03ilo 
+    Serial:  CZ22420JCN
+    Power:   On
+    Health:  OK
+
+==============================================
+
+   image-build-automation  Get-OneViewServerList
+
+============================================== 
+  Server List Validation
+============================================== 
+
+  Status:   VALID
+  File:     
+  Servers:  16
+
+  --- Servers ---
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+
+==============================================
+
+2026-08-20 15:59:36 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=16
+   image-build-automation  Test-ServerList -MgmtHost va-oneviewt-01            16:59:36 Test-ServerList: A parameter cannot be found that matches parameter name 'MgmtHost'. 
+   image-build-automation  Test-ServerList                                  1  16:59:43  
+==============================================
+  Server List Validation
+==============================================
+
+  Status:   VALID
+  File:     configs\server_list.txt 
+  Servers:  5
+
+  --- Servers ---
+    - server1.example.com
+    - server2.example.com
+    - server3.example.com
+    - proliant-server-01 
+    - proliant-server-02
+
+==============================================
+
+   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'nae:0*ilo'
+
+============================================== 
+  Server List Validation
+============================================== 
+
+  Status:   VALID
+  File:     
+  Servers:  16
+
+  --- Servers ---
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+ 
+==============================================
+
+2026-08-20 16:00:56 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=16
+   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'nae:03ilo'
+
+============================================== 
+  Server List Validation
+==============================================
+
+  Status:   VALID
+  File:     
+  Servers:  6
+
+  --- Servers ---
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+
+==============================================
+
+2026-08-20 16:01:09 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=6
+   image-build-automation  Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'Poer:On'     
+
+============================================== 
+  Server List Validation
+==============================================
+
+  Status:   VALID
+  File:     
+  Servers:  16
+
+  --- Servers ---
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable 
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+    - System.Collections.Hashtable
+ 
+==============================================
+
+2026-08-20 16:01:32 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=16
+   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/'17:01:32   [OK] UNC/SMB path converted to CIFS URL: cifs://vm-ewismgt-19/Kev/ 
+
+Name                           Value
+----                           -----
+Success                        False
+BaseIsoPath                    //vm-ewismgt-19/Kev/
+IsoUrl                         cifs://vm-ewismgt-19/Kev/
+ResolvedPath                   //vm-ewismgt-19/Kev/
+FirmwareResults                {}
+Errors                         {Base ISO not found or not accessible: //vm-ewismgt-19/Kev…
+
+   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/Win2019Aut.iso'
+  [OK] UNC/SMB path converted to CIFS URL: cifs://vm-ewismgt-19/Kev/Win2019Auto.iso       
+
+Name                           Value
+----                           -----
+Success                        True
+BaseIsoPath                    //vm-ewismgt-19/Kev/Win2019Auto.iso 
+IsoUrl                         cifs://vm-ewismgt-19/Kev/Win2019Auto.iso
+ResolvedPath                   //vm-ewismgt-19/Kev/Win2019Auto.iso
+FirmwareResults                {}
+Errors                         {}
+
+   image-build-automation  Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/Win201Auto.iso'
+  [OK] SMB URL converted to CIFS URL: cifs://vm-ewismgt-19/Kev/Win2019Auto.iso
+
+Name                           Value
+----                           -----
+Success                        True
+BaseIsoPath                    smb://vm-ewismgt-19/Kev/Win2019Auto.iso
+IsoUrl                         cifs://vm-ewismgt-19/Kev/Win2019Auto.iso
+ResolvedPath                   smb://vm-ewismgt-19/Kev/Win2019Auto.iso
+FirmwareResults                {}
+Errors                         {} 
+ 
+   image-build-automation  Test-BuildParams -BaseIsoPath 'smb://vm-ewismgt-19/Kev/Win201Auto.iso' 
+  [OK] SMB URL converted to CIFS URL: cifs://vm-ewismgt-19/Kev/Win2013Auto.iso
+
+Name                           Value
+----                           -----
+Success                        True
+BaseIsoPath                    smb://vm-ewismgt-19/Kev/Win2013Auto.iso
+IsoUrl                         cifs://vm-ewismgt-19/Kev/Win2013Auto.iso 
+ResolvedPath                   smb://vm-ewismgt-19/Kev/Win2013Auto.iso
+FirmwareResults                {}
+Errors                         {}
+
+   image-build-automation  Test-BuildParams -BaseIsoPath 'smb://vm-ewisffffmgt-19/Kev/Wi2013Auto.iso'
+  [OK] SMB URL converted to CIFS URL: cifs://vm-ewisffffmgt-19/Kev/Win2013Auto.iso
+
+Name                           Value
+----                           -----
+Success                        True
+BaseIsoPath                    smb://vm-ewisffffmgt-19/Kev/Win2013Auto.iso
+IsoUrl                         cifs://vm-ewisffffmgt-19/Kev/Win2013Auto.iso
+ResolvedPath                   smb://vm-ewisffffmgt-19/Kev/Win2013Auto.iso
+FirmwareResults                {}
+Errors                         {}
+
+   image-build-automation  Test-BuildParams -BaseIsoPath '//vm-ewismgt-19/Kev/Win2019Aut.iso'        
+  [OK] UNC/SMB path converted to CIFS URL: cifs://vm-ewismgt-19/Kev/Win2019Auto.iso       
+
+Name                           Value
+----                           -----
+Success                        True
+BaseIsoPath                    //vm-ewismgt-19/Kev/Win2019Auto.iso
+IsoUrl                         cifs://vm-ewismgt-19/Kev/Win2019Auto.iso
+ResolvedPath                   //vm-ewismgt-19/Kev/Win2019Auto.iso
+FirmwareResults                {}
+Errors                         {}
+
+   image-build-automation  Test-BuildParams -BaseIsoPath '/vm-ewismgt-19/Kev/Win2019Autoiso' 
+
+Name                           Value 
+----                           -----
+Success                        False
+BaseIsoPath                    /vm-ewismgt-19/Kev/Win2019Auto.iso
+IsoUrl
+ResolvedPath
+FirmwareResults                {}
+Errors                         {Unsupported media path format: '/vm-ewismgt-19/Kev/Win201…
+
+   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\jjWIN2019Auto.iso'
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\jjWIN2019Auto.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE     
+/jjWIN2019Auto.iso
+
+Name                           Value
+----                           -----
+Success                        False
+BaseIsoPath                    Y:\jjWIN2019Auto.iso
+IsoUrl                         cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE                …
+ResolvedPath                   Y:\jjWIN2019Auto.iso
+FirmwareResults                {}
+Errors                         {Base ISO not found or not accessible: Y:\jjWIN2019Auto.is…
+
+   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\WIN2019Auto.iso'  17:04:57   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WIN2019Auto.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE     
+/WIN2019Auto.iso
+
+Name                           Value 
+----                           -----
+Success                        True
+BaseIsoPath                    Y:\WIN2019Auto.iso
+IsoUrl                         cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE                …
+ResolvedPath                   Y:\WIN2019Auto.iso
+FirmwareResults                {}
+Errors                         {}
+
+   image-build-automation  Test-BuildParams -BaseIsoPath 'Y:\WIN2012Auto.iso'  17:16:32   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WIN2012Auto.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE     
+/WIN2012Auto.iso
+
+Name                           Value
+----                           -----
+Success                        False
+BaseIsoPath                    Y:\WIN2012Auto.iso
+IsoUrl                         cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE                …
+ResolvedPath                   Y:\WIN2012Auto.iso
+FirmwareResults                {}
+Errors                         {Base ISO not found or not accessible: Y:\WIN2012Auto.iso} 
+ 
+   image-build-automation  Test-PreBuildValidation -ServerIdentifier omg-qlikview-03ilo -DryRun
+WARNING: Already connected to OneView appliance 'va-oneviewt-01'. Cannot reconnect to '--DyRun' - reusing the existing session (reconnecting would drop the live session). Run Disconect-OneView first if you need to switch to '--DryRun'.
+C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit 
+C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_omgqlikview-03ilo_2026-08-20T16-23-38Z.json
+
+Name                           Value 
+----                           ----- 
+Success                        True  
+Checks                         {[oneview_target, System.Collections.Hashtable], [iso_url_…
+Timestamp                      2026-08-20T16:23:38.7827743Z
+Server                         omg-qlikview-03ilo
+ 
+Success                        True
+Checks                         {[oneview_target, System.Collections.Hashtable], [iso_url_…     
+Timestamp                      2026-08-20T16:24:08.3585282Z
+Server                         omg-qlikview-03ilo
+
+   image-build-automation   Configure-PhysicalBuild -ServerIdentifier omg-qlikview-03ilo     
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  GUARD RAIL REQUIRED - ACTION BLOCKED                            ║
+  ╚══════════════════════════════════════════════════════════════════╝
+  Command : Configure-PhysicalBuild
+  Action  : build plan review
+  Fix     : supply -GuardRail '<regex>' matching the approved target server(s).
+ 
+
+Name                           Value
+----                           -----
+Success                        False
+Error                          GUARD RAIL REQUIRED: -GuardRail must be supplied to Config…     
+GuardRailRequired              True
+
+   image-build-automation   Configure-PhysicalBuild -ServerIdentifier omg-qlikview-03ilo -OneViewHost va-oneviewt-01 -RepoBaseUrl 'Y:\WIN2012Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers')
+  ╔══════════════════════════════════════════════════════════════════╗ 
+  ║  GUARD RAIL REQUIRED - ACTION BLOCKED                            ║
+  ╚══════════════════════════════════════════════════════════════════╝
+  Command : Configure-PhysicalBuild
+  Action  : build plan review
+  Fix     : supply -GuardRail '<regex>' matching the approved target server(s). 
+
+
+Name                           Value
+----                           -----
+Success                        False
+Error                          GUARD RAIL REQUIRED: -GuardRail must be supplied to Configure-… 
+GuardRailRequired              True
+
+   image-build-automation   Configure-PhysicalBuild -ServerIdentifier omg-qlikview-03ilo -OneViewHost va-oneviewt-01 -RepoBaseUrl 'Y:\WIN2012Auto.iso' -FirmwareFolders @('Y:\Drivers for Windows ISO\FC-14.4.624.0-1', 'Y:\Drivers for Windows ISO\MR216i-a Win19Drivers') -GuardRail 'omg-qlikview-03ile'
+
+  [ERROR] PRE-BUILD VALIDATION requires ConfigMgr parameters. Missing: -SiteCode (ConfigMgr site code, e.g. P01); -ManagementPoint (ConfigMgr MP FQDN, e.g. mp01.corp.local); -DistributionPoint (ConfigMgr DP FQDN, e.g. dp01.corp.local); -BootImageName (ConfigMgr boot image name, e.g. "WinPE x64 - HPE"). Either supply these parameters, use -SkipPreBuild to skip validation, or use -ExternalIsoPath 'https://...' to deploy a client-supplied ISO.
+
+Name                           Value
+----                           -----
+Success                        False
+Server                         omg-qlikview-03ilo
+Error                          PRE-BUILD VALIDATION requires ConfigMgr parameters. Missing: -… 
+
+   image-build-automation
+```
