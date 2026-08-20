@@ -320,7 +320,7 @@ if ($useDryRun -or $connected) {
         Get-OneViewVersion -OneViewHost $hostArg -DryRun
     } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
     Invoke-SafeStep 'Test-ServerList (validation)' -Script {
-        Test-ServerList
+        Test-ServerList -PassThru
     } -SuccessPredicate { param($r) $r.ContainsKey('Success') }
 
     # ── Phase 4: disconnect, then verify graceful failure again ─────────────────────

@@ -66,14 +66,14 @@ Describe 'Test-ClusterId' {
 
 Describe 'Test-ServerList' {
     It 'Returns a non-empty list for a valid server list' {
-        $result = Test-ServerList -ServerListPath (Join-Path $Script:ConfigDir 'server_list.txt')
+        $result = Test-ServerList -ServerListPath (Join-Path $Script:ConfigDir 'server_list.txt') -PassThru
         $result.Success | Should -Be $true
         $result.Servers.Count | Should -BeGreaterThan 0
         $result.Servers[0] | Should -BeOfType [string]
     }
 
     It 'Returns failure for a missing file' {
-        $result = Test-ServerList -ServerListPath 'C:\nonexistent_servers.txt'
+        $result = Test-ServerList -ServerListPath 'C:\nonexistent_servers.txt' -PassThru
         $result.Success | Should -Be $false
         $result.Servers.Count | Should -Be 0
     }
