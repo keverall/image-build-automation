@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewVersion.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -33,7 +33,9 @@ Local checks (always performed): * Loaded HPEOneView.*/HPOneView.* modules in th
 | `-Port` | OneView HTTPS port (default 443). |
 | `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL cert verification (default true). |
 | `-TimeoutSec` _(Aliases: -Timeout)_ | Appliance probe timeout (default 15 s). |
-| `-Quiet` _(Aliases: -Q)_ | Suppress the formatted console report; return only the hashtable. |
+| `-Quiet` _(Aliases: -Q)_ | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). By default the command writes the report to the host and returns nothing on the success stream. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Get-OneViewVersion -PassThru`, for scripting. |
 
 <a id="examples"></a>
 
@@ -93,12 +95,28 @@ Get-OneViewVersion -OneViewHost oneview.example.com
         Appliance probe timeout (default 15 s).
 
     .PARAMETER Quiet
-        Suppress the formatted console report; return only the hashtable.
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself). By default the command writes the report
+        to the host and returns nothing on the success stream.
+
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream. By
+        default the command writes only the report and returns nothing, so the
+        terminal/log never receives a truncated hashtable dump. Capture the
+        result into a variable, e.g. `$r = Get-OneViewVersion -PassThru`, for
+        scripting.
 
     .OUTPUTS
-        [hashtable] Success, RequiredModule, Compliant, LoadedModules,
-        InstalledModules, NonCompliantLoaded, NonCompliantInstalled,
-        Appliance, ApplianceVersion, ApplianceReachable, Error.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with keys Success, RequiredModule, Compliant, LoadedModules,
+        InstalledModules, NonCompliantLoaded, NonCompliantInstalled, Appliance,
+        ApplianceVersion, ApplianceReachable, Error. With -Json, a JSON [string]
+        representation of the same data.
 
     .EXAMPLE
         Get-OneViewVersion

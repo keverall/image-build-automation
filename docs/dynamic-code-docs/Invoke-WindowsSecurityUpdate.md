@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-WindowsSecurity.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -36,6 +36,9 @@ Applies Windows security patches to a base ISO using DISM or PowerShell DISM equ
 | `-OutputDir` _(Aliases: -o)_ | Output directory (default: output\patched). |
 | `-Method` _(Aliases: -m)_ | Patching method: 'dism' or 'powershell' (default: dism). |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate without making changes. |
+| `-Json` | Emit the result as a JSON string on the success stream (for API integration / redirection) instead of the human-readable report. When omitted, the command writes a human-readable report to the host (terminal / transcript / logs) and does NOT dump a raw hashtable. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Invoke-WindowsSecurityUpdate -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -89,8 +92,28 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 's
     .PARAMETER DryRun
         Simulate without making changes.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+        When omitted, the command writes a human-readable report to the host
+        (terminal / transcript / logs) and does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Invoke-WindowsSecurityUpdate -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success (bool), PatchedIso (string), and details.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success (bool), PatchedIso (string), and Error.
+        With -Json, a JSON [string] representation of the same data.
 
     .EXAMPLE
         Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01' -DryRun

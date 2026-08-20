@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-IsoBuild.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -45,6 +45,9 @@ Auto-detects a ConfigMgr PowerShell context (local module or PSRemoting to the s
 | `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
 | `-MockIso` | Create a 0-byte placeholder ISO without calling ConfigMgr (used by tests). |
 | `-DryRun` | Validate inputs and print plan without creating the ISO. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. When omitted, the command writes a human-readable report to the host (terminal / transcript / logs) and does NOT dump a raw hashtable. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = New-IsoBuild -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -127,8 +130,28 @@ New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' ` -Distribut
     .PARAMETER DryRun
         Validate inputs and print plan without creating the ISO.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report. When omitted, the command writes a
+        human-readable report to the host (terminal / transcript / logs) and
+        does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = New-IsoBuild -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, IsoPath, IsoUrl (if -RepoBaseUrl given), Metadata.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success, IsoPath, Metadata. With -Json, a JSON
+        [string] representation of the same data.
 
     .EXAMPLE
         New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' `

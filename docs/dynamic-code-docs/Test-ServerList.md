@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerList.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,13 +14,14 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Examples](#examples)
   - [Example 1](#example-1)
+  - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
 <a id="description"></a>
 
 ## Description
 
-Reads the server list text file (server_list.txt) and returns a hashtable with Success and Servers properties. Skips empty lines and comments (lines starting with #). Optionally trims comma-separated metadata from each line.
+Reads the server list text file (server_list.txt) and validates it: skips empty lines and comments (lines starting with #), and trims any comma-separated metadata from each line. Returns a structured result describing the file path, server count and the validated server names. By default the command writes a HUMAN-READABLE report to the terminal (a formatted list of servers) and returns NOTHING on the success stream, so the operator never sees a truncated raw hashtable dump. Use -PassThru to also capture the structured [hashtable] (Success, Path, Count, Error, Servers) for scripting, or -Json to emit it as a JSON string.
 
 <a id="parameters"></a>
 
@@ -28,7 +29,12 @@ Reads the server list text file (server_list.txt) and returns a hashtable with S
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ServerListPath` | Path to server_list.txt (default: configs\server_list.txt). |
+| `-ServerListPath` _(Aliases: -Path)_ | Explicit path to server_list.txt. When omitted, the file is resolved as '<ConfigDir>/server_list.txt'. |
+| `-ConfigDir` _(Aliases: -CfgDir)_ | Config directory used to locate the default server_list.txt when -ServerListPath is not supplied. Defaults to 'configs'. |
+| `-DryRun` _(Aliases: -Dry)_ | Accepted for parameter-surface consistency with the other automation commands. This command performs no modifications (it only reads a file), so -DryRun has no additional effect beyond a [DRY-RUN] note in the report. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Test-ServerList -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -39,7 +45,15 @@ Reads the server list text file (server_list.txt) and returns a hashtable with S
 ### Example 1
 
 ```powershell
-$servers = Test-ServerList
+Test-ServerList
+```
+
+<a id="example-2"></a>
+
+### Example 2
+
+```powershell
+Test-ServerList -ServerListPath .\staging_servers.txt -PassThru
 ```
 
 <a id="original-comment-based-help"></a>
@@ -51,15 +65,50 @@ $servers = Test-ServerList
         Validate and load the server list text file.
 
     .DESCRIPTION
-        Reads the server list text file (server_list.txt) and returns a hashtable
-        with Success and Servers properties. Skips empty lines and comments
-        (lines starting with #). Optionally trims comma-separated metadata from each line.
+        Reads the server list text file (server_list.txt) and validates it:
+        skips empty lines and comments (lines starting with #), and trims any
+        comma-separated metadata from each line. Returns a structured result
+        describing the file path, server count and the validated server names.
+
+        By default the command writes a HUMAN-READABLE report to the terminal (a
+        formatted list of servers) and returns NOTHING on the success stream, so
+        the operator never sees a truncated raw hashtable dump. Use -PassThru to
+        also capture the structured [hashtable] (Success, Path, Count, Error,
+        Servers) for scripting, or -Json to emit it as a JSON string.
 
     .PARAMETER ServerListPath
-        Path to server_list.txt (default: configs\server_list.txt).
+        Explicit path to server_list.txt. When omitted, the file is resolved as
+        '<ConfigDir>/server_list.txt'.
+
+    .PARAMETER ConfigDir
+        Config directory used to locate the default server_list.txt when
+        -ServerListPath is not supplied. Defaults to 'configs'.
+
+    .PARAMETER DryRun
+        Accepted for parameter-surface consistency with the other automation
+        commands. This command performs no modifications (it only reads a file),
+        so -DryRun has no additional effect beyond a [DRY-RUN] note in the report.
+
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream. By
+        default the command writes only the human-readable report and returns
+        nothing, so the terminal/log never receives a truncated hashtable dump.
+        Capture the result into a variable, e.g.
+        `$r = Test-ServerList -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
 
     .EXAMPLE
-        $servers = Test-ServerList
+        Test-ServerList
+
+    .EXAMPLE
+        Test-ServerList -ServerListPath .\staging_servers.txt -PassThru
 ```
 
 ---

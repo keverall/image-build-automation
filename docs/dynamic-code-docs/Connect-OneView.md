@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Connect-OneView.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -33,6 +33,7 @@ This is a connection-focused alias for Test-ServerConnectivity.  It validates ne
 | `-DryRun` _(Aliases: -Dry)_ | Validate host resolution only - no authentication is attempted and no real connection is made.  Host is resolved from connection_hosts.json (Test environment by default).  Safe for testing code without touching an appliance.  Remove -DryRun when you are ready to connect and make changes. |
 | `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. |
 | `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -96,6 +97,10 @@ Connect-OneView -DryRun Validate host resolution from config without connecting 
     .PARAMETER Json
         Emit the result as a JSON string on the success stream instead of
         the human-readable report.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
 
     .EXAMPLE
         Connect-OneView -OneViewHost oneview.example.com

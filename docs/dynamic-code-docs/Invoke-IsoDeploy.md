@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IsoDeploy.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -42,6 +42,9 @@ Bulk deployment orchestrator.  Looks up each server's iLO IP from server_list.tx
 | `-DryRun` _(Aliases: -Dry)_ | Simulate - no actual deployment. |
 | `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt before deployment. |
 | `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any deployment. If it is OMITTED the command fails early with an expressive, logged error and performs no deployment. If it does NOT match the target, the deployment is aborted with no changes. When it matches, a destructive confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. When omitted, the command writes a human-readable report to the host (terminal / transcript / logs) and does NOT dump a raw hashtable. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Invoke-IsoDeploy -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -146,8 +149,28 @@ Invoke-IsoDeploy -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.example.com' -
         are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
         'quickview.ilo03.alp'.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report. When omitted, the command writes a
+        human-readable report to the host (terminal / transcript / logs) and
+        does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Invoke-IsoDeploy -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, Server, Summary.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success, Server, Method (single-target) or Summary
+        (bulk). With -Json, a JSON [string] representation of the same data.
 
     .EXAMPLE
         Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'

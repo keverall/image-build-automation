@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PostBuildValidation.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -38,6 +38,9 @@ Connects over WinRM to the freshly-built server and verifies the post-build stat
 | `-SkipDrivers` | Skip driver presence check. |
 | `-SkipRemote` | Skip all WinRM-dependent checks (only do local / metadata validation). |
 | `-DryRun` _(Aliases: -Dry)_ | Skip WinRM probes - assume checks pass. |
+| `-Json` | Emit the result as a JSON string on the success stream (for API integration / redirection) instead of the human-readable report. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Test-PostBuildValidation -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -95,8 +98,26 @@ Test-PostBuildValidation -Hostname 'srv01.ad.example.com' -Domain 'ad.example.co
     .PARAMETER DryRun
         Skip WinRM probes - assume checks pass.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Test-PostBuildValidation -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success (bool), Checks, AuditFile.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success (bool), Hostname, Timestamp, Checks, AuditFile.
+        With -Json, a JSON [string] representation of the same data.
 
     .EXAMPLE
         Test-PostBuildValidation -Hostname 'srv01.ad.example.com' -Domain 'ad.example.com' -ExpectedOsVersion '10.0.20348'
