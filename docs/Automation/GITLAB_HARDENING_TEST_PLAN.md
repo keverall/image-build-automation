@@ -23,7 +23,7 @@
 <p class="report-run-date"><strong>Run date:</strong> 01/08/2026 20:43 UTC</p>
 <!-- END:run-date -->
 
-<a name="1-standards-scope"></a>
+<a id="1-standards-scope"></a>
 
 ## 1. Standards & Scope
 
@@ -43,7 +43,7 @@ job covers the Python helper and any IaC, but all ~20,000 lines of PowerShell ar
 scanned *only* by the `sast-powershell` job (PSScriptAnalyzer security ruleset).
 If that job is removed, the PowerShell is entirely unscanned.
 
-<a name="2-how-to-execute-runner-reference"></a>
+<a id="2-how-to-execute-runner-reference"></a>
 
 ## 2. How to execute (runner reference)
 
@@ -54,7 +54,7 @@ If that job is removed, the PowerShell is entirely unscanned.
 | `pwsh -File scripts/ci-security-check.ps1 -Mode report` | Run the PowerShell security gate locally |
 | `pwsh -File scripts/run-coverage.ps1 -Threshold 70` | Run the Pester suite with coverage locally |
 
-<a name="3-gitlab-cicd-hardening-test-scenarios"></a>
+<a id="3-gitlab-cicd-hardening-test-scenarios"></a>
 
 ## 3. GitLab CI/CD Hardening Test Scenarios
 
@@ -80,7 +80,7 @@ against the Bank's GitLab instance).
 | 14 | Tier-portable (Free/Premium via Code Quality widget; Ultimate via Security Dashboard) | Controls visible regardless of Bank tier | Operability | Partial |
 | 15 | `POWERSHELL_IMAGE` is runner OS, not OneView estate; Windows image configurable | Correct mental model for DevOps | Operability | Pass |
 
-<a name="4-security-gate-posture"></a>
+<a id="4-security-gate-posture"></a>
 
 ## 4. Security Gate Posture
 
@@ -97,7 +97,7 @@ remediation plan for any finding not baselined; (3) a change ticket flipping
 `SECURITY_ENFORCEMENT_MODE` to `enforce`. This is a tracked commitment, not a
 permanent state. See `docs/compliance/SECURITY_PIPELINE.md`.
 
-<a name="5-pipeline-coverage-per-run"></a>
+<a id="5-pipeline-coverage-per-run"></a>
 
 ## 5. Pipeline Coverage (per run)
 
@@ -111,7 +111,7 @@ Code coverage measured by the pipeline `test-unit` job. Recorded per pipeline ru
 | 3 | 01/08/2026 20:43:27 UTC |  |  |  |  |
 <!-- END:gitlab-coverage-rows -->
 
-<a name="6-known-findings-baseline"></a>
+<a id="6-known-findings-baseline"></a>
 
 ## 6. Known Findings (baseline)
 
@@ -134,7 +134,7 @@ an EMIR review (and are tracked as a separate code-remediation program) are:
 | 9 | `.env` committed & not gitignored (values empty today) | `.env` → `.env.example` |
 | 10 | Vendored `HPEOneView.1000/Samples/*` contain demo credentials (scanner noise) | `scripts/modules/.../Samples` |
 
-<a name="7-test-run-summary-filled-per-cycle"></a>
+<a id="7-test-run-summary-filled-per-cycle"></a>
 
 ## 7. Test Run Summary (filled per cycle)
 

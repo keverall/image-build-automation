@@ -46,13 +46,21 @@ function Start-InstallMonitor {
     #>
     [CmdletBinding()]
     param(
+        [Alias('Srvr')]
         [Parameter(Mandatory = $false)][string] $Server    = $null,
+        [Alias('Srl')]
         [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Alias('OVHost')]
         [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
+        [Alias('SrvrList')]
         [Parameter(Mandatory = $false)][string] $ServerList  = 'configs\server_list.txt',
+        [Alias('IloCred')]
         [Parameter(Mandatory = $false)][System.Management.Automation.PSCredential] $IloCredential,
+        [Alias('Timeout')]
         [Parameter(Mandatory = $false)][int]    $TimeoutSeconds  = 7200,
+        [Alias('PollSec')]
         [Parameter(Mandatory = $false)][int]    $PollIntervalSeconds = 30,
+        [Alias('OpsCfg')]
         [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json'
     )
     Initialize-Logging -LogFile 'monitoring.log' -CommandName 'Start-InstallMonitor'

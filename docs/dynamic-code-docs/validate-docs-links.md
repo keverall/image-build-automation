@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/validate-docs-links.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Scans all .md files for markdown links pointing to source files and validates that they exist. Fixes broken links by searching for the target file and correcting the path. Reports errors for links that cannot be resolved.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -30,11 +30,11 @@ Scans all .md files for markdown links pointing to source files and validates th
 |-----------|-------------|
 | `-WhatIf` | Preview changes without modifying files (dry-run mode). |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -42,7 +42,7 @@ Scans all .md files for markdown links pointing to source files and validates th
 pwsh -File scripts/validate-docs-links.ps1 pwsh -File scripts/validate-docs-links.ps1 -WhatIf
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

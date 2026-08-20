@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PreBuildValidation.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,21 +16,21 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Returns a hashtable of named checks with pass/fail status.  Any failure marks the overall result as failed.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-ServerIdentifier` | Target server identifier (name, serial, OneView name, iLO IP, bay). |
-| `-OneViewHost` | OneView appliance hostname or IP. |
-| `-IloIp` | iLO IPv4 address / hostname for the target server. |
+| `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
+| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. |
 | `-IloCredential` | PSCredential for the iLO Redfish check. If omitted on a live run, the operator is prompted interactively. Never read from config or environment. |
 | `-IsoUrl` | HTTPS URL of the bootable ISO. |
 | `-ManagementPoint` | FQDN of the ConfigMgr Management Point. |
@@ -41,13 +41,13 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 | `-SkipIlo` | Skip the iLO credential / Redfish session check. |
 | `-SkipDpMp` | Skip the Distribution Point / Management Point reachability check. |
 | `-SkipIsoUrl` | Skip the ISO URL reachability check (use when the orchestrator will populate IsoUrl later, or when running offline). |
-| `-DryRun` | Validate inputs but skip network probes. |
+| `-DryRun` _(Aliases: -Dry)_ | Validate inputs but skip network probes. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -55,7 +55,7 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' -IloIp '192.168.1.101' ` -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso' ` -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

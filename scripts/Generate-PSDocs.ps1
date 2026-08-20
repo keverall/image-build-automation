@@ -180,7 +180,7 @@ function ConvertFrom-CommentBlock {
         if (-not $text) { return }
         switch ($mode) {
             'desc'     { if (-not $r.Description) { $r.Description = $text } else { $r.Description += "`n$text" } }
-            'param'    { if ($curKey) { $r.Parameters.Add([pscustomobject]@{Name=$curKey; Help=$text}) } }
+            'param'    { if ($curKey) { $r.Parameters.Add([pscustomobject]@{Name=$curKey; Help=$text; Aliases=@()}) } }
             'example'  { $r.Examples.Add($text) }
             'synopsis' { if ($r.Synopsis) { $r.Synopsis += ' ' }; $r.Synopsis += $text }
         }
@@ -225,8 +225,42 @@ function ConvertFrom-CommentBlock {
     return $result
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Per-file Markdown rendering (consistent style)
+# Returns a map of parameter name -> alias names (from [Alias()] attributes) for a
+# given function, extracted from the file's AST. Used to surface short parameter
+# aliases in the generated parameter tables (e.g. -ServerIdentifier -> -SrvrId).
+function Get-FunctionParameterAliases {
+    <#
+    .SYNOPSIS
+        Get parameter alias map for a function from its AST.
+    #>
+    [OutputType([hashtable])]
+    param([string]$Path, [string]$FunctionName)
+
+    $map = @{}
+    $tokens = $null; $errs = $null
+    try {
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$tokens, [ref]$errs)
+    } catch {
+        return $map
+    }
+    $fn = $ast.Find({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $FunctionName }, $true)
+    if (-not $fn -or -not $fn.Body.ParamBlock) { return $map }
+    foreach ($p in $fn.Body.ParamBlock.Parameters) {
+        $pname = $p.Name.VariablePath.UserPath
+        $aliases = [System.Collections.Generic.List[string]]::new()
+        foreach ($attr in $p.Attributes) {
+            if ($attr.TypeName.Name -eq 'Alias') {
+                foreach ($arg in $attr.PositionalArguments) {
+                    $a = "$($arg.Extent.Text)".Trim("'", '"')
+                    if ($a) { $aliases.Add($a) }
+                }
+            }
+        }
+        if ($aliases.Count -gt 0) { $map[$pname] = @($aliases) }
+    }
+    return $map
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 function Format-FunctionDoc {
@@ -271,8 +305,13 @@ $md += ''
     $md += '|-----------|-------------|'
     foreach ($p in $Doc.Parameters) {
     $help = ($p.Help -replace "`n", ' ').Trim()
-        $md += "| ``-$($p.Name)`` | $help |"
-}
+        $aliasText = ''
+        if ($p.Aliases -and $p.Aliases.Count -gt 0) {
+            $aliasList = ($p.Aliases | ForEach-Object { "-$_" }) -join ', '
+            $aliasText = " _(Aliases: $aliasList)_"
+        }
+        $md += "| ``-$($p.Name)``$aliasText | $help |"
+    }
     $md += ''
     }
 
@@ -380,6 +419,12 @@ foreach ($f in $files) {
         }
 
         $doc = ConvertFrom-CommentBlock -Lines $pair.Comment
+        $aliasMap = Get-FunctionParameterAliases -Path $f.FullName -FunctionName $cmdName
+        if ($aliasMap.Count -gt 0) {
+            foreach ($prm in $doc.Parameters) {
+                if ($aliasMap.ContainsKey($prm.Name)) { $prm.Aliases = $aliasMap[$prm.Name] }
+            }
+        }
         $md  = Format-FunctionDoc -CmdName $cmdName -RelPath $relPath -Doc $doc
 
         $outFile = Join-Path $OutputDir "$cmdName.md"

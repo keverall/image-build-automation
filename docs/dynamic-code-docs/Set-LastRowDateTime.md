@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/TestProgress.Common.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Replace the Date/Time cell (2nd column) of the last row in $Rows.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/test-scom-maint-connectivity.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,13 +18,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 SCOM ping + connect test (safe during change freeze).
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -38,11 +38,11 @@ SCOM ping + connect test (safe during change freeze).
 | `-DryRun` | Simulate connectivity without actual network calls |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -50,7 +50,7 @@ SCOM ping + connect test (safe during change freeze).
 pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -58,15 +58,15 @@ pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-
 pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
 ```powershell
-pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
+pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
@@ -102,7 +102,7 @@ pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-
     pwsh -File scripts/test-scom-maint-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 
 .EXAMPLE
-    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com' -Credential (Get-Credential)
+    pwsh -File scripts/test-scom-maint-connectivity.ps1 -ManagementHost 'VR-OPM19T1-7382.ad.example.com'
 ```
 
 ---

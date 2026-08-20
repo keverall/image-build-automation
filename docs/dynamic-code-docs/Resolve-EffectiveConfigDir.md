@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/PathResolver.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Shared resolution logic used by all Public commands that accept a -ConfigDir parameter. Resolution order: 1. When -ConfigDir was explicitly bound: absolute paths are used verbatim; relative paths are resolved against the current location. 2. Otherwise: <project-root>\configs. 3. Fallback: when the marker file is not found in the resolved directory and -ConfigDir is relative, retry against the project root (handles commands invoked from outside the repo root).
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -30,7 +30,7 @@ Shared resolution logic used by all Public commands that accept a -ConfigDir par
 | `-MarkerFile` | A file whose presence confirms the directory (e.g. 'connection_hosts.json', 'clusters_catalogue.json'). |
 | `-ExplicitlyBound` | Pass $PSBoundParameters.ContainsKey('ConfigDir') from the caller. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

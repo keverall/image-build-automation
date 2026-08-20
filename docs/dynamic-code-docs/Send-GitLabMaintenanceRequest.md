@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/gitlab/Send-GitLabMaintenanceRequest.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Initiates GitLab pipeline via trigger API and optionally waits for completion. Sends web callback with results when pipeline finishes. Can be used two ways: 1. Dot-sourced: Defines Send-GitLabMaintenanceRequest function for reuse 2. Direct execution: Runs immediately with provided parameters Integrates with GitLab trigger tokens, job tokens, and pipeline variables.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -45,11 +45,11 @@ Initiates GitLab pipeline via trigger API and optionally waits for completion. S
 | `-JobToken` | GitLab job token for API access (from GITLAB_JOB_TOKEN) |
 | `-SkipValidation` | Skip parameter validation when running directly (for testing) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -57,7 +57,7 @@ Initiates GitLab pipeline via trigger API and optionally waits for completion. S
 # Dot-source and use as function Send-GitLabMaintenanceRequest -Action enable -TargetId 'CLUSTER01' -ProjectId '123' -TriggerToken 'abc'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -65,7 +65,7 @@ Initiates GitLab pipeline via trigger API and optionally waits for completion. S
 # Run directly with all parameters pwsh -File scripts/gitlab/Send-GitLabMaintenanceRequest.ps1 -Action enable -TargetId 'CLUSTER01' -GitLabUrl 'https://gitlab.com' -ProjectId '123' -TriggerToken 'abc'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

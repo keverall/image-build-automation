@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/Show-Help.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,17 +15,17 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Parses Makefile for documented targets and displays them in a formatted bordered table with a header row. Descriptions that are longer than the available terminal width are wrapped onto multiple lines. Uses Write-Output with ANSI escape codes (not Write-Host) so that the PSScriptAnalyzer AvoidUsingWriteHost rule is not triggered, while still rendering colored output in a supporting terminal.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -33,7 +33,7 @@ Parses Makefile for documented targets and displays them in a formatted bordered
 pwsh -File scripts/Show-Help.ps1
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

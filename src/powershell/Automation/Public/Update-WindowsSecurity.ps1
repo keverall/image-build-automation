@@ -53,12 +53,15 @@ function Invoke-WindowsSecurityUpdate {
     param(
         [Parameter(Mandatory)][Alias('BaseIso', 'b')][string] $BaseIsoPath,
         [Parameter(Mandatory)][Alias('ServerName', 's')][string] $Server,
+        [Alias('Srl')]
         [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Alias('OVHost')]
         [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
         [Parameter(Mandatory = $false)][Alias('p')][string] $PatchesConfig = 'configs\windows_patches.json',
         [Parameter(Mandatory = $false)][Alias('o')][string] $OutputDir = 'output\patched',
         [ValidateSet('dism', 'powershell')]
         [Parameter(Mandatory = $false)][Alias('m')][string] $Method = 'dism',
+        [Alias('Dry')]
         [Parameter(Mandatory = $false)][switch] $DryRun
     )
     if ($SerialNumber) {

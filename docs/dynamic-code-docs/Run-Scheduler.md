@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Control.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,17 +15,17 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Processes scheduled task parameters to execute automated maintenance operations. Maps task names to orchestrator request types for cron/scheduled task execution.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -33,7 +33,7 @@ Processes scheduled task parameters to execute automated maintenance operations.
 Run-Scheduler -TaskParams @{ task = 'maintenance_disable'; dry_run = $false }
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

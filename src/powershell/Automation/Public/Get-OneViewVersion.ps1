@@ -58,17 +58,28 @@ function Get-OneViewVersion {
         Reports local module state and, if a session is active, the appliance version.
 
     .EXAMPLE
-        Get-OneViewVersion -OneViewHost va-oneviewt-01
+        Get-OneViewVersion -OneViewHost oneview.example.com
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
+        [Alias('OVHost')]
         [string] $OneViewHost,
         [int]    $Port = 443,
+        [Alias('SkipCert')]
         [bool]   $SkipCertificateCheck = $true,
+        [Alias('Timeout')]
         [int]    $TimeoutSec = 15,
-        [switch] $Quiet
+        [Alias('Q')]
+        [switch] $Quiet,
+        [Alias('Dry')]
+        [switch] $DryRun
     )
+
+    # Common logging: each command writes to its own isolated log under
+    # generated/logs/commands/Get-OneViewVersion/.
+    Initialize-Logging -CommandName 'Get-OneViewVersion' -LogName "Get-OneViewVersion-Host-$($OneViewHost ?? 'unspecified')"
+    $logger = Get-Logger 'Get-OneViewVersion'
 
     $moduleStatus = Get-OneViewModuleStatus
 
@@ -90,6 +101,14 @@ function Get-OneViewVersion {
     if (-not $OneViewHost) {
         $activeSession = Get-OneViewActiveSession
         if ($activeSession) { $OneViewHost = $activeSession.Name }
+    }
+
+    if ($DryRun) {
+        $msg = "[DRY RUN] Get-OneViewVersion Host=$OneViewHost"
+        $logger.Info($msg); Write-Host $msg
+        $result.Appliance = $OneViewHost
+        $result.DryRun    = $true
+        return $result
     }
 
     if ($OneViewHost) {
@@ -156,6 +175,7 @@ function Get-OneViewVersion {
         Write-Output "=============================================="
     }
 
+    $logger.Info("Get-OneViewVersion result: Success=$($result.Success) Appliance='$($result.Appliance)' Reachable=$($result.ApplianceReachable) Version='$($result.ApplianceVersion)'")
     return $result
 }
 

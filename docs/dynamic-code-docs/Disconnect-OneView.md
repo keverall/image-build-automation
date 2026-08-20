@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Disconnect-OneView.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,13 +17,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Closes the active HPE OneView session established by Test-ServerConnectivity or Connect-OVMgmt. This command safely disconnects from the OneView appliance and cleans up the session state. Use this command when you are finished running OneView commands and want to explicitly close the connection.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,11 +31,11 @@ Closes the active HPE OneView session established by Test-ServerConnectivity or 
 |-----------|-------------|
 | `-Force` | Force disconnection even if errors occur during cleanup. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -43,7 +43,7 @@ Closes the active HPE OneView session established by Test-ServerConnectivity or 
 Disconnect-OneView Disconnect from the current OneView session.
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -51,7 +51,7 @@ Disconnect-OneView Disconnect from the current OneView session.
 Disconnect-OneView -Force Force disconnection, suppressing any cleanup errors.
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
@@ -87,9 +87,10 @@ Disconnect-OneView -Force Force disconnection, suppressing any cleanup errors.
           Timestamp   [string] - UTC ISO 8601
 
     .NOTES
-        This command is the counterpart to Test-ServerConnectivity, which establishes
-        the persistent OneView session. The session is also automatically closed when
-        the PowerShell session ends.
+        This command is the counterpart to Connect-OneView (and the underlying
+        Test-ServerConnectivity), which establishes the persistent OneView
+        session. The session is also automatically closed when the PowerShell
+        session ends.
 ```
 
 ---

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Shared connection helper used by all OneView automation commands. Resolves the locked HPEOneView module (ONEVIEW_MODULE_NAME env, or the appliance's OneView version), removes any other loaded HPEOneView.* modules so only the locked library's cmdlets (Connect-OVMgmt, etc.) are in scope, imports it, then connects.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -32,7 +32,7 @@ Shared connection helper used by all OneView automation commands. Resolves the l
 | `-Destructive` | When $true, destructive calls are additionally guarded before mutating server state. NOTE: using an HPEOneView module OLDER than the appliance is ALWAYS rejected (hard error) regardless of this switch, because it causes 502 / corrupted-state failures; only a newer-or-equal module (backward-compatible) is permitted. |
 | `-Port` | HTTPS port for the appliance version probe (default 443). |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

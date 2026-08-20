@@ -29,7 +29,10 @@ function _Validate-Request {
     param([string]$RequestType, [hashtable]$Params)
     $errors = @()
     if ($RequestType -in @('build_iso', 'patch_windows')) {
-        $errors += Test-BuildParams -BaseIsoPath $Params.Get_Item('base_iso')
+        $buildCheck = Test-BuildParams -BaseIsoPath $Params.Get_Item('base_iso')
+        if ($buildCheck.Errors.Count -gt 0) {
+            $errors += $buildCheck.Errors
+        }
     }
     if ($RequestType.StartsWith('maintenance_')) {
         $def = Test-ClusterId -TargetId $Params.Get_Item('TargetId')

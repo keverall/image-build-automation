@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Logging.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Walks the PowerShell call stack and returns the first (innermost) frame outside the logging infrastructure whose function name matches the Verb-Noun command pattern (e.g. Test-ServerConnectivity). This lets any command that logs via Get-Logger (which auto-calls Initialize-Logging) write to its own logs/commands/<Command>/ folder without having to pass -CommandName explicitly. Frames from the logging plumbing (Initialize-Logging, Get-Logger) and anonymous script blocks are skipped. If no command frame is found (e.g. logging triggered from a Pester It block) $null is returned so the caller can fall back to the shared testing/production behaviour.
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

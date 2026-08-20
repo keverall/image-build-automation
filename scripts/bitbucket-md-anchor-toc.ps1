@@ -131,7 +131,7 @@ function Add-BitbucketMdToc {
             if ($lines[$i] -match '^(#{2,3})\s+(.+)$') {
                 $headingTitle   = $matches[2]
                 $expectedAnchor = Get-Anchor $headingTitle ([ref]$anchorsSeen)
-                $expectedTag    = "<a name=""$expectedAnchor""></a>"
+                $expectedTag    = "<a id=""$expectedAnchor""></a>"
 
                 if ($i -eq 0) {
                     $issues.Add("Heading '$headingTitle' on line 1 has no preceding line for anchor tag")

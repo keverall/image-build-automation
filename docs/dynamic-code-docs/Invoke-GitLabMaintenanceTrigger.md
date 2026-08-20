@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,38 +17,38 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Router handler that initiates GitLab CI/CD pipeline for maintenance operations. Wraps Send-GitLabMaintenanceRequest to enable, disable, or validate maintenance mode via GitLab pipelines instead of direct execution.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-TargetId` | Cluster ID or target identifier for maintenance |
+| `-TargetId` _(Aliases: -TgtId)_ | Cluster ID or target identifier for maintenance |
 | `-Action` | Maintenance action: enable, disable, or validate |
 | `-Start` | Maintenance window start time (ISO 8601 format) |
 | `-End` | Maintenance window end time (ISO 8601 format) |
-| `-ConfigDir` | Directory containing configuration files (default: 'configs') |
-| `-DryRun` | Perform validation without executing changes |
-| `-GitLabUrl` | GitLab instance URL (from GITLAB_URL environment variable) |
-| `-ProjectId` | GitLab project ID (from GITLAB_PROJECT_ID environment variable) |
-| `-TriggerToken` | GitLab CI trigger token (from GITLAB_TRIGGER_TOKEN environment variable) |
+| `-ConfigDir` _(Aliases: -CfgDir)_ | Directory containing configuration files (default: 'configs') |
+| `-DryRun` _(Aliases: -Dry)_ | Perform validation without executing changes |
+| `-GitLabUrl` _(Aliases: -GitUrl)_ | GitLab instance URL (from GITLAB_URL environment variable) |
+| `-ProjectId` _(Aliases: -ProjId)_ | GitLab project ID (from GITLAB_PROJECT_ID environment variable) |
+| `-TriggerToken` _(Aliases: -TrigTok)_ | GitLab CI trigger token (from GITLAB_TRIGGER_TOKEN environment variable) |
 | `-GitRef` | Git reference/branch to trigger pipeline on (default: 'main') |
-| `-CallbackUrl` | URL to send completion callback to (from MAINTENANCE_CALLBACK_URL) |
-| `-CallbackApiKey` | API key for callback authentication (from MAINTENANCE_API_KEY) |
-| `-TimeoutSeconds` | Timeout for waiting on pipeline completion (default: 600) |
-| `-JobToken` | GitLab job token for API access (from GITLAB_JOB_TOKEN) |
+| `-CallbackUrl` _(Aliases: -CbUrl)_ | URL to send completion callback to (from MAINTENANCE_CALLBACK_URL) |
+| `-CallbackApiKey` _(Aliases: -CbKey)_ | API key for callback authentication (from MAINTENANCE_API_KEY) |
+| `-TimeoutSeconds` _(Aliases: -Timeout)_ | Timeout for waiting on pipeline completion (default: 600) |
+| `-JobToken` _(Aliases: -JobTok)_ | GitLab job token for API access (from GITLAB_JOB_TOKEN) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -56,7 +56,7 @@ Router handler that initiates GitLab CI/CD pipeline for maintenance operations. 
 Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'enable' -Start '2024-01-01T00:00:00Z' -End '2024-01-01T06:00:00Z'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -64,7 +64,7 @@ Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'enable' -Start '2
 Invoke-GitLabMaintenanceTrigger -TargetId 'CLUSTER01' -Action 'disable' -DryRun
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

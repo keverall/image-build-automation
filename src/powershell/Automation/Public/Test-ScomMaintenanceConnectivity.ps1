@@ -43,9 +43,13 @@ function Test-ScomMaintenanceConnectivity {
         the host you specify is ever contacted.
 
     .PARAMETER Credential
-        PSCredential for the live connection (e.g. -Credential (Get-Credential)).
-        If omitted on a live run, the command prompts interactively for username
-        and password. Never read from config.
+        PSCredential for the live connection. If omitted on a live run, the
+        command prompts interactively for username and password. Never read
+        from config (e.g. connection_hosts.json).
+
+        NOTE: Automated GitLab pipeline runs will source credentials from
+        environment variables / CyberArk in a future release - not yet
+        implemented for this release.
 
     .PARAMETER ConfigDir
         Directory containing configuration files (default: 'configs'). Only used

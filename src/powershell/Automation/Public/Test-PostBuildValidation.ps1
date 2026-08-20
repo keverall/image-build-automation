@@ -64,7 +64,9 @@ function Test-PostBuildValidation {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)][string] $Hostname,
+        [Alias('Srl')]
         [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Alias('OVHost')]
         [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
         [string] $ExpectedHostname = $null,
         [string] $Domain,
@@ -72,6 +74,7 @@ function Test-PostBuildValidation {
         [switch] $SkipCmClient,
         [switch] $SkipDrivers,
         [switch] $SkipRemote,
+        [Alias('Dry')]
         [switch] $DryRun
     )
     if ($SerialNumber) {

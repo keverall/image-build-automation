@@ -50,7 +50,7 @@ Describe 'Logging is functional: commands initialise and write logs' {
         $before = foreach ($d in $logDirs) {
             if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
-        Test-ServerConnectivity -ManagementHost 'test-ov.local' -DryRun
+        Test-ServerConnectivity -OneViewHost 'test-ov.local' -DryRun
         $after = foreach ($d in $logDirs) {
             if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
@@ -74,7 +74,7 @@ Describe 'Logging is functional: commands initialise and write logs' {
         $rec = InModuleScope Automation {
             $script:_logCalls = [System.Collections.ArrayList]::new()
             Mock Initialize-Logging -MockWith { $script:_logCalls.Add([PSCustomObject]@{ File = $LogFile; Level = $Level }) | Out-Null }
-            try { Update-Firmware -Server 'srv1' -DryRun } catch { }
+            try { Update-Firmware -Server 'srv1' -GuardRail '.*' -DryRun } catch { }
             ,$script:_logCalls
         }
         ($rec | Where-Object { $_.File -eq 'firmware_updater.log' }) | Should -Not -BeNullOrEmpty
@@ -90,3 +90,4 @@ Describe 'Logging is functional: commands initialise and write logs' {
         ($rec | Where-Object { $_.File -eq 'windows_patcher.log' }) | Should -Not -BeNullOrEmpty
     }
 }
+

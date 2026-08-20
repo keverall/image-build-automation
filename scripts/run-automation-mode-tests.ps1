@@ -64,7 +64,8 @@ $config.Run.Path = @(
     (Join-Path $testPath 'Test-PostBuildValidation.Unit.Tests.ps1'),
     (Join-Path $testPath 'Start-InstallMonitor.Unit.Tests.ps1'),
     (Join-Path $testPath 'Update-Firmware.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Update-WindowsSecurity.Unit.Tests.ps1')
+    (Join-Path $testPath 'Update-WindowsSecurity.Unit.Tests.ps1'),
+    (Join-Path $testPath 'Setup-Profile.Tests.ps1')
 )
 $config.Run.PassThru = $true
 $config.Output.Verbosity = 'Detailed'

@@ -36,30 +36,30 @@
 
 > **ALWAYS test connectivity before running maintenance commands.** This read-only command verifies **OneView appliance** availability and is safe during change freezes. The OneView session persists in `$global:ConnectedSessions` after testing - use `Disconnect-OneView` when finished. For SCOM connectivity, use `Test-ScomMaintenanceConnectivity`.
 
-<a name="quick-start"></a>
+<a id="quick-start"></a>
 
 ## Quick Start
 
 ```powershell
 # Test OneView connectivity (explicit host)
-Test-ServerConnectivity -ManagementHost 'oneview-test.ad.example.com'
+Test-ServerConnectivity -OneViewHost 'oneview-test.ad.example.com'
 
 # Resolve host from connection_hosts.json for an environment
 Test-ServerConnectivity -Environment Test -JsonConfig
 ```
 
-<a name="two-phase-test"></a>
+<a id="two-phase-test"></a>
 
 ## Two-Phase Test
 
-<a name="phase-1-network-ping"></a>
+<a id="phase-1-network-ping"></a>
 
 ### Phase 1: Network Ping
 
 - **DNS Resolution**: Verifies hostname resolves correctly
 - **TCP Port Probe**: Checks HTTPS connectivity (port 443 by default)
 
-<a name="phase-2-authentication-connect"></a>
+<a id="phase-2-authentication-connect"></a>
 
 ### Phase 2: Authentication Connect
 
@@ -67,13 +67,13 @@ Test-ServerConnectivity -Environment Test -JsonConfig
 - **Authentication Test**: Full login via `Connect-OVMgmt`
 - **Persistent Session**: the OneView session remains active in `$global:ConnectedSessions` for subsequent commands; close it explicitly with `Disconnect-OneView`
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-ManagementHost` | Optional* | OneView appliance hostname (required for live runs) |
+| `-OneViewHost` | Optional* | OneView appliance hostname (required for live runs) |
 | `-Environment` | Optional | `Test` or `Prod`; used with `-JsonConfig` to resolve the host |
 | `-Credential` | Optional | `PSCredential` for the connection; prompted interactively if omitted |
 | `-JsonConfig` | Switch | Resolve host from `configs/connection_hosts.json` |
@@ -85,16 +85,16 @@ Test-ServerConnectivity -Environment Test -JsonConfig
 
 \* Required for a live (non-`-DryRun`) test unless resolved via `-JsonConfig` or `$env:MAINTENANCE_HOST`.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
 ```powershell
 # Basic connectivity test
-Test-ServerConnectivity -ManagementHost 'oneview.ad.example.com'
+Test-ServerConnectivity -OneViewHost 'oneview.ad.example.com'
 
 # JSON output for automation
-Test-ServerConnectivity -ManagementHost 'oneview.ad.example.com' -Json | ConvertFrom-Json
+Test-ServerConnectivity -OneViewHost 'oneview.ad.example.com' -Json | ConvertFrom-Json
 
 # DryRun - verify configuration without network calls
 Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
@@ -103,20 +103,20 @@ Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
 pwsh scripts/test-connectivity.ps1 -Environment Test
 ```
 
-<a name="exit-codes"></a>
+<a id="exit-codes"></a>
 
 ## Exit Codes
 
 - `0` - Available (DNS resolved + TCP open + Auth succeeded)
 - `1` - Unavailable (any phase failed)
 
-<a name="change-freeze-safety"></a>
+<a id="change-freeze-safety"></a>
 
 ## Change Freeze Safety
 
 Read-only: no objects are modified and no maintenance windows are created. ✅ Safe to run during change freezes.
 
-<a name="troubleshooting"></a>
+<a id="troubleshooting"></a>
 
 ## Troubleshooting
 
@@ -127,7 +127,7 @@ Read-only: no objects are modified and no maintenance windows are created. ✅ S
 | Credentials not configured | Missing environment variables | Set `$env:ONEVIEW_USER` / `$env:ONEVIEW_PASSWORD` or pass `-Credential` |
 | Module not found | HPEOneView module not installed | Install the HPEOneView module (see `configs/oneview_config.json` `module_name`) |
 
-<a name="configuration-files"></a>
+<a id="configuration-files"></a>
 
 ## Configuration Files
 
@@ -144,7 +144,7 @@ configs/
 
 > Only run AFTER verifying connectivity.
 
-<a name="quick-start-1"></a>
+<a id="quick-start-1"></a>
 
 ## Quick Start
 
@@ -162,7 +162,7 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom
 Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Start now -End +1hour -DryRun
 ```
 
-<a name="actions"></a>
+<a id="actions"></a>
 
 ## Actions
 
@@ -172,7 +172,7 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Start no
 | `disable` | Remove target from maintenance mode (with stabilization wait) |
 | `validate` | Check current maintenance mode status (read-only) |
 
-<a name="target-identification"></a>
+<a id="target-identification"></a>
 
 ## Target Identification
 
@@ -185,7 +185,7 @@ Set-MaintenanceMode -Action enable -TargetId server01 -Mode oneview ...
 Set-MaintenanceMode -Action enable -SerialNumber MXQ1234567 -Mode oneview ...
 ```
 
-<a name="time-formats"></a>
+<a id="time-formats"></a>
 
 ## Time Formats
 
@@ -200,7 +200,7 @@ Set-MaintenanceMode -Action enable -SerialNumber MXQ1234567 -Mode oneview ...
 
 **Note**: All times are UTC; no local timezone conversion is performed.
 
-<a name="parameters-1"></a>
+<a id="parameters-1"></a>
 
 ## Parameters
 
@@ -211,7 +211,7 @@ Set-MaintenanceMode -Action enable -SerialNumber MXQ1234567 -Mode oneview ...
 | `-SerialNumber` | Optional** | Hardware serial (OneView only; rejected for SCOM) |
 | `-Mode` | **Required** | `scom` or `oneview` |
 | `-Environment` | Optional | `Test` or `Prod` (default: `$env:ENVIRONMENT`, then `Prod`) |
-| `-ManagementHost` | Optional | Override management server/appliance |
+| `-OneViewHost` | Optional | Override management server/appliance |
 | `-Start` / `-End` | Optional | Maintenance window (UTC); `-End` defaults from config for enable |
 | `-PostDisableWaitSeconds` | Optional | Wait after SCOM disable (default: 120, 0 to skip) |
 | `-Username` | Optional | Direct username (testing only) |
@@ -222,21 +222,21 @@ Set-MaintenanceMode -Action enable -SerialNumber MXQ1234567 -Mode oneview ...
 
 ** Either `-TargetId` or `-SerialNumber` (OneView) is required.
 
-<a name="output-formats"></a>
+<a id="output-formats"></a>
 
 ## Output Formats
 
 Default output is human-readable (audit header, per-server maintenance status). Use `-Json` for structured output for API/iRequest integration.
 
-<a name="host-resolution-priority"></a>
+<a id="host-resolution-priority"></a>
 
 ## Host Resolution Priority
 
-1. `-ManagementHost` parameter (explicit override)
+1. `-OneViewHost` parameter (explicit override)
 2. `$env:MAINTENANCE_HOST` environment variable
 3. `configs/connection_hosts.json` (`environments` → `Test`/`Prod` → `scom.management_server` or `oneview.appliance`)
 
-<a name="credential-configuration"></a>
+<a id="credential-configuration"></a>
 
 ## Credential Configuration
 
@@ -250,7 +250,7 @@ $env:ONEVIEW_PASSWORD = '...'
 # Or interactive prompt if credentials are not set (non-automated mode)
 ```
 
-<a name="dry-run-mode"></a>
+<a id="dry-run-mode"></a>
 
 ## Dry Run Mode
 
@@ -260,7 +260,7 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environm
 
 `-DryRun` verifies target/host/config resolution using mock data without connecting or changing anything.
 
-<a name="troubleshooting-1"></a>
+<a id="troubleshooting-1"></a>
 
 ## Troubleshooting
 
@@ -271,7 +271,7 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environm
 | Connection failed | Network/auth issue | Run `Test-ServerConnectivity` (OneView) or `Test-ScomMaintenanceConnectivity` (SCOM) first |
 | Target not found in catalogue | Invalid TargetId | Check `clusters_catalogue.json` / `servers_catalogue.oneview.json` |
 
-<a name="best-practices"></a>
+<a id="best-practices"></a>
 
 ## Best Practices
 
@@ -281,7 +281,7 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environm
 4. **Validate before and after**: `-Action validate` confirms actual state
 5. **Set reasonable time windows**; don't leave maintenance mode indefinitely
 
-<a name="related"></a>
+<a id="related"></a>
 
 ## Related
 

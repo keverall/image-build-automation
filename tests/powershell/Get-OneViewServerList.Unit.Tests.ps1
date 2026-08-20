@@ -27,7 +27,7 @@ Describe 'Get-OneViewServerList - basic invocation' {
     It 'Returns MockResult without network call' {
         $r = Get-OneViewServerList -OneViewHost 'h' -MockResult @{
             Success = $true; Count = 2; Servers = @(@{ name = 's1' }, @{ name = 's2' }); Error = $null
-        }
+        } -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 2
     }
@@ -36,7 +36,7 @@ Describe 'Get-OneViewServerList - basic invocation' {
         $prevAuto = $env:AUTOMATED_MODE
         try {
             $env:AUTOMATED_MODE = 'true'
-            $r = Get-OneViewServerList -Credential $Script:TestCred
+            $r = Get-OneViewServerList -Credential $Script:TestCred -PassThru
             $r.Success | Should -Be $false
             $r.Error   | Should -Match 'OneViewHost'
         } finally {
@@ -45,15 +45,28 @@ Describe 'Get-OneViewServerList - basic invocation' {
     }
 
     It 'DryRun succeeds' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -DryRun
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -DryRun -PassThru
         $r.Success | Should -Be $true
         $r.DryRun  | Should -Be $true
     }
 
     It 'Rejects an unsupported -Filter' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'foo:bar'
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'foo:bar' -PassThru
         $r.Success | Should -Be $false
         $r.Error   | Should -Match 'Filter'
+    }
+
+    It 'Bare invocation with no session returns not-connected (no prompt)' {
+        $prevAuto = $env:AUTOMATED_MODE
+        try {
+            $env:AUTOMATED_MODE = 'true'
+            InModuleScope Automation { Mock Get-OneViewActiveSession { $null } }
+            $r = Get-OneViewServerList -PassThru
+            $r.Success | Should -Be $false
+            $r.Error   | Should -Match 'OneViewHost'
+        } finally {
+            if ($prevAuto) { $env:AUTOMATED_MODE = $prevAuto } else { $env:AUTOMATED_MODE = $null }
+        }
     }
 }
 
@@ -82,22 +95,72 @@ Describe 'Get-OneViewServerList - pagination & filtering (mocked REST)' {
     }
 
     It 'Enumerates every page (Count = 3)' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 3
     }
 
     It 'Filters by health:Critical' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'health:Critical'
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'health:Critical' -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 1
         $r.Servers[0].name | Should -Be 's2'
     }
 
     It 'Filters by power:Off' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'power:Off'
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'power:Off' -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 1
+        $r.Servers[0].name | Should -Be 's2'
+    }
+}
+
+Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                if ($Uri -match 'start=(\d+)') { $s = [int]$Matches[1] } else { $s = 0 }
+                if ($s -eq 0) {
+                    return @{ total = 3; members = @(
+                        [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0' },
+                        [pscustomobject]@{ name = 's2'; serialNumber = 'B'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0' }
+                    )}
+                } else {
+                    return @{ total = 3; members = @(
+                        [pscustomobject]@{ name = 's3'; serialNumber = 'C'; model = 'DL380'; powerState = 'On'; status = 'Warning'; mpIpAddresses = @('10.0.0.3'); enclosureName = 'Enc1'; position = 'Bay 3'; uri = '/rest/z'; romVersion = '1.0' }
+                    )}
+                }
+            }
+        }
+    }
+
+    It 'Substring name filter (s) matches all three' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s' -PassThru
+        $r.Success | Should -Be $true
+        $r.Count   | Should -Be 3
+    }
+
+    It 'Substring name filter narrows to s1' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s1' -PassThru
+        $r.Count | Should -Be 1
+        $r.Servers[0].name | Should -Be 's1'
+    }
+
+    It 'Wildcard name filter s1* narrows to s1' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s1*' -PassThru
+        $r.Count | Should -Be 1
+        $r.Servers[0].name | Should -Be 's1'
+    }
+
+    It 'Single-char wildcard s? matches all three' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'name:s?' -PassThru
+        $r.Count | Should -Be 3
+    }
+
+    It 'Health filter still works (Critical -> s2)' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'health:Critical' -PassThru
+        $r.Count | Should -Be 1
         $r.Servers[0].name | Should -Be 's2'
     }
 }

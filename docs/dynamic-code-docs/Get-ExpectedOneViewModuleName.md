@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Returns $env:ONEVIEW_MODULE_NAME when set to a valid module name, otherwise the project default 'HPEOneView.1000'. Used by read-only status checks that must not import or scan HPEOneView.* modules (which can be costly/unsafe on hosts where the full library is installed). The authoritative, appliance-probing resolution lives in Resolve-PinnedOneViewModule (used only when actually connecting).
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
