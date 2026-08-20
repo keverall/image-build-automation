@@ -164,3 +164,51 @@ Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
         $r.Servers[0].name | Should -Be 's2'
     }
 }
+
+Describe 'Get-OneViewServerList - output rendering (regression)' {
+    # Regression: a prior change made Get-OneViewServerList define a formatter
+    # named _Format-ServerListResult, which is also defined by Test-ServerList.ps1.
+    # Because Public files load alphabetically (G before T), Test-ServerList's
+    # "Server List Validation" renderer silently shadowed Get-OneViewServerList's
+    # "OneView Server List" table. The corruption showed up as:
+    #   Status: VALID / File: (blank) / Servers: N / - System.Collections.Hashtable xN
+    # These tests capture the rendered host output and assert the correct OneView
+    # table is emitted while the validation block / hashtable dump never appears.
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession {
+                [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true }
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{
+                    total   = 2
+                    members = @(
+                        [pscustomobject]@{ name = 'srv-alpha'; serialNumber = 'A1'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0' },
+                        [pscustomobject]@{ name = 'srv-beta';  serialNumber = 'B2'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0' }
+                    )
+                }
+            }
+        }
+    }
+
+    It 'Renders the OneView server table (not the shadowed Server List Validation block)' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru -InformationVariable hostRecords
+        $rendered = ($hostRecords | ForEach-Object { $_.MessageData }) -join "`n"
+        $rendered | Should -Match 'OneView Server List'
+        $rendered | Should -Match 'Server Name'
+        $rendered | Should -Match 'srv-alpha'
+        $rendered | Should -Match 'srv-beta'
+        $rendered | Should -Not -Match 'Server List Validation'
+        $rendered | Should -Not -Match 'System\.Collections\.Hashtable'
+    }
+
+    It 'Returns the structured result with -PassThru (servers as hashtables with names)' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
+        $r.Success         | Should -Be $true
+        $r.Count           | Should -Be 2
+        $r.Servers.Count   | Should -Be 2
+        $r.Servers[0].name | Should -Be 'srv-alpha'
+        $r.Servers[1].name | Should -Be 'srv-beta'
+    }
+}

@@ -25,7 +25,7 @@
   - [19) Test-BuildParams firmware-location validation](#19-test-buildparams-firmware-location-validation)
   - [20) Command documentation clarity — functionality + safe/destructive](#20-command-documentation-clarity-functionality-safedestructive)
   - [21) Command documentation clarity — firmware/security/utility + repository corrections](#21-command-documentation-clarity-firmwaresecurityutility-repository-corrections)
-  - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-publish-result-passthru-output-migration-15-public-commands)
+  - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-_publish-result-passthru-output-migration-15-public-commands)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -639,7 +639,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `automation_commands.md` shows the four commands' "What it does"/Destructive annotations and the softened repository language; no remaining mandatory-repository assumption remains for ISO sourcing.
 
-<a id="22-shared-publish-result-passthru-output-migration-15-public-commands"></a>
+<a id="22-shared-_publish-result-passthru-output-migration-15-public-commands"></a>
 
 ### 22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)
 
