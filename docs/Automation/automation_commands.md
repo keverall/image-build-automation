@@ -381,9 +381,20 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 
 ```powershell
 Test-ServerList
+Test-ServerList -ServerListPath .\staging_servers.txt -PassThru
 ```
 
-**Returns:** `[hashtable]` with `Success` and `Servers`.
+By default prints a human-readable validation report (file path, server count,
+and a formatted list of servers) and returns nothing on the success stream - no
+truncated raw hashtable dump. Add `-PassThru` to also capture the structured
+`[hashtable]` (`Success`, `Path`, `Count`, `Error`, `Servers`) for scripting, or
+`-Json` to emit it as a JSON string. `-ConfigDir` (default `configs`) controls
+where the default `server_list.txt` is resolved from when `-ServerListPath` is
+not supplied; `-DryRun`/`-Quiet` are accepted for parameter-surface consistency
+with the other automation commands.
+
+**Returns:** nothing by default (formatted report to host). With `-PassThru`, a
+`[hashtable]` with `Success`, `Path`, `Count`, `Error`, and `Servers`.
 
 ---
 
