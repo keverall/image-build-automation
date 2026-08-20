@@ -25,6 +25,7 @@
   - [19) Test-BuildParams firmware-location validation](#19-test-buildparams-firmware-location-validation)
   - [20) Command documentation clarity — functionality + safe/destructive](#20-command-documentation-clarity-functionality-safedestructive)
   - [21) Command documentation clarity — firmware/security/utility + repository corrections](#21-command-documentation-clarity-firmwaresecurityutility-repository-corrections)
+  - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-publish-result-passthru-output-migration-15-public-commands)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -637,3 +638,54 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 #### Verification
 
 - `automation_commands.md` shows the four commands' "What it does"/Destructive annotations and the softened repository language; no remaining mandatory-repository assumption remains for ISO sourcing.
+
+<a id="22-shared-publish-result-passthru-output-migration-15-public-commands"></a>
+
+### 22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-20 | Migrated 15 Public commands to the shared `_Publish-Result` / `-PassThru` output pattern so interactive runs no longer dump a truncated raw hashtable; added `-Json`/`-PassThru`/`-Quiet` to each and updated their tests | Kev Everall |
+
+<a name="scope-22"></a>
+
+#### Scope
+
+- Many Public commands ended their main (and error) paths with a bare `return $result` (an unformatted hashtable). On an interactive run PowerShell rendered that as a truncated 2-column `Name / Value` table dumped to the terminal/transcript after the human-readable report — noisy and unreadable for nested structures.
+- The fix generalises the pattern already established by `Test-ServerConnectivity` / `Test-ServerList` (§10) to every remaining command that published a result.
+
+<a name="change-22"></a>
+
+#### Change
+
+- Added `[switch] $Json`, `[Alias('PT')] [switch] $PassThru`, `[switch] $Quiet` to each migrated command's param block, with matching `.PARAMETER` / `.RETURNS` doc comments.
+- Every main + early-exit/error path that returned the structured object now routes through `_Publish-Result` (from `Private/OutputFormatter.ps1`):
+  - **Command-specific view** — when a command already printed a bespoke report, that report was extracted into a local `_Format-<VerbNoun>Result` function and emitted via a thin `_Emit-<VerbNoun>Result` wrapper using `_Publish-Result -CustomView { param($r) _Format-<VerbNoun>Result -Result $r }` (e.g. `Connect-OneView`, `Get-OneViewConnectionStatus`, `Get-OneViewVersion`, `Test-PostBuildValidation`, `Start-InstallMonitor`, `Update-Firmware`, `Invoke-IsoDeploy`).
+  - **Generic view** — commands without a bespoke report route straight through `_Publish-Result -Result $result` (e.g. `Disconnect-OneView`, `New-IsoBuild`, `Publish-BootIso`, `Start-PhysicalServerBuild`, `Update-WindowsSecurity`, `Start-AutomationOrchestrator`), using the recursive `_Format-HumanReadable` renderer.
+- **New default behaviour:** the command writes the human-readable report and returns **nothing** on the success stream (no truncated hashtable). `-PassThru` *also* returns the raw structured object; `-Json` emits a `ConvertTo-Json` string; `-Quiet` suppresses the report.
+
+<a name="commands-22"></a>
+
+#### Commands migrated
+
+- OneView / connection: `Get-OneViewVersion`, `Get-OneViewConnectionStatus`, `Connect-OneView`, `Disconnect-OneView`
+- Read-only reports: `Test-PostBuildValidation`, `Start-InstallMonitor`, `Get-MaintenanceStatusReport`
+- ISO / firmware build pipeline: `New-IsoBuild`, `Update-Firmware`, `Publish-BootIso`, `Invoke-IsoDeploy`
+- Deploy / security / orchestrator / router: `Start-PhysicalServerBuild`, `Update-WindowsSecurity`, `Start-AutomationOrchestrator`, `Control`
+
+<a name="callers-22"></a>
+
+#### Caller + test updates
+
+- Tests that captured the old raw return were updated to `-PassThru` (typically `-PassThru -Quiet` to keep test output quiet); assertions were not weakened. Where a command previously repurposed `-Quiet` to return the object (e.g. `Get-OneViewVersion`), that was reconciled to the standard contract (`-Quiet` = suppress report only; `-PassThru` = return object).
+- Internal callers that relied on the default object return were fixed to pass `-PassThru`: `Start-PhysicalServerBuild.ps1` (its `_Step` aggregation over `Start-InstallMonitor` / `Test-PostBuildValidation` / `New-IsoBuild` / `Publish-BootIso` / `Update-Firmware`) and `scripts/testBuildDeploy.ps1` (its `Update-Firmware` / `Invoke-IsoDeploy` captures).
+- `Connect-OneView` additionally fixed a pre-existing bug: its `$Json` switch auto-bound to `Test-ServerConnectivity`'s `-Json` (PowerShell parameter-name prefixing), which made the delegated connectivity probe return JSON. The delegate call is now wrapped to force `$Json = $false` so `Connect-OneView` controls JSON emission itself.
+- Remaining bare `return $result` / `return @{…}` are **intentionally** internal: class-method returns (e.g. `WindowsPatcher.Build`, `FirmwareBuilder.Build`, `Start-InstallMonitor` `Monitor()`) that feed their command wrapper, and `Get-MaintenanceStatusReport`'s deliberate format-aware `-Json` / `-PassThru` / default-return-nothing block.
+
+<a name="verification-22"></a>
+
+#### Verification
+
+- `tests/powershell` full suite: **520 passed, 0 failed** (across all 15 commands' `*.Tests.ps1` plus `Router.Unit.Tests.ps1`).
+- `scripts/lint.ps1` (PSScriptAnalyzer): **151 files, all checks passed** (syntax + code quality).
+- Smoke test (`Disconnect-OneView`): default path returns nothing on the success stream (only the human-readable report prints); `-PassThru` returns the structured `{ Message, Timestamp, Success }` hashtable; `-Json` emits a JSON string.

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewConnectionStatus.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -42,6 +42,8 @@ Performs two read-only checks against the OneView REST API: 1. Reachability - GE
 | `-MockResult` _(Aliases: -Mock)_ | Hashtable to return without making any HTTP calls. Used for tests. |
 | `-DryRun` _(Aliases: -Dry)_ | Print the checks without performing them. |
 | `-PassThru` _(Aliases: -PT)_ | By default the command only prints a human-readable status summary to the terminal and emits NO object to the pipeline (so the console is not cluttered with a raw hashtable/json dump). Pass -PassThru to also return the structured [hashtable] for use by scripts or the module Router. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable status summary. |
+| `-Quiet` | Suppress the human-readable status summary (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -136,6 +138,14 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
         with a raw hashtable/json dump). Pass -PassThru to also return the structured
         [hashtable] for use by scripts or the module Router.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable status summary.
+
+    .PARAMETER Quiet
+        Suppress the human-readable status summary (use with -PassThru / -Json when
+        the caller handles display itself).
+
     .RETURNS
         Nothing by default (summary printed to host). With -PassThru, a [hashtable]
         with Success, Connected, Reachable, Authenticated, Appliance, Version
@@ -143,7 +153,8 @@ Get-OneViewConnectionStatus Uses an existing HPEOneView module session if availa
         Server (optional), SessionSource ('HPEOneViewModule' when reusing an active
         session, 'Explicit' otherwise), ModuleName (the HPEOneView PowerShell library
         that serves the call), ModuleVersion, ModuleSource, VersionCompliant (bool) and
-        VersionWarning (optional, present only on a mismatch).
+        VersionWarning (optional, present only on a mismatch). With -Json, a JSON
+        [string] representation of the same data.
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Publish-BootIso.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -34,6 +34,9 @@ Validates the local ISO, copies it to the configured HTTPS repository root, and 
 | `-ForceOverwrite` | Allow overwriting an existing ISO with the same filename in the repository. Default refuses to overwrite without this switch. |
 | `-SkipVerify` | Skip HTTPS HEAD reachability check. |
 | `-DryRun` | Simulate without copying or verifying. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. When omitted, the command writes a human-readable report to the host (terminal / transcript / logs) and does NOT dump a raw hashtable. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Publish-BootIso -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -81,8 +84,28 @@ Publish-BootIso -IsoPath 'C:\osdmedia\WinSrv2025_BootableMedia_v1.0.iso' ` -Repo
     .PARAMETER DryRun
         Simulate without copying or verifying.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report. When omitted, the command writes a
+        human-readable report to the host (terminal / transcript / logs) and
+        does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Publish-BootIso -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, PublicUrl, RepoPath, Verified.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success, PublicUrl, RepoPath, Verified. With -Json, a
+        JSON [string] representation of the same data.
 
     .EXAMPLE
         Publish-BootIso -IsoPath 'C:\osdmedia\WinSrv2025_BootableMedia_v1.0.iso' `

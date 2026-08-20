@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/run-test-progress-rpt-tests.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

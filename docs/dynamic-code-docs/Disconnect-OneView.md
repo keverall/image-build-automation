@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Disconnect-OneView.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -30,6 +30,9 @@ Closes the active HPE OneView session established by Test-ServerConnectivity or 
 | Parameter | Description |
 |-----------|-------------|
 | `-Force` | Force disconnection even if errors occur during cleanup. |
+| `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Disconnect-OneView -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -70,6 +73,21 @@ Disconnect-OneView -Force Force disconnection, suppressing any cleanup errors.
     .PARAMETER Force
         Force disconnection even if errors occur during cleanup.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream. By
+        default the command writes only the human-readable report and returns
+        nothing, so the terminal/log never receives a truncated hashtable dump.
+        Capture the result into a variable, e.g.
+        `$r = Disconnect-OneView -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .EXAMPLE
         Disconnect-OneView
 
@@ -81,10 +99,10 @@ Disconnect-OneView -Force Force disconnection, suppressing any cleanup errors.
         Force disconnection, suppressing any cleanup errors.
 
     .OUTPUTS
-        [hashtable] with keys:
-          Success     [bool]   - disconnection succeeded
-          Message     [string] - status message
-          Timestamp   [string] - UTC ISO 8601
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with keys Success, Message, Timestamp. With -Json, a JSON
+        [string] representation of the same data.
 
     .NOTES
         This command is the counterpart to Connect-OneView (and the underlying

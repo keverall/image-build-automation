@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-InstallMonitor.ps1
-generated: 2026-08-19
+generated: 2026-08-20
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -35,6 +35,9 @@ Polls iLO Redfish and WinRM to track installation phases (Generalize, Specialize
 | `-TimeoutSeconds` _(Aliases: -Timeout)_ | Maximum monitoring duration in seconds (default: 7200). |
 | `-PollIntervalSeconds` _(Aliases: -PollSec)_ | Seconds between checks (default: 30). |
 | `-OpsRampConfig` _(Aliases: -OpsCfg)_ | Path to opsramp_config.json. |
+| `-Json` | Emit the result as a JSON string on the success stream (for API integration / redirection) instead of the human-readable report. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Start-InstallMonitor -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
 
 <a id="examples"></a>
 
@@ -84,8 +87,26 @@ Start-InstallMonitor -Server 'srv01.corp.local' -TimeoutSeconds 3600
     .PARAMETER OpsRampConfig
         Path to opsramp_config.json.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Start-InstallMonitor -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with status, progress, and details.
+        By default, nothing is returned on the success stream (the human-readable
+        report is written to the host). With -PassThru, a [hashtable] with
+        Success (bool), Status (single) / Summary (all), and Details. With -Json,
+        a JSON [string] representation of the same data.
 
     .EXAMPLE
         Start-InstallMonitor -Server 'srv01.corp.local' -TimeoutSeconds 3600
