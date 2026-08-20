@@ -89,8 +89,28 @@ function Invoke-IsoDeploy {
         are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
         'quickview.ilo03.alp'.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report. When omitted, the command writes a
+        human-readable report to the host (terminal / transcript / logs) and
+        does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Invoke-IsoDeploy -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, Server, Summary.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success, Server, Method (single-target) or Summary
+        (bulk). With -Json, a JSON [string] representation of the same data.
 
     .EXAMPLE
         Invoke-IsoDeploy -Server 'srv01.corp.local' -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso'
@@ -125,7 +145,11 @@ function Invoke-IsoDeploy {
         [Parameter(Mandatory = $false)][switch] $DryRun,
         [Alias('SkipConf')]
         [Parameter(Mandatory = $false)][switch] $SkipConfirmation,
-        [string] $GuardRail = $null
+        [string] $GuardRail = $null,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
@@ -133,7 +157,7 @@ function Invoke-IsoDeploy {
     # unapproved server on a shared/production network.
     $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
         -CommandName 'Invoke-IsoDeploy' -ActionDescription 'ISO deployment'
-    if ($grCheck) { return $grCheck }
+    if ($grCheck) { return (_Publish-Result -Result $grCheck -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
 
     # TERMINAL COMMAND: when the target is not supplied, prompt for it (interactive
     # runs only - suppressed under AUTOMATED_MODE, see AGENTS.md). The documented
@@ -141,7 +165,7 @@ function Invoke-IsoDeploy {
     # and credential inputs that were not provided.
     if (-not $Server -and -not $SerialNumber) {
         if ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -eq 'true') {
-            return @{ Success = $false; Error = "Server or SerialNumber is required (neither was supplied and AUTOMATED_MODE is set)." }
+            return (_Publish-Result -Result @{ Success = $false; Error = "Server or SerialNumber is required (neither was supplied and AUTOMATED_MODE is set)." } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
         Write-Host "No target supplied. Identify the server by:" -ForegroundColor Cyan
         $choice = Read-Host "Enter '1' for server name/FQDN, '2' for serial number"
@@ -165,7 +189,7 @@ function Invoke-IsoDeploy {
             $OneViewHost = Read-Host "OneView appliance host (used to resolve serial '$SerialNumber')"
         }
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        if (-not $resolved.Success) { return (_Publish-Result -Result @{ Success = $false; Error = $resolved.Error } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         $Server = $resolved.Identifier
         # Carry the OneView-resolved iLO IP so the live Redfish deploy can reach iLO.
         if ($resolved.IloIp) { $IloIp = $resolved.IloIp }
@@ -182,19 +206,19 @@ function Invoke-IsoDeploy {
             -SerialNumber $SerialNumber -ApplianceName $OneViewHost `
             -ActionDescription 'ISO deployment' -DryRun:$DryRun -SkipConfirmation:$SkipConfirmation
         if (-not $guardOk) {
-            return @{ Success = $false; Error = "Guard rail rejected target '$Server' (guard: '$GuardRail'). No deployment performed." }
+            return (_Publish-Result -Result @{ Success = $false; Error = "Guard rail rejected target '$Server' (guard: '$GuardRail'). No deployment performed." } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
     }
 
     if (-not $DryRun -and -not $Server) {
-        return @{ Success = $false; Error = "Server or SerialNumber is required for non-dryrun ISO deployment" }
+        return (_Publish-Result -Result @{ Success = $false; Error = "Server or SerialNumber is required for non-dryrun ISO deployment" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # TERMINAL COMMAND: a live run must be driven entirely by parameters.
     # deployment_metadata.json / package-dir resolution is a -DryRun helper only
     # (see AGENTS.md). Require an explicit ISO source for live deployments.
     if (-not $DryRun -and -not $IsoUrl -and -not $ExternalIsoPath) {
-        return @{ Success = $false; Error = "An explicit ISO source is required for a live deployment. Supply -IsoUrl <https-url> or -ExternalIsoPath <path>. Config/metadata resolution (deployment_metadata.json) is only used with -DryRun." }
+        return (_Publish-Result -Result @{ Success = $false; Error = "An explicit ISO source is required for a live deployment. Supply -IsoUrl <https-url> or -ExternalIsoPath <path>. Config/metadata resolution (deployment_metadata.json) is only used with -DryRun." } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # ── Handle External ISO Path ──────────────────────────────────────────────
@@ -207,7 +231,7 @@ function Invoke-IsoDeploy {
         # Resolve the ISO path to an accessible URL
         $resolvedIsoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
         if (-not $resolvedIsoUrl) {
-            return @{ Success = $false; Error = "Failed to resolve external ISO path to accessible URL" }
+            return (_Publish-Result -Result @{ Success = $false; Error = "Failed to resolve external ISO path to accessible URL" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
 
         $IsoUrl = $resolvedIsoUrl
@@ -221,24 +245,23 @@ function Invoke-IsoDeploy {
         if ($Server) {
             if ($DryRun) {
                 $serverInfo = ($deployer.ServerDetails | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-                if (-not $serverInfo) { return @{ Success = $false; Error = "Server not found: $Server" } }
+                if (-not $serverInfo) { return (_Publish-Result -Result @{ Success = $false; Error = "Server not found: $Server" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
             } else {
                 # Live run: carry the iLO IP (from -IloIp, or OneView-resolved via serial)
                 # so Redfish deployment can reach the iLO.
                 $serverInfo = [ServerInfo]::new($Server, '', $IloIp, 0)
             }
             $ok = $deployer.Deploy($serverInfo, $Method, [bool]$DryRun)
-            return @{ Success = $ok; Server = $Server; Method = $Method }
+            return (_Publish-Result -Result @{ Success = $ok; Server = $Server; Method = $Method } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
         else {
             $summary = $deployer.DeployAll($Method, [bool]$DryRun)
             $result = @{ Success = ($summary['successful'] -eq $summary['total']); Summary = $summary }
-            _Format-IsoDeploySummary -Result $result
-            return $result
+            return (_Emit-IsoDeployResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
     }
     catch {
-        return @{ Success = $false; Error = $_.Exception.Message }
+        return (_Publish-Result -Result @{ Success = $false; Error = $_.Exception.Message } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 }
 
@@ -432,6 +455,26 @@ function _Format-IsoDeploySummary {
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
+}
+
+# ── Result emission ───────────────────────────────────────────────────────────
+function _Emit-IsoDeployResult {
+    <#
+    .SYNOPSIS
+        Emits the ISO deployment result via the shared, DRY _Publish-Result
+        helper (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-IsoDeploySummary -Result $r
+    }
 }
 
 # vim: ts=4 sw=4 et

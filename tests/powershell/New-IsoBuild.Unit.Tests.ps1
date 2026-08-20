@@ -17,7 +17,7 @@ Describe 'New-IsoBuild - basic invocation and parameter validation' {
     }
 
     It 'DryRun returns Success without ConfigMgr call' {
-        $r = New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp.test' -DistributionPoint 'dp.test' -DryRun
+        $r = New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp.test' -DistributionPoint 'dp.test' -DryRun -PassThru -Quiet
         $r.Success | Should -Be $true
         $r.DryRun  | Should -Be $true
         $r.IsoPath | Should -Match 'WinSrv2025_HPE_BootableMedia_v\d+\.\d+\.iso$'
@@ -29,7 +29,7 @@ Describe 'New-IsoBuild - basic invocation and parameter validation' {
         $tmpDst = Join-Path ([System.IO.Path]::GetTempPath()) "mock_dst_$(Get-Random).iso"
         try {
             $r = New-IsoBuild -SiteCode 'P01' -ManagementPoint 'mp.test' -DistributionPoint 'dp.test' `
-                -MockIsoPath $tmpSrc -OutputPath $tmpDst
+                -MockIsoPath $tmpSrc -OutputPath $tmpDst -PassThru -Quiet
             $r.Success | Should -Be $true
             $r.Mocked  | Should -Be $true
             Test-Path $tmpDst | Should -Be $true

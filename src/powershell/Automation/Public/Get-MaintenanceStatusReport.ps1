@@ -60,6 +60,27 @@ function Get-MaintenanceStatusReport {
     .PARAMETER DryRun
         Alias for -IncludeLive:$false - catalogue-only mock report, no connections.
 
+    .PARAMETER Json
+        Emit the result rows as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [PSObject[]] result rows on the success stream.
+        By default the command writes only the human-readable report (per -Format)
+        and returns nothing, so the terminal/log never receives a truncated
+        object dump. Capture the result into a variable, e.g.
+        `$rows = Get-MaintenanceStatusReport -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself). When combined with -PassThru the report
+        is suppressed but the objects are still returned.
+
+    .OUTPUTS
+        By default, nothing is returned on the success stream (the report is
+        written to the host per -Format, or to a CSV file). With -PassThru, the
+        [PSObject[]] result rows. With -Json, a JSON [string] of the same rows.
+
     .EXAMPLE
         Get-MaintenanceStatusReport -Environment Prod
 
@@ -95,7 +116,11 @@ function Get-MaintenanceStatusReport {
         [string] $Path,
 
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     if ($DryRun) { $IncludeLive = $false }
@@ -261,7 +286,7 @@ foreach (`$g in `$groups) {
 
     if ($clusterUnits.Count -eq 0) {
         Write-Error "No clusters discovered from SCOM and none in catalogue at '$effectiveConfigDir'."
-        return @()
+        return (_Publish-Result -Result @() -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # ── Build OneView server index once (live) for name/serial linking ────────
@@ -428,23 +453,32 @@ foreach (`$g in `$groups) {
 
     # ── Output ─────────────────────────────────────────────────────────────────
     $result = $rows.ToArray()
-    switch ($Format) {
-        'Json' { return ($result | ConvertTo-Json -Depth 4) }
-        'Table' {
-            $result | Format-Table -AutoSize | Out-Host
-            return $result
-        }
-        default {
-            if (-not $Path) {
-                $projRoot = Get-ProjectRoot
-                if (-not $projRoot) { $projRoot = (Get-Location).Path }
-                $reportDir = Join-Path $projRoot 'generated/reports'
-                Ensure-DirectoryExists -Path $reportDir
-                $Path = Join-Path $reportDir "MaintenanceStatusReport_$(Get-UtcFileTimestamp).csv"
+
+    # Human-readable report (per -Format). Suppressed with -Quiet.
+    if (-not $Quiet) {
+        switch ($Format) {
+            'Json'  { $result | ConvertTo-Json -Depth 4 | Out-Host }
+            'Table' { $result | Format-Table -AutoSize | Out-Host }
+            default {
+                if (-not $Path) {
+                    $projRoot = Get-ProjectRoot
+                    if (-not $projRoot) { $projRoot = (Get-Location).Path }
+                    $reportDir = Join-Path $projRoot 'generated/reports'
+                    Ensure-DirectoryExists -Path $reportDir
+                    $Path = Join-Path $reportDir "MaintenanceStatusReport_$(Get-UtcFileTimestamp).csv"
+                }
+                $result | Export-Csv -Path $Path -NoTypeInformation -Encoding UTF8
+                Write-Host "Maintenance status report written to: $Path ($($result.Count) rows)"
             }
-            $result | Export-Csv -Path $Path -NoTypeInformation -Encoding UTF8
-            Write-Host "Maintenance status report written to: $Path ($($result.Count) rows)"
-            return $result
         }
     }
+
+    # Data consumers: -Json for a JSON string, -PassThru for the raw objects.
+    if ($Json) {
+        return ($result | ConvertTo-Json -Depth 4)
+    }
+    if ($PassThru) {
+        return $result
+    }
+    return
 }

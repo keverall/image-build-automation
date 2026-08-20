@@ -40,8 +40,28 @@ function Publish-BootIso {
     .PARAMETER DryRun
         Simulate without copying or verifying.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report. When omitted, the command writes a
+        human-readable report to the host (terminal / transcript / logs) and
+        does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Publish-BootIso -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, PublicUrl, RepoPath, Verified.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success, PublicUrl, RepoPath, Verified. With -Json, a
+        JSON [string] representation of the same data.
 
     .EXAMPLE
         Publish-BootIso -IsoPath 'C:\osdmedia\WinSrv2025_BootableMedia_v1.0.iso' `
@@ -55,7 +75,11 @@ function Publish-BootIso {
         [string] $RepoLocalPath = $null,
         [switch] $ForceOverwrite,
         [switch] $SkipVerify,
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     # TERMINAL COMMAND: live runs take repo settings ONLY from parameters -
@@ -67,11 +91,11 @@ function Publish-BootIso {
     }
 
     if (-not (Test-Path $IsoPath -PathType Leaf)) {
-        return @{ Success = $false; Error = "ISO not found: $IsoPath" }
+        return (_Publish-Result -Result @{ Success = $false; Error = "ISO not found: $IsoPath" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     if (-not $RepoBaseUrl) {
-        return @{ Success = $false; Error = "RepoBaseUrl is required. Supply -RepoBaseUrl <https-base-url> explicitly (env defaults are only used with -DryRun)." }
+        return (_Publish-Result -Result @{ Success = $false; Error = "RepoBaseUrl is required. Supply -RepoBaseUrl <https-base-url> explicitly (env defaults are only used with -DryRun)." } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     $isoName = Split-Path $IsoPath -Leaf
@@ -92,7 +116,7 @@ function Publish-BootIso {
         $result.RepoPath = if ($RepoLocalPath) { Join-Path $RepoLocalPath $isoName } else { $publicUrl }
         $result.Verified = $false
         $result.DryRun   = $true
-        return $result
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     try {
@@ -100,14 +124,14 @@ function Publish-BootIso {
             Ensure-DirectoryExists -Path $RepoLocalPath
             $destPath = Join-Path $RepoLocalPath $isoName
             if (Test-Path $destPath -PathType Leaf -and -not $ForceOverwrite -and -not $DryRun) {
-                return @{
+                return (_Publish-Result -Result @{
                     Success = $false
                     Error   = "Destination already exists: $destPath - pass -ForceOverwrite to replace."
                     RepoPath = $destPath
                     Verified = $false
                     PublicUrl = $publicUrl
                     Timestamp = Get-UtcTimestamp
-                }
+                } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
             }
             Copy-Item -Path $IsoPath -Destination $destPath -Force
             $result.RepoPath = $destPath
@@ -128,11 +152,11 @@ function Publish-BootIso {
         }
 
         $result.Success = $true
-        return $result
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {
         $result.Error = $_.Exception.Message
-        return $result
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 }
 
