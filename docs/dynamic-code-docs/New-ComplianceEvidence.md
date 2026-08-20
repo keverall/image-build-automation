@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/ci/New-ComplianceEvidence.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,13 +14,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 EMIR Art. 34 and DORA Art. 8-10 require that ICT controls be demonstrable, not merely present. This job collects the artefacts produced by the lint, test, PowerShell SAST and secret detection jobs into a single dated record retained as a GitLab artifact. The output is designed to be copied nightly into the Bank's authoritative evidence store; the GitLab artifact retention is a convenience copy only. The script never fails the pipeline on its own (it is evidence, not a gate), but it emits a clear warning if a downstream control failed so the result is not mistaken for a clean run.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -28,7 +28,7 @@ EMIR Art. 34 and DORA Art. 8-10 require that ICT controls be demonstrable, not m
 |-----------|-------------|
 | `-OutputPath` | Path of the JSON evidence file to write. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

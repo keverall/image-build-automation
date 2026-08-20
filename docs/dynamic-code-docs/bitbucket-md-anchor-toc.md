@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/bitbucket-md-anchor-toc.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -20,13 +20,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 5](#example-5)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Processes markdown files across the entire repository, ensuring each file has a valid TOC and matching anchor tags above every H2/H3 heading. Files already in canonical form are left untouched. Scans all folders recursively (including docs/, configs/, src/, and root README.md). Results are logged to generated/logs/toc-anchor/.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -36,11 +36,11 @@ Processes markdown files across the entire repository, ensuring each file has a 
 | `-All` | Recursively scan all .md files across the entire repository and fix or validate each one. |
 | `-DryRun` | Validate without writing changes. Reports pass/fail for every file processed. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -48,7 +48,7 @@ Processes markdown files across the entire repository, ensuring each file has a 
 Fixes a single file (writes changes in-place).
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -56,7 +56,7 @@ Fixes a single file (writes changes in-place).
 Validates a file without making changes.
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -64,7 +64,7 @@ Validates a file without making changes.
 Fixes every .md file in the entire repository in-place.
 ```
 
-<a name="example-4"></a>
+<a id="example-4"></a>
 
 ### Example 4
 
@@ -72,7 +72,7 @@ Fixes every .md file in the entire repository in-place.
 Validates every .md file in the entire repository without making changes.
 ```
 
-<a name="example-5"></a>
+<a id="example-5"></a>
 
 ### Example 5
 
@@ -80,7 +80,7 @@ Validates every .md file in the entire repository without making changes.
 Add-BitbucketMdToc -All -DryRun       # then call it manually
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

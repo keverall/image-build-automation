@@ -74,28 +74,58 @@ function Get-OneViewServerTarget {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
+        [Alias('OVHost')]
         [string] $OneViewHost,
+        [Alias('SrvrId')]
         [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Alias('IdTyp')]
         [ValidateSet('Auto','Name','Serial','OneViewName','IloIp','EnclosureBay')][string] $IdentifierType = 'Auto',
+        [Alias('Cred')]
         [System.Management.Automation.PSCredential] $Credential,
+        [Alias('OVUser')]
         [string] $OneViewUser = $null,
+        [Alias('OVPwd')]
         [string] $OneViewPassword = $null,
         [int]    $Port = 443,
+        [Alias('SkipCert')]
         [bool]   $SkipCertificateCheck = $true,
+        [Alias('Timeout')]
         [int]    $TimeoutSec = 30,
+        [Alias('Mock')]
         [hashtable] $MockResult = $null,
+         [Alias('Dry')]
         [switch] $DryRun
     )
 
+    # Common logging: each command writes to its own isolated log under
+    # generated/logs/commands/Get-OneViewServerTarget/.
+    Initialize-Logging -CommandName 'Get-OneViewServerTarget' -LogName "Get-OneViewServerTarget-Host-$($OneViewHost ?? 'unspecified')-Id-$ServerIdentifier"
+    $logger = Get-Logger 'Get-OneViewServerTarget'
+
     if ($MockResult) {
+        $logger.Info("Get-OneViewServerTarget returning MockResult for Id=$ServerIdentifier")
         return $MockResult
     }
 
     if ($DryRun) {
-        Write-Output "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
+        $msg = "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
+        $logger.Info($msg); Write-Host $msg
         return @{
             Success = $true; Server = $ServerIdentifier; DryRun = $true
             Details = @{ oneview_host = $OneViewHost; identifier = $ServerIdentifier; type = $IdentifierType }
+        }
+    }
+
+    # Graceful no-session handling, mirroring the sibling read-only commands
+    # (Get-OneViewConnectionStatus / Get-OneViewServerList / Get-OneViewVersion):
+    # when no host is supplied AND no OneView session is active, fail gracefully
+    # instead of prompting interactively (which would hang automated / test runs
+    # and violate the no-interactive-input rule). When an active session exists we
+    # still reuse it below via Resolve-OneViewSession.
+    if (-not $OneViewHost) {
+        $activeSession = Get-OneViewActiveSession
+        if (-not $activeSession) {
+            return @{ Success = $false; Server = $ServerIdentifier; Error = $script:ONEVIEW_NO_SESSION_MSG }
         }
     }
 
@@ -105,6 +135,7 @@ function Get-OneViewServerTarget {
     $sess = Resolve-OneViewSession -OneViewHost $OneViewHost -Credential $Credential `
         -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
     if (-not $sess.Success) {
+        $logger.Info("Get-OneViewServerTarget failed: no session. Error='$($sess.Error)'")
         return @{ Success = $false; Server = $ServerIdentifier; Error = $sess.Error }
     }
     $OneViewHost  = $sess.OneViewHost
@@ -171,6 +202,7 @@ function Get-OneViewServerTarget {
                     Details = $details
                 }
                 _Format-ServerTargetResult -Result $result
+                $logger.Info("Get-OneViewServerTarget resolved Id=$ServerIdentifier (ResolvedBy=$($result.ResolvedBy))")
                 return $result
             }
         }

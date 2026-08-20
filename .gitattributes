@@ -1,0 +1,8 @@
+# Normalise line endings (LF) so .md/.ps1/.json don't churn between the Windows
+# test server (core.autocrlf) and Linux/macOS (CI, prod VDI). Without this, pulling
+# from Bitbucket/Stash <-> GitHub flips CRLF/LF and marks every file modified,
+# which is a prime cause of the "git history breaks on pull" problem.
+* text=auto eol=lf
+*.md text eol=lf
+*.ps1 text eol=lf
+*.json text eol=lf

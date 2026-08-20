@@ -178,7 +178,7 @@ function Remove-ExistingAnchors([string[]]$lines) {
             continue
         }
 
-        $isAnchorLine = $lines[$i] -match '^<a name="[^"]*"></a>$'
+        $isAnchorLine = $lines[$i] -match '^<a (?:name|id)="[^"]*"></a>$'
         if ($isAnchorLine) {
             # Walk forward past blank lines AND any other stacked anchors to find
             # the next real content line. A name-anchor is a heading anchor (and is
@@ -242,7 +242,7 @@ function Build-CanonicalContent([string[]]$lines) {
                 $indent = '  ' * ($level - 2)
                 $toc.Add("$indent- [$title](#$anchor)")
 
-                $updatedContent.Add("<a name=""$anchor""></a>")
+                $updatedContent.Add("<a id=""$anchor""></a>")
                 $updatedContent.Add('')
             }
 

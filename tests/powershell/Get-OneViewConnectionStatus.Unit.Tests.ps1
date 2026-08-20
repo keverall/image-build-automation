@@ -1,7 +1,10 @@
 # Get-OneViewConnectionStatus.Unit.Tests.ps1
 # Mocked unit tests for Get-OneViewConnectionStatus.
 # No live OneView appliance is required: the REST layer is either bypassed via
-# -MockResult / -DryRun, or intercepted with an InModuleScope mock of Invoke-RestMethod.
+# -MockResult / -DryRun, or intercepted with an InModuleScope mock of Invoke-RestMethod
+# to exercise the real reachability / authentication / version logic.
+# -PassThru is used so the structured object is returned for assertions (by default the
+# command emits only a formatted terminal summary and returns nothing).
 
 BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
@@ -18,13 +21,13 @@ Describe 'Get-OneViewConnectionStatus - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Get-OneViewConnectionStatus
-        foreach ($p in @('OneViewHost','ServerIdentifier','IdentifierType','Credential','OneViewUser','OneViewPassword','IncludeServerCount','MockResult','DryRun')) {
+        foreach ($p in @('OneViewHost','Credential','OneViewUser','OneViewPassword','ServerIdentifier','IdentifierType','IncludeServerCount','MockResult','DryRun','PassThru')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
 
     It 'Returns MockResult without network call' {
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -MockResult @{
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -PassThru -MockResult @{
             Success = $true; Connected = $true; Reachable = $true; Authenticated = $true
             Appliance = 'h'; Version = '10.00'; ServerCount = 5; Server = $null; Error = $null
         }
@@ -36,7 +39,7 @@ Describe 'Get-OneViewConnectionStatus - basic invocation' {
         $prevAuto = $env:AUTOMATED_MODE
         try {
             $env:AUTOMATED_MODE = 'true'
-            $r = Get-OneViewConnectionStatus -Credential $Script:TestCred
+            $r = Get-OneViewConnectionStatus -Credential $Script:TestCred -PassThru
             $r.Success | Should -Be $false
             $r.Connected | Should -Be $false
             $r.Error   | Should -Match 'OneViewHost'
@@ -46,7 +49,7 @@ Describe 'Get-OneViewConnectionStatus - basic invocation' {
     }
 
     It 'DryRun succeeds' {
-        $r = Get-OneViewConnectionStatus -OneViewHost 'oneview.test.local' -Credential $Script:TestCred -DryRun
+        $r = Get-OneViewConnectionStatus -OneViewHost 'oneview.test.local' -Credential $Script:TestCred -DryRun -PassThru
         $r.Success   | Should -Be $true
         $r.Connected | Should -Be $true
         $r.DryRun    | Should -Be $true
@@ -71,7 +74,7 @@ Describe 'Get-OneViewConnectionStatus - parsing (mocked REST)' {
     }
 
     It 'Reports connected + version + server count from mocked probes' {
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -IncludeServerCount
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -IncludeServerCount -PassThru
         $r.Connected      | Should -Be $true
         $r.Reachable      | Should -Be $true
         $r.Authenticated  | Should -Be $true
@@ -81,8 +84,8 @@ Describe 'Get-OneViewConnectionStatus - parsing (mocked REST)' {
         $r.Error          | Should -Be $null
     }
 
-    It 'Resolves a server when -ServerIdentifier is supplied' {
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -ServerIdentifier 'A' -IdentifierType Serial
+    It 'Resolves a server when -SrvrId is supplied' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -SrvrId 'A' -IdentifierType Serial -PassThru
         $r.Server              | Should -Not -Be $null
         $r.Server.name         | Should -Be 's1'
         $r.Server.serial_number| Should -Be 'A'
@@ -104,7 +107,7 @@ Describe 'Get-OneViewConnectionStatus - version guard (HPEOneView.1000 / OneView
 
     It 'Flags a compliant OneView 10.x version (string "10.00") as compliant' {
         InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = '10.00' } }
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -PassThru
         $r.Version          | Should -Be '10.00'
         $r.VersionCompliant | Should -Be $true
         $r.VersionWarning   | Should -Be $null
@@ -112,14 +115,14 @@ Describe 'Get-OneViewConnectionStatus - version guard (HPEOneView.1000 / OneView
 
     It 'Flags a compliant OneView 10.x version (integer 10000) as compliant' {
         InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = 10000 } }
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -PassThru
         $r.VersionCompliant | Should -Be $true
         $r.VersionWarning   | Should -Be $null
     }
 
     It 'Does NOT warn when the module (major 10) is newer than the appliance (8200 = 8.20) - backward compatible' {
         InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = 8200 } }
-        $r = Get-OneViewConnectionStatus -OneViewHost 'va-oneviewt-01' -Credential $Script:TestCred -WarningAction SilentlyContinue
+        $r = Get-OneViewConnectionStatus -OneViewHost 'oneview.example.com' -Credential $Script:TestCred -WarningAction SilentlyContinue -PassThru
         $r.Version          | Should -Be 8200
         $r.VersionCompliant | Should -Be $true
         $r.VersionWarning   | Should -Be $null
@@ -127,7 +130,7 @@ Describe 'Get-OneViewConnectionStatus - version guard (HPEOneView.1000 / OneView
 
     It 'Does NOT warn on a dotted 8.20 appliance version with HPEOneView.1000 (backward compatible)' {
         InModuleScope Automation { $Script:CurrentVersionProbe = @{ currentVersion = '8.20' } }
-        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -WarningAction SilentlyContinue
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -WarningAction SilentlyContinue -PassThru
         $r.VersionCompliant | Should -Be $true
         $r.VersionWarning   | Should -Be $null
     }
@@ -153,7 +156,7 @@ Describe 'Get-OneViewConnectionStatus - HPEOneView module session (parameterless
         try {
             $env:AUTOMATED_MODE = 'true'
             $global:ConnectedSessions = $null
-            $r = Get-OneViewConnectionStatus
+            $r = Get-OneViewConnectionStatus -PassThru
             $r.Success   | Should -Be $false
             $r.Connected | Should -Be $false
             $r.Appliance | Should -Be $null
@@ -169,7 +172,7 @@ Describe 'Get-OneViewConnectionStatus - HPEOneView module session (parameterless
             $global:ConnectedSessions = @(
                 [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'token-abc'; Connected = $true }
             )
-            $r = Get-OneViewConnectionStatus
+            $r = Get-OneViewConnectionStatus -PassThru
             $r.Connected     | Should -Be $true
             $r.Appliance     | Should -Be 'ov-session.local'
             $r.SessionSource | Should -Be 'HPEOneViewModule'
@@ -179,20 +182,23 @@ Describe 'Get-OneViewConnectionStatus - HPEOneView module session (parameterless
     }
 
     It 'Reports SessionSource Explicit when -OneViewHost is supplied' {
-        $r = Get-OneViewConnectionStatus -OneViewHost 'explicit.local' -Credential $Script:TestCred
+        $r = Get-OneViewConnectionStatus -OneViewHost 'explicit.local' -Credential $Script:TestCred -PassThru
         $r.Connected     | Should -Be $true
         $r.Appliance     | Should -Be 'explicit.local'
         $r.SessionSource | Should -Be 'Explicit'
     }
 
     It 'Never invokes Connect-OVMgmt or Disconnect-OVMgmt (read-only check only)' {
+        if (-not (Get-Command Connect-OVMgmt -ErrorAction SilentlyContinue) -or
+            -not (Get-Command Disconnect-OVMgmt -ErrorAction SilentlyContinue)) {
+            Set-ItResult -Skipped -Because 'HPEOneView module not loaded in test environment; Connect-OVMgmt/Disconnect-OVMgmt unavailable to mock'
+        }
         try {
             $global:ConnectedSessions = @(
                 [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'token-abc'; Connected = $true }
             )
-            # The HPEOneView module is not loaded in tests; mock both cmdlets so
-            # any erroneous call would throw, proving the command never connects
-            # or disconnects an existing session.
+            # Mock both cmdlets so any erroneous call would throw, proving the command
+            # never connects or disconnects an existing session.
             InModuleScope Automation {
                 Mock Connect-OVMgmt    { throw 'Connect-OVMgmt was called erroneously' }
                 Mock Disconnect-OVMgmt { throw 'Disconnect-OVMgmt was called erroneously' }
@@ -232,7 +238,7 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
     }
 
     It 'Returns the server name for an active session (no -OneViewHost, no -Credential)' {
-        $r = Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial
+        $r = Get-OneViewConnectionStatus -SrvrId 'CZ22420JCM' -IdentifierType Serial -PassThru
         $r.Connected       | Should -Be $true
         $r.SessionSource   | Should -Be 'HPEOneViewModule'
         $r.Server          | Should -Not -Be $null
@@ -242,10 +248,68 @@ Describe 'Get-OneViewConnectionStatus - active session reuses the auth token on 
     }
 
     It 'Passes the session token (auth header) and X-API-Version on the server lookup' {
-        Get-OneViewConnectionStatus -ServerIdentifier 'CZ22420JCM' -IdentifierType Serial | Out-Null
+        Get-OneViewConnectionStatus -SrvrId 'CZ22420JCM' -IdentifierType Serial | Out-Null
         InModuleScope Automation { $Script:LastFilterHeaders } | Should -Not -Be $null
         $h = InModuleScope Automation { $Script:LastFilterHeaders }
         $h['auth']         | Should -Be 'reused-token-xyz'
         "$($h['X-API-Version'])" | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Reuses the active session when -OneViewHost matches the connected appliance (no reconnect, no 401)' {
+        # Regression: with an active session and -OneViewHost = the connected appliance,
+        # the command must reuse the session token instead of attempting an unauthenticated
+        # reconnect (which previously 401'd and reported "authentication failed for ''").
+        $r = Get-OneViewConnectionStatus -OneViewHost 'ov-session.local' -PassThru
+        $r.Connected      | Should -Be $true
+        $r.Authenticated  | Should -Be $true
+        $r.Appliance      | Should -Be 'ov-session.local'
+        $r.SessionSource  | Should -Be 'HPEOneViewModule'
+    }
+
+    It 'Reuses the active session even when -OneViewHost differs (guard: never reconnect)' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'different.local' -PassThru -WarningAction SilentlyContinue
+        $r.Connected      | Should -Be $true
+        $r.Appliance      | Should -Be 'ov-session.local'   # reports the ACTIVE appliance, not the requested one
+        $r.SessionSource  | Should -Be 'HPEOneViewModule'
+    }
+}
+
+Describe 'Get-OneViewConnectionStatus - parameter aliases' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'reused-token-xyz'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/version*' } -MockWith { @{ currentVersion = '10.00' } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -notlike '*filter*' } -MockWith { @{ total = 3; members = @() } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' -and $Uri -like '*filter*' } -MockWith {
+                @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'SRV-X'; serialNumber = 'CZ22420JCM'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0' }
+                ) }
+            }
+        }
+    }
+
+    It 'Exposes canonical -ServerIdentifier (alias -SrvrId) and -IdentifierType (alias -IdTyp)' {
+        $cmd = Get-Command Get-OneViewConnectionStatus
+        $cmd.Parameters.ContainsKey('ServerIdentifier') | Should -Be $true
+        $cmd.Parameters['ServerIdentifier'].Aliases -contains 'SrvrId' | Should -Be $true
+        $cmd.Parameters.ContainsKey('IdentifierType') | Should -Be $true
+        $cmd.Parameters['IdentifierType'].Aliases -contains 'IdTyp' | Should -Be $true
+    }
+
+    It 'Resolves a server via short aliases -SrvrId -IdTyp (proves aliases bind)' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -SrvrId 'CZ22420JCM' -IdTyp Serial -PassThru
+        $r.Server | Should -Not -Be $null
+        $r.Server.serial_number | Should -Be 'CZ22420JCM'
+        $r.Server.resolved_by | Should -Be 'Serial'
+    }
+
+    It 'Resolves with a single -ServerIdentifier (Auto detects Serial)' {
+        $r = Get-OneViewConnectionStatus -OneViewHost 'h' -Credential $Script:TestCred -ServerIdentifier 'CZ22420JCM' -PassThru
+        $r.Server | Should -Not -Be $null
+        $r.Server.serial_number | Should -Be 'CZ22420JCM'
+    }
+
+    It 'Rejects the invalid -SrvId alias (typo, missing r)' {
+        { & Get-OneViewConnectionStatus -SrvId 'X' -ErrorAction Stop } | Should -Throw
     }
 }

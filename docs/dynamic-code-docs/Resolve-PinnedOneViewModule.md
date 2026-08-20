@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/OneViewSession.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -13,13 +13,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Description](#description)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 1. ONEVIEW_MODULE_NAME env var (valid module name) - explicit override. 2. Otherwise the latest HPEOneView.* module installed on this server (sorted by version; the newest is backward-compatible with older appliances), else default. NOTE: The HPEOneView.* libraries are Windows-only. On non-Windows hosts (Linux/ macOS) enumerating/importing them crashes the native PowerShell layer, so the availability checks below are SKIPPED off-Windows and resolution is by name only (the actual Connect-OVMgmt import is a Windows-only operation; unit tests mock it).
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

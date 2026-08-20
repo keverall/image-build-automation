@@ -97,6 +97,7 @@ Thumbs.db
 
 # === AI Workspace Configs ===
 # .kilo/
+AGENTS.md
 scripts/modules/OperationsManager/
 scripts/modules/
 

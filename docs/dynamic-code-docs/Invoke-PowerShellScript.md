@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-PowerShellScript.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Executes PowerShell scripts locally by spawning a new PowerShell process with configurable timeout, execution policy, and output capture. Useful for isolating script execution or running scripts in a fresh PowerShell context. Prefers `pwsh` (PowerShell 7+) on all platforms and falls back to `powershell.exe` (Windows PowerShell 5.1) only when `pwsh` is not available. Returns a hashtable with success status and combined output.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -34,11 +34,11 @@ Executes PowerShell scripts locally by spawning a new PowerShell process with co
 | `-ExecutionPolicy` | PowerShell execution-policy override (default: Bypass). |
 | `-Environment` | Optional hashtable of environment variables to set on the child process only (never interpolated into the script text). Use this to pass secrets so they do not appear in the command line, transcripts, or error output. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -46,7 +46,7 @@ Executes PowerShell scripts locally by spawning a new PowerShell process with co
 $r = Invoke-PowerShellScript -Script 'Get-Service | Select-Object -First 5 Name' -TimeoutSeconds 30
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

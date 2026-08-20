@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewVersion.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -17,29 +17,29 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 2](#example-2)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Local checks (always performed): * Loaded HPEOneView.*/HPOneView.* modules in this session (name, version, path). * Installed HPEOneView.*/HPOneView.* modules on PSModulePath. * Compliance with the HPEOneView.1000-only policy, including the exact remediation command when a stray version (e.g. HPEOneView.860) is found. Appliance check (best effort): * If -OneViewHost is supplied, or an active session exists, queries GET /rest/version (unauthenticated) and reports currentVersion. This value comes from the appliance and is unrelated to the local module version.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-OneViewHost` | Optional appliance hostname/IP. Defaults to the active session's appliance when one exists. Skips the appliance probe when unresolved. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | Optional appliance hostname/IP. Defaults to the active session's appliance when one exists. Skips the appliance probe when unresolved. |
 | `-Port` | OneView HTTPS port (default 443). |
-| `-SkipCertificateCheck` | Skip SSL cert verification (default true). |
-| `-TimeoutSec` | Appliance probe timeout (default 15 s). |
-| `-Quiet` | Suppress the formatted console report; return only the hashtable. |
+| `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL cert verification (default true). |
+| `-TimeoutSec` _(Aliases: -Timeout)_ | Appliance probe timeout (default 15 s). |
+| `-Quiet` _(Aliases: -Q)_ | Suppress the formatted console report; return only the hashtable. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -47,15 +47,15 @@ Local checks (always performed): * Loaded HPEOneView.*/HPOneView.* modules in th
 Get-OneViewVersion Reports local module state and, if a session is active, the appliance version.
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
 ```powershell
-Get-OneViewVersion -OneViewHost va-oneviewt-01
+Get-OneViewVersion -OneViewHost oneview.example.com
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
@@ -106,7 +106,7 @@ Get-OneViewVersion -OneViewHost va-oneviewt-01
         Reports local module state and, if a session is active, the appliance version.
 
     .EXAMPLE
-        Get-OneViewVersion -OneViewHost va-oneviewt-01
+        Get-OneViewVersion -OneViewHost oneview.example.com
 ```
 
 ---

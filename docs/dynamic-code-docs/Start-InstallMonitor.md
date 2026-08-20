@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-InstallMonitor.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,31 +16,31 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Polls iLO Redfish and WinRM to track installation phases (Generalize, Specialize, Running Windows, etc.).  Sends progress metrics and alerts to OpsRamp.  The PowerShell equivalent of automation.cli.monitor_install.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Server` | Monitor a single server only. Mutually exclusive with -SerialNumber. |
-| `-SerialNumber` | Monitor a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
-| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
-| `-ServerList` | Path to server_list.txt. Only used for -DryRun mock targeting. |
-| `-TimeoutSeconds` | Maximum monitoring duration in seconds (default: 7200). |
-| `-PollIntervalSeconds` | Seconds between checks (default: 30). |
-| `-OpsRampConfig` | Path to opsramp_config.json. |
+| `-Server` _(Aliases: -Srvr)_ | Monitor a single server only. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` _(Aliases: -Srl)_ | Monitor a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-ServerList` _(Aliases: -SrvrList)_ | Path to server_list.txt. Only used for -DryRun mock targeting. |
+| `-TimeoutSeconds` _(Aliases: -Timeout)_ | Maximum monitoring duration in seconds (default: 7200). |
+| `-PollIntervalSeconds` _(Aliases: -PollSec)_ | Seconds between checks (default: 30). |
+| `-OpsRampConfig` _(Aliases: -OpsCfg)_ | Path to opsramp_config.json. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -48,7 +48,7 @@ Polls iLO Redfish and WinRM to track installation phases (Generalize, Specialize
 Start-InstallMonitor -Server 'srv01.corp.local' -TimeoutSeconds 3600
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

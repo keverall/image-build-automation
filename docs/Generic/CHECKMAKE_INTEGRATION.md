@@ -16,13 +16,13 @@
   - [Checkmake finds violations](#checkmake-finds-violations)
 - [Configuration](#configuration)
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
 Checkmake has been integrated into the build system to validate Makefile syntax and best practices.
 
-<a name="installation"></a>
+<a id="installation"></a>
 
 ## Installation
 
@@ -36,11 +36,11 @@ Or manually via the setup script:
 pwsh -File scripts/setup-runner.ps1
 ```
 
-<a name="usage"></a>
+<a id="usage"></a>
 
 ## Usage
 
-<a name="run-checkmake-only"></a>
+<a id="run-checkmake-only"></a>
 
 ### Run checkmake only:
 
@@ -48,7 +48,7 @@ pwsh -File scripts/setup-runner.ps1
 make lint-checkmake
 ```
 
-<a name="run-as-part-of-full-linting"></a>
+<a id="run-as-part-of-full-linting"></a>
 
 ### Run as part of full linting:
 
@@ -61,7 +61,7 @@ This runs:
 - `lint-checkmake` - Makefile best practices validation
 - `pwsh-lint` - PowerShell PSScriptAnalyzer
 
-<a name="how-it-works"></a>
+<a id="how-it-works"></a>
 
 ## How It Works
 
@@ -70,17 +70,17 @@ This runs:
 3. **Installation**: Places binary in `bin/checkmake` for offline use
 4. **Validation**: `make lint-checkmake` runs checkmake with a 5-second timeout
 
-<a name="troubleshooting"></a>
+<a id="troubleshooting"></a>
 
 ## Troubleshooting
 
-<a name="checkmake-hangs"></a>
+<a id="checkmake-hangs"></a>
 
 ### Checkmake hangs
 
 The lint-checkmake target has a built-in 5-second timeout. If it times out, it silently continues.
 
-<a name="checkmake-not-found"></a>
+<a id="checkmake-not-found"></a>
 
 ### Checkmake not found
 
@@ -96,7 +96,7 @@ go install github.com/mrtazz/checkmake@latest
 pwsh -File scripts/setup-runner.ps1
 ```
 
-<a name="checkmake-finds-violations"></a>
+<a id="checkmake-finds-violations"></a>
 
 ### Checkmake finds violations
 
@@ -110,7 +110,7 @@ Common violations:
 - `phony`: Missing .PHONY declaration
 - `double-colon`: Using double colon rules
 
-<a name="configuration"></a>
+<a id="configuration"></a>
 
 ## Configuration
 

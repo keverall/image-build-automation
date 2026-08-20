@@ -82,6 +82,11 @@
       "ci_stage": null,
       "description": "List all servers managed by HPE OneView"
     },
+    "maintmode_status_report": {
+      "powershell_handler": "Get-MaintenanceStatusReport",
+      "ci_stage": null,
+      "description": "Read-only report linking SCOM + HPE OneView: cluster/server state, SCOM maintenance windows, power schedules, and OneView maintenance state (CSV output)"
+    },
     "prebuild_validation": {
       "powershell_handler": "Test-PreBuildValidation",
       "ci_stage": null,

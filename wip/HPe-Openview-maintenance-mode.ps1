@@ -4,7 +4,7 @@
 # Ensure your administration environment has the module loaded and a valid session established: [3] 
 
 # Import-Module HPEOneView.1000
-# Connect-OVMgmt -Hostname "oneview.yourdomain.local" -Credential (Get-Credential)
+# Connect-OVMgmt -Hostname "oneview.yourdomain.local"
 
 # ------------------------------
 ## The Script: Manage-OVClusterMaintenance.ps1

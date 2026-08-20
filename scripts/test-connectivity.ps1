@@ -4,16 +4,26 @@
 
 <#
 .SYNOPSIS
-    OneView ping + connect test (safe during change freeze).
+    OneView connectivity STATUS CHECK (safe during change freeze).
+
+.DESCRIPTION
+    Wrapper around the Test-ServerConnectivity module command. This is a STATUS
+    CHECK, not a connect command - it NEVER prompts for a host or credentials.
+    Run with no parameters to report the ACTIVE OneView connection (established
+    by Connect-OneView); supply -OneViewHost to check a SPECIFIC appliance.
+    To actually connect, use Connect-OneView -OneViewHost <host>.
 
 .PARAMETER Environment
     Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
-.PARAMETER ManagementHost
-    Override OneView appliance hostname (highest priority, required for live runs)
+.PARAMETER OneViewHost
+    Override OneView appliance hostname (highest priority). Optional - omit to
+    report the active Connect-OneView session.
 
 .PARAMETER Credential
-    PSCredential for the live connection. If omitted, prompts interactively.
+    PSCredential for the live connection. If omitted, the active session is reused
+    (when it matches) or ONEVIEW_USER / ONEVIEW_PASSWORD / CyberArk are used. This
+    command never prompts.
 
 .PARAMETER JsonConfig
     Use configs/connection_hosts.json to resolve the appliance (DryRun only).
@@ -28,19 +38,19 @@
     TCP connect timeout in milliseconds (default: 3000)
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01'
+    pwsh -File scripts/test-connectivity.ps1
+
+.EXAMPLE
+    pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
 
 .EXAMPLE
     pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
-
-.EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)
 #>
 
 [CmdletBinding()]
 param(
     [ValidateSet('Test', 'Prod')][string]$Environment = 'Prod',
-    [string]$ManagementHost,
+    [string]$OneViewHost,
     [System.Management.Automation.PSCredential]$Credential,
     [switch]$JsonConfig,
     [switch]$Json,
@@ -74,7 +84,7 @@ $connParams = @{
 }
 
 if ($Environment)    { $connParams['Environment'] = $Environment }
-if ($ManagementHost) { $connParams['ManagementHost'] = $ManagementHost }
+if ($OneViewHost) { $connParams['OneViewHost'] = $OneViewHost }
 if ($Credential)    { $connParams['Credential'] = $Credential }
 if ($JsonConfig)     { $connParams['JsonConfig'] = $true }
 if ($Json)           { $connParams['Json'] = $true }

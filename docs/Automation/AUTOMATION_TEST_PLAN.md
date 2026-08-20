@@ -20,7 +20,7 @@
 <p class="report-run-date"><strong>Run date:</strong> 02/08/2026 01:54 UTC</p>
 <!-- END:run-date -->
 
-<a name="how-to-execute-runner-reference"></a>
+<a id="how-to-execute-runner-reference"></a>
 
 ## How to execute (runner reference):
 
@@ -64,7 +64,7 @@
 
 ---
 
-<a name="1-iso-build-patching-deployment-and-monitoring"></a>
+<a id="1-iso-build-patching-deployment-and-monitoring"></a>
 
 ## 1. ISO Build, Patching, Deployment and Monitoring
 
@@ -163,7 +163,7 @@
   </tbody>
 </table>
 
-<a name="2-oneview-and-ilo-connectivity-targeting"></a>
+<a id="2-oneview-and-ilo-connectivity-targeting"></a>
 
 ## 2. OneView and iLO Connectivity / Targeting
 
@@ -273,7 +273,7 @@
   </tbody>
 </table>
 
-<a name="3-prepost-build-validation"></a>
+<a id="3-prepost-build-validation"></a>
 
 ## 3. Pre/Post Build Validation
 
@@ -339,7 +339,7 @@
   </tbody>
 </table>
 
-<a name="4-maintenance-mode-oneview-scom"></a>
+<a id="4-maintenance-mode-oneview-scom"></a>
 
 ## 4. Maintenance Mode (OneView / SCOM)
 
@@ -449,7 +449,7 @@
   </tbody>
 </table>
 
-<a name="5-orchestration-routing-and-utility"></a>
+<a id="5-orchestration-routing-and-utility"></a>
 
 ## 5. Orchestration, Routing and Utility
 
@@ -537,7 +537,7 @@
   </tbody>
 </table>
 
-<a name="6-shared-infrastructure-modules"></a>
+<a id="6-shared-infrastructure-modules"></a>
 
 ## 6. Shared / Infrastructure Modules
 
@@ -671,7 +671,7 @@
 
 ---
 
-<a name="7-test-run-summary-filled-per-cycle"></a>
+<a id="7-test-run-summary-filled-per-cycle"></a>
 
 ## 7. Test Run Summary (filled per cycle)
 
@@ -683,14 +683,14 @@ Record each execution run here so the lead can trace sign-off to a build/CI job.
 |1|21/07/2026|Full Automation suite — `make test` + `make automation-mode-tests` (all 38 `AT-*` scenarios above → 68 atomic Pester tests)|Ran manually on terminal on Test VDI Mocking Tests|Passed (68/68)|Initial test run|
 |2|23/07/2026 09:31:16|Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (93/93)|Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken.|
 |3|23/07/2026 18:55:24 UTC|Full Automation suite — `make test` + `make automation-mode-tests` (all 93 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (93/93)|Fixed Oneview connectivity issues which broke the appliance connection commands because of erroneous proxy bypass confusion and also fixed logging which a powershell bug caused to break. The automation regression test suite was increased from 68 to 93 tests, to cover testing for connectivity to host works and to ensure logging is working and has not been broken. 2|
-|4|24/07/2026 16:34:08 UTC|Full Automation suite — `make automation-mode-tests` (all 95 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (95/95)|Removed phantom proxy config on EWISMGMT-19; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing.|
-|5|27/07/2026 15:30:48 UTC|Live connectivity verification — `Test-ServerConnectivity -ManagementHost va-oneviewt-01` + `Get-OneViewConnectionStatus`|va-oneviewt-01 (Prod)|Passed - Full connectivity verified: DNS resolved (10.239.124.79), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).|Live connectivity test on va-oneviewt-01 to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session.|
+|4|24/07/2026 16:34:08 UTC|Full Automation suite — `make automation-mode-tests` (all 95 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests|Passed (95/95)|Removed phantom proxy config on <mgmt-host>; fixed critical OneView session-lifecycle design flaw across all automation commands; suppressed interactive Read-Host prompts in Invoke-IsoDeploy (3 tests, 309ms) and Test-ServerConnectivity (35 tests, 880ms) for non-interactive automated testing.|
+|5|27/07/2026 15:30:48 UTC|Live connectivity verification — `Test-ServerConnectivity -ManagementHost oneview.example.com` + `Get-OneViewConnectionStatus`|oneview.example.com (Prod)|Passed - Full connectivity verified: DNS resolved (203.0.113.10), TCP 443 open (12ms), auth connected, session persists. Get-OneViewConnectionStatus: Reachable=True, Connected=True, Authenticated=True, Version=8200. Session persistence confirmed (bug #2 fix verified).|Live connectivity test on oneview.example.com to verify OneView session lifecycle fix and confirm all connectivity phases (DNS, TCP, Auth) pass with persistent session.|
 |6|31/07/2026 09:14:27 UTC|NO TESTING ON THIS DAY UNTIL 31/07/2026 DUE TO FREEZE|N/A|N/A|N/A|
 |7| 02/08/2026 01:54:37 UTC |make automation-mode-tests (all 99 automated regression unit test scenarios above)|Ran manually on terminal on Test VDI Mocking Tests (CachyOS Linux)|Passed (99/99)|Full automation regression suite rerun after code-freeze to confirm the 99-scenario suite is green|
 | 8 | 02/08/2026 01:54:37 UTC | Full Automation suite — `make automation-mode-tests` (all 99 automated regression unit test scenarios above) | Ran manually on terminal | Passed (99/99) | fix gitlab hopefully |
 <!-- END:automation-evidence-rows -->
 
-<a name="run-log"></a>
+<a id="run-log"></a>
 
 ### Run log
 
@@ -712,7 +712,7 @@ Latest Full test run output (from `make test` / `make automation-mode-tests`):
  Duration      : 3.15s
 ```
 
-<a name="8-coverage-gaps-action-items-for-the-team"></a>
+<a id="8-coverage-gaps-action-items-for-the-team"></a>
 
 ## 8. Coverage Gaps (action items for the team)
 
@@ -723,7 +723,7 @@ These commands are documented but **lack automated test files** and need new Pes
 - `Invoke-PowerShellScript` (AT-ORC-05)
 - `Invoke-PowerShellWinRM` (AT-ORC-06)
 
-<a name="9-notes-for-the-delivery-lead"></a>
+<a id="9-notes-for-the-delivery-lead"></a>
 
 ## 9. Notes for the Delivery Lead
 

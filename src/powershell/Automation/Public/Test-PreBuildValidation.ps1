@@ -78,8 +78,11 @@ function Test-PreBuildValidation {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
+        [Alias('SrvrId')]
         [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Alias('OVHost')]
         [string] $OneViewHost,
+        [Alias('Ilo')]
         [string] $IloIp,
         [System.Management.Automation.PSCredential] $IloCredential,
         [string] $IsoUrl,
@@ -91,6 +94,7 @@ function Test-PreBuildValidation {
         [switch] $SkipIlo,
         [switch] $SkipDpMp,
         [switch] $SkipIsoUrl,
+        [Alias('Dry')]
         [switch] $DryRun
     )
 

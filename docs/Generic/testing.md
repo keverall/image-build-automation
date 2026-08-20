@@ -38,7 +38,7 @@ Complete guide to running and maintaining the Pester test suite for the `src/pow
 
 ---
 
-<a name="overview"></a>
+<a id="overview"></a>
 
 ## Overview
 
@@ -49,7 +49,7 @@ The PowerShell module uses **Pester v6+** as its BDD-style testing framework. Te
 **Test discovery:** `*.Unit.Tests.ps1`, `*.Tests.ps1` files in `tests/powershell/`  
 **Offline support:** All dependencies are bundled under `vendor/modules/`
 
-<a name="bdd-keywords"></a>
+<a id="bdd-keywords"></a>
 
 ### BDD Keywords
 
@@ -64,7 +64,7 @@ The PowerShell module uses **Pester v6+** as its BDD-style testing framework. Te
 
 ---
 
-<a name="prerequisites"></a>
+<a id="prerequisites"></a>
 
 ## Prerequisites
 
@@ -85,11 +85,11 @@ Get-Module Pester -ListAvailable
 
 ---
 
-<a name="running-tests"></a>
+<a id="running-tests"></a>
 
 ## Running Tests
 
-<a name="run-the-complete-test-suite"></a>
+<a id="run-the-complete-test-suite"></a>
 
 ### Run the Complete Test Suite
 
@@ -101,7 +101,7 @@ Invoke-Pester -Path 'tests/powershell' -PassThru
 Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
 ```
 
-<a name="run-via-makefile"></a>
+<a id="run-via-makefile"></a>
 
 ### Run via Makefile
 
@@ -122,7 +122,7 @@ make maint-mode-tests
 make lint-test
 ```
 
-<a name="run-via-wrapper-script"></a>
+<a id="run-via-wrapper-script"></a>
 
 ### Run via Wrapper Script
 
@@ -134,7 +134,7 @@ pwsh -File scripts/run-tests.ps1
 pwsh -File scripts/run-maint-mode-tests.ps1
 ```
 
-<a name="run-a-single-test-file"></a>
+<a id="run-a-single-test-file"></a>
 
 ### Run a Single Test File
 
@@ -142,7 +142,7 @@ pwsh -File scripts/run-maint-mode-tests.ps1
 Invoke-Pester -Path 'tests/powershell\Config.Unit.Tests.ps1'
 ```
 
-<a name="run-by-tag"></a>
+<a id="run-by-tag"></a>
 
 ### Run by Tag
 
@@ -154,7 +154,7 @@ Invoke-Pester -Path 'tests/powershell' -Tag @('Config','FileIO') -PassThru
 Invoke-Pester -Path 'tests/powershell' -ExcludeTag @('Integration') -PassThru
 ```
 
-<a name="ci-xml-output-coverage-reports"></a>
+<a id="ci-xml-output-coverage-reports"></a>
 
 ### CI / XML Output & Coverage Reports
 
@@ -168,7 +168,7 @@ Write-Output "Passed: $($result.PassedCount)  Failed: $($result.FailedCount)"
 exit $result.FailedCount
 ```
 
-<a name="code-coverage"></a>
+<a id="code-coverage"></a>
 
 ### Code Coverage
 
@@ -190,7 +190,7 @@ pwsh -File scripts/coverage-report.ps1
 
 ---
 
-<a name="test-file-structure"></a>
+<a id="test-file-structure"></a>
 
 ## Test File Structure
 
@@ -212,7 +212,7 @@ Representative test files (not exhaustive):
 
 ---
 
-<a name="writing-a-new-test"></a>
+<a id="writing-a-new-test"></a>
 
 ## Writing a New Test
 
@@ -237,7 +237,7 @@ Describe 'My-Cmdlet' {
 }
 ```
 
-<a name="common-assertions"></a>
+<a id="common-assertions"></a>
 
 ### Common Assertions
 
@@ -252,7 +252,7 @@ Describe 'My-Cmdlet' {
 
 ---
 
-<a name="mocking"></a>
+<a id="mocking"></a>
 
 ## Mocking
 
@@ -273,7 +273,7 @@ Describe 'Invoke-PowerShellScript' {
 
 ---
 
-<a name="ci-integration"></a>
+<a id="ci-integration"></a>
 
 ## CI Integration
 
@@ -300,7 +300,7 @@ stage('PowerShell Tests') {
 
 ---
 
-<a name="troubleshooting"></a>
+<a id="troubleshooting"></a>
 
 ## Troubleshooting
 
@@ -312,7 +312,7 @@ stage('PowerShell Tests') {
 
 ---
 
-<a name="see-also"></a>
+<a id="see-also"></a>
 
 ## See Also
 
@@ -322,13 +322,13 @@ stage('PowerShell Tests') {
 
 ---
 
-<a name="maintenance-mode-testing"></a>
+<a id="maintenance-mode-testing"></a>
 
 ## Maintenance Mode Testing
 
 Comprehensive testing for maintenance mode operations across SCOM and OneView systems.
 
-<a name="test-files"></a>
+<a id="test-files"></a>
 
 ### Test Files
 
@@ -341,7 +341,7 @@ Comprehensive testing for maintenance mode operations across SCOM and OneView sy
 | `tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1` | Environment/host resolution |
 | `tests/powershell/Test-ServerConnectivity.Tests.ps1` | OneView connectivity check |
 
-<a name="test-scripts"></a>
+<a id="test-scripts"></a>
 
 ### Test Scripts
 
@@ -351,7 +351,7 @@ Comprehensive testing for maintenance mode operations across SCOM and OneView sy
 | `scripts/run-maintenance-tests.ps1` | Run test suite | `pwsh scripts/run-maintenance-tests.ps1 -TestSuite All -PassThru` |
 | `scripts/test-maintenance-connection.ps1` | Interactive connection test | `pwsh scripts/test-maintenance-connection.ps1 -Environment Test` |
 
-<a name="running-maintenance-mode-tests"></a>
+<a id="running-maintenance-mode-tests"></a>
 
 ### Running Maintenance Mode Tests
 
@@ -372,14 +372,14 @@ Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -
 Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test -DryRun
 ```
 
-<a name="test-coverage-areas"></a>
+<a id="test-coverage-areas"></a>
 
 ### Test Coverage Areas
 
 | Area | Description | Test File |
 |------|-------------|----------|
 | Environment parameter | Test/Prod environment selection | Set-MaintenanceMode.Environment.Tests.ps1 |
-| Host override | ManagementHost parameter and env var | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Host override | OneViewHost parameter and env var | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Credential parameters | Username parameter | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Relative time formats | +Xhours, +Xminutes, +Xdays, +Xseconds | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Absolute time formats | YYYY-MM-DD HH:MM, ISO 8601 | Set-MaintenanceMode.Environment.Tests.ps1 |
@@ -388,7 +388,7 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 | Configuration files | connection_hosts.json structure | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Backward compatibility | Existing behavior preservation | Set-MaintenanceMode.Unit.Tests.ps1 |
 
-<a name="interpreting-test-results"></a>
+<a id="interpreting-test-results"></a>
 
 ### Interpreting Test Results
 
@@ -447,7 +447,7 @@ Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -
 Invoke-Pester -Path tests/powershell/ -OutputFile test-results.xml -OutputFormat NUnitXml
 ```
 
-<a name="manual-testing-checklist"></a>
+<a id="manual-testing-checklist"></a>
 
 ### Manual Testing Checklist
 
@@ -456,7 +456,7 @@ Before deploying maintenance mode changes:
 - [ ] **Configuration valid** - `pwsh scripts/validate-maintenance-config.ps1`
 - [ ] **Test environment works** - `-Environment Test -DryRun`
 - [ ] **Prod environment works** - `-Environment Prod -DryRun`
-- [ ] **Host override works** - `-ManagementHost backup-server.local`
+- [ ] **Host override works** - `-OneViewHost backup-server.local`
 - [ ] **Relative time formats work** - `-Start now -End +1hour`
 - [ ] **Absolute time formats work** - `-Start 2025-01-15T10:00:00Z -End 2025-01-15T12:00:00Z`
 - [ ] **Serial number lookup works** - Only OneView mode, requires real OneView server
@@ -477,7 +477,7 @@ Before deploying maintenance mode changes:
 - [ ] Maintenance window creation works
 - [ ] Per-object status reporting works
 
-<a name="maintenance-mode-behavior"></a>
+<a id="maintenance-mode-behavior"></a>
 
 ### Maintenance Mode Behavior
 
@@ -499,7 +499,7 @@ Before deploying maintenance mode changes:
 - Per-object status with ACK/NACK details
 
 **Environment Resolution:**
-1. `-ManagementHost` parameter (highest priority)
+1. `-OneViewHost` parameter (highest priority)
 2. `$env:MAINTENANCE_HOST` environment variable
 3. `connection_hosts.json` → Environment config
 
@@ -514,7 +514,7 @@ Before deploying maintenance mode changes:
 1. `$env:SCOM_ADMIN_PASSWORD` (SCOM) or `$env:ONEVIEW_PASSWORD` (OneView)
 2. Interactive prompt
 
-<a name="maintenance-mode-testing-examples"></a>
+<a id="maintenance-mode-testing-examples"></a>
 
 ### Maintenance Mode Testing Examples
 
@@ -546,7 +546,7 @@ Set-MaintenanceMode `
     -TargetId CLU-CLUSTER-01 `
     -Mode scom `
     -Environment Prod `
-    -ManagementHost backup-scom.local `
+    -OneViewHost backup-scom.local `
     -DryRun`
 ```
 
@@ -578,7 +578,7 @@ if ($result.Success) {
 }
 ```
 
-<a name="per-object-status-reporting"></a>
+<a id="per-object-status-reporting"></a>
 
 ### Per-Object Status Reporting
 
@@ -652,7 +652,7 @@ $failures = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Failed' }).
 Write-Output "Successes: $successes, Failures: $failures"
 ```
 
-<a name="safety-warnings"></a>
+<a id="safety-warnings"></a>
 
 ### Safety Warnings
 

@@ -32,11 +32,11 @@ This table helps you select the correct PowerShell module for your OneView appli
 
 **Important:** `HPOneView.Managed` is NOT a standard HPE OneView module name. Use `HPEOneView.1000`, `HPEOneView.900`, etc.
 
-<a name="quick-selection-guide"></a>
+<a id="quick-selection-guide"></a>
 
 ## Quick Selection Guide
 
-<a name="for-oneview-8x-appliances-recommended"></a>
+<a id="for-oneview-8x-appliances-recommended"></a>
 
 ### For OneView 8.x+ appliances (recommended)
 
@@ -44,7 +44,7 @@ This table helps you select the correct PowerShell module for your OneView appli
 Install-Module HPEOneView.1000 -Scope AllUsers
 ```
 
-<a name="for-oneview-7x-appliances-legacy"></a>
+<a id="for-oneview-7x-appliances-legacy"></a>
 
 ### For OneView 7.x appliances (legacy)
 
@@ -52,7 +52,7 @@ Install-Module HPEOneView.1000 -Scope AllUsers
 Install-Module HPEOneView.720 -Scope AllUsers
 ```
 
-<a name="installation-commands"></a>
+<a id="installation-commands"></a>
 
 ## Installation Commands
 
@@ -88,7 +88,7 @@ Common errors if multiple versions exist:
 - `Connect-OVMgmt: The term 'Connect-OVMgmt' is not recognized`
 - Cmdlet name conflicts between module versions
 
-<a name="connection-command"></a>
+<a id="connection-command"></a>
 
 ## Connection Command
 
@@ -102,7 +102,7 @@ Connect-OVMgmt -Hostname oneview.example.com -Credential $cred
 Connect-OVMgmt -Appliance oneview.example.com -Credential $cred
 ```
 
-<a name="how-the-automation-selects-modules"></a>
+<a id="how-the-automation-selects-modules"></a>
 
 ## How the Automation Selects Modules
 
@@ -110,7 +110,7 @@ Connect-OVMgmt -Appliance oneview.example.com -Credential $cred
 2. **Auto-detect**: Scans installed modules, picks highest version
 3. **Fallback**: Defaults to `HPEOneView.1000` if none found
 
-<a name="module-validation"></a>
+<a id="module-validation"></a>
 
 ## Module Validation
 
@@ -119,7 +119,7 @@ When `Set-MaintenanceMode` runs (non-dry-run), it validates:
 - PowerShell version compatibility (warns if PowerShell 7+ is required but not available)
 - Logs the selected module name
 
-<a name="related-documentation"></a>
+<a id="related-documentation"></a>
 
 ## Related Documentation
 

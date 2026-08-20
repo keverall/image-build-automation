@@ -33,7 +33,7 @@ Pester v5 tests. Integration cases invoke `Update-TestProgress.ps1` in a child
 `pwsh` process (with `-SkipHtml`) against disposable fixture copies so that no
 repository files are modified and the script's `exit` calls cannot abort Pester.
 
-<a name="column-legend"></a>
+<a id="column-legend"></a>
 
 ## Column legend
 
@@ -41,7 +41,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 - **Case** — the specific branch/variant exercised.
 - **Expected** — the asserted outcome.
 
-<a name="1-marker-block-helpers-get-block-set-block"></a>
+<a id="1-marker-block-helpers-get-block-set-block"></a>
 
 ## 1. Marker block helpers (`Get-Block` / `Set-Block`)
 
@@ -54,7 +54,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-BLK-05 | `Set-Block` with `$`, backtick, brace in text | Inserted literally (no regex/var substitution) |
 | TPR-BLK-06 | `Set-Block` only touches the targeted key | Other blocks left intact |
 
-<a name="2-cell-row-utilities"></a>
+<a id="2-cell-row-utilities"></a>
 
 ## 2. Cell / row utilities
 
@@ -70,7 +70,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-UTL-08 | `Set-LastRowDateTime` updates 2nd cell of last row | Only last row date changes |
 | TPR-UTL-09 | `Set-LastRowDateTime` on empty rows | No error, returns empty |
 
-<a name="3-run-date-block"></a>
+<a id="3-run-date-block"></a>
 
 ## 3. Run-date block
 
@@ -79,7 +79,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-RD-01 | `Update-RunDateBlock` | `<p class="report-run-date">` line carries new date |
 | TPR-RD-02 | Idempotent format | Output matches `dd/MM/yyyy HH:mm` value supplied |
 
-<a name="4-automation-section-7-evidence"></a>
+<a id="4-automation-section-7-evidence"></a>
 
 ## 4. Automation section-7 evidence
 
@@ -89,7 +89,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-AUT-02 | Reason/Command with a pipe | Pipe escaped in the emitted row |
 | TPR-AUT-03 | Block missing | Warns, content unchanged, `RunNumber=0` |
 
-<a name="5-oneview-status-summary-bullet"></a>
+<a id="5-oneview-status-summary-bullet"></a>
 
 ## 5. OneView status summary bullet
 
@@ -99,7 +99,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-SUM-02 | Blank/null text | Content unchanged (existing bullet kept) |
 | TPR-SUM-03 | Replacement run twice | Replaces, does not append a second bullet |
 
-<a name="6-oneview-phase-11-table"></a>
+<a id="6-oneview-phase-11-table"></a>
 
 ## 6. OneView Phase 11 table
 
@@ -110,7 +110,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-P11-03 | Add-row field with a pipe | Pipe escaped in the emitted row |
 | TPR-P11-04 | Block missing | Warns, content unchanged |
 
-<a name="7-log-summary-parsing"></a>
+<a id="7-log-summary-parsing"></a>
 
 ## 7. Log summary parsing
 
@@ -120,7 +120,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-LOG-02 | Failures present | Result `Failed (p/t passed, f failed)` |
 | TPR-LOG-03 | No summary block | Fallback zeroes, duration `N/A`, `Parsed=$false` |
 
-<a name="8-end-to-end-script-child-process-skiphtml"></a>
+<a id="8-end-to-end-script-child-process-skiphtml"></a>
 
 ## 8. End-to-end script (child process, `-SkipHtml`)
 
@@ -133,7 +133,7 @@ repository files are modified and the script's `exit` calls cannot abort Pester.
 | TPR-E2E-05 | `-AddOneViewRow` with fields | New Phase 11 row appended |
 | TPR-E2E-06 | Missing log file | Non-zero exit, clear error |
 
-<a name="9-html-converter-comment-stripping"></a>
+<a id="9-html-converter-comment-stripping"></a>
 
 ## 9. HTML converter comment stripping
 

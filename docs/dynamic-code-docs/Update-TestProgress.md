@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/Update-TestProgress.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,13 +18,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Extracts test summary from the latest automation test log, prompts for test run details, and updates the Execution Evidence tables in both AUTOMATION_TEST_PLAN.md and ONEVIEW_TEST_PLAN.md. Then regenerates HTML.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -41,16 +41,16 @@ Extracts test summary from the latest automation test log, prompts for test run 
 | `-AddOneViewRow` | Add a new Phase 11 execution evidence row to OneView test plan. |
 | `-OvPhases` | Phase(s) for new OneView row (default: "Phases 1-10"). |
 | `-OvTester` | Tester name for new OneView row (default: "<tester>"). |
-| `-OvAppliance` | Appliance name for new OneView row (default: "HPEOpenview.1000"). |
+| `-OvAppliance` | Appliance name for new OneView row (default: "oneview.example.com"). |
 | `-OvResult` | Result for new OneView row (default: "Pending"). |
 | `-ReportsDir` | Output directory for generated HTML reports (default: docs/Automation/Testing_Reports). |
 | `-SkipHtml` | Skip HTML regeneration (used by tests to keep runs hermetic). |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -58,7 +58,7 @@ Extracts test summary from the latest automation test log, prompts for test run 
 Prompts for test run details and updates both test plans.
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -66,7 +66,7 @@ Prompts for test run details and updates both test plans.
 Uses specific log file.
 ```
 
-<a name="example-3"></a>
+<a id="example-3"></a>
 
 ### Example 3
 
@@ -74,7 +74,7 @@ Uses specific log file.
 Non-interactive mode with explicit parameters.
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
@@ -121,7 +121,7 @@ Non-interactive mode with explicit parameters.
     Tester name for new OneView row (default: "<tester>").
 
 .PARAMETER OvAppliance
-    Appliance name for new OneView row (default: "HPEOpenview.1000").
+    Appliance name for new OneView row (default: "oneview.example.com").
 
 .PARAMETER OvResult
     Result for new OneView row (default: "Pending").

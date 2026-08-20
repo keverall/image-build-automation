@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Executor.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,17 +15,17 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Wraps Invoke-NativeCommand with automatic retry logic. Uses exponential back-off between attempts, starting at the specified delay and doubling after each failure. Useful for handling transient network or resource issues.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -33,7 +33,7 @@ Wraps Invoke-NativeCommand with automatic retry logic. Uses exponential back-off
 Invoke-NativeCommandWithRetry -Command @('ping','-c','1','8.8.8.8') -MaxAttempts 3
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

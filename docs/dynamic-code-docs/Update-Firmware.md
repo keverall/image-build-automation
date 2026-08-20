@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Update-Firmware.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,34 +15,37 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Examples](#examples)
   - [Example 1](#example-1)
   - [Example 2](#example-2)
+  - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invokes hpe_sut.exe to create per-server firmware ISOs.  Equivalent to the reference implementation automation.cli.update_firmware_drivers module.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Config` | Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json). |
-| `-Server` | Build for a specific server only. Mutually exclusive with -SerialNumber. |
-| `-SerialNumber` | Build for a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
-| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
-| `-ServerList` | Path to server_list.txt. Only used for -DryRun mock targeting. |
-| `-OutputDir` | Output directory. |
-| `-SkipDownload` | Skip component download step. |
-| `-DryRun` | Simulate without executing. |
+| `-Config` _(Aliases: -Cfg)_ | Path to firmware drivers JSON config (default: configs\hpe_firmware_drivers_nov2025.json). |
+| `-Server` _(Aliases: -Srvr)_ | Build for a specific server only. Mutually exclusive with -SerialNumber. |
+| `-SerialNumber` _(Aliases: -Srl)_ | Build for a server identified by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-ServerList` _(Aliases: -SrvrList)_ | Path to server_list.txt. Only used for -DryRun mock targeting. |
+| `-OutputDir` _(Aliases: -OutDir)_ | Output directory. |
+| `-FirmwareFolders` _(Aliases: -FwDirs)_ | Additional firmware component source directories (string array). These are local folder paths containing pre-downloaded HPE SUT component packages (e.g. '.spp' component folders or extracted firmware update packs). Each folder is passed to hpe_sut via the --firmware-components flag so SUT includes them alongside the manifest-specified components. Use this when Marin provides firmware component folders outside the standard manifest repository. Example: Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') |
+| `-SkipDownload` _(Aliases: -SkipDl)_ | Skip component download step. |
+| `-DryRun` _(Aliases: -Dry)_ | Simulate without executing. |
+| `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any firmware update. If it is OMITTED the command fails early with an expressive, logged error and performs no update. If it does NOT match the target, the update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -50,7 +53,7 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
 
@@ -58,7 +61,15 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv
 Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="example-3"></a>
+
+### Example 3
+
+```powershell
+Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+```
+
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
@@ -91,11 +102,31 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumbe
     .PARAMETER OutputDir
         Output directory.
 
+    .PARAMETER FirmwareFolders
+        Additional firmware component source directories (string array). These are
+        local folder paths containing pre-downloaded HPE SUT component packages
+        (e.g. '.spp' component folders or extracted firmware update packs).
+        Each folder is passed to hpe_sut via the --firmware-components flag so
+        SUT includes them alongside the manifest-specified components. Use this
+        when Marin provides firmware component folders outside the standard
+        manifest repository.
+
+        Example:
+          Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+
     .PARAMETER SkipDownload
         Skip component download step.
 
     .PARAMETER DryRun
         Simulate without executing.
+
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        firmware update. If it is OMITTED the command fails early with an expressive,
+        logged error and performs no update. If it does NOT match the target, the
+        update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches
+        server 'quickview.ilo03.alp'.
 
     .RETURNS
         [hashtable] with Success (bool) and details.
@@ -104,6 +135,8 @@ Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumbe
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
     .EXAMPLE
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
+    .EXAMPLE
+        Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 ```
 
 ---

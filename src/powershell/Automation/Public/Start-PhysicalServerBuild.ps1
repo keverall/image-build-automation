@@ -20,240 +20,6 @@
 #     (local path, UNC/SMB share, or HTTP/HTTPS URL)
 #
 
-function Get-SmbPathFromDriveLetter {
-    <#
-    .SYNOPSIS
-        Resolve a Windows drive letter to its UNC/SMB path (if it's a mapped network drive).
-
-    .DESCRIPTION
-        Helper function to find the SMB address of a mapped drive. Useful when you have
-        a file on a mapped drive (e.g. H:\windows.iso) and need to find the UNC path
-        for iLO virtual media.
-
-    .PARAMETER DriveLetter
-        The drive letter to resolve (e.g. 'H', 'Z').
-
-    .EXAMPLE
-        Get-SmbPathFromDriveLetter -DriveLetter 'H'
-        # Returns: \\fileserver\isos
-
-    .EXAMPLE
-        # Find the full UNC path for a file on H:\
-        $uncBase = Get-SmbPathFromDriveLetter -DriveLetter 'H'
-        $fullUnc = Join-Path $uncBase 'windows.iso'
-        # Returns: \\fileserver\isos\windows.iso
-    #>
-    [CmdletBinding()]
-    [OutputType([string])]
-    param(
-        [Parameter(Mandatory)][string] $DriveLetter
-    )
-
-    $DriveLetter = $DriveLetter.TrimEnd(':', '\').ToUpper()
-
-    if ($DriveLetter.Length -ne 1) {
-        throw "Invalid drive letter: '$DriveLetter'. Expected a single letter (e.g. 'H')."
-    }
-
-    $psDrive = Get-PSDrive -Name $DriveLetter -ErrorAction SilentlyContinue
-
-    if (-not $psDrive) {
-        throw "Drive $DriveLetter`: does not exist."
-    }
-
-    if (-not $psDrive.DisplayRoot) {
-        Write-Host "Drive $DriveLetter`: is a local drive, not a mapped network drive." -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "To find the SMB address, you have two options:" -ForegroundColor Cyan
-        Write-Host ""
-        Write-Host "1. If the drive is already shared on the network:" -ForegroundColor Gray
-        Write-Host "   Run: Get-SmbShare | Where-Object { \$_.Path -eq '$($psDrive.Root)' }" -ForegroundColor Gray
-        Write-Host "   Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\ShareName\file.iso'" -ForegroundColor Gray
-        Write-Host ""
-        Write-Host "2. Create a new SMB share for this drive:" -ForegroundColor Gray
-        Write-Host "   Run (as Administrator):" -ForegroundColor Gray
-        Write-Host "   New-SmbShare -Name 'isos' -Path '$($psDrive.Root)' -ReadAccess 'Everyone'" -ForegroundColor Gray
-        Write-Host "   Then use: -ExternalIsoPath '\\$env:COMPUTERNAME\isos\file.iso'" -ForegroundColor Gray
-        return $null
-    }
-
-    if ($psDrive.DisplayRoot -match '^\\\\') {
-        Write-Host "Drive $DriveLetter`: maps to: $($psDrive.DisplayRoot)" -ForegroundColor Green
-        return $psDrive.DisplayRoot
-    }
-
-    throw "Drive $DriveLetter`: is not a UNC/SMB mapped drive (root: $($psDrive.DisplayRoot))."
-}
-
-function Resolve-ExternalIsoPath {
-    <#
-    .SYNOPSIS
-        Resolve an external ISO path to a URL accessible by the iLO BMC.
-
-    .DESCRIPTION
-        The iLO virtual media controller requires network-accessible ISO sources.
-        Supported formats:
-          - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
-          - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
-          - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
-          - Local file path: MUST be copied to a network share first
-
-        iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or
-        'C:\isos\win.iso'). The iLO BMC is a separate management controller on
-        the physical server and cannot access local drives on your workstation.
-
-    .PARAMETER IsoPath
-        Path to the ISO file (UNC/SMB, NFS, or HTTP/HTTPS URL).
-
-    .PARAMETER RepoLocalPath
-        Local filesystem path of the ISO repository (for copying local files).
-
-    .PARAMETER RepoBaseUrl
-        HTTPS base URL of the ISO repository (for constructing the accessible URL).
-
-    .RETURNS
-        [string] URL accessible by iLO BMC.
-    #>
-    [CmdletBinding()]
-    [OutputType([string])]
-    param(
-        [Parameter(Mandatory)][string] $IsoPath,
-        [string] $RepoLocalPath,
-        [string] $RepoBaseUrl
-    )
-
-    # HTTP/HTTPS URL - use directly
-    if ($IsoPath -match '^https?://') {
-        Write-Verbose "ISO is an HTTP/HTTPS URL: $IsoPath"
-        Write-Host "  [OK] HTTP/HTTPS URL - iLO will download directly" -ForegroundColor Green
-        return $IsoPath
-    }
-
-    # NFS path - use directly
-    if ($IsoPath -match '^nfs://') {
-        Write-Verbose "ISO is an NFS path: $IsoPath"
-        Write-Host "  [OK] NFS path - iLO will mount directly" -ForegroundColor Green
-        return $IsoPath
-    }
-
-    # UNC/SMB path - convert to CIFS URL for iLO
-    if ($IsoPath -match '^\\\\') {
-        Write-Verbose "ISO is a UNC/SMB path: $IsoPath"
-        # Convert \\server\share\file.iso -> cifs://server/share/file.iso
-        $cifsUrl = $IsoPath -replace '\\\\', 'cifs://' -replace '\\', '/'
-        Write-Host "  [OK] UNC/SMB path converted to CIFS URL: $cifsUrl" -ForegroundColor Green
-        return $cifsUrl
-    }
-
-    # Check if it's a mapped network drive (e.g. H:\ that maps to \\server\share)
-    if ($IsoPath -match '^[A-Z]:\\' -or $IsoPath -match '^[a-z]:\\') {
-        $driveLetter = $IsoPath.Substring(0, 1)
-        $psDrive = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
-
-        if ($psDrive -and $psDrive.DisplayRoot -and $psDrive.DisplayRoot -match '^\\\\') {
-            # It's a mapped network drive - construct the UNC path
-            $relativePath = $IsoPath.Substring(3) # Remove "H:\"
-            $uncPath = Join-Path $psDrive.DisplayRoot $relativePath
-            Write-Host "  [INFO] Detected mapped drive: $driveLetter`: -> $($psDrive.DisplayRoot)" -ForegroundColor Yellow
-            Write-Host "  [INFO] Resolved UNC path: $uncPath" -ForegroundColor Yellow
-
-            $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
-            Write-Host "  [OK] Mapped drive converted to CIFS URL: $cifsUrl" -ForegroundColor Green
-            return $cifsUrl
-        }
-
-        # It's a local drive - requires Administrator to create SMB share
-        Write-Host ""
-        Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Red
-        Write-Host "  ║  WARNING: Local Drive Path Detected                              ║" -ForegroundColor Red
-        Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Red
-        Write-Host ""
-        Write-Host "  Path: $IsoPath" -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "  The iLO BMC is a separate physical controller on the server." -ForegroundColor Yellow
-        Write-Host "  It CANNOT access local drives (H:\, C:\, etc.) on this machine." -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "  To use this ISO, you need an SMB (network share) path." -ForegroundColor Cyan
-        Write-Host ""
-        
-        if (-not (Test-Path $IsoPath)) {
-            throw "ISO file not found: $IsoPath"
-        }
-        
-        $fileInfo = Get-Item $IsoPath
-        $isoDirectory = Split-Path $IsoPath -Parent
-        $isoFileName = $fileInfo.Name
-        $computerName = $env:COMPUTERNAME
-        
-        # Check if running as Administrator
-        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-        
-        if ($isAdmin) {
-            # Auto-create SMB share
-            $shareName = "isos_" + ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Substring(0, [Math]::Min(20, ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Length))
-            
-            Write-Host "  [OK] Running as Administrator - creating SMB share automatically..." -ForegroundColor Green
-            Write-Host ""
-            Write-Host "  Share name:   $shareName" -ForegroundColor Gray
-            Write-Host "  Share path:   $isoDirectory" -ForegroundColor Gray
-            Write-Host "  Computer:     $computerName" -ForegroundColor Gray
-            
-            try {
-                $existingShare = Get-SmbShare -Name $shareName -ErrorAction SilentlyContinue
-                
-                if ($existingShare) {
-                    Write-Host "  [OK] Share already exists" -ForegroundColor Green
-                } else {
-                    New-SmbShare -Name $shareName -Path $isoDirectory -ReadAccess 'Everyone' -ErrorAction Stop | Out-Null
-                    Write-Host "  [OK] Share created successfully" -ForegroundColor Green
-                }
-                
-                $uncPath = "\\$computerName\$shareName\$isoFileName"
-                Write-Host "  [OK] UNC path: $uncPath" -ForegroundColor Green
-                
-                $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
-                Write-Host "  [OK] CIFS URL for iLO: $cifsUrl" -ForegroundColor Green
-                
-                return $cifsUrl
-                
-            } catch {
-                throw "Failed to create SMB share: $($_.Exception.Message)"
-            }
-        } else {
-            # Not running as Administrator - show instructions
-            Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
-            Write-Host "  ║  Administrator Privileges Required                               ║" -ForegroundColor Yellow
-            Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "  You are NOT running PowerShell as Administrator." -ForegroundColor Red
-            Write-Host "  Creating an SMB share requires Administrator privileges." -ForegroundColor Red
-            Write-Host ""
-            Write-Host "  OPTION 1: Run as Administrator (if you have access)" -ForegroundColor Cyan
-            Write-Host "    1. Close this PowerShell window" -ForegroundColor Gray
-            Write-Host "    2. Right-click PowerShell → Run as Administrator" -ForegroundColor Gray
-            Write-Host "    3. Re-run your command with the same local path" -ForegroundColor Gray
-            Write-Host ""
-            Write-Host "  OPTION 2: Ask your Administrator to create the share" -ForegroundColor Cyan
-            Write-Host "    Ask your IT admin to run this command on $computerName`:" -ForegroundColor Gray
-            Write-Host ""
-            Write-Host "    New-SmbShare -Name 'isos' -Path '$isoDirectory' -ReadAccess 'Everyone'" -ForegroundColor White
-            Write-Host ""
-            Write-Host "    Then use this SMB path in your command:" -ForegroundColor Gray
-            Write-Host "    -ExternalIsoPath '\\$computerName\isos\$isoFileName'" -ForegroundColor White
-            Write-Host ""
-            Write-Host "  OPTION 3: Use an existing SMB/HTTP path" -ForegroundColor Cyan
-            Write-Host "    If the ISO is already on a network share or web server, use that path:" -ForegroundColor Gray
-            Write-Host "    -ExternalIsoPath '\\fileserver\share\$isoFileName'" -ForegroundColor White
-            Write-Host "    -ExternalIsoPath 'https://webserver/isos/$isoFileName'" -ForegroundColor White
-            Write-Host ""
-            
-            throw "Local drive path '$IsoPath' requires Administrator privileges to create SMB share, or an existing SMB/HTTP path must be provided."
-        }
-    }
-
-    # Unknown format
-    throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTTPS URL, NFS path, UNC/SMB path (\\server\share\file.iso), or local path with -RepoLocalPath/-RepoBaseUrl."
-}
 
 function Confirm-IsoDeployment {
     <#
@@ -364,23 +130,24 @@ function Start-PhysicalServerBuild {
 
     .PARAMETER ExternalIsoPath
         Path to a client-supplied ISO for deployment (skip build/publish).
-        Accepts the following formats:
+        Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts:
           - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
-          - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
           - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
-          - Mapped drive: Auto-resolved to UNC if mapped to network share (e.g. 'H:\win.iso')
-          - Local path: REQUIRES ADMINISTRATOR PRIVILEGES - automatically creates SMB share
-        
+          - UNC/SMB path (backslash): Converted to CIFS URL (e.g. '\\server\share\win.iso')
+          - UNC/SMB path (forward slash): Same as above (e.g. '//server/share/win.iso')
+          - CIFS/SMB URL: Used directly, round-trips the emitted URL (e.g. 'cifs://server/share/win.iso')
+          - SMB URL alias: Normalised to cifs:// (e.g. 'smb://server/share/win.iso')
+          - Mapped drive: Auto-resolved to its UNC share if mapped to a network drive (e.g. 'H:\win.iso')
+          - Local path: NOT supported — iLO cannot access local drives. Supply
+            an SMB/UNC, CIFS/SMB URL, or HTTPS path instead. This module never creates SMB
+            shares or requires Administrator privileges (regulated banking env).
+
         IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'):
-          The iLO BMC cannot access local drives. When a local path is supplied:
-            - If running as Administrator: Creates SMB share automatically
-            - If NOT running as Administrator: Command will FAIL with instructions
-              to either run as Administrator or obtain an SMB path from your admin
-        
+          The iLO BMC cannot access local drives on the automation host. This
+          module does NOT auto-create SMB shares and does NOT require
+          Administrator privileges. Supply an already-shared path instead.
+
         When supplied, -SkipIsoBuild and -SkipPublish are implied.
-        For non-Administrator users, obtain the SMB path from your IT admin:
-          - Admin runs: New-SmbShare -Name 'isos' -Path 'H:\' -ReadAccess 'Everyone'
-          - You use: -ExternalIsoPath '\\SERVERNAME\isos\windows.iso'
 
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
@@ -395,6 +162,19 @@ function Start-PhysicalServerBuild {
     .PARAMETER SkipMount
     .PARAMETER SkipMonitor
     .PARAMETER SkipPostBuild
+    .PARAMETER SkipFirmware
+        Skip the post-OS firmware update step. By default, if -FirmwareFolders
+        are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked
+        after post-build validation.
+
+    .PARAMETER FirmwareFolders
+        Additional firmware component source directories (string array) passed
+        to Update-Firmware for post-OS firmware updates via HPE SUT.
+        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+
+    .PARAMETER FirmwareConfig
+        Path to a firmware manifest JSON passed to Update-Firmware.
+        Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json'
 
     .PARAMETER Mock
         Run with mocked calls - no network calls are made; useful for CI smoke tests.
@@ -420,6 +200,17 @@ function Start-PhysicalServerBuild {
         operator must type 'YES' to confirm the deployment plan (server details, ISO,
         and actions). Use -SkipConfirmation for automated/unattended deployments.
 
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        destructive action. If it is OMITTED the command fails early with an
+        expressive, logged error and performs no action. If it does NOT match the
+        target, the build is aborted with no changes. When it matches, a destructive
+        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
+        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        'quickview.ilo03.alp'. This prevents accidentally overwriting a production
+        server when the client's test server lives on the production network.
+
     .RETURNS
         [hashtable] with Success, Steps (ordered list of step results), AuditFile.
 
@@ -436,8 +227,11 @@ function Start-PhysicalServerBuild {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
+        [Alias('SrvrId')]
         [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Alias('OVHost')]
         [string] $OneViewHost,
+        [Alias('Ilo')]
         [string] $IloIp,
         [string] $ExpectedHostname = $null,
         [string] $Domain,
@@ -449,6 +243,7 @@ function Start-PhysicalServerBuild {
         [string] $TaskSequenceName,
         [string] $RepoBaseUrl,
         [string] $RepoLocalPath,
+        [Alias('ExtIso')]
         [string] $ExternalIsoPath,
         [int]    $MonitorTimeoutSeconds = 7200,
         [int]    $MonitorPollSeconds = 30,
@@ -460,16 +255,60 @@ function Start-PhysicalServerBuild {
         [switch] $SkipMonitor,
         [switch] $SkipPostBuild,
         [switch] $Mock,
+        [Alias('Dry')]
         [switch] $DryRun,
         [switch] $Force,
         [switch] $InMaintenanceWindow,
         [switch] $AllowUnknownIsoUrl,
-        [switch] $SkipConfirmation
+        [Alias('SkipConf')]
+        [switch] $SkipConfirmation,
+        [string[]] $FirmwareFolders = @(),
+        [string] $FirmwareConfig = $null,
+        [switch] $SkipFirmware,
+        [string] $GuardRail = $null
     )
 
     if ($Mock -and -not $DryRun) {
         Write-Verbose "-Mock supplied - forcing DryRun behaviour for all downstream steps"
         $DryRun = $true
+    }
+
+    # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
+    # Fail early (graceful, logged) when omitted so we never overwrite an
+    # unapproved server on a shared/production network.
+    $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
+        -CommandName 'Start-PhysicalServerBuild' -ActionDescription 'physical server build'
+    if ($grCheck) {
+        $grCheck['server']      = $ServerIdentifier
+        $grCheck['start_time']  = Get-UtcTimestamp
+        $grCheck['end_time']    = Get-UtcTimestamp
+        $grCheck['steps']       = @{}
+        return $grCheck
+    }
+
+    # ── Parameter validation with actionable error messages ───────────────────
+    # Build mode (no -ExternalIsoPath) needs ConfigMgr endpoints to build/publish
+    # the bootable ISO. External ISO mode skips those steps entirely.
+    if (-not $ExternalIsoPath) {
+        $needsConfigMgr = -not $SkipIsoBuild -or -not $SkipPreBuild
+        if ($needsConfigMgr) {
+            $missing = @()
+            if (-not $SiteCode)          { $missing += '-SiteCode (ConfigMgr site code, e.g. P01)' }
+            if (-not $ManagementPoint)   { $missing += '-ManagementPoint (ConfigMgr MP FQDN, e.g. mp01.corp.local)' }
+            if (-not $DistributionPoint) { $missing += '-DistributionPoint (ConfigMgr DP FQDN, e.g. dp01.corp.local)' }
+            if (-not $SkipIsoBuild -and -not $BootImageName) {
+                $missing += '-BootImageName (ConfigMgr boot image name, e.g. "WinPE x64 - HPE")'
+            }
+            if ($missing.Count -gt 0) {
+                $msg = "BUILD MODE requires ConfigMgr parameters. Missing: $($missing -join '; '). " +
+                       "Either supply these parameters, or use -ExternalIsoPath 'https://...' to " +
+                       "deploy a client-supplied ISO directly (skipping ConfigMgr build/publish)."
+                $logger = Get-Logger 'Start-PhysicalServerBuild'
+                $logger.Error($msg)
+                Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
+                return @{ Success = $false; Error = $msg; Server = $ServerIdentifier }
+            }
+        }
     }
 
     # ── Handle External ISO Path ──────────────────────────────────────────────
@@ -561,9 +400,29 @@ function Start-PhysicalServerBuild {
             }
         }
 
+        # ── Guard rail (build/deploy safety gate) ──────────────────────────────
+        # When -GuardRail is supplied, the resolved target server name MUST match
+        # the pattern before any destructive action. Resolved name prefers the
+        # OneView-resolved server name (incl. for serial lookups); falls back to
+        # the supplied identifier otherwise.
+        if ($GuardRail) {
+            $guardName   = if ($oneview -and $oneview.Details -and $oneview.Details.name) { $oneview.Details.name } else { $ServerIdentifier }
+            $guardSerial = if ($oneview -and $oneview.Details -and $oneview.Details.serial_number) { $oneview.Details.serial_number } else { $null }
+            $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $guardName `
+                -SerialNumber $guardSerial -ApplianceName $OneViewHost `
+                -ActionDescription 'physical server build' -DryRun:$DryRun -SkipConfirmation:$SkipConfirmation
+            if (-not $guardOk) {
+                $overall['success'] = $false
+                $overall['guard_rail_blocked'] = $true
+                return $overall
+            }
+        }
+
         if (-not $SkipMount -and $IloIp -and $isoUrl) {
             # ── Confirmation Prompt ─────────────────────────────────────────────
-            if (-not $SkipConfirmation -and -not $DryRun) {
+            # When a -GuardRail was supplied it already performed the destructive
+            # confirmation inside Assert-GuardRail, so we skip the generic prompt.
+            if (-not $SkipConfirmation -and -not $DryRun -and -not $GuardRail) {
                 $confirmed = Confirm-IsoDeployment -ServerIdentifier $ServerIdentifier `
                     -IloIp $IloIp -IsoUrl $isoUrl -OneViewDetails $oneview.Details -DryRun:$DryRun
                 if (-not $confirmed) {
@@ -610,6 +469,19 @@ function Start-PhysicalServerBuild {
             $r = Test-PostBuildValidation -Hostname $ExpectedHostname -Domain $Domain `
                 -DryRun:$DryRun
             _Step 'post_build_validation' $r
+        }
+
+        if (-not $SkipFirmware -and ($FirmwareFolders.Count -gt 0 -or $FirmwareConfig)) {
+            $fwParams = @{
+                Server   = $ExpectedHostname
+                OutputDir = 'output\firmware'
+                DryRun   = $DryRun
+            }
+            if ($FirmwareConfig)        { $fwParams.Config = $FirmwareConfig }
+            if ($FirmwareFolders.Count) { $fwParams.FirmwareFolders = $FirmwareFolders }
+            Write-Host "`n  Starting post-OS firmware update..." -ForegroundColor Cyan
+            $r = Update-Firmware @fwParams
+            _Step 'firmware_update' $r
         }
 
         return $overall

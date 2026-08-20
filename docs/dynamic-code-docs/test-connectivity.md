@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/test-connectivity.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -18,70 +18,80 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 3](#example-3)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
-OneView ping + connect test (safe during change freeze).
+Wrapper around the Test-ServerConnectivity module command. This is a STATUS CHECK, not a connect command - it NEVER prompts for a host or credentials. Run with no parameters to report the ACTIVE OneView connection (established by Connect-OneView); supply -OneViewHost to check a SPECIFIC appliance. To actually connect, use Connect-OneView -OneViewHost <host>.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
 | `-Environment` | Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig. |
-| `-ManagementHost` | Override OneView appliance hostname (highest priority, required for live runs) |
-| `-Credential` | PSCredential for the live connection. If omitted, prompts interactively. |
+| `-OneViewHost` | Override OneView appliance hostname (highest priority). Optional - omit to report the active Connect-OneView session. |
+| `-Credential` | PSCredential for the live connection. If omitted, the active session is reused (when it matches) or ONEVIEW_USER / ONEVIEW_PASSWORD / CyberArk are used. This command never prompts. |
 | `-JsonConfig` | Use configs/connection_hosts.json to resolve the appliance (DryRun only). |
 | `-Json` | Output as JSON |
 | `-DryRun` | Simulate connectivity without actual network calls |
 | `-PingTimeoutMs` | TCP connect timeout in milliseconds (default: 3000) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
 ```powershell
-pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01'
+pwsh -File scripts/test-connectivity.ps1
 ```
 
-<a name="example-2"></a>
+<a id="example-2"></a>
 
 ### Example 2
+
+```powershell
+pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
+```
+
+<a id="example-3"></a>
+
+### Example 3
 
 ```powershell
 pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
 ```
 
-<a name="example-3"></a>
-
-### Example 3
-
-```powershell
-pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)
-```
-
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
 ```powershell
 .SYNOPSIS
-    OneView ping + connect test (safe during change freeze).
+    OneView connectivity STATUS CHECK (safe during change freeze).
+
+.DESCRIPTION
+    Wrapper around the Test-ServerConnectivity module command. This is a STATUS
+    CHECK, not a connect command - it NEVER prompts for a host or credentials.
+    Run with no parameters to report the ACTIVE OneView connection (established
+    by Connect-OneView); supply -OneViewHost to check a SPECIFIC appliance.
+    To actually connect, use Connect-OneView -OneViewHost <host>.
 
 .PARAMETER Environment
     Environment to test: Test or Prod (default: 'Prod'). Only used with -JsonConfig.
 
-.PARAMETER ManagementHost
-    Override OneView appliance hostname (highest priority, required for live runs)
+.PARAMETER OneViewHost
+    Override OneView appliance hostname (highest priority). Optional - omit to
+    report the active Connect-OneView session.
 
 .PARAMETER Credential
-    PSCredential for the live connection. If omitted, prompts interactively.
+    PSCredential for the live connection. If omitted, the active session is reused
+    (when it matches) or ONEVIEW_USER / ONEVIEW_PASSWORD / CyberArk are used. This
+    command never prompts.
 
 .PARAMETER JsonConfig
     Use configs/connection_hosts.json to resolve the appliance (DryRun only).
@@ -96,13 +106,13 @@ pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Crede
     TCP connect timeout in milliseconds (default: 3000)
 
 .EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01'
+    pwsh -File scripts/test-connectivity.ps1
+
+.EXAMPLE
+    pwsh -File scripts/test-connectivity.ps1 -OneViewHost 'oneview.example.com'
 
 .EXAMPLE
     pwsh -File scripts/test-connectivity.ps1 -Environment Test -JsonConfig -DryRun
-
-.EXAMPLE
-    pwsh -File scripts/test-connectivity.ps1 -ManagementHost 'va-oneviewt-01' -Credential (Get-Credential)
 ```
 
 ---

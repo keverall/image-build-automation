@@ -71,19 +71,19 @@ This document maps every code location executed by `Set-MaintenanceMode` and `Te
 
 ---
 
-<a name="0-test-serverconnectivity-start-here"></a>
+<a id="0-test-serverconnectivity-start-here"></a>
 
 ## 0. Test-ServerConnectivity - Start Here
 
 This phase performs read-only connectivity checks against the **OneView appliance** before attempting maintenance operations. It's safe to run during change freezes as it doesn't modify any objects. This command is OneView-only (there is no `-Mode` parameter); for SCOM connectivity use `Test-ScomMaintenanceConnectivity`.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-ManagementHost` | Optional* | OneView appliance hostname (required for live runs) |
+| `-OneViewHost` | Optional* | OneView appliance hostname (required for live runs) |
 | `-Environment` | Optional | `Test` or `Prod`; used with `-JsonConfig` to resolve the host |
 | `-Credential` | Optional | `PSCredential` for the connection; prompted if omitted |
 | `-JsonConfig` | Switch | Resolve host from `configs/connection_hosts.json` |
@@ -97,7 +97,7 @@ This phase performs read-only connectivity checks against the **OneView applianc
 
 **Source**: [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1)
 
-<a name="dryrun-mode"></a>
+<a id="dryrun-mode"></a>
 
 ### DryRun Mode
 
@@ -114,21 +114,21 @@ Test-ServerConnectivity -Environment Test -JsonConfig -DryRun
 - MockData with resolved configuration (target port, PowerShell module, credential env vars)
 - `DryRun = $true` flag in result
 
-<a name="phase-1-network-ping"></a>
+<a id="phase-1-network-ping"></a>
 
 ### Phase 1 - Network Ping
 
 1. **DNS Resolution**: Resolves the management host hostname using `System.Net.Dns::GetHostEntry()`
 2. **TCP Port Probe**: Attempts connection to the OneView HTTPS port (443) with configurable timeout
 
-<a name="phase-2-auth-connect"></a>
+<a id="phase-2-auth-connect"></a>
 
 ### Phase 2 - Auth Connect
 
 1. **OneView**: Calls `Connect-OVMgmt` with credentials. **Session persists** in `$global:ConnectedSessions` for subsequent commands - use `Disconnect-OneView` to close explicitly
 2. Validates module loaded (HPEOneView.*) and connected successfully
 
-<a name="result-structure"></a>
+<a id="result-structure"></a>
 
 ### Result Structure
 
@@ -136,7 +136,7 @@ See the result assembly at the end of [`Test-ServerConnectivity.ps1`](../../src/
 
 ---
 
-<a name="1-signon-connect"></a>
+<a id="1-signon-connect"></a>
 
 ## 1. Signon & Connect
 
@@ -148,7 +148,7 @@ This phase covers everything from the moment the command is invoked until a veri
 >
 > Always verify the target identifier against `clusters_catalogue.json` (for cluster-level operations) or `servers_catalogue.oneview.json` (for serial-number lookups) **before** execution.
 
-<a name="11-parameter-binding-input-validation"></a>
+<a id="11-parameter-binding-input-validation"></a>
 
 ### 1.1 - Parameter Binding & Input Validation
 
@@ -166,7 +166,7 @@ The command accepts two mutually-exclusive targeting parameters depending on the
 - [Lines 326–331](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L326-L331): Normalize `-Mode` (lowercase) and reject if empty
 - [Lines 333–341](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L333-L341): Validate `-TargetId` - required for SCOM mode; for OneView mode, `-SerialNumber` alone is accepted (line 335)
 
-<a name="12-scom-connect-by-targetid"></a>
+<a id="12-scom-connect-by-targetid"></a>
 
 ### 1.2 - SCOM Connect (by `-TargetId`)
 
@@ -199,7 +199,7 @@ Set-MaintenanceMode -Action enable `
    - [`Lines 1846–1868`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1846-L1868): Imports `OperationsManager` module, creates `New-SCOMManagementGroupConnection`, verifies `"CONNECTED"`
    - If the connection fails → returns `Success = $false` with an error message (lines 1170–1174)
 
-<a name="13-oneview-connect-by-targetid-cluster-scope"></a>
+<a id="13-oneview-connect-by-targetid-cluster-scope"></a>
 
 ### 1.3 - OneView Connect (by `-TargetId` cluster scope)
 
@@ -232,7 +232,7 @@ Set-MaintenanceMode -Action enable `
    - [`Lines 1870–1894`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1870-L1894): Imports `HPEOneView.xxx` module, connects via `Connect-OVMgmt`, verifies `"CONNECTED"`
    - If the connection fails → returns error with `-TargetId` and `-SerialNumber` context (lines 1190–1195)
 
-<a name="14-oneview-connect-by-serialnumber"></a>
+<a id="14-oneview-connect-by-serialnumber"></a>
 
 ### 1.4 - OneView Connect (by `-SerialNumber`)
 
@@ -262,7 +262,7 @@ Set-MaintenanceMode -Action enable `
 
 ---
 
-<a name="2-target-resolution-shared"></a>
+<a id="2-target-resolution-shared"></a>
 
 ## 2. Target Resolution (Shared)
 
@@ -279,11 +279,11 @@ After signon, the command identifies exactly which infrastructure objects will b
 **Environment host resolution**: [`Lines 657–699`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L657-L699)
 - [`Lines 666–672`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L666-L672): Environment priority - parameter > `$env:ENVIRONMENT` > `'Prod'`
 - [`Lines 677–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L677-L692): Host resolution from `connection_hosts.json` → SCOM management server or OneView appliance
-- [`Lines 680–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L680-L692): Override via `-ManagementHost` or `$env:MAINTENANCE_HOST`
+- [`Lines 680–692`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L680-L692): Override via `-OneViewHost` or `$env:MAINTENANCE_HOST`
 
 ---
 
-<a name="3-connection-validation"></a>
+<a id="3-connection-validation"></a>
 
 ## 3. Connection Validation
 
@@ -291,7 +291,7 @@ After signon, the command identifies exactly which infrastructure objects will b
 
 This step is skipped in DryRun mode - no credentials are needed when simulating.
 
-<a name="scom-connection-test"></a>
+<a id="scom-connection-test"></a>
 
 ### SCOM Connection Test
 
@@ -300,7 +300,7 @@ This step is skipped in DryRun mode - no credentials are needed when simulating.
 - **Actions**: Imports `OperationsManager` module → `New-SCOMManagementGroupConnection` → verifies `"CONNECTED"` in output
 - **On failure**: Returns `Success = $false` immediately (lines 1170–1174)
 
-<a name="oneview-connection-test"></a>
+<a id="oneview-connection-test"></a>
 
 ### OneView Connection Test
 
@@ -311,11 +311,11 @@ This step is skipped in DryRun mode - no credentials are needed when simulating.
 
 ---
 
-<a name="4-enable-maintenance-mode"></a>
+<a id="4-enable-maintenance-mode"></a>
 
 ## 4. Enable Maintenance Mode
 
-<a name="41-pre-check-already-enabled"></a>
+<a id="41-pre-check-already-enabled"></a>
 
 ### 4.1 - Pre-Check: Already Enabled?
 
@@ -326,14 +326,14 @@ Before issuing enable commands, the function checks whether the target is **alre
   - [Lines 1250–1264](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1250-L1264): OneView pre-check via [`OneViewClient.GetMaintenanceStatus()`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3178)
 - **On duplicate**: Returns error `"Server is already in maintenance mode."` (lines 1267–1284)
 
-<a name="42-startend-time-resolution"></a>
+<a id="42-startend-time-resolution"></a>
 
 ### 4.2 - Start/End Time Resolution
 
 - **[`Lines 1055–1090`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1055-L1090)**: Applies catalogue-based default end time and schedule adjustments
 - **[`Lines 1896–1954`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1896-L1954)**: `_Parse-Datetime` - parses `now`, `+Xhours`, `+Xminutes`, `+Xdays`, `YYYY-MM-DD HH:MM`
 
-<a name="43-scom-enter-maintenance"></a>
+<a id="43-scom-enter-maintenance"></a>
 
 ### 4.3 - SCOM: Enter Maintenance
 
@@ -369,7 +369,7 @@ EnterMaintenance($scom_group, $duration, $comment, $DryRun, $servers, $useCluste
   "message": "...", "nack_reason": "...", "resolution": "..." }
 ```
 
-<a name="44-oneview-set-maintenance"></a>
+<a id="44-oneview-set-maintenance"></a>
 
 ### 4.4 - OneView: Set Maintenance
 
@@ -403,11 +403,11 @@ SetMaintenance($targetName, $targetType, $startDt, $endDt, $DryRun)
 
 ---
 
-<a name="5-enable-post-operation-actions"></a>
+<a id="5-enable-post-operation-actions"></a>
 
 ## 5. Enable - Post-Operation Actions
 
-<a name="51-scom-schedule-auto-disable-task"></a>
+<a id="51-scom-schedule-auto-disable-task"></a>
 
 ### 5.1 - SCOM: Schedule Auto-Disable Task
 
@@ -418,7 +418,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
   - Command: `pwsh.exe Set-MaintenanceMode.ps1 -Action disable -TargetId $TargetId -NoSchedule`
   - Scheduled for `$endDt` (the maintenance window end)
 
-<a name="52-email-notification-enable"></a>
+<a id="52-email-notification-enable"></a>
 
 ### 5.2 - Email Notification (Enable)
 
@@ -430,7 +430,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 2. [`Lines 3500–3528`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3500-L3528): Template variable substitution (`{cluster_name}`, `{environment}`, `{servers}`, etc.)
 3. [`Lines 3538–3565`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3538-L3565): `System.Net.Mail.SmtpClient` send to all recipients
 
-<a name="53-opsramp-metrics-alerts-enable"></a>
+<a id="53-opsramp-metrics-alerts-enable"></a>
 
 ### 5.3 - OpsRamp Metrics & Alerts (Enable)
 
@@ -441,11 +441,11 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
 
 ---
 
-<a name="6-disable-maintenance-mode"></a>
+<a id="6-disable-maintenance-mode"></a>
 
 ## 6. Disable Maintenance Mode
 
-<a name="61-pre-check-already-disabled"></a>
+<a id="61-pre-check-already-disabled"></a>
 
 ### 6.1 - Pre-Check: Already Disabled?
 
@@ -454,7 +454,7 @@ After SCOM maintenance is enabled, a Windows Scheduled Task is created to automa
   - [Lines 1504–1518](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1504-L1518): OneView pre-check via `GetMaintenanceStatus()`
 - **On duplicate**: Returns error `"Server is already out of maintenance mode."` (lines 1521–1538)
 
-<a name="62-scom-exit-maintenance"></a>
+<a id="62-scom-exit-maintenance"></a>
 
 ### 6.2 - SCOM: Exit Maintenance
 
@@ -481,7 +481,7 @@ ExitMaintenance($scom_group, $DryRun, $servers, $useClusterMode)
         └─ Parse OBJECT_STATUS: and SUMMARY: JSON lines (lines 2381–2438)
 ```
 
-<a name="63-scom-post-disable-stabilization-wait"></a>
+<a id="63-scom-post-disable-stabilization-wait"></a>
 
 ### 6.3 - SCOM: Post-Disable Stabilization Wait
 
@@ -492,7 +492,7 @@ After disabling SCOM maintenance, a **stabilization sleep** prevents false alert
   - Controlled by `-PostDisableWaitSeconds` parameter ([line 315](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L315))
   - Skip if DryRun or `PostDisableWaitSeconds = 0`
 
-<a name="64-oneview-disable-maintenance"></a>
+<a id="64-oneview-disable-maintenance"></a>
 
 ### 6.4 - OneView: Disable Maintenance
 
@@ -520,14 +520,14 @@ DisableMaintenance($targetName, $targetType, $DryRun)
             └─ Accumulate per-server success/failure counts
 ```
 
-<a name="65-email-notification-disable"></a>
+<a id="65-email-notification-disable"></a>
 
 ### 6.5 - Email Notification (Disable)
 
 - **Call site**: [`Line 1600`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1600)
 - Uses same [`EmailNotifier.SendMaintenanceNotification()`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3473) with action `'disabled'`
 
-<a name="66-opsramp-metrics-alerts-disable"></a>
+<a id="66-opsramp-metrics-alerts-disable"></a>
 
 ### 6.6 - OpsRamp Metrics & Alerts (Disable)
 
@@ -538,7 +538,7 @@ DisableMaintenance($targetName, $targetType, $DryRun)
 
 ---
 
-<a name="7-validate-action-read-only"></a>
+<a id="7-validate-action-read-only"></a>
 
 ## 7. Validate Action (Read-Only)
 
@@ -547,13 +547,13 @@ The validate action queries current maintenance status **without making any chan
 - **Entry point**: [`Line 702`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L702)
 - **Full implementation**: [`Lines 702–983`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L702-L983)
 
-<a name="dryrun-validation"></a>
+<a id="dryrun-validation"></a>
 
 ### DryRun Validation
 
 - **[`Lines 716–810`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L716-L810)**: Returns mock status data without connecting to any management system
 
-<a name="scom-validation"></a>
+<a id="scom-validation"></a>
 
 ### SCOM Validation
 
@@ -562,7 +562,7 @@ The validate action queries current maintenance status **without making any chan
   - [Line 2582](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L2582): Routes to REST API if SCOM 2019+ with REST ready
   - [`Lines 2587–2657`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L2587-L2657): PowerShell cmdlet path for older versions
 
-<a name="oneview-validation"></a>
+<a id="oneview-validation"></a>
 
 ### OneView Validation
 
@@ -570,7 +570,7 @@ The validate action queries current maintenance status **without making any chan
   - [Line 861](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L861): Serial-number resolve via `ResolveServerBySerial()` if applicable
   - [Line 884](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L884): Calls `OneViewClient.GetMaintenanceStatus()` → [`Line 3178`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3178)
 
-<a name="status-computation"></a>
+<a id="status-computation"></a>
 
 ### Status Computation
 
@@ -578,7 +578,7 @@ The validate action queries current maintenance status **without making any chan
 - **[`_Format-StatusState()`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1995)** (line 1995): Maps to `enabled` | `partially enabled` | `disabled`
 - **[`_Format-StatusMessage()`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L2003)** (line 2003): Builds detail message string
 
-<a name="result-assembly"></a>
+<a id="result-assembly"></a>
 
 ### Result Assembly
 
@@ -586,17 +586,17 @@ The validate action queries current maintenance status **without making any chan
 
 ---
 
-<a name="8-audit-record-output"></a>
+<a id="8-audit-record-output"></a>
 
 ## 8. Audit Record & Output
 
-<a name="81-audit-initialization"></a>
+<a id="81-audit-initialization"></a>
 
 ### 8.1 - Audit Initialization
 
 - **[`Lines 1222–1239`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1222-L1239)**: Creates `$audit` hashtable with action, mode, environment, target_id, serial_number, timestamps, steps, success flag
 
-<a name="82-audit-finalization-save"></a>
+<a id="82-audit-finalization-save"></a>
 
 ### 8.2 - Audit Finalization & Save
 
@@ -606,7 +606,7 @@ The validate action queries current maintenance status **without making any chan
   - Appends to master log file `maintenance_audit_*.log`
   - Includes GitHub Actions context enrichment if available (line 2019)
 
-<a name="83-response-construction"></a>
+<a id="83-response-construction"></a>
 
 ### 8.3 - Response Construction
 
@@ -614,7 +614,7 @@ The validate action queries current maintenance status **without making any chan
   - [`Lines 1734–1769`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1734-L1769): Core fields - Success, Message, Action, Mode, StartTimeUtc, EndTimeUtc, TargetId, SerialNumber, ServerCount, DryRun, AuditFile, FailedObjects
   - [`Lines 1772–1790`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L1772-L1790): Mode-specific fields - ScomObjects/ScomSummary or OneViewObjects/OneViewSummary
 
-<a name="84-cli-output-script-mode-only"></a>
+<a id="84-cli-output-script-mode-only"></a>
 
 ### 8.4 - CLI Output (Script-Mode Only)
 
@@ -624,7 +624,7 @@ The validate action queries current maintenance status **without making any chan
 
 ---
 
-<a name="9-helper-functions-shared"></a>
+<a id="9-helper-functions-shared"></a>
 
 ## 9. Helper Functions (Shared)
 
@@ -644,11 +644,11 @@ Functions called at various points throughout the execution flow:
 
 ---
 
-<a name="10-class-reference"></a>
+<a id="10-class-reference"></a>
 
 ## 10. Class Reference
 
-<a name="scommanager"></a>
+<a id="scommanager"></a>
 
 ### SCOMManager
 
@@ -668,7 +668,7 @@ Functions called at various points throughout the execution flow:
 | `GetMaintenanceStatus` | [2578–2658](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L2578-L2658) | Query status (REST or cmdlet) |
 | `_GetMaintenanceStatusRest` | [2660–2775](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L2660-L2775) | REST status query |
 
-<a name="oneviewclient"></a>
+<a id="oneviewclient"></a>
 
 ### OneViewClient
 
@@ -693,7 +693,7 @@ Functions called at various points throughout the execution flow:
 | `_GetMaintenanceStatusViaWinRM` | [3278–3280](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3278-L3280) | WinRM delegate |
 | `ResolveServerBySerial` | [3282–3430](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1#L3282-L3430) | Serial → server (REST primary + cmdlet fallback) |
 
-<a name="emailnotifier"></a>
+<a id="emailnotifier"></a>
 
 ### EmailNotifier
 
@@ -708,7 +708,7 @@ Functions called at various points throughout the execution flow:
 
 ---
 
-<a name="11-configuration-files"></a>
+<a id="11-configuration-files"></a>
 
 ## 11. Configuration Files
 
@@ -728,7 +728,7 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<a name="12-module-loading"></a>
+<a id="12-module-loading"></a>
 
 ## 12. Module Loading
 
@@ -741,11 +741,11 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<a name="13-testing"></a>
+<a id="13-testing"></a>
 
 ## 13. Testing
 
-<a name="pester-test-files"></a>
+<a id="pester-test-files"></a>
 
 ### Pester Test Files
 
@@ -757,7 +757,7 @@ All configurations loaded from `configs/` directory, in load order:
 | [`Set-MaintenanceMode.Validation.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Validation.Tests.ps1) | Validate action tests |
 | [`Set-MaintenanceMode.Environment.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1) | Environment resolution tests |
 
-<a name="test-scripts"></a>
+<a id="test-scripts"></a>
 
 ### Test Scripts
 
@@ -770,7 +770,7 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<a name="14-quick-navigation"></a>
+<a id="14-quick-navigation"></a>
 
 ## 14. Quick Navigation
 
@@ -797,7 +797,7 @@ All configurations loaded from `configs/` directory, in load order:
 
 ---
 
-<a name="15-documentation-references"></a>
+<a id="15-documentation-references"></a>
 
 ## 15. Documentation References
 

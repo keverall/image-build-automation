@@ -46,11 +46,31 @@ function Update-Firmware {
     .PARAMETER OutputDir
         Output directory.
 
+    .PARAMETER FirmwareFolders
+        Additional firmware component source directories (string array). These are
+        local folder paths containing pre-downloaded HPE SUT component packages
+        (e.g. '.spp' component folders or extracted firmware update packs).
+        Each folder is passed to hpe_sut via the --firmware-components flag so
+        SUT includes them alongside the manifest-specified components. Use this
+        when Marin provides firmware component folders outside the standard
+        manifest repository.
+
+        Example:
+          Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+
     .PARAMETER SkipDownload
         Skip component download step.
 
     .PARAMETER DryRun
         Simulate without executing.
+
+    .PARAMETER GuardRail
+        MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
+        REGULAR EXPRESSION the resolved target server name must match before any
+        firmware update. If it is OMITTED the command fails early with an expressive,
+        logged error and performs no update. If it does NOT match the target, the
+        update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches
+        server 'quickview.ilo03.alp'.
 
     .RETURNS
         [hashtable] with Success (bool) and details.
@@ -59,25 +79,57 @@ function Update-Firmware {
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -Server 'srv01.corp.local'
     .EXAMPLE
         Update-Firmware -Config 'configs\hpe_firmware_drivers_nov2025.json' -SerialNumber 'MXQ1234567' -OneViewHost 'oneview.ad.example.com'
+    .EXAMPLE
+        Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
 param(
+    [Alias('Cfg')]
     [Parameter(Mandatory = $false)][string] $Config     = 'configs\hpe_firmware_drivers_nov2025.json',
+    [Alias('Srvr')]
     [Parameter(Mandatory = $false)][string] $Server     = $null,
+    [Alias('Srl')]
     [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+    [Alias('OVHost')]
     [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
+    [Alias('SrvrList')]
     [Parameter(Mandatory = $false)][string] $ServerList = 'configs\server_list.txt',
+    [Alias('OutDir')]
     [Parameter(Mandatory = $false)][string] $OutputDir  = 'output\firmware',
+    [Alias('SkipDl')]
     [Parameter(Mandatory = $false)][switch] $SkipDownload,
-    [Parameter(Mandatory = $false)][switch] $DryRun
+    [Alias('Dry')]
+    [Parameter(Mandatory = $false)][switch] $DryRun,
+    [Alias('FwDirs')]
+    [Parameter(Mandatory = $false)][string[]] $FirmwareFolders = @(),
+    [string] $GuardRail = $null
 )
+
+    # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
+    # Fail early (graceful, logged) when omitted so we never flash firmware to an
+    # unapproved server on a shared/production network.
+    $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
+        -CommandName 'Update-Firmware' -ActionDescription 'firmware update'
+    if ($grCheck) { return $grCheck }
+
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
         if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
         $Server = $resolved.Identifier
         Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
     }
+
+    # ── Guard rail (build/deploy safety gate) ──────────────────────────────────
+    if ($GuardRail -and $Server) {
+        $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $Server `
+            -SerialNumber $SerialNumber -ApplianceName $OneViewHost `
+            -ActionDescription 'firmware update' -DryRun:$DryRun -SkipConfirmation
+        if (-not $guardOk) {
+            return @{ Success = $false; Error = "Guard rail rejected target '$Server' (guard: '$GuardRail'). No firmware update performed." }
+        }
+    }
+
     if (-not $DryRun -and -not $Server) {
         throw "Server or SerialNumber is required for non-dryrun firmware update"
     }
@@ -91,6 +143,7 @@ param(
     try {
         $servers = if ($DryRun -and -not $Server) { Load-ServerList -Path $ServerList } else { @($Server) }
         $updater = [FirmwareUpdater]::new($Config, $OutputDir)
+        $updater.FirmwareFolders = $FirmwareFolders
         $results = foreach ($s in $servers) { $updater.Build($s, [bool]$DryRun) }
         $okCount = ($results | Where-Object { $_.success }).Count
         Write-Output "Firmware build: $okCount/$($servers.Count) succeeded"
@@ -157,6 +210,7 @@ class FirmwareUpdater {
     [string] $SutPath
     [hashtable] $DownloadCreds
     [System.Collections.ArrayList] $BuildLog
+    [string[]] $FirmwareFolders
 
     # SUT retry settings (mirrors Invoke-NativeCommandWithRetry semantics)
     [int]    $MaxRetryAttempts = 3
@@ -165,6 +219,7 @@ class FirmwareUpdater {
     FirmwareUpdater([string]$ConfigPath, [string]$OutputDir) {
         $this.ConfigPath = $ConfigPath
         $this.OutputDir  = $OutputDir
+        $this.FirmwareFolders = @()
         $this.Config     = Import-JsonConfig -Path $ConfigPath -Required $true
         $this.BuildLog   = [System.Collections.ArrayList]::new()
         $this.SutPath    = $this._FindSut()
@@ -271,6 +326,14 @@ class FirmwareUpdater {
             $compList = ($components | ForEach-Object { $_['Component'] }) -join ','
             $sutArgs  = @('create', '--server-generation', $gen, '--repository', $repoUrl,
                           '--output', $isoOut, '--components', $compList, '--include-drivers')
+
+            # Append additional firmware component source folders (Marin-provided)
+            if ($this.FirmwareFolders.Count -gt 0) {
+                $fwFoldersEscaped = ($this.FirmwareFolders | ForEach-Object { $_.Replace(' ', '` ' ) }) -join ','
+                $sutArgs += '--firmware-components'
+                $sutArgs += $fwFoldersEscaped
+                $this._Log('component_resolution','INFO',"Extra firmware folders: $($this.FirmwareFolders -join ', ')")
+            }
 
             $this._Log('sut_invoke','START',"$($this.SutPath) $($sutArgs -join ' ')  (max $($this.MaxRetryAttempts) attempts)")
             $sutResult = $this._RunSut($sutArgs)

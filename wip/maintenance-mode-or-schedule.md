@@ -120,7 +120,7 @@ if($type -eq "Group") {
 }
 ```
 
-<a name="scom-management-group-server-names"></a>
+<a id="scom-management-group-server-names"></a>
 
 ## SCOM Management Group Server names
 
@@ -130,11 +130,11 @@ if($type -eq "Group") {
 
 - [SCOM Maintenance Mode with Powershell: ](https://kevinjustin.com/blog/tag/maintenance-mode/)
 
-<a name="powershell-scripts-as-examples-of-group-and-cluster-support-maintenance-mode"></a>
+<a id="powershell-scripts-as-examples-of-group-and-cluster-support-maintenance-mode"></a>
 
 ## Powershell scripts as examples of Group and Cluster Support maintenance mode:
 
-<a name="scom-2012"></a>
+<a id="scom-2012"></a>
 
 ### SCOM 2012
 
@@ -145,7 +145,7 @@ Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED*** and ***REMOVED
 Operational Database Server:  ***REMOVED***
 Datawarehouse Server:  ***REMOVED***
 
-<a name="scom-2016"></a>
+<a id="scom-2016"></a>
 
 ### SCOM 2016
 
@@ -163,7 +163,7 @@ Management Servers:  ***REMOVED***, ***REMOVED***, ***REMOVED***, ***REMOVED***
 Operational Database Servers:  ***REMOVED*** and ***REMOVED*** (SQL AlwaysOn)
 Datawarehouse Server:  ***REMOVED*** and ***REMOVED*** (SQL AlwaysOn)
 
-<a name="scom-2019"></a>
+<a id="scom-2019"></a>
 
 ### SCOM 2019
 
@@ -183,7 +183,7 @@ Datawarehouse Server:  ***REMOVED***
 
 I need to verify the below so I build automation that is as its expected and not how I assume it should be, so can I get responses for my questions below, please? Alternatively, I could book a call if preferred?
 
-<a name="questions-that-group-needs-to-clarify-on-and-still-has-not"></a>
+<a id="questions-that-group-needs-to-clarify-on-and-still-has-not"></a>
 
 ## Questions that group needs to clarify on and still has not
 

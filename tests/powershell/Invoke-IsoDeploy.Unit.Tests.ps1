@@ -20,9 +20,17 @@ Describe 'Invoke-IsoDeploy - basic invocation and parameter validation' {
         $cmd.Parameters.Keys | Should -Contain 'DryRun'
     }
 
-    It 'Accepts -DryRun switch without throwing' {
-        # Most functions accept -DryRun; calling with it should not throw immediately
-        { & Invoke-IsoDeploy -DryRun -ErrorAction SilentlyContinue } | Should -Not -Throw
+    It 'Accepts -DryRun switch (with -GuardRail) without throwing' {
+        # Most functions accept -DryRun; calling with it should not throw immediately.
+        # -GuardRail is mandatory on build/deploy commands.
+        { & Invoke-IsoDeploy -GuardRail '.*' -DryRun -ErrorAction SilentlyContinue } | Should -Not -Throw
+    }
+
+    It 'Fails early (graceful, logged) when -GuardRail is omitted' {
+        $r = & Invoke-IsoDeploy -DryRun -ErrorAction SilentlyContinue
+        $r.Success | Should -Be $false
+        $r.GuardRailRequired | Should -Be $true
+        $r.Error | Should -Match 'GUARD RAIL REQUIRED'
     }
 
     It 'Rejects unknown parameters (strict mode)' {

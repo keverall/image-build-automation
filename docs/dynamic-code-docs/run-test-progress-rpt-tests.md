@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/run-test-progress-rpt-tests.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -15,17 +15,17 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Executes Pester tests for the test-plan progress update pipeline: - Update-TestProgress.Unit.Tests.ps1 (all helper functions + E2E + HTML) Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/testing/test_progress_rpt_tests_*.log Exits with code 1 if any tests fail.
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -33,7 +33,7 @@ Executes Pester tests for the test-plan progress update pipeline: - Update-TestP
 pwsh -File scripts/run-test-progress-rpt-tests.ps1
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

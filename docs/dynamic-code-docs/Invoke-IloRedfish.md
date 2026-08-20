@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IloRedfish.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,34 +16,34 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â†’ X-Auth-Token) * Insert / Eject virtual media (CD/DVD) * One-time boot override to CD * System reset (ForceRestart) Operates against a single iLO IP. Connection details are runtime parameters - no JSON config required.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
 | `-Action` | Operation to perform. One of: Mount, MountAndBoot, Boot, Reset, Eject, Status. |
-| `-IloIp` | iLO IPv4 address or hostname. Required. |
-| `-IloUser` | iLO username. If omitted on a live run, prompted interactively. Never read from config or environment. |
-| `-IloPassword` | iLO password. If omitted on a live run, prompted interactively (secure input). Never read from config or environment. |
-| `-IsoUrl` | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
+| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address or hostname. Required. |
+| `-IloUser` _(Aliases: -IloU)_ | iLO username. If omitted on a live run, prompted interactively. Never read from config or environment. |
+| `-IloPassword` _(Aliases: -IloP)_ | iLO password. If omitted on a live run, prompted interactively (secure input). Never read from config or environment. |
+| `-IsoUrl` _(Aliases: -Iso)_ | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
 | `-CdDeviceId` | VirtualMedia device id (default 1). Enumerate via /redfish/v1/Managers/1/VirtualMedia. |
 | `-Force` | Required for destructive actions (MountAndBoot, Boot, Reset) to confirm intent. Read-only actions (Status, Eject without -Force) do not require this switch. |
-| `-SkipCertificateCheck` | Skip SSL cert verification (default true - iLO uses self-signed certs). |
-| `-TimeoutSec` | Per-call timeout (default 30 s). |
-| `-DryRun` | Print actions without performing them. |
+| `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL cert verification (default true - iLO uses self-signed certs). |
+| `-TimeoutSec` _(Aliases: -Timeout)_ | Per-call timeout (default 30 s). |
+| `-DryRun` _(Aliases: -Dry)_ | Print actions without performing them. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -51,7 +51,7 @@ Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â
 Invoke-IloRedfish -Action MountAndBoot -IloIp 192.168.1.101 ` -IsoUrl 'https://artifacts.internal.example.com/isos/WinSrv2025_BootableMedia_v1.0.iso'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

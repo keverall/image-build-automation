@@ -1,25 +1,43 @@
 <#
 .SYNOPSIS
-    Resolve an external ISO path to a URL accessible by the iLO BMC.
+    Resolve an external media path (ISO or firmware) to a URL accessible by the iLO BMC.
 
 .DESCRIPTION
-    The iLO virtual media controller requires network-accessible ISO sources.
-    Supported formats:
-      - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
-      - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
-      - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
-      - Local file path: Auto-shared via an SMB share when run as Administrator
-        (otherwise an existing SMB/HTTP path must be supplied)
+    The iLO virtual media controller and HPE SUT (firmware) require network-accessible
+    sources. This is the SINGLE shared resolver used by every command that attaches,
+    builds, or deploys images and firmware to HPE OneView connected servers, so path
+    handling stays consistent across the module.
 
-    iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or
-    'C:\isos\win.iso'). The iLO BMC is a separate management controller on
-    the physical server and cannot access local drives on your workstation.
+    Accepted input formats (all equivalent from iLO's point of view):
 
-    NOTE: This is a module-internal helper (defined once in Private/) and is
-    dot-sourced into the module scope. It is intentionally not exported.
+      - HTTP/HTTPS URL : 'https://artifacts/win.iso'           -> used directly
+      - NFS path       : 'nfs://server/export/win.iso'         -> used directly
+      - CIFS/SMB URL   : 'cifs://server/share/win.iso'         -> used directly (this is
+                         also the scheme this resolver EMITS, so it round-trips)
+      - SMB URL alias  : 'smb://server/share/win.iso'          -> normalised to cifs://
+      - UNC/SMB path   : '\\server\share\win.iso'              -> converted to cifs://
+                         (Windows form, backslashes)
+      - UNC/SMB path   : '//server/share/win.iso'              -> converted to cifs://
+                         (Posix-style forward slashes; Windows/PowerShell treat this as
+                         identical to '\\server\share\win.iso')
+      - Mapped drive   : 'H:\win.iso' where H: maps to a UNC    -> expanded to UNC, then
+                         converted to cifs://
+
+    iLO does NOT support local filesystem paths (e.g. 'C:\isos\win.iso' or an 'H:\'
+    that maps to a local disk). The iLO BMC is a separate management controller on the
+    physical server and cannot access local drives on your workstation. Local paths are
+    intentionally NOT auto-shared — this module never requires or attempts Administrator
+    privileges (regulated banking environments). Supply an SMB/UNC, NFS, CIFS/SMB URL, or
+    HTTPS path instead.
+
+    NOTE: This is a module-internal helper (defined once in Private/) and is dot-sourced
+    into the module scope. It is intentionally not exported for direct end-user use, but
+    is exported internally so every command module resolves paths through one code path.
 
 .PARAMETER IsoPath
-    Path to the ISO file (UNC/SMB, NFS, or HTTP/HTTPS URL, or a local path).
+    Path to the media file (UNC/SMB, NFS, CIFS/SMB URL, HTTP/HTTPS URL, or a mapped
+    network drive). Despite the parameter name, it is path-type agnostic and is also used
+    for firmware component folders/zips.
 
 .PARAMETER RepoLocalPath
     Retained for call-site compatibility. Not used by the resolver.
@@ -28,8 +46,51 @@
     Retained for call-site compatibility. Not used by the resolver.
 
 .RETURNS
-    [string] URL accessible by iLO BMC.
+    [string] URL accessible by iLO BMC (cifs://, nfs://, or https://).
 #>
+function Get-SmbPathFromDriveLetter {
+    <#
+    .SYNOPSIS
+        Resolve a Windows drive letter to its UNC/SMB path (if it's a mapped network drive).
+
+    .DESCRIPTION
+        Helper used by Resolve-ExternalIsoPath to find the SMB address of a mapped drive.
+        Returns the UNC root (e.g. '\\fileserver\isos') or throws if the drive is local
+        or does not exist.
+
+    .PARAMETER DriveLetter
+        The drive letter to resolve (e.g. 'H', 'Z').
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string] $DriveLetter
+    )
+
+    $DriveLetter = $DriveLetter.TrimEnd(':', '\').ToUpper()
+
+    if ($DriveLetter.Length -ne 1) {
+        throw "Invalid drive letter: '$DriveLetter'. Expected a single letter (e.g. 'H')."
+    }
+
+    $psDrive = Get-PSDrive -Name $DriveLetter -ErrorAction SilentlyContinue
+
+    if (-not $psDrive) {
+        throw "Drive $DriveLetter`: does not exist."
+    }
+
+    if (-not $psDrive.DisplayRoot) {
+        throw "Drive $DriveLetter`: is a local drive, not a mapped network drive. iLO cannot access local drives."
+    }
+
+    if ($psDrive.DisplayRoot -match '^\\\\') {
+        Write-Verbose "Drive $DriveLetter`: maps to: $($psDrive.DisplayRoot)"
+        return $psDrive.DisplayRoot
+    }
+
+    throw "Drive $DriveLetter`: is not a UNC/SMB mapped drive (root: $($psDrive.DisplayRoot))."
+}
+
 function Resolve-ExternalIsoPath {
     [CmdletBinding()]
     [OutputType([string])]
@@ -39,135 +100,72 @@ function Resolve-ExternalIsoPath {
         [string] $RepoBaseUrl
     )
 
-    # HTTP/HTTPS URL - use directly
-    if ($IsoPath -match '^https?://') {
-        Write-Verbose "ISO is an HTTP/HTTPS URL: $IsoPath"
+    # Normalise surrounding quotes/whitespace that can creep in from shells.
+    $p = $IsoPath.Trim().Trim('"', '''')
+
+    # HTTP/HTTPS URL - used directly
+    if ($p -match '^https?://') {
+        Write-Verbose "Media is an HTTP/HTTPS URL: $p"
         Write-Host "  [OK] HTTP/HTTPS URL - iLO will download directly" -ForegroundColor Green
-        return $IsoPath
+        return $p
     }
 
-    # NFS path - use directly
-    if ($IsoPath -match '^nfs://') {
-        Write-Verbose "ISO is an NFS path: $IsoPath"
+    # NFS path - used directly
+    if ($p -match '^nfs://') {
+        Write-Verbose "Media is an NFS path: $p"
         Write-Host "  [OK] NFS path - iLO will mount directly" -ForegroundColor Green
-        return $IsoPath
+        return $p
     }
 
-    # UNC/SMB path - convert to CIFS URL for iLO
-    if ($IsoPath -match '^\\\\') {
-        Write-Verbose "ISO is a UNC/SMB path: $IsoPath"
-        # Convert \\server\share\file.iso -> cifs://server/share/file.iso
-        $cifsUrl = $IsoPath -replace '\\\\', 'cifs://' -replace '\\', '/'
+    # Already a cifs:// URL (the scheme this resolver emits) - round-trip safe
+    if ($p -match '^cifs://') {
+        Write-Verbose "Media is already a CIFS URL: $p"
+        Write-Host "  [OK] CIFS URL - iLO will mount directly" -ForegroundColor Green
+        return $p
+    }
+
+    # smb:// scheme alias - normalise to cifs:// for iLO
+    if ($p -match '^smb://') {
+        $cifsUrl = 'cifs://' + $p.Substring('smb://'.Length)
+        Write-Verbose "Media is an SMB URL, normalised to CIFS: $cifsUrl"
+        Write-Host "  [OK] SMB URL converted to CIFS URL: $cifsUrl" -ForegroundColor Green
+        return $cifsUrl
+    }
+
+    # UNC/SMB path. Accept BOTH the Windows form ('\\server\share\file.iso') and the
+    # Posix-style forward-slash form ('//server/share/file.iso'), which Windows/PowerShell
+    # treat as identical. Normalise the forward-slash form to backslashes first.
+    $unc = $p
+    if ($unc -match '^//') {
+        $unc = '\\' + $unc.Substring(2).Replace('/', '\')
+    }
+    if ($unc -match '^\\\\') {
+        Write-Verbose "Media is a UNC/SMB path: $unc"
+        # \\server\share\file.iso -> cifs://server/share/file.iso
+        $cifsUrl = $unc -replace '\\\\', 'cifs://' -replace '\\', '/'
         Write-Host "  [OK] UNC/SMB path converted to CIFS URL: $cifsUrl" -ForegroundColor Green
         return $cifsUrl
     }
 
-    # Check if it's a mapped network drive (e.g. H:\ that maps to \\server\share)
-    if ($IsoPath -match '^[A-Z]:\\' -or $IsoPath -match '^[a-z]:\\') {
-        $driveLetter = $IsoPath.Substring(0, 1)
-        $psDrive = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
-
-        if ($psDrive -and $psDrive.DisplayRoot -and $psDrive.DisplayRoot -match '^\\\\') {
-            # It's a mapped network drive - construct the UNC path
-            $relativePath = $IsoPath.Substring(3) # Remove "H:\"
-            $uncPath = Join-Path $psDrive.DisplayRoot $relativePath
-            Write-Host "  [INFO] Detected mapped drive: $driveLetter`: -> $($psDrive.DisplayRoot)" -ForegroundColor Yellow
-            Write-Host "  [INFO] Resolved UNC path: $uncPath" -ForegroundColor Yellow
-
-            $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
-            Write-Host "  [OK] Mapped drive converted to CIFS URL: $cifsUrl" -ForegroundColor Green
-            return $cifsUrl
+    # Mapped network drive (e.g. H:\ that maps to \\server\share)
+    if ($p -match '^[A-Za-z]:[\\/]') {
+        $driveLetter = $p.Substring(0, 1).ToUpper()
+        try {
+            $uncRoot = Get-SmbPathFromDriveLetter -DriveLetter $driveLetter
+        } catch {
+            throw "Local drive path '$IsoPath' is not supported. $($_.Exception.Message) Supply an SMB/UNC (\\server\share\file.iso or //server/share/file.iso), CIFS/SMB URL (cifs://... / smb://...), NFS, or HTTPS URL instead. This module does not auto-create shares or require Administrator privileges."
         }
 
-        # It's a local drive - requires Administrator to create SMB share
-        Write-Host ""
-        Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Red
-        Write-Host "  ║  WARNING: Local Drive Path Detected                              ║" -ForegroundColor Red
-        Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Red
-        Write-Host ""
-        Write-Host "  Path: $IsoPath" -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "  The iLO BMC is a separate physical controller on the server." -ForegroundColor Yellow
-        Write-Host "  It CANNOT access local drives (H:\, C:\, etc.) on this machine." -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "  To use this ISO, you need an SMB (network share) path." -ForegroundColor Cyan
-        Write-Host ""
+        $relativePath = $p.Substring(2).TrimStart('\', '/')
+        $uncPath = Join-Path $uncRoot $relativePath
+        Write-Host "  [INFO] Detected mapped drive: $driveLetter`: -> $uncRoot" -ForegroundColor Yellow
+        Write-Host "  [INFO] Resolved UNC path: $uncPath" -ForegroundColor Yellow
 
-        if (-not (Test-Path $IsoPath)) {
-            throw "ISO file not found: $IsoPath"
-        }
-
-        $fileInfo = Get-Item $IsoPath
-        $isoDirectory = Split-Path $IsoPath -Parent
-        $isoFileName = $fileInfo.Name
-        $computerName = $env:COMPUTERNAME
-
-        # Check if running as Administrator
-        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-
-        if ($isAdmin) {
-            # Auto-create SMB share
-            $shareName = "isos_" + ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Substring(0, [Math]::Min(20, ($isoDirectory -replace '[^a-zA-Z0-9]', '_').Length))
-
-            Write-Host "  [OK] Running as Administrator - creating SMB share automatically..." -ForegroundColor Green
-            Write-Host ""
-            Write-Host "  Share name:   $shareName" -ForegroundColor Gray
-            Write-Host "  Share path:   $isoDirectory" -ForegroundColor Gray
-            Write-Host "  Computer:     $computerName" -ForegroundColor Gray
-
-            try {
-                $existingShare = Get-SmbShare -Name $shareName -ErrorAction SilentlyContinue
-
-                if ($existingShare) {
-                    Write-Host "  [OK] Share already exists" -ForegroundColor Green
-                } else {
-                    New-SmbShare -Name $shareName -Path $isoDirectory -ReadAccess 'Everyone' -ErrorAction Stop | Out-Null
-                    Write-Host "  [OK] Share created successfully" -ForegroundColor Green
-                }
-
-                $uncPath = "\\$computerName\$shareName\$isoFileName"
-                Write-Host "  [OK] UNC path: $uncPath" -ForegroundColor Green
-
-                $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
-                Write-Host "  [OK] CIFS URL for iLO: $cifsUrl" -ForegroundColor Green
-
-                return $cifsUrl
-
-            } catch {
-                throw "Failed to create SMB share: $($_.Exception.Message)"
-            }
-        } else {
-            # Not running as Administrator - show instructions
-            Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
-            Write-Host "  ║  Administrator Privileges Required                               ║" -ForegroundColor Yellow
-            Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "  You are NOT running PowerShell as Administrator." -ForegroundColor Red
-            Write-Host "  Creating an SMB share requires Administrator privileges." -ForegroundColor Red
-            Write-Host ""
-            Write-Host "  OPTION 1: Run as Administrator (if you have access)" -ForegroundColor Cyan
-            Write-Host "    1. Close this PowerShell window" -ForegroundColor Gray
-            Write-Host "    2. Right-click PowerShell -> Run as Administrator" -ForegroundColor Gray
-            Write-Host "    3. Re-run your command with the same local path" -ForegroundColor Gray
-            Write-Host ""
-            Write-Host "  OPTION 2: Ask your Administrator to create the share" -ForegroundColor Cyan
-            Write-Host "    Ask your IT admin to run this command on $computerName`:" -ForegroundColor Gray
-            Write-Host ""
-            Write-Host "    New-SmbShare -Name 'isos' -Path '$isoDirectory' -ReadAccess 'Everyone'" -ForegroundColor White
-            Write-Host ""
-            Write-Host "    Then use this SMB path in your command:" -ForegroundColor Gray
-            Write-Host "    -ExternalIsoPath '\\$computerName\isos\$isoFileName'" -ForegroundColor White
-            Write-Host ""
-            Write-Host "  OPTION 3: Use an existing SMB/HTTP path" -ForegroundColor Cyan
-            Write-Host "    If the ISO is already on a network share or web server, use that path:" -ForegroundColor Gray
-            Write-Host "    -ExternalIsoPath '\\fileserver\share\$isoFileName'" -ForegroundColor White
-            Write-Host "    -ExternalIsoPath 'https://webserver/isos/$isoFileName'" -ForegroundColor White
-            Write-Host ""
-
-            throw "Local drive path '$IsoPath' requires Administrator privileges to create SMB share, or an existing SMB/HTTP path must be provided."
-        }
+        $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
+        Write-Host "  [OK] Mapped drive converted to CIFS URL: $cifsUrl" -ForegroundColor Green
+        return $cifsUrl
     }
 
     # Unknown format
-    throw "Unsupported ISO path format: '$IsoPath'. Expected HTTP/HTTPS URL, NFS path, UNC/SMB path (\\server\share\file.iso), or a local path (e.g. H:\file.iso) which is auto-shared as an SMB share when run as Administrator."
+    throw "Unsupported media path format: '$IsoPath'. Expected HTTP/HTTPS URL, NFS path, UNC/SMB path (\\server\share\file.iso or //server/share/file.iso), CIFS/SMB URL (cifs://... / smb://...), or a mapped network drive."
 }

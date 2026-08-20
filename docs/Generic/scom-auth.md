@@ -16,7 +16,7 @@
 
 Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM manages Microsoft Windows cluster objects - all servers and resources nested under the group are put into maintenance mode. See [DevOps Guide to HPE Terms](../devops-guide-to-HPe-Terms.md#top) for the relationship between SCOM, OneView, and iLO.
 
-<a name="required-secrets-cyberark-safe-scom-2015"></a>
+<a id="required-secrets-cyberark-safe-scom-2015"></a>
 
 ## Required Secrets (CyberArk Safe: `SCOM-2015`)
 
@@ -25,11 +25,11 @@ Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM mana
 | `SCOM_ADMIN_USER` | SCOM admin username |
 | `SCOM_ADMIN_PASSWORD` | SCOM admin password |
 
-<a name="configuration-files"></a>
+<a id="configuration-files"></a>
 
 ## Configuration Files
 
-<a name="configsscom_configjson"></a>
+<a id="configsscom_configjson"></a>
 
 ### `configs/scom_config.json`
 
@@ -62,7 +62,7 @@ Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM mana
 }
 ```
 
-<a name="configsclusters_cataloguejson"></a>
+<a id="configsclusters_cataloguejson"></a>
 
 ### `configs/clusters_catalogue.json`
 
@@ -86,13 +86,13 @@ Configure `Set-MaintenanceMode` (SCOM cluster-level maintenance mode). SCOM mana
 }
 ```
 
-<a name="gitlab-ci-integration"></a>
+<a id="gitlab-ci-integration"></a>
 
 ## GitLab CI Integration
 
 In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job before any maintenance operations. 
 
-<a name="required-gitlab-cicd-variables-masked"></a>
+<a id="required-gitlab-cicd-variables-masked"></a>
 
 ### Required GitLab CI/CD Variables (Masked)
 
@@ -101,7 +101,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 | `CYBERARK_CCP_URL` | CyberArk AIM Web Service URL | `https://cyberark-ccp:443/AIMWebService/API/Accounts` |
 | `CYBERARK_APP_ID` | Application ID registered in CyberArk | `ci` |
 
-<a name="how-it-works"></a>
+<a id="how-it-works"></a>
 
 ### How it works
 
@@ -111,7 +111,7 @@ In GitLab CI, secrets are fetched automatically via the `cyberark-bootstrap` job
 4. Subsequent maintenance jobs source `secrets.env` to set environment variables
 5. `Set-MaintenanceMode` reads these variables via `Get-ScomCredentials`
 
-<a name="manual-testing"></a>
+<a id="manual-testing"></a>
 
 ### Manual Testing
 
@@ -124,7 +124,7 @@ $env:SCOM_ADMIN_PASSWORD = 'SecurePassword123!'
 pwsh -File ./scripts/cyberark-bootstrap.ps1 -CyberArkUrl "https://cyberark-ccp:443/AIMWebService/API/Accounts" -AppId "ci"
 ```
 
-<a name="setup-script"></a>
+<a id="setup-script"></a>
 
 ## Setup Script
 

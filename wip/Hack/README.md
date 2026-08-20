@@ -23,11 +23,11 @@ For more information have a look at the upstream website: https://github.com/sou
 
 Version: 3.003
 
-<a name="which-font"></a>
+<a id="which-font"></a>
 
 ## Which font?
 
-<a name="tldr"></a>
+<a id="tldr"></a>
 
 ### TL;DR
 
@@ -36,7 +36,7 @@ Version: 3.003
   * If you want to have bigger icons (usually around 1.5 normal letters wide) pick a font without `Mono` i.e. `Nerd Font` (or `NF`). Most terminals support this, but ymmv.
   * If you work in a proportional context (GUI elements or edit a presentation etc) pick a font with `Nerd Font Propo` (or `NFP`).
 
-<a name="ligatures"></a>
+<a id="ligatures"></a>
 
 ### Ligatures
 
@@ -44,7 +44,7 @@ Ligatures are generally preserved in the patched fonts.
 Nerd Fonts `v2.0.0` had no ligatures in the `Nerd Font Mono` fonts, this has been dropped with `v2.1.0`.
 If you have a ligature-aware terminal and don't want ligatures you can (usually) disable them in the terminal settings.
 
-<a name="explanation"></a>
+<a id="explanation"></a>
 
 ### Explanation
 

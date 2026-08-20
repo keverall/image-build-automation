@@ -584,8 +584,11 @@ $_privateOrder = @(
     'FileIO.ps1',       # Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult, Test-PathEx
     'PathResolver.ps1', # Get-ProjectRoot, Get-LogDirectory
     'Inventory.ps1',    # Load-ServerList, Load-ClusterCatalogue, Test-ClusterDefinition, New-ServerInfo
+    'ParameterValidation.ps1', # Assert-ParameterNotFlag (shared parameter-usage guard)
     'OneViewSession.ps1', # Get-OneViewActiveSession, Test-OneViewSessionActive (shared OneView session detection)
     'Logging.ps1',      # Initialize-Logging, Get-Logger
+    'OutputFormatter.ps1', # _Publish-Result, _Format-HumanReadable (shared DRY output rendering)
+    'GuardRail.ps1',    # Assert-GuardRail (destructive-action safety gate for build/deploy)
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
     'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild)
@@ -613,12 +616,20 @@ if (Test-Path $_publicRoot) {
     }
 }
 
+# Engineer-friendly alias for the SCOM + OneView status report.
+# (request name preserved from the SCOM team's request: scom-maintmode-status-report)
+# Note: a hyphenated name must be invoked with the call operator, e.g.
+#   & 'scom-maintmode-status-report' -Environment Prod
+# The router request name 'maintmode_status_report' is the canonical requestable form.
+Set-Alias -Name 'scom-maintmode-status-report' -Value 'Get-MaintenanceStatusReport'
+
 # Export only the functions that are part of the public API surface.
 # Private helpers (leading underscore) and internal factories are intentionally excluded.
 Export-ModuleMember -Function @(
     # Orchestrator
     'Start-AutomationOrchestrator'
     'Start-PhysicalServerBuild'
+    'Configure-PhysicalBuild'
     # Control
     'New-CIPipelineCtrl'
     'New-IRequestCtrl'
@@ -657,6 +668,7 @@ Export-ModuleMember -Function @(
     'Test-ServerConnectivity'
     'Test-ServerList'
     # OneView session management
+    'Connect-OneView'
     'Disconnect-OneView'
     # Config / credential helpers
     'Import-JsonConfig'
@@ -682,6 +694,9 @@ Export-ModuleMember -Function @(
     'Test-ClusterDefinition'
     'New-ServerInfo'
     'Resolve-OneViewTarget'
+    # ISO path resolution (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild;
+    # exported so functional test harnesses can validate path->iLO URL conversion)
+    'Resolve-ExternalIsoPath'
     # Logging / audit / timestamps
     'Initialize-Logging'
     'Get-Logger'
@@ -702,7 +717,9 @@ Export-ModuleMember -Function @(
     'New-ScomMaintenanceScript'
     'Test-ScomMaintenanceConnectivity'
     'Get-ScomCredentials'
-)
+    # SCOM + OneView status report
+    'Get-MaintenanceStatusReport'
+) -Alias @('scom-maintmode-status-report')
 
 $global:__Automation_Loading = $false
 

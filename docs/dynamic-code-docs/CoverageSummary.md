@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/CoverageSummary.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,13 +16,13 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Parses Cobertura XML coverage file and generates formatted table showing: - Per-file coverage statistics (rate, covered lines, missed lines) - Overall coverage summary - Output to both console and text file Default input: coverage-results.xml Default output: coverage-report.txt
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
@@ -31,11 +31,11 @@ Parses Cobertura XML coverage file and generates formatted table showing: - Per-
 | `-InputFile` | Path to Cobertura XML coverage file (default: coverage-results.xml) |
 | `-OutputFile` | Path for text report output (default: coverage-report.txt) |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -43,7 +43,7 @@ Parses Cobertura XML coverage file and generates formatted table showing: - Per-
 pwsh -File scripts/CoverageSummary.ps1
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

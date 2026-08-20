@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/ExternalIso.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -14,48 +14,66 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 - [Parameters](#parameters)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
-The iLO virtual media controller requires network-accessible ISO sources. Supported formats: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - Local file path: Auto-shared via an SMB share when run as Administrator (otherwise an existing SMB/HTTP path must be supplied) iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or 'C:\isos\win.iso'). The iLO BMC is a separate management controller on the physical server and cannot access local drives on your workstation. NOTE: This is a module-internal helper (defined once in Private/) and is dot-sourced into the module scope. It is intentionally not exported.
+The iLO virtual media controller and HPE SUT (firmware) require network-accessible sources. This is the SINGLE shared resolver used by every command that attaches, builds, or deploys images and firmware to HPE OneView connected servers, so path handling stays consistent across the module. Accepted input formats (all equivalent from iLO's point of view): - HTTP/HTTPS URL : 'https://artifacts/win.iso'           -> used directly - NFS path       : 'nfs://server/export/win.iso'         -> used directly - CIFS/SMB URL   : 'cifs://server/share/win.iso'         -> used directly (this is also the scheme this resolver EMITS, so it round-trips) - SMB URL alias  : 'smb://server/share/win.iso'          -> normalised to cifs:// - UNC/SMB path   : '\\server\share\win.iso'              -> converted to cifs:// (Windows form, backslashes) - UNC/SMB path   : '//server/share/win.iso'              -> converted to cifs:// (Posix-style forward slashes; Windows/PowerShell treat this as identical to '\\server\share\win.iso') - Mapped drive   : 'H:\win.iso' where H: maps to a UNC    -> expanded to UNC, then converted to cifs:// iLO does NOT support local filesystem paths (e.g. 'C:\isos\win.iso' or an 'H:\' that maps to a local disk). The iLO BMC is a separate management controller on the physical server and cannot access local drives on your workstation. Local paths are intentionally NOT auto-shared — this module never requires or attempts Administrator privileges (regulated banking environments). Supply an SMB/UNC, NFS, CIFS/SMB URL, or HTTPS path instead. NOTE: This is a module-internal helper (defined once in Private/) and is dot-sourced into the module scope. It is intentionally not exported for direct end-user use, but is exported internally so every command module resolves paths through one code path.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-IsoPath` | Path to the ISO file (UNC/SMB, NFS, or HTTP/HTTPS URL, or a local path). |
+| `-IsoPath` | Path to the media file (UNC/SMB, NFS, CIFS/SMB URL, HTTP/HTTPS URL, or a mapped network drive). Despite the parameter name, it is path-type agnostic and is also used for firmware component folders/zips. |
 | `-RepoLocalPath` | Retained for call-site compatibility. Not used by the resolver. |
 | `-RepoBaseUrl` | Retained for call-site compatibility. Not used by the resolver. |
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 
 ```powershell
 .SYNOPSIS
-    Resolve an external ISO path to a URL accessible by the iLO BMC.
+    Resolve an external media path (ISO or firmware) to a URL accessible by the iLO BMC.
 
 .DESCRIPTION
-    The iLO virtual media controller requires network-accessible ISO sources.
-    Supported formats:
-      - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso')
-      - UNC/SMB path: Converted to CIFS URL for iLO (e.g. '\\server\share\win.iso')
-      - NFS path: Used directly (e.g. 'nfs://server/export/win.iso')
-      - Local file path: Auto-shared via an SMB share when run as Administrator
-        (otherwise an existing SMB/HTTP path must be supplied)
+    The iLO virtual media controller and HPE SUT (firmware) require network-accessible
+    sources. This is the SINGLE shared resolver used by every command that attaches,
+    builds, or deploys images and firmware to HPE OneView connected servers, so path
+    handling stays consistent across the module.
 
-    iLO does NOT support local filesystem paths (e.g. 'H:\windows.iso' or
-    'C:\isos\win.iso'). The iLO BMC is a separate management controller on
-    the physical server and cannot access local drives on your workstation.
+    Accepted input formats (all equivalent from iLO's point of view):
 
-    NOTE: This is a module-internal helper (defined once in Private/) and is
-    dot-sourced into the module scope. It is intentionally not exported.
+      - HTTP/HTTPS URL : 'https://artifacts/win.iso'           -> used directly
+      - NFS path       : 'nfs://server/export/win.iso'         -> used directly
+      - CIFS/SMB URL   : 'cifs://server/share/win.iso'         -> used directly (this is
+                         also the scheme this resolver EMITS, so it round-trips)
+      - SMB URL alias  : 'smb://server/share/win.iso'          -> normalised to cifs://
+      - UNC/SMB path   : '\\server\share\win.iso'              -> converted to cifs://
+                         (Windows form, backslashes)
+      - UNC/SMB path   : '//server/share/win.iso'              -> converted to cifs://
+                         (Posix-style forward slashes; Windows/PowerShell treat this as
+                         identical to '\\server\share\win.iso')
+      - Mapped drive   : 'H:\win.iso' where H: maps to a UNC    -> expanded to UNC, then
+                         converted to cifs://
+
+    iLO does NOT support local filesystem paths (e.g. 'C:\isos\win.iso' or an 'H:\'
+    that maps to a local disk). The iLO BMC is a separate management controller on the
+    physical server and cannot access local drives on your workstation. Local paths are
+    intentionally NOT auto-shared — this module never requires or attempts Administrator
+    privileges (regulated banking environments). Supply an SMB/UNC, NFS, CIFS/SMB URL, or
+    HTTPS path instead.
+
+    NOTE: This is a module-internal helper (defined once in Private/) and is dot-sourced
+    into the module scope. It is intentionally not exported for direct end-user use, but
+    is exported internally so every command module resolves paths through one code path.
 
 .PARAMETER IsoPath
-    Path to the ISO file (UNC/SMB, NFS, or HTTP/HTTPS URL, or a local path).
+    Path to the media file (UNC/SMB, NFS, CIFS/SMB URL, HTTP/HTTPS URL, or a mapped
+    network drive). Despite the parameter name, it is path-type agnostic and is also used
+    for firmware component folders/zips.
 
 .PARAMETER RepoLocalPath
     Retained for call-site compatibility. Not used by the resolver.
@@ -64,7 +82,7 @@ The iLO virtual media controller requires network-accessible ISO sources. Suppor
     Retained for call-site compatibility. Not used by the resolver.
 
 .RETURNS
-    [string] URL accessible by iLO BMC.
+    [string] URL accessible by iLO BMC (cifs://, nfs://, or https://).
 ```
 
 ---

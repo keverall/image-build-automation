@@ -21,7 +21,7 @@ Here is the breakdown of how these pieces fit together and what those terms actu
 
 ---
 
-<a name="1-monitoring-software-vs-the-actual-hardware"></a>
+<a id="1-monitoring-software-vs-the-actual-hardware"></a>
 
 ## 1. Monitoring Software vs. The Actual Hardware
 
@@ -32,7 +32,7 @@ When you change a status to "Maintenance Mode" or "Disable" in monitoring softwa
 
 ---
 
-<a name="2-hpe-ilo-vs-hpe-oneview-note-openview-is-now-oneview"></a>
+<a id="2-hpe-ilo-vs-hpe-oneview-note-openview-is-now-oneview"></a>
 
 ## 2. HPE iLO vs. HPE OneView (Note: "OpenView" is now OneView)
 
@@ -48,7 +48,7 @@ Here is how maintenance and disabling work across these two HPE tools:
 
 ---
 
-<a name="3-where-does-scom-fit-into-this"></a>
+<a id="3-where-does-scom-fit-into-this"></a>
 
 ## 3. Where does SCOM fit into this?
 
@@ -60,7 +60,7 @@ Think of the hierarchy like this:
 2. **HPE OneView** talks to all your iLOs to manage your entire fleet of HPE hardware.
 3. **SCOM** sits at the very top. It watches the Windows/Linux Operating Systems, the applications (like SQL or Exchange), **and** it hooks into HPE OneView to get hardware alerts.
 
-<a name="scom-maintenance-mode"></a>
+<a id="scom-maintenance-mode"></a>
 
 ### SCOM Maintenance Mode
 
@@ -68,7 +68,7 @@ If you put a server into Maintenance Mode in SCOM, you are telling SCOM: *"Stop 
 
 ---
 
-<a name="summary-of-the-flow"></a>
+<a id="summary-of-the-flow"></a>
 
 ## Summary of the Flow
 
@@ -80,7 +80,7 @@ Imagine you need to replace a bad stick of RAM in an HPE server:
 4. You swap the RAM, turn it back on, and verify it's healthy in iLO.
 5. You take the server **out of Maintenance Mode** in OneView and SCOM so it starts actively monitoring for real failures again.
 
-<a name="the-sneaky-exception-ilos-own-maintenance-mode"></a>
+<a id="the-sneaky-exception-ilos-own-maintenance-mode"></a>
 
 ## The Sneaky Exception: iLO's Own Maintenance Mode
 
@@ -92,13 +92,13 @@ While "Maintenance Mode" in **OneView** and **SCOM** strictly means *"stop sendi
 
 Here is the distinction:
 
-<a name="1-you-cannot-manually-put-ilo-into-maintenance-mode"></a>
+<a id="1-you-cannot-manually-put-ilo-into-maintenance-mode"></a>
 
 ### 1. You cannot manually put iLO into Maintenance Mode
 
 In SCOM or OneView, you click a button to turn Maintenance Mode on. In iLO, there is no button for you to do this.
 
-<a name="2-if-ilo-is-in-maintenance-mode-it-means-it-is-broken"></a>
+<a id="2-if-ilo-is-in-maintenance-mode-it-means-it-is-broken"></a>
 
 ### 2. If iLO is in Maintenance Mode, it means it is broken
 

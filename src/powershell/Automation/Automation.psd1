@@ -89,6 +89,7 @@
         'Set-MaintenanceMode'
         'Start-InstallMonitor'
         'Start-PhysicalServerBuild'
+        'Configure-PhysicalBuild'
         'Get-OneViewServerTarget'
         'Get-OneViewConnectionStatus'
         'Get-OneViewServerList'
@@ -112,6 +113,7 @@
         'Test-ServerConnectivity'
         'Test-ServerList'
         # ── OneView session management ──────────────────────────────────────────
+        'Connect-OneView'
         'Disconnect-OneView'
         # ── Config / credential helpers ─────────────────────────────────────────
         'Import-JsonConfig'
@@ -138,6 +140,9 @@
         'New-ServerInfo'
         'Test-ClusterDefinition'
         'Resolve-OneViewTarget'
+        # ISO path resolution (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild;
+        # exported so functional test harnesses can validate path->iLO URL conversion)
+        'Resolve-ExternalIsoPath'
         # ── Logging / audit / timestamps ────────────────────────────────────────
         'Get-Logger'
         'Get-LocalTimestamp'
@@ -158,6 +163,8 @@
         'New-ScomConnection'
         'New-ScomMaintenanceScript'
         'Test-ScomMaintenanceConnectivity'
+        # ── SCOM + OneView status report ──────────────────────────────────────
+        'Get-MaintenanceStatusReport'
     )
 
     # Cmdlets to export from this module
@@ -167,7 +174,10 @@
     VariablesToExport = @('LogDir')
 
     # Aliases to export from this module
-    AliasesToExport = @()
+    AliasesToExport = @(
+        # Engineer-friendly request name for the SCOM + OneView status report
+        'scom-maintmode-status-report'
+    )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess
     PrivateData = @{

@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-PostBuildValidation.ps1
-generated: 2026-08-02
+generated: 2026-08-19
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -16,34 +16,34 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
   - [Example 1](#example-1)
 - [Original Comment-Based Help](#original-comment-based-help)
 
-<a name="description"></a>
+<a id="description"></a>
 
 ## Description
 
 Connects over WinRM to the freshly-built server and verifies the post-build state.  Returns a hashtable of named checks.
 
-<a name="parameters"></a>
+<a id="parameters"></a>
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
 | `-Hostname` | Target server hostname (FQDN or short). Mutually exclusive with -SerialNumber. |
-| `-SerialNumber` | Identify the server by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
-| `-OneViewHost` | OneView appliance hostname/IP used to resolve -SerialNumber. |
+| `-SerialNumber` _(Aliases: -Srl)_ | Identify the server by its HPE serial number. Resolved to the server hostname via OneView; requires -OneViewHost. |
+| `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
 | `-ExpectedHostname` | Expected hostname for cross-check. Defaults to -Hostname. |
 | `-Domain` | AD domain to verify join (e.g. ad.example.com). |
 | `-ExpectedOsVersion` | Expected OS version string (e.g. '10.0.20348' for Server 2022). |
 | `-SkipCmClient` | Skip ConfigMgr client check. |
 | `-SkipDrivers` | Skip driver presence check. |
 | `-SkipRemote` | Skip all WinRM-dependent checks (only do local / metadata validation). |
-| `-DryRun` | Skip WinRM probes - assume checks pass. |
+| `-DryRun` _(Aliases: -Dry)_ | Skip WinRM probes - assume checks pass. |
 
-<a name="examples"></a>
+<a id="examples"></a>
 
 ## Examples
 
-<a name="example-1"></a>
+<a id="example-1"></a>
 
 ### Example 1
 
@@ -51,7 +51,7 @@ Connects over WinRM to the freshly-built server and verifies the post-build stat
 Test-PostBuildValidation -Hostname 'srv01.ad.example.com' -Domain 'ad.example.com' -ExpectedOsVersion '10.0.20348'
 ```
 
-<a name="original-comment-based-help"></a>
+<a id="original-comment-based-help"></a>
 
 ## Original Comment-Based Help
 

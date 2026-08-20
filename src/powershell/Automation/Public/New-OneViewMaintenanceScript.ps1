@@ -30,8 +30,11 @@ function New-OneViewMaintenanceScript {
     [CmdletBinding()]
     [OutputType([string])]
     param(
+        [Alias('Appl')]
         [Parameter(Mandatory, Position = 0)][string] $Appliance,
+        [Alias('Scope')]
         [Parameter(Mandatory, Position = 1)][string] $ScopeName,
+        [Alias('Op')]
         [Parameter(Mandatory, Position = 2)][ValidateSet('enable', 'disable')][string] $Operation,
         [Parameter(Mandatory = $false)][bool] $Async = $true,
         [Parameter(Mandatory = $false)][string] $ModuleName
