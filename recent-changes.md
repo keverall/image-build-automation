@@ -28,6 +28,7 @@
   - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-_publish-result-passthru-output-migration-15-public-commands)
   - [23) `Get-OneViewServerList` DRY output migration + iLO IP fix + `prune-logs` hardening](#23-get-oneviewserverlist-dry-output-migration-ilo-ip-fix-prune-logs-hardening)
   - [24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming](#24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming)
+  - [25) `Connect-OneView` "already connected" message → bold red (no reconnection)](#25-connect-oneview-already-connected-message-bold-red-no-reconnection)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -751,3 +752,24 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 
 - `Get-OneViewServerList.Unit.Tests.ps1` (17), `Get-OneViewConnectionStatus.Unit.Tests.ps1` (23), `Get-OneViewServerTarget.Unit.Tests.ps1` (13) — **53 passed, 0 failed**.
 - End-to-end render check: `Get-OneViewServerList` prints `Appliance: va-oneviewt-01` and the 9-column table; `srv-alpha` renders `iLO IP = 10.9.9.9, 10.9.9.10` (object-array `ipAddress`), `srv-beta` renders `192.168.1.5` (object-array `address`). `Disconnect-OneView` (mocked session) reports `Successfully disconnected from OneView appliance 'va-oneviewt-01'` with `Appliance` in the result.
+
+<a id="25-connect-oneview-already-connected-message-bold-red-no-reconnection"></a>
+
+### 25) `Connect-OneView` "already connected" message → bold red (no reconnection)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-21 | Replaced the plain "Already connected to OneView appliance '&lt;host&gt;'." message in `Connect-OneView` with a bold-red banner: `HPeOneView IS ALREADY CONNECTED TO <host> NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect`, shown in both the same-appliance reuse path and the different-appliance refusal path | Kev Everall |
+
+<a name="change-25"></a>
+
+#### Change
+
+- When `Connect-OneView` is run and a live session already exists, it now prints a prominent bold-red (`ESC[1;31m`) banner instead of the previous plain/verbose message, making it unmistakable that no reconnection was attempted and how to switch appliances (`Disconnect-OneView` then reconnect).
+- The banner is emitted in both the **reuse** path (same appliance / no host — previously only set `$result.Message`, never displayed) and the **refusal** path (different appliance). The structured `Message` returned via `-PassThru` carries the same text so automation callers see it too.
+
+<a name="verification-25"></a>
+
+#### Verification
+
+- Mocked `Get-OneViewActiveSession` + `Test-ServerConnectivity` (`Connect-OneView -OneViewHost va-oneviewt-01` while already connected) renders the banner containing `HPeOneView IS ALREADY CONNECTED TO va-oneviewt-01` and `Disconnect-OneView`; the 53 existing unit tests still pass.
