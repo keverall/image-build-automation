@@ -160,20 +160,23 @@ function Connect-OneView {
     $active = Get-OneViewActiveSession
     if ($active -and -not $DryRun) {
         if ($OneViewHost -and $active.Name -ne $OneViewHost) {
-            Write-Warning "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost' - this would drop the live session. Run Disconnect-OneView first to switch appliances."
+            $alreadyMsg = "HPeOneView IS ALREADY CONNECTED TO $($active.Name) NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect"
+            Write-Host ("`e[1;31m" + $alreadyMsg + "`e[0m")
             return (_Complete-ConnectOneViewResult -Result @{
                 Available      = $false
                 Mode           = 'oneview'
                 OneViewHost = $OneViewHost
                 Environment    = $(if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { 'Prod' })
-                NetworkPing    = @{ DnsResolved = $false; Error = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost'." }
+                NetworkPing    = @{ DnsResolved = $false; Error = $alreadyMsg }
                 AuthConnect    = @{ Connected = $false; Error = "Skipped - already connected to '$($active.Name)'. Run Disconnect-OneView first to switch to '$OneViewHost'." }
                 Timestamp      = Get-UtcTimestamp
-                Message        = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost'."
+                Message        = $alreadyMsg
             } -PassThru:$PassThru -Json:$Json -Quiet:$Quiet -OneViewHost $OneViewHost)
         }
         # Same appliance (or no host supplied): reuse the live session, do not reconnect.
         Write-Verbose "Already connected to OneView appliance '$($active.Name)'. Reusing the existing session (not reconnecting)."
+        $alreadyMsg = "HPeOneView IS ALREADY CONNECTED TO $($active.Name) NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect"
+        Write-Host ("`e[1;31m" + $alreadyMsg + "`e[0m")
         $statusParams = @{ PingTimeoutMs = 3000 }
         if ($OneViewHost) { $statusParams['OneViewHost'] = $OneViewHost }
         # Connect-OneView has its own -Json switch. PowerShell's binder auto-binds this
@@ -183,7 +186,7 @@ function Connect-OneView {
         # the delegate always returns the hashtable; Connect-OneView emits its own
         # -Json via _Complete-ConnectOneViewResult.
         $result = & { $Json = $false; Test-ServerConnectivity @statusParams -PassThru -Quiet }
-        $result.Message = "Already connected to OneView appliance '$($active.Name)'."
+        $result.Message = $alreadyMsg
         $logger.Info("Connect-OneView result: Available=$($result.Available) Message='$($result.Message)'")
         return (_Complete-ConnectOneViewResult -Result $result -PassThru:$PassThru -Json:$Json -Quiet:$Quiet -OneViewHost $OneViewHost)
     }
