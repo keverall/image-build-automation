@@ -260,3 +260,33 @@ function _Publish-Result {
 
     if ($PassThru) { return $Result }
 }
+
+function _ConvertTo-IloIpAddressList {
+    <#
+    .SYNOPSIS
+        Extracts every iLO / management IP address string from a OneView
+        server-hardware mpIpAddresses value, regardless of whether it is an
+        array of plain strings or an array of address objects.
+    .DESCRIPTION
+        OneView returns mpIpAddresses either as a string[] or as an array of
+        objects (e.g. @{ ipAddress = '10.1.1.1'; type = 'Auto' }). Returning only
+        the first element as-is previously yielded blank iLO columns. This helper
+        normalises every entry to its address string so all IPs are preserved.
+    #>
+    [CmdletBinding()]
+    param($MpIpAddresses)
+
+    $out = [System.Collections.Generic.List[string]]::new()
+    if ($null -eq $MpIpAddresses) { return $out }
+    if ($MpIpAddresses -isnot [System.Collections.ICollection]) { $MpIpAddresses = @($MpIpAddresses) }
+
+    foreach ($entry in $MpIpAddresses) {
+        if ($null -eq $entry) { continue }
+        if ($entry -is [string]) { $out.Add($entry); continue }
+        if ($entry.PSObject.Properties.Name -contains 'ipAddress')  { $out.Add([string]$entry.ipAddress); continue }
+        if ($entry.PSObject.Properties.Name -contains 'address')    { $out.Add([string]$entry.address); continue }
+        if ($entry.PSObject.Properties.Name -contains 'ipv4Address') { $out.Add([string]$entry.ipv4Address); continue }
+        if ($entry -is [System.Collections.IDictionary] -and $entry.ContainsKey('ipAddress')) { $out.Add([string]$entry['ipAddress']); continue }
+    }
+    return $out
+}

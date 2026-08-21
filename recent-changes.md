@@ -26,6 +26,7 @@
   - [20) Command documentation clarity — functionality + safe/destructive](#20-command-documentation-clarity-functionality-safedestructive)
   - [21) Command documentation clarity — firmware/security/utility + repository corrections](#21-command-documentation-clarity-firmwaresecurityutility-repository-corrections)
   - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-_publish-result-passthru-output-migration-15-public-commands)
+  - [23) `Get-OneViewServerList` DRY output migration + iLO IP fix + `prune-logs` hardening](#23-get-oneviewserverlist-dry-output-migration-ilo-ip-fix-prune-logs-hardening)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -689,3 +690,40 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - `tests/powershell` full suite: **520 passed, 0 failed** (across all 15 commands' `*.Tests.ps1` plus `Router.Unit.Tests.ps1`).
 - `scripts/lint.ps1` (PSScriptAnalyzer): **151 files, all checks passed** (syntax + code quality).
 - Smoke test (`Disconnect-OneView`): default path returns nothing on the success stream (only the human-readable report prints); `-PassThru` returns the structured `{ Message, Timestamp, Success }` hashtable; `-Json` emits a JSON string.
+
+<a id="23-get-oneviewserverlist-dry-output-migration-ilo-ip-fix-prune-logs-hardening"></a>
+
+### 23) `Get-OneViewServerList` DRY output migration + iLO IP fix + `prune-logs` hardening
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-21 | Migrated `Get-OneViewServerList` to the shared `_Publish-Result` / `_Emit-*` output pattern (the 16th command, previously the outlier); fixed blank/missing iLO IP across the list/target/connection commands with a shared `_ConvertTo-IloIpAddressList` helper; made the server-list formatter render errors on failure; hardened `prune-logs.ps1` (removed the `-Include` scan hang + layered exception handling); removed `prune-logs` from non-log-creating `make` targets | Kev Everall |
+
+<a name="scope-23"></a>
+
+#### Scope
+
+- `Get-OneViewServerList` was the one command **not** covered by the §22 `_Publish-Result` / `-PassThru` migration. It still used an ad-hoc local formatter plus manual `-PassThru` gating — which is also what let a duplicate `_Format-ServerListResult` formatter drift and collide with `Test-ServerList.ps1` (the "Server List Validation" shadowing bug fixed earlier in `9cb8049`).
+- The server-list / server-target / connection-status commands rendered an **empty iLO IP column** because `ilo_ip` was taken as `$srv.mpIpAddresses | Select-Object -First 1`, which yields nothing useful when OneView returns `mpIpAddresses` as an array of address objects (`@{ ipAddress = …; type = … }`).
+- Build commands (`Start-PhysicalServerBuild`, etc.) do **not** re-query OneView for the iLO IP — they read `Details.ilo_ip` from `Get-OneViewServerTarget` (`Start-PhysicalServerBuild.ps1:423`). With `ilo_ip` blank, that a→b→c chain broke and forced manual `-IloIp` entry.
+- `prune-logs.ps1` hung indefinitely: `Get-ChildItem -Recurse -File -Include *.log,*.json,*.txt` over ~937 files never returned (>60 s), blocking `make lint` / `make test` on the developer machine.
+
+<a name="change-23"></a>
+
+#### Change
+
+- **`Get-OneViewServerList` DRY migration** — added `-Json` / `-Quiet`, created `_Emit-OneViewServerListResult` (thin wrapper over `_Publish-Result -CustomView { _Format-OneViewServerListResult }`), and routed **every** exit path (mock, bad filter, dry-run, no-session, session-fail, success, exception) through it, mirroring `Get-OneViewConnectionStatus`. The uniquely-named `_Format-OneViewServerListResult` is now the only formatter, eliminating the duplicate-function fragility.
+- **Shared iLO IP helper** — added `_ConvertTo-IloIpAddressList` to `Private/OutputFormatter.ps1`. It extracts every address string from `mpIpAddresses` whether it is a `string[]` or an array of `@{ ipAddress = … }` objects (also handles `address` / `ipv4Address` / dictionary forms), joining them with `, ` so **all** IPs are shown and returned. Applied in `Get-OneViewServerList`, `Get-OneViewServerTarget` (`Details.ilo_ip`, consumed by build commands) and `Get-OneViewConnectionStatus` (per-server lookup).
+- **Formatter failure rendering (regression fix)** — `_Format-OneViewServerListResult` previously did `if (-not $Result.Success) { return }`, so failures rendered **nothing** after the DRY migration. It now prints the `Error` in red, so the no-session / bad-filter / exception paths still give the operator clear feedback (and removing the duplicate `result:` INFO line no longer loses that feedback).
+- **Removed duplicate `result:` INFO lines** — dropped the `$logger.Info("… result: …")` summary line from `Get-OneViewServerList` and `Get-OneViewConnectionStatus` (it duplicated the human-readable table on screen). The failure-path INFO lines are retained.
+- **`prune-logs.ps1` hardening** — replaced the hanging `-Include *.log,*.json,*.txt -Recurse` scan with `Get-ChildItem -Recurse -File | Where-Object { $_.Extension -in … }` (~0.04 s vs >60 s hang). Added **layered exception handling**: per-file `try/catch` (one undeletable log warns and continues instead of aborting the whole prune) wrapped in an outer `try/catch` that exits `1` with a clear `[prune-logs] Failed:` message instead of a stack dump.
+- **`Makefile` `prune-logs` wiring** — removed `prune-logs` as a prerequisite from `help`, `lint`, `lint-test`, `setup`, `docs`, `fix-docs`, `fix-docs-dryrun` and `clean` (the latter already `rm -rf`s `generated/`, so pruning first was pointless). Kept it only on the log-generating targets: `test`, `test-unit`, `test-integration`, `maint-mode-tests`, `automation-mode-tests`, `test-progress-rpt-tests`, `coverage`.
+
+<a name="verification-23"></a>
+
+#### Verification
+
+- `Get-OneViewServerList.Unit.Tests.ps1` (17), `Get-OneViewConnectionStatus.Unit.Tests.ps1` (23), `Get-OneViewServerTarget.Unit.Tests.ps1` (13) — **53 passed, 0 failed**.
+- End-to-end proof with the real OneView `mpIpAddresses` object shape: `(_ConvertTo-IloIpAddressList @(@{ ipAddress='10.1.2.3' }, @{ ipAddress='10.1.2.4' }))` → `10.1.2.3 | 10.1.2.4`; string array → `192.168.1.5`; `$null` → `''` (no throw). `Get-OneViewServerList` returns and renders `ilo_ip` (`10.9.9.9`) from an object-array mock.
+- Failure-path proof: `Get-OneViewServerList` with no session now renders `Error: No active OneView session…` (was blank).
+- `prune-logs.ps1` runs in ~0.04 s and exits `0`; `PSScriptAnalyzer` on all four changed `.ps1` files: no new issues (the only findings are pre-existing in `Get-OneViewServerTarget.ps1`).
