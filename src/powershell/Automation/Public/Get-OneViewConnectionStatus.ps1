@@ -328,9 +328,9 @@ function Get-OneViewConnectionStatus {
                             serial_number  = $srv.serialNumber
                             model          = $srv.model
                             power_state    = $srv.powerState
-                            health_status  = $srv.status
-                            ilo_ip         = ($srv.mpIpAddresses | Select-Object -First 1)
-                            enclosure_name = $srv.enclosureName
+                        health_status  = $srv.status
+                        ilo_ip         = (_ConvertTo-IloIpAddressList $srv.mpIpAddresses) -join ', '
+                        enclosure_name = $srv.enclosureName
                             enclosure_bay  = $srv.position
                             connected      = ($srv.status -ne 'Disabled')
                             resolved_by    = $t
@@ -347,7 +347,6 @@ function Get-OneViewConnectionStatus {
         }
 
         $result.Success = $result.Connected
-        $logger.Info("Get-OneViewConnectionStatus result: Success=$($result.Success) Connected=$($result.Connected) Reachable=$($result.Reachable) Authenticated=$($result.Authenticated) Error='$($result.Error)'")
         return (_Emit-ConnectionStatusResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {

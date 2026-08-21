@@ -234,7 +234,7 @@ function Get-OneViewServerList {
                     model          = $srv.model
                     power_state    = $srv.powerState
                     health_status  = $srv.status
-                    ilo_ip         = ($srv.mpIpAddresses | Select-Object -First 1)
+                    ilo_ip         = (_ConvertTo-IloIpAddressList $srv.mpIpAddresses) -join ', '
                     enclosure_name = $srv.enclosureName
                     enclosure_bay  = $srv.position
                     oneview_uri    = $srv.uri
@@ -255,7 +255,6 @@ function Get-OneViewServerList {
             Servers = $servers.ToArray()
             Error   = $null
         }
-        $logger.Info("Get-OneViewServerList result: Success=$($result.Success) Count=$($result.Count)")
         return (_Emit-OneViewServerListResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {
@@ -316,7 +315,14 @@ function _Emit-OneViewServerListResult {
 function _Format-OneViewServerListResult {
     param([hashtable]$Result)
 
-    if (-not $Result.Success) { return }
+    if (-not $Result.Success) {
+        if ($Result.Error) {
+            Write-Host ""
+            Write-Host "  Error:   $($Result.Error)" -ForegroundColor Red
+            Write-Host ""
+        }
+        return
+    }
 
     if ($Result.DryRun) {
         Write-Host ""
@@ -345,7 +351,9 @@ function _Format-OneViewServerListResult {
     $serialWidth = 15
     $powerWidth = 8
     $healthWidth = 10
-    $iloWidth = 15
+    $iloWidth = ($Result.Servers | ForEach-Object { "$($_.ilo_ip)".Length } | Measure-Object -Maximum).Maximum
+    if ($iloWidth -lt 15) { $iloWidth = 15 }
+    if ($iloWidth -gt 40) { $iloWidth = 40 }
 
     $header = "{0,-$nameWidth}  {1,-$serialWidth}  {2,-$powerWidth}  {3,-$healthWidth}  {4,-$iloWidth}" -f `
         'Server Name', 'Serial Number', 'Power', 'Health', 'iLO IP'
