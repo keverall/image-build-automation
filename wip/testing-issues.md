@@ -76,7 +76,6 @@
     - [Get-OneViewConnectionStatus -ServerIdentifier alp-qlikview-03ilo](#get-oneviewconnectionstatus--serveridentifier-alp-qlikview-03ilo)
     - [Get-OneViewServerList -ServerIdentifier alp-qlikview-03ilo](#get-oneviewserverlist--serveridentifier-alp-qlikview-03ilo)
     - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:Off'](#get-oneviewserverlist--oneviewhost-va-oneviewt-01--filter-poweroff-1)
-    - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:On'                  0  17:45:07 ](#get-oneviewserverlist--oneviewhost-va-oneviewt-01--filter-poweron------------------0--174507-)
     - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:\*qlikview-03ilo'      0  17:45:20 ](#get-oneviewserverlist--oneviewhost-va-oneviewt-01--filter-nameqlikview-03ilo------0--174520-)
     - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03ilo'       0  17:50:27 ](#get-oneviewserverlist--oneviewhost-va-oneviewt-01--filter-nameqlikview-03ilo-------0--175027-)
     - [Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'name:qlikview-03'          0  17:50:59 ](#get-oneviewserverlist--oneviewhost-va-oneviewt-01--filter-nameqlikview-03----------0--175059-)
@@ -1679,9 +1678,7 @@ No servers matched the request.
 
 2026-08-18 16:45:07 - OneViewServerList - INFO - Get-OneViewServerList result: Success=True Count=0 
 
-<a id="get-oneviewserverlist-oneviewhost-va-oneviewt-01-filter-poweron-0-174507"></a>
 
-### Get-OneViewServerList -OneViewHost va-oneviewt-01 -Filter 'power:On'                  0  17:45:07 
 
 ```text
 ==============================================
