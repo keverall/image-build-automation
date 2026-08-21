@@ -51,7 +51,7 @@ endif
 .PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
-setup: prune-logs ## Setup PowerShell environment (install modules, configure profiles)
+setup: ## Setup PowerShell environment (install modules, configure profiles)
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Setup-Profile.ps1
@@ -59,7 +59,7 @@ setup: prune-logs ## Setup PowerShell environment (install modules, configure pr
 # Note: checkmake installation is now handled gracefully by setup-runner.ps1
 
 # ─── Linting ────────────────────────────────────────────────────────────────
-lint: prune-logs lint-make lint-checkmake ## Lint PowerShell files and Makefile
+lint: lint-make lint-checkmake ## Lint PowerShell files and Makefile
 	@echo "$(CYAN)[lint]$(NC) Running PSScriptAnalyzer..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
@@ -70,7 +70,7 @@ lint-make: ## Lint Makefile syntax and style
 	@echo "$(CYAN)[lint-make]$(NC) Checking Makefile..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint-make.ps1
 
-lint-test: prune-logs ## Lint and run tests (combined CI step)
+lint-test: ## Lint and run tests (combined CI step)
 	@$(MAKE) lint && $(MAKE) test
 
 # ─── PowerShell Testing ──────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ coverage: prune-logs ## Run Pester tests with code coverage and generate report
 	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage and generating report..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/coverage-report.ps1
 
-docs: prune-logs gen-docs fix-links add-anchors ## Generate PowerShell Markdown docs, fix links, and add anchors/TOC
+docs: gen-docs fix-links add-anchors ## Generate PowerShell Markdown docs, fix links, and add anchors/TOC
 	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
 
 gen-docs: ## Generate PowerShell API reference docs (src/ + scripts/ -> docs/dynamic-code-docs)
@@ -122,21 +122,21 @@ fix-links: ## Validate and fix broken markdown links (shared by docs + fix-docs)
 	@echo "$(CYAN)[fix-links]$(NC) Validating and fixing markdown links..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
 
-fix-docs: prune-logs fix-links add-anchors ## Fix broken markdown links + anchors/TOC in configs/, docs/, and root
+fix-docs: fix-links add-anchors ## Fix broken markdown links + anchors/TOC in configs/, docs/, and root
 	@echo "$(GREEN)[fix-docs]$(NC) Done."
 
 fix-docs-dryrun: WHATIF=-WhatIf
 fix-docs-dryrun: DRYRUN=-DryRun
-fix-docs-dryrun: prune-logs ## Preview broken markdown link + anchor/TOC fixes (dry-run)
+fix-docs-dryrun: ## Preview broken markdown link + anchor/TOC fixes (dry-run)
 	@$(MAKE) fix-links
 	@$(MAKE) add-anchors
 
 # ─── Default Target ──────────────────────────────────────────────────────────
-help: prune-logs ## Show this help message
+help: ## Show this help message
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Show-Help.ps1
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
-clean: prune-logs ## Remove build artifacts and temp files
+clean: ## Remove build artifacts and temp files
 	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
 	@rm -rf generated/
 	@echo "$(GREEN)[clean]$(NC) Done"

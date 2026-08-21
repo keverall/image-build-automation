@@ -48,28 +48,33 @@ if ($searchDirs.Count -eq 0) {
 
 Write-Host "[prune-logs] Pruning logs to keep maximum $MaxLogsToKeep per type..." -ForegroundColor Cyan
 
-$count = 0
+try {
+    $count = 0
 
 $legacyLogs = @()
 foreach ($dir in $searchDirs) {
-    $legacyLogs += Get-ChildItem -Path $dir -Recurse -File -Include pester-log.txt, pester.log -ErrorAction SilentlyContinue
+    $legacyLogs += Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -in 'pester-log.txt', 'pester.log' }
 }
 
 $legacyLogs = $legacyLogs | Select-Object -Unique FullName
 
 if ($null -ne $legacyLogs -and $legacyLogs.Count -gt 0) {
     foreach ($log in $legacyLogs) {
-        if (Test-Path $log.FullName) {
-            Remove-Item -Path $log.FullName -Force
-            Write-Output "Removed legacy redundant log: $($log.FullName)"
-            $count++
+        try {
+            if (Test-Path $log.FullName) {
+                Remove-Item -Path $log.FullName -Force -ErrorAction Stop
+                Write-Output "Removed legacy redundant log: $($log.FullName)"
+                $count++
+            }
+        } catch {
+            Write-Warning "Could not remove legacy log '$($log.FullName)': $($_.Exception.Message)"
         }
     }
 }
 
 $allLogs = @()
 foreach ($dir in $searchDirs) {
-    $allLogs += Get-ChildItem -Path $dir -Recurse -File -Include *.log, *.json, *.txt -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne '.gitkeep' -and $_.Name -notmatch 'coverage-report' }
+    $allLogs += Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in '.log', '.json', '.txt' -and $_.Name -ne '.gitkeep' -and $_.Name -notmatch 'coverage-report' }
 }
 
 # De-duplicate by full path WITHOUT flattening the FileInfo objects: using
@@ -109,15 +114,24 @@ if ($null -ne $allLogs -and $allLogs.Count -gt 0) {
         if ($sorted.Count -gt $MaxLogsToKeep) {
             $toPrune = $sorted | Select-Object -Skip $MaxLogsToKeep
             foreach ($log in $toPrune) {
-                if (Test-Path $log.FullName) {
-                    Remove-Item -Path $log.FullName -Force
-                    Write-Output "Removed excess log: $($log.FullName)"
-                    $count++
+                try {
+                    if (Test-Path $log.FullName) {
+                        Remove-Item -Path $log.FullName -Force -ErrorAction Stop
+                        Write-Output "Removed excess log: $($log.FullName)"
+                        $count++
+                    }
+                } catch {
+                    Write-Warning "Could not remove excess log '$($log.FullName)': $($_.Exception.Message)"
                 }
             }
         }
     }
 }
 
-Write-Host "[prune-logs] Pruned $count excess log files." -ForegroundColor Green
+    Write-Host "[prune-logs] Pruned $count excess log files." -ForegroundColor Green
+}
+catch {
+    Write-Error "[prune-logs] Failed: $($_.Exception.Message)"
+    exit 1
+}
 exit 0

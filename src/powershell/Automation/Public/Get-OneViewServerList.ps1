@@ -129,7 +129,9 @@ function Get-OneViewServerList {
         [Alias('Dry')]
         [switch] $DryRun,
         [Alias('PT')]
-        [switch] $PassThru
+        [switch] $PassThru,
+        [switch] $Json,
+        [switch] $Quiet
     )
 
     # Common logging: each command writes to its own isolated log under
@@ -139,8 +141,7 @@ function Get-OneViewServerList {
 
     if ($MockResult) {
         $logger.Info("Get-OneViewServerList returning MockResult (filter=$Filter)")
-        if ($PassThru) { return $MockResult }
-        return
+        return (_Emit-OneViewServerListResult -Result $MockResult -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # Parse -Filter into predicate regexes (validate before connecting).
@@ -153,17 +154,15 @@ function Get-OneViewServerList {
         elseif ($Filter -match '^name:(.+)$')    { $nameRegex   = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
         else {
             $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<value>." }
-            if ($PassThru) { return $errMap }
-            Write-Host $errMap.Error -ForegroundColor Red
-            return
+            return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
     }
 
     if ($DryRun) {
         $msg = "[DRY RUN] Get-OneViewServerList Host=$OneViewHost Filter=$Filter"
         $logger.Info($msg); Write-Host $msg
-        if ($PassThru) { return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true } }
-        return
+        $dryMap = @{ Success = $true; Count = 0; Servers = @(); DryRun = $true }
+        return (_Emit-OneViewServerListResult -Result $dryMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # ── Resolve the OneView session ──────────────────────────────────────────
@@ -185,9 +184,7 @@ function Get-OneViewServerList {
     if (-not $OneViewHost) {
         $logger.Info("Get-OneViewServerList: no host and no active session - graceful failure")
         $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
-        if ($PassThru) { return $errMap }
-        Write-Host $errMap.Error -ForegroundColor Red
-        return
+        return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # Reuse the active session directly when we derived the host from it; otherwise
@@ -198,9 +195,7 @@ function Get-OneViewServerList {
         if (-not $sess.Success) {
             $logger.Info("Get-OneViewServerList: session resolution failed. Error='$($sess.Error)'")
             $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
-            if ($PassThru) { return $errMap }
-            Write-Host $errMap.Error -ForegroundColor Red
-            return
+            return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
         $OneViewHost  = $sess.OneViewHost
         $sessionToken = $sess.SessionToken
@@ -260,12 +255,8 @@ function Get-OneViewServerList {
             Servers = $servers.ToArray()
             Error   = $null
         }
-        _Format-OneViewServerListResult -Result $result
         $logger.Info("Get-OneViewServerList result: Success=$($result.Success) Count=$($result.Count)")
-        # By default emit ONLY the formatted table (no raw hashtable/json dump to the
-        # terminal). Scripts/consumers opt in to the structured object with -PassThru.
-        if ($PassThru) { return $result }
-        return
+        return (_Emit-OneViewServerListResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {
         $err = "OneView server list failed: $($_.Exception.Message)"
@@ -276,9 +267,7 @@ function Get-OneViewServerList {
             Servers = @()
             Error   = $err
         }
-        if ($PassThru) { return $errMap }
-        Write-Host $err -ForegroundColor Red
-        return
+        return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 }
 
@@ -305,10 +294,36 @@ function _ConvertToWildcardRegex {
     return ".*$($sb.ToString()).*"
 }
 
+function _Emit-OneViewServerListResult {
+    <#
+    .SYNOPSIS
+        Emits the server-list result via the shared, DRY _Publish-Result helper
+        (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-OneViewServerListResult -Result $r
+    }
+}
+
 function _Format-OneViewServerListResult {
     param([hashtable]$Result)
 
     if (-not $Result.Success) { return }
+
+    if ($Result.DryRun) {
+        Write-Host ""
+        Write-Host "DRY RUN - no servers queried." -ForegroundColor Yellow
+        Write-Host ""
+        return
+    }
 
     if ($Result.Count -eq 0) {
         Write-Host ""
