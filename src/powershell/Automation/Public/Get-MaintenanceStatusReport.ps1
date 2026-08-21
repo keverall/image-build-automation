@@ -123,7 +123,9 @@ function Get-MaintenanceStatusReport {
         [switch] $Quiet
     )
 
-    if ($DryRun) { $IncludeLive = $false }
+    if ($DryRun) {
+        $IncludeLive = $false 
+    }
 
     $generatedUtc = (Get-UtcTimestamp)
 
@@ -146,7 +148,9 @@ function Get-MaintenanceStatusReport {
     $hostsCfgPath = Join-Path $effectiveConfigDir 'connection_hosts.json'
     $hostsCfg = if (Test-Path $hostsCfgPath) {
         Import-JsonConfig -Path $hostsCfgPath -Required:$false
-    } else { @{} }
+    } else {
+        @{} 
+    }
 
     $envConfig = $hostsCfg.Get_Item('environments') ?? @{}
     $selectedEnv = $envConfig.Get_Item($effectiveEnv) ?? @{}
@@ -181,11 +185,11 @@ function Get-MaintenanceStatusReport {
         if ($resolvedScomHost) {
             try {
                 $scomMgr = [SCOMManager]::new(@{
-                    management_server = $resolvedScomHost
-                    powershell_module = 'OperationsManager'
-                    use_winrm         = $scomUseWinRm
-                    credentials       = @{ username_env = 'SCOM_ADMIN_USER'; password_env = 'SCOM_ADMIN_PASSWORD' }
-                })
+                        management_server = $resolvedScomHost
+                        powershell_module = 'OperationsManager'
+                        use_winrm         = $scomUseWinRm
+                        credentials       = @{ username_env = 'SCOM_ADMIN_USER'; password_env = 'SCOM_ADMIN_PASSWORD' }
+                    })
             } catch {
                 Write-Warning "SCOM manager init failed ($resolvedScomHost): $($_.Exception.Message)"
             }
@@ -196,12 +200,12 @@ function Get-MaintenanceStatusReport {
         if ($resolvedOvHost) {
             try {
                 $ovMgr = [OneViewClient]::new(@{
-                    oneview = @{
-                        appliance   = $resolvedOvHost
-                        use_winrm   = $false
-                        credentials = @{ username_env = 'ONEVIEW_USER'; password_env = 'ONEVIEW_PASSWORD' }
-                    }
-                })
+                        oneview = @{
+                            appliance   = $resolvedOvHost
+                            use_winrm   = $false
+                            credentials = @{ username_env = 'ONEVIEW_USER'; password_env = 'ONEVIEW_PASSWORD' }
+                        }
+                    })
             } catch {
                 Write-Warning "OneView manager init failed ($resolvedOvHost): $($_.Exception.Message)"
             }
@@ -246,15 +250,15 @@ foreach (`$g in `$groups) {
                 $discovered = $dr.Output | ConvertFrom-Json
                 foreach ($d in $discovered) {
                     $clusterUnits.Add(@{
-                        ClusterId  = $d.group
-                        DisplayName = $d.group
-                        SCOMGroup   = $d.group
-                        Servers     = @($d.servers)
-                        Environment = $effectiveEnv
-                        OvScope     = $null
-                        Schedule    = @{}
-                        Source      = 'SCOM'
-                    })
+                            ClusterId   = $d.group
+                            DisplayName = $d.group
+                            SCOMGroup   = $d.group
+                            Servers     = @($d.servers)
+                            Environment = $effectiveEnv
+                            OvScope     = $null
+                            Schedule    = @{}
+                            Source      = 'SCOM'
+                        })
                 }
             }
         } catch {
@@ -271,15 +275,15 @@ foreach (`$g in `$groups) {
             foreach ($ce in $clustersMap.GetEnumerator()) {
                 $cdef = $ce.Value
                 $clusterUnits.Add(@{
-                    ClusterId   = $ce.Key
-                    DisplayName = $cdef.Get_Item('display_name') ?? $ce.Key
-                    SCOMGroup   = $cdef.Get_Item('scom_group')
-                    Servers     = @($cdef.Get_Item('servers') ?? @())
-                    Environment = $cdef.Get_Item('environment') ?? $effectiveEnv
-                    OvScope     = $cdef.Get_Item('oneview_scope')
-                    Schedule    = $cdef.Get_Item('schedule') ?? @{}
-                    Source      = 'Catalogue'
-                })
+                        ClusterId   = $ce.Key
+                        DisplayName = $cdef.Get_Item('display_name') ?? $ce.Key
+                        SCOMGroup   = $cdef.Get_Item('scom_group')
+                        Servers     = @($cdef.Get_Item('servers') ?? @())
+                        Environment = $cdef.Get_Item('environment') ?? $effectiveEnv
+                        OvScope     = $cdef.Get_Item('oneview_scope')
+                        Schedule    = $cdef.Get_Item('schedule') ?? @{}
+                        Source      = 'Catalogue'
+                    })
             }
         }
     }
@@ -299,7 +303,9 @@ foreach (`$g in `$groups) {
                 foreach ($s in $ovList.Servers) {
                     $nm = "$($s.name)".ToLower(); $sh = ($nm.Split('.'))[0]
                     $ovIndex[$nm] = $s; $ovIndex[$sh] = $s
-                    if ($s.serial_number) { $ovIndex["$($s.serial_number)".ToLower()] = $s }
+                    if ($s.serial_number) {
+                        $ovIndex["$($s.serial_number)".ToLower()] = $s 
+                    }
                 }
             }
         } catch {
@@ -319,7 +325,9 @@ foreach (`$g in `$groups) {
                 foreach ($e in $svc['servers'].GetEnumerator()) {
                     $v = $e.Value
                     foreach ($kk in @($e.Key, $v['oneview_name'], $v['display_name'], $v['serial_number'])) {
-                        if ($kk) { $dryOvIndex["$($kk)".ToLower()] = $v }
+                        if ($kk) {
+                            $dryOvIndex["$($kk)".ToLower()] = $v 
+                        }
                     }
                     if ($v['oneview_name']) {
                         $dryOvIndex[($v['oneview_name'].ToLower().Split('.'))[0]] = $v
@@ -336,11 +344,27 @@ foreach (`$g in `$groups) {
 
     foreach ($unit in $clusterUnits) {
         $scomGroup = $unit.SCOMGroup
-        $servers   = if ($unit.Servers.Count -eq 0) { @($unit.ClusterId) } else { $unit.Servers }
-        $schedule  = $unit.Schedule
-        $powerStart = if ($schedule -and $schedule.ContainsKey('work_start')) { $schedule['work_start'] } else { 'n/a (not sourced from SCOM)' }
-        $powerEnd   = if ($schedule -and $schedule.ContainsKey('work_end'))   { $schedule['work_end'] }   else { 'n/a (not sourced from SCOM)' }
-        $powerTz    = if ($schedule -and $schedule.ContainsKey('timezone'))   { $schedule['timezone'] }   else { 'n/a' }
+        $servers = if ($unit.Servers.Count -eq 0) {
+            @($unit.ClusterId) 
+        } else {
+            $unit.Servers 
+        }
+        $schedule = $unit.Schedule
+        $powerStart = if ($schedule -and $schedule.ContainsKey('work_start')) {
+            $schedule['work_start'] 
+        } else {
+            'n/a (not sourced from SCOM)' 
+        }
+        $powerEnd = if ($schedule -and $schedule.ContainsKey('work_end')) {
+            $schedule['work_end'] 
+        } else {
+            'n/a (not sourced from SCOM)' 
+        }
+        $powerTz = if ($schedule -and $schedule.ContainsKey('timezone')) {
+            $schedule['timezone'] 
+        } else {
+            'n/a' 
+        }
 
         # ── Live SCOM status for this group ───────────────────────────────────
         $scomOk = $false
@@ -351,10 +375,14 @@ foreach (`$g in `$groups) {
                 if ($status.Success) {
                     $scomOk = $true
                     foreach ($obj in $status.Objects) {
-                        foreach ($k in (_BuildServerKey $obj.Name)) { $scomByServer[$k] = $obj }
+                        foreach ($k in (_BuildServerKey $obj.Name)) {
+                            $scomByServer[$k] = $obj 
+                        }
                     }
                 }
-            } catch { Write-Verbose "SCOM status error for '$scomGroup': $($_.Exception.Message)" }
+            } catch {
+                Write-Verbose "SCOM status error for '$scomGroup': $($_.Exception.Message)" 
+            }
         }
 
         # ── OneView status: live (per-server link) or mock (dry config) ─────────
@@ -365,17 +393,24 @@ foreach (`$g in `$groups) {
             foreach ($srv in $servers) {
                 $srvKey = $srv.ToLower(); $srvShort = ($srvKey.Split('.'))[0]
                 $ovServer = $null
-                if ($ovIndex.ContainsKey($srvKey)) { $ovServer = $ovIndex[$srvKey] }
-                elseif ($ovIndex.ContainsKey($srvShort)) { $ovServer = $ovIndex[$srvShort] }
+                if ($ovIndex.ContainsKey($srvKey)) {
+                    $ovServer = $ovIndex[$srvKey] 
+                } elseif ($ovIndex.ContainsKey($srvShort)) {
+                    $ovServer = $ovIndex[$srvShort] 
+                }
                 if ($ovServer) {
                     try {
                         $st = $ovMgr.GetMaintenanceStatus($ovServer.name, 'ServerHardware')
                         if ($st.Success -and $st.Objects.Count -gt 0) {
                             $ovOk = $true
                             $ovByServer[$srvKey] = $st.Objects[0]
-                            if (-not $ovByServer.ContainsKey($srvShort)) { $ovByServer[$srvShort] = $st.Objects[0] }
+                            if (-not $ovByServer.ContainsKey($srvShort)) {
+                                $ovByServer[$srvShort] = $st.Objects[0] 
+                            }
                         }
-                    } catch { Write-Verbose "OneView status error for '$($ovServer.name)': $($_.Exception.Message)" }
+                    } catch {
+                        Write-Verbose "OneView status error for '$($ovServer.name)': $($_.Exception.Message)" 
+                    }
                 }
             }
         }
@@ -386,59 +421,94 @@ foreach (`$g in `$groups) {
             # SCOM state
             $scomState = 'Unknown'; $scomStart = ''; $scomEnd = ''
             $scomObj = $null
-            if ($scomByServer.ContainsKey($srvKey)) { $scomObj = $scomByServer[$srvKey] }
-            elseif ($scomByServer.ContainsKey($srvShort)) { $scomObj = $scomByServer[$srvShort] }
+            if ($scomByServer.ContainsKey($srvKey)) {
+                $scomObj = $scomByServer[$srvKey] 
+            } elseif ($scomByServer.ContainsKey($srvShort)) {
+                $scomObj = $scomByServer[$srvShort] 
+            }
             if ($scomObj) {
-                $scomState = if ($scomObj.InMaintenanceMode) { 'InMaintenance' } else { 'NotInMaintenance' }
-                if ($scomObj.MaintenanceModeStartTime) { $scomStart = (Convert-ToUtcIso8601 $scomObj.MaintenanceModeStartTime) }
-                if ($scomObj.MaintenanceModeEndTime)   { $scomEnd   = (Convert-ToUtcIso8601 $scomObj.MaintenanceModeEndTime) }
+                $scomState = if ($scomObj.InMaintenanceMode) {
+                    'InMaintenance' 
+                } else {
+                    'NotInMaintenance' 
+                }
+                if ($scomObj.MaintenanceModeStartTime) {
+                    $scomStart = (Convert-ToUtcIso8601 $scomObj.MaintenanceModeStartTime) 
+                }
+                if ($scomObj.MaintenanceModeEndTime) {
+                    $scomEnd = (Convert-ToUtcIso8601 $scomObj.MaintenanceModeEndTime) 
+                }
             }
 
             # OneView state + link method
             $ovState = 'Unknown'; $linkMethod = 'None'
             $ovObj = $null
-            if ($ovByServer.ContainsKey($srvKey)) { $ovObj = $ovByServer[$srvKey] }
-            elseif ($ovByServer.ContainsKey($srvShort)) { $ovObj = $ovByServer[$srvShort] }
+            if ($ovByServer.ContainsKey($srvKey)) {
+                $ovObj = $ovByServer[$srvKey] 
+            } elseif ($ovByServer.ContainsKey($srvShort)) {
+                $ovObj = $ovByServer[$srvShort] 
+            }
             if ($ovObj) {
-                $linkMethod = if ($unit.Source -eq 'Catalogue') { 'Catalogue' } else { 'Name' }
-                $ovState = if ($ovObj.InMaintenanceMode) { 'InMaintenance' } else { 'NotInMaintenance' }
+                $linkMethod = if ($unit.Source -eq 'Catalogue') {
+                    'Catalogue' 
+                } else {
+                    'Name' 
+                }
+                $ovState = if ($ovObj.InMaintenanceMode) {
+                    'InMaintenance' 
+                } else {
+                    'NotInMaintenance' 
+                }
             } elseif (-not $IncludeLive -and $dryOvIndex) {
                 # Mock: link from dry config (servers_catalogue.oneview.json) - no live state
                 $dryMatch = $null
-                if ($dryOvIndex.ContainsKey($srvKey)) { $dryMatch = $dryOvIndex[$srvKey] }
-                elseif ($dryOvIndex.ContainsKey($srvShort)) { $dryMatch = $dryOvIndex[$srvShort] }
+                if ($dryOvIndex.ContainsKey($srvKey)) {
+                    $dryMatch = $dryOvIndex[$srvKey] 
+                } elseif ($dryOvIndex.ContainsKey($srvShort)) {
+                    $dryMatch = $dryOvIndex[$srvShort] 
+                }
                 if ($dryMatch) {
                     $matchedBySerial = ($dryMatch['serial_number'] -and
                         (($srvKey -eq $dryMatch['serial_number'].ToLower()) -or ($srvShort -eq $dryMatch['serial_number'].ToLower())))
-                    $linkMethod = if ($matchedBySerial) { 'Serial' } else { 'Name' }
+                    $linkMethod = if ($matchedBySerial) {
+                        'Serial' 
+                    } else {
+                        'Name' 
+                    }
                 }
             }
 
-            $dataSource = if (-not $IncludeLive) { 'CatalogueOnly' }
-                          elseif ($scomOk -and $ovOk) { 'Live' }
-                          elseif ($scomOk) { 'Partial-SCOM' }
-                          elseif ($ovOk) { 'Partial-OneView' }
-                          else { 'CatalogueOnly' }
+            $dataSource = if (-not $IncludeLive) {
+                'CatalogueOnly' 
+            } elseif ($scomOk -and $ovOk) {
+                'Live' 
+            } elseif ($scomOk) {
+                'Partial-SCOM' 
+            } elseif ($ovOk) {
+                'Partial-OneView' 
+            } else {
+                'CatalogueOnly' 
+            }
 
             $rows.Add([PSCustomObject]@{
-                ReportGeneratedUtc     = $generatedUtc
-                ClusterId              = $unit.ClusterId
-                ClusterDisplayName     = $unit.DisplayName
-                Environment            = $unit.Environment
-                SCOMGroup              = $scomGroup
-                Server                 = $srv
-                SCOMMaintenanceMode    = $scomState
-                SCOMWindowStartUtc     = $scomStart
-                SCOMWindowEndUtc       = $scomEnd
-                SCOMWindowComment      = 'n/a (status query does not expose comment)'
-                OneViewMaintenanceMode = $ovState
-                OneViewLinkMethod      = $linkMethod
-                OneViewScope          = $unit.OvScope
-                PowerScheduleStart     = $powerStart
-                PowerScheduleEnd       = $powerEnd
-                PowerScheduleTimezone  = $powerTz
-                DataSource             = $dataSource
-            })
+                    ReportGeneratedUtc     = $generatedUtc
+                    ClusterId              = $unit.ClusterId
+                    ClusterDisplayName     = $unit.DisplayName
+                    Environment            = $unit.Environment
+                    SCOMGroup              = $scomGroup
+                    Server                 = $srv
+                    SCOMMaintenanceMode    = $scomState
+                    SCOMWindowStartUtc     = $scomStart
+                    SCOMWindowEndUtc       = $scomEnd
+                    SCOMWindowComment      = 'n/a (status query does not expose comment)'
+                    OneViewMaintenanceMode = $ovState
+                    OneViewLinkMethod      = $linkMethod
+                    OneViewScope           = $unit.OvScope
+                    PowerScheduleStart     = $powerStart
+                    PowerScheduleEnd       = $powerEnd
+                    PowerScheduleTimezone  = $powerTz
+                    DataSource             = $dataSource
+                })
         }
     }
 
@@ -446,10 +516,16 @@ foreach (`$g in `$groups) {
     try {
         $audit = New-AuditLogger -Category 'maintenance_status_report' `
             -LogDir (Join-Path (Get-ProjectRoot) 'generated/logs/audit') -MasterLogName 'audit.log'
-        $src = if ($IncludeLive) { 'SCOM' } else { 'Catalogue' }
+        $src = if ($IncludeLive) {
+            'SCOM' 
+        } else {
+            'Catalogue' 
+        }
         $audit.Log('report_generate', 'INFO', '', "Rows=$($rows.Count) Environment=$effectiveEnv Live=$IncludeLive Source=$src") | Out-Null
         $audit.Save() | Out-Null
-    } catch { Write-Verbose "Audit logging skipped: $($_.Exception.Message)" }
+    } catch {
+        Write-Verbose "Audit logging skipped: $($_.Exception.Message)" 
+    }
 
     # ── Output ─────────────────────────────────────────────────────────────────
     $result = $rows.ToArray()
@@ -457,12 +533,18 @@ foreach (`$g in `$groups) {
     # Human-readable report (per -Format). Suppressed with -Quiet.
     if (-not $Quiet) {
         switch ($Format) {
-            'Json'  { $result | ConvertTo-Json -Depth 4 | Out-Host }
-            'Table' { $result | Format-Table -AutoSize | Out-Host }
+            'Json' {
+                $result | ConvertTo-Json -Depth 4 | Out-Host 
+            }
+            'Table' {
+                $result | Format-Table -AutoSize | Out-Host 
+            }
             default {
                 if (-not $Path) {
                     $projRoot = Get-ProjectRoot
-                    if (-not $projRoot) { $projRoot = (Get-Location).Path }
+                    if (-not $projRoot) {
+                        $projRoot = (Get-Location).Path 
+                    }
                     $reportDir = Join-Path $projRoot 'generated/reports'
                     Ensure-DirectoryExists -Path $reportDir
                     $Path = Join-Path $reportDir "MaintenanceStatusReport_$(Get-UtcFileTimestamp).csv"

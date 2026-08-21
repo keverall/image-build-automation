@@ -2698,7 +2698,7 @@ Connect-OneView: A parameter cannot be found that matches parameter name 'Server
 
 2026-08-20 15:59:36 - OneViewServerList - INFO - Get-OneViewServerList result: Success=Tru Count=16
    image-build-automation  Test-ServerList -MgmtHost va-oneviewt-01            16:59:36 Test-ServerList: A parameter cannot be found that matches parameter name 'MgmtHost'. 
-   image-build-automation  Test-ServerList                                  1  16:59:43  
+   image-build-automation  Test-ServerList                                 
 ==============================================
   Server List Validation
 ==============================================
