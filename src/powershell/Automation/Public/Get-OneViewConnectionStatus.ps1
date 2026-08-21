@@ -329,7 +329,7 @@ function Get-OneViewConnectionStatus {
                             model          = $srv.model
                             power_state    = $srv.powerState
                         health_status  = $srv.status
-                        ilo_ip         = (_ConvertTo-IloIpAddressList $srv.mpIpAddresses) -join ', '
+                        ilo_ip         = (_ConvertTo-IloIpAddressList $srv) -join ', '
                         enclosure_name = $srv.enclosureName
                             enclosure_bay  = $srv.position
                             connected      = ($srv.status -ne 'Disabled')

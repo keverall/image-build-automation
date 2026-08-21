@@ -234,7 +234,7 @@ function Get-OneViewServerList {
                     model          = $srv.model
                     power_state    = $srv.powerState
                     health_status  = $srv.status
-                    ilo_ip         = (_ConvertTo-IloIpAddressList $srv.mpIpAddresses) -join ', '
+                    ilo_ip         = (_ConvertTo-IloIpAddressList $srv) -join ', '
                     enclosure_name = $srv.enclosureName
                     enclosure_bay  = $srv.position
                     oneview_uri    = $srv.uri
@@ -250,10 +250,11 @@ function Get-OneViewServerList {
         } while ($start -lt $total -and $resp.members.Count -gt 0)
 
         $result = @{
-            Success = $true
-            Count   = $servers.Count
-            Servers = $servers.ToArray()
-            Error   = $null
+            Success   = $true
+            Count     = $servers.Count
+            Appliance = $OneViewHost
+            Servers   = $servers.ToArray()
+            Error     = $null
         }
         return (_Emit-OneViewServerListResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
@@ -341,22 +342,24 @@ function _Format-OneViewServerListResult {
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host "  OneView Server List ($($Result.Count) servers)" -ForegroundColor Cyan
+    if ($Result.Appliance) {
+        Write-Host "  Appliance: $($Result.Appliance)" -ForegroundColor Cyan
+    }
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
 
-    $nameWidth = ($Result.Servers | ForEach-Object { $_.name.Length } | Measure-Object -Maximum).Maximum
-    if ($nameWidth -lt 10) { $nameWidth = 10 }
-    if ($nameWidth -gt 50) { $nameWidth = 50 }
+    $nameW   = [math]::Max(10, [math]::Min(50, ($Result.Servers | ForEach-Object { "$($_.name)".Length } | Measure-Object -Maximum).Maximum))
+    $serialW = 15
+    $modelW  = [math]::Max(8,  [math]::Min(22, ($Result.Servers | ForEach-Object { "$($_.model)".Length } | Measure-Object -Maximum).Maximum))
+    $powerW  = 8
+    $healthW = 10
+    $iloW    = [math]::Max(15, [math]::Min(40, ($Result.Servers | ForEach-Object { "$($_.ilo_ip)".Length } | Measure-Object -Maximum).Maximum))
+    $encW    = [math]::Max(10, [math]::Min(20, ($Result.Servers | ForEach-Object { "$($_.enclosure_name)".Length } | Measure-Object -Maximum).Maximum))
+    $bayW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.enclosure_bay)".Length } | Measure-Object -Maximum).Maximum))
+    $romW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.rom_version)".Length } | Measure-Object -Maximum).Maximum))
 
-    $serialWidth = 15
-    $powerWidth = 8
-    $healthWidth = 10
-    $iloWidth = ($Result.Servers | ForEach-Object { "$($_.ilo_ip)".Length } | Measure-Object -Maximum).Maximum
-    if ($iloWidth -lt 15) { $iloWidth = 15 }
-    if ($iloWidth -gt 40) { $iloWidth = 40 }
-
-    $header = "{0,-$nameWidth}  {1,-$serialWidth}  {2,-$powerWidth}  {3,-$healthWidth}  {4,-$iloWidth}" -f `
-        'Server Name', 'Serial Number', 'Power', 'Health', 'iLO IP'
+    $header = "{0,-$nameW}  {1,-$serialW}  {2,-$modelW}  {3,-$powerW}  {4,-$healthW}  {5,-$iloW}  {6,-$encW}  {7,-$bayW}  {8,-$romW}" -f `
+        'Server Name', 'Serial', 'Model', 'Power', 'Health', 'iLO IP', 'Enclosure', 'Bay', 'ROM'
     Write-Host $header -ForegroundColor Yellow
     Write-Host ("-" * $header.Length) -ForegroundColor Gray
 
@@ -376,8 +379,8 @@ function _Format-OneViewServerListResult {
             default      { 'Gray' }
         }
 
-        $line = "{0,-$nameWidth}  {1,-$serialWidth}  {2,-$powerWidth}  {3,-$healthWidth}  {4,-$iloWidth}" -f `
-            $name, $srv.serial_number, $srv.power_state, $srv.health_status, $srv.ilo_ip
+        $line = "{0,-$nameW}  {1,-$serialW}  {2,-$modelW}  {3,-$powerW}  {4,-$healthW}  {5,-$iloW}  {6,-$encW}  {7,-$bayW}  {8,-$romW}" -f `
+            $name, $srv.serial_number, $srv.model, $srv.power_state, $srv.health_status, $srv.ilo_ip, $srv.enclosure_name, $srv.enclosure_bay, $srv.rom_version
         Write-Host $line -ForegroundColor $healthColor
     }
 
