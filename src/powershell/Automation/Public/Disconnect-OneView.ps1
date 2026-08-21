@@ -67,6 +67,7 @@ function Disconnect-OneView {
 
     $result = @{
         Success   = $false
+        Appliance = $null
         Message   = ''
         Timestamp = Get-UtcTimestamp
     }
@@ -79,6 +80,10 @@ function Disconnect-OneView {
             return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
 
+        # Identify the appliance we are disconnecting from (for clear client feedback).
+        $activeSession = Get-OneViewActiveSession
+        $appliance = if ($activeSession -and $activeSession.Name) { $activeSession.Name } else { 'OneView appliance' }
+
         # Disconnect using the HPE OneView module
         if ($Force) {
             Disconnect-OVMgmt -ErrorAction SilentlyContinue
@@ -86,8 +91,9 @@ function Disconnect-OneView {
             Disconnect-OVMgmt -ErrorAction Stop
         }
 
-        $result.Success = $true
-        $result.Message = "Successfully disconnected from OneView appliance."
+        $result.Success   = $true
+        $result.Appliance = $appliance
+        $result.Message   = "Successfully disconnected from OneView appliance '$appliance'."
         $script:ActiveOneViewSession = $null
         Write-Host $result.Message -ForegroundColor Green
     }

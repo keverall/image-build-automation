@@ -264,29 +264,48 @@ function _Publish-Result {
 function _ConvertTo-IloIpAddressList {
     <#
     .SYNOPSIS
-        Extracts every iLO / management IP address string from a OneView
-        server-hardware mpIpAddresses value, regardless of whether it is an
-        array of plain strings or an array of address objects.
-    .DESCRIPTION
-        OneView returns mpIpAddresses either as a string[] or as an array of
-        objects (e.g. @{ ipAddress = '10.1.1.1'; type = 'Auto' }). Returning only
-        the first element as-is previously yielded blank iLO columns. This helper
-        normalises every entry to its address string so all IPs are preserved.
+        Extracts every iLO / management IP address from a OneView server-hardware
+        object (or directly from its mpIpAddresses value), tolerating the different
+        shapes OneView returns across versions:
+          - a string[]                                      (e.g. @('10.0.0.1'))
+          - an array of @{ ipAddress = …; type = … } / @{ address = … } objects
+          - an mpHostInfo sub-object holding mpIpAddresses
+          - a top-level iloIpAddress / managementIP property
+        Every candidate value is scanned for an IPv4/IPv6-looking string, so the
+        column is never blank just because OneView renamed the property.
     #>
     [CmdletBinding()]
-    param($MpIpAddresses)
+    param($ServerOrMpIpAddresses)
 
+    $ipPattern = '\b(?:\d{1,3}\.){3}\d{1,3}\b|\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b'
     $out = [System.Collections.Generic.List[string]]::new()
-    if ($null -eq $MpIpAddresses) { return $out }
-    if ($MpIpAddresses -isnot [System.Collections.ICollection]) { $MpIpAddresses = @($MpIpAddresses) }
+    if ($null -eq $ServerOrMpIpAddresses) { return $out }
 
-    foreach ($entry in $MpIpAddresses) {
-        if ($null -eq $entry) { continue }
-        if ($entry -is [string]) { $out.Add($entry); continue }
-        if ($entry.PSObject.Properties.Name -contains 'ipAddress')  { $out.Add([string]$entry.ipAddress); continue }
-        if ($entry.PSObject.Properties.Name -contains 'address')    { $out.Add([string]$entry.address); continue }
-        if ($entry.PSObject.Properties.Name -contains 'ipv4Address') { $out.Add([string]$entry.ipv4Address); continue }
-        if ($entry -is [System.Collections.IDictionary] -and $entry.ContainsKey('ipAddress')) { $out.Add([string]$entry['ipAddress']); continue }
+    $sets = [System.Collections.Generic.List[object]]::new()
+    if ($ServerOrMpIpAddresses.PSObject -and $ServerOrMpIpAddresses.PSObject.Properties.Name -contains 'mpIpAddresses') {
+        $s = $ServerOrMpIpAddresses
+        if ($s.mpIpAddresses)                               { $sets.Add($s.mpIpAddresses) }
+        if ($s.mpHostInfo -and $s.mpHostInfo.mpIpAddresses) { $sets.Add($s.mpHostInfo.mpIpAddresses) }
+        if ($s.iloIpAddress)                               { $sets.Add($s.iloIpAddress) }
+        if ($s.managementIP)                               { $sets.Add($s.managementIP) }
+    } else {
+        $sets.Add($ServerOrMpIpAddresses)
+    }
+
+    foreach ($set in $sets) {
+        if ($null -eq $set) { continue }
+        if ($set -isnot [System.Collections.ICollection]) { $set = @($set) }
+        foreach ($entry in $set) {
+            if ($null -eq $entry) { continue }
+            if ($entry -is [string]) {
+                if ($entry -match $ipPattern) { $out.Add($entry) }
+                continue
+            }
+            $values = if ($entry -is [System.Collections.IDictionary]) { $entry.Values } else { $entry.PSObject.Properties.Value }
+            foreach ($val in $values) {
+                if ($val -is [string] -and $val -match $ipPattern) { $out.Add($val) }
+            }
+        }
     }
     return $out
 }

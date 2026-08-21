@@ -27,6 +27,7 @@
   - [21) Command documentation clarity — firmware/security/utility + repository corrections](#21-command-documentation-clarity-firmwaresecurityutility-repository-corrections)
   - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-_publish-result-passthru-output-migration-15-public-commands)
   - [23) `Get-OneViewServerList` DRY output migration + iLO IP fix + `prune-logs` hardening](#23-get-oneviewserverlist-dry-output-migration-ilo-ip-fix-prune-logs-hardening)
+  - [24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming](#24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -727,3 +728,26 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - End-to-end proof with the real OneView `mpIpAddresses` object shape: `(_ConvertTo-IloIpAddressList @(@{ ipAddress='10.1.2.3' }, @{ ipAddress='10.1.2.4' }))` → `10.1.2.3 | 10.1.2.4`; string array → `192.168.1.5`; `$null` → `''` (no throw). `Get-OneViewServerList` returns and renders `ilo_ip` (`10.9.9.9`) from an object-array mock.
 - Failure-path proof: `Get-OneViewServerList` with no session now renders `Error: No active OneView session…` (was blank).
 - `prune-logs.ps1` runs in ~0.04 s and exits `0`; `PSScriptAnalyzer` on all four changed `.ps1` files: no new issues (the only findings are pre-existing in `Get-OneViewServerTarget.ps1`).
+
+<a id="24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming"></a>
+
+### 24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-21 | Enriched `Get-OneViewServerList` to show the connected appliance and the full set of available server fields (Model, Enclosure, Bay, ROM alongside name/serial/power/health/iLO IP); made iLO IP extraction robust to every OneView `mpIpAddresses` shape; `Disconnect-OneView` now names the appliance it disconnected from | Kev Everall |
+
+<a name="change-24"></a>
+
+#### Change
+
+- **`Get-OneViewServerList` table enrichment** — the header block now prints the connected appliance (`Appliance: <host>`, taken from the resolved session host) and the rendered table adds **Model**, **Enclosure**, **Bay** and **ROM** columns (these fields were already fetched into each server object but never displayed). Per-server column widths are computed dynamically so long names/enclosure names don't break alignment. The `Appliance` is also carried on the returned result object.
+- **Robust iLO IP extraction (fixes the still-blank column)** — `_ConvertTo-IloIpAddressList` (OutputFormatter.ps1) was rewritten to accept the whole server object and scan every known location OneView uses for management IPs: `mpIpAddresses`, `mpHostInfo.mpIpAddresses`, `iloIpAddress`, `managementIP`. Each candidate value is matched against an IPv4/IPv6 pattern, so the iLO column populates whether OneView returns a `string[]`, `@{ ipAddress = … }` objects, `@{ address = … }` objects, or nests the addresses under `mpHostInfo`. All IPs are joined with `, ` (verified: `ipAddress` + `address` object shapes both render, e.g. `10.9.9.9, 10.9.9.10`).
+- **`Disconnect-OneView` appliance naming** — captures the active session's appliance name before disconnecting and reports `Successfully disconnected from OneView appliance '<name>'`; the structured result now also carries `Appliance` (useful for client/automation callers).
+
+<a name="verification-24"></a>
+
+#### Verification
+
+- `Get-OneViewServerList.Unit.Tests.ps1` (17), `Get-OneViewConnectionStatus.Unit.Tests.ps1` (23), `Get-OneViewServerTarget.Unit.Tests.ps1` (13) — **53 passed, 0 failed**.
+- End-to-end render check: `Get-OneViewServerList` prints `Appliance: va-oneviewt-01` and the 9-column table; `srv-alpha` renders `iLO IP = 10.9.9.9, 10.9.9.10` (object-array `ipAddress`), `srv-beta` renders `192.168.1.5` (object-array `address`). `Disconnect-OneView` (mocked session) reports `Successfully disconnected from OneView appliance 'va-oneviewt-01'` with `Appliance` in the result.
