@@ -247,3 +247,55 @@ Describe 'Get-OneViewServerList - output rendering (regression)' {
         $r.Servers[1].name | Should -Be 'srv-beta'
     }
 }
+
+Describe 'Get-OneViewServerList - Summary and Detail views' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{
+                    total   = 2
+                    members = @(
+                        [pscustomobject]@{ name = 'srv-alpha'; serialNumber = 'A1'; model = 'DL380'; modelNumber = '867963-B21'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); romVersion = '1.0'; MaintenanceModeEnabled = $false; state = 'Monitored'; stateReason = '' },
+                        [pscustomobject]@{ name = 'srv-beta';  serialNumber = 'B2'; model = 'DL380'; modelNumber = '867963-B21'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); romVersion = '1.0'; MaintenanceModeEnabled = $true; state = 'MaintenanceMode'; stateReason = 'Fw' }
+                    )
+                }
+            }
+        }
+    }
+
+    It '-Summary shows only Server Name, Serial, MaintMode, Health, iLO IP' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Summary -InformationVariable hostRecords
+        $header = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1)
+        $header | Should -Match 'Server Name'
+        $header | Should -Match 'Serial'
+        $header | Should -Match 'MaintMode'
+        $header | Should -Match 'Health'
+        $header | Should -Match 'iLO IP'
+        $header | Should -Not -Match 'State'
+        $header | Should -Not -Match 'Power'
+        $header | Should -Not -Match 'ROM'
+        $header | Should -Not -Match 'Model'
+        $header | Should -Not -Match 'State Reason'
+    }
+
+    It '-Detail (explicit) shows the full field set including State and Model' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Detail -InformationVariable hostRecords
+        $header = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1)
+        $header | Should -Match 'State'
+        $header | Should -Match 'Power'
+        $header | Should -Match 'ROM'
+        $header | Should -Match 'Model'
+        $header | Should -Match 'State Reason'
+    }
+
+    It 'Neither switch defaults to the full (Detail) view' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -InformationVariable hostRecords
+        $header = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1)
+        $header | Should -Match 'State'
+        $header | Should -Match 'Model'
+    }
+}

@@ -362,6 +362,12 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'power:On'
 # Narrow to servers currently IN or OUT of OneView maintenance mode
 Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:Yes'
 Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:No'
+
+# Condensed summary view (Server Name, Serial, MaintMode, Health, iLO IP only)
+Get-OneViewServerList -OneViewHost oneview.example.com -Summary
+
+# Explicit full-field view (default when no switch is supplied)
+Get-OneViewServerList -OneViewHost oneview.example.com -Detail
 ```
 
 ```powershell
@@ -392,6 +398,8 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:srv-0?'
 | `-MockResult` | `-Mock` | No | Hashtable to return without making any HTTP calls (tests). | - |
 | `-DryRun` | `-Dry` | No | Print the query without performing it | - |
 | `-PassThru` | `-PT` | No | Also return the structured `[hashtable]` (by default only a table is printed). | - |
+| -Summary | -Sum | No | Print a condensed table with only Server Name, Serial, MaintMode, Health and iLO IP - a quick fleet health/maintenance glance. | - |
+| -Detail | -Det | No | Print the full table with every field (the default when neither switch is set). | - |
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
