@@ -129,22 +129,22 @@ Describe 'Get-OneViewServerList - maintenance mode (mocked REST)' {
         }
     }
 
-    It 'Reports InMaintenance for MaintenanceModeEnabled servers' {
+    It 'Reports Yes for MaintenanceModeEnabled servers' {
         $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
         $r.Success | Should -Be $true
-        ($r.Servers | Where-Object { $_.name -eq 's1' }).maintenance_mode | Should -Be 'InMaintenance'
-        ($r.Servers | Where-Object { $_.name -eq 's2' }).maintenance_mode | Should -Be 'Operational'
+        ($r.Servers | Where-Object { $_.name -eq 's1' }).maintenance_mode | Should -Be 'Yes'
+        ($r.Servers | Where-Object { $_.name -eq 's2' }).maintenance_mode | Should -Be 'No'
     }
 
-    It 'Filters by maintenance:InMaintenance' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:InMaintenance' -PassThru
+    It 'Filters by maintenance:Yes' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:Yes' -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 1
         $r.Servers[0].name | Should -Be 's1'
     }
 
-    It 'Filters by maintenance:Operational' {
-        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:Operational' -PassThru
+    It 'Filters by maintenance:No' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:No' -PassThru
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 2
     }

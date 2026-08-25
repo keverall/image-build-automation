@@ -51,7 +51,7 @@ Then use:
 Connect-OneView -ManagementHost oneview.example.com -Environment Prod
 
 # 2. Run OneView commands while the session is active
-#    Get-OneViewServerList shows, per server: Maintenance mode, lifecycle State,
+#    Get-OneViewServerList shows, per server: MaintMode (Yes/No), lifecycle State,
 #    State Reason, Health, Power, iLO IP, Model, ROM, Enclosure & Bay.
 Get-OneViewServerList
 Get-OneViewConnectionStatus
