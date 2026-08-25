@@ -325,7 +325,19 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 
 ### Get OneView server list
 
-Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, or name.
+Lists every server managed by the appliance with normalised connection/health fields. Pagination is handled internally so the full fleet is returned in one call. Supports an optional `-Filter` to narrow by health, power state, maintenance mode, or name.
+
+Each row also shows the server's **HPE OneView maintenance mode** and lifecycle **state**, which is what a hardware engineer needs to tell a server that is intentionally in maintenance (e.g. for firmware work) apart from one that is merely monitored or has hit an error:
+
+| Column | Source field | Meaning |
+|--------|--------------|---------|
+| `Maintenance` | `MaintenanceModeEnabled` | `InMaintenance` when maintenance mode is on, otherwise `Operational`. This is the authoritative "is it in maintenance?" flag. |
+| `State` | `state` | Lifecycle state: `Monitored` (normal), `MaintenanceMode`, `ConfigureHardware`, `NoProfileApplied`, `ProfileApplying`, `ProfileError`, `Deleting`. |
+| `State Reason` | `stateReason` | Optional free-text reason for the current state (often populated for maintenance). |
+
+> **Maintenance mode vs other states:** `MaintenanceModeEnabled` is `true` **only** when the server is in maintenance mode (and `state` will read `MaintenanceMode`). A server in `ProfileError`, `Monitored`, etc. shows in `State` but `Maintenance` stays `Operational` — so the two columns are independent and an engineer reads `Maintenance = InMaintenance` as the definitive maintenance signal.
+>
+> **Note on dates:** OneView maintenance mode is a manual toggle on the server-hardware resource — there is **no start/end timestamp** for it. Scheduled maintenance *windows* with start/end dates come from SCOM (see `Get-MaintenanceStatusReport`), not from OneView.
 
 **Connection behaviour (shared helper):** An existing OneView connection always takes priority - if a session is already active, the command reuses it and never reconnects (reconnecting could drop the live session and cause incidents); if you supplied a different `-OneViewHost`, it warns you which appliance you are connected to and to run `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity`). If there is no host and no active session, it returns an exception explaining there is none and how to connect. The session persists - this command never disconnects (only `Disconnect-OneView` does).
 
@@ -346,11 +358,22 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'power:On'
 ```
 
 ```powershell
+# Narrow to servers currently IN or OUT of OneView maintenance mode
+Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:InMaintenance'
+Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:Operational'
+```
+
+```powershell
 # Narrow by partial / wildcard server name (substring AND * / ? wildcards)
 Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:PROD'
 Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:PROD-*'
 Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:srv-0?'
 ```
+
+> **Reference:** the fields above come straight from the HPE OneView REST API `GET /rest/server-hardware` resource. See the official HPE OneView REST API reference for `ServerHardware` (`MaintenanceModeEnabled`, `state`, `stateReason`) and the maintenance-mode operations:
+> - HPE OneView REST API (ServerHardware resource): <https://developer.hpe.com/blog/hpe-oneview-rest-api>
+> - HPE OneView documentation / API explorer: <https://oneview.ext.hpe.com/>
+> - Enable/Disable server maintenance mode (`Enable-OVMaintenanceMode` / `Disable-OVMaintenanceMode` in the HPEOneView PowerShell library): <https://github.com/HewlettPackard/Powershell-HPE-OneView>
 
 **Parameters:**
 
@@ -364,14 +387,14 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:srv-0?'
 | `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification. Most appliances use a self-signed/internal-CA cert, so default is `$true`. Only relevant while a NEW connection is established; has no effect when reusing an active session. | `true` |
 | `-TimeoutSec` | `-Timeout` | No | Per-call REST timeout. Only relevant while establishing a NEW connection or for very large fleets over a slow link; `30` is fine for normal use. | `30` |
 | `-PageSize` | `-Page` | No | Servers fetched per page (max 1000) | `100` |
-| `-Filter` | `-` | No | Client-side filter. Case-insensitive **substring** by default, with PowerShell-style `*`/`?` wildcards supported: `health:<value>`, `power:<value>`, `name:<value>` (e.g. `name:PROD`, `name:PROD-*`, `name:srv-0?`). | - |
+| `-Filter` | `-` | No | Client-side filter. Case-insensitive **substring** by default, with PowerShell-style `*`/`?` wildcards supported: `health:<value>`, `power:<value>`, `maintenance:<value>` (e.g. `maintenance:InMaintenance`, `maintenance:Operational`), `name:<value>` (e.g. `name:PROD`, `name:PROD-*`, `name:srv-0?`). | - |
 | `-MockResult` | `-Mock` | No | Hashtable to return without making any HTTP calls (tests). | - |
 | `-DryRun` | `-Dry` | No | Print the query without performing it | - |
 | `-PassThru` | `-PT` | No | Also return the structured `[hashtable]` (by default only a table is printed). | - |
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
-**Returns:** `[hashtable]` with `Success`, `Count`, and `Servers` (array of name, serial, model, power_state, health_status, ilo_ip, enclosure, rom_version).
+**Returns:** `[hashtable]` with `Success`, `Count`, and `Servers` (array of name, serial, model, power_state, health_status, ilo_ip, enclosure, enclosure_bay, rom_version, maintenance_mode, state, state_reason). Each `Server` entry maps directly to the HPE OneView `ServerHardware` resource fields documented above.
 
 ---
 
