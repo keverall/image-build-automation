@@ -16,8 +16,11 @@ function Get-OneViewServerList {
     .DESCRIPTION
         Queries GET /rest/server-hardware across all pages and returns a normalised
         list of servers (name, serial, model, power state, health, iLO IP, enclosure).
-        Supports an optional -Filter to narrow the result by health, power state, or
-        name (substring/wildcard match).
+        Each server also reports its HPE OneView maintenance mode
+        (InMaintenance / Operational) from the server-hardware resource's
+        MaintenanceModeEnabled flag.
+        Supports an optional -Filter to narrow the result by health, power state,
+        maintenance mode, or name (substring/wildcard match).
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
@@ -61,6 +64,7 @@ function Get-OneViewServerList {
         also accept PowerShell-style wildcards:
           health:<value>   e.g. health:Critical, health:*Warning*
           power:<value>     e.g. power:On, power:Off
+          maintenance:<value>  e.g. maintenance:InMaintenance, maintenance:Operational
           name:<value>     e.g. name:PROD (substring), name:PROD-* (wildcard),
                             name:srv-0? (single-char wildcard)
 
@@ -147,11 +151,12 @@ function Get-OneViewServerList {
     # Parse -Filter into predicate regexes (validate before connecting).
     # Matching is case-insensitive; substring-by-default with PowerShell-style
     # wildcards (*, ?) supported via the shared converter.
-    $healthRegex = $null; $powerRegex = $null; $nameRegex = $null
+    $healthRegex = $null; $powerRegex = $null; $maintRegex = $null; $nameRegex = $null
     if ($Filter) {
-        if ($Filter -match '^health:(.+)$')     { $healthRegex = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
-        elseif ($Filter -match '^power:(.+)$')   { $powerRegex  = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
-        elseif ($Filter -match '^name:(.+)$')    { $nameRegex   = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        if ($Filter -match '^health:(.+)$')          { $healthRegex = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^power:(.+)$')        { $powerRegex  = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^maintenance:(.+)$')  { $maintRegex  = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^name:(.+)$')          { $nameRegex   = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
         else {
             $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<value>." }
             return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
@@ -239,9 +244,11 @@ function Get-OneViewServerList {
                     enclosure_bay  = $srv.position
                     oneview_uri    = $srv.uri
                     rom_version    = $srv.romVersion
+                    maintenance_mode = if ($srv.MaintenanceModeEnabled) { 'InMaintenance' } else { 'Operational' }
                 }
                 if ($healthRegex -and -not $healthRegex.IsMatch($entry.health_status)) { continue }
                 if ($powerRegex  -and -not $powerRegex.IsMatch($entry.power_state))    { continue }
+                if ($maintRegex  -and -not $maintRegex.IsMatch($entry.maintenance_mode)) { continue }
                 if ($nameRegex   -and -not $nameRegex.IsMatch($entry.name))           { continue }
                 $servers.Add($entry)
             }
@@ -350,16 +357,17 @@ function _Format-OneViewServerListResult {
 
     $nameW   = [math]::Max(10, [math]::Min(50, ($Result.Servers | ForEach-Object { "$($_.name)".Length } | Measure-Object -Maximum).Maximum))
     $serialW = 15
-    $modelW  = [math]::Max(8,  [math]::Min(22, ($Result.Servers | ForEach-Object { "$($_.model)".Length } | Measure-Object -Maximum).Maximum))
-    $powerW  = 8
+    $maintW  = 13
     $healthW = 10
+    $powerW  = 8
     $iloW    = [math]::Max(15, [math]::Min(40, ($Result.Servers | ForEach-Object { "$($_.ilo_ip)".Length } | Measure-Object -Maximum).Maximum))
+    $modelW  = [math]::Max(8,  [math]::Min(22, ($Result.Servers | ForEach-Object { "$($_.model)".Length } | Measure-Object -Maximum).Maximum))
+    $romW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.rom_version)".Length } | Measure-Object -Maximum).Maximum))
     $encW    = [math]::Max(10, [math]::Min(20, ($Result.Servers | ForEach-Object { "$($_.enclosure_name)".Length } | Measure-Object -Maximum).Maximum))
     $bayW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.enclosure_bay)".Length } | Measure-Object -Maximum).Maximum))
-    $romW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.rom_version)".Length } | Measure-Object -Maximum).Maximum))
 
-    $header = "{0,-$nameW}  {1,-$serialW}  {2,-$modelW}  {3,-$powerW}  {4,-$healthW}  {5,-$iloW}  {6,-$encW}  {7,-$bayW}  {8,-$romW}" -f `
-        'Server Name', 'Serial', 'Model', 'Power', 'Health', 'iLO IP', 'Enclosure', 'Bay', 'ROM'
+    $header = "{0,-$nameW}  {1,-$serialW}  {2,-$maintW}  {3,-$healthW}  {4,-$powerW}  {5,-$iloW}  {6,-$modelW}  {7,-$romW}  {8,-$encW}  {9,-$bayW}" -f `
+        'Server Name', 'Serial', 'Maintenance', 'Health', 'Power', 'iLO IP', 'Model', 'ROM', 'Enclosure', 'Bay'
     Write-Host $header -ForegroundColor Yellow
     Write-Host ("-" * $header.Length) -ForegroundColor Gray
 
@@ -378,9 +386,13 @@ function _Format-OneViewServerListResult {
             '*Critical*' { 'Red' }
             default      { 'Gray' }
         }
+        $maintColor = switch ($srv.maintenance_mode) {
+            'InMaintenance' { 'Yellow' }
+            default         { 'Gray' }
+        }
 
-        $line = "{0,-$nameW}  {1,-$serialW}  {2,-$modelW}  {3,-$powerW}  {4,-$healthW}  {5,-$iloW}  {6,-$encW}  {7,-$bayW}  {8,-$romW}" -f `
-            $name, $srv.serial_number, $srv.model, $srv.power_state, $srv.health_status, $srv.ilo_ip, $srv.enclosure_name, $srv.enclosure_bay, $srv.rom_version
+        $line = "{0,-$nameW}  {1,-$serialW}  {2,-$maintW}  {3,-$healthW}  {4,-$powerW}  {5,-$iloW}  {6,-$modelW}  {7,-$romW}  {8,-$encW}  {9,-$bayW}" -f `
+            $name, $srv.serial_number, $srv.maintenance_mode, $srv.health_status, $srv.power_state, $srv.ilo_ip, $srv.model, $srv.rom_version, $srv.enclosure_name, $srv.enclosure_bay
         Write-Host $line -ForegroundColor $healthColor
     }
 
