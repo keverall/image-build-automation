@@ -115,6 +115,41 @@ Describe 'Get-OneViewServerList - pagination & filtering (mocked REST)' {
     }
 }
 
+Describe 'Get-OneViewServerList - maintenance mode (mocked REST)' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ total = 3; members = @(
+                    [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; MaintenanceModeEnabled = $true },
+                    [pscustomobject]@{ name = 's2'; serialNumber = 'B'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0'; MaintenanceModeEnabled = $false },
+                    [pscustomobject]@{ name = 's3'; serialNumber = 'C'; model = 'DL380'; powerState = 'On';  status = 'Warning';  mpIpAddresses = @('10.0.0.3'); enclosureName = 'Enc1'; position = 'Bay 3'; uri = '/rest/z'; romVersion = '1.0'; MaintenanceModeEnabled = $false }
+                ) }
+            }
+        }
+    }
+
+    It 'Reports InMaintenance for MaintenanceModeEnabled servers' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
+        $r.Success | Should -Be $true
+        ($r.Servers | Where-Object { $_.name -eq 's1' }).maintenance_mode | Should -Be 'InMaintenance'
+        ($r.Servers | Where-Object { $_.name -eq 's2' }).maintenance_mode | Should -Be 'Operational'
+    }
+
+    It 'Filters by maintenance:InMaintenance' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:InMaintenance' -PassThru
+        $r.Success | Should -Be $true
+        $r.Count   | Should -Be 1
+        $r.Servers[0].name | Should -Be 's1'
+    }
+
+    It 'Filters by maintenance:Operational' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:Operational' -PassThru
+        $r.Success | Should -Be $true
+        $r.Count   | Should -Be 2
+    }
+}
+
 Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
     BeforeAll {
         InModuleScope Automation {
