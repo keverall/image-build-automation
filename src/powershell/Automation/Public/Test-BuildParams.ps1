@@ -197,16 +197,23 @@ function _Format-BuildParamsResult {
     param([hashtable]$Result)
 
     $ok = $Result.Success
-    $statusColor = if ($ok) { 'Green' } else { 'Red' }
+    $hasErrors = ($Result.Errors -and $Result.Errors.Count -gt 0)
     $dryRunTag = if ($Result.DryRun) { ' [DRY-RUN]' } else { '' }
 
+    $boldRed = "$([char]27)[1;31m"
+    $reset   = "$([char]27)[0m"
+    $green   = 'Green'
+    $cyan    = 'Cyan'
+    $yellow  = 'Yellow'
+
     Write-Host ""
-    Write-Host "==============================================" -ForegroundColor Cyan
-    Write-Host "  Build Parameter Validation" -ForegroundColor Cyan
-    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor $cyan
+    Write-Host "  Build Parameter Validation" -ForegroundColor $cyan
+    Write-Host "==============================================" -ForegroundColor $cyan
     Write-Host ""
 
-    Write-Host "  Result:    $(if ($ok) { 'VALID' } else { 'INVALID' })${dryRunTag}" -ForegroundColor $statusColor
+    Write-Host "  Result:    $(if ($ok) { 'VALID' } else { 'INVALID' })${dryRunTag}" `
+        -ForegroundColor $(if ($ok) { $green } else { 'Red' })
     Write-Host "  Base ISO:  $(if ($Result.BaseIsoPath) { $Result.BaseIsoPath } else { '(none)' })"
     if ($Result.IsoUrl) {
         Write-Host "  Resolved:  $($Result.IsoUrl)"
@@ -215,42 +222,50 @@ function _Format-BuildParamsResult {
     # ── Firmware results (one readable entry per location) ──
     if ($Result.FirmwareResults -and $Result.FirmwareResults.Count -gt 0) {
         Write-Host ""
-        Write-Host "  Firmware locations:" -ForegroundColor Yellow
+        Write-Host "  Firmware locations:" -ForegroundColor $yellow
         $idx = 1
         foreach ($fw in $Result.FirmwareResults) {
             Write-Host "    [$idx] $($fw.Location)"
             if ($fw.ResolvedUrl) { Write-Host "        Resolved: $($fw.ResolvedUrl)" }
             if ($null -ne $fw.Exists) {
-                $existsColor = if ($fw.Exists) { 'Green' } else { 'Red' }
+                $existsColor = if ($fw.Exists) { $green } else { 'Red' }
                 Write-Host "        Exists:   $($fw.Exists)" -ForegroundColor $existsColor
             }
             if ($fw.Error) {
-                Write-Host "        Error:    $($fw.Error)" -ForegroundColor Red
+                Write-Host "        ${boldRed}Error:    $($fw.Error)${reset}"
             }
             $idx++
         }
     }
 
-    # ── Errors, classified as ISO-related vs firmware-file-related ──
-    if ($Result.Errors -and $Result.Errors.Count -gt 0) {
-        $isoErrors = @($Result.Errors | Where-Object { $_ -match '^Base ISO' })
-        $fwErrors  = @($Result.Errors | Where-Object { $_ -match '^Firmware file' })
+    # ── PROMINENT ERROR BANNER ───────────────────────────────────────────────
+    # Only emitted when there really are errors, so a clean run shows nothing
+    # about Errors (no confusing empty "Errors {}" line).
+    if ($hasErrors) {
+        $isoErrors   = @($Result.Errors | Where-Object { $_ -match '^Base ISO' })
+        $fwErrors    = @($Result.Errors | Where-Object { $_ -match '^Firmware file' })
         $otherErrors = @($Result.Errors | Where-Object { $_ -notmatch '^(Base ISO|Firmware file)' })
 
+        $bar = '############################################################'
         Write-Host ""
+        Write-Host "${boldRed}${bar}${reset}"
+        Write-Host "${boldRed}#${reset}"
+        Write-Host "${boldRed}#  BUILD PARAMETER VALIDATION FAILED${reset}"
+        Write-Host "${boldRed}#${reset}"
         if ($isoErrors.Count -gt 0) {
-            Write-Host "  ISO-related errors:" -ForegroundColor Red
-            foreach ($e in $isoErrors) { Write-Host "    - $($e -replace '^Base ISO:\s*', '')" -ForegroundColor Red }
+            Write-Host "${boldRed}#  ISO-related errors:${reset}"
+            foreach ($e in $isoErrors) { Write-Host "${boldRed}#    - $($e -replace '^Base ISO:\s*', '')${reset}" }
         }
         if ($fwErrors.Count -gt 0) {
-            Write-Host "  Firmware file errors:" -ForegroundColor Red
-            foreach ($e in $fwErrors) { Write-Host "    - $($e -replace '^Firmware file:\s*', '')" -ForegroundColor Red }
+            Write-Host "${boldRed}#  Firmware file errors:${reset}"
+            foreach ($e in $fwErrors) { Write-Host "${boldRed}#    - $($e -replace '^Firmware file:\s*', '')${reset}" }
         }
         if ($otherErrors.Count -gt 0) {
-            Write-Host "  Other errors:" -ForegroundColor Red
-            foreach ($e in $otherErrors) { Write-Host "    - $e" -ForegroundColor Red }
+            Write-Host "${boldRed}#  Other errors:${reset}"
+            foreach ($e in $otherErrors) { Write-Host "${boldRed}#    - $e${reset}" }
         }
+        Write-Host "${boldRed}#${reset}"
+        Write-Host "${boldRed}${bar}${reset}"
+        Write-Host ""
     }
-
-    Write-Host ""
 }
