@@ -334,6 +334,7 @@ Each row also shows the server's **HPE OneView maintenance mode** and lifecycle 
 | `MaintMode` | `MaintenanceModeEnabled` | `Yes` when the server is IN HPE OneView maintenance mode, otherwise `No`. This is the definitive "in/out of maintenance?" flag. |
 | `State` | `state` | Lifecycle state: `Monitored` (normal), `MaintenanceMode`, `ConfigureHardware`, `NoProfileApplied`, `ProfileApplying`, `ProfileApplied`, `ProfileError`, `Deleting`. |
 | `State Reason` | `stateReason` | Optional free-text reason for the current state (often populated for maintenance). |
+| `Model` | `modelNumber` | Short, stable HPE model **code** (e.g. `867963-B21`) — placed last because it varies in length and would otherwise break column alignment. The full descriptive model string is still available in the `-PassThru` object as `model`. |
 
 > **Maintenance mode vs other states:** `MaintMode = Yes` **only** when the server is in maintenance mode (and `State` will read `MaintenanceMode`). A server in `ProfileError`, `Monitored`, `NoProfileApplied`, etc. shows in `State` but `MaintMode` stays `No` — so the two columns are independent and an engineer reads `MaintMode = Yes` as the definitive maintenance signal. None of your fleet being in maintenance is expected when every row reads `MaintMode = No`; you would only see `MaintenanceMode` in `State` (and `MaintMode = Yes`) for a server that's actually been placed into maintenance.
 >
@@ -394,7 +395,7 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:srv-0?'
 
 If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for an active HPEOneView module session.
 
-**Returns:** `[hashtable]` with `Success`, `Count`, and `Servers` (array of name, serial, model, power_state, health_status, ilo_ip, enclosure, enclosure_bay, rom_version, maintenance_mode, state, state_reason). Each `Server` entry maps directly to the HPE OneView `ServerHardware` resource fields documented above.
+**Returns:** `[hashtable]` with `Success`, `Count`, and `Servers` (array of name, serial, model, model_number, power_state, health_status, ilo_ip, rom_version, maintenance_mode, state, state_reason). Each `Server` entry maps directly to the HPE OneView `ServerHardware` resource fields documented above.
 
 ---
 
