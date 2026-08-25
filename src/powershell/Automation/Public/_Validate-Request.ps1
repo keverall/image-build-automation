@@ -29,7 +29,7 @@ function _Validate-Request {
     param([string]$RequestType, [hashtable]$Params)
     $errors = @()
     if ($RequestType -in @('build_iso', 'patch_windows')) {
-        $buildCheck = Test-BuildParams -BaseIsoPath $Params.Get_Item('base_iso')
+        $buildCheck = Test-BuildParams -BaseIsoPath $Params.Get_Item('base_iso') -PassThru -Quiet
         if ($buildCheck.Errors.Count -gt 0) {
             $errors += $buildCheck.Errors
         }
