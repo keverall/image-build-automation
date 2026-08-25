@@ -331,11 +331,11 @@ Each row also shows the server's **HPE OneView maintenance mode** and lifecycle 
 
 | Column | Source field | Meaning |
 |--------|--------------|---------|
-| `Maintenance` | `MaintenanceModeEnabled` | `InMaintenance` when maintenance mode is on, otherwise `Operational`. This is the authoritative "is it in maintenance?" flag. |
-| `State` | `state` | Lifecycle state: `Monitored` (normal), `MaintenanceMode`, `ConfigureHardware`, `NoProfileApplied`, `ProfileApplying`, `ProfileError`, `Deleting`. |
+| `MaintMode` | `MaintenanceModeEnabled` | `Yes` when the server is IN HPE OneView maintenance mode, otherwise `No`. This is the definitive "in/out of maintenance?" flag. |
+| `State` | `state` | Lifecycle state: `Monitored` (normal), `MaintenanceMode`, `ConfigureHardware`, `NoProfileApplied`, `ProfileApplying`, `ProfileApplied`, `ProfileError`, `Deleting`. |
 | `State Reason` | `stateReason` | Optional free-text reason for the current state (often populated for maintenance). |
 
-> **Maintenance mode vs other states:** `MaintenanceModeEnabled` is `true` **only** when the server is in maintenance mode (and `state` will read `MaintenanceMode`). A server in `ProfileError`, `Monitored`, etc. shows in `State` but `Maintenance` stays `Operational` — so the two columns are independent and an engineer reads `Maintenance = InMaintenance` as the definitive maintenance signal.
+> **Maintenance mode vs other states:** `MaintMode = Yes` **only** when the server is in maintenance mode (and `State` will read `MaintenanceMode`). A server in `ProfileError`, `Monitored`, `NoProfileApplied`, etc. shows in `State` but `MaintMode` stays `No` — so the two columns are independent and an engineer reads `MaintMode = Yes` as the definitive maintenance signal. None of your fleet being in maintenance is expected when every row reads `MaintMode = No`; you would only see `MaintenanceMode` in `State` (and `MaintMode = Yes`) for a server that's actually been placed into maintenance.
 >
 > **Note on dates:** OneView maintenance mode is a manual toggle on the server-hardware resource — there is **no start/end timestamp** for it. Scheduled maintenance *windows* with start/end dates come from SCOM (see `Get-MaintenanceStatusReport`), not from OneView.
 
@@ -359,8 +359,8 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'power:On'
 
 ```powershell
 # Narrow to servers currently IN or OUT of OneView maintenance mode
-Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:InMaintenance'
-Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:Operational'
+Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:Yes'
+Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'maintenance:No'
 ```
 
 ```powershell
@@ -387,7 +387,7 @@ Get-OneViewServerList -OneViewHost oneview.example.com -Filter 'name:srv-0?'
 | `-SkipCertificateCheck` | `-SkipCert` | No | Skip SSL cert verification. Most appliances use a self-signed/internal-CA cert, so default is `$true`. Only relevant while a NEW connection is established; has no effect when reusing an active session. | `true` |
 | `-TimeoutSec` | `-Timeout` | No | Per-call REST timeout. Only relevant while establishing a NEW connection or for very large fleets over a slow link; `30` is fine for normal use. | `30` |
 | `-PageSize` | `-Page` | No | Servers fetched per page (max 1000) | `100` |
-| `-Filter` | `-` | No | Client-side filter. Case-insensitive **substring** by default, with PowerShell-style `*`/`?` wildcards supported: `health:<value>`, `power:<value>`, `maintenance:<value>` (e.g. `maintenance:InMaintenance`, `maintenance:Operational`), `name:<value>` (e.g. `name:PROD`, `name:PROD-*`, `name:srv-0?`). | - |
+| `-Filter` | `-` | No | Client-side filter. Case-insensitive **substring** by default, with PowerShell-style `*`/`?` wildcards supported: `health:<value>`, `power:<value>`, `maintenance:<value>` (e.g. `maintenance:Yes`, `maintenance:No`), `name:<value>` (e.g. `name:PROD`, `name:PROD-*`, `name:srv-0?`). | - |
 | `-MockResult` | `-Mock` | No | Hashtable to return without making any HTTP calls (tests). | - |
 | `-DryRun` | `-Dry` | No | Print the query without performing it | - |
 | `-PassThru` | `-PT` | No | Also return the structured `[hashtable]` (by default only a table is printed). | - |

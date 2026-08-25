@@ -244,7 +244,7 @@ function Get-OneViewServerList {
                     enclosure_bay  = $srv.position
                     oneview_uri    = $srv.uri
                     rom_version    = $srv.romVersion
-                    maintenance_mode = if ($srv.MaintenanceModeEnabled) { 'InMaintenance' } else { 'Operational' }
+                    maintenance_mode = if ($srv.MaintenanceModeEnabled) { 'Yes' } else { 'No' }
                     state          = $srv.state
                     state_reason   = $srv.stateReason
                 }
@@ -359,7 +359,7 @@ function _Format-OneViewServerListResult {
 
     $nameW   = [math]::Max(10, [math]::Min(50, ($Result.Servers | ForEach-Object { "$($_.name)".Length } | Measure-Object -Maximum).Maximum))
     $serialW = 15
-    $maintW  = 13
+    $maintW  = 9
     $stateW  = [math]::Max(10, [math]::Min(18, ($Result.Servers | ForEach-Object { "$($_.state)".Length } | Measure-Object -Maximum).Maximum))
     $healthW = 10
     $powerW  = 8
@@ -371,7 +371,7 @@ function _Format-OneViewServerListResult {
     $bayW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.enclosure_bay)".Length } | Measure-Object -Maximum).Maximum))
 
     $header = "{0,-$nameW}  {1,-$serialW}  {2,-$maintW}  {3,-$stateW}  {4,-$healthW}  {5,-$powerW}  {6,-$iloW}  {7,-$modelW}  {8,-$romW}  {9,-$reasonW}  {10,-$encW}  {11,-$bayW}" -f `
-        'Server Name', 'Serial', 'Maintenance', 'State', 'Health', 'Power', 'iLO IP', 'Model', 'ROM', 'State Reason', 'Enclosure', 'Bay'
+        'Server Name', 'Serial', 'MaintMode', 'State', 'Health', 'Power', 'iLO IP', 'Model', 'ROM', 'State Reason', 'Enclosure', 'Bay'
     Write-Host $header -ForegroundColor Yellow
     Write-Host ("-" * $header.Length) -ForegroundColor Gray
 
@@ -391,8 +391,8 @@ function _Format-OneViewServerListResult {
             default      { 'Gray' }
         }
         $maintColor = switch ($srv.maintenance_mode) {
-            'InMaintenance' { 'Yellow' }
-            default         { 'Gray' }
+            'Yes' { 'Yellow' }
+            default { 'Gray' }
         }
 
         $line = "{0,-$nameW}  {1,-$serialW}  {2,-$maintW}  {3,-$stateW}  {4,-$healthW}  {5,-$powerW}  {6,-$iloW}  {7,-$modelW}  {8,-$romW}  {9,-$reasonW}  {10,-$encW}  {11,-$bayW}" -f `
@@ -400,6 +400,18 @@ function _Format-OneViewServerListResult {
         Write-Host $line -ForegroundColor $healthColor
     }
 
+    Write-Host ""
+    Write-Host "KEY" -ForegroundColor Cyan
+    Write-Host "  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode." -ForegroundColor Gray
+    Write-Host "  State     : server lifecycle state from OneView:" -ForegroundColor Gray
+    Write-Host "               Monitored        = normal / being monitored (not in maintenance)" -ForegroundColor Gray
+    Write-Host "               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)" -ForegroundColor Gray
+    Write-Host "               NoProfileApplied = no server profile assigned" -ForegroundColor Gray
+    Write-Host "               ProfileApplying  = a server profile is being applied" -ForegroundColor Gray
+    Write-Host "               ProfileApplied   = a server profile has been applied" -ForegroundColor Gray
+    Write-Host "               ConfigureHardware = hardware configuration in progress" -ForegroundColor Gray
+    Write-Host "               ProfileError     = profile apply failed (NOT maintenance)" -ForegroundColor Gray
+    Write-Host "               Deleting         = server being removed" -ForegroundColor Gray
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
