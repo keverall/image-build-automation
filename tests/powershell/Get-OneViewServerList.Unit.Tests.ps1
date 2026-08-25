@@ -121,9 +121,9 @@ Describe 'Get-OneViewServerList - maintenance mode (mocked REST)' {
             Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
             Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
                 return @{ total = 3; members = @(
-                    [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; MaintenanceModeEnabled = $true },
-                    [pscustomobject]@{ name = 's2'; serialNumber = 'B'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0'; MaintenanceModeEnabled = $false },
-                    [pscustomobject]@{ name = 's3'; serialNumber = 'C'; model = 'DL380'; powerState = 'On';  status = 'Warning';  mpIpAddresses = @('10.0.0.3'); enclosureName = 'Enc1'; position = 'Bay 3'; uri = '/rest/z'; romVersion = '1.0'; MaintenanceModeEnabled = $false }
+                    [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; MaintenanceModeEnabled = $true;  state = 'MaintenanceMode'; stateReason = 'Scheduled firmware update' },
+                    [pscustomobject]@{ name = 's2'; serialNumber = 'B'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0'; MaintenanceModeEnabled = $false; state = 'ProfileError';     stateReason = 'Profile apply failed' },
+                    [pscustomobject]@{ name = 's3'; serialNumber = 'C'; model = 'DL380'; powerState = 'On';  status = 'Warning';  mpIpAddresses = @('10.0.0.3'); enclosureName = 'Enc1'; position = 'Bay 3'; uri = '/rest/z'; romVersion = '1.0'; MaintenanceModeEnabled = $false; state = 'Monitored';        stateReason = '' }
                 ) }
             }
         }
