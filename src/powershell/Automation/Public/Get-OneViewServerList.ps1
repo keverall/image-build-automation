@@ -237,11 +237,10 @@ function Get-OneViewServerList {
                     name           = $srv.name
                     serial_number  = $srv.serialNumber
                     model          = $srv.model
+                    model_number   = $srv.modelNumber
                     power_state    = $srv.powerState
                     health_status  = $srv.status
                     ilo_ip         = (_ConvertTo-IloIpAddressList $srv) -join ', '
-                    enclosure_name = $srv.enclosureName
-                    enclosure_bay  = $srv.position
                     oneview_uri    = $srv.uri
                     rom_version    = $srv.romVersion
                     maintenance_mode = if ($srv.MaintenanceModeEnabled) { 'Yes' } else { 'No' }
@@ -364,16 +363,21 @@ function _Format-OneViewServerListResult {
     $healthW = 10
     $powerW  = 8
     $iloW    = [math]::Max(15, [math]::Min(40, ($Result.Servers | ForEach-Object { "$($_.ilo_ip)".Length } | Measure-Object -Maximum).Maximum))
-    $modelW  = [math]::Max(8,  [math]::Min(22, ($Result.Servers | ForEach-Object { "$($_.model)".Length } | Measure-Object -Maximum).Maximum))
     $romW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.rom_version)".Length } | Measure-Object -Maximum).Maximum))
     $reasonW = [math]::Max(10, [math]::Min(24, ($Result.Servers | ForEach-Object { "$($_.state_reason)".Length } | Measure-Object -Maximum).Maximum))
-    $encW    = [math]::Max(10, [math]::Min(20, ($Result.Servers | ForEach-Object { "$($_.enclosure_name)".Length } | Measure-Object -Maximum).Maximum))
-    $bayW    = [math]::Max(6,  [math]::Min(12, ($Result.Servers | ForEach-Object { "$($_.enclosure_bay)".Length } | Measure-Object -Maximum).Maximum))
+    $modelW  = [math]::Max(10, [math]::Min(16, ($Result.Servers | ForEach-Object { "$($_.model_number)".Length } | Measure-Object -Maximum).Maximum))
 
-    $header = "{0,-$nameW}  {1,-$serialW}  {2,-$maintW}  {3,-$stateW}  {4,-$healthW}  {5,-$powerW}  {6,-$iloW}  {7,-$modelW}  {8,-$romW}  {9,-$reasonW}  {10,-$encW}  {11,-$bayW}" -f `
-        'Server Name', 'Serial', 'MaintMode', 'State', 'Health', 'Power', 'iLO IP', 'Model', 'ROM', 'State Reason', 'Enclosure', 'Bay'
+    $widths      = @($nameW, $serialW, $maintW, $stateW, $healthW, $powerW, $iloW, $romW, $reasonW, $modelW)
+    $headerCells = @('Server Name', 'Serial', 'MaintMode', 'State', 'Health', 'Power', 'iLO IP', 'ROM', 'State Reason', 'Model')
+
+    $cellFormats = for ($i = 0; $i -lt $widths.Count; $i++) { "{$($i),-$($widths[$i])} " }
+    $fmt = "| $($cellFormats -join '| ')|"
+
+    $header = $fmt -f $headerCells
     Write-Host $header -ForegroundColor Yellow
-    Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+    $divider = '|' + (($widths | ForEach-Object { '-' * ($_ + 2) }) -join '|') + '|'
+    Write-Host $divider -ForegroundColor Gray
 
     foreach ($srv in $Result.Servers) {
         $name = $srv.name
@@ -390,13 +394,8 @@ function _Format-OneViewServerListResult {
             '*Critical*' { 'Red' }
             default      { 'Gray' }
         }
-        $maintColor = switch ($srv.maintenance_mode) {
-            'Yes' { 'Yellow' }
-            default { 'Gray' }
-        }
 
-        $line = "{0,-$nameW}  {1,-$serialW}  {2,-$maintW}  {3,-$stateW}  {4,-$healthW}  {5,-$powerW}  {6,-$iloW}  {7,-$modelW}  {8,-$romW}  {9,-$reasonW}  {10,-$encW}  {11,-$bayW}" -f `
-            $name, $srv.serial_number, $srv.maintenance_mode, $srv.state, $srv.health_status, $srv.power_state, $srv.ilo_ip, $srv.model, $srv.rom_version, $srv.state_reason, $srv.enclosure_name, $srv.enclosure_bay
+        $line = $fmt -f $name, $srv.serial_number, $srv.maintenance_mode, $srv.state, $srv.health_status, $srv.power_state, $srv.ilo_ip, $srv.rom_version, $srv.state_reason, $srv.model_number
         Write-Host $line -ForegroundColor $healthColor
     }
 
