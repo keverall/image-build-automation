@@ -41,6 +41,22 @@ Describe 'Configure-PhysicalBuild - basic invocation' {
         $r.IsoUrl | Should -Be 'https://artifacts/isos/win.iso'
     }
 
+    It 'Resolves single-slash UNC external ISO path (/server/share) gracefully' {
+        $r = Configure-PhysicalBuild -SrvrId 'srv01' -GuardRail '.*' `
+            -ExternalIsoPath '/fileserver/share/win.iso' `
+            -SkipPreBuild -SkipOneView -SkipConfirmation
+        $r.Success | Should -Be $true
+        $r.IsoUrl  | Should -Be 'cifs://fileserver/share/win.iso'
+    }
+
+    It 'Returns a graceful error when -ExternalIsoPath is a local path' {
+        $r = Configure-PhysicalBuild -SrvrId 'srv01' -GuardRail '.*' `
+            -ExternalIsoPath 'C:\local\win.iso' `
+            -SkipPreBuild -SkipOneView -SkipConfirmation
+        $r.Success | Should -Be $false
+        $r.Reason  | Should -Match 'Failed to resolve'
+    }
+
     It 'Sets cancelled=true when operator does not confirm (non-SkipConfirmation)' {
         # AUTOMATED_MODE prevents interactive prompt
         $env:AUTOMATED_MODE = 'true'

@@ -229,7 +229,11 @@ function Invoke-IsoDeploy {
         Write-Host "ISO Source: $ExternalIsoPath" -ForegroundColor Yellow
 
         # Resolve the ISO path to an accessible URL
-        $resolvedIsoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+        try {
+            $resolvedIsoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+        } catch {
+            return (_Publish-Result -Result @{ Success = $false; Error = "Failed to resolve -ExternalIsoPath '$ExternalIsoPath': $($_.Exception.Message)" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+        }
         if (-not $resolvedIsoUrl) {
             return (_Publish-Result -Result @{ Success = $false; Error = "Failed to resolve external ISO path to accessible URL" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }

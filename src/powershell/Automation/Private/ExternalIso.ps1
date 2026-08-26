@@ -18,8 +18,11 @@
       - UNC/SMB path   : '\\server\share\win.iso'              -> converted to cifs://
                          (Windows form, backslashes)
       - UNC/SMB path   : '//server/share/win.iso'              -> converted to cifs://
-                         (Posix-style forward slashes; Windows/PowerShell treat this as
-                         identical to '\\server\share\win.iso')
+                          (Posix-style forward slashes; Windows/PowerShell treat this as
+                          identical to '\\server\share\win.iso')
+      - UNC/SMB path   : '/server/share/win.iso'               -> also accepted (single
+                          leading slash, a common typo for the '//server/share' form);
+                          normalised to '//server/share/win.iso' -> cifs://
       - Mapped drive   : 'H:\win.iso' where H: maps to a UNC    -> expanded to UNC, then
                          converted to cifs://
 
@@ -163,6 +166,18 @@ function Resolve-ExternalIsoPath {
 
         $cifsUrl = $uncPath -replace '\\\\', 'cifs://' -replace '\\', '/'
         Write-Host "  [OK] Mapped drive converted to CIFS URL: $cifsUrl" -ForegroundColor Green
+        return $cifsUrl
+    }
+
+    # Single-slash UNC form ('/server/share/file.iso'). Windows/PowerShell treat a
+    # single leading slash as relative-to-current-drive, but operators frequently
+    # type this when they mean the Posix double-slash UNC form ('//server/share/...').
+    # Normalise the leading single slash to a double slash and treat it as UNC.
+    if ($p -match '^/[^/]+/.+') {
+        $unc = '\\' + $p.Substring(1).Replace('/', '\')
+        Write-Verbose "Media is a single-slash UNC path (normalised from '$p'): $unc"
+        $cifsUrl = $unc -replace '\\\\', 'cifs://' -replace '\\', '/'
+        Write-Host "  [OK] UNC/SMB path converted to CIFS URL: $cifsUrl" -ForegroundColor Green
         return $cifsUrl
     }
 
