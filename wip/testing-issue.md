@@ -4,10 +4,8 @@
 
 ## Table of Contents
 
-- [Testing Issues](#testing-issues)
-  - [Table of Contents](#table-of-contents)
-  - [Tuesday 24th August](#tuesday-24th-august)
-  - [Wednesday 26th August](#wednesday-26th-august)
+- [Tuesday 24th August](#tuesday-24th-august)
+- [Wednesday 26th August](#wednesday-26th-august)
 
 <a id="tuesday-24th-august"></a>
 
@@ -1084,7 +1082,6 @@ KEY
   Command : Configure-PhysicalBuild
   Action  : build plan review
   Fix     : supply -GuardRail '<regex>' matching the approved target server(s). 
-
 
 Name                           Value
 ----                           -----

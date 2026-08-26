@@ -344,9 +344,13 @@ function Start-PhysicalServerBuild {
         Write-Host "ISO Source: $ExternalIsoPath" -ForegroundColor Yellow
         
         # Resolve the ISO path to an accessible URL
-        $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+        try {
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+        } catch {
+            return (_Publish-Result -Result @{ Success = $false; Server = $ServerIdentifier; Error = "Failed to resolve -ExternalIsoPath '$ExternalIsoPath': $($_.Exception.Message)" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+        }
         if (-not $isoUrl) {
-            throw "Failed to resolve external ISO path to accessible URL"
+            return (_Publish-Result -Result @{ Success = $false; Server = $ServerIdentifier; Error = "Failed to resolve external ISO path to accessible URL" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
         
         Write-Host "ISO URL for iLO: $isoUrl" -ForegroundColor Green

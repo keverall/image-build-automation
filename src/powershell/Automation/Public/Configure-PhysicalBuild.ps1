@@ -266,8 +266,20 @@ function Configure-PhysicalBuild {
 
     if ($ExternalIsoPath) {
         $isoSource = "External ISO: $ExternalIsoPath"
-        $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
-        Write-Host "  [OK] Resolved to: $isoUrl" -ForegroundColor Green
+        try {
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+            Write-Host "  [OK] Resolved to: $isoUrl" -ForegroundColor Green
+        } catch {
+            $isoErr = "Failed to resolve -ExternalIsoPath '$ExternalIsoPath': $($_.Exception.Message)"
+            Write-Host "  [ERROR] $isoErr" -ForegroundColor Red
+            return @{
+                Success         = $false
+                Server          = $ExpectedHostname
+                Reason          = $isoErr
+                ServerIdentity  = $serverIdentity
+                ExternalIsoPath = $ExternalIsoPath
+            }
+        }
     } else {
         $isoSource = "Build from ConfigMgr (SiteCode=$SiteCode)"
         if ($RepoBaseUrl) {

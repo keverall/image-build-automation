@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1
-generated: 2026-08-20
+generated: 2026-08-26
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
