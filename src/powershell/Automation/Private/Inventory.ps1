@@ -161,7 +161,7 @@ function Resolve-OneViewTarget {
             return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $SerialNumber; ResolvedBy = $null; Error = "OneViewHost is required to resolve -SerialNumber '$SerialNumber'." }
         }
         $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
-            -SrvrId $SerialNumber -IdentifierType Serial -DryRun:$DryRun
+            -SrvrId $SerialNumber -IdentifierType Serial -DryRun:$DryRun -PassThru
         if (-not $r.Success) {
             return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $SerialNumber; ResolvedBy = $null; Error = "Serial '$SerialNumber' not resolved in OneView: $($r.Error)" }
         }
@@ -175,7 +175,7 @@ function Resolve-OneViewTarget {
             return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $null; ResolvedBy = $null; Error = "OneViewHost is required to confirm -ServerName '$ServerName' against OneView." }
         }
         $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
-            -SrvrId $ServerName -IdentifierType Name -DryRun:$DryRun
+            -SrvrId $ServerName -IdentifierType Name -DryRun:$DryRun -PassThru
         if (-not $r.Success) {
             return @{ Success = $false; Identifier = $null; IloIp = ''; SerialNumber = $null; ResolvedBy = $null; Error = "Server name '$ServerName' not confirmed in OneView: $($r.Error)" }
         }

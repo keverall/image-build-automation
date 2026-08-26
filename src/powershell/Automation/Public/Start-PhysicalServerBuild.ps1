@@ -417,7 +417,7 @@ function Start-PhysicalServerBuild {
         $oneview = $null
         if (-not $SkipOneView -and $OneViewHost) {
             $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
-                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun
+                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun -PassThru
             _Step 'oneview_target' $r
             $oneview = $r
             if ($r.Details -and $r.Details.ilo_ip -and -not $IloIp) {
