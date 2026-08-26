@@ -221,7 +221,7 @@ Write-Host "`n--- Phase 4: -GuardRail mandatory + match/non-match gate ---" -For
 
 # 4a. OMITTED guard -> every build/deploy command must block early & gracefully.
 Record-Step 'Configure-PhysicalBuild (NO guard) blocked' $true "Expected: GUARD RAIL REQUIRED"
-$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -SkipOneView -SkipPreBuild -SkipConfirmation
+$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -SkipOneView -SkipPreBuild -SkipConfirmation -PassThru
 Record-Step '  -> GuardRailRequired=true, Success=false' (($r.GuardRailRequired -eq $true) -and ($r.Success -eq $false)) ("Error='$($r.Error)'")
 
 $r = Update-Firmware -Server $Server -GuardRail '' -DryRun -PassThru
@@ -236,7 +236,7 @@ Record-Step 'Start-PhysicalServerBuild (NO guard) blocked' (($r.GuardRailRequire
 
 # 4b. NON-MATCHING guard -> mismatch block (after the mandatory check passes).
 $nonMatch = 'zzz_no_such_server_zzz'
-$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $nonMatch -SkipOneView -SkipPreBuild -SkipConfirmation
+$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $nonMatch -SkipOneView -SkipPreBuild -SkipConfirmation -PassThru
 Record-Step 'Configure-PhysicalBuild (NON-MATCH guard) blocked' ($r.Success -eq $false) ("Reason='$($r.Reason)'")
 
 # 4c. MATCHING guard -> the command is NOT blocked by the guard (it proceeds to
@@ -246,7 +246,7 @@ Record-Step 'Configure-PhysicalBuild (NON-MATCH guard) blocked' ($r.Success -eq 
 $matchGuard = if ($GuardRail) { $GuardRail } else { '.*' }
 function GuardAllowed { param($r) ($r.GuardRailRequired -ne $true) -and ($r.Error -notmatch 'GUARD RAIL') }
 
-$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard -SkipOneView -SkipPreBuild -SkipConfirmation
+$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard -SkipOneView -SkipPreBuild -SkipConfirmation -PassThru
 Record-Step "Configure-PhysicalBuild (MATCH guard '$matchGuard') not blocked" (GuardAllowed $r) ("Server='$($r.Server)'")
 
 $r = Update-Firmware -Server $Server -GuardRail $matchGuard -DryRun -PassThru
