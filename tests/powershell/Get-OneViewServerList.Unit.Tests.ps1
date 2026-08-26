@@ -256,8 +256,8 @@ Describe 'Get-OneViewServerList - Summary and Detail views' {
                 return @{
                     total   = 2
                     members = @(
-                        [pscustomobject]@{ name = 'srv-alpha'; serialNumber = 'A1'; model = 'DL380'; modelNumber = '867963-B21'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); romVersion = '1.0'; MaintenanceModeEnabled = $false; state = 'Monitored'; stateReason = '' },
-                        [pscustomobject]@{ name = 'srv-beta';  serialNumber = 'B2'; model = 'DL380'; modelNumber = '867963-B21'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); romVersion = '1.0'; MaintenanceModeEnabled = $true; state = 'MaintenanceMode'; stateReason = 'Fw' }
+                        [pscustomobject]@{ name = 'srv-alpha'; serialNumber = 'A1'; model = 'DL380 Gen10'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); romVersion = 'P89 v2.92 (11/23/2021)'; MaintenanceModeEnabled = $false; state = 'Monitored'; stateReason = '' },
+                        [pscustomobject]@{ name = 'srv-beta';  serialNumber = 'B2'; model = 'DL380 Gen10'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); romVersion = 'U32 v3.50 (04/17/2025)'; MaintenanceModeEnabled = $true; state = 'MaintenanceMode'; stateReason = 'Fw' }
                     )
                 }
             }
@@ -297,5 +297,25 @@ Describe 'Get-OneViewServerList - Summary and Detail views' {
         $header = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1)
         $header | Should -Match 'State'
         $header | Should -Match 'Model'
+    }
+
+    It '-Detail Model column contains actual model data (not empty)' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Detail -InformationVariable hostRecords
+        $dataRows = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'srv-alpha' -or $_ -match 'srv-beta' })
+        $dataRows | Should -Not -BeNullOrEmpty
+        $dataRows | Should -Match 'DL380 Gen10'
+    }
+
+    It '-Detail ROM column accommodates long version strings without misalignment' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Detail -InformationVariable hostRecords
+        $allRows = $hostRecords | ForEach-Object { $_.MessageData }
+        $dataLines = $allRows | Where-Object { $_ -match 'P89 v2.92' -or $_ -match 'U32 v3.50' }
+        $dataLines | Should -Not -BeNullOrEmpty
+        # Each data line should have the same number of pipe-delimited columns as the header
+        $headerLine = $allRows | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1
+        $headerCols = ($headerLine -split '\|').Count
+        $dataLines | ForEach-Object { ($($_ -split '\|')).Count | Should -Be $headerCols }
     }
 }

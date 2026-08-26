@@ -381,9 +381,9 @@ function _Format-OneViewServerListResult {
         health    = @{ Header = 'Health';       Prop = 'health_status';   Min = 10; Max = 10 }
         power     = @{ Header = 'Power';        Prop = 'power_state';     Min = 8;  Max = 8  }
         ilo       = @{ Header = 'iLO IP';       Prop = 'ilo_ip';          Min = 15; Max = 40 }
-        rom       = @{ Header = 'ROM';          Prop = 'rom_version';     Min = 6;  Max = 12 }
+        rom       = @{ Header = 'ROM';          Prop = 'rom_version';     Min = 6;  Max = 30 }
         reason    = @{ Header = 'State Reason'; Prop = 'state_reason';    Min = 10; Max = 24 }
-        model     = @{ Header = 'Model';        Prop = 'model_number';    Min = 10; Max = 16 }
+        model     = @{ Header = 'Model';        Prop = 'model';           Min = 10; Max = 30 }
     }
     $cols = if ($View -eq 'Summary') {
         @('name', 'serial', 'maintmode', 'health', 'ilo')
@@ -394,8 +394,9 @@ function _Format-OneViewServerListResult {
     $widths = @(); $headerCells = @()
     foreach ($c in $cols) {
         $def = $colDefs[$c]
-        $maxLen = ($Result.Servers | ForEach-Object { "$($_.$($def.Prop))".Length } | Measure-Object -Maximum).Maximum
-        if ($null -eq $maxLen) { $maxLen = 0 }
+        $maxDataLen = ($Result.Servers | ForEach-Object { "$($_.$($def.Prop))".Length } | Measure-Object -Maximum).Maximum
+        if ($null -eq $maxDataLen) { $maxDataLen = 0 }
+        $maxLen = [math]::Max($def.Header.Length, $maxDataLen)
         $widths += [math]::Max($def.Min, [math]::Min($def.Max, $maxLen))
         $headerCells += $def.Header
     }
@@ -410,9 +411,6 @@ function _Format-OneViewServerListResult {
     Write-Host $divider -ForegroundColor Gray
 
     foreach ($srv in $Result.Servers) {
-        $name = $srv.name
-        if ($name.Length -gt 50) { $name = $name.Substring(0, 47) + '...' }
-
         $powerColor = switch ($srv.power_state) {
             'On'  { 'Green' }
             'Off' { 'Red' }
@@ -427,7 +425,12 @@ function _Format-OneViewServerListResult {
 
         $cells = for ($i = 0; $i -lt $cols.Count; $i++) {
             $def = $colDefs[$cols[$i]]
-            if ($def.Prop -eq 'name') { $name } else { $srv.$($def.Prop) }
+            $val = $srv.$($def.Prop)
+            if ($null -ne $val -and $val.Length -gt $widths[$i]) {
+                $val.Substring(0, [math]::Max(0, $widths[$i] - 3)) + '...'
+            } else {
+                $val
+            }
         }
         $line = $fmt -f $cells
         Write-Host $line -ForegroundColor $healthColor
