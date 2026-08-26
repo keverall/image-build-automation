@@ -222,7 +222,7 @@ function Configure-PhysicalBuild {
     $serverIdentity = $null
     if (-not $SkipOneView -and $OneViewHost) {
         Write-Host "`n[1/4] Resolving server identity from OneView..." -ForegroundColor Yellow
-        $ov = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -DryRun:$true
+        $ov = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -DryRun:$true -PassThru
         if ($ov.Success) {
             $serverIdentity = $ov.Details
             Write-Host "  [OK] Server resolved" -ForegroundColor Green

@@ -112,7 +112,7 @@ function Test-PreBuildValidation {
 
     if (-not $SkipOneView -and $OneViewHost) {
         try {
-            $r = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -DryRun:$DryRun
+            $r = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -DryRun:$DryRun -PassThru
             _Set 'oneview_target' ($r.Success) ($r | ConvertTo-Json -Depth 6 -Compress)
         } catch { _Set 'oneview_target' $false $_.Exception.Message }
     } else {

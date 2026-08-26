@@ -15,7 +15,7 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
 
     It 'Has expected parameters' {
         $cmd = Get-Command Get-OneViewServerTarget
-        foreach ($p in @('ServerIdentifier','OneViewHost','IdentifierType','MockResult','DryRun')) {
+        foreach ($p in @('ServerIdentifier','OneViewHost','IdentifierType','MockResult','DryRun','PassThru')) {
             $cmd.Parameters.Keys | Should -Contain $p
         }
     }
@@ -23,7 +23,7 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
     It 'Returns MockResult without network call' {
         $r = Get-OneViewServerTarget -SrvrId 'TEST' -MockResult @{
             Success = $true; Server = 'TEST'; Details = @{ serial_number = 'MXQ0000' }
-        }
+        } -PassThru
         $r.Success          | Should -Be $true
         $r.Details.serial_number | Should -Be 'MXQ0000'
     }
@@ -32,7 +32,7 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
         $prevAuto = $env:AUTOMATED_MODE
         try {
             $env:AUTOMATED_MODE = 'true'
-            $r = Get-OneViewServerTarget -SrvrId 'TEST'
+            $r = Get-OneViewServerTarget -SrvrId 'TEST' -PassThru
             $r.Success | Should -Be $false
             $r.Error   | Should -Match 'OneViewHost'
         } finally {
@@ -41,7 +41,7 @@ Describe 'Get-OneViewServerTarget - basic invocation' {
     }
 
     It 'DryRun succeeds' {
-        $r = Get-OneViewServerTarget -OneViewHost 'oneview.test.local' -SrvrId 'TEST' -DryRun
+        $r = Get-OneViewServerTarget -OneViewHost 'oneview.test.local' -SrvrId 'TEST' -DryRun -PassThru
         $r.Success | Should -Be $true
         $r.DryRun  | Should -Be $true
     }
@@ -73,7 +73,7 @@ Describe 'Get-OneViewServerTarget - strict single-server matching (mocked REST)'
                 )}
             }
         }
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'DUP' -IdentifierType Serial -Credential $Script:TargetCred
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'DUP' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
         $r.Success | Should -Be $false
         $r.Error   | Should -Match 'Ambiguous'
     }
@@ -86,7 +86,7 @@ Describe 'Get-OneViewServerTarget - strict single-server matching (mocked REST)'
                 )}
             }
         }
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'UNIQUE' -IdentifierType Serial -Credential $Script:TargetCred
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'UNIQUE' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
         $r.Success              | Should -Be $true
         $r.Details.serial_number | Should -Be 'UNIQUE'
     }
@@ -116,21 +116,21 @@ Describe 'Get-OneViewServerTarget - parameter aliases & single-parameter targeti
     }
 
     It 'Resolves via canonical -ServerIdentifier -IdentifierType Serial' {
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial -Credential $Script:TargetCred
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'MXQ1234567' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
         $r.Success | Should -Be $true
         $r.ResolvedBy | Should -Be 'Serial'
         $r.Details.serial_number | Should -Be 'MXQ1234567'
     }
 
     It 'Resolves via short aliases -SrvrId -IdTyp (proves aliases bind)' {
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'MXQ1234567' -IdTyp Serial -Credential $Script:TargetCred
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'MXQ1234567' -IdTyp Serial -Credential $Script:TargetCred -PassThru
         $r.Success | Should -Be $true
         $r.ResolvedBy | Should -Be 'Serial'
         $r.Details.serial_number | Should -Be 'MXQ1234567'
     }
 
     It 'Resolves with a single -ServerIdentifier (Auto detects Name)' {
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'PROD-SRV-01' -Credential $Script:TargetCred
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -ServerIdentifier 'PROD-SRV-01' -Credential $Script:TargetCred -PassThru
         $r.Success | Should -Be $true
         $r.ResolvedBy | Should -Be 'Name'
         $r.Details.name | Should -Be 'PROD-SRV-01'
@@ -138,5 +138,31 @@ Describe 'Get-OneViewServerTarget - parameter aliases & single-parameter targeti
 
     It 'Rejects the invalid -SrvId alias (typo, missing r)' {
         { & Get-OneViewServerTarget -SrvId 'X' -ErrorAction Stop } | Should -Throw
+    }
+}
+
+Describe 'Get-OneViewServerTarget - output rendering (no raw hashtable dump)' {
+    BeforeAll {
+        $Script:TargetCred = [System.Management.Automation.PSCredential]::new(
+            'admin', (ConvertTo-SecureString 'test-password' -AsPlainText -Force))
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-x'; serialNumber = 'X1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0' }
+                )}
+            }
+        }
+    }
+
+    It 'Renders a clean Details sentence (not a { [...] } hashtable dump)' {
+        $hostRecords = $null
+        $null = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'X1' -IdentifierType Serial -Credential $Script:TargetCred -InformationVariable hostRecords
+        $rendered = ($hostRecords | ForEach-Object { $_.MessageData }) -join "`n"
+        $rendered | Should -Match 'OneView Server Target'
+        $rendered | Should -Match 'Details:'
+        $rendered | Should -Match 'name=srv-x'
+        $rendered | Should -Not -Match 'System\.Collections\.Hashtable'
+        $rendered | Should -Not -Match '^\s*Details\s*:\s*\{'
     }
 }
