@@ -29,6 +29,7 @@
   - [23) `Get-OneViewServerList` DRY output migration + iLO IP fix + `prune-logs` hardening](#23-get-oneviewserverlist-dry-output-migration-ilo-ip-fix-prune-logs-hardening)
   - [24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming](#24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming)
   - [25) `Connect-OneView` "already connected" message → bold red (no reconnection)](#25-connect-oneview-already-connected-message-bold-red-no-reconnection)
+  - [26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking](#26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -773,3 +774,38 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 #### Verification
 
 - Mocked `Get-OneViewActiveSession` + `Test-ServerConnectivity` (`Connect-OneView -OneViewHost va-oneviewt-01` while already connected) renders the banner containing `HPeOneView IS ALREADY CONNECTED TO va-oneviewt-01` and `Disconnect-OneView`; the 53 existing unit tests still pass.
+
+<a id="26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking"></a>
+
+### 26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-08-26 | `Get-OneViewServerList` Detail view: fixed empty Model column, increased ROM column `Max` from 12→30 to prevent overflow misalignment, included header length in width calculation, added truncation safety net for over-width cells, render `NotApplicable` as blank in State Reason, added State Reason to KEY | Kev Everall |
+
+<a name="root-cause-26"></a>
+
+#### Root cause
+
+- **Empty Model column**: the Detail table column definition used `Prop = 'model_number'`, which mapped to `$srv.modelNumber` from the OneView REST API. The `modelNumber` field exists on the server-hardware resource but is consistently **blank/null** in real appliances, so the Model column showed nothing. The populated model string lives in `$srv.model`.
+- **Column misalignment after ROM**: the ROM column had `Max = 12`, but real ROM version strings like `U32 v3.50 (04/17/2025)` are 22 chars. PowerShell's composite-format specifier `{N,-12}` left-aligns short strings but does **not** truncate long ones, so the 22-char value overflowed its 12-char slot and shifted every subsequent column (State Reason, Model) out of alignment.
+- **`NotApplicable` clutter**: OneView returns `stateReason = "NotApplicable"` as a default sentinel for the majority of servers (meaning "no special reason; state is self-explanatory"). Seeing `NotApplicable` in every row added noise without information.
+
+<a name="fix-26"></a>
+
+#### Fix
+
+- **`Model` column populated** — changed the column definition from `Prop = 'model_number'` to `Prop = 'model'`, pointing at the field that OneView actually populates. The `model_number` key is still extracted into the entry hashtables for `-PassThru` consumers, but the display column now reads `model`.
+- **ROM column width** — increased `Max` from 12 to 30 so typical ROM version strings (≤ 22 chars) fit without truncation.
+- **Width calculation** — the per-column width now includes the header length (`[math]::Max($def.Header.Length, $maxDataLen)`), preventing a header wider than the data from being clipped.
+- **Truncation safety net** — when a cell value exceeds its computed width, it is truncated to `width - 3` characters + `…` (`Substring(0, [math]::Max(0, $widths[$i] - 3)) + '...'`). This replaces the ad-hoc name-only truncation with a generalised guarantee that no column can ever overflow, regardless of field.
+- **`NotApplicable` blanking** — in the cell-builder, `if ($val -eq 'NotApplicable') { $val = '' }` at render time only (the raw `state_reason` value remains in `-PassThru` results for programmatic consumers).
+- **KEY documentation** — added a `State Reason` section to the KEY block explaining the `NotApplicable` → blank mapping and listing the non-default values (`UserInitiated`, `Unmanaged`, `Removed`).
+
+<a name="verification-26"></a>
+
+#### Verification
+
+- `Get-OneViewServerList.Unit.Tests.ps1`: **19 passed, 0 failed** (17 existing + 2 new: Model data populated, ROM alignment column-count parity).
+- `scripts/lint.ps1` (PSScriptAnalyzer): all checks passed, no new findings.
+- Updated the §26 test mock to use realistic OneView fields: `model = 'DL380 Gen10'` (no `modelNumber`, which doesn't exist in the real API) and long ROM strings (`P89 v2.92 (11/23/2021)`, `U32 v3.50 (04/17/2025)`) that previously caused overflow.
