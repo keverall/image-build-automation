@@ -26,7 +26,7 @@ The iLO virtual media controller and HPE SUT (firmware) require network-accessib
 
 | Parameter | Description |
 |-----------|-------------|
-| `-IsoPath` | Path to the media file (UNC/SMB, NFS, CIFS/SMB URL, HTTP/HTTPS URL, or a mapped network drive). Despite the parameter name, it is path-type agnostic and is also used for firmware component folders/zips. |
+| `-IsoPath` | Path to the media file (UNC/SMB, NFS, CIFS/SMB URL, HTTP/HTTPS URL, or a mapped network drive). Despite the parameter name, it is path-type agnostic and is also used for firmware component folders/zips. See ../PathParameterFormats.md for the full list of accepted formats (incl. the single-slash /server/share autocorrection). |
 | `-RepoLocalPath` | Retained for call-site compatibility. Not used by the resolver. |
 | `-RepoBaseUrl` | Retained for call-site compatibility. Not used by the resolver. |
 
@@ -76,7 +76,8 @@ The iLO virtual media controller and HPE SUT (firmware) require network-accessib
 .PARAMETER IsoPath
     Path to the media file (UNC/SMB, NFS, CIFS/SMB URL, HTTP/HTTPS URL, or a mapped
     network drive). Despite the parameter name, it is path-type agnostic and is also used
-    for firmware component folders/zips.
+    for firmware component folders/zips. See ../PathParameterFormats.md for the full
+    list of accepted formats (incl. the single-slash /server/share autocorrection).
 
 .PARAMETER RepoLocalPath
     Retained for call-site compatibility. Not used by the resolver.

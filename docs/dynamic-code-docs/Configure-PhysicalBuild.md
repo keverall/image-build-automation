@@ -43,8 +43,8 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 | `-TaskSequenceName` | ConfigMgr task sequence name to verify. |
 | `-RepoBaseUrl` | HTTPS base URL of the ISO repository. |
 | `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl. |
-| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Use a client-supplied ISO instead of building one. Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path (incl. '//server/share'), a 'cifs://'/'smb://' URL, an HTTPS/NFS URL, or a mapped network drive. Local paths are not supported. |
-| `-FirmwareFolders` | Firmware component source directories that will be applied post-OS-install. Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') |
+| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Use a client-supplied ISO instead of building one. Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path (incl. '//server/share'), a 'cifs://'/'smb://' URL, an HTTPS/NFS URL, or a mapped network drive. Local paths are not supported. See |
+| `-FirmwareFolders` | Firmware component source directories that will be applied post-OS-install. Each is resolved through the same shared helper as the ISO. Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). See |
 | `-FirmwareConfig` | Firmware manifest JSON for Update-Firmware. |
 | `-AllowUnknownIsoUrl` | Skip the head-verify check on the ISO URL (offline scenarios). |
 | `-InMaintenanceWindow` | Acknowledge the target server is in an approved maintenance window. |
@@ -141,11 +141,14 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
         Use a client-supplied ISO instead of building one. Resolved by the single
         shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path
         (incl. '//server/share'), a 'cifs://'/'smb://' URL, an HTTPS/NFS URL, or a
-        mapped network drive. Local paths are not supported.
+        mapped network drive. Local paths are not supported. See
+        ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER FirmwareFolders
         Firmware component source directories that will be applied post-OS-install.
-        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+        Each is resolved through the same shared helper as the ISO. Example:
+        -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). See
+        ../PathParameterFormats.md for the accepted path formats.
 
     .PARAMETER FirmwareConfig
         Firmware manifest JSON for Update-Firmware.

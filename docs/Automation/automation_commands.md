@@ -438,6 +438,8 @@ Reuses the shared `Resolve-ExternalIsoPath` helper (the single resolver used by 
 
 Accepted formats: `\\server\share\file.iso` (UNC), `//server/share/file.iso` (forward-slash UNC — identical to the above), `cifs://server/share/file.iso`, `smb://server/share/file.iso`, `https://…` / `nfs://…` URLs, or a mapped network drive (`H:\file.iso`).
 
+> **Full format reference:** see [Path Parameter Formats](../PathParameterFormats.md#top) for every accepted `-ExternalIsoPath` / `-IsoPath` / `-FirmwareFolders` format, including the single-slash `/server/share` autocorrection and the list of unsupported local paths.
+
 ```powershell
 # UNC/SMB share (backslash or forward slash) - resolved to a cifs:// URL iLO can mount
 Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'
@@ -514,6 +516,8 @@ All of the following work and resolve to the address iLO mounts as virtual media
 > **Point at the file, not the share.** Supply the full path to the `.iso` (or firmware `.zip`/folder), e.g. `\\fileserver\isos\win2025.iso`. A bare `\\fileserver\isos\` with no filename is not a deployable image.
 
 **Not supported:** local drives (`C:\isos\…`, or a letter mapped to a *local* disk). Passing one fails with an error telling you to supply an SMB/UNC or HTTPS path instead.
+
+> **Full format reference:** see [Path Parameter Formats](../PathParameterFormats.md#top) for every accepted `-ExternalIsoPath` / `-IsoPath` / `-FirmwareFolders` format, including the single-slash `/server/share` autocorrection and the list of unsupported local paths.
 
 ```powershell
 # Any of these work — pick the form that matches how your file is shared:
@@ -806,6 +810,8 @@ Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
 - `Mapped drive` (`H:\file.iso` where `H:` maps to a UNC share) — auto-resolved to UNC, then `cifs://`
 
 Local drive paths (`C:\`, `H:\` on local disk) are **not supported**. iLO cannot access local drives, and this module does not create SMB shares.
+
+> **Full format reference:** see [Path Parameter Formats](../PathParameterFormats.md#top) for every accepted `-ExternalIsoPath` / `-IsoPath` / `-FirmwareFolders` format, including the single-slash `/server/share` autocorrection and the list of unsupported local paths.
 
 ```powershell
 # Destructive deploy - reboots server, installs OS (requires -GuardRail + confirmation)

@@ -58,6 +58,10 @@ function Update-Firmware {
         Example:
           Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
 
+        These locations are resolved/validated through the same shared
+        Resolve-ExternalIsoPath helper as the ISO; see
+        ../PathParameterFormats.md for the accepted path formats.
+
     .PARAMETER SkipDownload
         Skip component download step.
 

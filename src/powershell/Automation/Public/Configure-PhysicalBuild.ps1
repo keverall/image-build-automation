@@ -81,11 +81,14 @@ function Configure-PhysicalBuild {
         Use a client-supplied ISO instead of building one. Resolved by the single
         shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path
         (incl. '//server/share'), a 'cifs://'/'smb://' URL, an HTTPS/NFS URL, or a
-        mapped network drive. Local paths are not supported.
+        mapped network drive. Local paths are not supported. See
+        ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER FirmwareFolders
         Firmware component source directories that will be applied post-OS-install.
-        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+        Each is resolved through the same shared helper as the ISO. Example:
+        -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). See
+        ../PathParameterFormats.md for the accepted path formats.
 
     .PARAMETER FirmwareConfig
         Firmware manifest JSON for Update-Firmware.

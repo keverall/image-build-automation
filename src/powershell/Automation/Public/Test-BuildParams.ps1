@@ -47,13 +47,14 @@ function Test-BuildParams {
         Path to the base Windows ISO (required for ISO builds). Accepts an UNC/SMB share
         (\\server\share\file.iso or //server/share/file.iso), an HTTPS/NFS/CIFS/SMB URL,
         or a mapped network drive (H:\file.iso that maps to a network share). Local drive
-        paths are not supported by iLO.
+        paths are not supported by iLO. See ../PathParameterFormats.md for the full
+        list of accepted formats.
 
     .PARAMETER FirmwareFolders
         One or more firmware component source locations (directories or .zip files) passed
         to Update-Firmware for post-OS firmware updates via HPE SUT. Each is resolved and
         validated with the same shared helper as the ISO. Local drive paths are not
-        supported.
+        supported. See ../PathParameterFormats.md for the accepted path formats.
 
     .PARAMETER DryRun
         Resolve and validate the path format(s) without checking that the file(s) exist.

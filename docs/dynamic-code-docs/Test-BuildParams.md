@@ -31,8 +31,8 @@ Takes a Windows ISO image path and/or one or more firmware component locations, 
 
 | Parameter | Description |
 |-----------|-------------|
-| `-BaseIsoPath` | Path to the base Windows ISO (required for ISO builds). Accepts an UNC/SMB share (\\server\share\file.iso or //server/share/file.iso), an HTTPS/NFS/CIFS/SMB URL, or a mapped network drive (H:\file.iso that maps to a network share). Local drive paths are not supported by iLO. |
-| `-FirmwareFolders` | One or more firmware component source locations (directories or .zip files) passed to Update-Firmware for post-OS firmware updates via HPE SUT. Each is resolved and validated with the same shared helper as the ISO. Local drive paths are not supported. |
+| `-BaseIsoPath` | Path to the base Windows ISO (required for ISO builds). Accepts an UNC/SMB share (\\server\share\file.iso or //server/share/file.iso), an HTTPS/NFS/CIFS/SMB URL, or a mapped network drive (H:\file.iso that maps to a network share). Local drive paths are not supported by iLO. See ../PathParameterFormats.md for the full list of accepted formats. |
+| `-FirmwareFolders` | One or more firmware component source locations (directories or .zip files) passed to Update-Firmware for post-OS firmware updates via HPE SUT. Each is resolved and validated with the same shared helper as the ISO. Local drive paths are not supported. See ../PathParameterFormats.md for the accepted path formats. |
 | `-DryRun` | Resolve and validate the path format(s) without checking that the file(s) exist. |
 | `-Json` | Emit the result as a JSON string on the success stream instead of the human-readable report. |
 | `-PassThru` | Also return the structured result object on the success stream (for scripting / capture into a variable). Without this, nothing is returned on the success stream so the operator only sees the readable report. |
@@ -122,13 +122,14 @@ Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' ` -FirmwareFold
         Path to the base Windows ISO (required for ISO builds). Accepts an UNC/SMB share
         (\\server\share\file.iso or //server/share/file.iso), an HTTPS/NFS/CIFS/SMB URL,
         or a mapped network drive (H:\file.iso that maps to a network share). Local drive
-        paths are not supported by iLO.
+        paths are not supported by iLO. See ../PathParameterFormats.md for the full
+        list of accepted formats.
 
     .PARAMETER FirmwareFolders
         One or more firmware component source locations (directories or .zip files) passed
         to Update-Firmware for post-OS firmware updates via HPE SUT. Each is resolved and
         validated with the same shared helper as the ISO. Local drive paths are not
-        supported.
+        supported. See ../PathParameterFormats.md for the accepted path formats.
 
     .PARAMETER DryRun
         Resolve and validate the path format(s) without checking that the file(s) exist.

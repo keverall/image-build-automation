@@ -36,7 +36,7 @@ Reads the firmware/driver manifest (hpe_firmware_drivers_nov2025.json) and invok
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
 | `-ServerList` _(Aliases: -SrvrList)_ | Path to server_list.txt. Only used for -DryRun mock targeting. |
 | `-OutputDir` _(Aliases: -OutDir)_ | Output directory. |
-| `-FirmwareFolders` _(Aliases: -FwDirs)_ | Additional firmware component source directories (string array). These are local folder paths containing pre-downloaded HPE SUT component packages (e.g. '.spp' component folders or extracted firmware update packs). Each folder is passed to hpe_sut via the --firmware-components flag so SUT includes them alongside the manifest-specified components. Use this when Marin provides firmware component folders outside the standard manifest repository. Example: Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') |
+| `-FirmwareFolders` _(Aliases: -FwDirs)_ | Additional firmware component source directories (string array). These are local folder paths containing pre-downloaded HPE SUT component packages (e.g. '.spp' component folders or extracted firmware update packs). Each folder is passed to hpe_sut via the --firmware-components flag so SUT includes them alongside the manifest-specified components. Use this when Marin provides firmware component folders outside the standard manifest repository. Example: Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') These locations are resolved/validated through the same shared Resolve-ExternalIsoPath helper as the ISO; see |
 | `-SkipDownload` _(Aliases: -SkipDl)_ | Skip component download step. |
 | `-DryRun` _(Aliases: -Dry)_ | Simulate without executing. |
 | `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any firmware update. If it is OMITTED the command fails early with an expressive, logged error and performs no update. If it does NOT match the target, the update is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
@@ -116,6 +116,10 @@ Update-Firmware -Server 'srv01.corp.local' -FirmwareFolders @('C:\fw\BIOS', 'C:\
 
         Example:
           Update-Firmware -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+
+        These locations are resolved/validated through the same shared
+        Resolve-ExternalIsoPath helper as the ISO; see
+        ../PathParameterFormats.md for the accepted path formats.
 
     .PARAMETER SkipDownload
         Skip component download step.
