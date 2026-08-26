@@ -426,6 +426,7 @@ function _Format-OneViewServerListResult {
         $cells = for ($i = 0; $i -lt $cols.Count; $i++) {
             $def = $colDefs[$cols[$i]]
             $val = $srv.$($def.Prop)
+            if ($val -eq 'NotApplicable') { $val = '' }
             if ($null -ne $val -and $val.Length -gt $widths[$i]) {
                 $val.Substring(0, [math]::Max(0, $widths[$i] - 3)) + '...'
             } else {
@@ -449,6 +450,13 @@ function _Format-OneViewServerListResult {
         Write-Host "               ConfigureHardware = hardware configuration in progress" -ForegroundColor Gray
         Write-Host "               ProfileError     = profile apply failed (NOT maintenance)" -ForegroundColor Gray
         Write-Host "               Deleting         = server being removed" -ForegroundColor Gray
+    }
+    if ($cols -contains 'reason') {
+        Write-Host "  State Reason : additional context for the State value (blank when 'NotApplicable'):" -ForegroundColor Gray
+        Write-Host "               NotApplicable  = no special reason; state is self-explanatory (shown as blank)" -ForegroundColor Gray
+        Write-Host "               UserInitiated  = state change triggered by a user action" -ForegroundColor Gray
+        Write-Host "               Unmanaged      = hardware not managed by this OneView appliance" -ForegroundColor Gray
+        Write-Host "               Removed        = hardware has been removed from the appliance" -ForegroundColor Gray
     }
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
