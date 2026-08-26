@@ -4,8 +4,10 @@
 
 ## Table of Contents
 
-- [Tuesday 24th August](#tuesday-24th-august)
-- [Wednesday 26th August](#wednesday-26th-august)
+- [Testing Issues](#testing-issues)
+  - [Table of Contents](#table-of-contents)
+  - [Tuesday 24th August](#tuesday-24th-august)
+  - [Wednesday 26th August](#wednesday-26th-august)
 
 <a id="tuesday-24th-august"></a>
 
@@ -831,8 +833,6 @@ Server                         alp-qlikview-03ilo
  
    image-build-automation  Get-OneViewServerTarget -Sme 
 ```
-
-<a id=wednesday-26th-august"></a>
 
 <a id="wednesday-26th-august"></a>
 
