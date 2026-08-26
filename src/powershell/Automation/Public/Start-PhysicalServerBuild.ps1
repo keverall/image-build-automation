@@ -147,7 +147,8 @@ function Start-PhysicalServerBuild {
           module does NOT auto-create SMB shares and does NOT require
           Administrator privileges. Supply an already-shared path instead.
 
-        When supplied, -SkipIsoBuild and -SkipPublish are implied.
+        When supplied, -SkipIsoBuild and -SkipPublish are implied. See
+        ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
@@ -170,7 +171,9 @@ function Start-PhysicalServerBuild {
     .PARAMETER FirmwareFolders
         Additional firmware component source directories (string array) passed
         to Update-Firmware for post-OS firmware updates via HPE SUT.
-        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). Each is resolved
+        through the same shared helper as the ISO; see
+        ../PathParameterFormats.md for the accepted path formats.
 
     .PARAMETER FirmwareConfig
         Path to a firmware manifest JSON passed to Update-Firmware.

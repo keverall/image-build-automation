@@ -18,7 +18,9 @@ function Invoke-WindowsSecurityUpdate {
         to the mounted ISO image.
 
     .PARAMETER BaseIsoPath
-        Path to the base Windows Server ISO file.
+        Path to the base Windows Server ISO file. Accepts the same network-share
+        and URL formats as the other build commands; see
+        ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER Server
         Server hostname for output naming. Mutually exclusive with -SerialNumber.

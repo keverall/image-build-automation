@@ -62,7 +62,8 @@ function Invoke-IsoDeploy {
           module does NOT auto-create SMB shares and does NOT require
           Administrator privileges. Supply an already-shared path instead.
 
-        When supplied, -IsoUrl is ignored and package resolution is skipped.
+        When supplied, -IsoUrl is ignored and package resolution is skipped. See
+        ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER RepoBaseUrl
         HTTPS base URL of the ISO repository. Combined with the bootable_iso filename

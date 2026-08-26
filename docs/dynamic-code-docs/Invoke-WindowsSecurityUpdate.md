@@ -28,7 +28,7 @@ Applies Windows security patches to a base ISO using DISM or PowerShell DISM equ
 
 | Parameter | Description |
 |-----------|-------------|
-| `-BaseIsoPath` _(Aliases: -BaseIso, -b)_ | Path to the base Windows Server ISO file. |
+| `-BaseIsoPath` _(Aliases: -BaseIso, -b)_ | Path to the base Windows Server ISO file. Accepts the same network-share and URL formats as the other build commands; see |
 | `-Server` _(Aliases: -ServerName, -s)_ | Server hostname for output naming. Mutually exclusive with -SerialNumber. |
 | `-SerialNumber` _(Aliases: -Srl)_ | Identify the server by its HPE serial number; resolved to the hostname (for output naming) via OneView. Requires -OneViewHost. |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname/IP used to resolve -SerialNumber. |
@@ -68,7 +68,9 @@ Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 's
         to the mounted ISO image.
 
     .PARAMETER BaseIsoPath
-        Path to the base Windows Server ISO file.
+        Path to the base Windows Server ISO file. Accepts the same network-share
+        and URL formats as the other build commands; see
+        ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER Server
         Server hostname for output naming. Mutually exclusive with -SerialNumber.
