@@ -29,13 +29,13 @@ Describe 'Test-PreBuildValidation - basic invocation' {
 
     It 'Skips iso_url_check when IsoUrl empty' {
         $r = Test-PreBuildValidation -SrvrId 'TEST' -DryRun -SkipOneView -SkipIlo -SkipDpMp
-        ($r.Checks['iso_url_check_skipped'].status) | Should -Be 'PASS'
+        ($r.Checks['iso_url_check_skipped'].status) | Should -Be 'SKIP'
         $r.Checks.Keys -notcontains 'iso_url_provided' | Should -Be $true
     }
 
     It 'SkipIsoUrl suppresses the ISO URL check' {
         $r = Test-PreBuildValidation -SrvrId 'TEST' -IsoUrl 'https://example.com/iso.iso' -DryRun -SkipOneView -SkipIlo -SkipDpMp -SkipIsoUrl
-        ($r.Checks['iso_url_check_skipped'].status) | Should -Be 'PASS'
+        ($r.Checks['iso_url_check_skipped'].status) | Should -Be 'SKIP'
     }
 
     It 'Returns Checks dictionary even when nothing configured' {

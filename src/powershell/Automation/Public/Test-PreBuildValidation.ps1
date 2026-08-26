@@ -29,7 +29,14 @@ function Test-PreBuildValidation {
         OneView appliance hostname or IP.
 
     .PARAMETER IloIp
-        iLO IPv4 address / hostname for the target server.
+        iLO IPv4 address / hostname for the target server. OPTIONAL but
+        recommended: when supplied (with -IloCredential, or an interactive
+        prompt) the ilo_credentials check performs a LIVE iLO Redfish GET to
+        confirm the iLO is reachable and the credentials are valid before the
+        destructive build. This is the same channel Start-PhysicalBuild uses to
+        mount the ISO and reboot, so verifying it early avoids a failed build
+        after destructive steps have already begun (e.g. the disk is being
+        wiped). If omitted (or -SkipIlo), the check is recorded as SKIP, not PASS.
 
     .PARAMETER IloCredential
         PSCredential for the iLO Redfish check. If omitted on a live run, the
@@ -106,6 +113,12 @@ function Test-PreBuildValidation {
         if (-not $ok) { $script:overallSuccess = $false }
     }
 
+    function _Skip([string]$name, [string]$details) {
+        # Recorded as SKIP (not PASS) so the review screen never claims a check
+        # "passed" when it was never run. Does not affect overall success.
+        $script:checks[$name] = @{ status = 'SKIP'; details = $details }
+    }
+
     # Re-bind to outer scope so _Set (defined inside this function) sees them
     $Script:checks          = $checks
     $Script:overallSuccess  = $overallSuccess
@@ -113,24 +126,43 @@ function Test-PreBuildValidation {
     if (-not $SkipOneView -and $OneViewHost) {
         try {
             $r = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -DryRun:$DryRun -PassThru
-            _Set 'oneview_target' ($r.Success) ($r | ConvertTo-Json -Depth 6 -Compress)
+            if ($r.Details) {
+                $detailParts = ($r.Details.GetEnumerator() | ForEach-Object { "$($_.Key): $($_.Value)" }) -join ', '
+                $ovDetail = "Server: $($r.Server), Details: $detailParts, Success: $($r.Success)"
+            } else {
+                $ovDetail = "Server: $($r.Server), Success: $($r.Success)$(if ($r.Error) { ', Error: ' + $r.Error })"
+            }
+            _Set 'oneview_target' ($r.Success) $ovDetail
         } catch { _Set 'oneview_target' $false $_.Exception.Message }
-    } else {
-        _Set 'oneview_target' $true 'skipped'
-    }
+        } else {
+            # Reached only when -SkipOneView was supplied (OneViewHost empty means the
+            # caller has no appliance to talk to at all, so a target can't be resolved).
+            $reason = if ($SkipOneView) { 'skipped (-SkipOneView supplied)' } else { 'skipped (no -OneViewHost supplied — target cannot be resolved without an appliance)' }
+            _Skip 'oneview_target' $reason
+        }
 
     if ($SkipIsoUrl) {
-        _Set 'iso_url_check_skipped' $true 'Skipped by parameter'
+        _Skip 'iso_url_check_skipped' 'skipped (-SkipIsoUrl)'
     } elseif ($IsoUrl) {
         try {
-            if ($DryRun) {
-                _Set 'iso_url_format' ($IsoUrl -match '^https://') "DryRun - $IsoUrl"
+            if ($IsoUrl -match '^https?://') {
+                if ($DryRun) {
+                    _Set 'iso_url_format' $true "DryRun - $IsoUrl"
+                } else {
+                    $head = Invoke-WebRequest -Uri $IsoUrl -Method Head -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+                    _Set 'iso_url_reachable' ($head.StatusCode -ge 200 -and $head.StatusCode -lt 400) "HTTP $($head.StatusCode)"
+                }
+            } elseif ($IsoUrl -match '^(cifs|smb)://') {
+                # CIFS/SMB share URLs cannot be HEAD-probed from the automation host;
+                # the share path was already validated by Resolve-ExternalIsoPath.
+                _Set 'iso_url_format' $true "CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): $IsoUrl"
+            } elseif ($IsoUrl -match '^nfs://') {
+                _Set 'iso_url_format' $true "NFS share URL (verified by Resolve-ExternalIsoPath): $IsoUrl"
             } else {
-                $head = Invoke-WebRequest -Uri $IsoUrl -Method Head -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
-                _Set 'iso_url_reachable' ($head.StatusCode -ge 200 -and $head.StatusCode -lt 400) "HTTP $($head.StatusCode)"
+                _Set 'iso_url_format' $false "Unsupported ISO URL scheme: $IsoUrl (expected https://, cifs://, smb:// or nfs://)"
             }
         } catch { _Set 'iso_url_reachable' $false $_.Exception.Message }
-    } else { _Set 'iso_url_check_skipped' $true 'IsoUrl not provided - orchestrator will supply' }
+    } else { _Skip 'iso_url_check_skipped' 'skipped (no IsoUrl supplied - orchestrator will provide)' }
 
     if (-not $SkipIlo -and $IloIp) {
         if ($DryRun) {
@@ -157,7 +189,7 @@ function Test-PreBuildValidation {
                 }
             } catch { _Set 'ilo_credentials' $false $_.Exception.Message }
         }
-    } else { _Set 'ilo_credentials' $true 'skipped' }
+    } else { _Skip 'ilo_credentials' 'skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)' }
 
     if (-not $SkipDpMp) {
         foreach ($endpoint in @(@{ name = 'management_point'; value = $ManagementPoint },
@@ -182,6 +214,7 @@ function Test-PreBuildValidation {
     try {
         $auditDir = Join-Path (Get-ProjectRoot) 'generated/logs/audit'
         Ensure-DirectoryExists -Path $auditDir
+        $auditPath = Join-Path $auditDir "prebuild_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json"
         $entry = @{
             timestamp = Get-UtcTimestamp
             server    = $ServerIdentifier
@@ -189,8 +222,8 @@ function Test-PreBuildValidation {
             success   = $overallSuccess
             checks    = $checks
         }
-        Save-Json -Data $entry -Path (Join-Path $auditDir "prebuild_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json")
-        _Set 'audit_recorded' $true "prebuild_$ServerIdentifier logged"
+        Save-Json -Data $entry -Path $auditPath
+        _Set 'audit_recorded' $true "logged to $auditPath"
     } catch { _Set 'audit_recorded' $false $_.Exception.Message }
 
     return @{

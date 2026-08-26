@@ -94,10 +94,10 @@ The module has a lot of commands because each one has a single, well-defined job
 >
 > | Safety | Commands | Effect |
 > |--------|----------|--------|
-> | ✅ **Non-destructive / safe** | `Test-ServerConnectivity`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Get-OneViewServerTarget`, `Test-BuildParams`, `Test-PreBuildValidation`, `Configure-PhysicalBuild` (review only), `Start-InstallMonitor`, `Invoke-IloRedfish -Action Status\|Eject`, `Invoke-OpsRampClient`, `Disconnect-OneView` | Read-only lookups, path/validation checks, or 4-eye review. No reboot, mount, or change to any server. Safe on the live appliance. |
-> | ⚠ **Destructive** | `Invoke-IsoDeploy`, `Start-PhysicalServerBuild`, `Update-Firmware`, `Invoke-IloRedfish -Action MountAndBoot\|Reset` | Mounts ISO + reboots (wipes/reinstalls), or flashes HPE firmware + reboots. Gated by `-GuardRail`; `-DryRun` prints the plan without acting. |
+> | ✅ **Non-destructive / safe** | `Test-ServerConnectivity`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Get-OneViewServerTarget`, `Test-BuildParams`, `Test-PreBuildValidation`, `Start-InstallMonitor`, `Invoke-IloRedfish -Action Status\|Eject`, `Invoke-OpsRampClient`, `Disconnect-OneView` | Read-only lookups, path/validation checks, or status monitoring. No reboot, mount, or change to any server. Safe on the live appliance. |
+> | ⚠ **Destructive** | `Configure-PhysicalBuild` (DEPLOY confirmation gate), `Invoke-IsoDeploy`, `Start-PhysicalServerBuild`, `Update-Firmware`, `Invoke-IloRedfish -Action MountAndBoot\|Reset` | `Configure-PhysicalBuild` reviews the plan and, on typing `DEPLOY`, **authorizes the destructive build** — it makes no change itself, but it is the gate that releases the destructive run (carried out by `Start-PhysicalServerBuild`/`Invoke-IsoDeploy`). The other commands mount the ISO + reboot (wipe/reinstall), or flash HPE firmware + reboot. All are gated by `-GuardRail`; `-DryRun` prints the plan without acting. |
 >
-> **Recommended zero-risk pre-flight (no changes made):** `Get-OneViewServerTarget` → `Test-BuildParams` (ISO + firmware) → `Test-PreBuildValidation` → `Configure-PhysicalBuild -GuardRail '<server>'` → `Invoke-IsoDeploy … -DryRun -GuardRail '<server>'`. Only then drop `-DryRun` for the real run.
+> **Recommended pre-flight review (no change is made until you type `DEPLOY` on `Configure-PhysicalBuild`, or drop `-DryRun` on the deploy commands):** `Get-OneViewServerTarget` → `Test-BuildParams` (ISO + firmware) → `Test-PreBuildValidation` → `Configure-PhysicalBuild -GuardRail '<server>'` (review, then type `DEPLOY` only to authorize the real run) → `Invoke-IsoDeploy … -DryRun -GuardRail '<server>'`. Only then drop `-DryRun` for the real run.
 
 ---
 
@@ -545,7 +545,7 @@ The full runbook workflow in one command: pre-build validation, ConfigMgr bootab
 
 ### Configure build (4-eye review)
 
-Use `Configure-PhysicalBuild` to review the full deployment plan before anything destructive happens. This command is **read-only** — it resolves server identity from OneView, validates ISO reachability, runs pre-build checks, and prints a comprehensive summary including all destructive actions that `Start-PhysicalServerBuild` would perform. Requires interactive confirmation (type `DEPLOY`) unless `-SkipConfirmation` is used.
+Use `Configure-PhysicalBuild` to review the full deployment plan before anything destructive happens. The review itself makes **no changes** — it resolves server identity from OneView, validates ISO reachability, runs pre-build checks, and prints a comprehensive summary including all destructive actions that `Start-PhysicalServerBuild` would perform. However, it is the **authorization gate**: typing `DEPLOY` releases the destructive run (carried out by `Start-PhysicalServerBuild`/`Invoke-IsoDeploy`). Requires interactive confirmation (type `DEPLOY`) unless `-SkipConfirmation` is used.
 
 ```powershell
 # Full 4-eye review with confirmation prompt

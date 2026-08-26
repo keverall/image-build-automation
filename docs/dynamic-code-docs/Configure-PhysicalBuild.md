@@ -31,7 +31,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 |-----------|-------------|
 | `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (hostname, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
-| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server (if known). |
+| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. OPTIONAL but strongly recommended as a pre-flight: when supplied (with -IloCredential, or an interactive prompt), the pre-build validation performs a LIVE iLO Redfish GET that confirms the iLO is reachable and the credentials are valid BEFORE any destructive step. This matters because Start-PhysicalBuild mounts the Windows ISO and reboots the server through this exact iLO channel — verifying it first prevents a failed/partial build (e.g. after the disk is already being wiped) caused by a wrong or unreachable iLO. DISTINCT ROLES: -ServerIdentifier (name/serial) is the IDENTITY unique constraint OneView uses to select the single target; -IloIp is the separate CONNECTIVITY/CREDENTIAL pre-flight for the mount/reboot path. If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS. |
 | `-IloCredential` | PSCredential for the iLO Redfish check. If omitted, prompted interactively. |
 | `-ExpectedHostname` | Hostname that should result from the build (defaults to SrvrId). |
 | `-Domain` | AD domain to verify in post-build validation. |
@@ -102,7 +102,18 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
         OneView appliance hostname or IP.
 
     .PARAMETER IloIp
-        iLO IPv4 address / hostname for the target server (if known).
+        iLO IPv4 address / hostname for the target server. OPTIONAL but strongly
+        recommended as a pre-flight: when supplied (with -IloCredential, or an
+        interactive prompt), the pre-build validation performs a LIVE iLO Redfish
+        GET that confirms the iLO is reachable and the credentials are valid
+        BEFORE any destructive step. This matters because Start-PhysicalBuild
+        mounts the Windows ISO and reboots the server through this exact iLO
+        channel — verifying it first prevents a failed/partial build (e.g. after
+        the disk is already being wiped) caused by a wrong or unreachable iLO.
+        DISTINCT ROLES: -ServerIdentifier (name/serial) is the IDENTITY unique
+        constraint OneView uses to select the single target; -IloIp is the
+        separate CONNECTIVITY/CREDENTIAL pre-flight for the mount/reboot path.
+        If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS.
 
     .PARAMETER IloCredential
         PSCredential for the iLO Redfish check. If omitted, prompted interactively.

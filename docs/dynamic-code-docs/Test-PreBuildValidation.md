@@ -30,7 +30,7 @@ Returns a hashtable of named checks with pass/fail status.  Any failure marks th
 |-----------|-------------|
 | `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (name, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
-| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. |
+| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. OPTIONAL but recommended: when supplied (with -IloCredential, or an interactive prompt) the ilo_credentials check performs a LIVE iLO Redfish GET to confirm the iLO is reachable and the credentials are valid before the destructive build. This is the same channel Start-PhysicalBuild uses to mount the ISO and reboot, so verifying it early avoids a failed build after destructive steps have already begun (e.g. the disk is being wiped). If omitted (or -SkipIlo), the check is recorded as SKIP, not PASS. |
 | `-IloCredential` | PSCredential for the iLO Redfish check. If omitted on a live run, the operator is prompted interactively. Never read from config or environment. |
 | `-IsoUrl` | HTTPS URL of the bootable ISO. |
 | `-ManagementPoint` | FQDN of the ConfigMgr Management Point. |
@@ -75,7 +75,14 @@ Test-PreBuildValidation -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'onevi
         OneView appliance hostname or IP.
 
     .PARAMETER IloIp
-        iLO IPv4 address / hostname for the target server.
+        iLO IPv4 address / hostname for the target server. OPTIONAL but
+        recommended: when supplied (with -IloCredential, or an interactive
+        prompt) the ilo_credentials check performs a LIVE iLO Redfish GET to
+        confirm the iLO is reachable and the credentials are valid before the
+        destructive build. This is the same channel Start-PhysicalBuild uses to
+        mount the ISO and reboot, so verifying it early avoids a failed build
+        after destructive steps have already begun (e.g. the disk is being
+        wiped). If omitted (or -SkipIlo), the check is recorded as SKIP, not PASS.
 
     .PARAMETER IloCredential
         PSCredential for the iLO Redfish check. If omitted on a live run, the
