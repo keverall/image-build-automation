@@ -14,6 +14,11 @@
 #   AppID   - "ci"  (or set via $env:CYBERARK_APP_ID)
 #
 
+# In-process credential cache. Resolved secrets are held here ONLY and are never
+# written to the process environment, where they would leak to every child process
+# (inherited env vars / /proc/$pid/environ) and into process command lines.
+$script:_CredCache = @{}
+
 function _Resolve-Credential {
     <#
     .SYNOPSIS
@@ -48,6 +53,11 @@ Core credential resolver: env var → CyberArk CLI → REST → default.
         return $val
     }
 
+    # ── Step 1b: In-process cache (secrets never touch the environment) ─
+    if ($script:_CredCache.ContainsKey($EnvVarName)) {
+        return $script:_CredCache[$EnvVarName]
+    }
+
     # ── Step 2: CyberArk CLI on PATH ─────────────────────────────────────────
     foreach ($cliName in @('ark_ccl','ark_cc','CyberArk.CLI')) {
         try {
@@ -74,14 +84,15 @@ Core credential resolver: env var → CyberArk CLI → REST → default.
                 $user  = if ($lines.Count -ge 1) { $lines[0] } else { '' }
                 $pwd   = if ($lines.Count -ge 2) { $lines[1] } else { '' }
                 if ($user) {
-                    # Cache into env var so subsequent look-ups in the same process are instant
+                    # Non-secret usernames may be cached to the environment for
+                    # callers that read env directly; secrets are cached in-process
+                    # ONLY and never written to the process environment.
                     if ($EnvVarName -match '_USER$|_ID$') {
                         [System.Environment]::SetEnvironmentVariable($EnvVarName, $user)
                         return $user
-                    } else {
-                        [System.Environment]::SetEnvironmentVariable($EnvVarName, $pwd)
-                        return $pwd
                     }
+                    $script:_CredCache[$EnvVarName] = $pwd
+                    return $pwd
                 }
             }
         } catch {
@@ -107,9 +118,13 @@ Core credential resolver: env var → CyberArk CLI → REST → default.
         $cUser    = $first.UserName
         $cPwd     = $first.Content
         if ($cUser) {
-            $cacheVal = if ($EnvVarName -match '_USER$|_ID$') { $cUser } else { $cPwd }
-            [System.Environment]::SetEnvironmentVariable($EnvVarName, $cacheVal)
-            return $cacheVal
+            if ($EnvVarName -match '_USER$|_ID$') {
+                [System.Environment]::SetEnvironmentVariable($EnvVarName, $cUser)
+                return $cUser
+            }
+            # Secret: cache in-process only, never in the environment.
+            $script:_CredCache[$EnvVarName] = $cPwd
+            return $cPwd
         }
     } catch {
         $logger = Get-Logger 'Credentials'
