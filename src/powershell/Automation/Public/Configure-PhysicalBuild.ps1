@@ -277,10 +277,18 @@ function Configure-PhysicalBuild {
             $serverIdentity = $ov.Details
             Write-Host "  [OK] Server resolved" -ForegroundColor Green
         } else {
-            # Even on a non-fatal issue (e.g. health != OK) the Details we did get
-            # are shown so the operator sees what OneView returned.
-            if ($ov.Details) { $serverIdentity = $ov.Details }
-            Write-Host "  [WARN] OneView resolution issue: $($ov.Error)" -ForegroundColor Yellow
+            # A failed OneView resolution is fatal for a build plan: without a
+            # confirmed target server (and its iLO IP) we cannot safely produce a
+            # plan, so stop here instead of carrying on to the guard rail / ISO steps.
+            $msg = "OneView resolution failed: $($ov.Error)"
+            $logger.Error($msg)
+            Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
+            return (_Emit @{
+                Success        = $false
+                Server         = $ServerIdentifier
+                Error          = $ov.Error
+                ServerIdentity = if ($ov.Details) { $ov.Details } else { $null }
+            })
         }
     } elseif ($IloIp) {
         Write-Host "`n[1/4] OneView skipped — using iLO IP directly" -ForegroundColor Yellow

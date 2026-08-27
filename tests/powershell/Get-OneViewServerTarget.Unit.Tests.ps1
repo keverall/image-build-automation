@@ -166,3 +166,56 @@ Describe 'Get-OneViewServerTarget - output rendering (no raw hashtable dump)' {
         $rendered | Should -Not -Match '^\s*Details\s*:\s*\{'
     }
 }
+
+Describe 'Get-OneViewServerTarget - honest error classification' {
+    BeforeAll {
+        $Script:TargetCred = [System.Management.Automation.PSCredential]::new(
+            'admin', (ConvertTo-SecureString 'test-password' -AsPlainText -Force))
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+        }
+    }
+
+    It 'Reports a plain "No connection" message when the appliance cannot be reached' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                throw [System.Net.Http.HttpRequestException]::new('No such host is known.')
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'X1' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
+        $r.Success | Should -Be $false
+        $r.Error   | Should -Match 'No connection to OneView'
+        $r.Error   | Should -Not -Match 'query failed'
+    }
+
+    It 'Does not leak the raw "Response status code" exception text' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                throw [System.Exception]::new('Response status code does not indicate success: 400 (Bad Request).')
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'X1' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
+        $r.Success | Should -Be $false
+        $r.Error   | Should -Not -Match 'Response status code does not indicate success'
+        $r.Error   | Should -Match 'HTTP 400'
+    }
+
+    It 'Auto mode falls through a 400 on one type and resolves via the next type' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                if ($Uri -like "*serialNumber='alp-srv'*") {
+                    throw [System.Exception]::new('Response status code does not indicate success: 400 (Bad Request).')
+                }
+                if ($Uri -like "*name='alp-srv'*") {
+                    return @{ count = 1; members = @(
+                        [pscustomobject]@{ name = 'alp-srv'; serialNumber = 'SN1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0' }
+                    )}
+                }
+                return @{ count = 0; members = @() }
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'alp-srv' -Credential $Script:TargetCred -PassThru
+        $r.Success     | Should -Be $true
+        $r.ResolvedBy | Should -Be 'Name'
+    }
+}

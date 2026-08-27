@@ -4,8 +4,10 @@
 
 ## Table of Contents
 
-- [Wednesday 26th August](#wednesday-26th-august)
-- [Thursday 27th August](#thursday-27th-august)
+- [Testing Issues](#testing-issues)
+  - [Table of Contents](#table-of-contents)
+  - [Wednesday 26th August](#wednesday-26th-august)
+  - [Thursday 27th August](#thursday-27th-august)
 
 <a id="wednesday-26th-august"></a>
 
@@ -511,7 +513,6 @@ Server                         alp-qlikview-03ilo
   Action        : build plan review
   Result        : No changes made.
 
-
   ============================================ 
   RESULT: CANCELLED
   ============================================
@@ -663,7 +664,6 @@ Server                         alp-qlikview-03ilo
   Error:   OneView query failed: Response status code does not indicate success: 400 (Bad Request).
 
 ==============================================
-
 
 PowerShell credential request
 iLO credentials for '10.30.54.22'
