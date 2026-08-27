@@ -161,6 +161,8 @@ function Configure-PhysicalBuild {
         [Alias('Ilo')]
         [string] $IloIp,
         [System.Management.Automation.PSCredential] $IloCredential,
+        [Alias('OVCred')]
+        [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $ExpectedHostname = $null,
         [string] $Domain,
         [string] $SiteCode,
@@ -272,7 +274,8 @@ function Configure-PhysicalBuild {
         # NOTE: this is a read-only GET — deliberately NOT -DryRun, so the review
         # screen shows the REAL serial/model/iLO IP/URI. Start-PhysicalBuild owns
         # the destructive work; reviewing accurate identity here is required.
-        $ov = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier -PassThru
+        $ov = Get-OneViewServerTarget -OneViewHost $OneViewHost -ServerIdentifier $ServerIdentifier `
+            -Credential $OneViewCredential -PassThru
         if ($ov.Success) {
             $serverIdentity = $ov.Details
             Write-Host "  [OK] Server resolved" -ForegroundColor Green
@@ -357,6 +360,7 @@ function Configure-PhysicalBuild {
         $preBuildResult = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
             -OneViewHost $OneViewHost -IloIp $IloIp `
             -IloCredential $IloCredential `
+            -OneViewCredential $OneViewCredential `
             -IsoUrl $isoUrl `
             -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `

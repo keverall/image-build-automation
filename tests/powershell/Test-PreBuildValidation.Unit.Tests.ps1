@@ -44,3 +44,52 @@ Describe 'Test-PreBuildValidation - basic invocation' {
         $r.Checks.audit_recorded | Should -Not -Be $null
     }
 }
+
+Describe 'Test-PreBuildValidation - iLO credential fallback to OneView credentials' {
+    BeforeAll {
+        $Script:OvCred  = [System.Management.Automation.PSCredential]::new('ovuser',  (ConvertTo-SecureString 'ovpass'  -AsPlainText -Force))
+        $Script:IloCred = [System.Management.Automation.PSCredential]::new('ilouser', (ConvertTo-SecureString 'ilopass' -AsPlainText -Force))
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+        }
+    }
+
+    It 'Uses -OneViewCredential for the iLO Redfish check when it succeeds' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/redfish/v1/Systems/1' } -MockWith {
+                if ($Credential -and $Credential.UserName -eq 'ovuser') { return [pscustomobject]@{ PowerState = 'On' } }
+                throw [System.Net.Http.HttpRequestException]::new('401')
+            }
+        }
+        $r = Test-PreBuildValidation -SrvrId 'x' -IloIp '10.0.0.5' -OneViewCredential $Script:OvCred -DryRun:$false -SkipOneView -SkipDpMp -SkipIsoUrl
+        $r.Checks['ilo_credentials'].status  | Should -Be 'PASS'
+        $r.Checks['ilo_credentials'].details | Should -Match 'OneView credentials'
+    }
+
+    It 'Falls back to -IloCredential when -OneViewCredential is rejected by iLO' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/redfish/v1/Systems/1' } -MockWith {
+                if ($Credential -and $Credential.UserName -eq 'ilouser') { return [pscustomobject]@{ PowerState = 'On' } }
+                throw [System.Net.Http.HttpRequestException]::new('401 Unauthorized')
+            }
+        }
+        $r = Test-PreBuildValidation -SrvrId 'x' -IloIp '10.0.0.5' -OneViewCredential $Script:OvCred -IloCredential $Script:IloCred -DryRun:$false -SkipOneView -SkipDpMp -SkipIsoUrl
+        $r.Checks['ilo_credentials'].status | Should -Be 'PASS'
+    }
+
+    It 'Fails (and states the reason) when -OneViewCredential is rejected by iLO and no fallback is available' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/redfish/v1/Systems/1' } -MockWith {
+                throw [System.Net.Http.HttpRequestException]::new('401 Unauthorized')
+            }
+        }
+        $prevAuto = $env:AUTOMATED_MODE
+        $env:AUTOMATED_MODE = 'true'
+        try {
+            $r = Test-PreBuildValidation -SrvrId 'x' -IloIp '10.0.0.5' -OneViewCredential $Script:OvCred -DryRun:$false -SkipOneView -SkipDpMp -SkipIsoUrl
+            $r.Checks['ilo_credentials'].status | Should -Be 'FAIL'
+        } finally {
+            if ($prevAuto) { $env:AUTOMATED_MODE = $prevAuto } else { $env:AUTOMATED_MODE = $null }
+        }
+    }
+}

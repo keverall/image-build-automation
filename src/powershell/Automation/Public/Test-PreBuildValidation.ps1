@@ -92,6 +92,8 @@ function Test-PreBuildValidation {
         [Alias('Ilo')]
         [string] $IloIp,
         [System.Management.Automation.PSCredential] $IloCredential,
+        [Alias('OVCred')]
+        [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $IsoUrl,
         [string] $ManagementPoint,
         [string] $DistributionPoint,
@@ -168,26 +170,47 @@ function Test-PreBuildValidation {
         if ($DryRun) {
             _Set 'ilo_credentials' $true 'DryRun - credentials assumed valid'
         } else {
-            try {
-                # TERMINAL COMMAND: iLO credentials come ONLY from -IloCredential
-                # or a direct interactive prompt. Never from config/env (see AGENTS.md).
-                if (-not $IloCredential) {
-                    $canPrompt = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
-                        [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
-                    if ($canPrompt) {
-                        $IloCredential = Get-Credential -Message "iLO credentials for '$IloIp'"
-                    }
-                }
-                if (-not $IloCredential) {
-                    _Set 'ilo_credentials' $false "iLO credentials required. Supply -IloCredential or run interactively. Terminal commands never read credentials from config or environment."
-                } else {
+            $iloCred = $IloCredential  # explicit iLO credentials always win if supplied
+            $canPrompt = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
+                [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
+
+            # iLO and OneView are separate auth domains, but in practice the same
+            # credentials are often used. When no explicit iLO credential is given, try
+            # the OneView credentials first; only if they fail do we prompt interactively.
+            if (-not $iloCred -and $OneViewCredential) {
+                try {
                     $url = "https://$IloIp/redfish/v1/Systems/1"
                     $resp = Invoke-RestMethod -Uri $url -Method Get `
-                        -Credential $IloCredential `
+                        -Credential $OneViewCredential `
+                        -SkipCertificateCheck -TimeoutSec 10 -ErrorAction Stop
+                    _Set 'ilo_credentials' $true "Redfish OK (PowerState=$($resp.PowerState)) (used OneView credentials)"
+                    $iloCred = $OneViewCredential
+                } catch {
+                    Write-Host "  [WARN] iLO login failed using the OneView credentials ('$($OneViewCredential.UserName)') - they are not accepted by iLO. Prompting for iLO credentials." -ForegroundColor Yellow
+                    if ($canPrompt) {
+                        $iloCred = Get-Credential -Message "iLO credentials for '$IloIp' (OneView credentials were rejected)"
+                    }
+                }
+            }
+
+            # No credential yet (neither -IloCredential nor a working -OneViewCredential): prompt.
+            if (-not $iloCred -and $canPrompt) {
+                $iloCred = Get-Credential -Message "iLO credentials for '$IloIp'"
+            }
+
+            if (-not $iloCred) {
+                # TERMINAL COMMAND: iLO credentials come ONLY from -IloCredential, -OneViewCredential,
+                # or a direct interactive prompt. Never from config/env (see AGENTS.md).
+                _Set 'ilo_credentials' $false "iLO credentials required. Supply -IloCredential or -OneViewCredential, or run interactively. Terminal commands never read credentials from config or environment."
+            } elseif ($checks['ilo_credentials'].status -ne 'PASS') {
+                try {
+                    $url = "https://$IloIp/redfish/v1/Systems/1"
+                    $resp = Invoke-RestMethod -Uri $url -Method Get `
+                        -Credential $iloCred `
                         -SkipCertificateCheck -TimeoutSec 10 -ErrorAction Stop
                     _Set 'ilo_credentials' $true "Redfish OK (PowerState=$($resp.PowerState))"
-                }
-            } catch { _Set 'ilo_credentials' $false $_.Exception.Message }
+                } catch { _Set 'ilo_credentials' $false $_.Exception.Message }
+            }
         }
     } else { _Skip 'ilo_credentials' 'skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)' }
 
