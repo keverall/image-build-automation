@@ -61,8 +61,9 @@ if (-not $env:SSH_AUTH_SOCK) {
     }
 }
 
-# Force git to use Git's bundled ssh so it honours the Git agent socket above
-$env:GIT_SSH_COMMAND = "$gitSshPath\ssh.exe"
+# Pin git to Git's bundled ssh (Windows OpenSSH is blocked in this locked-down env).
+# GIT_SSH is executed directly by git, so Windows backslash paths are safe here.
+$env:GIT_SSH = "$gitSshPath\ssh.exe"
 
 # Add key if not already loaded (qualify ssh-add so it targets Git's agent, not Windows OpenSSH)
 $keyPath = "$env:USERPROFILE\.ssh\id_ed25519"
