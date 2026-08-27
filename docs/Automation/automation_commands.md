@@ -12,7 +12,6 @@
   - [Disconnect from OneView](#disconnect-from-oneview)
   - [Get OneView connection status](#get-oneview-connection-status)
   - [Get OneView server list](#get-oneview-server-list)
-  - [Validate server list](#validate-server-list)
   - [Validate build parameters](#validate-build-parameters)
 - [ISO Image Naming & SMB Shares](#iso-image-naming-smb-shares)
   - [Bootable ISO filename convention](#bootable-iso-filename-convention)
@@ -21,21 +20,14 @@
   - [Configure build (4-eye review)](#configure-build-4-eye-review)
   - [Full build (most common)](#full-build-most-common)
   - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
-  - [Build with firmware folders (post-OS-install)](#build-with-firmware-folders-post-os-install)
-  - [Re-run after ISO already built (skip build phases)](#re-run-after-iso-already-built-skip-build-phases)
   - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
   - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
-  - [Mock build (testing)](#mock-build-testing)
-- [ISO Build, Deployment & Monitoring](#iso-build-deployment-monitoring)
-  - [Build a bootable ISO](#build-a-bootable-iso)
-  - [Publish a bootable ISO](#publish-a-bootable-iso)
-  - [Deploy ISOs to servers](#deploy-isos-to-servers)
+- [ISO Deployment & Monitoring](#iso-deployment-monitoring)
   - [Monitor installation progress](#monitor-installation-progress)
   - [iLO Redfish operations](#ilo-redfish-operations)
   - [Resolve server target via OneView](#resolve-server-target-via-oneview)
   - [Pre-build validation](#pre-build-validation)
   - [Post-build validation](#post-build-validation)
-  - [Build firmware ISO](#build-firmware-iso)
   - [Patch Windows ISO with security updates](#patch-windows-iso-with-security-updates)
 - [Maintenance Mode](#maintenance-mode)
   - [Examples](#examples)
@@ -78,16 +70,16 @@ The module has a lot of commands because each one has a single, well-defined job
 | **Status** | `Get-OneViewConnectionStatus` | Quick status check against the active session (or a specific host). **Never prompts.** |
 | **Lookup** | `Get-OneViewServerList` | Lists all servers managed by OneView. Reuses the active session. |
 | **Lookup** | `Get-OneViewServerTarget` | Resolves a single server by name, serial, iLO IP, or bay. Reuses the active session. |
-| **Review** | `Configure-PhysicalBuild` | Read-only 4-eye review. Shows the full deployment plan, including all destructive actions, and waits for you to type `DEPLOY`. |
-| **Execute** | `Start-PhysicalServerBuild` | Runs the full build pipeline: ISO build/publish, OneView resolution, iLO mount, OS install, post-build checks, firmware update. |
+| **Review** | `Configure-PhysicalBuild` | Read-only 4-eye review. Shows the full deployment plan, including all destructive actions, and waits for you to type `APPROVE`. |
+| **Execute** | `Start-PhysicalServerBuild` | Runs the full build pipeline: OneView resolution, iLO mount, OS install, post-build checks. |
 | **Monitor** | `Start-InstallMonitor` | Watches an in-progress installation and reports progress. |
 
 **Which command should I use?**
 
 - "Is OneView up?" → `Test-ServerConnectivity`
 - "I need to run several OneView commands" → `Connect-OneView` once, then use `Get-OneViewServerList` / `Get-OneViewServerTarget` freely
-- "Show me what `Start-PhysicalServerBuild` would do" → `Configure-PhysicalBuild`
-- "Actually deploy to the server" → `Start-PhysicalServerBuild`
+- "Show me what the deploy would do" → `Configure-PhysicalBuild`
+- "Actually deploy to the server" → `Configure-PhysicalBuild -Deploy` (or `-Execute`) after review
 
 > ### ⚠ Safe vs destructive commands (read this first)
 > On a live, regulated banking appliance you must never lose a client server, its data, or impact a workload. Run the **non-destructive** commands first to identify and validate the exact target and media; the **destructive** ones are gated by a mandatory `-GuardRail` regex (the *resolved* server name must match) and prompt for confirmation.
@@ -95,9 +87,9 @@ The module has a lot of commands because each one has a single, well-defined job
 > | Safety | Commands | Effect |
 > |--------|----------|--------|
 > | ✅ **Non-destructive / safe** | `Test-ServerConnectivity`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Get-OneViewServerTarget`, `Test-BuildParams`, `Test-PreBuildValidation`, `Start-InstallMonitor`, `Invoke-IloRedfish -Action Status\|Eject`, `Invoke-OpsRampClient`, `Disconnect-OneView` | Read-only lookups, path/validation checks, or status monitoring. No reboot, mount, or change to any server. Safe on the live appliance. |
-> | ⚠ **Destructive** | `Configure-PhysicalBuild` (DEPLOY confirmation gate), `Invoke-IsoDeploy`, `Start-PhysicalServerBuild`, `Update-Firmware`, `Invoke-IloRedfish -Action MountAndBoot\|Reset` | `Configure-PhysicalBuild` reviews the plan and, on typing `DEPLOY`, **authorizes the destructive build** — it makes no change itself, but it is the gate that releases the destructive run (carried out by `Start-PhysicalServerBuild`/`Invoke-IsoDeploy`). The other commands mount the ISO + reboot (wipe/reinstall), or flash HPE firmware + reboot. All are gated by `-GuardRail`; `-DryRun` prints the plan without acting. |
+> | ⚠ **Destructive** | `Configure-PhysicalBuild` (APPROVE confirmation gate), `Start-PhysicalServerBuild` | `Configure-PhysicalBuild` reviews the plan and, on typing `APPROVE` or passing `-Deploy`/`-Execute`, **authorizes the destructive build** — it makes no change itself, but it is the gate that releases the destructive run (carried out by `Start-PhysicalServerBuild`). That command mounts the ISO + reboot (wipe/reinstall). All are gated by `-GuardRail`; `-DryRun` prints the plan without acting. |
 >
-> **Recommended pre-flight review (no change is made until you type `DEPLOY` on `Configure-PhysicalBuild`, or drop `-DryRun` on the deploy commands):** `Get-OneViewServerTarget` → `Test-BuildParams` (ISO + firmware) → `Test-PreBuildValidation` → `Configure-PhysicalBuild -GuardRail '<server>'` (review, then type `DEPLOY` only to authorize the real run) → `Invoke-IsoDeploy … -DryRun -GuardRail '<server>'`. Only then drop `-DryRun` for the real run.
+> **Recommended pre-flight review (no change is made until you type `APPROVE` on `Configure-PhysicalBuild`, or pass `-Deploy`/`-Execute`):** `Get-OneViewServerTarget` → `Test-BuildParams` (ISO path) → `Test-PreBuildValidation` → `Configure-PhysicalBuild -GuardRail '<server>'` (review, then type `APPROVE` or pass `-Deploy` to authorize the real run).
 
 ---
 
@@ -407,27 +399,6 @@ If `-OneViewHost` is omitted, the command checks `$global:ConnectedSessions` for
 
 ---
 
-<a id="validate-server-list"></a>
-
-### Validate server list
-
-```powershell
-Test-ServerList
-Test-ServerList -ServerListPath .\staging_servers.txt -PassThru
-```
-
-By default prints a human-readable validation report (file path, server count,
-and a formatted list of servers) and returns nothing on the success stream - no
-truncated raw hashtable dump. Add `-PassThru` to also capture the structured
-`[hashtable]` (`Success`, `Path`, `Count`, `Error`, `Servers`) for scripting, or
-`-Json` to emit it as a JSON string. `-ConfigDir` (default `configs`) controls
-where the default `server_list.txt` is resolved from when `-ServerListPath` is
-not supplied; `-DryRun`/`-Quiet` are accepted for parameter-surface consistency
-with the other automation commands.
-
-**Returns:** nothing by default (formatted report to host). With `-PassThru`, a
-`[hashtable]` with `Success`, `Path`, `Count`, `Error`, and `Servers`.
-
 ---
 
 <a id="validate-build-parameters"></a>
@@ -477,23 +448,21 @@ How ISO filenames are generated and how local ISO paths are exposed to the iLO B
 
 ### Bootable ISO filename convention
 
-`New-IsoBuild` emits a ConfigMgr bootable media ISO using the runbook naming standard:
+When hosting ISOs on an HTTPS repository, use the standard naming convention:
 
 ```
 WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso
 ```
 
 - `<Major>` / `<Minor>` come from `-VersionMajor` (default `1`) and `-VersionMinor` (default `0`).
-- `New-IsoBuild` does **not** auto-bump the version. If a file already exists at the resolved path it is reused; pass explicit `-VersionMajor`/`-VersionMinor` or a unique `-OutputPath` to control the name.
+- If a file already exists at the resolved path it is reused; pass explicit `-VersionMajor`/`-VersionMinor` or a unique `-OutputPath` to control the name.
 
 Example generated names:
 
-| Command | Resulting file |
-|---------|----------------|
-| `New-IsoBuild -SiteCode P01 -ManagementPoint mp01 -DistributionPoint dp01` | `WinSrv2025_HPE_BootableMedia_v1.0.iso` |
-| `New-IsoBuild ... -VersionMajor 2 -VersionMinor 1` | `WinSrv2025_HPE_BootableMedia_v2.1.iso` |
-
-The same `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso` name is what `Publish-BootIso` and `Invoke-IsoDeploy -IsoUrl` expect to reference on the share/repository where the ISO is hosted.
+| Scenario | Resulting file |
+|----------|----------------|
+| Default build | `WinSrv2025_HPE_BootableMedia_v1.0.iso` |
+| Custom version | `WinSrv2025_HPE_BootableMedia_v2.1.iso` |
 
 <a id="iso-path-requirements-no-local-drives"></a>
 
@@ -521,11 +490,11 @@ All of the following work and resolve to the address iLO mounts as virtual media
 
 ```powershell
 # Any of these work — pick the form that matches how your file is shared:
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\fileserver\isos\win2025.iso'        # UNC (backslash)
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '//fileserver/isos/win2025.iso'        # UNC (forward slash)
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'cifs://fileserver/isos/win2025.iso'   # CIFS URL
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'H:\win2025.iso'                        # Mapped drive
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts.internal.example.com/isos/win2025.iso'
+Configure-PhysicalBuild -ServerIdentifier srv01 -ExternalIsoPath '\\fileserver\isos\win2025.iso' -GuardRail 'srv01'   # UNC (backslash)
+Configure-PhysicalBuild -ServerIdentifier srv01 -ExternalIsoPath '//fileserver/isos/win2025.iso' -GuardRail 'srv01'   # UNC (forward slash)
+Configure-PhysicalBuild -ServerIdentifier srv01 -ExternalIsoPath 'cifs://fileserver/isos/win2025.iso' -GuardRail 'srv01'   # CIFS URL
+Configure-PhysicalBuild -ServerIdentifier srv01 -ExternalIsoPath 'H:\win2025.iso' -GuardRail 'srv01'   # Mapped drive
+Configure-PhysicalBuild -ServerIdentifier srv01 -ExternalIsoPath 'https://artifacts.internal.example.com/isos/win2025.iso' -GuardRail 'srv01'
 ```
 
 ---
@@ -545,18 +514,18 @@ The full runbook workflow in one command: pre-build validation, ConfigMgr bootab
 
 ### Configure build (4-eye review)
 
-Use `Configure-PhysicalBuild` to review the full deployment plan before anything destructive happens. The review itself makes **no changes** — it resolves server identity from OneView, validates ISO reachability, runs pre-build checks, and prints a comprehensive summary including all destructive actions that `Start-PhysicalServerBuild` would perform. However, it is the **authorization gate**: typing `DEPLOY` releases the destructive run (carried out by `Start-PhysicalServerBuild`/`Invoke-IsoDeploy`). Requires interactive confirmation (type `DEPLOY`) unless `-SkipConfirmation` is used.
+Use `Configure-PhysicalBuild` to review the full deployment plan before anything destructive happens. The review itself makes **no changes** — it resolves server identity from OneView, validates ISO reachability, runs pre-build checks, and prints a comprehensive summary including all destructive actions that `Start-PhysicalServerBuild` would perform. However, it is the **authorization gate**: typing `APPROVE` or passing `-Deploy` (alias `-Execute`) releases the destructive run, which is executed internally by `Start-PhysicalServerBuild`. Requires explicit authorization unless `-DryRun` is used.
 
 ```powershell
 # Full 4-eye review with confirmation prompt
 Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
     -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local `
-    -RepoBaseUrl 'https://artifacts/isos/' -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5') -Domain corp.local -GuardRail 'srv01'
+    -RepoBaseUrl 'https://artifacts/isos/' -Domain corp.local -GuardRail 'srv01'
 ```
 
 ```powershell
-# Non-interactive (skip confirmation) — returns a plan hashtable that can be piped to Start-PhysicalServerBuild
-Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -ExternalIsoPath 'https://artifacts/isos/win2025.iso' -SkipConfirmation -GuardRail 'srv01'
+# Non-interactive deploy — passes -Deploy to skip the prompt and run immediately
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -ExternalIsoPath 'https://artifacts/isos/win2025.iso' -Deploy -GuardRail 'srv01'
 ```
 
 **Parameters:**
@@ -578,8 +547,6 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository — **only when hosting ISOs on an HTTPS repo**; otherwise supply the ISO directly from a network share via `-ExternalIsoPath`. |
 | `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl` (HTTPS-repo hosting only). |
 | `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). When supplied, ConfigMgr build/publish is skipped. |
-| `-FirmwareFolders` | No | Firmware component source directories (string array). |
-| `-FirmwareConfig` | No | Firmware manifest JSON path. |
 | `-GuardRail` | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before the build plan is even produced. Omitting it aborts early with an expressive, logged error. If it does not match, the review is aborted. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. |
 | `-InMaintenanceWindow` | No | Acknowledge approved maintenance window. |
 | `-SkipPreBuild` | No | Skip pre-build validation. |
@@ -588,7 +555,9 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-SkipDpMp` | No | Skip MP/DP reachability check. |
 | `-SkipIsoUrl` | No | Skip ISO URL reachability check. |
 | `-Force` | No | Acknowledge server power state is On (informational only — no reboot performed). |
-| `-SkipConfirmation` | No | Skip interactive confirmation prompt. |
+| `-Deploy` | No | Authorize the destructive build immediately (alias `-Execute`). Skips the interactive `APPROVE` prompt. |
+| `-PassThru` | No | Return the structured result hashtable on the success stream (for scripting). |
+| `-Json` | No | Emit the result as a JSON string on the success stream. |
 
 > **Build mode vs External ISO mode:** When you supply `-ExternalIsoPath`, the ConfigMgr parameters (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-RepoBaseUrl`, `-RepoLocalPath`, `-SiteServer`) are **not required** because the ISO build/publish steps are skipped.
 
@@ -598,10 +567,18 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 ### Full build (most common)
 
-Build a ConfigMgr bootable ISO, publish it, and deploy it to the target server.
+The primary deploy entry point is `Configure-PhysicalBuild` with `-Deploy` (or `-Execute`). It performs the full 4-eye review internally and, on authorization, runs `Start-PhysicalServerBuild` with the supplied parameters. You can also call `Start-PhysicalServerBuild` directly if you have already reviewed the plan.
 
 ```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow -GuardRail 'srv01'
+# Recommended: review + deploy in one command
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+```
+
+```powershell
+# Direct execution (skip review — only use after a separate Configure-PhysicalBuild review)
+Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -InMaintenanceWindow -GuardRail 'srv01'
 ```
 
 <a id="dry-run-validate-without-changing-anything"></a>
@@ -609,27 +586,13 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 ### Dry run (validate without changing anything)
 
 ```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -DryRun -GuardRail 'srv01'
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -DryRun -GuardRail 'srv01'
 ```
-
-<a id="build-with-firmware-folders-post-os-install"></a>
-
-### Build with firmware folders (post-OS-install)
-
-Specify firmware component source directories (e.g. from Marin) to be applied via HPE SUT after the OS build completes. The firmware ISO is built, mounted via iLO, and applied after post-build validation.
 
 ```powershell
 Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
-    -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local `
-    -InMaintenanceWindow -FirmwareFolders @('C:\fw\BIOS_v2.80', 'C:\fw\iLO5_v2.70', 'C:\fw\SmartArray') -GuardRail 'srv01'
-```
-
-<a id="re-run-after-iso-already-built-skip-build-phases"></a>
-
-### Re-run after ISO already built (skip build phases)
-
-```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -SkipPreBuild -SkipIsoBuild -SkipPublish -InMaintenanceWindow -GuardRail 'srv01'
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -DryRun -GuardRail 'srv01'
 ```
 
 <a id="re-run-monitoring-after-deployment"></a>
@@ -637,7 +600,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -SkipPreBuild
 ### Re-run monitoring after deployment
 
 ```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -InMaintenanceWindow -GuardRail 'srv01'
+Start-PhysicalServerBuild -ServerIdentifier srv01 -SkipPreBuild -SkipOneView -SkipMount -InMaintenanceWindow -GuardRail 'srv01'
 ```
 
 <a id="build-with-custom-domain-and-post-build-checks"></a>
@@ -645,30 +608,15 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -SkipPreBuild -SkipIsoBuild -S
 ### Build with custom domain and post-build checks
 
 ```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -ExpectedHostname srv01.corp.local -Domain corp.local -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow -GuardRail 'srv01'
-```
-
-<a id="mock-build-testing"></a>
-
-### Mock build (testing)
-
-```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -Mock -GuardRail 'srv01'
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExpectedHostname srv01.corp.local -Domain corp.local -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -InMaintenanceWindow -Deploy -GuardRail 'srv01'
 ```
 
 ```powershell
-# Deploy an external ISO directly (skip build/publish phases)
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -ExternalIsoPath '\\fileserver\isos\custom.iso' -InMaintenanceWindow -GuardRail 'srv01'
-```
-
-```powershell
-# Deploy an external ISO from an HTTPS URL (local drive paths not supported)
-Start-PhysicalServerBuild -ServerIdentifier srv01 -IloIp 10.0.1.50 -ExternalIsoPath 'https://fileserver/isos/windows.iso' -InMaintenanceWindow -GuardRail 'srv01'
-```
-
-```powershell
-# Skip confirmation prompt for automated deployments
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -InMaintenanceWindow -SkipConfirmation -GuardRail 'srv01'
+Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExpectedHostname srv01.corp.local -Domain corp.local -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -InMaintenanceWindow -GuardRail 'srv01'
 ```
 
 **Parameters:**
@@ -682,7 +630,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 | `-ExpectedHostname` | No | Hostname expected after build. Defaults to `-ServerIdentifier`. Only needed if the post-build hostname will differ. |
 | `-Domain` | No | AD domain for post-build check. |
 | `-InMaintenanceWindow` | No | Acknowledge approved maintenance window. |
-| `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). Implies `-SkipIsoBuild` and `-SkipPublish`. |
+| `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). |
 | `-SiteCode` | No | ConfigMgr site code. Only needed when building a bootable ISO (not required with `-ExternalIsoPath`). |
 | `-ManagementPoint` | No | ConfigMgr Management Point FQDN. Only needed when building a bootable ISO. |
 | `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN. Only needed when building a bootable ISO. |
@@ -691,17 +639,11 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 | `-TaskSequenceName` | No | ConfigMgr task sequence name (informational). |
 | `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository — **only when hosting ISOs on an HTTPS repo**; otherwise supply the ISO directly from a network share via `-ExternalIsoPath`. |
 | `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl` (HTTPS-repo hosting only). |
-| `-FirmwareFolders` | No | Firmware component source directories (array). |
-| `-FirmwareConfig` | No | Firmware manifest JSON path. |
 | `-SkipPreBuild` | No | Skip pre-build validation. |
-| `-SkipIsoBuild` | No | Skip ISO creation. |
-| `-SkipPublish` | No | Skip ISO publishing. |
 | `-SkipOneView` | No | Skip OneView resolution. |
 | `-SkipMount` | No | Skip iLO mount and boot. |
 | `-SkipMonitor` | No | Skip installation monitoring. |
 | `-SkipPostBuild` | No | Skip post-build validation. |
-| `-SkipConfirmation` | No | Skip the interactive confirmation prompt before deployment. |
-| `-Mock` | No | Mock all calls (implies `-DryRun`). |
 | `-DryRun` | No | Validate and print plan only. |
 | `-Force` | No | Allow destructive `ForceRestart`. |
 | `-AllowUnknownIsoUrl` | No | Skip ISO URL reachability check. |
@@ -710,153 +652,18 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 
 ---
 
-<a id="iso-build-deployment-monitoring"></a>
+<a id="iso-deployment-monitoring"></a>
 
-## ISO Build, Deployment & Monitoring
+## ISO Deployment & Monitoring
 
-Individual commands for the ISO pipeline - build, publish, deploy (reboot + install), and monitor. These are the building blocks the full build above orchestrates.
-
-<a id="build-a-bootable-iso"></a>
-
-### Build a bootable ISO
-
-Creates a ConfigMgr bootable media ISO (WinPE) that can be mounted via iLO Redfish to run a task sequence against a HPE ProLiant server.
-
-```powershell
-New-IsoBuild -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local
-```
-
-#### Customise version and output path
-
-```powershell
-New-IsoBuild -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -VersionMajor 2 -VersionMinor 1 -OutputPath 'C:\isos\winpe_v2.1.iso'
-```
-
-#### Validate without creating the ISO
-
-```powershell
-New-IsoBuild -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local -DryRun
-```
-
-**Parameters:**
-
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-SiteCode` | Yes | ConfigMgr site code (e.g. `P01`). | - |
-| `-ManagementPoint` | Yes | FQDN of the ConfigMgr Management Point (e.g. `mp01.corp.local`). | - |
-| `-DistributionPoint` | Yes | FQDN of the ConfigMgr Distribution Point (e.g. `dp01.corp.local`). | - |
-| `-BootImageName` | No | Name of the boot image to embed (e.g. `WinPE x64 - HPE`). | - |
-| `-TaskSequenceName` | No | Task sequence name (informational; TS selection happens at boot). | - |
-| `-SiteServer` | No | ConfigMgr site server FQDN for PSRemoting fallback (e.g. `cm01.corp.local`). | - |
-| `-OutputPath` | No | Full output path for the ISO. | Auto-generated under `output/bootable_media/` |
-| `-VersionMajor` | No | Major version embedded in the filename. | `1` |
-| `-VersionMinor` | No | Minor version embedded in the filename. | `0` |
-| `-DryRun` | No | Validate inputs and print the plan without creating the ISO. | - |
-
-**Returns:** `[hashtable]` with `Success`, `IsoPath`, and `Metadata`.
-
----
-
-<a id="publish-a-bootable-iso"></a>
-
-### Publish a bootable ISO
-
-> **Optional step.** `Publish-BootIso` is only needed when you host ISOs on an **HTTPS repository**. If the ISO already sits on a network share reachable by iLO (UNC/SMB, `cifs://`, `smb://`, or a mapped drive), you can skip publish entirely and point `-ExternalIsoPath` straight at that share.
-
-```powershell
-Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso'
-```
-
-#### Publish with force overwrite
-
-```powershell
-Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -ForceOverwrite
-```
-
-#### Publish without HTTPS verification
-
-```powershell
-Publish-BootIso -IsoPath 'C:\isos\winpe_v1.0.iso' -SkipVerify
-```
-
-**Parameters:**
-
-| Parameter | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `-IsoPath` | Yes | Local path to the ISO file | - |
-| `-RepoBaseUrl` | Yes (live) | HTTPS base URL of the repository — **only used when hosting ISOs on an HTTPS repo**; otherwise supply the ISO directly from a network share via `-ExternalIsoPath`. Env default only with `-DryRun`. | - |
-| `-RepoLocalPath` | No | Local path mirrored to the repository. Env default only with `-DryRun`. | - |
-| `-ForceOverwrite` | No | Overwrite existing ISO | - |
-| `-SkipVerify` | No | Skip HTTPS HEAD check | - |
-| `-DryRun` | No | Simulate only | - |
-
-**Returns:** `[hashtable]` with `Success`, `PublicUrl`, `RepoPath`, and `Verified`.
-
----
-
-<a id="deploy-isos-to-servers"></a>
-
-### Deploy ISOs to servers
-
-**DESTRUCTIVE.** Mounts the ISO via iLO Redfish, sets one-time boot override, and **reboots the server to install Windows**. The server will wipe its local disks.
-
-`-ExternalIsoPath` accepts:
-- `https://...` — used directly
-- `\\server\share\file.iso` — UNC (backslash), converted to `cifs://` for iLO
-- `//server/share/file.iso` — UNC (forward slash); identical to the above on Windows
-- `cifs://server/share/file.iso` — used directly (round-trips the URL this tool emits)
-- `smb://server/share/file.iso` — normalised to `cifs://`
-- `nfs://server/export/file.iso` — used directly
-- `Mapped drive` (`H:\file.iso` where `H:` maps to a UNC share) — auto-resolved to UNC, then `cifs://`
-
-Local drive paths (`C:\`, `H:\` on local disk) are **not supported**. iLO cannot access local drives, and this module does not create SMB shares.
-
-> **Full format reference:** see [Path Parameter Formats](../PathParameterFormats.md#top) for every accepted `-ExternalIsoPath` / `-IsoPath` / `-FirmwareFolders` format, including the single-slash `/server/share` autocorrection and the list of unsupported local paths.
-
-```powershell
-# Destructive deploy - reboots server, installs OS (requires -GuardRail + confirmation)
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -GuardRail 'srv01'
-```
-
-```powershell
-# HTTPS URL (used directly by iLO)
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts/isos/WinSrv2025.iso' -GuardRail 'srv01'
-```
-
-```powershell
-# By serial number (resolved via OneView)
-Invoke-IsoDeploy -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com -IsoUrl 'https://artifacts/isos/WinSrv2025_BootableMedia_v1.0.iso' -GuardRail '.*'
-```
-
-```powershell
-# Dry run - validates paths and targeting, no reboot
-Invoke-IsoDeploy -Server srv01 -ExternalIsoPath 'https://artifacts/isos/win2025.iso' -DryRun -GuardRail 'srv01'
-```
-
-**Parameters:**
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `-Server` | No* | Single server hostname. Mutually exclusive with `-SerialNumber`. |
-| `-SerialNumber` | No* | HPE serial number; resolved to hostname/iLO IP via OneView. Requires `-OneViewHost`. |
-| `-OneViewHost` | No | OneView appliance for serial resolution. |
-| `-IsoUrl` | No | HTTPS URL of the bootable ISO. |
-| `-ExternalIsoPath` | No | Client-supplied ISO path. Accepts HTTP/HTTPS, UNC/SMB incl. `//server/share` and `cifs://`/`smb://` URLs, NFS, or mapped network drives. Local drive paths not supported. When supplied, `-IsoUrl` is ignored. |
-| `-GuardRail` | Yes | **MANDATORY.** Case-insensitive regex the target server name must match. If omitted or mismatched, deployment is blocked. When matched, a destructive confirmation (type `YES`) is still required unless `-SkipConfirmation` or `-DryRun`. |
-| `-DryRun` | No | Simulate only - validates paths and targeting, no reboot. |
-
-\* Either `-Server` or `-SerialNumber` is required for live runs.
-
-**Returns:** `[hashtable]` with `Success`, `Server`, and `Summary`.
-
----
+Commands for deploying ISOs to servers and monitoring installation progress.
 
 <a id="monitor-installation-progress"></a>
 
 ### Monitor installation progress
 
 **What it does:**
-- Watches an **in-progress** OS installation started by `Start-PhysicalServerBuild` or `Invoke-IsoDeploy`.
+- Watches an **in-progress** OS installation started by `Start-PhysicalServerBuild`.
 - Polls the server (via OneView/iLO) on an interval and reports progress/status.
 - **Read-only / non-destructive** — it only observes; it never reboots, mounts, or changes the server.
 - Safe to run on a live appliance at any time (use it to confirm a build is progressing).
@@ -970,7 +777,7 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 - **Read-only / non-destructive** — it only looks up and validates; it changes nothing.
 - This is the single resolver every build/deploy command uses, so targeting stays consistent.
 
-Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity` / `Connect-OneView`). With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Invoke-IsoDeploy`, `Update-Firmware`, `Test-PostBuildValidation`, `Start-InstallMonitor`, `Start-PhysicalServerBuild`, etc.) all resolve through this module and inherit both behaviours.
+Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity` / `Connect-OneView`). With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Test-PostBuildValidation`, `Start-InstallMonitor`, `Start-PhysicalServerBuild`, etc.) all resolve through this module and inherit both behaviours.
 
 ```powershell
 Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local
@@ -1097,57 +904,6 @@ Test-PostBuildValidation -SerialNumber MXQ1234567 -OneViewHost oneview.ad.exampl
 **Returns:** `[hashtable]` with `Success`, `Hostname`, `Timestamp`, `Checks`, and `AuditFile`.
 
 ---
-
-<a id="build-firmware-iso"></a>
-
-### Build firmware ISO
-
-**What it does:** Builds/flashes **HPE hardware firmware** (BIOS, iLO, Smart Array, NIC, drivers) onto the target server using the HPE Smart Update Tool (SUT), driven by a firmware manifest (`hpe_firmware_drivers_*.json`) or `-FirmwareFolders`.
-- **HPE firmware only** — it updates server hardware, **not** the Windows OS. OS/security patch management on the live server remains BladeLogic's responsibility; this command is not a substitute for it.
-- Can run standalone (`Update-Firmware -Server srv01`) or automatically post-OS via `Start-PhysicalServerBuild` when firmware folders are supplied.
-- **Destructive: TRUE** — it flashes firmware and **reboots** the server. Gated by the **mandatory** `-GuardRail` regex (the resolved server name must match); aborts if omitted or unmatched.
-
-```powershell
-Update-Firmware -Server srv01
-```
-
-#### Build firmware for all servers
-
-```powershell
-Update-Firmware
-```
-
-#### Dry run
-
-```powershell
-Update-Firmware -DryRun
-```
-
-**Parameters:**
-
-| Parameter | Aliases | Required | Description | Default |
-|-----------|---------|----------|-------------|---------|
-| `-Config` | `-Cfg` | Yes (live) | Firmware manifest path - must be passed explicitly on live runs; default path only with `-DryRun` | DryRun only |
-| `-Server` | `-Srvr` | No | Single server hostname. Mutually exclusive with `-SerialNumber`. | - |
-| `-SerialNumber` | `-Srl` | No | Target a server by its HPE serial number; resolved to the hostname via OneView. Requires `-OneViewHost`. | - |
-| `-OneViewHost` | `-OVHost` | No | OneView appliance used to resolve `-SerialNumber`. | - |
-| `-ServerList` | `-SrvrList` | No | Path to server list | auto-resolved |
-| `-OutputDir` | `-OutDir` | No | Output directory | - |
-| `-SkipDownload` | `-SkipDl` | No | Skip component download | - |
-| `-DryRun` | `-Dry` | No | Simulate only | - |
-| `-FirmwareFolders` | `-FwDirs` | No | Additional firmware component source directories (array). Passed to `hpe_sut` via `--firmware-components`. Use when Marin provides firmware folders outside the standard manifest. | `-` |
-| `-GuardRail` | — | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before any firmware update. Omitting it aborts early with an expressive, logged error and performs no update. If it does not match, the update is aborted. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. | - |
-| `-SkipFirmware` | — | No | Skip the post-OS firmware update step (only on `Start-PhysicalServerBuild`). | - |
-
-```powershell
-# Target by serial number (resolved via OneView)
-Update-Firmware -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
-
-# Include Marin-provided firmware component folders
-Update-Firmware -Server srv01 -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5', 'C:\fw\Storage')
-```
-
-**Returns:** `[hashtable]` with `Success` and details.
 
 ---
 
@@ -1345,13 +1101,13 @@ pwsh scripts/testConnectAndList.ps1 -OneViewHost oneview-test.ad.example.com -Li
 ### testBuildDeploy
 
 Build/deploy pipeline harness with the **mandatory `-GuardRail`** safety gate.
-Validates ISO path → iLO-accessible URL conversion, firmware archive integrity,
-guard-rail match / non-match / omitted behaviour, the confirmation flow, and
-build/deploy variants — all under `-DryRun` unless `-Live` is supplied.
+Validates ISO path → iLO-accessible URL conversion, guard-rail match / non-match /
+omitted behaviour, the confirmation flow, and build/deploy variants — all under
+`-DryRun` unless `-Live` is supplied.
 
 ```powershell
 pwsh scripts/testBuildDeploy.ps1 -OneViewHost oneview-test.ad.example.com -Server srv01 -GuardRail 'srv0'
-pwsh scripts/testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
+pwsh scripts/testBuildDeploy.ps1 -Server srv01 -ExternalIsoPath '\\fileserver\isos\win.iso' -GuardRail 'srv0'
 ```
 
 <a id="troubleshooting"></a>

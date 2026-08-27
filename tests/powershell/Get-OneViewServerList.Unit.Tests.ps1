@@ -201,14 +201,9 @@ Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
 }
 
 Describe 'Get-OneViewServerList - output rendering (regression)' {
-    # Regression: a prior change made Get-OneViewServerList define a formatter
-    # named _Format-ServerListResult, which is also defined by Test-ServerList.ps1.
-    # Because Public files load alphabetically (G before T), Test-ServerList's
-    # "Server List Validation" renderer silently shadowed Get-OneViewServerList's
-    # "OneView Server List" table. The corruption showed up as:
-    #   Status: VALID / File: (blank) / Servers: N / - System.Collections.Hashtable xN
-    # These tests capture the rendered host output and assert the correct OneView
-    # table is emitted while the validation block / hashtable dump never appears.
+    # Regression: Get-OneViewServerList must render its own "OneView Server List" table
+    # and never emit a raw validation block / hashtable dump. These tests capture the
+    # rendered host output and assert the correct OneView table is emitted.
     BeforeAll {
         InModuleScope Automation {
             Mock Get-OneViewActiveSession {

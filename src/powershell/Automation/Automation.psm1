@@ -591,7 +591,7 @@ $_privateOrder = @(
     'GuardRail.ps1',    # Assert-GuardRail (destructive-action safety gate for build/deploy)
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
-    'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild)
+    'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Start-PhysicalServerBuild)
 )
 
 foreach ($_f in $_privateOrder) {
@@ -640,9 +640,7 @@ Export-ModuleMember -Function @(
     'Run-Scheduler'
     'Run-GitLab'
     # Entry-point handlers (called by Invoke-RoutedRequest)
-    'Invoke-IsoDeploy'
     'Invoke-WindowsSecurityUpdate'
-    'New-IsoBuild'
     'Set-MaintenanceMode'
     'Start-InstallMonitor'
     'Get-OneViewServerTarget'
@@ -650,11 +648,9 @@ Export-ModuleMember -Function @(
     'Get-OneViewServerList'
     'Get-OneViewVersion'
     'Invoke-IloRedfish'
-    'Publish-BootIso'
     'Test-PreBuildValidation'
     'Test-PostBuildValidation'
     'New-Uuid'
-    'Update-Firmware'
     # OpsRamp
     'Invoke-OpsRamp'
     'Invoke-OpsRampClient'
@@ -666,7 +662,6 @@ Export-ModuleMember -Function @(
     'Test-BuildParams'
     'Test-ClusterId'
     'Test-ServerConnectivity'
-    'Test-ServerList'
     # OneView session management
     'Connect-OneView'
     'Disconnect-OneView'
@@ -694,7 +689,7 @@ Export-ModuleMember -Function @(
     'Test-ClusterDefinition'
     'New-ServerInfo'
     'Resolve-OneViewTarget'
-    # ISO path resolution (shared by Invoke-IsoDeploy + Start-PhysicalServerBuild;
+    # ISO path resolution (shared by Start-PhysicalServerBuild;
     # exported so functional test harnesses can validate path->iLO URL conversion)
     'Resolve-ExternalIsoPath'
     # Logging / audit / timestamps
