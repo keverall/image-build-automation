@@ -12,7 +12,7 @@ $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') +
     ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
 
 # ─── Git SSH (Git's bundled ssh only; Windows OpenSSH is blocked here) ───────
-$gitSshPath = "$env:USERPROFILE\AppData\Local\Programs\Git\usr\bin"
+$gitSshPath = "$env:USERPROFILE/AppData/Local/Programs/Git/usr/bin"
 if ($env:PATH -notlike "*$gitSshPath*")
 {
     $env:PATH += ";$gitSshPath"
@@ -21,7 +21,7 @@ if ($env:PATH -notlike "*$gitSshPath*")
 # Start ssh-agent and wire env vars if not already set
 if (-not $env:SSH_AUTH_SOCK)
 {
-    $agentOutput = & "$gitSshPath\ssh-agent.exe" -s
+    $agentOutput = & "$gitSshPath/ssh-agent.exe" -s
     foreach ($line in $agentOutput)
     {
         if ($line -match "^(\w+)=(.+?);")
@@ -32,14 +32,15 @@ if (-not $env:SSH_AUTH_SOCK)
 }
 
 # Pin git to Git's bundled ssh (Windows OpenSSH is blocked in this locked-down env).
-$env:GIT_SSH = "$gitSshPath\ssh.exe"
+# Use forward slashes: git hands GIT_SSH to a shell, which treats '\' as an escape.
+$env:GIT_SSH = "$gitSshPath/ssh.exe"
 
 # Add key if not already loaded (qualify ssh-add so it targets Git's agent, not Windows OpenSSH)
 $keyPath = "$env:USERPROFILE\.ssh\id_ed25519"
-$keys = & "$gitSshPath\ssh-add.exe" -l 2>$null
+$keys = & "$gitSshPath/ssh-add.exe" -l 2>$null
 if ($LASTEXITCODE -ne 0 -or $keys -notmatch "id_ed25519")
 {
-    & "$gitSshPath\ssh-add.exe" $keyPath
+    & "$gitSshPath/ssh-add.exe" $keyPath
 }
 
 # ─── Module Imports (safe - won't break profile if missing) ──────────────────
