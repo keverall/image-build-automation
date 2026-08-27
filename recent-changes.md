@@ -30,7 +30,7 @@
   - [24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming](#24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming)
   - [25) `Connect-OneView` "already connected" message → bold red (no reconnection)](#25-connect-oneview-already-connected-message-bold-red-no-reconnection)
   - [26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking](#26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking)
-  - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-fixes)
+  - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -812,7 +812,7 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - `scripts/lint.ps1` (PSScriptAnalyzer): all checks passed, no new findings.
 - Updated the §26 test mock to use realistic OneView fields: `model = 'DL380 Gen10'` (no `modelNumber`, which doesn't exist in the real API) and long ROM strings (`P89 v2.92 (11/23/2021)`, `U32 v3.50 (04/17/2025)`) that previously caused overflow.
 
-<a id="27-command-prune-doc-update-deploy-flow-fixes"></a>
+<a id="27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes"></a>
 
 ### 27) Command prune + doc update: deploy flow, deleted commands, bug fixes
 
