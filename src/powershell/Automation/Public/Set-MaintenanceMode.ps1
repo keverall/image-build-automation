@@ -2889,12 +2889,13 @@ class OneViewClient {
             return @{ Success = $true; Message = "[DRY RUN] OneView maintenance for $TargetType '$Target'"; Objects = @() }
         }
         $scriptContent = @"
-Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
+ Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$objects = @()
@@ -2972,10 +2973,16 @@ if ('$TargetType' -eq 'ServerHardware') {
         try {
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3017,12 +3024,13 @@ if ('$TargetType' -eq 'ServerHardware') {
             return @{ Success = $true; Message = "[DRY RUN] OneView disable maintenance for $TargetType '$Target'"; Objects = @() }
         }
         $scriptContent = @"
-Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
+ Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$objects = @()
@@ -3100,10 +3108,16 @@ if ('$TargetType' -eq 'ServerHardware') {
         try {
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3145,11 +3159,12 @@ if ('$TargetType' -eq 'ServerHardware') {
         $ovModule = $this.ModuleName
         $ovAppliance = $this.Appliance
         $scriptContent = @"
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$server = Get-OVServer -Name '$TargetId' -ErrorAction SilentlyContinue
@@ -3170,10 +3185,16 @@ if (`$scope) {
         try {
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3211,11 +3232,12 @@ if (`$scope) {
         $ovModule = $this.ModuleName
         $ovAppliance = $this.Appliance
         $scriptContent = @"
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$objects = @()
@@ -3275,10 +3297,16 @@ if ('$TargetType' -eq 'ServerHardware') {
         try {
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3311,11 +3339,12 @@ if ('$TargetType' -eq 'ServerHardware') {
         $ovModule = $this.ModuleName
         $ovAppliance = $this.Appliance
         $scriptContent = @"
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 
@@ -3434,10 +3463,16 @@ if (`$server) {
         try {
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
