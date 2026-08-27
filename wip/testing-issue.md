@@ -811,3 +811,27 @@ SSH_AGENT_PID=1598; export SSH_AGENT_PID;
 echo Agent pid 1598;
      image-build-automation  feature/fix-output-tables          
 ```
+
+```text
+ feature/fix-output-tables  gst                                                                             0  1s 586ms  15:52:34 
+On branch feature/fix-output-tables
+Your branch is up to date with 'github/feature/fix-output-tables'.
+
+nothing to commit, working tree clean
+     image-build-automation  feature/fix-output-tables  git push gitstash                                                                  0  773ms  15:52:39 
+git@gitstash.aib.pri: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  feature/fix-output-tables  code $profile                                                                 128  1s 405ms  15:52:53 
+     image-build-automation  feature/fix-output-tables  . $profile                                                                     0  17s 128ms  15:53:27 
+Identity added: C:\Users\98253\.ssh\id_ed25519 (Kevin.X.Everall@aib.ie)
+     image-build-automation  feature/fix-output-tables  git push gitstash                                                               0  2s 592ms  15:53:58 
+C:\Users\98253\AppData\Local\Programs\Git\usr\bin\ssh.exe: line 1: C:Users98253AppDataLocalProgramsGitusrbinssh.exe: command not found
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  feature/fix-output-tables                                                                                128  1s 512ms  15:54:06 
+```
