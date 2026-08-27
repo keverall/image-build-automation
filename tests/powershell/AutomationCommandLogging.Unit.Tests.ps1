@@ -8,9 +8,8 @@
 #   * Wiring (source-level): each known logging command calls
 #     `Initialize-Logging -LogFile` so a regression that drops logging is caught.
 #   * Functional: Test-ServerConnectivity writes a real connectivity log file;
-#     the in-function logging commands (New-IsoBuild, Update-Firmware,
-#     Update-WindowsSecurity) are shown to call Initialize-Logging with the
-#     expected log file name at runtime.
+#     the in-function logging commands (Update-WindowsSecurity) are shown to call
+#     Initialize-Logging with the expected log file name at runtime.
 
 BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
@@ -23,9 +22,7 @@ BeforeAll {
 # Automation commands that must initialise logging (with their expected log file).
 $Script:LoggingCommands = @(
     @{ Name = 'Set-MaintenanceMode';     File = 'Set-MaintenanceMode.ps1';     LogFile = 'maintenance.log' }
-    @{ Name = 'New-IsoBuild';            File = 'New-IsoBuild.ps1';            LogFile = 'iso_build.log' }
     @{ Name = 'Start-InstallMonitor';    File = 'Start-InstallMonitor.ps1';    LogFile = 'monitoring.log' }
-    @{ Name = 'Update-Firmware';         File = 'Update-Firmware.ps1';         LogFile = 'firmware_updater.log' }
     @{ Name = 'Update-WindowsSecurity';  File = 'Update-WindowsSecurity.ps1';  LogFile = 'windows_patcher.log' }
     @{ Name = 'Test-ServerConnectivity'; File = 'Test-ServerConnectivity.ps1'; LogFile = 'connectivity.log' }
 )
@@ -58,26 +55,6 @@ Describe 'Logging is functional: commands initialise and write logs' {
         $new.Count | Should -BeGreaterThan 0
         $content = Get-Content $new[0].FullName
         ($content | Where-Object { $_ -match 'Connectivity test for' }) | Should -Not -BeNullOrEmpty
-    }
-
-    It 'New-IsoBuild initialises logging with iso_build.log' {
-        $rec = InModuleScope Automation {
-            $script:_logCalls = [System.Collections.ArrayList]::new()
-            Mock Initialize-Logging -MockWith { $script:_logCalls.Add([PSCustomObject]@{ File = $LogFile; Level = $Level }) | Out-Null }
-            try { New-IsoBuild -SiteCode 'ABC' -ManagementPoint 'mp' -DistributionPoint 'dp' -DryRun } catch { }
-            ,$script:_logCalls
-        }
-        ($rec | Where-Object { $_.File -eq 'iso_build.log' }) | Should -Not -BeNullOrEmpty
-    }
-
-    It 'Update-Firmware initialises logging with firmware_updater.log' {
-        $rec = InModuleScope Automation {
-            $script:_logCalls = [System.Collections.ArrayList]::new()
-            Mock Initialize-Logging -MockWith { $script:_logCalls.Add([PSCustomObject]@{ File = $LogFile; Level = $Level }) | Out-Null }
-            try { Update-Firmware -Server 'srv1' -GuardRail '.*' -DryRun } catch { }
-            ,$script:_logCalls
-        }
-        ($rec | Where-Object { $_.File -eq 'firmware_updater.log' }) | Should -Not -BeNullOrEmpty
     }
 
     It 'Update-WindowsSecurity initialises logging with windows_patcher.log' {

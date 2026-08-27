@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-generated: 2026-08-26
+generated: 2026-08-27
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -20,7 +20,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-One-call orchestrator for new HPE ProLiant server deployments.  Each step's parameters are exposed individually with sensible defaults; skip switches allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy against an already-built ISO).
+One-call orchestrator for new HPE ProLiant server deployments. Deploys a client-supplied ISO directly from a network share or HTTPS URL. Each step can be skipped with the -Skip* switches for re-running individual phases.
 
 <a id="parameters"></a>
 
@@ -39,21 +39,16 @@ One-call orchestrator for new HPE ProLiant server deployments.  Each step's para
 | `-SiteServer` | FQDN of the ConfigMgr site server (for PSRemoting fallback). |
 | `-BootImageName` | Name of the boot image to embed (e.g. 'WinPE x64 - HPE'). |
 | `-TaskSequenceName` | Optional task sequence name. |
-| `-RepoBaseUrl` | HTTPS base URL of the ISO repository (used by Publish-BootIso). |
+| `-RepoBaseUrl` | HTTPS base URL of the ISO repository (only used when hosting ISOs on an HTTPS repo; otherwise supply the ISO directly from a network share via -ExternalIsoPath). |
 | `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl. |
-| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip build/publish). Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - UNC/SMB path (backslash): Converted to CIFS URL (e.g. '\\server\share\win.iso') - UNC/SMB path (forward slash): Same as above (e.g. '//server/share/win.iso') - CIFS/SMB URL: Used directly, round-trips the emitted URL (e.g. 'cifs://server/share/win.iso') - SMB URL alias: Normalised to cifs:// (e.g. 'smb://server/share/win.iso') - Mapped drive: Auto-resolved to its UNC share if mapped to a network drive (e.g. 'H:\win.iso') - Local path: NOT supported — iLO cannot access local drives. Supply an SMB/UNC, CIFS/SMB URL, or HTTPS path instead. This module never creates SMB shares or requires Administrator privileges (regulated banking env). IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives on the automation host. This module does NOT auto-create SMB shares and does NOT require Administrator privileges. Supply an already-shared path instead. When supplied, -SkipIsoBuild and -SkipPublish are implied. See |
+| `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Path to a client-supplied ISO for deployment (skip build/publish). Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts: - HTTP/HTTPS URL: Used directly (e.g. 'https://artifacts/win.iso') - NFS path: Used directly (e.g. 'nfs://server/export/win.iso') - UNC/SMB path (backslash): Converted to CIFS URL (e.g. '\\server\share\win.iso') - UNC/SMB path (forward slash): Same as above (e.g. '//server/share/win.iso') - CIFS/SMB URL: Used directly, round-trips the emitted URL (e.g. 'cifs://server/share/win.iso') - SMB URL alias: Normalised to cifs:// (e.g. 'smb://server/share/win.iso') - Mapped drive: Auto-resolved to its UNC share if mapped to a network drive (e.g. 'H:\win.iso') - Local path: NOT supported — iLO cannot access local drives. Supply an SMB/UNC, CIFS/SMB URL, or HTTPS path instead. This module never creates SMB shares or requires Administrator privileges (regulated banking env). IMPORTANT - Local Drive Paths (e.g. 'H:\windows.iso'): The iLO BMC cannot access local drives on the automation host. This module does NOT auto-create SMB shares and does NOT require Administrator privileges. Supply an already-shared path instead. When supplied, the ISO build/publish steps are skipped entirely. See ../PathParameterFormats.md for the full list of accepted formats. |
 | `-MonitorTimeoutSeconds` | Install monitor timeout (default 7200). |
 | `-MonitorPollSeconds` | Install monitor poll interval (default 30). |
-| `-SkipFirmware` | Skip the post-OS firmware update step. By default, if -FirmwareFolders are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked after post-build validation. |
-| `-FirmwareFolders` | Additional firmware component source directories (string array) passed to Update-Firmware for post-OS firmware updates via HPE SUT. Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). Each is resolved through the same shared helper as the ISO; see |
-| `-FirmwareConfig` | Path to a firmware manifest JSON passed to Update-Firmware. Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json' |
-| `-Mock` | Run with mocked calls - no network calls are made; useful for CI smoke tests. When -Mock is set, all downstream steps run as if -DryRun was also set. |
 | `-DryRun` _(Aliases: -Dry)_ | Validate inputs and print plan without performing any destructive action. |
 | `-Force` | Required for the destructive Reset action (ForceRestart) issued by Invoke-IloRedfish. Refuses to proceed without this switch when the server's iLO reports power state On. |
 | `-InMaintenanceWindow` | Acknowledge that the target server is in an approved maintenance window. Required when -Force is not supplied and the server is currently On. |
 | `-AllowUnknownIsoUrl` | Skip the head-verify check on the ISO URL during pre-build validation (use only when the build pipeline runs offline). |
-| `-SkipConfirmation` _(Aliases: -SkipConf)_ | Skip the interactive confirmation prompt before deployment. By default, the operator must type 'YES' to confirm the deployment plan (server details, ISO, and actions). Use -SkipConfirmation for automated/unattended deployments. |
-| `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any destructive action. If it is OMITTED the command fails early with an expressive, logged error and performs no action. If it does NOT match the target, the build is aborted with no changes. When it matches, a destructive confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. This prevents accidentally overwriting a production server when the client's test server lives on the production network. |
+| `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before any destructive action. If it is OMITTED the command fails early with an expressive, logged error and performs no action. If it does NOT match the target, the build is aborted with no changes. When it matches, a destructive confirmation (typing YES) is still required unless -DryRun is supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. This prevents accidentally overwriting a production server when the client's test server lives on the production network. |
 | `-Json` | Emit the result as a JSON string on the success stream (for API integration / redirection) instead of the human-readable report. When omitted, the command writes a human-readable report to the host (terminal / transcript / logs) and does NOT dump a raw hashtable. |
 | `-PassThru` _(Aliases: -PT)_ | Also return the structured [hashtable] result on the success stream. By default the command writes only the human-readable report and returns nothing, so the terminal/log never receives a truncated hashtable dump. Capture the result into a variable, e.g. `$r = Start-PhysicalServerBuild -PassThru`, for scripting. |
 | `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). |
@@ -80,10 +75,9 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
         Callable from the module Router.
 
     .DESCRIPTION
-        One-call orchestrator for new HPE ProLiant server deployments.  Each step's
-        parameters are exposed individually with sensible defaults; skip switches
-        allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy
-        against an already-built ISO).
+        One-call orchestrator for new HPE ProLiant server deployments. Deploys a
+        client-supplied ISO directly from a network share or HTTPS URL. Each step
+        can be skipped with the -Skip* switches for re-running individual phases.
 
     .PARAMETER ServerIdentifier
         Target server identifier (name, serial, OneView name, iLO IP, bay). Required.
@@ -119,7 +113,8 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
         Optional task sequence name.
 
     .PARAMETER RepoBaseUrl
-        HTTPS base URL of the ISO repository (used by Publish-BootIso).
+        HTTPS base URL of the ISO repository (only used when hosting ISOs on an HTTPS repo;
+        otherwise supply the ISO directly from a network share via -ExternalIsoPath).
 
     .PARAMETER RepoLocalPath
         Local filesystem path mirrored to RepoBaseUrl.
@@ -143,8 +138,8 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
           module does NOT auto-create SMB shares and does NOT require
           Administrator privileges. Supply an already-shared path instead.
 
-        When supplied, -SkipIsoBuild and -SkipPublish are implied. See
-        ../PathParameterFormats.md for the full list of accepted formats.
+        When supplied, the ISO build/publish steps are skipped entirely.
+        See ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
@@ -153,31 +148,10 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
         Install monitor poll interval (default 30).
 
     .PARAMETER SkipPreBuild
-    .PARAMETER SkipIsoBuild
-    .PARAMETER SkipPublish
     .PARAMETER SkipOneView
     .PARAMETER SkipMount
     .PARAMETER SkipMonitor
     .PARAMETER SkipPostBuild
-    .PARAMETER SkipFirmware
-        Skip the post-OS firmware update step. By default, if -FirmwareFolders
-        are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked
-        after post-build validation.
-
-    .PARAMETER FirmwareFolders
-        Additional firmware component source directories (string array) passed
-        to Update-Firmware for post-OS firmware updates via HPE SUT.
-        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). Each is resolved
-        through the same shared helper as the ISO; see
-        ../PathParameterFormats.md for the accepted path formats.
-
-    .PARAMETER FirmwareConfig
-        Path to a firmware manifest JSON passed to Update-Firmware.
-        Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json'
-
-    .PARAMETER Mock
-        Run with mocked calls - no network calls are made; useful for CI smoke tests.
-        When -Mock is set, all downstream steps run as if -DryRun was also set.
 
     .PARAMETER DryRun
         Validate inputs and print plan without performing any destructive action.
@@ -194,19 +168,14 @@ Start-PhysicalServerBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'o
         Skip the head-verify check on the ISO URL during pre-build validation (use only
         when the build pipeline runs offline).
 
-    .PARAMETER SkipConfirmation
-        Skip the interactive confirmation prompt before deployment. By default, the
-        operator must type 'YES' to confirm the deployment plan (server details, ISO,
-        and actions). Use -SkipConfirmation for automated/unattended deployments.
-
     .PARAMETER GuardRail
         MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
         REGULAR EXPRESSION the resolved target server name must match before any
         destructive action. If it is OMITTED the command fails early with an
         expressive, logged error and performs no action. If it does NOT match the
         target, the build is aborted with no changes. When it matches, a destructive
-        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
-        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        confirmation (typing YES) is still required unless -DryRun is supplied.
+        Example (regex): -GuardRail 'quickview\.ilo0' matches server
         'quickview.ilo03.alp'. This prevents accidentally overwriting a production
         server when the client's test server lives on the production network.
 

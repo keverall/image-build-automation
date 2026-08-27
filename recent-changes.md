@@ -30,11 +30,13 @@
   - [24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming](#24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming)
   - [25) `Connect-OneView` "already connected" message → bold red (no reconnection)](#25-connect-oneview-already-connected-message-bold-red-no-reconnection)
   - [26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking](#26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking)
+  - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-fixes)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
 | 2026-08-06 | Command consolidation — 2-command workflow (runbook-aligned) | Kev Everall |
 | 2026-08-06 | Parameter-usage guard + non-interactive `-DryRun` (rejected `Connect-OneView --DryRun`) | Kev Everall |
+| 2026-08-27 | Command prune + doc update: deploy flow, deleted commands, bug fixes | Kev Everall |
 
 <a id="1-command-consolidation-2-command-workflow-runbook-aligned"></a>
 
@@ -809,3 +811,76 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - `Get-OneViewServerList.Unit.Tests.ps1`: **19 passed, 0 failed** (17 existing + 2 new: Model data populated, ROM alignment column-count parity).
 - `scripts/lint.ps1` (PSScriptAnalyzer): all checks passed, no new findings.
 - Updated the §26 test mock to use realistic OneView fields: `model = 'DL380 Gen10'` (no `modelNumber`, which doesn't exist in the real API) and long ROM strings (`P89 v2.92 (11/23/2021)`, `U32 v3.50 (04/17/2025)`) that previously caused overflow.
+
+<a id="27-command-prune-doc-update-deploy-flow-fixes"></a>
+
+### 27) Command prune + doc update: deploy flow, deleted commands, bug fixes
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-27 | Pruned 5 commands (`Test-ServerList`, `Invoke-IsoDeploy`, `New-IsoBuild`, `Publish-BootIso`, `Update-Firmware`) from source/tests/docs; rewrote `Configure-PhysicalBuild` as the single deploy entry point with `-Deploy`/`-Execute` + `APPROVE`; updated docs, dynamic-code-docs, `testBuildDeploy.ps1`, and fixed 3 runtime bugs in the build pipeline | Kev Everall |
+
+<a name="commands-removed"></a>
+
+#### Commands removed
+
+- Deleted `src/powershell/Automation/Public/{Test-ServerList,Invoke-IsoDeploy,New-IsoBuild,Publish-BootIso,Update-Firmware}.ps1`, their unit tests, and their dynamic-code-docs pages.
+- Pruned `Automation.psd1` / `Automation.psm1` exports and comments to match.
+- `Configure-PhysicalBuild` is now the **only** deploy entry point. `Start-PhysicalServerBuild` no longer accepts `-FirmwareFolders`, `-FirmwareConfig`, `-SkipIsoBuild`, `-SkipPublish`, `-Mock`, or `-SkipConfirmation` from external callers; firmware post-OS is not currently implemented inline.
+
+<a name="configure-physicalbuild-changes"></a>
+
+#### `Configure-PhysicalBuild` rewrite
+
+- Added `-Deploy` (alias `-Execute`) as the explicit authorization switch; removed `-SkipConfirmation` and `-Mock` from the public surface.
+- Added `-DryRun` so the review can run non-interactively without reaching the approval gate.
+- Authorization flow: typing `APPROVE` at the interactive prompt, or passing `-Deploy`/`-Execute`, internally invokes `Start-PhysicalServerBuild` with the same parameters — the operator never re-types them.
+- On `APPROVE`/`-Deploy`, `_InvokeBuild` passes `-SkipConfirmation` internally to `Start-PhysicalServerBuild` so the guard-rail confirmation inside `Assert-GuardRail` is bypassed (approval was already given here).
+- Removed the firmware display block and `FirmwareFolders`/`FirmwareConfig` from the plan hashtable.
+- Results now emit through `_Publish-Result` (clean block by default; `-PassThru`/`-Json` opt into structured output).
+
+<a name="start-physicalserverbuild-changes"></a>
+
+#### `Start-PhysicalServerBuild` changes
+
+- Replaced the ISO build/publish block with direct `Resolve-ExternalIsoPath` from `-ExternalIsoPath`; removed all `New-IsoBuild`/`Publish-BootIso` call sites.
+- Removed the firmware execution block (`Update-Firmware` call).
+- Restored `-SkipConfirmation` as an **internal** parameter: it is not advertised to users, but `Configure-PhysicalBuild._InvokeBuild` passes it so `Assert-GuardRail` skips its destructive confirmation when approval was already given.
+- Removed obsolete `.PARAMETER` doc lines for `-SkipIsoBuild`, `-SkipPublish`, `-SkipFirmware`, `-FirmwareFolders`, `-FirmwareConfig`, and `-Mock` from comment-based help.
+
+<a name="doc-updates"></a>
+
+#### Documentation updates
+
+- `docs/Automation/automation_commands.md`: removed all sections/TOC entries for deleted commands; updated "How commands fit together" and safe/destructive tables to use `APPROVE`/`-Deploy`; rewrote `Configure-PhysicalBuild` and `Start-PhysicalServerBuild` parameter tables to match current signatures; added `testBuildDeploy` examples using `-ExternalIsoPath`.
+- `docs/dynamic-code-docs/Configure-PhysicalBuild.md`: regenerated — removed `-SkipConfirmation`, `-FirmwareFolders`, `-FirmwareConfig`; added `-Deploy`/`-Execute`, `-PassThru`, `-Json`.
+- `docs/dynamic-code-docs/Start-PhysicalServerBuild.md`: regenerated — removed obsolete params listed above.
+- `docs/dynamic-code-docs/INDEX.md`: removed dead links to deleted command docs and stale internal helper docs (`_Emit-IsoDeployResult`, `_Format-IsoDeploySummary`).
+- Removed stale doc files `_Emit-IsoDeployResult.md` and `_Format-IsoDeploySummary.md` (helpers no longer exist).
+
+<a name="test-script-updates"></a>
+
+#### Test script + unit test updates
+
+- `scripts/testBuildDeploy.ps1`: rewrote to exercise `Configure-PhysicalBuild` + `Start-PhysicalServerBuild` directly; removed all `Invoke-IsoDeploy`/`Update-Firmware` calls; removed `-all` param; ISO/firmware path validation exercised through `Resolve-ExternalIsoPath` + `Test-PathEx` only.
+- `tests/powershell/Configure-PhysicalBuild.Unit.Tests.ps1`: rewrote — dropped `-SkipConfirmation`/`-Mock`/`-FirmwareFolders` references; replaced with `-DryRun`, `-Deploy`, and external ISO path tests; 9 tests, all pass.
+- `tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1`: updated parameter list and skip flags to match current surface; replaced `-SkipIsoBuild`/`-SkipPublish` with `-ExternalIsoPath`.
+
+<a name="bug-fixes-27"></a>
+
+#### Bug fixes
+
+- **`_Step` null-array crash** (`Start-PhysicalServerBuild.ps1`): `_Step` used `$script:overall['steps']` but `$overall` was a local `[ordered]@{}` — under `-SkipOneView` the function received a null result and crashed with "Cannot index into a null array". Fixed to use the local `$overall` variable.
+- **`-DryRun` bypass in `Configure-PhysicalBuild`**: the confirmation block did not check `$DryRun`, so automated tests that passed `-DryRun` still hit the non-interactive auto-cancel path. Fixed: `-DryRun` now short-circuits before the approval gate and returns the review plan.
+- **`-IloCredential` passthrough**: `_InvokeBuild` was passing `-IloCredential $IloCredential` to `Start-PhysicalServerBuild`, which does not accept that parameter. Fixed: removed from `_InvokeBuild`.
+- **`-SkipConfirmation` passthrough to `Assert-GuardRail`**: `Start-PhysicalServerBuild` now passes `-SkipConfirmation:$SkipConfirmation` into `Assert-GuardRail` so approval given by `Configure-PhysicalBuild` (via `_InvokeBuild`) is honoured without a second `YES` prompt.
+
+<a name="verification-27"></a>
+
+#### Verification
+
+- `Configure-PhysicalBuild.Unit.Tests.ps1`: **9 passed, 0 failed**.
+- `Start-PhysicalServerBuild.Unit.Tests.ps1`: **2 passed, 0 failed**.
+- `make automation-mode-tests`: **115 passed, 0 failed**, 0 skipped (full suite including the updated `Configure-PhysicalBuild` + `Start-PhysicalServerBuild` + `Setup-Profile` + `Connect-OneView` + `Get-OneViewConnectionStatus` + `Get-OneViewServerList` + `Get-OneViewServerTarget` + `Test-PreBuildValidation` + `Test-BuildParams` + `Validators` + `AutomationCommandLogging` + `Router` + `Run-*` runners).
+- Module import: `Import-Module Automation.psd1 -Force -DisableNameChecking` succeeds; `Get-Command Configure-PhysicalBuild, Start-PhysicalServerBuild` resolves with the expected parameter sets.
+- `Resolve-ExternalIsoPath` is now called from exactly one source file (`Private/ExternalIso.ps1`); all deploy commands resolve through it.

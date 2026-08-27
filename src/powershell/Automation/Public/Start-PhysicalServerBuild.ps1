@@ -3,21 +3,19 @@
 #
 # Orchestrates the full runbook workflow:
 #   1. Pre-build validation  (Test-PreBuildValidation)
-#   2. Build ConfigMgr bootable ISO  (New-IsoBuild)
-#   3. Publish ISO to HTTPS  (Publish-BootIso)
-#   4. Resolve iLO via OneView  (Get-OneViewServerTarget)
-#   5. Mount ISO + force one-time boot via iLO Redfish  (Invoke-IloRedfish)
-#   6. Monitor installation  (Start-InstallMonitor)
-#   7. Post-build validation  (Test-PostBuildValidation)
-#   8. Audit log entry
+#   2. Resolve iLO via OneView  (Get-OneViewServerTarget)
+#   3. Mount ISO + force one-time boot via iLO Redfish  (Invoke-IloRedfish)
+#   4. Monitor installation  (Start-InstallMonitor)
+#   5. Post-build validation  (Test-PostBuildValidation)
+#   6. Audit log entry
 #
-# All parameters are runtime - server identifier, OneView host, ConfigMgr
-# endpoints, etc. - supplied by the operator at invocation.
+# All parameters are runtime - server identifier, OneView host, ISO path,
+# etc. - supplied by the operator at invocation.
 #
-# Supports two ISO source modes:
-#   - Build mode (default): Builds a ConfigMgr bootable ISO, publishes it, deploys
+# Supported ISO source mode:
 #   - External ISO mode (-ExternalIsoPath): Deploys a client-supplied ISO directly
-#     (local path, UNC/SMB share, or HTTP/HTTPS URL)
+#     (UNC/SMB share, cifs://, smb://, HTTPS, NFS, or mapped network drive).
+#     ISO build/publish is no longer supported; supply -ExternalIsoPath.
 #
 
 
@@ -84,10 +82,9 @@ function Start-PhysicalServerBuild {
         Callable from the module Router.
 
     .DESCRIPTION
-        One-call orchestrator for new HPE ProLiant server deployments.  Each step's
-        parameters are exposed individually with sensible defaults; skip switches
-        allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy
-        against an already-built ISO).
+        One-call orchestrator for new HPE ProLiant server deployments. Deploys a
+        client-supplied ISO directly from a network share or HTTPS URL. Each step
+        can be skipped with the -Skip* switches for re-running individual phases.
 
     .PARAMETER ServerIdentifier
         Target server identifier (name, serial, OneView name, iLO IP, bay). Required.
@@ -123,7 +120,8 @@ function Start-PhysicalServerBuild {
         Optional task sequence name.
 
     .PARAMETER RepoBaseUrl
-        HTTPS base URL of the ISO repository (used by Publish-BootIso).
+        HTTPS base URL of the ISO repository (only used when hosting ISOs on an HTTPS repo;
+        otherwise supply the ISO directly from a network share via -ExternalIsoPath).
 
     .PARAMETER RepoLocalPath
         Local filesystem path mirrored to RepoBaseUrl.
@@ -147,8 +145,8 @@ function Start-PhysicalServerBuild {
           module does NOT auto-create SMB shares and does NOT require
           Administrator privileges. Supply an already-shared path instead.
 
-        When supplied, -SkipIsoBuild and -SkipPublish are implied. See
-        ../PathParameterFormats.md for the full list of accepted formats.
+        When supplied, the ISO build/publish steps are skipped entirely.
+        See ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
@@ -157,31 +155,10 @@ function Start-PhysicalServerBuild {
         Install monitor poll interval (default 30).
 
     .PARAMETER SkipPreBuild
-    .PARAMETER SkipIsoBuild
-    .PARAMETER SkipPublish
     .PARAMETER SkipOneView
     .PARAMETER SkipMount
     .PARAMETER SkipMonitor
     .PARAMETER SkipPostBuild
-    .PARAMETER SkipFirmware
-        Skip the post-OS firmware update step. By default, if -FirmwareFolders
-        are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked
-        after post-build validation.
-
-    .PARAMETER FirmwareFolders
-        Additional firmware component source directories (string array) passed
-        to Update-Firmware for post-OS firmware updates via HPE SUT.
-        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). Each is resolved
-        through the same shared helper as the ISO; see
-        ../PathParameterFormats.md for the accepted path formats.
-
-    .PARAMETER FirmwareConfig
-        Path to a firmware manifest JSON passed to Update-Firmware.
-        Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json'
-
-    .PARAMETER Mock
-        Run with mocked calls - no network calls are made; useful for CI smoke tests.
-        When -Mock is set, all downstream steps run as if -DryRun was also set.
 
     .PARAMETER DryRun
         Validate inputs and print plan without performing any destructive action.
@@ -198,19 +175,14 @@ function Start-PhysicalServerBuild {
         Skip the head-verify check on the ISO URL during pre-build validation (use only
         when the build pipeline runs offline).
 
-    .PARAMETER SkipConfirmation
-        Skip the interactive confirmation prompt before deployment. By default, the
-        operator must type 'YES' to confirm the deployment plan (server details, ISO,
-        and actions). Use -SkipConfirmation for automated/unattended deployments.
-
     .PARAMETER GuardRail
         MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
         REGULAR EXPRESSION the resolved target server name must match before any
         destructive action. If it is OMITTED the command fails early with an
         expressive, logged error and performs no action. If it does NOT match the
         target, the build is aborted with no changes. When it matches, a destructive
-        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
-        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        confirmation (typing YES) is still required unless -DryRun is supplied.
+        Example (regex): -GuardRail 'quickview\.ilo0' matches server
         'quickview.ilo03.alp'. This prevents accidentally overwriting a production
         server when the client's test server lives on the production network.
 
@@ -272,13 +244,10 @@ function Start-PhysicalServerBuild {
         [int]    $MonitorTimeoutSeconds = 7200,
         [int]    $MonitorPollSeconds = 30,
         [switch] $SkipPreBuild,
-        [switch] $SkipIsoBuild,
-        [switch] $SkipPublish,
         [switch] $SkipOneView,
         [switch] $SkipMount,
         [switch] $SkipMonitor,
         [switch] $SkipPostBuild,
-        [switch] $Mock,
         [Alias('Dry')]
         [switch] $DryRun,
         [switch] $Force,
@@ -286,20 +255,12 @@ function Start-PhysicalServerBuild {
         [switch] $AllowUnknownIsoUrl,
         [Alias('SkipConf')]
         [switch] $SkipConfirmation,
-        [string[]] $FirmwareFolders = @(),
-        [string] $FirmwareConfig = $null,
-        [switch] $SkipFirmware,
         [string] $GuardRail = $null,
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet
     )
-
-    if ($Mock -and -not $DryRun) {
-        Write-Verbose "-Mock supplied - forcing DryRun behaviour for all downstream steps"
-        $DryRun = $true
-    }
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
     # Fail early (graceful, logged) when omitted so we never overwrite an
@@ -380,10 +341,10 @@ function Start-PhysicalServerBuild {
     $overall['steps'] = [ordered]@{}
 
     function _Step([string]$name, [hashtable]$r) {
-        $script:overall['steps'][$name] = $r
+        $overall['steps'][$name] = $r
         $ok = if ($r) { [bool]$r.Success } else { $false }
         Write-Output "[$(if($ok){'OK'}else{'FAIL'})] $name"
-        if (-not $ok) { $script:overall['success'] = $false }
+        if (-not $ok) { $overall['success'] = $false }
     }
 
     $overall['success'] = $true
@@ -392,21 +353,15 @@ function Start-PhysicalServerBuild {
     try {
         $isoPath = $null
         $isoUrl  = $null
-        if (-not $SkipIsoBuild) {
-            $r = New-IsoBuild -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
-                -DistributionPoint $DistributionPoint -BootImageName $BootImageName `
-                -TaskSequenceName $TaskSequenceName -SiteServer $SiteServer `
-                -DryRun:$DryRun -PassThru
-            _Step 'iso_build' $r
-            $isoPath = $r.IsoPath
-            if (-not $r.Success -and -not $DryRun) { return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
-        }
-
-        if (-not $SkipPublish -and $isoPath -and $RepoBaseUrl) {
-            $r = Publish-BootIso -IsoPath $isoPath -RepoBaseUrl $RepoBaseUrl `
-                -RepoLocalPath $RepoLocalPath -DryRun:$DryRun -PassThru
-            _Step 'publish_iso' $r
-            if ($r.Success) { $isoUrl = $r.PublicUrl }
+        if ($ExternalIsoPath) {
+            # No repository: deploy the client-supplied CIFS/SMB/HTTPS ISO directly.
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+            $isoPath = $ExternalIsoPath
+            _Step 'resolve_iso' @{ Success = $true; IsoUrl = $isoUrl }
+        } else {
+            _Step 'resolve_iso' @{ Success = $false; Error = 'No -ExternalIsoPath supplied. The build pipeline now deploys a client-supplied CIFS/SMB/HTTPS ISO directly (ISO build/publish removed).' }
+            $overall['success'] = $false
+            return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
 
         if (-not $SkipPreBuild) {
@@ -454,7 +409,7 @@ function Start-PhysicalServerBuild {
             # ── Confirmation Prompt ─────────────────────────────────────────────
             # When a -GuardRail was supplied it already performed the destructive
             # confirmation inside Assert-GuardRail, so we skip the generic prompt.
-            if (-not $SkipConfirmation -and -not $DryRun -and -not $GuardRail) {
+            if (-not $DryRun -and -not $GuardRail) {
                 $confirmed = Confirm-IsoDeployment -ServerIdentifier $ServerIdentifier `
                     -IloIp $IloIp -IsoUrl $isoUrl -OneViewDetails $oneview.Details -DryRun:$DryRun
                 if (-not $confirmed) {
@@ -502,19 +457,6 @@ function Start-PhysicalServerBuild {
             $r = Test-PostBuildValidation -Hostname $ExpectedHostname -Domain $Domain `
                 -DryRun:$DryRun -PassThru
             _Step 'post_build_validation' $r
-        }
-
-        if (-not $SkipFirmware -and ($FirmwareFolders.Count -gt 0 -or $FirmwareConfig)) {
-            $fwParams = @{
-                Server   = $ExpectedHostname
-                OutputDir = 'output\firmware'
-                DryRun   = $DryRun
-            }
-            if ($FirmwareConfig)        { $fwParams.Config = $FirmwareConfig }
-            if ($FirmwareFolders.Count) { $fwParams.FirmwareFolders = $FirmwareFolders }
-            Write-Host "`n  Starting post-OS firmware update..." -ForegroundColor Cyan
-            $r = Update-Firmware @fwParams -PassThru
-            _Step 'firmware_update' $r
         }
 
         return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)

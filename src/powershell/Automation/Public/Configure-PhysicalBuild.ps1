@@ -95,15 +95,6 @@ function Configure-PhysicalBuild {
         mapped network drive. Local paths are not supported. See
         ../PathParameterFormats.md for the full list of accepted formats.
 
-    .PARAMETER FirmwareFolders
-        Firmware component source directories that will be applied post-OS-install.
-        Each is resolved through the same shared helper as the ISO. Example:
-        -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5'). See
-        ../PathParameterFormats.md for the accepted path formats.
-
-    .PARAMETER FirmwareConfig
-        Firmware manifest JSON for Update-Firmware.
-
     .PARAMETER AllowUnknownIsoUrl
         Skip the head-verify check on the ISO URL (offline scenarios).
 
@@ -127,11 +118,11 @@ function Configure-PhysicalBuild {
 
     .PARAMETER Force
         Acknowledge server power state is On (informational only — this command
-        does not perform any reboot; included for parity with Start-PhysicalBuild).
+        does not perform any reboot; included for parity with Start-PhysicalServerBuild).
 
-    .PARAMETER SkipConfirmation
-        Skip the interactive confirmation prompt. When set, the function returns
-        the plan hashtable without waiting for operator input.
+    .PARAMETER DryRun
+        Validate inputs and print the plan without performing any destructive action.
+        Skips network probes and the confirmation prompt.
 
     .PARAMETER GuardRail
         MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
@@ -142,8 +133,9 @@ function Configure-PhysicalBuild {
         'quickview.ilo03.alp'.
 
     .RETURNS
-        [hashtable] with Success, ServerIdentity, IsoDetails, FirmwareDetails,
-        DestructiveActions, ValidationChecks, and Plan (for piping to Start-PhysicalBuild).
+        [hashtable] with Success, ServerIdentity, IsoDetails, ValidationChecks,
+        and Server. On -Deploy / -Execute or APPROVE, Start-PhysicalServerBuild
+        is executed internally and the build result is returned.
 
     .EXAMPLE
         Configure-PhysicalBuild `
@@ -154,11 +146,10 @@ function Configure-PhysicalBuild {
             -ManagementPoint 'mp01.ad.example.com' `
             -DistributionPoint 'dp01.ad.example.com' `
             -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' `
-            -Domain 'ad.example.com' `
-            -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
+            -Domain 'ad.example.com'
 
     .EXAMPLE
-        Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -SkipConfirmation
+        Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.example.com' -ExternalIsoPath 'https://artifacts/isos/Win2025.iso' -Deploy -GuardRail 'srv01'
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -182,8 +173,6 @@ function Configure-PhysicalBuild {
         [string] $RepoLocalPath,
         [Alias('ExtIso')]
         [string] $ExternalIsoPath,
-        [string[]] $FirmwareFolders = @(),
-        [string] $FirmwareConfig = $null,
         [switch] $AllowUnknownIsoUrl,
         [switch] $InMaintenanceWindow,
         [switch] $SkipPreBuild,
@@ -192,11 +181,13 @@ function Configure-PhysicalBuild {
         [switch] $SkipDpMp,
         [switch] $SkipIsoUrl,
         [switch] $Force,
-        [Alias('SkipConf')]
-        [switch] $SkipConfirmation,
+        [Alias('Dry')]
+        [switch] $DryRun,
         [string] $GuardRail = $null,
         [switch] $PassThru,
-        [switch] $Json
+        [switch] $Json,
+        [Alias('Execute')]
+        [switch] $Deploy
     )
 
     if (-not $ExpectedHostname) { $ExpectedHostname = $ServerIdentifier }
@@ -222,6 +213,23 @@ function Configure-PhysicalBuild {
     }
     function _Emit([hashtable]$result) {
         _Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -CustomView $resultView
+    }
+
+    function _InvokeBuild {
+        # Reuse the parameters already supplied to Configure-PhysicalBuild so the
+        # operator never re-types them. Start-PhysicalServerBuild performs the actual
+        # mount/reboot/install; approval was already given here (interactive APPROVE
+        # or explicit -Deploy), so we pass -SkipConfirmation to bypass the guard-rail
+        # confirmation inside Start-PhysicalServerBuild.
+        Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
+            -IloIp $IloIp -ExpectedHostname $ExpectedHostname `
+            -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
+            -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
+            -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
+            -RepoBaseUrl $RepoBaseUrl -RepoLocalPath $RepoLocalPath -ExternalIsoPath $ExternalIsoPath `
+            -SkipPreBuild:$SkipPreBuild -SkipOneView:$SkipOneView -SkipMount:$SkipIlo -SkipMonitor -SkipPostBuild `
+            -InMaintenanceWindow:$InMaintenanceWindow -AllowUnknownIsoUrl:$AllowUnknownIsoUrl `
+            -GuardRail $GuardRail -Force:$Force -SkipConfirmation -PassThru:$PassThru
     }
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
@@ -292,7 +300,7 @@ function Configure-PhysicalBuild {
         $guardSerial = if ($serverIdentity -and $serverIdentity.serial_number) { $serverIdentity.serial_number } else { $null }
         $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $guardName `
             -SerialNumber $guardSerial -ApplianceName $OneViewHost `
-            -ActionDescription 'build plan review' -SkipConfirmation:$SkipConfirmation -NonDestructive
+            -ActionDescription 'build plan review' -SkipConfirmation:$true -NonDestructive
         if (-not $guardOk) {
             return (_Emit @{
                 Success    = $false
@@ -388,28 +396,12 @@ function Configure-PhysicalBuild {
     }
     Write-Host "  Contents:        Windows Server boot media + ConfigMgr task sequence" -ForegroundColor Gray
 
-    # Firmware details
-    Write-Host "`n  ─ FIRMWARE UPDATE (post-OS-install) ─" -ForegroundColor Yellow
-    if ($FirmwareFolders.Count -gt 0) {
-        Write-Host "  Component folders:" -ForegroundColor White
-        foreach ($f in $FirmwareFolders) {
-            Write-Host "    - $f" -ForegroundColor Gray
-        }
-        Write-Host "  Manifest:         $($FirmwareConfig ?? 'default manifest (DryRun only)')" -ForegroundColor Gray
-    } else {
-        Write-Host "  No additional firmware folders specified." -ForegroundColor Gray
-        Write-Host "  Manifest:         $($FirmwareConfig ?? 'default')" -ForegroundColor Gray
-    }
-
     # Destructive actions
     Write-Host "`n  ─ DESTRUCTIVE ACTIONS (will be executed by Start-PhysicalBuild) ─" -ForegroundColor Red
     Write-Host "  1. Disk partitioning & formatting (ALL data will be erased)" -ForegroundColor Red
     Write-Host "  2. Windows OS installation from ISO" -ForegroundColor Red
     Write-Host "  3. Server reboot into installed OS" -ForegroundColor Red
     Write-Host "  4. Post-build validation (hostname, domain join, drivers)" -ForegroundColor Red
-    if ($FirmwareFolders.Count -gt 0 -or $FirmwareConfig) {
-        Write-Host "  5. Firmware update via HPE SUT (reboots during apply)" -ForegroundColor Red
-    }
 
     # Validation results
     if ($preBuildResult) {
@@ -436,7 +428,7 @@ function Configure-PhysicalBuild {
 
     Write-Host "`n══════════════════════════════════════════════════════════════`n" -ForegroundColor Cyan
 
-    # ── Hard stop: a real validation failure must never reach the DEPLOY prompt ─
+    # ── Hard stop: a real validation failure must never reach the APPROVE prompt ─
     if ($preBuildResult -and -not $preBuildResult.Success) {
         Write-Host "`n  ✗ PRE-BUILD VALIDATION FAILED — deployment is BLOCKED." -ForegroundColor Red
         Write-Host "    Resolve the failing check(s) above, then re-run the review." -ForegroundColor Yellow
@@ -451,19 +443,22 @@ function Configure-PhysicalBuild {
         })
     }
 
-    # ── Confirmation prompt ─────────────────────────────────────────────────
-    if (-not $SkipConfirmation) {
-        # Never block on interactive input in automated / non-interactive runs
-        # (CI, `make test`, Pester). Auto-cancel with a clear reason instead.
+    # ── Authorization (APPROVE) and optional deploy ────────────────────────────
+    # APPROVE (interactive) or -Deploy (automation) runs the build via the
+    # Start-PhysicalServerBuild code, reusing the parameters already supplied here —
+    # the operator never re-types them. Without explicit approval the command only
+    # reviews and returns the plan; it never deploys.
+    $doDeploy = [bool]$Deploy
+    if (-not $doDeploy -and -not $DryRun) {
         $isAutomated = ($env:AUTOMATED_MODE -eq 'true') -or ($env:CI -eq 'true')
         $isInteractive = ([Console]::IsInputRedirected -eq $false) -and ($Host.UI.RawUI -ne $null)
         if ($isAutomated -or -not $isInteractive) {
-            Write-Host "`n  Non-interactive / automated mode detected - deployment confirmation skipped (auto-cancelled)." -ForegroundColor Yellow
+            Write-Host "`n  Non-interactive / automated mode detected - explicit -Deploy authorization required to proceed." -ForegroundColor Yellow
             return (_Emit @{
                 Success          = $false
                 Cancelled        = $true
                 Server           = $ExpectedHostname
-                Reason           = "Non-interactive mode: operator confirmation required but input is not available"
+                Reason           = "Non-interactive mode: explicit -Deploy authorization required to proceed"
                 ServerIdentity   = $serverIdentity
                 IsoUrl           = $isoUrl
                 ValidationChecks = if ($preBuildResult) { $preBuildResult.Checks } else { $null }
@@ -472,27 +467,33 @@ function Configure-PhysicalBuild {
 
         Write-Host "  ╔════════════════════════════════════════════════════════╗" -ForegroundColor Red
         Write-Host "  ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║" -ForegroundColor Red
-        Write-Host "  ║  This will ERASE ALL DATA on the target server and    ║" -ForegroundColor Red
-        Write-Host "  ║  install a fresh Windows Server OS + firmware.        ║" -ForegroundColor Red
-        Write-Host "  ║                                                      ║" -ForegroundColor Red
-        Write-Host "  ║  Enter DEPLOY to proceed with this build.             ║" -ForegroundColor Red
-        Write-Host "  ║  Anything else cancels — no deploy will occur.         ║" -ForegroundColor Red
+        Write-Host "  ║  You are authorizing a destructive deploy to this     ║" -ForegroundColor Red
+        Write-Host "  ║  server. It will be REFORMATTED / REPARTITIONED per    ║" -ForegroundColor Red
+        Write-Host "  ║  the ISO, firmware REINSTALLED, and hostname/serial    ║" -ForegroundColor Red
+        Write-Host "  ║  allocated as confirmed above. Re-check, then type     ║" -ForegroundColor Red
+        Write-Host "  ║  APPROVE to proceed. Anything else cancels.            ║" -ForegroundColor Red
         Write-Host "  ╚════════════════════════════════════════════════════════╝" -ForegroundColor Red
         Write-Host ""
-        $response = Read-Host "  Enter DEPLOY to proceed, or anything else to cancel (server: '$ExpectedHostname')"
-        if ($response -ne 'DEPLOY') {
+        $response = Read-Host "  Type APPROVE to authorize the ISO + firmware deploy to '$ExpectedHostname', or anything else to cancel"
+        if ($response -ne 'APPROVE') {
             Write-Host "  Build CANCELLED by operator." -ForegroundColor Yellow
             return (_Emit @{
                 Success             = $false
                 Cancelled           = $true
                 Server              = $ExpectedHostname
-                Reason              = "Operator did not confirm with 'DEPLOY'"
+                Reason              = "Operator did not confirm with 'APPROVE'"
                 ServerIdentity      = $serverIdentity
                 IsoUrl              = $isoUrl
                 ValidationChecks    = if ($preBuildResult) { $preBuildResult.Checks } else { $null }
             })
         }
-        Write-Host "`n  ✓ CONFIRMED — proceed with Start-PhysicalBuild" -ForegroundColor Green
+        Write-Host "`n  ✓ APPROVED — deploying ISO + firmware to '$ExpectedHostname' (via Start-PhysicalServerBuild)." -ForegroundColor Green
+        $doDeploy = $true
+    }
+
+    # Approved (or -Deploy): execute the build with the already-supplied parameters.
+    if ($doDeploy) {
+        return (_InvokeBuild)
     }
 
     # Return a structured plan that can be piped to Start-PhysicalBuild (use -PassThru).
@@ -503,8 +504,6 @@ function Configure-PhysicalBuild {
         ServerIdentity      = $serverIdentity
         IsoUrl              = $isoUrl
         ExternalIsoPath     = $ExternalIsoPath
-        FirmwareFolders     = $FirmwareFolders
-        FirmwareConfig      = $FirmwareConfig
         OneViewHost         = $OneViewHost
         IloIp               = if ($serverIdentity -and $serverIdentity.ilo_ip) { $serverIdentity.ilo_ip } else { $IloIp }
         OneViewDetails      = $serverIdentity
