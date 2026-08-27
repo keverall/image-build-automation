@@ -31,12 +31,14 @@
   - [25) `Connect-OneView` "already connected" message → bold red (no reconnection)](#25-connect-oneview-already-connected-message-bold-red-no-reconnection)
   - [26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking](#26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking)
   - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes)
+  - [28) OneView error honesty + abort on failed resolution + iLO credential fallback](#28-oneview-error-honesty-abort-on-failed-resolution-ilocredential-fallback)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
 | 2026-08-06 | Command consolidation — 2-command workflow (runbook-aligned) | Kev Everall |
 | 2026-08-06 | Parameter-usage guard + non-interactive `-DryRun` (rejected `Connect-OneView --DryRun`) | Kev Everall |
 | 2026-08-27 | Command prune + doc update: deploy flow, deleted commands, bug fixes | Kev Everall |
+| 2026-08-27 | OneView error honesty + abort on failed resolution + iLO credential fallback | Kev Everall |
 
 <a id="1-command-consolidation-2-command-workflow-runbook-aligned"></a>
 
@@ -884,3 +886,39 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
 - `make automation-mode-tests`: **115 passed, 0 failed**, 0 skipped (full suite including the updated `Configure-PhysicalBuild` + `Start-PhysicalServerBuild` + `Setup-Profile` + `Connect-OneView` + `Get-OneViewConnectionStatus` + `Get-OneViewServerList` + `Get-OneViewServerTarget` + `Test-PreBuildValidation` + `Test-BuildParams` + `Validators` + `AutomationCommandLogging` + `Router` + `Run-*` runners).
 - Module import: `Import-Module Automation.psd1 -Force -DisableNameChecking` succeeds; `Get-Command Configure-PhysicalBuild, Start-PhysicalServerBuild` resolves with the expected parameter sets.
 - `Resolve-ExternalIsoPath` is now called from exactly one source file (`Private/ExternalIso.ps1`); all deploy commands resolve through it.
+
+<a id="28-oneview-error-honesty-abort-on-failed-resolution-ilocredential-fallback"></a>
+
+### 28) OneView error honesty + abort on failed resolution + iLO credential fallback
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-27 | `Get-OneViewServerTarget` now classifies REST failures honestly (transport failure → "No connection to OneView"; real HTTP status → "OneView returned HTTP <code> - <reason>") and lets `Auto` mode fall through a rejected filter to the next identifier type; `Configure-PhysicalBuild` + `Start-PhysicalServerBuild` now abort on a failed OneView resolution instead of warning and continuing to the guard rail / DEPLOY prompt; `Test-PreBuildValidation` reuses the OneView credentials for the iLO Redfish check (falls back to an interactive prompt if they are rejected) via a new `-OneViewCredential` (`-OVCred`) | Kev Everall |
+
+<a name="root-cause-28"></a>
+
+#### Root cause
+
+- **Misleading error message**: `Get-OneViewServerTarget` wrapped its `Invoke-RestMethod` call in a single `try/catch` that returned the raw exception text verbatim — `OneView query failed: Response status code does not indicate success: 400 (Bad Request).` — regardless of cause. A 400 from a rejected `Serial` filter was indistinguishable from a genuine outage, and (worse) in `Auto` mode the loop aborted on the *first* identifier type that threw, so a valid server could not be resolved via `Name` even when the appliance was reachable.
+- **Carry-on after failure**: `Configure-PhysicalBuild` and `Start-PhysicalServerBuild` call `Get-OneViewServerTarget` directly and only `WARN`ed (or `_Step`ped) on a failed resolution, then continued to the guard rail, ISO resolution, pre-build validation and the destructive `DEPLOY` prompt. A failed target resolution therefore produced a build plan / deploy authorization against an unresolvable server. `Resolve-OneViewTarget` (the central resolver) already aborted correctly; the two build commands did not.
+- **Redundant iLO login**: iLO and OneView are separate auth domains, but the same credentials are normally used for both. The pre-build iLO check only accepted `-IloCredential` or an interactive prompt, so supplying OneView credentials alone still forced a second login even though they were valid for iLO.
+
+<a name="fix-28"></a>
+
+#### Fix
+
+- **Honest error classification** (`Get-OneViewServerTarget.ps1`): added `_Classify-OneViewRequestError`, which detects a transport-level failure (no working path to the appliance) and reports `No connection to OneView at '<host>'. <detail>.` rather than leaking the raw exception. A real HTTP response is reported as `OneView returned HTTP <code> - <reason>` (e.g. `400 - Bad Request (the identifier/filter was rejected by OneView)`, `401 - Unauthorized (session expired or invalid credentials)`). The `try/catch` now wraps each identifier-type query *inside* the `Auto` loop, so a rejected filter on one type (e.g. `400` on `Serial`) is logged and the loop continues to the next (`IloIp` → `EnclosureBay` → `Name`) instead of aborting the whole resolution. A connection failure still returns `No connection` immediately.
+- **Abort on failed resolution** (`Configure-PhysicalBuild.ps1`, `Start-PhysicalServerBuild.ps1`): when `Get-OneViewServerTarget` returns `Success=$false`, the command now `return`s a failure result immediately (recording the error) instead of continuing. `Configure-PhysicalBuild` aborts before the guard rail / ISO / pre-build steps; `Start-PhysicalServerBuild` aborts before the guard rail and any destructive iLO steps. This guarantees no `DEPLOY` prompt / no destructive action is offered against an unresolvable target. (`-DryRun` still suppresses the abort, matching the existing `pre_build_validation` convention, since a DryRun preview never performs destructive work.)
+- **iLO credential fallback** (`Test-PreBuildValidation.ps1`): added `-OneViewCredential` (alias `-OVCred`). In the `ilo_credentials` check, an explicit `-IloCredential` still wins; otherwise the iLO Redfish GET first tries `-OneViewCredential`. If those are rejected by iLO it writes a clear warning — `iLO login failed using the OneView credentials ('<user>') - they are not accepted by iLO. Prompting for iLO credentials.` — and opens an interactive `Get-Credential` prompt (when interactive); if no prompt is possible and no iLO credential is available it fails with a clear message rather than hanging. `-OneViewCredential` is also threaded into the OneView resolution calls so a single credential authenticates both appliances.
+- **Parameter threading**: `-OneViewCredential` (`-OVCred`) added to `Configure-PhysicalBuild`, `Start-PhysicalServerBuild`, and `Test-PreBuildValidation`, and passed through to the iLO check and the OneView resolution.
+
+<a name="verification-28"></a>
+
+#### Verification
+
+- Full `tests/powershell` suite: **520 passed, 0 failed**.
+- New regression tests:
+  - `Get-OneViewServerTarget`: a transport exception returns `No connection to OneView…` (never the raw `Response status code…` text); a `400` is reported as `HTTP 400…` and not leaked verbatim; `Auto` mode falls through a `400` on `Serial` and resolves via `Name`.
+  - `Configure-PhysicalBuild`: a failed OneView resolution returns `Success=$false` and never reaches the guard rail (a `Mock Assert-GuardRail { throw }` proves the abort stops it).
+  - `Start-PhysicalServerBuild`: a failed OneView resolution returns `Success=$false` with `error` matching `OneView resolution failed` and never reaches the guard rail / destructive steps.
+  - `Test-PreBuildValidation`: `-OneViewCredential` succeeds for the iLO Redfish check; falls back to `-IloCredential` when the OneView credentials are rejected; fails (stating the reason) when the OneView credentials are rejected and no fallback is available.
