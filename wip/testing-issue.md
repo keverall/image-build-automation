@@ -815,3 +815,11 @@ echo Agent pid 1598;
 ```
 
 ```text
+Identity added: C:\Users\98253\.ssh\id_ed25519 (Kevin.X.Everall@aib.ie)
+     image-build-automation  feature/fix-output-tables  git push gitstash                                                               0  2s 411ms  16:16:15 
+C:\Users\98253\AppData\Local\Programs\Git\usr\bin\ssh.exe: line 1: C:Users98253AppDataLocalProgramsGitusrbinssh.exe: command not found
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+```
