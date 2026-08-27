@@ -74,3 +74,29 @@ Describe 'Configure-PhysicalBuild - basic invocation' {
         $r.Error | Should -Match 'GUARD RAIL REQUIRED'
     }
 }
+
+Describe 'Configure-PhysicalBuild - aborts when OneView resolution fails' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Get-OneViewServerTarget {
+                return [hashtable]@{
+                    Success = $false
+                    Server  = 'alp-qlikview-03ilo'
+                    Error   = "No connection to OneView at 'h'. could not reach the appliance (check host, network/VPN, and that OneView is online)."
+                }
+            }
+            # If the command fails to abort on a bad OneView resolution it would fall
+            # through to the guard rail - this throws to prove the abort actually stops it.
+            Mock Assert-GuardRail { throw 'Assert-GuardRail must NOT run when OneView resolution failed' }
+        }
+        $env:AUTOMATED_MODE = 'true'
+    }
+    AfterAll { $env:AUTOMATED_MODE = $null }
+
+    It 'Returns failure and never reaches the guard rail / deploy plan when OneView target resolution fails' {
+        $r = Configure-PhysicalBuild -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'h' -GuardRail '.*' -PassThru
+        $r.Success       | Should -Be $false
+        $r.ServerIdentity | Should -BeNullOrEmpty
+    }
+}

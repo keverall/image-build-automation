@@ -229,6 +229,8 @@ function Start-PhysicalServerBuild {
         [string] $OneViewHost,
         [Alias('Ilo')]
         [string] $IloIp,
+        [Alias('OVCred')]
+        [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $ExpectedHostname = $null,
         [string] $Domain,
         [string] $SiteCode,
@@ -367,6 +369,7 @@ function Start-PhysicalServerBuild {
         if (-not $SkipPreBuild) {
             $r = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
                 -OneViewHost $OneViewHost -IloIp $IloIp `
+                -OneViewCredential $OneViewCredential `
                 -IsoUrl $isoUrl `
                 -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
                 -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
@@ -379,7 +382,7 @@ function Start-PhysicalServerBuild {
         $oneview = $null
         if (-not $SkipOneView -and $OneViewHost) {
             $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
-                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun -PassThru
+                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun -PassThru -Credential $OneViewCredential
             _Step 'oneview_target' $r
             $oneview = $r
             if (-not $r.Success -and -not $DryRun) {
