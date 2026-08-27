@@ -61,12 +61,15 @@ if (-not $env:SSH_AUTH_SOCK) {
     }
 }
 
-# Add key if not already loaded
+# Force git to use Git's bundled ssh so it honours the Git agent socket above
+$env:GIT_SSH_COMMAND = "$gitSshPath\ssh.exe"
+
+# Add key if not already loaded (qualify ssh-add so it targets Git's agent, not Windows OpenSSH)
 $keyPath = "$env:USERPROFILE\.ssh\id_ed25519"
 
-$keys = ssh-add -l 2>$null
+$keys = & "$gitSshPath\ssh-add.exe" -l 2>$null
 if ($LASTEXITCODE -ne 0 -or $keys -notmatch "id_ed25519") {
-    ssh-add $keyPath
+    & "$gitSshPath\ssh-add.exe" $keyPath
 }
 
 
@@ -149,52 +152,27 @@ Set-Alias kill Stop-Process -Option AllScope -Force
 
 
 # ─── eza (ls replacement) ───────────────────────────────────────────────────
-if (Get-Command eza -ErrorAction SilentlyContinue)
+$ezaCmd = 'eza.exe'
+if (Get-Command $ezaCmd -ErrorAction SilentlyContinue)
 {
-    $script:EzaCmd = if ($IsWindows) { 'eza.exe' } else { 'eza' }
-    function ezals
-    { & $script:EzaCmd --icons=auto --color=always $args 
-    }
-    function ezall
-    { & $script:EzaCmd -lhG --icons=auto --color=always $args 
-    }
-    function ezald
-    { & $script:EzaCmd -lD  --icons=auto --color=always $args 
-    }
-    function ezalf
-    { & $script:EzaCmd -lf  --icons=auto --color=always $args 
-    }
-    function ezala
-    { & $script:EzaCmd -lag --icons=auto --color=always $args 
-    }
-    function ezalA
-    { & $script:EzaCmd -lAg --icons=auto --color=always $args 
-    }
-    function ezalaa
-    { & $script:EzaCmd -aalg --icons=auto --color=always $args 
-    }
-    function ezalt1
-    { & $script:EzaCmd -l --tree --level=1 --icons=auto --color=always $args 
-    }
-    function ezalt2
-    { & $script:EzaCmd -l --tree --level=2 --icons=auto --color=always $args 
-    }
-    function ezalt3
-    { & $script:EzaCmd -l --tree --level=3 --icons=auto --color=always $args 
-    }
+    $ezaAliases = @(
+        @{ Name = 'ezals';  Alias = 'ls';  Args = '--icons=auto --color=always' }
+        @{ Name = 'ezall';  Alias = 'll';  Args = '-lhG --icons=auto --color=always' }
+        @{ Name = 'ezala';  Alias = 'la';  Args = '-lag --icons=auto --color=always' }
+        @{ Name = 'ezalA';  Alias = 'lA';  Args = '-lAg --icons=auto --color=always' }
+        @{ Name = 'ezalaa'; Alias = 'laa'; Args = '-aalg --icons=auto --color=always' }
+        @{ Name = 'ezald';  Alias = 'ld';  Args = '-lD --icons=auto --color=always' }
+        @{ Name = 'ezalt1'; Alias = 'lt1'; Args = '-l --tree --level=1 --icons=auto --color=always' }
+        @{ Name = 'ezalt2'; Alias = 'lt2'; Args = '-l --tree --level=2 --icons=auto --color=always' }
+        @{ Name = 'ezalt3'; Alias = 'lt3'; Args = '-l --tree --level=3 --icons=auto --color=always' }
+    )
 
-    if (Test-Path alias:ls)
-    { Remove-Item alias:ls -Force 
+    if (Test-Path alias:ls) { Remove-Item alias:ls -Force }
+    foreach ($e in $ezaAliases)
+    {
+        Set-Item -Path "Function:$($e.Name)" -Value ([scriptblock]::Create("& $ezaCmd $($e.Args) `$args")) -Force
+        Set-Alias -Name $e.Alias -Value $e.Name -Force -Option AllScope
     }
-    Set-Alias ls  ezals  -Force -Option AllScope
-    Set-Alias ll  ezall  -Force -Option AllScope
-    Set-Alias la  ezala  -Force -Option AllScope
-    Set-Alias lA  ezalA  -Force -Option AllScope
-    Set-Alias laa ezalaa -Force -Option AllScope
-    Set-Alias ld  ezald  -Force -Option AllScope
-    Set-Alias lt1 ezalt1 -Force -Option AllScope
-    Set-Alias lt2 ezalt2 -Force -Option AllScope
-    Set-Alias lt3 ezalt3 -Force -Option AllScope
 }
 
 
@@ -233,74 +211,6 @@ function gcm
 }
 function gba
 { git branch -a @args 
-}
-
-# ─── Chezmoi Aliases ─────────────────────────────────────────────────────────
-
-if (Get-Command chezmoi -ErrorAction SilentlyContinue)
-{
-    Set-Alias cz   chezmoi
-    function cza
-    { chezmoi add @args 
-    }
-    function czap
-    { chezmoi apply @args 
-    }
-    function czcd
-    { Set-Location (chezmoi cd @args) 
-    }
-    function czd
-    { chezmoi diff @args 
-    }
-    function cze
-    { chezmoi edit @args 
-    }
-    function czs
-    { chezmoi status @args 
-    }
-    function czu
-    { chezmoi update @args 
-    }
-    function czr
-    { chezmoi re-add @args 
-    }
-    function czm
-    { chezmoi merge @args 
-    }
-    function czpu
-    { chezmoi git push @args 
-    }
-    function czpl
-    { chezmoi git pull @args 
-    }
-    function czst
-    { chezmoi git status @args 
-    }
-    function czco
-    { chezmoi git commit @args 
-    }
-    function czga
-    { chezmoi git add . 
-    }
-    function czgca
-    { chezmoi git add . ; chezmoi git commit @args 
-    }
-}
-
-# ─── pyenv-win (if installed) ────────────────────────────────────────────────
- 
-if ($IsWindows)
-{
-    $pyenvRoot = Join-Path $env:USERPROFILE '.pyenv\pyenv-win'
-    if (Test-Path (Join-Path $pyenvRoot 'bin\pyenv.bat'))
-    {
-        $env:PATH = "$pyenvRoot\bin;$pyenvRoot\shims;$env:PATH"
-        function pyenv
-        {
-            $bat = Join-Path $env:USERPROFILE '.pyenv\pyenv-win\bin\pyenv.bat'
-            & $bat @args
-        }
-    }
 }
 
 # ─── Editor ──────────────────────────────────────────────────────────────────

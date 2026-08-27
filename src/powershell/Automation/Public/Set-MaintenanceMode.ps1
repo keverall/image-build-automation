@@ -2971,6 +2971,7 @@ if ('$TargetType' -eq 'ServerHardware') {
 `$result | ConvertTo-Json -Depth 5
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
                 $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
@@ -3106,6 +3107,7 @@ if ('$TargetType' -eq 'ServerHardware') {
 `$result | ConvertTo-Json -Depth 5
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
                 $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
@@ -3183,6 +3185,7 @@ if (`$scope) {
 `$result | ConvertTo-Json -Depth 3
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
                 $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
@@ -3295,6 +3298,7 @@ if ('$TargetType' -eq 'ServerHardware') {
 `$result | ConvertTo-Json -Depth 5
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
                 $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
@@ -3461,6 +3465,7 @@ if (`$server) {
 }
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
                 $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
