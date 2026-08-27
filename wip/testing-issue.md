@@ -719,3 +719,95 @@ Password for user adm_98253: ****************
 
   Enter DEPLOY to proceed, or anything else to cancel (server: 'alp-qlikview-03ilo'):
   ```
+
+```text
+Identity added: C:\Users\98253\.ssh\id_ed25519 (Kevin.X.Everall@aib.ie)
+WARNING: Failed to load public script : At C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Public\Set-MaintenanceMode.ps1:2987 char:23
++             $result = $output | ConvertFrom-Json
++                       ~~~~~~~
+Variable is not assigned in the method.
+
+At C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Public\Set-MaintenanceMode.ps1:3122 char:23
++             $result = $output | ConvertFrom-Json
++                       ~~~~~~~
+Variable is not assigned in the method.
+
+At C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Public\Set-MaintenanceMode.ps1:3199 char:23
++             $result = $output | ConvertFrom-Json
++                       ~~~~~~~
+Variable is not assigned in the method.
+
+At C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Public\Set-MaintenanceMode.ps1:3311 char:23
++             $result = $output | ConvertFrom-Json
++                       ~~~~~~~
+Variable is not assigned in the method.
+
+At C:\Users\98253\repos\image-build-automation\src\powershell\Automation\Public\Set-MaintenanceMode.ps1:3477 char:23
++             $result = $output | ConvertFrom-Json
++                       ~~~~~~~
+Variable is not assigned in the method.
+     image-build-automation  feature/fix-output-tables  gst                                                                  0  15:07:04 
+On branch feature/fix-output-tables
+Your branch is up to date with 'github/feature/fix-output-tables'.
+
+nothing to commit, working tree clean
+     image-build-automation  feature/fix-output-tables                                                                0  727ms  15:07:24       git pull github
+Already up to date.
+     image-build-automation  feature/fix-output-tables  git log -1 --oneline
+b79da407 (HEAD -> feature/fix-output-tables, github/feature/fix-output-tables) Refactor table of contents in testing-issue.md to remove redundant entries
+     image-build-automation  feature/fix-output-tables  git push gitstash
+git@gitstash.aib.pri: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  feature/fix-output-tables  . $profile
+Identity added: C:\Users\98253\.ssh\id_ed25519 (Kevin.X.Everall@aib.ie)
+     image-build-automation  feature/fix-output-tables  
+     image-build-automation  feature/fix-output-tables                                      0  15:09:00 
+     image-build-automation  feature/fix-output-tables  git push gitstash                   0  15:09:02 
+git@gitstash.aib.pri: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  feature/fix-output-tables  echo $profile
+C:\Users\98253\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+     image-build-automation  feature/fix-output-tables  git push gitstash                   0  15:11:03 
+git@gitstash.aib.pri: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  feature/fix-output-tables  $keyPath = "$env:USERPROFILE\.ssh\id_ed25519"                                 128  1s 456ms  15:18:35 
+     image-build-automation  feature/fix-output-tables                                                                                            0  15:19:28 
+     image-build-automation  feature/fix-output-tables  $keys = ssh-add -l 2>$null                                                                0  15:19:29 
+     image-build-automation  feature/fix-output-tables  if ($LASTEXITCODE -ne 0 -or $keys -notmatch "id_ed25519")                          0  599ms  15:19:30 
+> {
+>     ssh-add $keyPath
+> }
+Identity added: C:\Users\98253\.ssh\id_ed25519 (Kevin.X.Everall@aib.ie)
+     image-build-automation  feature/fix-output-tables  git push gitstash                                                                  0  587ms  15:19:33 
+git@gitstash.aib.pri: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  feature/fix-output-tables  if ($LASTEXITCODE -ne 0 -or $keys -notmatch "id_ed25519")                     128  1s 493ms  15:19:43 
+> {
+>     ssh-add $keyPath
+> }
+Identity added: C:\Users\98253\.ssh\id_ed25519 (Kevin.X.Everall@aib.ie)
+     image-build-automation  feature/fix-output-tables  $keys = ssh-add -l 2>$null                                                         0  639ms  15:20:51 
+     image-build-automation  feature/fix-output-tables  echo $keys                                                                                0  15:20:55 
+256 SHA256:cKK5iVC2SbxxpvcJKyM4Ku5bkSiCUEzoCc9xY9PhFkQ Kevin.X.Everall@aib.ie (ED25519)
+     image-build-automation  feature/fix-output-tables  $env:SSH_AUTH_SOCK                                                                        0  15:21:04 
+/c/Users/98253/.ssh/agent/s.mLwBaXVyuk.agent.v41ZdO7dsb
+     image-build-automation  feature/fix-output-tables  echo $env:SSH_AUTH_SOCK                                                                   0  15:22:59 
+/c/Users/98253/.ssh/agent/s.mLwBaXVyuk.agent.v41ZdO7dsb
+     image-build-automation  feature/fix-output-tables  echo  $agentOutput                                                                        0  15:23:06 
+SSH_AUTH_SOCK=/c/Users/98253/.ssh/agent/s.mLwBaXVyuk.agent.v41ZdO7dsb; export SSH_AUTH_SOCK;
+SSH_AGENT_PID=1598; export SSH_AGENT_PID;
+echo Agent pid 1598;
+     image-build-automation  feature/fix-output-tables          
+```
