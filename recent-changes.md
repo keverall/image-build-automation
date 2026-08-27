@@ -32,6 +32,7 @@
   - [26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking](#26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking)
   - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes)
   - [28) OneView error honesty + abort on failed resolution + iLO credential fallback](#28-oneview-error-honesty-abort-on-failed-resolution-ilocredential-fallback)
+  - [29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials](#29-credential-hardening-ciso-vulnerability-scan-secure-storage-handling-hpe-oneview-ilo-scom-credentials)
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
@@ -39,6 +40,7 @@
 | 2026-08-06 | Parameter-usage guard + non-interactive `-DryRun` (rejected `Connect-OneView --DryRun`) | Kev Everall |
 | 2026-08-27 | Command prune + doc update: deploy flow, deleted commands, bug fixes | Kev Everall |
 | 2026-08-27 | OneView error honesty + abort on failed resolution + iLO credential fallback | Kev Everall |
+| 2026-08-27 | Credential hardening & CISO vulnerability scan: TLS-validated CyberArk fetch, secrets passed out-of-band (-Environment/-ArgumentList), in-process password cache, and CI guardrail rules | Kev Everall |
 
 <a id="1-command-consolidation-2-command-workflow-runbook-aligned"></a>
 
@@ -922,3 +924,45 @@ Per `runbook-requirements.md`, maintenance mode is a **separate operational conc
   - `Configure-PhysicalBuild`: a failed OneView resolution returns `Success=$false` and never reaches the guard rail (a `Mock Assert-GuardRail { throw }` proves the abort stops it).
   - `Start-PhysicalServerBuild`: a failed OneView resolution returns `Success=$false` with `error` matching `OneView resolution failed` and never reaches the guard rail / destructive steps.
   - `Test-PreBuildValidation`: `-OneViewCredential` succeeds for the iLO Redfish check; falls back to `-IloCredential` when the OneView credentials are rejected; fails (stating the reason) when the OneView credentials are rejected and no fallback is available.
+
+<a id="29-credential-hardening-ciso-vulnerability-scan-secure-storage-handling-hpe-oneview-ilo-scom-credentials"></a>
+
+### 29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-08-27 | Security hardening of HPE OneView / iLO / SCOM credential handling (TLS-validated CyberArk fetch, secrets passed out-of-band via `-Environment`/`-ArgumentList`, in-process password cache instead of process-env) and a CISO-style vulnerability scan with CI guardrail rules in `ci-security-check.ps1` | Kev Everall |
+
+<a name="root-cause-29"></a>
+
+#### Root cause
+
+A security review of how OneView / iLO / SCOM usernames and passwords are **stored and handled** in transit and in-process surfaced four exposure classes:
+
+- **TLS validation disabled on the credential fetch (CWE-295, CRITICAL)**: `scripts/cyberark-bootstrap.ps1` set `ServerCertificateValidationCallback = { $true }` while retrieving admin passwords from CyberArk. A MITM on the internal network could impersonate the appliance and harvest the returned OneView/SCOM credentials.
+- **Secrets interpolated into executed script/command text (CWE-214 / CWE-532, HIGH)**: SCOM and OneView passwords were embedded directly into strings run via `Invoke-PowerShellScript` (a child `pwsh -Command` process) and WinRM `Invoke-Command` scriptblocks — so the plaintext password landed in child-process command lines, transcripts, and logs. (`Set-MaintenanceMode.ps1`: `Test-ScomConnection`, the `SCOMManager` REST bodies, `_RunPs`, and the five OneView module/WinRM functions.)
+- **Passwords cached into the process environment (CWE-526 / CWE-214, MEDIUM)**: `Credentials.ps1` wrote resolved passwords to process environment variables (`[System.Environment]::SetEnvironmentVariable`). Those variables are inherited by every child process and are readable via `/proc/$pid/environ` — iLO/OneView/SCOM passwords leaked to everything the runner spawned.
+- **CI dotenv artifact not gitignored (CWE-538, LOW)**: `secrets.env` (the CyberArk dotenv export) was not in `.gitignore`, so a developer redirect could commit live credentials.
+
+<a name="fix-29"></a>
+
+#### Fix
+
+- **`scripts/cyberark-bootstrap.ps1`** — replaced the blanket accept-all callback with proper chain validation plus optional certificate pinning via a new `CYBERARK_EXPECTED_THUMBPRINT` env var, and enforced TLS 1.2. The credential response now traverses only a verified channel; the safe callback is ignored by the new scanner because it validates `$sslPolicyErrors` and pins a thumbprint rather than blindly returning `$true`.
+- **`src/powershell/Automation/Public/Set-MaintenanceMode.ps1`** — SCOM `Test-ScomConnection` and the `SCOMManager` REST bodies now read credentials from a `param()` block supplied out-of-band: `-Environment` for the local child process (`Invoke-PowerShellScript`) and `-ArgumentList` for WinRM (`Invoke-PowerShellWinRM`), mirroring the already-secure `Test-ScomMaintenanceConnectivity` pattern. `_RunPs` injects credentials via `-Environment` (local) / `-ArgumentList` (WinRM).
+- **OneView WinRM paths (Finding 5)** — converted `_SetViaModule`, `_DisableViaModule`, `ResolveTarget`, `_GetMaintenanceStatusViaModule`, and `ResolveServerBySerial` to a `param([string]$OVUser = $env:OV_CONN_USER, [string]$OVPwd = $env:OV_CONN_PASS)` block. WinRM now passes `-ArgumentList @($this.Username, $this.Password)`; the in-process `Invoke-Expression` path sets `$env:OV_CONN_USER`/`$env:OV_CONN_PASS` immediately before execution and clears them in a `finally` block. The password no longer appears in executed script text.
+- **`src/powershell/Automation/Private/Credentials.ps1`** — resolved secrets are now held in a module-scoped in-process cache (`$script:_CredCache`) and **never** written to the process environment; only non-secret usernames are still cached to env. iLO/OneView/SCOM passwords are no longer exposed to child processes.
+- **`.gitignore`** — added `secrets.env`. **`.envexample`** — documented `CYBERARK_EXPECTED_THUMBPRINT`.
+- **`scripts/ci-security-check.ps1`** — added `Get-CustomSecurityFindings` (runs alongside PSScriptAnalyzer, merged into the same `$findings` pipeline) with two rules that flow through the existing fingerprint / baseline / SAST-report machinery:
+  - `CustomTlsValidationDisabled` (Error, CWE-295) — flags `ServerCertificateValidationCallback = { … }` that returns `$true` without checking `$sslPolicyErrors` or pinning a certificate.
+  - `CustomEmbeddedSecret` (Warning, CWE-214/532) — flags `$($this.Password)` / `$($this.Cred['password'])` / `$($this.Cred['username'])` interpolated into an executed string.
+  Both gate in `enforce` mode and can be risk-accepted via `.security-baseline.json`.
+
+<a name="verification-29"></a>
+
+#### Verification
+
+- All touched `.ps1` files (`cyberark-bootstrap.ps1`, `Set-MaintenanceMode.ps1`, `Credentials.ps1`, `ci-security-check.ps1`) pass the PowerShell parser.
+- `ci-security-check.ps1 -Mode report` runs end-to-end; the safe `cyberark-bootstrap.ps1` callback is **not** flagged (it contains `$sslPolicyErrors` + `Thumbprint`), and **zero** `CustomTlsValidationDisabled` / `CustomEmbeddedSecret` findings exist in the current tree → no remaining violations.
+- A proof test confirms the custom rules *do* detect the bad patterns (`acceptAll=True` for `{ $true }`; secret matches for `$(this.Password)` / `$(this.Cred['password'])`), so they will block future regressions.
+- `grep` confirms no `$(this.Password)` / `$(this.Cred['password'])` interpolation and no `ServerCertificateValidationCallback = { $true }` remain in `src/` / `scripts/`.
