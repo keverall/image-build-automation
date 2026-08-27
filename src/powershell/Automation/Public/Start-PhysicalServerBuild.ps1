@@ -382,6 +382,14 @@ function Start-PhysicalServerBuild {
                 -ServerIdentifier $ServerIdentifier -DryRun:$DryRun -PassThru
             _Step 'oneview_target' $r
             $oneview = $r
+            if (-not $r.Success -and -not $DryRun) {
+                # A failed OneView resolution is fatal - we cannot target a server we
+                # could not resolve, so stop instead of carrying on to the guard rail
+                # or any destructive iLO steps.
+                $overall['success'] = $false
+                $overall['error'] = "OneView resolution failed: $($r.Error)"
+                return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
             if ($r.Details -and $r.Details.ilo_ip -and -not $IloIp) {
                 $IloIp = $r.Details.ilo_ip
             }

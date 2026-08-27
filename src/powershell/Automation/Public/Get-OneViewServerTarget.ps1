@@ -152,75 +152,152 @@ function Get-OneViewServerTarget {
         @('Serial','IloIp','EnclosureBay','Name')
     } else { @($IdentifierType) }
 
-    try {
-        foreach ($t in $typesToTry) {
-            $filter = switch ($t) {
-                'Name'         { "name='$ServerIdentifier'" }
-                'OneViewName'  { "name='$ServerIdentifier'" }
-                'Serial'       { "serialNumber='$ServerIdentifier'" }
-                'IloIp'        { "mpIpAddresses='$ServerIdentifier'" }
-                'EnclosureBay' { "position='$ServerIdentifier'" }
-            }
-            $url = "$apiBase/server-hardware?filter=`"$filter`""
+    $lastRequestError = $null
+    foreach ($t in $typesToTry) {
+        $filter = switch ($t) {
+            'Name'         { "name='$ServerIdentifier'" }
+            'OneViewName'  { "name='$ServerIdentifier'" }
+            'Serial'       { "serialNumber='$ServerIdentifier'" }
+            'IloIp'        { "mpIpAddresses='$ServerIdentifier'" }
+            'EnclosureBay' { "position='$ServerIdentifier'" }
+        }
+        $url = "$apiBase/server-hardware?filter=`"$filter`""
+        try {
             $resp = Invoke-RestMethod -Uri $url -Method Get `
                 -Headers @{ auth = $sessionToken } `
                 -SkipCertificateCheck:$SkipCertificateCheck `
                 -TimeoutSec $TimeoutSec -ErrorAction Stop
-            if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
-                # Single-server operations (attach/deploy/reboot/build) MUST target
-                # exactly one server. An ambiguous match is a hard failure - never
-                # silently pick the first, which could build the wrong machine.
-                if ($resp.members.Count -gt 1) {
-                    $matchedNames = ($resp.members | ForEach-Object { $_.name }) -join ', '
-                    return (_Emit-ServerTargetResult -Result @{
-                        Success = $false
-                        Server  = $ServerIdentifier
-                        Error   = "Ambiguous target: '$ServerIdentifier' matched $($resp.members.Count) servers via $t ($matchedNames). Refusing to proceed - single-server operations require exactly one match. Supply a more specific identifier (e.g. serial number)."
-                    } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
-                }
-                $srv = $resp.members[0]
-                $details = @{
-                    name              = $srv.name
-                    serial_number     = $srv.serialNumber
-                    model             = $srv.model
-                    power_state       = $srv.powerState
-                    health_status     = $srv.status
-                    ilo_ip            = (_ConvertTo-IloIpAddressList $srv) -join ', '
-                    enclosure_name    = $srv.enclosureName
-                    enclosure_bay     = $srv.position
-                    oneview_uri       = $srv.uri
-                    rom_version       = $srv.romVersion
-                }
-                if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
-                    return (_Emit-ServerTargetResult -Result @{
-                        Success = $false
-                        Server  = $ServerIdentifier
-                        Error   = "Server health is $($details.health_status) - refusing to proceed"
-                        Details = $details
-                    } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
-                }
-                $result = @{
-                    Success = $true
-                    Server  = $ServerIdentifier
-                    ResolvedBy = $t
-                    Details = $details
-                }
-                $logger.Info("Get-OneViewServerTarget resolved Id=$ServerIdentifier (ResolvedBy=$($result.ResolvedBy))")
-                return (_Emit-ServerTargetResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
-            }
         }
+        catch {
+            $classified = _Classify-OneViewRequestError -Exception $_.Exception -OneViewHost $OneViewHost
+            $lastRequestError = $classified
+            if ($classified.IsConnectionFailure) {
+                # Genuine transport failure: there is no working connection to OneView.
+                # Say so plainly rather than leaking a confusing raw exception message.
+                return (_Emit-ServerTargetResult -Result @{
+                    Success = $false
+                    Server  = $ServerIdentifier
+                    Error   = "No connection to OneView at '$OneViewHost'. $($classified.Message)."
+                } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+            # A real HTTP response (e.g. 400 from a rejected filter) means OneView IS
+            # reachable - just this identifier form did not match. Try the next type
+            # instead of aborting the whole resolution (important for -IdentifierType Auto).
+            $logger.Warning("Get-OneViewServerTarget: '$t' query returned $($classified.Message); trying next identifier type")
+            continue
+        }
+        if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
+            # Single-server operations (attach/deploy/reboot/build) MUST target
+            # exactly one server. An ambiguous match is a hard failure - never
+            # silently pick the first, which could build the wrong machine.
+            if ($resp.members.Count -gt 1) {
+                $matchedNames = ($resp.members | ForEach-Object { $_.name }) -join ', '
+                return (_Emit-ServerTargetResult -Result @{
+                    Success = $false
+                    Server  = $ServerIdentifier
+                    Error   = "Ambiguous target: '$ServerIdentifier' matched $($resp.members.Count) servers via $t ($matchedNames). Refusing to proceed - single-server operations require exactly one match. Supply a more specific identifier (e.g. serial number)."
+                } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+            $srv = $resp.members[0]
+            $details = @{
+                name              = $srv.name
+                serial_number     = $srv.serialNumber
+                model             = $srv.model
+                power_state       = $srv.powerState
+                health_status     = $srv.status
+                ilo_ip            = (_ConvertTo-IloIpAddressList $srv) -join ', '
+                enclosure_name    = $srv.enclosureName
+                enclosure_bay     = $srv.position
+                oneview_uri       = $srv.uri
+                rom_version       = $srv.romVersion
+            }
+            if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
+                return (_Emit-ServerTargetResult -Result @{
+                    Success = $false
+                    Server  = $ServerIdentifier
+                    Error   = "Server health is $($details.health_status) - refusing to proceed"
+                    Details = $details
+                } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+            $result = @{
+                Success = $true
+                Server  = $ServerIdentifier
+                ResolvedBy = $t
+                Details = $details
+            }
+            $logger.Info("Get-OneViewServerTarget resolved Id=$ServerIdentifier (ResolvedBy=$($result.ResolvedBy))")
+            return (_Emit-ServerTargetResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+        }
+    }
+    if ($lastRequestError) {
         return (_Emit-ServerTargetResult -Result @{
             Success = $false
             Server  = $ServerIdentifier
-            Error   = "Server '$ServerIdentifier' not found in OneView (tried: $($typesToTry -join ','))"
+            Error   = "OneView returned an error ($($lastRequestError.Message)); could not resolve '$ServerIdentifier' via any of: $($typesToTry -join ', ')"
         } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
-    catch {
-        return (_Emit-ServerTargetResult -Result @{
-            Success = $false
-            Server  = $ServerIdentifier
-            Error   = "OneView query failed: $($_.Exception.Message)"
-        } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+    return (_Emit-ServerTargetResult -Result @{
+        Success = $false
+        Server  = $ServerIdentifier
+        Error   = "Server '$ServerIdentifier' not found in OneView (tried: $($typesToTry -join ','))"
+    } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+}
+
+function _Classify-OneViewRequestError {
+    <#
+    .SYNOPSIS
+        Classifies a OneView REST exception into an honest, operator-readable result.
+
+    .DESCRIPTION
+        Distinguishes a genuine transport/connection failure (no working path to the
+        appliance) from an HTTP status response that OneView actually returned. This
+        keeps error messages truthful: a missing connection says "no connection"
+        rather than dumping a raw, hyperbolic exception string.
+    #>
+    [CmdletBinding()]
+    param(
+        [System.Exception] $Exception,
+        [string] $OneViewHost
+    )
+
+    $ex = $Exception
+    $isHttp     = $false
+    $statusCode = $null
+
+    if ($ex -is [Microsoft.PowerShell.Commands.HttpResponseException]) {
+        $isHttp = $true
+        if ($ex.Response -and $ex.Response.StatusCode) {
+            $statusCode = [int]$ex.Response.StatusCode
+        }
+    }
+    if (-not $statusCode -and $ex.Message -match 'status code does not indicate success:\s*(\d+)') {
+        $isHttp     = $true
+        $statusCode = [int]$Matches[1]
+    }
+
+    if ($isHttp) {
+        $reason = switch ($statusCode) {
+            400     { 'Bad Request (the identifier/filter was rejected by OneView)' }
+            401     { 'Unauthorized (session expired or invalid credentials)' }
+            403     { 'Forbidden (insufficient permissions)' }
+            404     { 'Not Found (endpoint or resource missing)' }
+            500     { 'Internal Server Error' }
+            502     { 'Bad Gateway' }
+            503     { 'Service Unavailable' }
+            504     { 'Gateway Timeout' }
+            default { 'HTTP error' }
+        }
+        return [hashtable]@{
+            IsConnectionFailure = $false
+            Message             = "OneView returned HTTP $statusCode - $reason"
+            StatusCode          = $statusCode
+        }
+    }
+
+    return [hashtable]@{
+        IsConnectionFailure = $true
+        Message             = 'could not reach the appliance (check host, network/VPN, and that OneView is online)'
+        StatusCode          = $null
     }
 }
 
