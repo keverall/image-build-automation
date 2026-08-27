@@ -1859,17 +1859,22 @@ function Test-ScomConnection {
     )
     
     try {
-        $escapedPass = $Password -replace "'", "''"
-        $escapedUser = $Username -replace "'", "''"
-        $escapedServer = $ManagementServer -replace "'", "''"
         $scriptContent = @"
+param([string]`$ScomUser = `$env:SCOM_CONN_TEST_USER, [string]`$ScomPass = `$env:SCOM_CONN_TEST_PASS, [string]`$ScomHost = `$env:SCOM_CONN_TEST_HOST)
 Import-Module $ModuleName -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
-`$conn = New-SCOMManagementGroupConnection -ComputerName '$escapedServer' -Credential `$cred -ErrorAction Stop
+`$securePass = ConvertTo-SecureString `$ScomPass -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential(`$ScomUser, `$securePass)
+`$conn = New-SCOMManagementGroupConnection -ComputerName `$ScomHost -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
 "@
-        $result = Invoke-PowerShellScript -Script $scriptContent
+        # Secrets are passed out-of-band via the child process environment so they
+        # never appear in the process command line, transcripts, or error output.
+        $childEnv = @{
+            SCOM_CONN_TEST_USER = $Username
+            SCOM_CONN_TEST_PASS = $Password
+            SCOM_CONN_TEST_HOST = $ManagementServer
+        }
+        $result = Invoke-PowerShellScript -Script $scriptContent -Environment $childEnv
         return $result.Success -and ($result.Output -match 'CONNECTED')
     } catch {
         Write-Warning "SCOM connection test failed: $($_.Exception.Message)"
@@ -2075,10 +2080,19 @@ class SCOMManager {
             if (-not $this.Cred) {
                 return @{ Success = $false; Output = 'WinRM credentials not configured' } 
             }
+            # Credentials travel over the encrypted WinRM channel via -ArgumentList
+            # (the remote script declares a matching param() block).
             return Invoke-PowerShellWinRM -Script $Script `
-                -Server $this.MgmtServer -Username $this.Cred['username'] -Password $this.Cred['password']
+                -Server $this.MgmtServer -Username $this.Cred['username'] -Password $this.Cred['password'] `
+                -ArgumentList @($this.Cred['username'], $this.Cred['password'])
         } else {
-            return Invoke-PowerShellScript -Script $Script
+            # Credentials are passed out-of-band via the child process environment so
+            # they never appear in the process command line, transcripts, or error
+            # output (CWE-214 / CWE-532).
+            return Invoke-PowerShellScript -Script $Script -Environment @{
+                SCOM_CONN_USER = $this.Cred['username']
+                SCOM_CONN_PASS = $this.Cred['password']
+            }
         }
     }
 
@@ -2465,10 +2479,11 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
         # The REST script authenticates, resolves monitoring object IDs, calls POST /ScheduleMaintenance
         $serverJson = ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join ","
         $script = @"
+param([string]`$SCOMUser = `$env:SCOM_CONN_USER, [string]`$SCOMPass = `$env:SCOM_CONN_PASS)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 `$server     = "$($this.MgmtServer)"
-`$user       = "$($this.Cred['username'])"
-`$pass       = "$($this.Cred['password'])"
+`$user       = `$SCOMUser
+`$pass       = `$SCOMPass
 `$baseUrl    = "http://`$server/OperationsManager"
 `$endTime    = [DateTime]::Parse('$EndTimeStr')
 `$endIso     = `$endTime.ToString('yyyy-MM-ddTHH:mm:ss')
@@ -2673,10 +2688,11 @@ foreach (`$inst in `$instances) {
         }
 
         $script = @"
+param([string]`$SCOMUser = `$env:SCOM_CONN_USER, [string]`$SCOMPass = `$env:SCOM_CONN_PASS)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 `$server     = "$($this.MgmtServer)"
-`$user       = "$($this.Cred['username'])"
-`$pass       = "$($this.Cred['password'])"
+`$user       = `$SCOMUser
+`$pass       = `$SCOMPass
 `$baseUrl    = "http://`$server/OperationsManager"
 
 # Authenticate

@@ -57,4 +57,8 @@ ILO_PASSWORD=
 # --- CyberArk (non-secret endpoint config) ---
 CYBERARK_CCP_URL=https://fake.cyberark-ccp:443/AIMWebService/API/Accounts
 CYBERARK_APP_ID=ci
+# CYBERARK_EXPECTED_THUMBPRINT=  # Optional: hex SHA-1 thumbprint of the CyberArk
+#                                  # appliance certificate. When set, cyberark-bootstrap
+#                                  # pins TLS to this cert instead of trusting any (set
+#                                  # this rather than disabling certificate validation).
 # AIM_WEBSERVICE_URL=        # optional alternative CyberArk AIM endpoint

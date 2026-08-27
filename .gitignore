@@ -133,6 +133,7 @@ Thumbs.db
 /generated/
 # /wip/
 .env
+secrets.env
 
 # ---- UNIVERSAL LOCAL DATA STACKS ----
 .vscode/
