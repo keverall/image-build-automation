@@ -48,7 +48,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs
+.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs rtf-docs rtf-docs-clean
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: ## Setup PowerShell environment (install modules, configure profiles)
@@ -130,6 +130,15 @@ fix-docs-dryrun: DRYRUN=-DryRun
 fix-docs-dryrun: ## Preview broken markdown link + anchor/TOC fixes (dry-run)
 	@$(MAKE) fix-links
 	@$(MAKE) add-anchors
+
+# ─── Windows RTF Help Docs ─────────────────────────────────────────────────────
+rtf-docs: ## Convert Markdown docs to RTF for Windows help (WordPad/Word)
+	@echo "$(CYAN)[rtf-docs]$(NC) Converting Markdown docs to RTF..."
+	@python3 scripts/MD_to_RTF_Converter.py
+	@echo "$(GREEN)[rtf-docs]$(NC) RTF docs written to doc/windows/help/rtf/"
+
+rtf-docs-clean: ## Remove generated RTF help docs
+	rm -rf doc/windows/help/rtf/
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
