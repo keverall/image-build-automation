@@ -87,6 +87,7 @@
         'Set-MaintenanceMode'
         'Start-InstallMonitor'
         'Configure-PhysicalBuild'
+        'Start-PhysicalServerBuild'
         'Get-OneViewServerTarget'
         'Get-OneViewConnectionStatus'
         'Get-OneViewServerList'
@@ -134,7 +135,7 @@
         'New-ServerInfo'
         'Test-ClusterDefinition'
         'Resolve-OneViewTarget'
-        # ISO path resolution (shared by Invoke-PhysicalServerBuild;
+        # ISO path resolution (shared by Start-PhysicalServerBuild;
         # exported so functional test harnesses can validate path->iLO URL conversion)
         'Resolve-ExternalIsoPath'
         # ── Logging / audit / timestamps ────────────────────────────────────────

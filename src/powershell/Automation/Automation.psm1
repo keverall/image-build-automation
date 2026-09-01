@@ -591,7 +591,7 @@ $_privateOrder = @(
     'GuardRail.ps1',    # Assert-GuardRail (destructive-action safety gate for build/deploy)
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
-    'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Invoke-PhysicalServerBuild)
+    'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Start-PhysicalServerBuild)
 )
 
 foreach ($_f in $_privateOrder) {
@@ -629,6 +629,7 @@ Export-ModuleMember -Function @(
     # Orchestrator
     'Start-AutomationOrchestrator'
     'Configure-PhysicalBuild'
+    'Start-PhysicalServerBuild'
     # Control
     'New-CIPipelineCtrl'
     'New-IRequestCtrl'
@@ -688,7 +689,7 @@ Export-ModuleMember -Function @(
     'Test-ClusterDefinition'
     'New-ServerInfo'
     'Resolve-OneViewTarget'
-    # ISO path resolution (shared by Invoke-PhysicalServerBuild;
+    # ISO path resolution (shared by Start-PhysicalServerBuild;
     # exported so functional test harnesses can validate path->iLO URL conversion)
     'Resolve-ExternalIsoPath'
     # Logging / audit / timestamps

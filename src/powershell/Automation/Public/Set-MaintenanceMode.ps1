@@ -2088,10 +2088,13 @@ class SCOMManager {
         } else {
             # Credentials are passed out-of-band via the child process environment so
             # they never appear in the process command line, transcripts, or error
-            # output (CWE-214 / CWE-532).
+            # output (CWE-214 / CWE-532). When no credentials are configured (e.g. dry-run
+            # tests), pass empty values so the script can still run.
+            $envUser = if ($this.Cred) { $this.Cred['username'] } else { '' }
+            $envPass = if ($this.Cred) { $this.Cred['password'] } else { '' }
             return Invoke-PowerShellScript -Script $Script -Environment @{
-                SCOM_CONN_USER = $this.Cred['username']
-                SCOM_CONN_PASS = $this.Cred['password']
+                SCOM_CONN_USER = $envUser
+                SCOM_CONN_PASS = $envPass
             }
         }
     }
