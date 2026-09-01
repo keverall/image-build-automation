@@ -193,13 +193,6 @@ function Invoke-PhysicalServerBuild {
     .PARAMETER TaskSequenceName
         Optional task sequence name.
 
-    .PARAMETER RepoBaseUrl
-        HTTPS base URL of the ISO repository (only used when hosting ISOs on an HTTPS repo;
-        otherwise supply the ISO directly from a network share via -ExternalIsoPath).
-
-    .PARAMETER RepoLocalPath
-        Local filesystem path mirrored to RepoBaseUrl.
-
     .PARAMETER ExternalIsoPath
         Path to a client-supplied ISO for deployment (skip build/publish).
         Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts:
@@ -297,8 +290,7 @@ function Invoke-PhysicalServerBuild {
             -IloIp '192.168.1.101' `
             -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' `
             -SiteServer 'cm01.ad.example.com' -BootImageName 'WinPE x64 - HPE' `
-            -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' `
-            -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com'
+            -Domain 'ad.example.com'
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -319,8 +311,6 @@ function Invoke-PhysicalServerBuild {
         [string] $SiteServer,
         [string] $BootImageName,
         [string] $TaskSequenceName,
-        [string] $RepoBaseUrl,
-        [string] $RepoLocalPath,
         [Alias('ExtIso')]
         [string] $ExternalIsoPath,
         [int]    $MonitorTimeoutSeconds = 7200,
@@ -392,7 +382,7 @@ function Invoke-PhysicalServerBuild {
         
         # Resolve the ISO path to an accessible URL
         try {
-            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath
         } catch {
             return (_Publish-Result -Result @{ Success = $false; Server = $ServerIdentifier; Error = "Failed to resolve -ExternalIsoPath '$ExternalIsoPath': $($_.Exception.Message)" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
@@ -437,8 +427,8 @@ function Invoke-PhysicalServerBuild {
         $isoPath = $null
         $isoUrl  = $null
         if ($ExternalIsoPath) {
-            # No repository: deploy the client-supplied CIFS/SMB/HTTPS ISO directly.
-            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+            # Deploy the client-supplied CIFS/SMB/HTTPS ISO directly.
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath
             $isoPath = $ExternalIsoPath
             _Step 'resolve_iso' @{ Success = $true; IsoUrl = $isoUrl }
         } else {

@@ -4,52 +4,67 @@
 
 ## Table of Contents
 
-- [How the commands fit together](#how-the-commands-fit-together)
-- [Setup (One-Time)](#setup-one-time)
-- [Connectivity, Connection & Server Lookup](#connectivity-connection-server-lookup)
-  - [Test OneView connectivity](#test-oneview-connectivity)
-  - [Connect to OneView](#connect-to-oneview)
-  - [Disconnect from OneView](#disconnect-from-oneview)
-  - [Get OneView connection status](#get-oneview-connection-status)
-  - [Get OneView server list](#get-oneview-server-list)
-  - [Validate build parameters](#validate-build-parameters)
-- [ISO Image Naming & SMB Shares](#iso-image-naming-smb-shares)
-  - [Bootable ISO filename convention](#bootable-iso-filename-convention)
-  - [ISO path requirements (no local drives)](#iso-path-requirements-no-local-drives)
-- [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
-  - [Configure build (4-eye review)](#configure-build-4-eye-review)
-  - [Full build (most common)](#full-build-most-common)
-  - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
-  - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
-  - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
-- [ISO Deployment & Monitoring](#iso-deployment-monitoring)
-  - [Monitor installation progress](#monitor-installation-progress)
-  - [iLO Redfish operations](#ilo-redfish-operations)
-  - [Resolve server target via OneView](#resolve-server-target-via-oneview)
-  - [Pre-build validation](#pre-build-validation)
-  - [Post-build validation](#post-build-validation)
-  - [Patch Windows ISO with security updates](#patch-windows-iso-with-security-updates)
-- [Maintenance Mode](#maintenance-mode)
-  - [Examples](#examples)
-- [PowerShell Execution and Utility](#powershell-execution-and-utility)
-  - [Run a local PowerShell script](#run-a-local-powershell-script)
-  - [Run a remote PowerShell script via WinRM](#run-a-remote-powershell-script-via-winrm)
-  - [Generate a deterministic UUID](#generate-a-deterministic-uuid)
-  - [OpsRamp API client](#opsramp-api-client)
-- [Routing and Control Surfaces](#routing-and-control-surfaces)
-  - [Orchestrator (unified entry point)](#orchestrator-unified-entry-point)
-  - [View the route map](#view-the-route-map)
-  - [Control surface factories and runners](#control-surface-factories-and-runners)
-  - [GitLab maintenance trigger](#gitlab-maintenance-trigger)
-- [Functional Test Harnesses](#functional-test-harnesses)
-  - [testConnectAndList](#testconnectandlist)
-  - [testBuildDeploy](#testbuilddeploy)
-- [Troubleshooting](#troubleshooting)
-  - [Command not found](#command-not-found)
-  - [Run setup again](#run-setup-again)
-  - [Check module is loaded](#check-module-is-loaded)
-  - [Force reimport](#force-reimport)
-  - [Source links](#source-links)
+- [Automation Command Reference](#automation-command-reference)
+  - [Table of Contents](#table-of-contents)
+  - [How the commands fit together](#how-the-commands-fit-together)
+  - [Setup (One-Time)](#setup-one-time)
+  - [Connectivity, Connection \& Server Lookup](#connectivity-connection--server-lookup)
+    - [Test OneView connectivity](#test-oneview-connectivity)
+    - [Connect to OneView](#connect-to-oneview)
+    - [Disconnect from OneView](#disconnect-from-oneview)
+    - [Get OneView connection status](#get-oneview-connection-status)
+    - [Get OneView server list](#get-oneview-server-list)
+    - [Validate build parameters](#validate-build-parameters)
+  - [ISO Image Naming \& SMB Shares](#iso-image-naming--smb-shares)
+    - [Bootable ISO filename convention](#bootable-iso-filename-convention)
+    - [ISO path requirements (no local drives)](#iso-path-requirements-no-local-drives)
+  - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
+    - [Configure build (4-eye review)](#configure-build-4-eye-review)
+    - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
+    - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
+    - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
+  - [ISO Deployment \& Monitoring](#iso-deployment--monitoring)
+    - [Monitor installation progress](#monitor-installation-progress)
+      - [Monitor with custom timeout](#monitor-with-custom-timeout)
+      - [Monitor all servers from the server list](#monitor-all-servers-from-the-server-list)
+    - [iLO Redfish operations](#ilo-redfish-operations)
+      - [Mount ISO only](#mount-iso-only)
+      - [Eject virtual media](#eject-virtual-media)
+      - [Check current status](#check-current-status)
+      - [Force reset](#force-reset)
+    - [Resolve server target via OneView](#resolve-server-target-via-oneview)
+      - [Look up by serial number](#look-up-by-serial-number)
+      - [Dry run](#dry-run)
+    - [Pre-build validation](#pre-build-validation)
+      - [Skip specific checks](#skip-specific-checks)
+      - [Dry run (validate inputs, skip network probes)](#dry-run-validate-inputs-skip-network-probes)
+    - [Post-build validation](#post-build-validation)
+      - [Skip ConfigMgr client check](#skip-configmgr-client-check)
+      - [Skip all remote checks (WinRM not available)](#skip-all-remote-checks-winrm-not-available)
+    - [Patch Windows ISO with security updates](#patch-windows-iso-with-security-updates)
+      - [Patch with custom method](#patch-with-custom-method)
+      - [Dry run](#dry-run-1)
+  - [Maintenance Mode](#maintenance-mode)
+    - [Examples](#examples)
+  - [PowerShell Execution and Utility](#powershell-execution-and-utility)
+    - [Run a local PowerShell script](#run-a-local-powershell-script)
+    - [Run a remote PowerShell script via WinRM](#run-a-remote-powershell-script-via-winrm)
+    - [Generate a deterministic UUID](#generate-a-deterministic-uuid)
+    - [OpsRamp API client](#opsramp-api-client)
+  - [Routing and Control Surfaces](#routing-and-control-surfaces)
+    - [Orchestrator (unified entry point)](#orchestrator-unified-entry-point)
+    - [View the route map](#view-the-route-map)
+    - [Control surface factories and runners](#control-surface-factories-and-runners)
+    - [GitLab maintenance trigger](#gitlab-maintenance-trigger)
+  - [Functional Test Harnesses](#functional-test-harnesses)
+    - [testConnectAndList](#testconnectandlist)
+    - [testBuildDeploy](#testbuilddeploy)
+  - [Troubleshooting](#troubleshooting)
+    - [Command not found](#command-not-found)
+    - [Run setup again](#run-setup-again)
+    - [Check module is loaded](#check-module-is-loaded)
+    - [Force reimport](#force-reimport)
+    - [Source links](#source-links)
 
 Runnable examples for every public Automation command. All commands work from any directory once the module is loaded into your PowerShell profile.
 
@@ -80,7 +95,7 @@ The module has a lot of commands because each one has a single, well-defined job
 - "Show me what the deploy would do" → `Configure-PhysicalBuild`
 - "Actually deploy to the server" → `Configure-PhysicalBuild -Deploy` (or `-Execute`) after review
 
-> **Single public build command:** `Configure-PhysicalBuild` is the only build command you run from the terminal. When you type `APPROVE` (or pass `-Deploy`), it internally executes the build pipeline — OneView resolution, maintenance mode enable, iLO mount, OS install, post-build validation, and maintenance mode disable. There is no separate `Start-PhysicalServerBuild` command to call directly.
+> **Single public build command:** `Configure-PhysicalBuild` is the only build command you run from the terminal. When you type `APPROVE` (or pass `-Deploy`), it internally executes the build pipeline — OneView resolution, maintenance mode enable, iLO mount, OS install, post-build validation, and maintenance mode disable. 
 
 > ### ⚠ Safe vs destructive commands (read this first)
 > On a live, regulated banking appliance you must never lose a client server, its data, or impact a workload. Run the **non-destructive** commands first to identify and validate the exact target and media; the **destructive** ones are gated by a mandatory `-GuardRail` regex (the *resolved* server name must match) and prompt for confirmation.
@@ -449,7 +464,7 @@ How ISO filenames are generated and how local ISO paths are exposed to the iLO B
 
 ### Bootable ISO filename convention
 
-When hosting ISOs on an HTTPS repository, use the standard naming convention:
+When building a ConfigMgr bootable ISO, use the standard naming convention:
 
 ```
 WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso
@@ -504,24 +519,24 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -ExternalIsoPath 'https://artifa
 
 ## Physical Server Build (End-to-End)
 
-The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, publish to an HTTPS repository (optional — skip if the ISO is already on a network share), OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, firmware update, and audit logging. Supports two modes:
+The full runbook workflow in one command: pre-build validation, ConfigMgr bootable ISO, OneView target resolution, iLO Redfish mount + boot, installation monitoring, post-build validation, firmware update, and audit logging. Supports two modes:
 
-- **Build mode** (default): Builds a ConfigMgr bootable ISO, publishes it (only if you host ISOs on an HTTPS repository), deploys it.
+- **Build mode** (default): Builds a ConfigMgr bootable ISO and deploys it.
 - **External ISO mode** (`-ExternalIsoPath`): Deploys a client-supplied ISO directly from a network share (UNC/SMB, `cifs://`, `smb://`, or HTTPS), skipping build and publish entirely.
 
-> **ConfigMgr parameters** (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-RepoBaseUrl`, `-RepoLocalPath`, `-SiteServer`): only needed in **Build mode**. When using `-ExternalIsoPath`, these are not required because the ISO build/publish steps are skipped.
+> **ConfigMgr parameters** (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-SiteServer`): only needed in **Build mode**. When using `-ExternalIsoPath`, these are not required because the ISO build/publish steps are skipped.
 
 <a id="configure-build-4-eye-review"></a>
 
 ### Configure build (4-eye review)
 
-Use `Configure-PhysicalBuild` to review the full deployment plan before anything destructive happens. The review itself makes **no changes** — it resolves server identity from OneView, validates ISO reachability, runs pre-build checks, and prints a comprehensive summary including all destructive actions that `Start-PhysicalServerBuild` would perform. However, it is the **authorization gate**: typing `APPROVE` or passing `-Deploy` (alias `-Execute`) releases the destructive run, which is executed internally by `Start-PhysicalServerBuild`. Requires explicit authorization unless `-DryRun` is used.
+Use `Configure-PhysicalBuild` to review the full deployment plan before anything destructive happens. The review itself makes **no changes** — it resolves server identity from OneView, validates ISO reachability, runs pre-build checks, and prints a comprehensive summary including all destructive actions that the build/deploy will perform. However, it is the **authorization gate**: typing `APPROVE` or passing `-Deploy` (alias `-Execute`) releases the destructive build and deploy of the iso image and firmware files being written to the designated server. 
 
 ```powershell
 # Full 4-eye review with confirmation prompt
 Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
     -SiteCode P01 -ManagementPoint mp01.corp.local -DistributionPoint dp01.corp.local `
-    -RepoBaseUrl 'https://artifacts/isos/' -Domain corp.local -GuardRail 'srv01'
+    -Domain corp.local -GuardRail 'srv01'
 ```
 
 ```powershell
@@ -545,8 +560,6 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-SiteServer` | No | ConfigMgr site server FQDN for PSRemoting fallback. |
 | `-BootImageName` | No | ConfigMgr boot image name to embed. |
 | `-TaskSequenceName` | No | ConfigMgr task sequence name (informational). |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository — **only when hosting ISOs on an HTTPS repo**; otherwise supply the ISO directly from a network share via `-ExternalIsoPath`. |
-| `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl` (HTTPS-repo hosting only). |
 | `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). When supplied, ConfigMgr build/publish is skipped. |
 | `-GuardRail` | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before the build plan is even produced. Omitting it aborts early with an expressive, logged error. If it does not match, the review is aborted. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. |
 | `-InMaintenanceWindow` | No | Acknowledge approved maintenance window. |
@@ -562,16 +575,17 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-PassThru` | No | Return the structured result hashtable on the success stream (for scripting). |
 | `-Json` | No | Emit the result as a JSON string on the success stream. |
 
-> **Build mode vs External ISO mode:** When you supply `-ExternalIsoPath`, the ConfigMgr parameters (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-RepoBaseUrl`, `-RepoLocalPath`, `-SiteServer`) are **not required** because the ISO build/publish steps are skipped.
+> **Build mode vs External ISO mode:** When you supply `-ExternalIsoPath`, the ConfigMgr parameters (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-SiteServer`) are **not required** because the ISO build/publish steps are skipped.
 
-> **Automatic OneView maintenance mode:** By default, `Configure-PhysicalBuild` and `Start-PhysicalServerBuild` automatically place the target server into HPE OneView maintenance mode **before** any destructive action (ISO mount, reboot) and remove it **after** the build completes. This stops unnecessary alerting and avoids on-call callouts during deployment. A highlighted notice appears in the deployment summary:
-> ```
+**Automatic OneView maintenance mode:** By default, `Configure-PhysicalBuild` automatically places the target server into HPE OneView maintenance mode **before** any destructive action (ISO mount, reboot) and remove it **after** the build completes. This stops unnecessary alerting and avoids on-call callouts during deployment. A highlighted notice appears in the deployment summary:
+
+```text
 > ╔══════════════════════════════════════════════════════════════════════╗
-> ║  🔇  ONEVIEW MAINTENANCE MODE (automatic)                          ║
+> ║  🔇  ONEVIEW MAINTENANCE MODE (automatic)                            ║
 > ╠══════════════════════════════════════════════════════════════════════╣
-> ║  This server will be put into HPE OneView maintenance mode          ║
-> ║  BEFORE the build starts. This stops unnecessary alerting           ║
-> ║  and avoids on-call callouts during the deployment.                 ║
+> ║  This server will be put into HPE OneView maintenance mode           ║
+> ║  BEFORE the build starts. This stops unnecessary alerting            ║
+> ║  and avoids on-call callouts during the deployment.                  ║
 > ║                                                                      ║
 > ║  Maintenance mode will be automatically removed when the             ║
 > ║  build completes (or if it fails).                                   ║
@@ -643,8 +657,6 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-SiteServer` | No | ConfigMgr site server FQDN for PSRemoting fallback. |
 | `-BootImageName` | No | ConfigMgr boot image name to embed. |
 | `-TaskSequenceName` | No | ConfigMgr task sequence name (informational). |
-| `-RepoBaseUrl` | No | HTTPS base URL of the ISO repository — **only when hosting ISOs on an HTTPS repo**; otherwise supply the ISO directly from a network share via `-ExternalIsoPath`. |
-| `-RepoLocalPath` | No | Local filesystem path mirrored to `-RepoBaseUrl` (HTTPS-repo hosting only). |
 | `-SkipPreBuild` | No | Skip pre-build validation. |
 | `-SkipOneView` | No | Skip OneView resolution. |
 | `-SkipMount` | No | Skip iLO mount and boot. |
@@ -785,7 +797,7 @@ Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
 - **Read-only / non-destructive** — it only looks up and validates; it changes nothing.
 - This is the single resolver every build/deploy command uses, so targeting stays consistent.
 
-Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity` / `Connect-OneView`). With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Test-PostBuildValidation`, `Start-InstallMonitor`, `Start-PhysicalServerBuild`, etc.) all resolve through this module and inherit both behaviours.
+Resolves and validates a target server via OneView. **This is the central single-server module** every OneView automation command that acts on one server uses (via `Resolve-OneViewTarget`), so targeting is consistent and strict across the pipeline. **Strict single-server:** a name or serial that matches more than one server is a hard failure - it never silently picks the first, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). **Connection behaviour (shared helper):** an existing OneView connection always takes priority - a live session is reused and never reconnected (to avoid dropping it); if you supplied a different `-OneViewHost` you are warned which appliance you are on and to `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity` / `Connect-OneView`). With no host and no active session it returns an exception explaining there is none. The session persists - this command never disconnects (only `Disconnect-OneView` does). The build pipeline (`Test-PostBuildValidation`, `Start-InstallMonitor`, etc.) all resolve through this module and inherit both behaviours.
 
 ```powershell
 Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local
