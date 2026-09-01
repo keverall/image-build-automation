@@ -638,38 +638,6 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
     -InMaintenanceWindow -Deploy -GuardRail 'srv01'
 ```
 
-**Parameters:**
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `-ServerIdentifier` | Yes | Target server name, serial, OneView name, iLO IP, or bay. |
-| `-GuardRail` | Yes | **MANDATORY** safety gate. CASE-INSENSITIVE REGEX the resolved target server name must match before any destructive action. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. |
-| `-OneViewHost` | No | OneView appliance hostname/IP for server resolution. |
-| `-IloIp` | No | Target iLO address or hostname. |
-| `-ExpectedHostname` | No | Hostname expected after build. Defaults to `-ServerIdentifier`. Only needed if the post-build hostname will differ. |
-| `-Domain` | No | AD domain for post-build check. |
-| `-InMaintenanceWindow` | No | Acknowledge approved maintenance window. |
-| `-OneViewMaintenanceMode` | No | Enable HPE OneView maintenance mode before destructive operations (ISO mount, reboot) and disable it after the build completes. Default is `$true`. Set to `$false` to skip (e.g. when OneView is unavailable). |
-| `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). |
-| `-SiteCode` | No | ConfigMgr site code. Only needed when building a bootable ISO (not required with `-ExternalIsoPath`). |
-| `-ManagementPoint` | No | ConfigMgr Management Point FQDN. Only needed when building a bootable ISO. |
-| `-DistributionPoint` | No | ConfigMgr Distribution Point FQDN. Only needed when building a bootable ISO. |
-| `-SiteServer` | No | ConfigMgr site server FQDN for PSRemoting fallback. |
-| `-BootImageName` | No | ConfigMgr boot image name to embed. |
-| `-TaskSequenceName` | No | ConfigMgr task sequence name (informational). |
-| `-SkipPreBuild` | No | Skip pre-build validation. |
-| `-SkipOneView` | No | Skip OneView resolution. |
-| `-SkipMount` | No | Skip iLO mount and boot. |
-| `-SkipMonitor` | No | Skip installation monitoring. |
-| `-SkipPostBuild` | No | Skip post-build validation. |
-| `-DryRun` | No | Validate and print plan only. |
-| `-Force` | No | Allow destructive `ForceRestart`. |
-| `-AllowUnknownIsoUrl` | No | Skip ISO URL reachability check. |
-| `-MonitorTimeoutSeconds` | No | Install monitor timeout (default 7200). |
-| `-MonitorPollSeconds` | No | Install monitor poll interval (default 30). |
-
-**Returns:** `[hashtable]` with `Success`, `Steps`, and `AuditFile`.
-
 ---
 
 <a id="iso-deployment-monitoring"></a>
