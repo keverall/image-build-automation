@@ -149,7 +149,7 @@ function _Disable-OneViewMaintenanceMode {
     }
 }
 
-function Invoke-PhysicalServerBuild {
+function Start-PhysicalServerBuild {
     <#
     .SYNOPSIS
         Run the full end-to-end physical server build via ConfigMgr + OneView + iLO Redfish.
@@ -270,7 +270,7 @@ function Invoke-PhysicalServerBuild {
         By default the command writes only the human-readable report and
         returns nothing, so the terminal/log never receives a truncated
         hashtable dump. Capture the result into a variable, e.g.
-        `$r = Invoke-PhysicalServerBuild -PassThru`, for scripting.
+        `$r = Start-PhysicalServerBuild -PassThru`, for scripting.
 
     .PARAMETER Quiet
         Suppress the human-readable report (use with -PassThru / -Json when the
@@ -284,7 +284,7 @@ function Invoke-PhysicalServerBuild {
         representation of the same data.
 
     .EXAMPLE
-        Invoke-PhysicalServerBuild `
+        Start-PhysicalServerBuild `
             -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
             -IloIp '192.168.1.101' `
@@ -308,6 +308,7 @@ function Invoke-PhysicalServerBuild {
         [string] $SiteCode,
         [string] $ManagementPoint,
         [string] $DistributionPoint,
+        [string] $RepoBaseUrl,
         [string] $SiteServer,
         [string] $BootImageName,
         [string] $TaskSequenceName,
@@ -339,7 +340,7 @@ function Invoke-PhysicalServerBuild {
     # Fail early (graceful, logged) when omitted so we never overwrite an
     # unapproved server on a shared/production network.
     $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
-        -CommandName 'Invoke-PhysicalServerBuild' -ActionDescription 'physical server build'
+        -CommandName 'Start-PhysicalServerBuild' -ActionDescription 'physical server build'
     if ($grCheck) {
         $grCheck['server']      = $ServerIdentifier
         $grCheck['start_time']  = Get-UtcTimestamp
@@ -365,7 +366,7 @@ function Invoke-PhysicalServerBuild {
                 $msg = "BUILD MODE requires ConfigMgr parameters. Missing: $($missing -join '; '). " +
                        "Either supply these parameters, or use -ExternalIsoPath 'https://...' to " +
                        "deploy a client-supplied ISO directly (skipping ConfigMgr build/publish)."
-                $logger = Get-Logger 'Invoke-PhysicalServerBuild'
+                $logger = Get-Logger 'Start-PhysicalServerBuild'
                 $logger.Error($msg)
                 Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
                 return (_Publish-Result -Result @{ Success = $false; Error = $msg; Server = $ServerIdentifier } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)

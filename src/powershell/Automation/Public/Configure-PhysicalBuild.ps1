@@ -172,6 +172,7 @@ function Configure-PhysicalBuild {
         [string] $SiteCode,
         [string] $ManagementPoint,
         [string] $DistributionPoint,
+        [string] $RepoBaseUrl,
         [string] $SiteServer,
         [string] $BootImageName,
         [string] $TaskSequenceName,
@@ -247,11 +248,11 @@ function Configure-PhysicalBuild {
 
     function _InvokeBuild {
         # Reuse the parameters already supplied to Configure-PhysicalBuild so the
-        # operator never re-types them. Invoke-PhysicalServerBuild performs the actual
+        # operator never re-types them. Start-PhysicalServerBuild performs the actual
         # mount/reboot/install; approval was already given here (interactive APPROVE
         # or explicit -Deploy), so we pass -SkipConfirmation to bypass the guard-rail
-        # confirmation inside Invoke-PhysicalServerBuild.
-        Invoke-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
+        # confirmation inside Start-PhysicalServerBuild.
+        Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
             -IloIp $IloIp -ExpectedHostname $ExpectedHostname `
             -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
