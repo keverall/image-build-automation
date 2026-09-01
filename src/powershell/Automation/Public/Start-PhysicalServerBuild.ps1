@@ -1,6 +1,10 @@
 #
 # Public/Start-PhysicalServerBuild.ps1 - End-to-end physical server build orchestrator
 #
+# INTERNAL FUNCTION - not exported from the module. Called internally by
+# Configure-PhysicalBuild when the operator types APPROVE or passes -Deploy.
+# Do not call directly from the terminal; use Configure-PhysicalBuild instead.
+#
 # Orchestrates the full runbook workflow:
 #   1. Pre-build validation  (Test-PreBuildValidation)
 #   2. Resolve iLO via OneView  (Get-OneViewServerTarget)
@@ -75,7 +79,77 @@ function Confirm-IsoDeployment {
     return $true
 }
 
-function Start-PhysicalServerBuild {
+function _Enable-OneViewMaintenanceMode {
+    [CmdletBinding()]
+    param(
+        [string] $OneViewHost,
+        [string] $SerialNumber,
+        [string] $ServerName,
+        [System.Management.Automation.PSCredential] $OneViewCredential,
+        [switch] $DryRun
+    )
+    $targetName = if ($ServerName) { $ServerName } else { $SerialNumber }
+    Write-Host "`n  [OneView] Enabling maintenance mode for server '$targetName'..." -ForegroundColor Yellow
+    try {
+        $params = @{
+            Action       = 'enable'
+            Mode         = 'oneview'
+            OneViewHost  = $OneViewHost
+            Start        = 'now'
+            End          = '+4hours'
+            DryRun       = $DryRun
+        }
+        if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
+        else { $params['TargetId'] = $ServerName }
+        if ($OneViewCredential) { $params['Credential'] = $OneViewCredential }
+        $result = Set-MaintenanceMode @params
+        if ($result.Success) {
+            Write-Host "  [OneView] Maintenance mode ENABLED for '$targetName'." -ForegroundColor Green
+        } else {
+            Write-Warning "  [OneView] Failed to enable maintenance mode for '$targetName': $($result.Error)"
+        }
+        return $result
+    } catch {
+        Write-Warning "  [OneView] Error enabling maintenance mode for '$targetName': $($_.Exception.Message)"
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
+
+function _Disable-OneViewMaintenanceMode {
+    [CmdletBinding()]
+    param(
+        [string] $OneViewHost,
+        [string] $SerialNumber,
+        [string] $ServerName,
+        [System.Management.Automation.PSCredential] $OneViewCredential,
+        [switch] $DryRun
+    )
+    $targetName = if ($ServerName) { $ServerName } else { $SerialNumber }
+    Write-Host "`n  [OneView] Disabling maintenance mode for server '$targetName'..." -ForegroundColor Yellow
+    try {
+        $params = @{
+            Action      = 'disable'
+            Mode        = 'oneview'
+            OneViewHost = $OneViewHost
+            DryRun      = $DryRun
+        }
+        if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
+        else { $params['TargetId'] = $ServerName }
+        if ($OneViewCredential) { $params['Credential'] = $OneViewCredential }
+        $result = Set-MaintenanceMode @params
+        if ($result.Success) {
+            Write-Host "  [OneView] Maintenance mode DISABLED for '$targetName'." -ForegroundColor Green
+        } else {
+            Write-Warning "  [OneView] Failed to disable maintenance mode for '$targetName': $($result.Error)"
+        }
+        return $result
+    } catch {
+        Write-Warning "  [OneView] Error disabling maintenance mode for '$targetName': $($_.Exception.Message)"
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
+
+function Invoke-PhysicalServerBuild {
     <#
     .SYNOPSIS
         Run the full end-to-end physical server build via ConfigMgr + OneView + iLO Redfish.
@@ -171,6 +245,12 @@ function Start-PhysicalServerBuild {
         Acknowledge that the target server is in an approved maintenance window. Required
         when -Force is not supplied and the server is currently On.
 
+    .PARAMETER OneViewMaintenanceMode
+        Enable HPE OneView maintenance mode before destructive operations (ISO mount,
+        reboot) and disable it after the build completes. Set to $false to skip
+        maintenance mode orchestration (e.g. when OneView is unavailable or the server
+        is not managed by OneView). Default is $true.
+
     .PARAMETER AllowUnknownIsoUrl
         Skip the head-verify check on the ISO URL during pre-build validation (use only
         when the build pipeline runs offline).
@@ -197,7 +277,7 @@ function Start-PhysicalServerBuild {
         By default the command writes only the human-readable report and
         returns nothing, so the terminal/log never receives a truncated
         hashtable dump. Capture the result into a variable, e.g.
-        `$r = Start-PhysicalServerBuild -PassThru`, for scripting.
+        `$r = Invoke-PhysicalServerBuild -PassThru`, for scripting.
 
     .PARAMETER Quiet
         Suppress the human-readable report (use with -PassThru / -Json when the
@@ -211,7 +291,7 @@ function Start-PhysicalServerBuild {
         representation of the same data.
 
     .EXAMPLE
-        Start-PhysicalServerBuild `
+        Invoke-PhysicalServerBuild `
             -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
             -IloIp '192.168.1.101' `
@@ -254,6 +334,7 @@ function Start-PhysicalServerBuild {
         [switch] $DryRun,
         [switch] $Force,
         [switch] $InMaintenanceWindow,
+        [switch] $OneViewMaintenanceMode = $true,
         [switch] $AllowUnknownIsoUrl,
         [Alias('SkipConf')]
         [switch] $SkipConfirmation,
@@ -268,7 +349,7 @@ function Start-PhysicalServerBuild {
     # Fail early (graceful, logged) when omitted so we never overwrite an
     # unapproved server on a shared/production network.
     $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
-        -CommandName 'Start-PhysicalServerBuild' -ActionDescription 'physical server build'
+        -CommandName 'Invoke-PhysicalServerBuild' -ActionDescription 'physical server build'
     if ($grCheck) {
         $grCheck['server']      = $ServerIdentifier
         $grCheck['start_time']  = Get-UtcTimestamp
@@ -294,7 +375,7 @@ function Start-PhysicalServerBuild {
                 $msg = "BUILD MODE requires ConfigMgr parameters. Missing: $($missing -join '; '). " +
                        "Either supply these parameters, or use -ExternalIsoPath 'https://...' to " +
                        "deploy a client-supplied ISO directly (skipping ConfigMgr build/publish)."
-                $logger = Get-Logger 'Start-PhysicalServerBuild'
+                $logger = Get-Logger 'Invoke-PhysicalServerBuild'
                 $logger.Error($msg)
                 Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
                 return (_Publish-Result -Result @{ Success = $false; Error = $msg; Server = $ServerIdentifier } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
@@ -398,6 +479,29 @@ function Start-PhysicalServerBuild {
             }
         }
 
+        # ── OneView Maintenance Mode (pre-destructive operations) ──────────────
+        # Put the server into OneView maintenance mode before any destructive action
+        # (ISO mount, reboot) so OneView stops pulling alerts / applying firmware
+        # compliance checks during the build. Skipped when OneView is unavailable,
+        # resolution failed, or -OneViewMaintenanceMode is $false.
+        $maintenanceModeEnabled = $false
+        $maintenanceSerial = if ($oneview -and $oneview.Details -and $oneview.Details.serial_number) { $oneview.Details.serial_number } else { $null }
+        $maintenanceServerName = if ($oneview -and $oneview.Details -and $oneview.Details.name) { $oneview.Details.name } else { $ServerIdentifier }
+        if ($OneViewMaintenanceMode -and $OneViewHost -and $maintenanceSerial) {
+            $maintResult = _Enable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
+                -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
+                -OneViewCredential $OneViewCredential -DryRun:$DryRun
+            _Step 'oneview_maintenance_enable' $maintResult
+            $maintenanceModeEnabled = $maintResult.Success
+            if (-not $maintResult.Success -and -not $DryRun) {
+                $overall['success'] = $false
+                $overall['error'] = "OneView maintenance mode enable failed: $($maintResult.Error)"
+                return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+        } elseif ($OneViewMaintenanceMode -and $OneViewHost) {
+            _Step 'oneview_maintenance_enable' @{ Success = $false; Error = 'OneView resolved target but no serial number available for maintenance mode' }
+        }
+
         # ── Guard rail (build/deploy safety gate) ──────────────────────────────
         # When -GuardRail is supplied, the resolved target server name MUST match
         # the pattern before any destructive action. Resolved name prefers the
@@ -481,6 +585,26 @@ function Start-PhysicalServerBuild {
             } catch {
                 $overall['iso_ejected'] = $false
                 $overall['iso_eject_error'] = $_.Exception.Message
+            }
+        }
+        # ── OneView Maintenance Mode (post-build cleanup) ──────────────────────
+        # Take the server out of maintenance mode after the build completes (or
+        # fails). Only runs if we successfully enabled it earlier. Errors here are
+        # logged but do not fail the build — the build result is already determined.
+        if ($maintenanceModeEnabled -and $OneViewHost -and $maintenanceSerial -and -not $DryRun) {
+            try {
+                $disableResult = _Disable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
+                    -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
+                    -OneViewCredential $OneViewCredential -DryRun:$DryRun
+                $overall['oneview_maintenance_disable'] = $disableResult.Success
+                if (-not $disableResult.Success) {
+                    $overall['oneview_maintenance_disable_error'] = $disableResult.Error
+                    Write-Warning "Failed to disable OneView maintenance mode for '$maintenanceSerial': $($disableResult.Error)"
+                }
+            } catch {
+                $overall['oneview_maintenance_disable'] = $false
+                $overall['oneview_maintenance_disable_error'] = $_.Exception.Message
+                Write-Warning "Error disabling OneView maintenance mode: $($_.Exception.Message)"
             }
         }
         try {

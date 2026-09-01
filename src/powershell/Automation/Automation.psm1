@@ -591,7 +591,7 @@ $_privateOrder = @(
     'GuardRail.ps1',    # Assert-GuardRail (destructive-action safety gate for build/deploy)
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
-    'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Start-PhysicalServerBuild)
+    'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Invoke-PhysicalServerBuild)
 )
 
 foreach ($_f in $_privateOrder) {
@@ -628,7 +628,6 @@ Set-Alias -Name 'scom-maintmode-status-report' -Value 'Get-MaintenanceStatusRepo
 Export-ModuleMember -Function @(
     # Orchestrator
     'Start-AutomationOrchestrator'
-    'Start-PhysicalServerBuild'
     'Configure-PhysicalBuild'
     # Control
     'New-CIPipelineCtrl'
@@ -689,7 +688,7 @@ Export-ModuleMember -Function @(
     'Test-ClusterDefinition'
     'New-ServerInfo'
     'Resolve-OneViewTarget'
-    # ISO path resolution (shared by Start-PhysicalServerBuild;
+    # ISO path resolution (shared by Invoke-PhysicalServerBuild;
     # exported so functional test harnesses can validate path->iLO URL conversion)
     'Resolve-ExternalIsoPath'
     # Logging / audit / timestamps

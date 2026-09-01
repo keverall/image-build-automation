@@ -4,33 +4,35 @@
 
 ## Table of Contents
 
-- [Purpose](#purpose)
-- [Scope](#scope)
-- [Assumptions and Design Principles](#assumptions-and-design-principles)
-- [References](#references)
-- [Roles and Responsibilities](#roles-and-responsibilities)
-- [High-Level Architecture](#high-level-architecture)
-- [Prerequisites](#prerequisites)
-  - [Technical prerequisites](#technical-prerequisites)
-  - [Access prerequisites](#access-prerequisites)
-- [Media Strategy](#media-strategy)
-- [Standard Operating Procedure](#standard-operating-procedure)
-  - [Prepare or update the Windows Server build in Configuration Manager](#prepare-or-update-the-windows-server-build-in-configuration-manager)
-  - [Create bootable media ISO](#create-bootable-media-iso)
-  - [Publish the ISO for iLO consumption](#publish-the-iso-for-ilo-consumption)
-  - [Mount ISO via HPE iLO and force one-time boot](#mount-iso-via-hpe-ilo-and-force-one-time-boot)
-  - [Task sequence execution](#task-sequence-execution)
-- [Validation Checklist](#validation-checklist)
-  - [Pre-build validation](#pre-build-validation)
-  - [In-build validation](#in-build-validation)
-  - [Post-build validation](#post-build-validation)
-- [Rollback / Recovery Procedure](#rollback-recovery-procedure)
-- [Troubleshooting Guide](#troubleshooting-guide)
-- [Security and Control Requirements](#security-and-control-requirements)
-- [Appendix A: Sample Automation Components](#appendix-a-sample-automation-components)
-  - [Sample workflow components](#sample-workflow-components)
-  - [Example file naming and versioning standard](#example-file-naming-and-versioning-standard)
-- [Source Note](#source-note)
+- [Runbook for automating the build of physical HPE servers](#runbook-for-automating-the-build-of-physical-hpe-servers)
+  - [Table of Contents](#table-of-contents)
+  - [Purpose](#purpose)
+  - [Scope](#scope)
+  - [Assumptions and Design Principles](#assumptions-and-design-principles)
+  - [References](#references)
+  - [Roles and Responsibilities](#roles-and-responsibilities)
+  - [High-Level Architecture](#high-level-architecture)
+  - [Prerequisites](#prerequisites)
+    - [Technical prerequisites](#technical-prerequisites)
+    - [Access prerequisites](#access-prerequisites)
+  - [Media Strategy](#media-strategy)
+  - [Standard Operating Procedure](#standard-operating-procedure)
+    - [Prepare or update the Windows Server build in Configuration Manager](#prepare-or-update-the-windows-server-build-in-configuration-manager)
+    - [Create bootable media ISO](#create-bootable-media-iso)
+    - [Publish the ISO for iLO consumption](#publish-the-iso-for-ilo-consumption)
+    - [Mount ISO via HPE iLO and force one-time boot](#mount-iso-via-hpe-ilo-and-force-one-time-boot)
+    - [Task sequence execution](#task-sequence-execution)
+  - [Validation Checklist](#validation-checklist)
+    - [Pre-build validation](#pre-build-validation)
+    - [In-build validation](#in-build-validation)
+    - [Post-build validation](#post-build-validation)
+  - [Rollback / Recovery Procedure](#rollback--recovery-procedure)
+  - [Troubleshooting Guide](#troubleshooting-guide)
+  - [Security and Control Requirements](#security-and-control-requirements)
+  - [Appendix A: Sample Automation Components](#appendix-a-sample-automation-components)
+    - [Sample workflow components](#sample-workflow-components)
+    - [Example file naming and versioning standard](#example-file-naming-and-versioning-standard)
+  - [Source Note](#source-note)
 
 <a id="purpose"></a>
 
@@ -296,7 +298,6 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - Do not hard-code production credentials in scripts.
 - Store OneView and iLO credentials in a secure secret store or pipeline secret vault.
 - Use Configuration Manager media passwords where appropriate.
-- Restrict ISO repository access to approved systems and service accounts.
 - Prefer trusted TLS certificates over certificate bypass methods used only in lab/testing.
 - Maintain audit logs showing who initiated the build, which server was targeted, which ISO was used, and the final outcome.
 

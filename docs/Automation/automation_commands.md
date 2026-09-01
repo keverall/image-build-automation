@@ -70,8 +70,7 @@ The module has a lot of commands because each one has a single, well-defined job
 | **Status** | `Get-OneViewConnectionStatus` | Quick status check against the active session (or a specific host). **Never prompts.** |
 | **Lookup** | `Get-OneViewServerList` | Lists all servers managed by OneView. Reuses the active session. |
 | **Lookup** | `Get-OneViewServerTarget` | Resolves a single server by name, serial, iLO IP, or bay. Reuses the active session. |
-| **Review** | `Configure-PhysicalBuild` | Read-only 4-eye review. Shows the full deployment plan, including all destructive actions, and waits for you to type `APPROVE`. |
-| **Execute** | `Start-PhysicalServerBuild` | Runs the full build pipeline: OneView resolution, iLO mount, OS install, post-build checks. |
+| **Review** | `Configure-PhysicalBuild` | Read-only 4-eye review. Shows the full deployment plan, including all destructive actions, and waits for you to type `APPROVE`. Automatically places server in OneView maintenance mode before build (use `-NoMaintenanceMode` to skip). |
 | **Monitor** | `Start-InstallMonitor` | Watches an in-progress installation and reports progress. |
 
 **Which command should I use?**
@@ -81,13 +80,15 @@ The module has a lot of commands because each one has a single, well-defined job
 - "Show me what the deploy would do" → `Configure-PhysicalBuild`
 - "Actually deploy to the server" → `Configure-PhysicalBuild -Deploy` (or `-Execute`) after review
 
+> **Single public build command:** `Configure-PhysicalBuild` is the only build command you run from the terminal. When you type `APPROVE` (or pass `-Deploy`), it internally executes the build pipeline — OneView resolution, maintenance mode enable, iLO mount, OS install, post-build validation, and maintenance mode disable. There is no separate `Start-PhysicalServerBuild` command to call directly.
+
 > ### ⚠ Safe vs destructive commands (read this first)
 > On a live, regulated banking appliance you must never lose a client server, its data, or impact a workload. Run the **non-destructive** commands first to identify and validate the exact target and media; the **destructive** ones are gated by a mandatory `-GuardRail` regex (the *resolved* server name must match) and prompt for confirmation.
 >
 > | Safety | Commands | Effect |
 > |--------|----------|--------|
 > | ✅ **Non-destructive / safe** | `Test-ServerConnectivity`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Get-OneViewServerTarget`, `Test-BuildParams`, `Test-PreBuildValidation`, `Start-InstallMonitor`, `Invoke-IloRedfish -Action Status\|Eject`, `Invoke-OpsRampClient`, `Disconnect-OneView` | Read-only lookups, path/validation checks, or status monitoring. No reboot, mount, or change to any server. Safe on the live appliance. |
-> | ⚠ **Destructive** | `Configure-PhysicalBuild` (APPROVE confirmation gate), `Start-PhysicalServerBuild` | `Configure-PhysicalBuild` reviews the plan and, on typing `APPROVE` or passing `-Deploy`/`-Execute`, **authorizes the destructive build** — it makes no change itself, but it is the gate that releases the destructive run (carried out by `Start-PhysicalServerBuild`). That command mounts the ISO + reboot (wipe/reinstall). All are gated by `-GuardRail`; `-DryRun` prints the plan without acting. |
+> | ⚠ **Destructive** | `Configure-PhysicalBuild` (APPROVE confirmation gate) | `Configure-PhysicalBuild` reviews the plan and, on typing `APPROVE` or passing `-Deploy`/`-Execute`, **executes the destructive build** internally — OneView resolution, maintenance mode enable, ISO mount + reboot (wipe/reinstall), post-build validation, and maintenance mode disable. Gated by `-GuardRail`; `-DryRun` prints the plan without acting. **Automatically places the server into OneView maintenance mode before destructive operations** (use `-NoMaintenanceMode` to skip). |
 >
 > **Recommended pre-flight review (no change is made until you type `APPROVE` on `Configure-PhysicalBuild`, or pass `-Deploy`/`-Execute`):** `Get-OneViewServerTarget` → `Test-BuildParams` (ISO path) → `Test-PreBuildValidation` → `Configure-PhysicalBuild -GuardRail '<server>'` (review, then type `APPROVE` or pass `-Deploy` to authorize the real run).
 
@@ -549,6 +550,8 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). When supplied, ConfigMgr build/publish is skipped. |
 | `-GuardRail` | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before the build plan is even produced. Omitting it aborts early with an expressive, logged error. If it does not match, the review is aborted. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. |
 | `-InMaintenanceWindow` | No | Acknowledge approved maintenance window. |
+| `-OneViewMaintenanceMode` | No | Enable HPE OneView maintenance mode before destructive operations (ISO mount, reboot) and disable it after the build completes. Default is `$true`. Set to `$false` to skip (e.g. when OneView is unavailable). |
+| `-NoMaintenanceMode` | No | Convenience switch to disable OneView maintenance mode. Equivalent to `-OneViewMaintenanceMode:$false`. |
 | `-SkipPreBuild` | No | Skip pre-build validation. |
 | `-SkipOneView` | No | Skip OneView target resolution. |
 | `-SkipIlo` | No | Skip iLO credential check. |
@@ -561,25 +564,38 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 > **Build mode vs External ISO mode:** When you supply `-ExternalIsoPath`, the ConfigMgr parameters (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-RepoBaseUrl`, `-RepoLocalPath`, `-SiteServer`) are **not required** because the ISO build/publish steps are skipped.
 
+> **Automatic OneView maintenance mode:** By default, `Configure-PhysicalBuild` and `Start-PhysicalServerBuild` automatically place the target server into HPE OneView maintenance mode **before** any destructive action (ISO mount, reboot) and remove it **after** the build completes. This stops unnecessary alerting and avoids on-call callouts during deployment. A highlighted notice appears in the deployment summary:
+> ```
+> ╔══════════════════════════════════════════════════════════════════════╗
+> ║  🔇  ONEVIEW MAINTENANCE MODE (automatic)                          ║
+> ╠══════════════════════════════════════════════════════════════════════╣
+> ║  This server will be put into HPE OneView maintenance mode          ║
+> ║  BEFORE the build starts. This stops unnecessary alerting           ║
+> ║  and avoids on-call callouts during the deployment.                 ║
+> ║                                                                      ║
+> ║  Maintenance mode will be automatically removed when the             ║
+> ║  build completes (or if it fails).                                   ║
+> ║                                                                      ║
+> ║  To skip this, use -NoMaintenanceMode.                               ║
+> ╚══════════════════════════════════════════════════════════════════════╝
+> ```
+> Use `-NoMaintenanceMode` (or `-OneViewMaintenanceMode:$false`) to disable this behavior when OneView is unavailable or the server is not managed by OneView.
+
 ---
 
 <a id="full-build-most-common"></a>
 
 ### Full build (most common)
 
-The primary deploy entry point is `Configure-PhysicalBuild` with `-Deploy` (or `-Execute`). It performs the full 4-eye review internally and, on authorization, runs `Start-PhysicalServerBuild` with the supplied parameters. You can also call `Start-PhysicalServerBuild` directly if you have already reviewed the plan.
+`Configure-PhysicalBuild` is the only build command you run from the terminal. It performs the full 4-eye review internally and, on authorization (typing `APPROVE` or passing `-Deploy`/`-Execute`), executes the build pipeline internally. There is no separate command to call directly.
 
 ```powershell
-# Recommended: review + deploy in one command
+# Review + deploy in one command (recommended)
 Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
     -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -InMaintenanceWindow -Deploy -GuardRail 'srv01'
 ```
 
-```powershell
-# Direct execution (skip review — only use after a separate Configure-PhysicalBuild review)
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
-    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -InMaintenanceWindow -GuardRail 'srv01'
-```
+> **Automatic OneView maintenance mode:** `Configure-PhysicalBuild` automatically places the server into HPE OneView maintenance mode before destructive operations and removes it after the build completes. Use `-NoMaintenanceMode` to skip this behavior.
 
 <a id="dry-run-validate-without-changing-anything"></a>
 
@@ -590,17 +606,12 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
     -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -DryRun -GuardRail 'srv01'
 ```
 
-```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
-    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -DryRun -GuardRail 'srv01'
-```
-
 <a id="re-run-monitoring-after-deployment"></a>
 
 ### Re-run monitoring after deployment
 
 ```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -SkipPreBuild -SkipOneView -SkipMount -InMaintenanceWindow -GuardRail 'srv01'
+Configure-PhysicalBuild -ServerIdentifier srv01 -SkipPreBuild -SkipOneView -SkipMount -InMaintenanceWindow -GuardRail 'srv01'
 ```
 
 <a id="build-with-custom-domain-and-post-build-checks"></a>
@@ -611,12 +622,6 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -SkipPreBuild -SkipOneView -Sk
 Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
     -ExpectedHostname srv01.corp.local -Domain corp.local -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
     -InMaintenanceWindow -Deploy -GuardRail 'srv01'
-```
-
-```powershell
-Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
-    -ExpectedHostname srv01.corp.local -Domain corp.local -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
-    -InMaintenanceWindow -GuardRail 'srv01'
 ```
 
 **Parameters:**
@@ -630,6 +635,7 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 | `-ExpectedHostname` | No | Hostname expected after build. Defaults to `-ServerIdentifier`. Only needed if the post-build hostname will differ. |
 | `-Domain` | No | AD domain for post-build check. |
 | `-InMaintenanceWindow` | No | Acknowledge approved maintenance window. |
+| `-OneViewMaintenanceMode` | No | Enable HPE OneView maintenance mode before destructive operations (ISO mount, reboot) and disable it after the build completes. Default is `$true`. Set to `$false` to skip (e.g. when OneView is unavailable). |
 | `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). |
 | `-SiteCode` | No | ConfigMgr site code. Only needed when building a bootable ISO (not required with `-ExternalIsoPath`). |
 | `-ManagementPoint` | No | ConfigMgr Management Point FQDN. Only needed when building a bootable ISO. |
@@ -647,6 +653,8 @@ Start-PhysicalServerBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.loca
 | `-DryRun` | No | Validate and print plan only. |
 | `-Force` | No | Allow destructive `ForceRestart`. |
 | `-AllowUnknownIsoUrl` | No | Skip ISO URL reachability check. |
+| `-MonitorTimeoutSeconds` | No | Install monitor timeout (default 7200). |
+| `-MonitorPollSeconds` | No | Install monitor poll interval (default 30). |
 
 **Returns:** `[hashtable]` with `Success`, `Steps`, and `AuditFile`.
 
@@ -663,7 +671,7 @@ Commands for deploying ISOs to servers and monitoring installation progress.
 ### Monitor installation progress
 
 **What it does:**
-- Watches an **in-progress** OS installation started by `Start-PhysicalServerBuild`.
+- Watches an **in-progress** OS installation started by `Configure-PhysicalBuild`.
 - Polls the server (via OneView/iLO) on an interval and reports progress/status.
 - **Read-only / non-destructive** — it only observes; it never reboots, mounts, or changes the server.
 - Safe to run on a live appliance at any time (use it to confirm a build is progressing).
