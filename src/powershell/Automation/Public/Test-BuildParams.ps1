@@ -20,7 +20,7 @@ function Test-BuildParams {
 
         Every location is resolved through the single shared Resolve-ExternalIsoPath helper,
         so the path-format handling is identical across Test-BuildParams, Invoke-IsoDeploy,
-        Configure-PhysicalBuild and Start-PhysicalServerBuild.
+        Configure-PhysicalBuild and Invoke-PhysicalServerBuild.
 
         Output is rendered through the shared _Publish-Result helper: a clean, human-readable
         report is written to the host (no truncated raw hashtable / OrderedDictionary dump),

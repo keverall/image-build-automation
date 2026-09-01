@@ -101,6 +101,17 @@ function Configure-PhysicalBuild {
     .PARAMETER InMaintenanceWindow
         Acknowledge the target server is in an approved maintenance window.
 
+    .PARAMETER OneViewMaintenanceMode
+        Enable HPE OneView maintenance mode before destructive operations (ISO mount,
+        reboot) and disable it after the build completes. Set to $false to skip
+        maintenance mode orchestration (e.g. when OneView is unavailable or the server
+        is not managed by OneView). Default is $true. Use -NoMaintenanceMode to disable.
+
+    .PARAMETER NoMaintenanceMode
+        Convenience switch to disable OneView maintenance mode. Equivalent to
+        -OneViewMaintenanceMode:$false. Use this when OneView is unavailable or the
+        server is not managed by OneView.
+
     .PARAMETER SkipPreBuild
         Skip pre-build validation checks.
 
@@ -118,7 +129,7 @@ function Configure-PhysicalBuild {
 
     .PARAMETER Force
         Acknowledge server power state is On (informational only — this command
-        does not perform any reboot; included for parity with Start-PhysicalServerBuild).
+        does not perform any reboot; included for parity with Invoke-PhysicalServerBuild).
 
     .PARAMETER DryRun
         Validate inputs and print the plan without performing any destructive action.
@@ -134,7 +145,7 @@ function Configure-PhysicalBuild {
 
     .RETURNS
         [hashtable] with Success, ServerIdentity, IsoDetails, ValidationChecks,
-        and Server. On -Deploy / -Execute or APPROVE, Start-PhysicalServerBuild
+        and Server. On -Deploy / -Execute or APPROVE, Invoke-PhysicalServerBuild
         is executed internally and the build result is returned.
 
     .EXAMPLE
@@ -177,6 +188,8 @@ function Configure-PhysicalBuild {
         [string] $ExternalIsoPath,
         [switch] $AllowUnknownIsoUrl,
         [switch] $InMaintenanceWindow,
+        [switch] $OneViewMaintenanceMode = $true,
+        [switch] $NoMaintenanceMode,
         [switch] $SkipPreBuild,
         [switch] $SkipOneView,
         [switch] $SkipIlo,
@@ -192,7 +205,15 @@ function Configure-PhysicalBuild {
         [switch] $Deploy
     )
 
-    if (-not $ExpectedHostname) { $ExpectedHostname = $ServerIdentifier }
+    if (-not $ExpectedHostname) {
+        $ExpectedHostname = $ServerIdentifier 
+    }
+
+    # ── Handle -NoMaintenanceMode convenience switch ──────────────────────────
+    # -NoMaintenanceMode is equivalent to -OneViewMaintenanceMode:$false
+    if ($NoMaintenanceMode) {
+        $OneViewMaintenanceMode = $false
+    }
 
     # Emit results through the shared _Publish-Result helper so the operator never
     # sees a raw hashtable/JSON dump in the terminal. By default nothing is returned
@@ -200,15 +221,31 @@ function Configure-PhysicalBuild {
     # object for scripting/piping; -Json emits a JSON string.
     $resultView = {
         param($r)
-        $label = if ($r.Success) { 'SUCCESS' } elseif ($r.Cancelled) { 'CANCELLED' } else { 'FAILED' }
-        $color = if ($r.Success) { 'Green' } elseif ($r.Cancelled) { 'Yellow' } else { 'Red' }
+        $label = if ($r.Success) {
+            'SUCCESS' 
+        } elseif ($r.Cancelled) {
+            'CANCELLED' 
+        } else {
+            'FAILED' 
+        }
+        $color = if ($r.Success) {
+            'Green' 
+        } elseif ($r.Cancelled) {
+            'Yellow' 
+        } else {
+            'Red' 
+        }
         Write-Host ""
         Write-Host "  ============================================" -ForegroundColor $color
         Write-Host "  RESULT: $label" -ForegroundColor $color
         Write-Host "  ============================================" -ForegroundColor $color
         Write-Host "  Server : $($r.Server)" -ForegroundColor White
-        if ($r.Reason) { Write-Host "  Reason : $($r.Reason)" -ForegroundColor Yellow }
-        if ($r.Error)  { Write-Host "  Error  : $($r.Error)" -ForegroundColor Red }
+        if ($r.Reason) {
+            Write-Host "  Reason : $($r.Reason)" -ForegroundColor Yellow 
+        }
+        if ($r.Error) {
+            Write-Host "  Error  : $($r.Error)" -ForegroundColor Red 
+        }
         if (-not $PassThru -and -not $Json) {
             Write-Host "  (structured plan available via -PassThru; JSON via -Json)" -ForegroundColor Gray
         }
@@ -219,11 +256,11 @@ function Configure-PhysicalBuild {
 
     function _InvokeBuild {
         # Reuse the parameters already supplied to Configure-PhysicalBuild so the
-        # operator never re-types them. Start-PhysicalServerBuild performs the actual
+        # operator never re-types them. Invoke-PhysicalServerBuild performs the actual
         # mount/reboot/install; approval was already given here (interactive APPROVE
         # or explicit -Deploy), so we pass -SkipConfirmation to bypass the guard-rail
-        # confirmation inside Start-PhysicalServerBuild.
-        Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
+        # confirmation inside Invoke-PhysicalServerBuild.
+        Invoke-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
             -IloIp $IloIp -ExpectedHostname $ExpectedHostname `
             -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
@@ -231,6 +268,7 @@ function Configure-PhysicalBuild {
             -RepoBaseUrl $RepoBaseUrl -RepoLocalPath $RepoLocalPath -ExternalIsoPath $ExternalIsoPath `
             -SkipPreBuild:$SkipPreBuild -SkipOneView:$SkipOneView -SkipMount:$SkipIlo -SkipMonitor -SkipPostBuild `
             -InMaintenanceWindow:$InMaintenanceWindow -AllowUnknownIsoUrl:$AllowUnknownIsoUrl `
+            -OneViewMaintenanceMode:$OneViewMaintenanceMode `
             -GuardRail $GuardRail -Force:$Force -SkipConfirmation -PassThru:$PassThru
     }
 
@@ -239,23 +277,31 @@ function Configure-PhysicalBuild {
     # for an unapproved server on a shared/production network.
     $grCheck = Assert-GuardRailRequired -GuardRail $GuardRail `
         -CommandName 'Configure-PhysicalBuild' -ActionDescription 'build plan review'
-    if ($grCheck) { return (_Emit $grCheck) }
+    if ($grCheck) {
+        return (_Emit $grCheck) 
+    }
 
     # ── Parameter validation with actionable error messages ───────────────────
     # Build mode (no -ExternalIsoPath) needs ConfigMgr endpoints to build the
     # bootable ISO. External ISO mode and fully-skipped review mode don't.
     if (-not $ExternalIsoPath -and -not $SkipPreBuild) {
         $missing = @()
-        if (-not $SiteCode)          { $missing += '-SiteCode (ConfigMgr site code, e.g. P01)' }
-        if (-not $ManagementPoint)   { $missing += '-ManagementPoint (ConfigMgr MP FQDN, e.g. mp01.corp.local)' }
-        if (-not $DistributionPoint) { $missing += '-DistributionPoint (ConfigMgr DP FQDN, e.g. dp01.corp.local)' }
+        if (-not $SiteCode) {
+            $missing += '-SiteCode (ConfigMgr site code, e.g. P01)' 
+        }
+        if (-not $ManagementPoint) {
+            $missing += '-ManagementPoint (ConfigMgr MP FQDN, e.g. mp01.corp.local)' 
+        }
+        if (-not $DistributionPoint) {
+            $missing += '-DistributionPoint (ConfigMgr DP FQDN, e.g. dp01.corp.local)' 
+        }
         if (-not $BootImageName) {
             $missing += '-BootImageName (ConfigMgr boot image name, e.g. "WinPE x64 - HPE")'
         }
         if ($missing.Count -gt 0) {
             $msg = "PRE-BUILD VALIDATION requires ConfigMgr parameters. Missing: $($missing -join '; '). " +
-                   "Either supply these parameters, use -SkipPreBuild to skip validation, " +
-                   "or use -ExternalIsoPath 'https://...' to deploy a client-supplied ISO."
+            "Either supply these parameters, use -SkipPreBuild to skip validation, " +
+            "or use -ExternalIsoPath 'https://...' to deploy a client-supplied ISO."
             $logger = Get-Logger 'Configure-PhysicalBuild'
             $logger.Error($msg)
             Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
@@ -287,11 +333,15 @@ function Configure-PhysicalBuild {
             $logger.Error($msg)
             Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
             return (_Emit @{
-                Success        = $false
-                Server         = $ServerIdentifier
-                Error          = $ov.Error
-                ServerIdentity = if ($ov.Details) { $ov.Details } else { $null }
-            })
+                    Success        = $false
+                    Server         = $ServerIdentifier
+                    Error          = $ov.Error
+                    ServerIdentity = if ($ov.Details) {
+                        $ov.Details 
+                    } else {
+                        $null 
+                    }
+                })
         }
     } elseif ($IloIp) {
         Write-Host "`n[1/4] OneView skipped — using iLO IP directly" -ForegroundColor Yellow
@@ -304,28 +354,36 @@ function Configure-PhysicalBuild {
     # ── Guard rail (build/deploy safety gate, review-only) ────────────────────
     # When -GuardRail is supplied, the resolved target name MUST match before we
     # even show the deployment plan. -NonDestructive suppresses the destructive
-    # confirmation prompt (this command only reviews; Start-PhysicalServerBuild
+    # confirmation prompt (this command only reviews; Invoke-PhysicalServerBuild
     # performs the actual overwrite).
     if ($GuardRail) {
-        $guardName   = if ($serverIdentity -and $serverIdentity.name) { $serverIdentity.name } else { $ExpectedHostname }
-        $guardSerial = if ($serverIdentity -and $serverIdentity.serial_number) { $serverIdentity.serial_number } else { $null }
+        $guardName = if ($serverIdentity -and $serverIdentity.name) {
+            $serverIdentity.name 
+        } else {
+            $ExpectedHostname 
+        }
+        $guardSerial = if ($serverIdentity -and $serverIdentity.serial_number) {
+            $serverIdentity.serial_number 
+        } else {
+            $null 
+        }
         $guardOk = Assert-GuardRail -GuardRail $GuardRail -ResolvedServerName $guardName `
             -SerialNumber $guardSerial -ApplianceName $OneViewHost `
             -ActionDescription 'build plan review' -SkipConfirmation:$true -NonDestructive
         if (-not $guardOk) {
             return (_Emit @{
-                Success    = $false
-                Cancelled  = $true
-                Server     = $guardName
-                Reason     = "Guard rail mismatch: '$guardName' does not match guard pattern '$GuardRail'. No plan produced."
-            })
+                    Success   = $false
+                    Cancelled = $true
+                    Server    = $guardName
+                    Reason    = "Guard rail mismatch: '$guardName' does not match guard pattern '$GuardRail'. No plan produced."
+                })
         }
     }
 
     # ── 2. Resolve ISO URL ───────────────────────────────────────────────────
     Write-Host "`n[2/4] Resolving ISO..." -ForegroundColor Yellow
     $isoPath = $null
-    $isoUrl  = $null
+    $isoUrl = $null
     $isoSource = 'Not specified'
 
     if ($ExternalIsoPath) {
@@ -337,12 +395,12 @@ function Configure-PhysicalBuild {
             $isoErr = "Failed to resolve -ExternalIsoPath '$ExternalIsoPath': $($_.Exception.Message)"
             Write-Host "  [ERROR] $isoErr" -ForegroundColor Red
             return (_Emit @{
-                Success         = $false
-                Server          = $ExpectedHostname
-                Reason          = $isoErr
-                ServerIdentity  = $serverIdentity
-                ExternalIsoPath = $ExternalIsoPath
-            })
+                    Success         = $false
+                    Server          = $ExpectedHostname
+                    Reason          = $isoErr
+                    ServerIdentity  = $serverIdentity
+                    ExternalIsoPath = $ExternalIsoPath
+                })
         }
     } else {
         $isoSource = "Build from ConfigMgr (SiteCode=$SiteCode)"
@@ -388,7 +446,9 @@ function Configure-PhysicalBuild {
     if ($serverIdentity) {
         $rack = if ($serverIdentity.enclosure_name -or $serverIdentity.enclosure_bay) {
             "$($serverIdentity.enclosure_name) Bay $($serverIdentity.enclosure_bay)".Trim()
-        } else { $null }
+        } else {
+            $null 
+        }
         Write-Host "  Serial:          $($serverIdentity.serial_number       ?? 'unknown')" -ForegroundColor White
         Write-Host "  Model:           $($serverIdentity.model             ?? 'unknown')" -ForegroundColor Gray
         Write-Host "  iLO IP:          $($serverIdentity.ilo_ip            ?? $IloIp ?? 'unknown')" -ForegroundColor White
@@ -396,8 +456,12 @@ function Configure-PhysicalBuild {
         Write-Host "  Rack/Position:   $($rack                             ?? 'unknown')" -ForegroundColor White
         Write-Host "  Server Group:    $($serverIdentity.server_group       ?? 'unknown')" -ForegroundColor Gray
         Write-Host "  Maintenance Mode:$($serverIdentity.maintenance_mode  ?? 'unknown')" -ForegroundColor White
-        if ($serverIdentity.power_state)  { Write-Host "  Power State:     $($serverIdentity.power_state)"  -ForegroundColor White }
-        if ($serverIdentity.health_status) { Write-Host "  Health:          $($serverIdentity.health_status)" -ForegroundColor White }
+        if ($serverIdentity.power_state) {
+            Write-Host "  Power State:     $($serverIdentity.power_state)" -ForegroundColor White 
+        }
+        if ($serverIdentity.health_status) {
+            Write-Host "  Health:          $($serverIdentity.health_status)" -ForegroundColor White 
+        }
     }
 
     # ISO details
@@ -415,16 +479,49 @@ function Configure-PhysicalBuild {
     Write-Host "  3. Server reboot into installed OS" -ForegroundColor Red
     Write-Host "  4. Post-build validation (hostname, domain join, drivers)" -ForegroundColor Red
 
+    # OneView maintenance mode notice
+    if ($OneViewMaintenanceMode) {
+        Write-Host ""
+        Write-Host "  ╔══════════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
+        Write-Host "  ║  🔇  ONEVIEW MAINTENANCE MODE (automatic)                            ║" -ForegroundColor Cyan
+        Write-Host "  ╠══════════════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
+        Write-Host "  ║  This server will be put into HPE OneView maintenance mode           ║" -ForegroundColor White
+        Write-Host "  ║  BEFORE the build starts. This stops unnecessary alerting            ║" -ForegroundColor White
+        Write-Host "  ║  and avoids on-call callouts during the deployment.                  ║" -ForegroundColor White
+        Write-Host "  ║                                                                      ║" - ForegroundColor White
+        Write-Host "  ║  Maintenance mode will be automatically removed when the             ║" - ForegroundColor White
+        Write-Host "  ║  build completes (or if it fails).                                   ║" - ForegroundColor White
+        Write-Host "  ║                                                                      ║" - ForegroundColor White
+        Write-Host "  ║  To skip this, use -NoMaintenanceMode.                               ║" - ForegroundColor Yellow
+        Write-Host "  ╚══════════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    } else {
+        Write-Host ""
+        Write-Host "  ╔══════════════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
+        Write-Host "  ║  ⚠  ONEVIEW MAINTENANCE MODE (disabled)                              ║" -ForegroundColor Yellow
+        Write-Host "  ╠══════════════════════════════════════════════════════════════════════╣" -ForegroundColor Yellow
+        Write-Host "  ║  OneView maintenance mode is DISABLED for this build.                ║" -ForegroundColor White
+        Write-Host "  ║  Alerts and callouts may be triggered during deployment.             ║" - ForegroundColor White
+        Write-Host "  ╚══════════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
+    }
+
     # Validation results
     if ($preBuildResult) {
         Write-Host "`n  ─ PRE-BUILD VALIDATION RESULTS ─" -ForegroundColor Yellow
         foreach ($key in $preBuildResult.Checks.Keys) {
             $check = $preBuildResult.Checks[$key]
             $statusColor = switch ($check.status) {
-                'PASS'  { 'Green' }
-                'SKIP'  { 'Gray' }
-                'FAIL'  { 'Red' }
-                default { 'Yellow' }
+                'PASS' {
+                    'Green' 
+                }
+                'SKIP' {
+                    'Gray' 
+                }
+                'FAIL' {
+                    'Red' 
+                }
+                default {
+                    'Yellow' 
+                }
             }
             Write-Host "  [$($check.status)] $key : $($check.details)" -ForegroundColor $statusColor
         }
@@ -445,19 +542,19 @@ function Configure-PhysicalBuild {
         Write-Host "`n  ✗ PRE-BUILD VALIDATION FAILED — deployment is BLOCKED." -ForegroundColor Red
         Write-Host "    Resolve the failing check(s) above, then re-run the review." -ForegroundColor Yellow
         return (_Emit @{
-            Success          = $false
-            Cancelled        = $false
-            Server           = $ExpectedHostname
-            Reason           = "Pre-build validation failed: deployment blocked"
-            ServerIdentity   = $serverIdentity
-            IsoUrl           = $isoUrl
-            ValidationChecks = $preBuildResult.Checks
-        })
+                Success          = $false
+                Cancelled        = $false
+                Server           = $ExpectedHostname
+                Reason           = "Pre-build validation failed: deployment blocked"
+                ServerIdentity   = $serverIdentity
+                IsoUrl           = $isoUrl
+                ValidationChecks = $preBuildResult.Checks
+            })
     }
 
     # ── Authorization (APPROVE) and optional deploy ────────────────────────────
     # APPROVE (interactive) or -Deploy (automation) runs the build via the
-    # Start-PhysicalServerBuild code, reusing the parameters already supplied here —
+    # Invoke-PhysicalServerBuild code, reusing the parameters already supplied here —
     # the operator never re-types them. Without explicit approval the command only
     # reviews and returns the plan; it never deploys.
     $doDeploy = [bool]$Deploy
@@ -467,14 +564,18 @@ function Configure-PhysicalBuild {
         if ($isAutomated -or -not $isInteractive) {
             Write-Host "`n  Non-interactive / automated mode detected - explicit -Deploy authorization required to proceed." -ForegroundColor Yellow
             return (_Emit @{
-                Success          = $false
-                Cancelled        = $true
-                Server           = $ExpectedHostname
-                Reason           = "Non-interactive mode: explicit -Deploy authorization required to proceed"
-                ServerIdentity   = $serverIdentity
-                IsoUrl           = $isoUrl
-                ValidationChecks = if ($preBuildResult) { $preBuildResult.Checks } else { $null }
-            })
+                    Success          = $false
+                    Cancelled        = $true
+                    Server           = $ExpectedHostname
+                    Reason           = "Non-interactive mode: explicit -Deploy authorization required to proceed"
+                    ServerIdentity   = $serverIdentity
+                    IsoUrl           = $isoUrl
+                    ValidationChecks = if ($preBuildResult) {
+                        $preBuildResult.Checks 
+                    } else {
+                        $null 
+                    }
+                })
         }
 
         Write-Host "  ╔════════════════════════════════════════════════════════╗" -ForegroundColor Red
@@ -490,16 +591,20 @@ function Configure-PhysicalBuild {
         if ($response -ne 'APPROVE') {
             Write-Host "  Build CANCELLED by operator." -ForegroundColor Yellow
             return (_Emit @{
-                Success             = $false
-                Cancelled           = $true
-                Server              = $ExpectedHostname
-                Reason              = "Operator did not confirm with 'APPROVE'"
-                ServerIdentity      = $serverIdentity
-                IsoUrl              = $isoUrl
-                ValidationChecks    = if ($preBuildResult) { $preBuildResult.Checks } else { $null }
-            })
+                    Success          = $false
+                    Cancelled        = $true
+                    Server           = $ExpectedHostname
+                    Reason           = "Operator did not confirm with 'APPROVE'"
+                    ServerIdentity   = $serverIdentity
+                    IsoUrl           = $isoUrl
+                    ValidationChecks = if ($preBuildResult) {
+                        $preBuildResult.Checks 
+                    } else {
+                        $null 
+                    }
+                })
         }
-        Write-Host "`n  ✓ APPROVED — deploying ISO + firmware to '$ExpectedHostname' (via Start-PhysicalServerBuild)." -ForegroundColor Green
+        Write-Host "`n  ✓ APPROVED — deploying ISO + firmware to '$ExpectedHostname' (via Invoke-PhysicalServerBuild)." -ForegroundColor Green
         $doDeploy = $true
     }
 
@@ -510,29 +615,41 @@ function Configure-PhysicalBuild {
 
     # Return a structured plan that can be piped to Start-PhysicalBuild (use -PassThru).
     return (_Emit @{
-        Success             = $true
-        Server              = $ExpectedHostname
-        ServerIdentifier    = $ServerIdentifier
-        ServerIdentity      = $serverIdentity
-        IsoUrl              = $isoUrl
-        ExternalIsoPath     = $ExternalIsoPath
-        OneViewHost         = $OneViewHost
-        IloIp               = if ($serverIdentity -and $serverIdentity.ilo_ip) { $serverIdentity.ilo_ip } else { $IloIp }
-        OneViewDetails      = $serverIdentity
-        ExpectedHostname    = $ExpectedHostname
-        Domain              = $Domain
-        SiteCode            = $SiteCode
-        ManagementPoint     = $ManagementPoint
-        DistributionPoint   = $DistributionPoint
-        SiteServer          = $SiteServer
-        BootImageName       = $BootImageName
-        TaskSequenceName    = $TaskSequenceName
-        RepoBaseUrl         = $RepoBaseUrl
-        RepoLocalPath       = $RepoLocalPath
-        AllowUnknownIsoUrl  = [bool]$AllowUnknownIsoUrl
-        InMaintenanceWindow = [bool]$InMaintenanceWindow
-        ValidationChecks    = if ($preBuildResult) { $preBuildResult.Checks } else { $null }
-        PreBuildSuccess     = if ($preBuildResult) { $preBuildResult.Success } else { $null }
-        Timestamp           = Get-UtcTimestamp
-    })
+            Success             = $true
+            Server              = $ExpectedHostname
+            ServerIdentifier    = $ServerIdentifier
+            ServerIdentity      = $serverIdentity
+            IsoUrl              = $isoUrl
+            ExternalIsoPath     = $ExternalIsoPath
+            OneViewHost         = $OneViewHost
+            IloIp               = if ($serverIdentity -and $serverIdentity.ilo_ip) {
+                $serverIdentity.ilo_ip 
+            } else {
+                $IloIp 
+            }
+            OneViewDetails      = $serverIdentity
+            ExpectedHostname    = $ExpectedHostname
+            Domain              = $Domain
+            SiteCode            = $SiteCode
+            ManagementPoint     = $ManagementPoint
+            DistributionPoint   = $DistributionPoint
+            SiteServer          = $SiteServer
+            BootImageName       = $BootImageName
+            TaskSequenceName    = $TaskSequenceName
+            RepoBaseUrl         = $RepoBaseUrl
+            RepoLocalPath       = $RepoLocalPath
+            AllowUnknownIsoUrl  = [bool]$AllowUnknownIsoUrl
+            InMaintenanceWindow = [bool]$InMaintenanceWindow
+            ValidationChecks    = if ($preBuildResult) {
+                $preBuildResult.Checks 
+            } else {
+                $null 
+            }
+            PreBuildSuccess     = if ($preBuildResult) {
+                $preBuildResult.Success 
+            } else {
+                $null 
+            }
+            Timestamp           = Get-UtcTimestamp
+        })
 }
