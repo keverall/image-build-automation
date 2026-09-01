@@ -1,0 +1,36 @@
+{\rtf1\ansi\ansicpg1252\deff0\widowctrl{\fonttbl{\f0 Calibri;}{\f1 Courier New;}}{\colortbl;\red0\green0\blue0;\red244\green244\blue244;\red232\green232\blue232;}{\*\generator MD-to-RTF Converter;}\pard\sa40\sb200\fs36\b changes\b0\par
+\pard\sa120\fs18\i Generated 2026-09-01\i0\par
+\pard\sa60\sb120\fs22\b Table of Contents\b0\par\pard\li0\fi-360\fs22\'95\tab {\field{\*\fldinst PAGEREF remove-the-broken-installation}{\fldrslt Remove the broken installation}}\par\pard\li0\fi-360\fs22\'95\tab {\field{\*\fldinst PAGEREF install-from-psgallery-requires-internet}{\fldrslt Install from PSGallery (requires internet)}}\par\pard\li0\fi-360\fs22\'95\tab {\field{\*\fldinst PAGEREF verify}{\fldrslt Verify}}\par\pard\li0\fi-360\fs22\'95\tab {\field{\*\fldinst PAGEREF copy-the-bundled-module-to-the-powershell-modules-folder}{\fldrslt Copy the bundled module to the PowerShell modules folder}}\par\pard\li0\fi-360\fs22\'95\tab {\field{\*\fldinst PAGEREF verify}{\fldrslt Verify}}\par\pard\li0\fi-360\fs22\'95\tab {\field{\*\fldinst PAGEREF prompted-for-username-paste-pat-as-password}{\fldrslt Prompted for username + paste PAT as password}}\par\pard\li0\fi-360\fs22\'95\tab {\field{\*\fldinst PAGEREF enter-username-pat-once-saved-to-git-credentials}{\fldrslt Enter username + PAT once, saved to ~/.git-credentials}}\par\pard\sa120\par
+\page
+\pard\sa80\fs22 make test 0 10s 848ms 10:15:52 \\033[0;36m[prune-logs]\\033[0m Pruning old log files... [prune-logs] Pruning logs to keep maximum 10 per type... [prune-logs] Pruned 0 excess log files. \\033[0;36m[test]\\033[0m Running Pester unit tests... Add-Type: Cannot bind parameter 'Path' to the target. Exception setting "Path": "Cannot find path 'C:\\Users\\98253\\Documents\\PowerShell\\Modules\\Pester\\6.0.1\\bin\\net8.0\\Pester.dll' because it does not exist." make: *** [test] Error 1\par
+\pard\sa80\fs22 On the Windows test server, run these PowerShell commands:\par
+\pard\sa120\sb120\fs32\b Remove the broken installation\b0{\*\bkmkstart remove-the-broken-installation}{\*\bkmkend remove-the-broken-installation}\par
+\pard\sa80\fs22 Remove-Item -Recurse -Force "$env:USERPROFILE\\Documents\\PowerShell\\Modules\\Pester"\par
+\pard\sa120\sb120\fs32\b Install from PSGallery (requires internet)\b0{\*\bkmkstart top}{\*\bkmkend top}\par
+\pard\sa80\fs22 Install-Module Pester -RequiredVersion 6.0.1 -Scope CurrentUser -Force -SkipPublisherCheck\par
+\pard\sa120\sb120\fs32\b Verify\b0{\*\bkmkstart verify}{\*\bkmkend verify}\par
+\pard\sa80\fs22 Import-Module Pester -RequiredVersion 6.0.1 -PassThru Or install from the bundled vendor copy (offline):\par
+\pard\sa120\sb120\fs32\b Copy the bundled module to the PowerShell modules folder\b0{\*\bkmkstart copy-the-bundled-module-to-the-powershell-modules-folder}{\*\bkmkend copy-the-bundled-module-to-the-powershell-modules-folder}\par
+\pard\sa80\fs22 $dest = "$env:USERPROFILE\\Documents\\PowerShell\\Modules\\Pester\\6.0.1"\par
+\pard\sa80\fs22 New-Item -ItemType Directory -Force -Path $dest | Out-Null Copy-Item -Path "<repo-path>\\scripts\\modules\\Pester\\6.0.1\\*" -Destination $dest -Recurse -Force\par
+\pard\sa120\sb120\fs32\b Verify\b0{\*\bkmkstart verify}{\*\bkmkend verify}\par
+\pard\sa80\fs22 Import-Module Pester -RequiredVersion 6.0.1 -PassThru Replace <repo-path> with the full path to your cloned repo on the Windows server.\par
+\pard\sa80\fs22 Switch to GitStash (BMC Bitbucket):\par
+\pard\sa80\fs22 git remote set-url origin https://gitstash.bmc.com/scm/~keverall/image-build-automation.git Or with SSH:\par
+\pard\sa80\fs22 git remote set-url origin ssh://git@gitstash.bmc.com:7999/~keverall/image-build-automation.git\par
+\pard\sa80\fs22 Sourcetree (Atlassian's official client) - free, Bitbucket-native:\par
+\pard\sa80\fs22 Download: https://www.sourcetreeapp.com/ GitKraken - polished, Bitbucket supported:\par
+\pard\sa80\fs22 https://www.gitkraken.com/ TortoiseGit - Windows shell integration, works with any remote:\par
+\pard\sa80\fs22 https://tortoisegit.org/\par
+\pard\sa80\fs22 1. Generate the PAT in GitStash/Bitbucket:\par
+\pard\sa80\fs22 Go to: https://gitstash.bmc.com/plugins/servlet/access-tokens/users-and-groups (or your instance URL -> Avatar -> Manage account -> HTTP access tokens -> Create token)\par
+\pard\sa80\fs22 Give it scopes: REPO_READ, REPO_WRITE, PROJECT_READ\par
+\pard\sa80\fs22 2. Use it in git (Windows):\par
+\pard\sa80\fs22 Option A - Credential Manager (recommended):\par
+\pard\sa80\fs22 git config --global credential.helper manager-core git fetch origin\par
+\pard\sa120\sb120\fs32\b Prompted for username + paste PAT as password\b0{\*\bkmkstart prompted-for-username-paste-pat-as-password}{\*\bkmkend prompted-for-username-paste-pat-as-password}\par
+\pard\sa80\fs22 Option B - Embed in remote URL (no prompts):\par
+\pard\sa80\fs22 git remote set-url origin https://<your-username>:<PAT>@gitstash.bmc.com/scm/~keverall/image-build-automation.git Option C - Git credential store (plain text, cached):\par
+\pard\sa80\fs22 git config --global credential.helper store git fetch origin\par
+\pard\sa120\sb120\fs32\b Enter username + PAT once, saved to ~/.git-credentials\b0{\*\bkmkstart enter-username-pat-once-saved-to-git-credentials}{\*\bkmkend enter-username-pat-once-saved-to-git-credentials}\par
+\pard\sa80\fs22 https://monitoringguys.com/2020/07/30/control-scom-maintenance-mode-from-the-agent-with-scomagenthelper-management-pack/\par}
