@@ -4,10 +4,8 @@
 
 ## Table of Contents
 
-- [Testing Issues](#testing-issues)
-  - [Table of Contents](#table-of-contents)
-  - [Wednesday 26th August](#wednesday-26th-august)
-  - [Thursday 27th August](#thursday-27th-august)
+- [Wednesday 26th August](#wednesday-26th-august)
+- [Thursday 27th August](#thursday-27th-august)
 
 <a id="wednesday-26th-august"></a>
 

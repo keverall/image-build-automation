@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Configure-PhysicalBuild.ps1
-generated: 2026-08-27
+generated: 2026-09-01
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -41,17 +41,17 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 | `-SiteServer` | ConfigMgr site server FQDN. |
 | `-BootImageName` | ConfigMgr boot image name to verify. |
 | `-TaskSequenceName` | ConfigMgr task sequence name to verify. |
-| `-RepoBaseUrl` | HTTPS base URL of the ISO repository. |
-| `-RepoLocalPath` | Local filesystem path mirrored to RepoBaseUrl. |
 | `-ExternalIsoPath` _(Aliases: -ExtIso)_ | Use a client-supplied ISO instead of building one. Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path (incl. '//server/share'), a 'cifs://'/'smb://' URL, an HTTPS/NFS URL, or a mapped network drive. Local paths are not supported. See |
 | `-AllowUnknownIsoUrl` | Skip the head-verify check on the ISO URL (offline scenarios). |
 | `-InMaintenanceWindow` | Acknowledge the target server is in an approved maintenance window. |
+| `-OneViewMaintenanceMode` | Enable HPE OneView maintenance mode before destructive operations (ISO mount, reboot) and disable it after the build completes. Set to $false to skip maintenance mode orchestration (e.g. when OneView is unavailable or the server is not managed by OneView). Default is $true. Use -NoMaintenanceMode to disable. |
+| `-NoMaintenanceMode` | Convenience switch to disable OneView maintenance mode. Equivalent to -OneViewMaintenanceMode:$false. Use this when OneView is unavailable or the server is not managed by OneView. |
 | `-SkipPreBuild` | Skip pre-build validation checks. |
 | `-SkipOneView` | Skip OneView target resolution. |
 | `-SkipIlo` | Skip iLO credential / Redfish check. |
 | `-SkipDpMp` | Skip Management Point / Distribution Point reachability check. |
 | `-SkipIsoUrl` | Skip ISO URL reachability check. |
-| `-Force` | Acknowledge server power state is On (informational only — this command does not perform any reboot; included for parity with Start-PhysicalServerBuild). |
+| `-Force` | Acknowledge server power state is On (informational only — this command does not perform any reboot; included for parity with Invoke-PhysicalServerBuild). |
 | `-DryRun` _(Aliases: -Dry)_ | Validate inputs and print the plan without performing any destructive action. Skips network probes and the confirmation prompt. |
 | `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before the build plan is even produced. If it is OMITTED the review is aborted early with an expressive, logged error. If it does NOT match, the review is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
@@ -64,7 +64,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 ### Example 1
 
 ```powershell
-Configure-PhysicalBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' ` -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' ` -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' ` -Domain 'ad.example.com'
+Configure-PhysicalBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' ` -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' ` -Domain 'ad.example.com'
 ```
 
 <a id="example-2"></a>
@@ -140,12 +140,6 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
     .PARAMETER TaskSequenceName
         ConfigMgr task sequence name to verify.
 
-    .PARAMETER RepoBaseUrl
-        HTTPS base URL of the ISO repository.
-
-    .PARAMETER RepoLocalPath
-        Local filesystem path mirrored to RepoBaseUrl.
-
     .PARAMETER ExternalIsoPath
         Use a client-supplied ISO instead of building one. Resolved by the single
         shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path
@@ -158,6 +152,17 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
 
     .PARAMETER InMaintenanceWindow
         Acknowledge the target server is in an approved maintenance window.
+
+    .PARAMETER OneViewMaintenanceMode
+        Enable HPE OneView maintenance mode before destructive operations (ISO mount,
+        reboot) and disable it after the build completes. Set to $false to skip
+        maintenance mode orchestration (e.g. when OneView is unavailable or the server
+        is not managed by OneView). Default is $true. Use -NoMaintenanceMode to disable.
+
+    .PARAMETER NoMaintenanceMode
+        Convenience switch to disable OneView maintenance mode. Equivalent to
+        -OneViewMaintenanceMode:$false. Use this when OneView is unavailable or the
+        server is not managed by OneView.
 
     .PARAMETER SkipPreBuild
         Skip pre-build validation checks.
@@ -176,7 +181,7 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
 
     .PARAMETER Force
         Acknowledge server power state is On (informational only — this command
-        does not perform any reboot; included for parity with Start-PhysicalServerBuild).
+        does not perform any reboot; included for parity with Invoke-PhysicalServerBuild).
 
     .PARAMETER DryRun
         Validate inputs and print the plan without performing any destructive action.
@@ -192,7 +197,7 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
 
     .RETURNS
         [hashtable] with Success, ServerIdentity, IsoDetails, ValidationChecks,
-        and Server. On -Deploy / -Execute or APPROVE, Start-PhysicalServerBuild
+        and Server. On -Deploy / -Execute or APPROVE, Invoke-PhysicalServerBuild
         is executed internally and the build result is returned.
 
     .EXAMPLE
@@ -203,7 +208,6 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
             -SiteCode 'P01' `
             -ManagementPoint 'mp01.ad.example.com' `
             -DistributionPoint 'dp01.ad.example.com' `
-            -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' `
             -Domain 'ad.example.com'
 
     .EXAMPLE

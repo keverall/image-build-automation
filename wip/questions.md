@@ -1,5 +1,9 @@
 # Questions and clarifications
 
+<a id="top"></a>
+
+## Table of Contents
+
 These are all Microsoft Configuration Manager (ConfigMgr / SCCM / MECM) parameters. Here's what each does in plain terms:
 
 | Parameter | What it is | When it's needed |
