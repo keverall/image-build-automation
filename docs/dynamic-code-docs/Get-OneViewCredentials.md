@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Credentials.ps1
-generated: 2026-08-27
+generated: 2026-09-01
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

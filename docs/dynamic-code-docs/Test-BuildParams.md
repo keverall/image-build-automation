@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-BuildParams.ps1
-generated: 2026-08-27
+generated: 2026-09-01
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -23,7 +23,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Takes a Windows ISO image path and/or one or more firmware component locations, resolves each to the network address the iLO BMC (and HPE SUT for firmware) can mount/access as virtual media, and verifies the files are present and usable. On success the resolved iLO URLs are returned (IsoUrl / FirmwareResults[*].ResolvedUrl) so callers can pass them straight to a deploy command. On failure the Errors array describes what is wrong. Local drive paths (C:\, etc.) are rejected because the iLO BMC cannot reach local drives on the automation host. Every location is resolved through the single shared Resolve-ExternalIsoPath helper, so the path-format handling is identical across Test-BuildParams, Invoke-IsoDeploy, Configure-PhysicalBuild and Start-PhysicalServerBuild. Output is rendered through the shared _Publish-Result helper: a clean, human-readable report is written to the host (no truncated raw hashtable / OrderedDictionary dump), while the structured object is still returned when captured or when -PassThru is used. Use -Json to receive a JSON string for automation/API consumers. Accepted location formats (see Resolve-ExternalIsoPath for the full list): - HTTP/HTTPS URL : 'https://artifacts/win.iso'      (used directly) - NFS path       : 'nfs://server/export/win.iso'    (used directly) - CIFS/SMB URL   : 'cifs://server/share/win.iso'    (used directly; round-trips the scheme this module emits) - SMB URL alias  : 'smb://server/share/win.iso'     (normalised to cifs://) - UNC/SMB path   : '\\server\share\win.iso'         (converted to cifs://) - UNC/SMB path   : '//server/share/win.iso'         (Posix-style forward slashes; equivalent to '\\server\share\win.iso' on Windows) - Mapped drive   : 'H:\win.iso' (where H: maps to a network share) -> expanded to its UNC share, then converted to cifs:// For filesystem locations (UNC/SMB, mapped drive) the file's existence is verified. For URL locations (http/https/nfs/cifs/smb) the path cannot be probed locally, so the existence check is skipped — the iLO/SUT fetches the file at mount time.
+Takes a Windows ISO image path and/or one or more firmware component locations, resolves each to the network address the iLO BMC (and HPE SUT for firmware) can mount/access as virtual media, and verifies the files are present and usable. On success the resolved iLO URLs are returned (IsoUrl / FirmwareResults[*].ResolvedUrl) so callers can pass them straight to a deploy command. On failure the Errors array describes what is wrong. Local drive paths (C:\, etc.) are rejected because the iLO BMC cannot reach local drives on the automation host. Every location is resolved through the single shared Resolve-ExternalIsoPath helper, so the path-format handling is identical across Test-BuildParams, Invoke-IsoDeploy, Configure-PhysicalBuild and Invoke-PhysicalServerBuild. Output is rendered through the shared _Publish-Result helper: a clean, human-readable report is written to the host (no truncated raw hashtable / OrderedDictionary dump), while the structured object is still returned when captured or when -PassThru is used. Use -Json to receive a JSON string for automation/API consumers. Accepted location formats (see Resolve-ExternalIsoPath for the full list): - HTTP/HTTPS URL : 'https://artifacts/win.iso'      (used directly) - NFS path       : 'nfs://server/export/win.iso'    (used directly) - CIFS/SMB URL   : 'cifs://server/share/win.iso'    (used directly; round-trips the scheme this module emits) - SMB URL alias  : 'smb://server/share/win.iso'     (normalised to cifs://) - UNC/SMB path   : '\\server\share\win.iso'         (converted to cifs://) - UNC/SMB path   : '//server/share/win.iso'         (Posix-style forward slashes; equivalent to '\\server\share\win.iso' on Windows) - Mapped drive   : 'H:\win.iso' (where H: maps to a network share) -> expanded to its UNC share, then converted to cifs:// For filesystem locations (UNC/SMB, mapped drive) the file's existence is verified. For URL locations (http/https/nfs/cifs/smb) the path cannot be probed locally, so the existence check is skipped — the iLO/SUT fetches the file at mount time.
 
 <a id="parameters"></a>
 
@@ -95,7 +95,7 @@ Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' ` -FirmwareFold
 
         Every location is resolved through the single shared Resolve-ExternalIsoPath helper,
         so the path-format handling is identical across Test-BuildParams, Invoke-IsoDeploy,
-        Configure-PhysicalBuild and Start-PhysicalServerBuild.
+        Configure-PhysicalBuild and Invoke-PhysicalServerBuild.
 
         Output is rendered through the shared _Publish-Result helper: a clean, human-readable
         report is written to the host (no truncated raw hashtable / OrderedDictionary dump),
