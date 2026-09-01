@@ -82,12 +82,6 @@ function Configure-PhysicalBuild {
     .PARAMETER TaskSequenceName
         ConfigMgr task sequence name to verify.
 
-    .PARAMETER RepoBaseUrl
-        HTTPS base URL of the ISO repository.
-
-    .PARAMETER RepoLocalPath
-        Local filesystem path mirrored to RepoBaseUrl.
-
     .PARAMETER ExternalIsoPath
         Use a client-supplied ISO instead of building one. Resolved by the single
         shared Resolve-ExternalIsoPath helper. Accepts an UNC/SMB path
@@ -156,7 +150,6 @@ function Configure-PhysicalBuild {
             -SiteCode 'P01' `
             -ManagementPoint 'mp01.ad.example.com' `
             -DistributionPoint 'dp01.ad.example.com' `
-            -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' `
             -Domain 'ad.example.com'
 
     .EXAMPLE
@@ -182,8 +175,6 @@ function Configure-PhysicalBuild {
         [string] $SiteServer,
         [string] $BootImageName,
         [string] $TaskSequenceName,
-        [string] $RepoBaseUrl,
-        [string] $RepoLocalPath,
         [Alias('ExtIso')]
         [string] $ExternalIsoPath,
         [switch] $AllowUnknownIsoUrl,
@@ -265,7 +256,7 @@ function Configure-PhysicalBuild {
             -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
-            -RepoBaseUrl $RepoBaseUrl -RepoLocalPath $RepoLocalPath -ExternalIsoPath $ExternalIsoPath `
+            -ExternalIsoPath $ExternalIsoPath `
             -SkipPreBuild:$SkipPreBuild -SkipOneView:$SkipOneView -SkipMount:$SkipIlo -SkipMonitor -SkipPostBuild `
             -InMaintenanceWindow:$InMaintenanceWindow -AllowUnknownIsoUrl:$AllowUnknownIsoUrl `
             -OneViewMaintenanceMode:$OneViewMaintenanceMode `
@@ -389,7 +380,7 @@ function Configure-PhysicalBuild {
     if ($ExternalIsoPath) {
         $isoSource = "External ISO: $ExternalIsoPath"
         try {
-            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath
             Write-Host "  [OK] Resolved to: $isoUrl" -ForegroundColor Green
         } catch {
             $isoErr = "Failed to resolve -ExternalIsoPath '$ExternalIsoPath': $($_.Exception.Message)"
@@ -404,11 +395,7 @@ function Configure-PhysicalBuild {
         }
     } else {
         $isoSource = "Build from ConfigMgr (SiteCode=$SiteCode)"
-        if ($RepoBaseUrl) {
-            $isoUrl = "$RepoBaseUrl/WinSrv2025_HPE_BootableMedia_v1.0.iso"
-            $isoSource = "ConfigMgr build → $isoUrl"
-        }
-        Write-Host "  [INFO] ISO will be built and published to: $isoUrl" -ForegroundColor Yellow
+        Write-Host "  [INFO] ISO will be built from ConfigMgr" -ForegroundColor Yellow
     }
 
     # ── 3. Run pre-build validation ──────────────────────────────────────────
@@ -636,8 +623,6 @@ function Configure-PhysicalBuild {
             SiteServer          = $SiteServer
             BootImageName       = $BootImageName
             TaskSequenceName    = $TaskSequenceName
-            RepoBaseUrl         = $RepoBaseUrl
-            RepoLocalPath       = $RepoLocalPath
             AllowUnknownIsoUrl  = [bool]$AllowUnknownIsoUrl
             InMaintenanceWindow = [bool]$InMaintenanceWindow
             ValidationChecks    = if ($preBuildResult) {

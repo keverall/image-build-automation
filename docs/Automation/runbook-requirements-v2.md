@@ -183,8 +183,6 @@ New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd -Path "\\fileserver\osdm
 2. Prefer HTTPS with controlled access and auditable hosting.
 3. Validate the full ISO path / URL before initiating the build.
 
-10.4 Identify and validate the target server in HPE OneView
-
 1. Query HPE OneView for the target physical server by name, serial number, Bay/Enclosure position, or other approved identifier.
 2. Verify the hardware state, power state, and health state before proceeding.
 3. Confirm the correct server has been selected and is approved for build / rebuild.
