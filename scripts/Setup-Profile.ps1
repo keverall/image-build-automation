@@ -116,6 +116,23 @@ if (-not (Test-Path $AutomationModule)) {
 Write-Color $Cyan "[setup] Configuring PowerShell profiles with Automation module..."
 
 # ─── Determine platform-appropriate WIP template paths ───────────────────────
+function Resolve-TerminalTemplate {
+    param([string]$ComputerName, [string]$RepoRoot)
+    $templates = @{
+        EIS19   = Join-Path $RepoRoot 'wip/eis19profile.ps1'
+        TECHVDI = Join-Path $RepoRoot 'wip/techvdi-profile.ps1'
+        DEFAULT = Join-Path $RepoRoot 'wip/windowspsprofile.ps1'
+    }
+    $name = if ($ComputerName) { $ComputerName.ToLowerInvariant() } else { '' }
+    if ($name -match 'eis19' -and (Test-Path $templates.EIS19)) {
+        return $templates.EIS19
+    }
+    if (($name -match 'vdi' -or $name -match 'prod') -and (Test-Path $templates.TECHVDI)) {
+        return $templates.TECHVDI
+    }
+    return $templates.DEFAULT
+}
+
 $isWin = $IsWindows -or $null -eq $IsWindows
 
 # ─── ProfileRoot (test hook) ──────────────────────────────────────────────────
@@ -130,9 +147,11 @@ $profileBase = if ($ProfileRoot) {
     $HOME
 }
 
-# Primary terminal profile template (Windows Terminal / pwsh console)
+# Primary terminal profile template (Windows Terminal / pwsh console).
+# On Windows the template is chosen per-machine by computer name (see
+# Resolve-TerminalTemplate); on Linux/macOS there is a single template.
 $TerminalTemplate = if ($isWin) {
-    Join-Path $RepoRoot 'wip/windowspsprofile.ps1'
+    Resolve-TerminalTemplate -ComputerName ([System.Environment]::MachineName) -RepoRoot $RepoRoot
 } else {
     Join-Path $RepoRoot 'wip/psprofile.ps1'
 }

@@ -13,11 +13,10 @@ $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') +
 # ─── Module Imports (safe — won't break profile if missing) ──────────────────
 
 $env:HOME = $env:USERPROFILE
-$env:HTTP_PROXY  = "http://webcorp.prd.aib.pri:8082"
-$env:HTTPS_PROXY = "http://webcorp.prd.aib.pri:8082"
 
-# Path to Git SSH tools (forward slashes: git passes this to a shell, which strips backslashes)
-$gitSshPath = "C:\Windows\System32\OpenSSH"
+# Path to Git SSH tools (Git's bundled ssh; Windows OpenSSH is blocked in this env)
+# (forward slashes: git passes this to a shell, which strips backslashes)
+$gitSshPath = "$env:USERPROFILE/AppData/Local/Programs/Git/usr/bin"
 
 # Ensure it's in PATH
 if ($env:PATH -notlike "*$gitSshPath*")

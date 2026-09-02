@@ -4,10 +4,9 @@
 
 ## Table of Contents
 
-- [Wednesday 26th August](#wednesday-26th-august)
-- [Thursday 27th August](#thursday-27th-august)
+- [Wednesday 2nd September](#wednesday-2nd-september)
 
-<a id="wednesday-26th-august"></a>
+<a id="wednesday-2nd-september"></a>
 
 ## Wednesday 2nd September
 

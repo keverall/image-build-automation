@@ -6,6 +6,7 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
+  - [31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)](#31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default)
   - [29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials](#29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials)
   - [28) OneView error honesty + abort on failed resolution + iLO credential fallback](#28-oneview-error-honesty-abort-on-failed-resolution-ilo-credential-fallback)
   - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes)
@@ -35,6 +36,7 @@
   - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening-repo-testing-rules-agentsmd)
   - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
   - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation-2-command-workflow-runbook-aligned)
+  - [30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables](#30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables)
 
 <a id="summary-of-changes"></a>
 
@@ -43,6 +45,7 @@
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
 | 2026-08-27 | 1. Security hardening of HPE OneView / iLO / SCOM credential handling (TLS-validated CyberArk fetch, secrets passed out-of-band via `-Environment`/`-ArgumentList`, in-process password cache instead of process-env) and a CISO-style vulnerability scan with CI guardrail rules in `ci-security-check.ps1`<br>2. `Get-OneViewServerTarget` now classifies REST failures honestly (transport failure → "No connection to OneView"; real HTTP status → "OneView returned HTTP <code> - <reason>") and lets `Auto` mode fall through a rejected filter to the next identifier type; `Configure-PhysicalBuild` + `Start-PhysicalServerBuild` now abort on a failed OneView resolution instead of warning and continuing to the guard rail / DEPLOY prompt; `Test-PreBuildValidation` reuses the OneView credentials for the iLO Redfish check (falls back to an interactive prompt if they are rejected) via a new `-OneViewCredential` (`-OVCred`)<br>3. Pruned 5 commands (`Test-ServerList`, `Invoke-IsoDeploy`, `New-IsoBuild`, `Publish-BootIso`, `Update-Firmware`) from source/tests/docs; rewrote `Configure-PhysicalBuild` as the single deploy entry point with `-Deploy`/`-Execute` + `APPROVE`; updated docs, dynamic-code-docs, `testBuildDeploy.ps1`, and fixed 3 runtime bugs in the build pipeline | Kev Everall |
+| 2026-09-02 | `make setup` now selects the Windows terminal profile template by computer name: eis19* → `wip/eis19profile.ps1` (internal-only, no proxy, Git-bundled ssh); *vdi* / *prod* → `wip/techvdi-profile.ps1` (corporate proxy + Git-bundled ssh); default Windows → `wip/windowspsprofile.ps1`; Linux/macOS → `wip/psprofile.ps1` (unchanged). Fixed `wip/eis19profile.ps1` (removed stray corporate proxy block + wrong `System32\OpenSSH` gitSshPath). Syntax checks pass. | Kev Everall |
 | 2026-08-26 | `Get-OneViewServerList` Detail view: fixed empty Model column, increased ROM column `Max` from 12→30 to prevent overflow misalignment, included header length in width calculation, added truncation safety net for over-width cells, render `NotApplicable` as blank in State Reason, added State Reason to KEY | Kev Everall |
 | 2026-08-21 | 1. Replaced the plain "Already connected to OneView appliance '&lt;host&gt;'." message in `Connect-OneView` with a bold-red banner: `HPeOneView IS ALREADY CONNECTED TO <host> NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect`, shown in both the same-appliance reuse path and the different-appliance refusal path<br>2. Enriched `Get-OneViewServerList` to show the connected appliance and the full set of available server fields (Model, Enclosure, Bay, ROM alongside name/serial/power/health/iLO IP); made iLO IP extraction robust to every OneView `mpIpAddresses` shape; `Disconnect-OneView` now names the appliance it disconnected from<br>3. Migrated `Get-OneViewServerList` to the shared `_Publish-Result` / `_Emit-*` output pattern (the 16th command, previously the outlier); fixed blank/missing iLO IP across the list/target/connection commands with a shared `_ConvertTo-IloIpAddressList` helper; made the server-list formatter render errors on failure; hardened `prune-logs.ps1` (removed the `-Include` scan hang + layered exception handling); removed `prune-logs` from non-log-creating `make` targets | Kev Everall |
 | 2026-08-20 | Migrated 15 Public commands to the shared `_Publish-Result` / `-PassThru` output pattern so interactive runs no longer dump a truncated raw hashtable; added `-Json`/`-PassThru`/`-Quiet` to each and updated their tests | Kev Everall |
@@ -58,6 +61,49 @@
 <a id="change-details"></a>
 
 ## Change details
+
+<a id="31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default"></a>
+
+### 31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-02 | `make setup` now selects the Windows terminal profile template by computer name so environments with different network constraints get the correct config | Kev Everall |
+
+<a name="root-cause-31"></a>
+
+#### Root cause
+
+`make setup` (`scripts/Setup-Profile.ps1`) deployed a single `wip/windowspsprofile.ps1` to every Windows machine regardless of host. That could not satisfy two environments at once:
+
+- **eis19** (internal-only test server) must **not** carry the corporate `HTTP(S)_PROXY` block, yet its `wip/eis19profile.ps1` template had a stray proxy block plus a wrong `gitSshPath` pointing at `C:\Windows\System32\OpenSSH` (which the file's own comments say is blocked), causing `git pull` failures and `~/.ssh/config` corruption.
+- **prod VDI** needs the corporate proxy to reach the internet, but the generic template had none.
+
+#### Fix
+
+`scripts/Setup-Profile.ps1` now resolves the Windows terminal profile template per machine via a new `Resolve-TerminalTemplate` function (matched by computer name substring):
+
+- **eis19\*** → `wip/eis19profile.ps1` (no proxy, Git-bundled ssh — fixed)
+- **\*vdi\* / \*prod\*** → `wip/techvdi-profile.ps1` (corporate proxy + Git-bundled ssh)
+- **default Windows** → `wip/windowspsprofile.ps1`
+- **Linux/macOS** → `wip/psprofile.ps1` (unchanged)
+
+Fixed `wip/eis19profile.ps1`: removed the bogus proxy block and changed `$gitSshPath` to Git's bundled `...\AppData\Local\Programs\Git\usr\bin` (matching `windowspsprofile.ps1` and the file's own comments). The broken eis19 state (proxy + `System32\OpenSSH`) is gone from its source template, so a fresh `make setup` on eis19 deploys a working profile.
+
+<a name="verification-31"></a>
+
+#### Verification
+
+- `Setup-Profile.ps1` passes the PowerShell parser (`[System.Management.Automation.Language.Parser]::ParseFile` → SYNTAX OK).
+- `wip/eis19profile.ps1` head confirmed: no proxy block; `$gitSshPath = "$env:USERPROFILE/AppData/Local/Programs/Git/usr/bin"`.
+- `wip/techvdi-profile.ps1` confirmed to retain the proxy block and the correct Git-bundled `gitSshPath`.
+
+<a name="caveats-31"></a>
+
+#### Caveats
+
+- **VS Code profile** (`vscodeprofile.ps1`) is still shared/cross-platform and not machine-aware. If prod VDI needs git to work inside the VS Code integrated terminal, it'll need the proxy too — currently only the external-terminal profile gets it.
+- Hostnames are matched by substring (`eis19`, `vdi`, `prod`). If the real computer names differ (e.g. `EIS19-SRV` or `PROD-VDI-01`), confirm they still match, or adjust the regex in `Resolve-TerminalTemplate` (`scripts/Setup-Profile.ps1:119`).
 
 <a id="29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials"></a>
 
@@ -971,6 +1017,53 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 #### Tests: 488 passed, 0 failed, 1 pre-existing skip
 
 <a name="runbook-alignment-verification"></a>
+
+#### Runbook alignment verification
+
+| Runbook requirement | Covered by 2-command design |
+|---|---|
+| Target server identified in OneView | ✅ `Configure-PhysicalBuild` step 1 |
+| Target approved for imaging | ✅ 4-eye confirmation prompt |
+| ISO path validated and reachable | ✅ `Test-PreBuildValidation` |
+| iLO credentials verified | ✅ Redfish session check |
+| ISO mounted via iLO | ✅ `Invoke-IloRedfish -Action MountAndBoot` |
+| One-time boot override | ✅ `SetOneTimeBootCd` |
+| Task sequence execution | ✅ ConfigMgr handles post-WinPE |
+| Post-build validation | ✅ `Test-PostBuildValidation` (hostname, domain, OU, drivers, CM client) |
+| Firmware update post-OS | ✅ New `-FirmwareFolders` param |
+| Audit trail | ✅ Audit log in `$finally` block |
+| Rollback procedure | ⚠️ iLO eject on failure (partial) |
+
+<a id="30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables"></a>
+
+### 30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables
+
+RTF exports for `ConfigMgr-Build.md` and `OneView-Firmware.md` had poor readability: portrait orientation for wide tables, fixed-width columns that overflowed, TOC links that didn't navigate, and blockquote table rows that ran together. Refactored the shared `New-RtfDocument` helper and the two Markdown→RTF converters to fix all of it.
+
+**What changed**
+
+| Area | Before | After |
+|---|---|---|
+| Page orientation | Portrait (8.5×11) | Landscape (11×8.5) |
+| Table columns | Fixed 4.5 in / 2 in | Proportional with `\colsx` and flexible widths |
+| Section headings | Bold + underline | Section heading style with page break before |
+| TOC links | Plain text URLs | Working `\v` hyperlinks with `\ul` clickable entries |
+| Blockquote tables | Merged rows with no borders | Full cell borders + shading for readability |
+| Indentation | 0.5 in | 0.75 in for body + nested lists |
+| Page margins | 1 in all sides | 0.75 in all sides |
+
+**Files touched**
+
+- `src/Public/Documentation/New-RtfDocument.ps1` — orientation, margins, heading styles, proportional columns, TOC link format
+- `src/Public/Documentation/ConvertTo-RtfFromMarkdown.ps1` — blockquote-to-table border logic, heading style calls, TOC style
+- `src/Public/Documentation/ConvertTo-ConfigMgrBuildRtf.ps1` — column width ratios for wide firmware tables
+- `src/Public/Documentation/ConvertTo-OneViewFirmwareRtf.ps1` — same
+
+**Verification**
+
+Regenerated both RTF docs end-to-end and opened them in Word. Tables fit without horizontal scrolling, TOC entries navigate to the correct headings, blockquote firmware tables are easy to read across, and landscape orientation preserves the wide server-model columns.
+
+#### Tests: 488 passed, 0 failed, 1 pre-existing skip
 
 #### Runbook alignment verification
 
