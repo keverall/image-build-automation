@@ -287,8 +287,8 @@ def _column_widths(header, rows):
     # Every document is landscape, so tables always use the long-edge width.
     use_landscape = True
     total = USABLE_WIDTH_LANDSCAPE_TWIPS
-    per_char = 74
-    pad = 120
+    per_char = 82
+    pad = 130
 
     raw = []
     for i in range(ncol):
@@ -304,23 +304,39 @@ def _column_widths(header, rows):
 
     if ncol == 1:
         return [total], use_landscape
-    first = max(w(raw[0], 24), 12 * per_char + pad)
+    first = max(w(raw[0], 24), 12 * per_char + pad)  # col1: natural, capped 24
     if ncol == 2:
         return [first, total - first], use_landscape
 
-    # Priority: first column, then LAST column, then middle column(s) last.
-    last = max(min(w(raw[-1], 40), total * 40 // 100), 20 * per_char + pad)
-    remaining = total - first - last
-    each = remaining // (ncol - 2)
-    each = max(each, 20 * per_char + pad)
-    widths = [first] + [each] * (ncol - 2) + [last]
-    widths[-1] += total - sum(widths)
-    widths[1:-1] = [max(20 * per_char + pad, widths[i]) for i in range(1, ncol - 1)]
+    # Identify the column with the longest content — that one gets the bulk of
+    # the page so the prose column (usually "Describe"/"Description") stays wide.
+    other_cols = list(range(1, ncol - 1)) + [ncol - 1]
+    primary = max(other_cols, key=lambda i: raw[i])
+
+    # All non-primary columns: size to their content with a sensible cap so a
+    # short label column doesn't steal space, but allow up to 36 chars for
+    # value columns like Command/Aliases.
+    non_primary_target = {}
+    for i in other_cols:
+        if i == primary:
+            continue
+        cap_chars = 40 if i < ncol - 1 else 28
+        non_primary_target[i] = min(w(raw[i], cap_chars), total * 18 // 100)
 
     floor = 600
+    np_total = sum(non_primary_target.values())
+    primary_w = max(total - first - np_total, 20 * per_char + pad)
+    widths = [0] * ncol
+    widths[0] = first
+    for i, val in non_primary_target.items():
+        widths[i] = val
+    widths[primary] = primary_w
     widths = [max(floor, x) for x in widths]
+
+    # Final guard: shrink the primary column if still over (it's the only one
+    # we're willing to sacrifice below its floor is unacceptable, so just trim).
     if sum(widths) > total:
-        widths[-1] -= sum(widths) - total
+        widths[primary] -= sum(widths) - total
     return widths, use_landscape
 
 
