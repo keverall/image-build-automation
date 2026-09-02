@@ -325,8 +325,10 @@ def toc_rtf(headings):
         indent = 360 * max(0, lvl - 1)
         # Use the same bookmark the heading carries (explicit anchor, else slug).
         bmk = anchor if anchor else slugify(text)
+        # HYPERLINK \l "bookmark" renders the heading text (not a page number) and
+        # jumps to the bookmark when clicked - unlike PAGEREF which shows a page #.
         out.append(
-            r"\pard\li%d\fi-360\fs%d\'95\tab {\field{\*\fldinst PAGEREF %s}{\fldrslt %s}}\par"
+            r"\pard\li%d\fi-360\fs%d\'95\tab {\field{\*\fldinst HYPERLINK \l \"%s\"}{\fldrslt %s}}\par"
             % (indent, TOC_SIZE, bmk, inline_to_rtf(text))
         )
     out.append(r"\pard\sa120\par")
