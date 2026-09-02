@@ -135,10 +135,10 @@ fix-docs-dryrun: ## Preview broken markdown link + anchor/TOC fixes (dry-run)
 rtf-docs: ## Convert Markdown docs to RTF for Windows help (WordPad/Word)
 	@echo "$(CYAN)[rtf-docs]$(NC) Converting Markdown docs to RTF..."
 	@python3 scripts/MD_to_RTF_Converter.py
-	@echo "$(GREEN)[rtf-docs]$(NC) RTF docs written to doc/windows/help/rtf/"
+	@echo "$(GREEN)[rtf-docs]$(NC) RTF docs written to docs/rtf/"
 
 rtf-docs-clean: ## Remove generated RTF help docs
-	rm -rf doc/windows/help/rtf/
+	rm -rf docs/rtf/
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
