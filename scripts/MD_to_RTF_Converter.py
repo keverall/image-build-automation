@@ -46,47 +46,20 @@ PAGE_HEIGHT_TWIPS = 16838
 LANDSCAPE_WIDTH_TWIPS = PAGE_HEIGHT_TWIPS
 LANDSCAPE_HEIGHT_TWIPS = PAGE_WIDTH_TWIPS
 MARGIN_TWIPS = 1440
-USABLE_WIDTH_TWIPS = PAGE_WIDTH_TWIPS - (2 * MARGIN_TWIPS)  # 9026
-USABLE_WIDTH_LANDSCAPE_TWIPS = LANDSCAPE_WIDTH_TWIPS - (2 * MARGIN_TWIPS)  # 13958
-
-# Tables with this many columns or more switch the page to landscape so the
-# proportional column widths can give each column room to breathe.
-LANDSCAPE_TABLE_THRESHOLD = 4
-
-# Section property blocks.
-SECT_PORTRAIT = (
-    r"\sectd\pgwsxn"
-    + str(PAGE_WIDTH_TWIPS)
-    + r"\pghsxn"
-    + str(PAGE_HEIGHT_TWIPS)
-    + r"\marglsxn"
-    + str(MARGIN_TWIPS)
-    + r"\margrsxn"
-    + str(MARGIN_TWIPS)
-    + r"\lndscpsxn0"
-)
-
-SECT_LANDSCAPE = (
-    r"\sectd\pgwsxn"
-    + str(LANDSCAPE_WIDTH_TWIPS)
-    + r"\pghsxn"
-    + str(LANDSCAPE_HEIGHT_TWIPS)
-    + r"\marglsxn"
-    + str(MARGIN_TWIPS)
-    + r"\margrsxn"
-    + str(MARGIN_TWIPS)
-    + r"\lndscpsxn1"
-)
-
-# Defaults applied to the body after the TOC; the TOC lives in the portrait
-# section so the generated TOC lines stay aligned with body paragraphs.
-SECT_BODY_PORTRAIT = r"{\pard" + SECT_PORTRAIT + r"}\par"
+# Every RTF doc page is landscape (A4 long edge) so tables always have the
+# full 13,958 twips of usable width and Word renders them consistently.
+USABLE_WIDTH_TWIPS = LANDSCAPE_WIDTH_TWIPS - (2 * MARGIN_TWIPS)
+USABLE_WIDTH_LANDSCAPE_TWIPS = USABLE_WIDTH_TWIPS
 
 RTF_HEADER = (
     r"{\rtf1\ansi\ansicpg1252\deff0\widowctrl"
     r"{\fonttbl{\f0 Calibri;}{\f1 Courier New;}}"
     r"{\colortbl;\red0\green0\blue0;\red244\green244\blue244;\red232\green232\blue232;}"
     r"{\*\generator MD-to-RTF Converter;}"
+    + r"\landscape"
+    + r"\paperw" + str(LANDSCAPE_WIDTH_TWIPS) + r"\paperh" + str(LANDSCAPE_HEIGHT_TWIPS)
+    + r"\margl" + str(MARGIN_TWIPS) + r"\margr" + str(MARGIN_TWIPS)
+    + r"\margt" + str(MARGIN_TWIPS) + r"\margb" + str(MARGIN_TWIPS)
 )
 
 RTF_FOOTER = r"}"
@@ -311,9 +284,10 @@ def _column_widths(header, rows):
     ncol = len(header)
     if ncol == 0:
         return [], False
-    use_landscape = ncol >= LANDSCAPE_TABLE_THRESHOLD
-    total = USABLE_WIDTH_LANDSCAPE_TWIPS if use_landscape else USABLE_WIDTH_TWIPS
-    per_char = 86
+    # Every document is landscape, so tables always use the long-edge width.
+    use_landscape = True
+    total = USABLE_WIDTH_LANDSCAPE_TWIPS
+    per_char = 74
     pad = 120
 
     raw = []
@@ -357,12 +331,6 @@ def table_rtf(header, rows):
     # preceding paragraph.
     out.append(r"\par")
 
-    if use_landscape:
-        # Close any open paragraph, then open a landscape section so wide
-        # tables render on a rotated page. The trailing \sectd carries the
-        # next section's settings (portrait again).
-        out.append(SECT_LANDSCAPE + r"\par")
-
     border = r"\clbrdrt\brdrs\clbrdrl\brdrs\clbrdrb\brdrs\clbrdrr\brdrs"
 
     def row_cells(cells, header_row=False):
@@ -389,9 +357,6 @@ def table_rtf(header, rows):
     emit_row(header, header_row=True)
     for row in rows:
         emit_row(row, header_row=False)
-
-    if use_landscape:
-        out.append(SECT_PORTRAIT + r"\par")
 
     # Always leave a blank line between a table and whatever paragraph follows.
     out.append(r"\pard\sa120\par")
