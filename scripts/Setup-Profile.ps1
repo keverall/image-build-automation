@@ -123,11 +123,18 @@ function Resolve-TerminalTemplate {
         TECHVDI = Join-Path $RepoRoot 'wip/techvdi-profile.ps1'
         DEFAULT = Join-Path $RepoRoot 'wip/windowspsprofile.ps1'
     }
-    $name = if ($ComputerName) { $ComputerName.ToLowerInvariant() } else { '' }
+    # Normalize: drop separators (-, _, space) so 'EIS-19' / 'eis_19' both match
+    # 'eis19'. Without this the real host 'eis-19' fails the check and falls
+    # through to the greedy 'prod' branch below.
+    $name = if ($ComputerName) { ($ComputerName -replace '[-_\s]', '').ToLowerInvariant() } else { '' }
     if ($name -match 'eis19' -and (Test-Path $templates.EIS19)) {
         return $templates.EIS19
     }
-    if (($name -match 'vdi' -or $name -match 'prod') -and (Test-Path $templates.TECHVDI)) {
+    # Only route genuine VDI hosts to the techvdi template. The bare 'prod'
+    # substring previously also matched unrelated production automation hosts
+    # (e.g. eis-19) and wrongly inherited the corporate proxy, which breaks
+    # Connect-OVMgmt against internal OneView appliances (504 via proxy tunnel).
+    if ($name -match 'vdi' -and (Test-Path $templates.TECHVDI)) {
         return $templates.TECHVDI
     }
     return $templates.DEFAULT
