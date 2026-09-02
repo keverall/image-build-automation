@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
 """
 MD_to_RTF_Converter.py — Markdown to RTF converter for Windows help docs.
 
@@ -29,7 +29,7 @@ Usage:
   python3 MD_to_RTF_Converter.py <in.md> <out.rtf>  # convert a single file
 
 Output layout:
-  doc/windows/help/rtf/  (mirrors source directory structure)
+  docs/rtf/  (mirrors source directory structure)
 """
 
 import re
@@ -42,8 +42,45 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 PAGE_WIDTH_TWIPS = 11906
+PAGE_HEIGHT_TWIPS = 16838
+LANDSCAPE_WIDTH_TWIPS = PAGE_HEIGHT_TWIPS
+LANDSCAPE_HEIGHT_TWIPS = PAGE_WIDTH_TWIPS
 MARGIN_TWIPS = 1440
 USABLE_WIDTH_TWIPS = PAGE_WIDTH_TWIPS - (2 * MARGIN_TWIPS)  # 9026
+USABLE_WIDTH_LANDSCAPE_TWIPS = LANDSCAPE_WIDTH_TWIPS - (2 * MARGIN_TWIPS)  # 13958
+
+# Tables with this many columns or more switch the page to landscape so the
+# proportional column widths can give each column room to breathe.
+LANDSCAPE_TABLE_THRESHOLD = 4
+
+# Section property blocks.
+SECT_PORTRAIT = (
+    r"\sectd\pgwsxn"
+    + str(PAGE_WIDTH_TWIPS)
+    + r"\pghsxn"
+    + str(PAGE_HEIGHT_TWIPS)
+    + r"\marglsxn"
+    + str(MARGIN_TWIPS)
+    + r"\margrsxn"
+    + str(MARGIN_TWIPS)
+    + r"\lndscpsxn0"
+)
+
+SECT_LANDSCAPE = (
+    r"\sectd\pgwsxn"
+    + str(LANDSCAPE_WIDTH_TWIPS)
+    + r"\pghsxn"
+    + str(LANDSCAPE_HEIGHT_TWIPS)
+    + r"\marglsxn"
+    + str(MARGIN_TWIPS)
+    + r"\margrsxn"
+    + str(MARGIN_TWIPS)
+    + r"\lndscpsxn1"
+)
+
+# Defaults applied to the body after the TOC; the TOC lives in the portrait
+# section so the generated TOC lines stay aligned with body paragraphs.
+SECT_BODY_PORTRAIT = r"{\pard" + SECT_PORTRAIT + r"}\par"
 
 RTF_HEADER = (
     r"{\rtf1\ansi\ansicpg1252\deff0\widowctrl"
@@ -55,19 +92,36 @@ RTF_HEADER = (
 RTF_FOOTER = r"}"
 
 HEADING_SIZES = {1: 32, 2: 28, 3: 24, 4: 22, 5: 20, 6: 20}
-BODY_SIZE = 22       # 11pt
-CODE_SIZE = 20       # 10pt
-TOC_SIZE = 22        # 11pt
+BODY_SIZE = 22  # 11pt
+CODE_SIZE = 20  # 10pt
+TOC_SIZE = 22  # 11pt
 
 # Characters that are valid in RTF ANSI (cp1252) and need no unicode escape.
 # Everything else (emoji, smart quotes, non-Latin) is either mapped or dropped.
 _CHAR_MAP = {
-    "\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"',
-    "\u2013": "-", "\u2014": "-", "\u2026": "...", "\u2022": "-",
-    "\u00a0": " ", "\u2192": "->", "\u2190": "<-", "\u00b4": "'",
-    "\u201a": ",", "\u201e": '"', "\u2032": "'", "\u2033": '"',
-    "\u00ab": "<<", "\u00bb": ">>", "\u2009": " ", "\u200b": "",
-    "\u200e": "", "\u200f": "", "\u00a0": " ",
+    "\u2018": "'",
+    "\u2019": "'",
+    "\u201c": '"',
+    "\u201d": '"',
+    "\u2013": "-",
+    "\u2014": "-",
+    "\u2026": "...",
+    "\u2022": "-",
+    "\u00a0": " ",
+    "\u2192": "->",
+    "\u2190": "<-",
+    "\u00b4": "'",
+    "\u201a": ",",
+    "\u201e": '"',
+    "\u2032": "'",
+    "\u2033": '"',
+    "\u00ab": "<<",
+    "\u00bb": ">>",
+    "\u2009": " ",
+    "\u200b": "",
+    "\u200e": "",
+    "\u200f": "",
+    "\u00a0": " ",
 }
 
 
@@ -128,13 +182,19 @@ def is_table_sep(line):
 
 
 def split_row(line):
-    """Split a pipe-delimited table row into trimmed cells."""
+    """Split a pipe-delimited table row into trimmed cells.
+
+    Markdown authors escape a literal pipe inside a cell as ``\\|``; honour
+    that escape so the row isn't split in the wrong place.
+    """
     s = line.strip()
+    s = re.sub(r"\\\|", "\x00P\x00", s)
     if s.startswith("|"):
         s = s[1:]
     if s.endswith("|"):
         s = s[:-1]
-    return [c.strip() for c in s.split("|")]
+    cells = [c.replace("\x00P\x00", "|").strip() for c in s.split("|")]
+    return cells
 
 
 # ---------------------------------------------------------------------------
@@ -165,8 +225,10 @@ def inline_to_rtf(text):
     # External links -> HYPERLINK field.
     text = re.sub(
         r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
-        lambda m: r"{\field{\*\fldinst HYPERLINK \"%s\"}{\fldrslt %s}}"
-        % (m.group(2), rtf_escape(m.group(1))),
+        lambda m: (
+            r"{\field{\*\fldinst HYPERLINK \"%s\"}{\fldrslt %s}}"
+            % (m.group(2), rtf_escape(m.group(1)))
+        ),
         text,
     )
     # Any other link -> keep visible text only.
@@ -190,7 +252,7 @@ def inline_to_rtf(text):
 # ---------------------------------------------------------------------------
 
 
-def heading_rtf(level, raw, bookmark=None):
+def heading_rtf(level, raw, bookmark=None, page_break=False):
     lvl = min(max(level, 1), 6)
     size = HEADING_SIZES[lvl]
     body = inline_to_rtf(raw)
@@ -198,7 +260,8 @@ def heading_rtf(level, raw, bookmark=None):
     # generated Table of Contents PAGEREF fields resolve in Word/WordPad.
     bm = bookmark if bookmark else slugify(raw)
     mark = r"{\*\bkmkstart %s}{\*\bkmkend %s}" % (bm, bm)
-    return r"\pard\sa120\sb120\fs%d\b %s\b0%s\par" % (size, body, mark)
+    pb = r"\pagebb\par" if page_break else ""
+    return r"%s\pard\sa120\sb120\fs%d\b %s\b0%s\par" % (pb, size, body, mark)
 
 
 def paragraph_rtf(text):
@@ -211,7 +274,7 @@ def code_block_rtf(code):
     return (
         r"{\pard\sa80\sb80\fs" + str(CODE_SIZE) + r"\fi0"
         r"\brdrt\brdrs\brdrw10\brdrb\brdrs\brdrw10"
-        r"\clcbpat2\cf2"
+        r"\clcbpat2"
         r"{\f1 " + escaped + r"\f0}\par}"
     )
 
@@ -233,14 +296,76 @@ def hrule_rtf():
     return r"\pard\brdrb\brdrs\brdrw20\brsp20\sa120\sb120\par"
 
 
-def table_rtf(header, rows):
+def _column_widths(header, rows):
+    """Column widths with priority-based allocation.
+
+    Allocation order (so the most important columns keep their natural width):
+      1. First column  — sized to its longest cell (capped so it folds at ~24
+         chars instead of growing without bound), floor ~12 chars.
+      2. Last column   — sized to its longest cell, capped at ~40% of the page.
+      3. Middle column(s) — get whatever is left, but never below ~20 chars.
+
+    Widths are measured in twips; Calibri 11pt ≈ 86 twips per character +
+    120 twips of inset padding (li60/ri60) per cell.
+    """
     ncol = len(header)
-    widths = [USABLE_WIDTH_TWIPS // ncol] * ncol
+    if ncol == 0:
+        return [], False
+    use_landscape = ncol >= LANDSCAPE_TABLE_THRESHOLD
+    total = USABLE_WIDTH_LANDSCAPE_TWIPS if use_landscape else USABLE_WIDTH_TWIPS
+    per_char = 86
+    pad = 120
+
+    raw = []
+    for i in range(ncol):
+        longest = len(header[i])
+        for r in rows:
+            if i < len(r):
+                longest = max(longest, len(r[i]))
+        raw.append(longest)
+
+    def w(chars, char_limit):
+        """twips needed for `chars` chars, clamped to [char_limit]."""
+        return min(chars * per_char + pad, char_limit * per_char + pad)
+
+    if ncol == 1:
+        return [total], use_landscape
+    first = max(w(raw[0], 24), 12 * per_char + pad)
+    if ncol == 2:
+        return [first, total - first], use_landscape
+
+    # Priority: first column, then LAST column, then middle column(s) last.
+    last = max(min(w(raw[-1], 40), total * 40 // 100), 20 * per_char + pad)
+    remaining = total - first - last
+    each = remaining // (ncol - 2)
+    each = max(each, 20 * per_char + pad)
+    widths = [first] + [each] * (ncol - 2) + [last]
+    widths[-1] += total - sum(widths)
+    widths[1:-1] = [max(20 * per_char + pad, widths[i]) for i in range(1, ncol - 1)]
+
+    floor = 600
+    widths = [max(floor, x) for x in widths]
+    if sum(widths) > total:
+        widths[-1] -= sum(widths) - total
+    return widths, use_landscape
+
+
+def table_rtf(header, rows):
+    widths, use_landscape = _column_widths(header, rows)
     out = []
+    # Leading blank line before the table so it doesn't sit flush against the
+    # preceding paragraph.
+    out.append(r"\par")
+
+    if use_landscape:
+        # Close any open paragraph, then open a landscape section so wide
+        # tables render on a rotated page. The trailing \sectd carries the
+        # next section's settings (portrait again).
+        out.append(SECT_LANDSCAPE + r"\par")
+
+    border = r"\clbrdrt\brdrs\clbrdrl\brdrs\clbrdrb\brdrs\clbrdrr\brdrs"
 
     def row_cells(cells, header_row=False):
-        # cell border control words
-        border = r"\clbrdrt\brdrs\clbrdrl\brdrs\clbrdrb\brdrs\clbrdrr\brdrs"
         res = []
         for c in cells:
             shade = r"\clcbpat3 " if header_row else ""
@@ -252,24 +377,24 @@ def table_rtf(header, rows):
             )
         return res
 
-    # Header
-    out.append(r"\trowd\trgaph60")
-    pos = 0
-    for w in widths:
-        pos += w
-        out.append(r"%s\cellx%d" % (r"\clbrdrt\brdrs\clbrdrl\brdrs\clbrdrb\brdrs\clbrdrr\brdrs", pos))
-    out.extend(row_cells(header, header_row=True))
-    out.append(r"\row")
-
-    # Data
-    for row in rows:
+    def emit_row(cells, header_row):
         out.append(r"\trowd\trgaph60")
         pos = 0
         for w in widths:
             pos += w
-            out.append(r"%s\cellx%d" % (r"\clbrdrt\brdrs\clbrdrl\brdrs\clbrdrb\brdrs\clbrdrr\brdrs", pos))
-        out.extend(row_cells(row, header_row=False))
+            out.append(r"%s\cellx%d" % (border, pos))
+        out.extend(row_cells(cells, header_row=header_row))
         out.append(r"\row")
+
+    emit_row(header, header_row=True)
+    for row in rows:
+        emit_row(row, header_row=False)
+
+    if use_landscape:
+        out.append(SECT_PORTRAIT + r"\par")
+
+    # Always leave a blank line between a table and whatever paragraph follows.
+    out.append(r"\pard\sa120\par")
 
     return "".join(out)
 
@@ -282,7 +407,7 @@ def table_rtf(header, rows):
 def strip_front_matter(md):
     m = re.match(r"^\s*---\n.*?\n---\n", md, re.S)
     if m:
-        return md[m.end():]
+        return md[m.end() :]
     return md
 
 
@@ -291,6 +416,10 @@ def extract_headings(md_lines):
 
     Headings that appear inside fenced code blocks are skipped, matching the
     real rendering (the main loop also treats them as code, not headings).
+
+    A pending <a id="..."> anchor stays armed across blank lines so it still
+    attaches to the heading that follows it (markdown allows any number of
+    blank lines between an anchor and its heading).
     """
     headings = []
     pending = None
@@ -301,19 +430,19 @@ def extract_headings(md_lines):
             continue
         if in_code:
             continue
-        if pending is not None:
-            pending = None
-            continue
         ma = re.match(r'^\s*<a\s+(?:name|id)=["\']([^"\']+)["\']', line, re.I)
         if ma and line.strip().endswith(">"):
+            # A later anchor replaces a still-pending one; safer than guessing.
             pending = ma.group(1)
             continue
         m = re.match(r"^(#{1,6})\s+(.*)$", line)
         if m:
             text = m.group(2).strip()
             if text.lower() in ("table of contents", "contents"):
+                pending = None
                 continue
             headings.append((len(m.group(1)), text, pending))
+            pending = None
     return headings
 
 
@@ -348,7 +477,9 @@ def convert_md_to_rtf(md, title=None):
     out = []
     if title:
         out.append(r"\pard\sa40\sb200\fs36\b %s\b0\par" % rtf_escape(title))
-    out.append(r"\pard\sa120\fs18\i Generated %s\i0\par" % rtf_escape(date.today().isoformat()))
+    out.append(
+        r"\pard\sa120\fs18\i Generated %s\i0\par" % rtf_escape(date.today().isoformat())
+    )
 
     if headings:
         out.append(toc_rtf(headings))
@@ -358,6 +489,8 @@ def convert_md_to_rtf(md, title=None):
     # the immediately following bullet list (it's a duplicate of our generated TOC).
     skip_next_list = False
     pending_id = None
+    seen_first_heading = False
+    section_start = len("".join(out))  # char offset of the current top-level section
     i = 0
     n = len(lines)
     while i < n:
@@ -396,31 +529,97 @@ def convert_md_to_rtf(md, title=None):
                 continue
             bm = pending_id
             pending_id = None
-            out.append(heading_rtf(lvl, raw, bookmark=bm))
+            # Only force a page break before a high-level heading (H1 / H2) when
+            # the content accumulated under the *previous* heading already
+            # fills roughly 70% of a portrait page (≈ 3500 RTF chars). Short
+            # sections stay on the same page so the document reads as one
+            # flowing sheet instead of dozens of two-line pages.
+            section_chars = len("".join(out)) - section_start
+            page_break = seen_first_heading and lvl <= 2 and section_chars > 3500
+            seen_first_heading = True
+            section_start = len("".join(out))
+            out.append(heading_rtf(lvl, raw, bookmark=bm, page_break=page_break))
             skip_next_list = False
             i += 1
             continue
 
-        # Blockquote
+        # Blockquote (may contain pipe tables; split at table boundaries so the
+        # table renders as a real RTF table rather than as markdown text).
         if line.lstrip().startswith(">"):
             buf = []
             while i < n and lines[i].lstrip().startswith(">"):
-                buf.append(re.sub(r"^\s*>\s?", "", lines[i]))
+                buf.append(lines[i])
                 i += 1
-            out.append(blockquote_rtf(buf))
-            skip_next_list = False
+            j = 0
+            while j < len(buf):
+                # Skip blank `>` separators within the quote.
+                if not buf[j].strip().lstrip(">").strip() and not (
+                    "|" in buf[j]
+                    and j + 1 < len(buf)
+                    and is_table_sep(re.sub(r"^\s*>\s?", "", buf[j + 1]))
+                ):
+                    j += 1
+                    continue
+                # Collect a run of consecutive `>` lines that are NOT a table.
+                run = []
+                while j < len(buf):
+                    raw = buf[j]
+                    stripped = re.sub(r"^\s*>\s?", "", raw)
+                    if not stripped.strip():
+                        # blank `>` line — end the paragraph run, but only if
+                        # the next line isn't the start of a table.
+                        if (
+                            j + 1 < len(buf)
+                            and "|" in buf[j + 1]
+                            and j + 2 < len(buf)
+                            and is_table_sep(re.sub(r"^\s*>\s?", "", buf[j + 2]))
+                        ):
+                            break
+                        break
+                    if (
+                        "|" in stripped
+                        and j + 1 < len(buf)
+                        and is_table_sep(re.sub(r"^\s*>\s?", "", buf[j + 1]))
+                    ):
+                        break
+                    run.append(stripped)
+                    j += 1
+                if run:
+                    out.append(blockquote_rtf(run))
+                    skip_next_list = False
+                # If we hit a table boundary, consume header + sep + body rows.
+                if j < len(buf) and "|" in buf[j] and j + 1 < len(buf):
+                    header_line = re.sub(r"^\s*>\s?", "", buf[j])
+                    sep_line = re.sub(r"^\s*>\s?", "", buf[j + 1])
+                    if is_table_sep(sep_line):
+                        header = split_row(header_line)
+                        j += 2
+                        rows = []
+                        while j < len(buf):
+                            tline = re.sub(r"^\s*>\s?", "", buf[j])
+                            if not tline.strip() or "|" not in tline:
+                                break
+                            rows.append(split_row(tline))
+                            j += 1
+                        out.append(table_rtf(header, rows))
+                        skip_next_list = False
             continue
 
         # Unordered list (skip if it's a duplicate TOC list)
         if line.lstrip().startswith("- ") or line.lstrip().startswith("* "):
             if skip_next_list:
                 # consume the whole list without rendering
-                while i < n and (lines[i].lstrip().startswith("- ") or lines[i].lstrip().startswith("* ")):
+                while i < n and (
+                    lines[i].lstrip().startswith("- ")
+                    or lines[i].lstrip().startswith("* ")
+                ):
                     i += 1
                 skip_next_list = False
                 continue
             buf = []
-            while i < n and (lines[i].lstrip().startswith("- ") or lines[i].lstrip().startswith("* ")):
+            while i < n and (
+                lines[i].lstrip().startswith("- ") or lines[i].lstrip().startswith("* ")
+            ):
                 buf.append(lines[i].lstrip()[2:])
                 i += 1
             out.append(list_rtf(buf))
@@ -490,7 +689,11 @@ def discover_md_files(repo_root):
         add(readme)
 
     auto = root / "docs" / "Automation"
-    for name in ("automation_commands.md", "runbook-requirements.md", "runbook-requirements-v2.md"):
+    for name in (
+        "automation_commands.md",
+        "runbook-requirements.md",
+        "runbook-requirements-v2.md",
+    ):
         p = auto / name
         if p.exists():
             add(p)
@@ -525,7 +728,7 @@ def main():
         print("wrote %s (%d bytes)" % (sys.argv[2], size))
         return
 
-    out_base = repo_root / "doc" / "windows" / "help" / "rtf"
+    out_base = repo_root / "docs" / "rtf"
     pairs = discover_md_files(repo_root)
     if not pairs:
         print("No source markdown files found.", file=sys.stderr)
