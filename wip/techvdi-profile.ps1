@@ -14,8 +14,17 @@ $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') +
 # ─── Module Imports (safe — won't break profile if missing) ──────────────────
 
 $env:HOME = $env:USERPROFILE
+
+# Corporate proxy — applied ONLY to genuine TECHVDI hosts. Resolve-TerminalTemplate
+# in Setup-Profile.ps1 routes machines whose name contains 'vdi' to this template and
+# nothing else, so webcorp is set exclusively on TECHVDI (see eis19profile.ps1 and
+# windowspsprofile.ps1 for the proxy-free templates).
+# The HPEOneView Connect-OVMgmt cmdlet routes through [System.Net.WebRequest]::DefaultWebProxy,
+# which inherits HTTP(S)_PROXY; internal OneView appliances must bypass the proxy or they 504.
+# Keep internal hosts in NO_PROXY so automation connects directly to them.
 $env:HTTP_PROXY  = "http://webcorp.prd.aib.pri:8082"
 $env:HTTPS_PROXY = "http://webcorp.prd.aib.pri:8082"
+$env:NO_PROXY    = "localhost,127.0.0.1,*.ad.aib.pri,*.aib.pri,10.*"
 
 # Path to Git SSH tools (forward slashes: git passes this to a shell, which strips backslashes)
 $gitSshPath = "$env:USERPROFILE/AppData/Local/Programs/Git/usr/bin"

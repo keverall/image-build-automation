@@ -36,23 +36,31 @@ $proxyVars = Get-ChildItem Env: | Where-Object { $_.Name -match 'proxy' }
 if ($proxyVars) {
     foreach ($v in $proxyVars) {
         Report "process env" "`$env:$($v.Name) = $($v.Value)"
-        if ($Apply) { Remove-Item "Env:$($v.Name)" -ErrorAction SilentlyContinue; Write-Host "    -> removed from this session" -ForegroundColor Yellow }
+        if ($Apply) {
+            Remove-Item "Env:$($v.Name)" -ErrorAction SilentlyContinue; Write-Host "    -> removed from this session" -ForegroundColor Yellow 
+        }
     }
-} else { Ok "process env (no proxy variables in this session)" }
+} else {
+    Ok "process env (no proxy variables in this session)" 
+}
 
 Write-Host "`n=== 2. Persisted environment variables (User + Machine registry) ===" -ForegroundColor Cyan
-$names = 'HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','all_proxy','no_proxy'
-foreach ($scope in 'User','Machine') {
+$names = 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'all_proxy', 'no_proxy'
+foreach ($scope in 'User', 'Machine') {
     $hit = $false
     foreach ($n in $names) {
         $val = [Environment]::GetEnvironmentVariable($n, $scope)
         if ($null -ne $val) {
             $hit = $true
             Report "$scope scope" "$n = $val"
-            if ($Apply) { [Environment]::SetEnvironmentVariable($n, $null, $scope); Write-Host "    -> deleted ($scope)" -ForegroundColor Yellow }
+            if ($Apply) {
+                [Environment]::SetEnvironmentVariable($n, $null, $scope); Write-Host "    -> deleted ($scope)" -ForegroundColor Yellow 
+            }
         }
     }
-    if (-not $hit) { Ok "$scope scope" }
+    if (-not $hit) {
+        Ok "$scope scope" 
+    }
 }
 
 Write-Host "`n=== 3. PowerShell profile files ===" -ForegroundColor Cyan
@@ -67,13 +75,17 @@ foreach ($p in $profilePaths) {
     if (Test-Path $p) {
         $lines = Select-String -Path $p -Pattern $proxyPattern
         if ($lines) {
-            foreach ($l in $lines) { Report $p "line $($l.LineNumber): $($l.Line.Trim())" }
+            foreach ($l in $lines) {
+                Report $p "line $($l.LineNumber): $($l.Line.Trim())" 
+            }
             if ($Apply) {
                 $kept = Get-Content $p | Where-Object { $_ -notmatch $proxyPattern }
                 Set-Content -Path $p -Value $kept -Encoding UTF8
                 Write-Host "    -> proxy lines stripped from $p" -ForegroundColor Yellow
             }
-        } else { Ok $p }
+        } else {
+            Ok $p 
+        }
     } else {
         Write-Host "  [absent] $p" -ForegroundColor DarkGray
     }
@@ -83,15 +95,21 @@ Write-Host "`n=== 4. WinINet (Internet Options) proxy - HKCU ===" -ForegroundCol
 $ie = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'
 $props = Get-ItemProperty $ie
 if ($props.ProxyEnable -eq 1 -or $props.ProxyServer -or $props.AutoConfigURL) {
-    if ($props.ProxyEnable -eq 1) { Report "$ie\ProxyEnable" "1 (proxy enabled), server: $($props.ProxyServer)" }
-    if ($props.AutoConfigURL)     { Report "$ie\AutoConfigURL" $props.AutoConfigURL }
+    if ($props.ProxyEnable -eq 1) {
+        Report "$ie\ProxyEnable" "1 (proxy enabled), server: $($props.ProxyServer)" 
+    }
+    if ($props.AutoConfigURL) {
+        Report "$ie\AutoConfigURL" $props.AutoConfigURL 
+    }
     if ($Apply) {
         Set-ItemProperty $ie -Name ProxyEnable -Value 0
         Remove-ItemProperty $ie -Name ProxyServer -ErrorAction SilentlyContinue
         Remove-ItemProperty $ie -Name AutoConfigURL -ErrorAction SilentlyContinue
         Write-Host "    -> WinINet proxy disabled and cleared" -ForegroundColor Yellow
     }
-} else { Ok "WinINet proxy disabled / not set" }
+} else {
+    Ok "WinINet proxy disabled / not set" 
+}
 
 Write-Host "`n=== 5. WinHTTP system proxy (netsh) ===" -ForegroundColor Cyan
 $winhttp = (netsh winhttp show proxy) 2>&1 | Out-String
@@ -101,7 +119,9 @@ if ($winhttp -match 'Proxy Server\s*:\s*(\S+)' -and $Matches[1] -ne '(none)') {
         netsh winhttp reset proxy | Out-Null
         Write-Host "    -> WinHTTP proxy reset (requires elevation)" -ForegroundColor Yellow
     }
-} else { Ok "WinHTTP: direct access (no proxy)" }
+} else {
+    Ok "WinHTTP: direct access (no proxy)" 
+}
 
 Write-Host "`n=== 6. .NET runtime proxy view (what Connect-OVMgmt will actually use) ===" -ForegroundColor Cyan
 $def = [System.Net.WebRequest]::DefaultWebProxy
@@ -113,8 +133,12 @@ try {
             [System.Net.WebRequest]::DefaultWebProxy = $null
             Write-Host "    -> DefaultWebProxy set to `$null for this session" -ForegroundColor Yellow
         }
-    } else { Ok ".NET resolves DIRECT for https targets" }
-} catch { Write-Host "  [info] could not probe DefaultWebProxy: $($_.Exception.Message)" }
+    } else {
+        Ok ".NET resolves DIRECT for https targets" 
+    }
+} catch {
+    Write-Host "  [info] could not probe DefaultWebProxy: $($_.Exception.Message)" 
+}
 
 Write-Host "`n==================================================================" -ForegroundColor Cyan
 if ($found -eq 0) {
