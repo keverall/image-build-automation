@@ -14,7 +14,9 @@ reference entries) so pandoc preserves them as bookmarks instead of hashing
 or dropping them.
 
 Usage:
-    python3 MD_to_DOCX_Converter.py                 # wip/SSO.md -> docs/docx/SSO.docx
+    word-docs                       Convert all Markdown docs (root, docs/, wip/)
+                                    to project-root docx/ with bookmarks/links.
+    python3 MD_to_DOCX_Converter.py                 # all docs -> docx/
     python3 MD_to_DOCX_Converter.py <in.md> <out.docx>
 """
 
@@ -136,8 +138,19 @@ def convert_file(input_path: Path, output_path: Path, pandoc: str) -> int:
         f.write(md)
         tmp_md = Path(f.name)
     try:
-        cmd = [pandoc, str(tmp_md), "-o", str(output_path), "--toc-depth=6"]
-        subprocess.run(cmd, check=True)
+        cmd = [
+            pandoc,
+            "-f", "markdown-tex_math_dollars",
+            "--toc-depth=6",
+            str(tmp_md), "-o", str(output_path)
+        ]
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, check=False
+        )
+        if proc.returncode != 0:
+            tail = (proc.stderr or "").strip().splitlines()
+            msg = tail[-1] if tail else "pandoc exited with code %d" % proc.returncode
+            raise RuntimeError(msg)
     finally:
         tmp_md.unlink(missing_ok=True)
     return output_path.stat().st_size
@@ -145,10 +158,35 @@ def convert_file(input_path: Path, output_path: Path, pandoc: str) -> int:
 
 def discover_md_files(repo_root: Path):
     root = repo_root
+    out_root = root / "docx"
+
+    def pair(p: Path) -> tuple[Path, Path]:
+        rel = p.relative_to(root).with_suffix(".docx")
+        return p, out_root / rel
+
+    readme = root / "README.md"
+    if readme.exists():
+        yield pair(readme)
+
+    auto = root / "docs" / "Automation"
+    for name in (
+        "automation_commands.md",
+        "runbook-requirements.md",
+        "runbook-requirements-v2.md",
+    ):
+        p = auto / name
+        if p.exists():
+            yield pair(p)
+
+    dcd = root / "docs" / "dynamic-code-docs"
+    if dcd.exists():
+        for p in sorted(dcd.glob("*.md")):
+            yield pair(p)
+
     wip = root / "wip"
     if wip.exists():
         for p in sorted(wip.glob("*.md")):
-            yield p, (root / "docs" / "docx" / p.with_suffix(".docx").name)
+            yield pair(p)
 
 
 def _find_pandoc() -> str | None:
@@ -178,14 +216,13 @@ def main() -> None:
     if not pandoc:
         print("pandoc not found; install pandoc or add it to PATH", file=sys.stderr)
         sys.exit(1)
-    out_base = repo_root / "docs" / "docx"
+    out_root = repo_root / "docx"
     pairs = list(discover_md_files(repo_root))
     if not pairs:
         print("No source markdown files found.", file=sys.stderr)
         sys.exit(1)
     count = 0
-    for src, rel_docx in pairs:
-        out = out_base / rel_docx
+    for src, out in pairs:
         out.parent.mkdir(parents=True, exist_ok=True)
         try:
             size = convert_file(src, out, pandoc)
@@ -193,7 +230,7 @@ def main() -> None:
             print("  wrote %s (%d bytes)" % (out, size))
         except Exception as e:  # noqa: BLE001
             print("  [WARN] failed to convert %s: %s" % (src, e), file=sys.stderr)
-    print("Converted %d markdown files to DOCX under %s" % (count, out_base))
+    print("Converted %d markdown files to DOCX under %s" % (count, out_root))
 
 
 if __name__ == "__main__":

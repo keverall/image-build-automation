@@ -49,7 +49,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs rtf-docs rtf-docs-clean
+.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs word-docs word-docs-clean
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: ## Setup PowerShell environment (install modules, configure profiles)
@@ -136,14 +136,14 @@ fix-docs-dryrun: ## Preview broken markdown link + anchor/TOC fixes (dry-run)
 	@$(MAKE) fix-links
 	@$(MAKE) add-anchors
 
-# ─── Windows RTF Help Docs ─────────────────────────────────────────────────────
-rtf-docs: ## Convert Markdown docs to RTF for Windows help (WordPad/Word)
-	@echo "$(CYAN)[rtf-docs]$(NC) Converting Markdown docs to RTF..."
-	@python3 scripts/MD_to_RTF_Converter.py
-	@echo "$(GREEN)[rtf-docs]$(NC) RTF docs written to docs/rtf/"
+# ─── Word DOCX Help Docs ───────────────────────────────────────────────────────
+word-docs: ## Convert Markdown docs to Word DOCX with clickable bookmarks/links
+	@echo "$(CYAN)[word-docs]$(NC) Converting Markdown docs to DOCX..."
+	@python3 scripts/MD_to_DOCX_Converter.py
+	@echo "$(GREEN)[word-docs]$(NC) DOCX docs written to docx/"
 
-rtf-docs-clean: ## Remove generated RTF help docs
-	rm -rf docs/rtf/
+word-docs-clean: ## Remove generated Word DOCX help docs
+	rm -rf docx/
 
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
