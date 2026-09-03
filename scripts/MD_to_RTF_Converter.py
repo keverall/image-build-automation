@@ -148,6 +148,24 @@ def slugify(s):
     return s or "section"
 
 
+def valid_bm_name(s):
+    """Normalize to an RTF/Word bookmark name.
+
+    Word and LibreOffice reject bookmark names that do not start with a letter
+    (e.g. "1-identity-..."); digit-leading names produce no anchor, which breaks
+    every internal link (TOC + citations) that targets them. Prefix such names
+    so the bookmark is actually created. The same normalization MUST be applied
+    to both the target (bookmark) and the link (\\l) so they stay in sync.
+    """
+    s = re.sub(r"[^A-Za-z0-9_-]", "-", s)
+    s = re.sub(r"-+", "-", s).strip("-")
+    if not s:
+        return "section"
+    if not s[0].isalpha():
+        s = "bm-" + s
+    return s or "section"
+
+
 def is_table_sep(line):
     """Return True if line is a Markdown table separator row."""
     return bool(re.match(r"^\s*\|?[\s:\-|]+\|?\s*$", line)) and "-" in line
@@ -196,10 +214,15 @@ def inline_to_rtf(text):
         # jump to them; drop the now-empty closing </a> tags. Anchors appear
         # both on their own line (handled at block level) and inline, e.g.
         # "<a id="ref-1"></a>[1] ...". The bookmark control words are injected
-        # after escaping so they are not mangled.
+        # after escaping so they are not mangled. Names are normalized to a
+        # valid RTF bookmark name (no leading digit) and the SAME normalization
+        # is applied to the citation links below so they resolve.
         parts[i] = re.sub(
             r'<a\s+(?:name|id)=["\']([^"\']+)["\']\s*/?>',
-            r"{\\*\\bkmkstart \1}{\\*\\bkmkend \1}",
+            lambda m: (
+                r"{\*\bkmkstart %s}{\*\bkmkend %s}"
+                % (valid_bm_name(m.group(1)), valid_bm_name(m.group(1)))
+            ),
             parts[i],
         )
         parts[i] = parts[i].replace("</a>", "")
@@ -216,9 +239,14 @@ def inline_to_rtf(text):
     )
     # Internal anchor links (#anchor) -> HYPERLINK \l "anchor" so citations
     # like [3](#ref-3) remain clickable and jump to the reference bookmark.
+    # Use single backslashes + \" quotes to match the external-link field form
+    # (which Word/LibreOffice accept); names are normalized to match targets.
     text = re.sub(
         r"\[([^\]]+)\]\(#([^)\s]+)\)",
-        r'{\\field{\\*\fldinst HYPERLINK \\l "\2"} {\\fldrslt \1}}',
+        lambda m: (
+            r"{\field{\*\fldinst HYPERLINK \l \"%s\"}{\fldrslt %s}}"
+            % (valid_bm_name(m.group(2)), m.group(1))
+        ),
         text,
     )
     # Any other link -> keep visible text only.
@@ -249,6 +277,7 @@ def heading_rtf(level, raw, bookmark=None, page_break=False):
     # Always attach a bookmark (prefer explicit anchor, else slug of text) so the
     # generated Table of Contents PAGEREF fields resolve in Word/WordPad.
     bm = bookmark if bookmark else slugify(raw)
+    bm = valid_bm_name(bm)
     mark = r"{\*\bkmkstart %s}{\*\bkmkend %s}" % (bm, bm)
     pb = r"\pagebb\par" if page_break else ""
     return r"%s\pard\sa120\sb120\fs%d\b %s\b0%s\par" % (pb, size, body, mark)
@@ -450,8 +479,10 @@ def toc_rtf(headings):
     out = [r"\pard\sa60\sb120\fs%d\b Table of Contents\b0\par" % TOC_SIZE]
     for lvl, text, anchor in headings:
         indent = 360 * max(0, lvl - 1)
-        # Use the same bookmark the heading carries (explicit anchor, else slug).
+        # Use the same bookmark the heading carries (explicit anchor, else slug),
+        # normalized so Word/LibreOffice actually create the bookmark target.
         bmk = anchor if anchor else slugify(text)
+        bmk = valid_bm_name(bmk)
         # HYPERLINK \l "bookmark" renders the heading text (not a page number) and
         # jumps to the bookmark when clicked - unlike PAGEREF which shows a page #.
         out.append(
