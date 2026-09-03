@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Audit.ps1
-generated: 2026-09-02
+generated: 2026-09-03
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
