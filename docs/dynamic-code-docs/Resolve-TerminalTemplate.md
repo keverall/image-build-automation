@@ -1,10 +1,10 @@
 ---
-source:  ./src/powershell/Automation/Private/Base.ps1
+source:  ./scripts/Setup-Profile.ps1
 generated: 2026-09-03
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
-# Get-UtcApiTimestamp
+# Resolve-TerminalTemplate
 
 <a id="top"></a>
 
@@ -17,7 +17,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Returns current UTC timestamp for SCOM REST API calls (yyyy-MM-ddTHH:mm:ss).
+Set content profile pair.
 
 <a id="original-comment-based-help"></a>
 
@@ -25,7 +25,7 @@ Returns current UTC timestamp for SCOM REST API calls (yyyy-MM-ddTHH:mm:ss).
 
 ```powershell
 .SYNOPSIS
-        Returns current UTC timestamp for SCOM REST API calls (yyyy-MM-ddTHH:mm:ss).
+        Set content profile pair.
 ```
 
 ---
