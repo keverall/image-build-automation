@@ -4,36 +4,40 @@
 
 ## Table of Contents
 
-- [Executive Summary (for Leadership)](#executive-summary-for-leadership)
-- [Technical Summary (for Engineering Management)](#technical-summary-for-engineering-management)
-- [Overview  ](#overview)
-- [1. Identity Infrastructure Layer (Windows Networks & Active Directory)](#1-identity-infrastructure-layer-windows-networks-active-directory)
-  - [1.1 Hybrid AD DS ↔ Entra ID Topology (the sync bridge)](#11-hybrid-ad-ds-entra-id-topology-the-sync-bridge)
-- [2. Bare-Metal Management Layer (iLO & Redfish)](#2-bare-metal-management-layer-ilo-redfish)
-- [3. Out-of-Band Network Access (ZPE Nodegrid)](#3-out-of-band-network-access-zpe-nodegrid)
-- [4. Management & Orchestration Layer (HPE OneView & MCM)](#4-management-orchestration-layer-hpe-oneview-mcm)
-- [5. Monitoring & Alerting Layer (Microsoft SCOM)](#5-monitoring-alerting-layer-microsoft-scom)
-- [6. iLO Trust-by-Certificate — Configuration Steps](#6-ilo-trust-by-certificate-configuration-steps)
-  - [6.1 Prerequisites](#61-prerequisites)
-  - [6.2 Step 1 — Generate a Certificate Signing Request (CSR) from iLO](#62-step-1-generate-a-certificate-signing-request-csr-from-ilo)
-  - [6.3 Step 2 — Issue the Certificate from the Enterprise CA](#63-step-2-issue-the-certificate-from-the-enterprise-ca)
-  - [6.4 Step 3 — Install the Certificate on iLO (Trust by Certificate)](#64-step-3-install-the-certificate-on-ilo-trust-by-certificate)
-  - [6.5 Step 4 — Configure the LDAP/AD Directory Integration](#65-step-4-configure-the-ldapad-directory-integration)
-  - [6.6 Step 5 — Map AD Groups to iLO Roles (Trust-by-Certificate Group Mapping)](#66-step-5-map-ad-groups-to-ilo-roles-trust-by-certificate-group-mapping)
-  - [6.7 Step 6 — OneView Brokered SSO (optional, for Gen10+/Synergy)](#67-step-6-oneview-brokered-sso-optional-for-gen10synergy)
-  - [6.8 Verification](#68-verification)
-- [7. ZPE Nodegrid — Azure AD SAML Claim Mapping (Step-by-Step)](#7-zpe-nodegrid-azure-ad-saml-claim-mapping-step-by-step)
-  - [7.1 Part A — Define Azure AD Side (Enterprise Application + Claims)](#71-part-a-define-azure-ad-side-enterprise-application-claims)
-  - [7.2 Part B — Define Nodegrid Side (Service Provider)](#72-part-b-define-nodegrid-side-service-provider)
-  - [7.3 Verification](#73-verification)
-- [8. Windows Interactive & RDP SSO — Preventing Account Lockouts](#8-windows-interactive-rdp-sso-preventing-account-lockouts)
-  - [8.1 Core principle: one credential, no per-server prompts](#81-core-principle-one-credential-no-per-server-prompts)
-  - [8.2 Domain Controller / AD-side controls (prevent lockout at source)](#82-domain-controller-ad-side-controls-prevent-lockout-at-source)
-  - [8.3 Step-by-step: Configure Windows workstation and servers](#83-step-by-step-configure-windows-workstation-and-servers)
-  - [8.4 RDP launch pattern the engineers should use](#84-rdp-launch-pattern-the-engineers-should-use)
-  - [8.5 MFA scoping (prevent MFA loops / re-authentication storms)](#85-mfa-scoping-prevent-mfa-loops-re-authentication-storms)
-- [Core Security Architecture Matrix](#core-security-architecture-matrix)
-- [References](#references)
+- [Single Sign-On (SSO) Architecture](#single-sign-on-sso-architecture)
+  - [Table of Contents](#table-of-contents)
+  - [Executive Summary (for Leadership)](#executive-summary-for-leadership)
+  - [Technical Summary (for Engineering Management)](#technical-summary-for-engineering-management)
+  - [Overview](#overview)
+  - [1. Identity Infrastructure Layer (Windows Networks \& Active Directory)](#1-identity-infrastructure-layer-windows-networks--active-directory)
+    - [1.1 Hybrid AD DS ↔ Entra ID Topology (the sync bridge)](#11-hybrid-ad-ds--entra-id-topology-the-sync-bridge)
+  - [2. Bare-Metal Management Layer (iLO \& Redfish)](#2-bare-metal-management-layer-ilo--redfish)
+  - [3. Out-of-Band Network Access (ZPE Nodegrid)](#3-out-of-band-network-access-zpe-nodegrid)
+  - [4. Management \& Orchestration Layer (HPE OneView \& MCM)](#4-management--orchestration-layer-hpe-oneview--mcm)
+  - [5. Monitoring \& Alerting Layer (Microsoft SCOM)](#5-monitoring--alerting-layer-microsoft-scom)
+  - [6. iLO Trust-by-Certificate — Configuration Steps](#6-ilo-trust-by-certificate--configuration-steps)
+    - [6.1 Prerequisites](#61-prerequisites)
+    - [6.2 Step 1 — Generate a Certificate Signing Request (CSR) from iLO](#62-step-1--generate-a-certificate-signing-request-csr-from-ilo)
+    - [6.3 Step 2 — Issue the Certificate from the Enterprise CA](#63-step-2--issue-the-certificate-from-the-enterprise-ca)
+    - [6.4 Step 3 — Install the Certificate on iLO (Trust by Certificate)](#64-step-3--install-the-certificate-on-ilo-trust-by-certificate)
+    - [6.5 Step 4 — Configure the LDAP/AD Directory Integration](#65-step-4--configure-the-ldapad-directory-integration)
+    - [6.6 Step 5 — Map AD Groups to iLO Roles (Trust-by-Certificate Group Mapping)](#66-step-5--map-ad-groups-to-ilo-roles-trust-by-certificate-group-mapping)
+    - [6.7 Step 6 — OneView Brokered SSO (optional, for Gen10+/Synergy)](#67-step-6--oneview-brokered-sso-optional-for-gen10synergy)
+    - [6.8 Verification](#68-verification)
+  - [7. ZPE Nodegrid — Azure AD SAML Claim Mapping (Step-by-Step)](#7-zpe-nodegrid--azure-ad-saml-claim-mapping-step-by-step)
+    - [7.1 Part A — Define Azure AD Side (Enterprise Application + Claims)](#71-part-a--define-azure-ad-side-enterprise-application--claims)
+    - [7.2 Part B — Define Nodegrid Side (Service Provider)](#72-part-b--define-nodegrid-side-service-provider)
+    - [7.3 Verification](#73-verification)
+  - [8. Windows Interactive \& RDP SSO — Preventing Account Lockouts](#8-windows-interactive--rdp-sso--preventing-account-lockouts)
+    - [8.1 Core principle: one credential, no per-server prompts](#81-core-principle-one-credential-no-per-server-prompts)
+    - [8.2 Domain Controller / AD-side controls (prevent lockout at source)](#82-domain-controller--ad-side-controls-prevent-lockout-at-source)
+    - [8.3 Step-by-step: Configure Windows workstation and servers](#83-step-by-step-configure-windows-workstation-and-servers)
+      - [8.3.1 Jump-box / engineer workstation (Tier-1)](#831-jump-box--engineer-workstation-tier-1)
+      - [8.3.2 RDP target servers (the 50+ ProLiant boxes)](#832-rdp-target-servers-the-50-proliant-boxes)
+    - [8.4 RDP launch pattern the engineers should use](#84-rdp-launch-pattern-the-engineers-should-use)
+    - [8.5 MFA scoping (prevent MFA loops / re-authentication storms)](#85-mfa-scoping-prevent-mfa-loops--re-authentication-storms)
+  - [Core Security Architecture Matrix](#core-security-architecture-matrix)
+  - [References](#references)
 
 <a id="executive-summary-for-leadership"></a>
 
@@ -62,7 +66,7 @@
 - Implementing Single Sign-On (SSO) in a highly regulated EU banking environment
 - subject to strict compliance frameworks - DORA, GDPR, and PSD2/3 Strong Customer Authentication
 - involves unifying modern web-based identity management with legacy datacentre infrastructure.
-- In a Windows network hosting HPE ProLiant infrastructure, 
+- In a Windows network hosting HPE ProLiant infrastructure,
 - this is achieved by mapping Active Directory (AD) / Azure AD (Entra ID) identities to different
   - hardware, management, and monitoring tiers
   - using explicit trust boundaries. [1](#ref-1)
@@ -104,24 +108,23 @@ The whole SSO model rests on a single identity control plane: on-prem AD DS is b
 
 ## 2. Bare-Metal Management Layer (iLO & Redfish)
 
-To prevent engineers from using shared local administrator accounts on HPE ProLiant servers, individual bare-metal access is tied back to AD. [4](#ref-4) 
+To prevent engineers from using shared local administrator accounts on HPE ProLiant servers, individual bare-metal access is tied back to AD. [4](#ref-4)
 
 - HPE iLO (Integrated Lights-Out): iLO is configured using Trust by Certificate mode. The bank installs enterprise CA-signed certificates onto the iLO chips. In the HPE SSO settings, iLO is configured to trust assertions from the parent manager software (HPE OneView). Additionally, iLO directories map AD Security Groups natively to specific iLO roles (e.g., Admin, Remote Console, Read-Only) using LDAPS. [3](#ref-3), [5](#ref-5), [6](#ref-6), [7](#ref-7)
 
 - Redfish API: Redfish is the modern RESTful replacement for IPMI/SNMP. For automated scripts or infrastructure-as-code, SSO is achieved via Session Tokens. A user authenticates securely via the /redfish/v1/SessionService/Sessions endpoint using their AD credentials, receives a temporary X-Auth-Token, and passes it in subsequent REST API headers. For server-to-server operations (like automated agents), HPE ProLiant Gen12+ utilizes Application Accounts / Tokens, minimizing human credential leakage. [8](#ref-8), [9](#ref-9), [10](#ref-10), [11](#ref-11)
   
-
 <a id="3-out-of-band-network-access-zpe-nodegrid"></a>
 
 ## 3. Out-of-Band Network Access (ZPE Nodegrid)
 
 Nodegrid serves as the critical console server infrastructure, providing access to hardware when the production network is down.
 
-- SAML 2.0 Web SSO: Nodegrid devices are configured as Service Providers (SP) 
-- linked to the bank's central identity provider (e.g., Azure AD/Entra ID) using XML Metadata exchange. 
+- SAML 2.0 Web SSO: Nodegrid devices are configured as Service Providers (SP)
+- linked to the bank's central identity provider (e.g., Azure AD/Entra ID) using XML Metadata exchange.
 - An engineer logging into the Nodegrid UI is redirected to the bank's portal to fulfill MFA requirements. [12](#ref-12), [13](#ref-13), [14](#ref-14), [15](#ref-15)
-- Console/CLI SSO & Authorization: Once authenticated via SAML, the user's group claims (e.g., memberOf) are evaluated. 
-- Nodegrid maps these claims to internal device access groups, 
+- Console/CLI SSO & Authorization: Once authenticated via SAML, the user's group claims (e.g., memberOf) are evaluated.
+- Nodegrid maps these claims to internal device access groups,
 - giving the user instant pass-through access (via serial/SSH) to specific ProLiant iLO ports without needing to log into the target servers a second time. [2](#ref-2), [13](#ref-13), [16](#ref-16), [17](#ref-17)
 
 <a id="4-management-orchestration-layer-hpe-oneview-mcm"></a>
@@ -133,21 +136,21 @@ Nodegrid serves as the critical console server infrastructure, providing access 
 - maps AD groups directly to OneView roles (e.g., Infrastructure Administrator).
 - Because OneView acts as a certificate authority/broker for the underlying hardware,
 - logging into OneView via AD automatically generates an implicit SSO token to launch the iLO Remote Console for any managed server seamlessly.
-- **MCM**(Microsoft Endpoint Configuration Manager / MECM): Formerly SCCM, MCM natively integrates into the Windows Domain infrastructure. 
-- SSO is handled implicitly through Windows Kerberos Authentication. 
-- Because the engineer logs into their Windows jump box with AD credentials, 
+- **MCM**(Microsoft Endpoint Configuration Manager / MECM): Formerly SCCM, MCM natively integrates into the Windows Domain infrastructure.
+- SSO is handled implicitly through Windows Kerberos Authentication.
+- Because the engineer logs into their Windows jump box with AD credentials,
 - MCM honours their token, granting them RBAC rights to manage ProLiant OS deployment and configuration tasks without prompting for a login. [18](#ref-18), [19](#ref-19), [20](#ref-20), [21](#ref-21), [22](#ref-22)
 
 <a id="5-monitoring-alerting-layer-microsoft-scom"></a>
 
 ## 5. Monitoring & Alerting Layer (Microsoft SCOM)
 
-- SCOM (System Center Operations Manager): Much like MCM, SCOM relies fully on Windows Kerberos authentication and Active Directory architecture. 
+- SCOM (System Center Operations Manager): Much like MCM, SCOM relies fully on Windows Kerberos authentication and Active Directory architecture.
 - SCOM management groups are secured via AD global security groups.
-- HPE OneView Management Pack for SCOM: To achieve seamless visibility, 
-- the HPE SCOM Management Pack is deployed. It utilizes a secure service account or an OAuth/Token connection back to HPE OneView. 
-- The engineer looking at the SCOM console can drill down into a ProLiant hardware alert 
-- and click a contextual link that passes their SSO token straight into OneView or iLO to inspect the hardware health, 
+- HPE OneView Management Pack for SCOM: To achieve seamless visibility,
+- the HPE SCOM Management Pack is deployed. It utilizes a secure service account or an OAuth/Token connection back to HPE OneView.
+- The engineer looking at the SCOM console can drill down into a ProLiant hardware alert
+- and click a contextual link that passes their SSO token straight into OneView or iLO to inspect the hardware health,
 - eliminating credential friction during high-severity banking outages.
 
 ------------------------------
@@ -199,10 +202,11 @@ To eliminate local iLO accounts and lockouts, each HPE ProLiant iLO chip is issu
 2. Upload the issued cert **+ the intermediate chain** (root is pre-trusted if enrolled via Enterprise CA; import intermediates explicitly).
 3. **Reboot** iLO when prompted. After restart, the browser trust indicator (lock icon) must show the CA as a trusted issuer.
 4. Verify via `ilorest`:
-   ```
+
+```pwsh
    ilorest login <ilo-fqdn> --user "" --password ""
    ilorest showcert
-   ```
+```
 
 <a id="65-step-4-configure-the-ldapad-directory-integration"></a>
 
@@ -232,7 +236,8 @@ Ref [7](#ref-7). This is the crux of SSO: iLO consumes the user's group membersh
 | `CN=iLO-Auditors,OU=Security,...` | **Auditor** | Server-level |
 
 CLI equivalent (via `ilorest`):
-```
+
+```pwsh
 ilorest.exe config --update
   --mgr_user 0 --mgr_password 0 \
   --ad_server ldaps://dc.bank.domains:636 \
@@ -249,6 +254,7 @@ After mapping, **disable iLO-local user accounts** (set local accounts to `disab
 ### 6.7 Step 6 — OneView Brokered SSO (optional, for Gen10+/Synergy)
 
 Because iLO is often managed through HPE OneView:
+
 1. Import the iLO into OneView: **Server Hardware → Add** (OneView discovers the certificate via WS-Trust).
 2. In OneView: **Settings → Platform Settings → iLO Settings → Enable "Use iLO for remote console with HPE SSO"**.
 3. Map an AD group to the OneView *Server Administrator* role. A user in that group can then click *Remote Console* in OneView and get a seamless iLO session without a second login (token is brokered via the OneView-iLO trust relationship).
@@ -260,8 +266,6 @@ Because iLO is often managed through HPE OneView:
 - Engineer in `iLO-Admins` opens `https://<ilo-fqdn>` → browser SSO to AD → lands in the iLO UI as Administrator, no iLO password prompt.
 - Engineer in `iLO-Read-Only` lands in **Read Only** mode; *Remote Console* button is greyed out.
 - Local accounts confirmed `disabled` via **Administration → User Administration → Local Accounts**.
-
----
 
 <a id="7-zpe-nodegrid-azure-ad-saml-claim-mapping-step-by-step"></a>
 
@@ -343,8 +347,6 @@ Ref [2](#ref-2), [13](#ref-13). This is configured per-Nodegrid device under **S
 - `memberOf=User`-mapped account sees the same device list but **Serial Console / SSH** buttons are restricted per that group's ACL (no full config write).
 - After Azure sign-out, Nodegrid session terminates (SLO confirmed).
 
----
-
 <a id="8-windows-interactive-rdp-sso-preventing-account-lockouts"></a>
 
 ## 8. Windows Interactive & RDP SSO — Preventing Account Lockouts
@@ -423,6 +425,7 @@ Ref [18](#ref-18). The lockout prevention happens by enforcing Restricted Admin 
 ### 8.4 RDP launch pattern the engineers should use
 
 Rather than typing credentials at the remote desktop prompt, engineers launch RDP from the **Azure AD / Entra-joined jump box** using one of:
+
 - `mstsc.exe /v:<server-fqdn>` — and **at the login prompt**, select *"Use my RD Gateway credentials for the remote computer"* / *"Attempt SSO"*; Windows presents the TGT to the remote server.
 - `Enter-PSSession -ComputerName <server>` (WinRM over Kerberos) — no second credential.
 - `ssh.exe <user>@<server>` (if WinOpenSSH + AD integration is enabled) — the local OpenSSH client can forward the GSSAPI/Kerberos ticket.
@@ -445,7 +448,7 @@ Ref [1](#ref-1), [21](#ref-21), [22](#ref-22). Place MFA at **exactly one** cont
 
 This single-MFA-entry model is what collapses the 50+ daily logins into one, removing the lockout trigger.
 
----
+------------------------------
 
 <a id="core-security-architecture-matrix"></a>
 

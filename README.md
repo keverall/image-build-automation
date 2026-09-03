@@ -4,20 +4,27 @@
 
 ## Table of Contents
 
-- [Summary](#summary)
-- [🚀 Quick Start - Setup & Installation](#quick-start-setup-installation)
-  - [TL;DR - One-Line Setup](#tldr-one-line-setup)
-  - [Internal docs index](#internal-docs-index)
-  - [In this document](#in-this-document)
-- [Project Architecture](#project-architecture)
-- [Generated Audit Logs (JSON)](#generated-audit-logs-json)
-- [Quick Links for Common Tasks](#quick-links-for-common-tasks)
-- [GitLab Pipeline Files](#gitlab-pipeline-files)
-  - [Pipeline Activation](#pipeline-activation)
-- [Contributing](#contributing)
-- [Support](#support)
-- [License](#license)
-- [HPe Doc](#hpe-doc)
+- [HPE ProLiant Windows Server ISO Automation (Root Readme)](#hpe-proliant-windows-server-iso-automation-root-readme)
+  - [Table of Contents](#table-of-contents)
+  - [Summary](#summary)
+  - [🚀 Quick Start - Setup \& Installation](#-quick-start---setup--installation)
+    - [TL;DR - One-Line Setup](#tldr---one-line-setup)
+    - [Internal docs index](#internal-docs-index)
+      - [Core Documentation](#core-documentation)
+      - [Physical Server Build \& Runbooks](#physical-server-build--runbooks)
+      - [Maintenance Mode \& Scheduling](#maintenance-mode--scheduling)
+      - [Integration \& Authentication](#integration--authentication)
+      - [Developer Resources](#developer-resources)
+    - [In this document](#in-this-document)
+  - [Project Architecture](#project-architecture)
+  - [Generated Audit Logs (JSON)](#generated-audit-logs-json)
+  - [Quick Links for Common Tasks](#quick-links-for-common-tasks)
+  - [GitLab Pipeline Files](#gitlab-pipeline-files)
+    - [Pipeline Activation](#pipeline-activation)
+  - [Contributing](#contributing)
+  - [Support](#support)
+  - [License](#license)
+  - [HPe Doc](#hpe-doc)
 
 <a id="summary"></a>
 
@@ -80,7 +87,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 #### Core Documentation
 
 | Document | Description |
-|---|---|
+| --- | --- |
 | [📚 Documentation Index](docs/README.md#top) | Complete documentation overview |
 | [🚀 Setup Guide](docs/SETUP-GUIDE.md#top) | **START HERE** - Profile setup, module installation, quick start |
 | [📡 PowerShell API Reference](docs/Generic/powershell_api_reference.md#top) | Module overview, cmdlet usage, orchestrator API |
@@ -94,7 +101,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 #### Physical Server Build & Runbooks
 
 | Document | Description |
-|---|---|
+| --- | --- |
 | [📋 Runbook Requirements](docs/Automation/runbook-requirements.md#top) | Operational runbook for physical HPE server builds via ConfigMgr + OneView + iLO Redfish |
 | [📋 Runbook Changes](docs/Automation/runbook-changes.md#top) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
 | [📗 Automation Command Reference](docs/Automation/automation_commands.md#top) | Command-level reference for the physical server build functions |
@@ -102,7 +109,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 #### Maintenance Mode & Scheduling
 
 | Document | Description |
-|---|---|
+| --- | --- |
 | [🔧 Quick Start Guide](docs/SETUP-GUIDE.md#top) | **NEW USERS** - Complete setup and first steps |
 | [⚡ Maintenance Mode Shortcuts](docs/Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top) | `mm` command reference and examples |
 | [🔧 Maintenance Mode Architecture](docs/Maintenance-Mode/maintenance_mode.md#top) | Architecture, scheduling, audit, OpsRamp integration |
@@ -112,7 +119,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 #### Integration & Authentication
 
 | Document | Description |
-|---|---|
+| --- | --- |
 | [🔐 SCOM Authentication](docs/Generic/scom-auth.md#top) | SCOM authentication setup and configuration |
 | [🔐 OneView Authentication](docs/Generic/oneview-auth.md#top) | HPE OneView authentication details |
 | [🔐 Authentication Overview](docs/Generic/auth-doc.md#top) | General authentication documentation |
@@ -122,7 +129,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 #### Developer Resources
 
 | Document | Description |
-|---|---|
+| --- | --- |
 | [📖 DevOps Guide to HPE Terms](docs/devops-guide-to-HPe-Terms.md#top) | HPE terminology guide |
 
 <a id="in-this-document"></a>
@@ -157,7 +164,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 
 ## Project Architecture
 
-```
+```pwsh
 image-build-automation/
 ├── bin/                               # Bundled binaries (checkmake, make, oh-my-posh)
 ├── configs/                           # Server/cluster/patch JSON configs
@@ -182,7 +189,7 @@ image-build-automation/
 
 ## Generated Audit Logs (JSON)
 
-During both normal operations and unit testing (e.g. `make test`), you will notice a significant number of structured `.json` log files generated in the `generated/logs/` subdirectories (such as `generated/logs/testing/enable_UNIT-TEST-CLUSTER_...json`). 
+During both normal operations and unit testing (e.g. `make test`), you will notice a significant number of structured `.json` log files generated in the `generated/logs/` subdirectories (such as `generated/logs/testing/enable_UNIT-TEST-CLUSTER_...json`).
 
 These files are the definitive, machine-readable execution records generated by the `AuditLogger`. They are designed to be ingested programmatically by external monitoring and compliance systems (like OpsRamp and ServiceNow) to confirm state changes, durations, and metadata without parsing plain text logs.
 
@@ -195,7 +202,7 @@ These files are the definitive, machine-readable execution records generated by 
 ## Quick Links for Common Tasks
 
 | Task | Manual Command | Pipeline Stage |
-|---|---|---|
+| --- | --- | --- |
 | Run all tests locally | `pwsh -File scripts/run-tests.ps1` | Unit Tests |
 | Run maintenance mode tests | `make maint-mode-tests` | Unit Tests |
 | Generate test coverage | `make coverage` | Test |
