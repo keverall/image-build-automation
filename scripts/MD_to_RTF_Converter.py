@@ -94,7 +94,6 @@ _CHAR_MAP = {
     "\u200b": "",
     "\u200e": "",
     "\u200f": "",
-    "\u00a0": " ",
 }
 
 
@@ -253,7 +252,7 @@ def code_block_rtf(code):
 
 
 def blockquote_rtf(lines):
-    body = r"\par\n".join(inline_to_rtf(l) for l in lines)
+    body = r"\par\n".join(inline_to_rtf(line) for line in lines)
     return r"\pard\li360\ri360\sa80\fs%d\i %s\i0\par" % (BODY_SIZE, body)
 
 
@@ -438,7 +437,8 @@ def toc_rtf(headings):
         # HYPERLINK \l "bookmark" renders the heading text (not a page number) and
         # jumps to the bookmark when clicked - unlike PAGEREF which shows a page #.
         out.append(
-            r"\pard\li%d\fi-360\fs%d\'95\tab {\field{\*\fldinst HYPERLINK \l \"%s\"}{\fldrslt %s}}\par"
+            r"\pard\li%d\fi-360\fs%d\'95\tab {\field{\*\fldinst HYPERLINK \l \"%s\"}"
+            r"{\fldrslt %s}}\par"
             % (indent, TOC_SIZE, bmk, inline_to_rtf(text))
         )
     out.append(r"\pard\sa120\par")

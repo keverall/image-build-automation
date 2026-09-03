@@ -77,7 +77,7 @@
 Central source of truth is Active Directory Domain Services (AD DS) combined with an identity provider (IdP) like Microsoft Entra ID / ADFS to enforce multi-factor authentication (MFA) and conditional access policies before granting an SSO token.
 
 - All administrative identities belong to tiered AD security groups (e.g., Tier-0 for Domain Admins/Hardware controllers).
-- Open standards are heavily enforced: SAML 2.0 / OIDC are used for web portals, while secure Kerberos or LDAP over TLS (LDAPS, Port 636) handles legacy backend authentications. [2](#ref-2, [3](#ref-3
+- Open standards are heavily enforced: SAML 2.0 / OIDC are used for web portals, while secure Kerberos or LDAP over TLS (LDAPS, Port 636) handles legacy backend authentications. [2](#ref-2), [3](#ref-3)
 
 <a id="11-hybrid-ad-ds-entra-id-topology-the-sync-bridge"></a>
 
