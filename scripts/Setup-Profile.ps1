@@ -116,6 +116,66 @@ if (-not (Test-Path $AutomationModule)) {
 Write-Color $Cyan "[setup] Configuring PowerShell profiles with Automation module..."
 
 # ─── Determine platform-appropriate WIP template paths ───────────────────────
+function Resolve-TerminalTemplate {
+    <#
+    .SYNOPSIS
+        Resolves the PowerShell profile template to apply for a given host.
+
+    .DESCRIPTION
+        Selects the correct WIP profile template path based on the target
+        computer name. On Windows, the name is normalized (dashes, underscores
+        and spaces removed) and matched against known host patterns:
+
+          * EIS19 hosts  -> wip/eis19profile.ps1
+          * VDI hosts    -> wip/techvdi-profile.ps1
+          * all others   -> wip/windowspsprofile.ps1 (default)
+
+        The normalization prevents hosts like 'eis-19' from falling through to
+        the default template and incorrectly inheriting a corporate proxy, which
+        breaks Connect-OVMgmt against internal HPE OneView appliances.
+
+        On Linux/macOS a separate template is chosen by the caller (see usage
+        of $TerminalTemplate below).
+
+    .PARAMETER ComputerName
+        Computer name used to pick the template. Callers pass
+        [System.Environment]::MachineName.
+
+    .PARAMETER RepoRoot
+        Root path of the repository, used to resolve template file paths.
+
+    .EXAMPLE
+        PS> Resolve-TerminalTemplate -ComputerName ([System.Environment]::MachineName) -RepoRoot $RepoRoot
+
+        Returns the EIS19 template path for an 'eis-19' host, otherwise the
+        default template.
+
+    .OUTPUTS
+        [string] Fully-qualified path to the chosen profile template.
+    #>
+    param([string]$ComputerName, [string]$RepoRoot)
+    $templates = @{
+        EIS19   = Join-Path $RepoRoot 'wip/eis19profile.ps1'
+        TECHVDI = Join-Path $RepoRoot 'wip/techvdi-profile.ps1'
+        DEFAULT = Join-Path $RepoRoot 'wip/windowspsprofile.ps1'
+    }
+    # Normalize: drop separators (-, _, space) so 'EIS-19' / 'eis_19' both match
+    # 'eis19'. Without this the real host 'eis-19' fails the check and falls
+    # through to the greedy 'prod' branch below.
+    $name = if ($ComputerName) { ($ComputerName -replace '[-_\s]', '').ToLowerInvariant() } else { '' }
+    if ($name -match 'eis19' -and (Test-Path $templates.EIS19)) {
+        return $templates.EIS19
+    }
+    # Only route genuine VDI hosts to the techvdi template. The bare 'prod'
+    # substring previously also matched unrelated production automation hosts
+    # (e.g. eis-19) and wrongly inherited the corporate proxy, which breaks
+    # Connect-OVMgmt against internal OneView appliances (504 via proxy tunnel).
+    if ($name -match 'vdi' -and (Test-Path $templates.TECHVDI)) {
+        return $templates.TECHVDI
+    }
+    return $templates.DEFAULT
+}
+
 $isWin = $IsWindows -or $null -eq $IsWindows
 
 # ─── ProfileRoot (test hook) ──────────────────────────────────────────────────
@@ -130,9 +190,11 @@ $profileBase = if ($ProfileRoot) {
     $HOME
 }
 
-# Primary terminal profile template (Windows Terminal / pwsh console)
+# Primary terminal profile template (Windows Terminal / pwsh console).
+# On Windows the template is chosen per-machine by computer name (see
+# Resolve-TerminalTemplate); on Linux/macOS there is a single template.
 $TerminalTemplate = if ($isWin) {
-    Join-Path $RepoRoot 'wip/windowspsprofile.ps1'
+    Resolve-TerminalTemplate -ComputerName ([System.Environment]::MachineName) -RepoRoot $RepoRoot
 } else {
     Join-Path $RepoRoot 'wip/psprofile.ps1'
 }

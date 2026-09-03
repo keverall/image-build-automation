@@ -4,9 +4,9 @@
     mandatory -GuardRail safety gate.
 
 .DESCRIPTION
-    Exercises the build/deploy commands plus the ISO / firmware validation they rely on:
+    Exercises the build/deploy commands plus the ISO validation they rely on:
 
-      Configure-PhysicalBuild, Start-PhysicalServerBuild, Invoke-IsoDeploy, Update-Firmware
+      Configure-PhysicalBuild, Start-PhysicalServerBuild
 
     What it exercises
     -----------------
@@ -14,17 +14,18 @@
       2. Running build/deploy WITHOUT the mandatory -GuardRail -> early, graceful,
          logged BLOCK (never an unguarded action).
       3. HPE OneView ISO file variants:
-           * filename/UNC/HTTPS/NFS path -> resolved to an iLO-accessible URL
-             (SMB conversion, shareability checks)
-           * a supplied local ISO path is validated (exists, is an .iso)
-      4. Firmware archive validation (exists, valid zip/cab/tar).
-      5. The -GuardRail SAFETY GATE across all four commands:
-           * omitted      -> blocked (GUARD RAIL REQUIRED)
-           * non-matching -> blocked (mismatch)
-           * matching     -> proceeds (DryRun / SkipConfirmation)
+            * filename/UNC/HTTPS/NFS path -> resolved to an iLO-accessible URL
+              (SMB conversion, shareability checks)
+            * a supplied local ISO path is validated (exists, is an .iso)
+      4. Firmware archive validation (exists, valid zip/cab/tar) — path validation
+         only; the standalone Update-Firmware command has been removed.
+      5. The -GuardRail SAFETY GATE across both commands:
+            * omitted      -> blocked (GUARD RAIL REQUIRED)
+            * non-matching -> blocked (mismatch)
+            * matching     -> proceeds (DryRun)
       6. Confirmation flow: a matched guard in an automated run with no
-         -SkipConfirmation auto-cancels (no unconfirmed destructive action).
-      7. Build/deploy VARIANTS (external ISO, firmware folders) under -DryRun.
+         -Deploy / -Execute auto-cancels (no unconfirmed destructive action).
+      7. Build/deploy VARIANTS (external ISO) under -DryRun.
 
     -OneViewHost is the OneView appliance and -Server is the target
     server identifier (name / serial / iLO IP). Nothing is hard-coded; both are
@@ -76,7 +77,7 @@
     .\testBuildDeploy.ps1 -OneViewHost oneview-test.ad.example.com -Server srv01
 
 .EXAMPLE
-    .\testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -FirmwarePath 'C:\fw\firmware.zip' -GuardRail 'srv0'
+    .\testBuildDeploy.ps1 -Server srv01 -IsoPath '\\fileserver\isos\win.iso' -GuardRail 'srv0'
 
 .EXAMPLE
     .\testBuildDeploy.ps1 -Live -OneViewHost ov.corp.local -Server srv01 -Credential $cred -IsoPath 'https://artifacts/isos/win.iso' -GuardRail 'srv0'
@@ -216,60 +217,48 @@ if ($FirmwarePath) {
     Record-Step "Supplied -FirmwarePath (skipped)" $true "No -FirmwarePath supplied; pass one to validate a real firmware archive."
 }
 
-# ── Phase 4: GUARD RAIL safety gate across all four commands ─────────────────
+# ── Phase 4: GUARD RAIL safety gate across both commands ─────────────────────
 Write-Host "`n--- Phase 4: -GuardRail mandatory + match/non-match gate ---" -ForegroundColor Yellow
 
 # 4a. OMITTED guard -> every build/deploy command must block early & gracefully.
 Record-Step 'Configure-PhysicalBuild (NO guard) blocked' $true "Expected: GUARD RAIL REQUIRED"
-$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -SkipOneView -SkipPreBuild -SkipConfirmation
+$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -SkipOneView -SkipPreBuild -PassThru
 Record-Step '  -> GuardRailRequired=true, Success=false' (($r.GuardRailRequired -eq $true) -and ($r.Success -eq $false)) ("Error='$($r.Error)'")
 
-$r = Update-Firmware -Server $Server -GuardRail '' -DryRun
-Record-Step 'Update-Firmware (NO guard) blocked' (($r.GuardRailRequired -eq $true) -and ($r.Success -eq $false)) ("Error='$($r.Error)'")
-
-$r = Invoke-IsoDeploy -Server $Server -OneViewHost $hostArg -GuardRail '' -DryRun
-Record-Step 'Invoke-IsoDeploy (NO guard) blocked' (($r.GuardRailRequired -eq $true) -and ($r.Success -eq $false)) ("Error='$($r.Error)'")
-
 $r = Start-PhysicalServerBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail '' -DryRun `
-        -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
+        -SkipPreBuild -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
 Record-Step 'Start-PhysicalServerBuild (NO guard) blocked' (($r.GuardRailRequired -eq $true) -and ($r.Success -eq $false)) ("Error='$($r.Error)'")
 
 # 4b. NON-MATCHING guard -> mismatch block (after the mandatory check passes).
 $nonMatch = 'zzz_no_such_server_zzz'
-$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $nonMatch -SkipOneView -SkipPreBuild -SkipConfirmation
+$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $nonMatch -SkipOneView -SkipPreBuild -PassThru
 Record-Step 'Configure-PhysicalBuild (NON-MATCH guard) blocked' ($r.Success -eq $false) ("Reason='$($r.Reason)'")
 
 # 4c. MATCHING guard -> the command is NOT blocked by the guard (it proceeds to
-#     attempt the action). Actual build/firmware/deploy success is environment-
+#     attempt the action). Actual build/deploy success is environment-
 #     dependent (real appliance/credentials), so we assert the guard *allowed* it
 #     rather than that the whole pipeline succeeded.
 $matchGuard = if ($GuardRail) { $GuardRail } else { '.*' }
 function GuardAllowed { param($r) ($r.GuardRailRequired -ne $true) -and ($r.Error -notmatch 'GUARD RAIL') }
 
-$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard -SkipOneView -SkipPreBuild -SkipConfirmation
+$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard -SkipOneView -SkipPreBuild -PassThru
 Record-Step "Configure-PhysicalBuild (MATCH guard '$matchGuard') not blocked" (GuardAllowed $r) ("Server='$($r.Server)'")
 
-$r = Update-Firmware -Server $Server -GuardRail $matchGuard -DryRun
-Record-Step "Update-Firmware (MATCH guard '$matchGuard') not blocked" (GuardAllowed $r) ("Total='$($r.Total)'")
-
-$r = Invoke-IsoDeploy -Server $Server -OneViewHost $hostArg -GuardRail $matchGuard -DryRun
-Record-Step "Invoke-IsoDeploy (MATCH guard '$matchGuard') not blocked" (GuardAllowed $r) ("Server='$($r.Server)'")
-
 $r = Start-PhysicalServerBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard -DryRun `
-        -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
+        -SkipPreBuild -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
 Record-Step "Start-PhysicalServerBuild (MATCH guard '$matchGuard') not blocked" (GuardAllowed $r) ("Server='$($r.server)'")
 
-# ── Phase 5: confirmation flow (automated, matched guard, no -SkipConfirmation) ─
+# ── Phase 5: confirmation flow (automated, matched guard, no -Deploy) ─────────
 Write-Host "`n--- Phase 5: confirmation flow (auto-cancel when unconfirmed) ---" -ForegroundColor Yellow
 $prevAuto = $env:AUTOMATED_MODE
 $env:AUTOMATED_MODE = 'true'
 try {
-    # Matched guard, not DryRun, not SkipConfirmation, automated -> must auto-cancel
+    # Matched guard, not DryRun, not -Deploy, automated -> must auto-cancel
     # (no unconfirmed destructive action). Use a real-ish build with guards but all
     # phases skipped so nothing is contacted; the guard+confirm decision still applies.
     $r = Start-PhysicalServerBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard `
-            -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
-    Record-Step 'Matched guard + automated + no -SkipConfirmation -> auto-cancel' ($r.Success -eq $false) ("Success='$($r.Success)'")
+            -SkipPreBuild -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild
+    Record-Step 'Matched guard + automated + no -Deploy -> auto-cancel' ($r.Success -eq $false) ("Success='$($r.Success)'")
 } finally {
     $env:AUTOMATED_MODE = $prevAuto
 }
@@ -280,14 +269,9 @@ Write-Host "`n--- Phase 6: build/deploy variants (DryRun) ---" -ForegroundColor 
 # External ISO deploy variant (skip build/publish automatically). We assert the
 # guard allowed the variant to run (full deploy success is environment-dependent).
 $extIso = if ($IsoPath) { $IsoPath } else { 'https://artifacts.internal.example.com/isos/WinSrv2025.iso' }
-$r = Invoke-IsoDeploy -Server $Server -OneViewHost $hostArg -GuardRail $matchGuard -ExternalIsoPath $extIso -DryRun
-Record-Step 'Invoke-IsoDeploy (external ISO variant) not blocked' (GuardAllowed $r) ("Server='$($r.Server)'")
-
-# Firmware folders variant on the build pipeline.
-$r = Start-PhysicalServerBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard -DryRun `
-        -SkipPreBuild -SkipIsoBuild -SkipPublish -SkipOneView -SkipMount -SkipMonitor -SkipPostBuild `
-        -FirmwareFolders @('C:\fw\BIOS') -SkipFirmware
-Record-Step 'Start-PhysicalServerBuild (firmware folders variant)' (GuardAllowed $r) ("Server='$($r.server)'")
+$r = Configure-PhysicalBuild -SrvrId $Server -OneViewHost $hostArg -GuardRail $matchGuard `
+        -ExternalIsoPath $extIso -SkipOneView -SkipPreBuild -DryRun -PassThru
+Record-Step 'Configure-PhysicalBuild (external ISO variant) not blocked' (GuardAllowed $r) ("Server='$($r.Server)'")
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 $passed = ($results | Where-Object { $_.Passed }).Count

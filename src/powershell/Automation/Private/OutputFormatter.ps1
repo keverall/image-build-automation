@@ -260,3 +260,52 @@ function _Publish-Result {
 
     if ($PassThru) { return $Result }
 }
+
+function _ConvertTo-IloIpAddressList {
+    <#
+    .SYNOPSIS
+        Extracts every iLO / management IP address from a OneView server-hardware
+        object (or directly from its mpIpAddresses value), tolerating the different
+        shapes OneView returns across versions:
+          - a string[]                                      (e.g. @('10.0.0.1'))
+          - an array of @{ ipAddress = …; type = … } / @{ address = … } objects
+          - an mpHostInfo sub-object holding mpIpAddresses
+          - a top-level iloIpAddress / managementIP property
+        Every candidate value is scanned for an IPv4/IPv6-looking string, so the
+        column is never blank just because OneView renamed the property.
+    #>
+    [CmdletBinding()]
+    param($ServerOrMpIpAddresses)
+
+    $ipPattern = '\b(?:\d{1,3}\.){3}\d{1,3}\b|\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b'
+    $out = [System.Collections.Generic.List[string]]::new()
+    if ($null -eq $ServerOrMpIpAddresses) { return $out }
+
+    $sets = [System.Collections.Generic.List[object]]::new()
+    if ($ServerOrMpIpAddresses.PSObject -and $ServerOrMpIpAddresses.PSObject.Properties.Name -contains 'mpIpAddresses') {
+        $s = $ServerOrMpIpAddresses
+        if ($s.mpIpAddresses)                               { $sets.Add($s.mpIpAddresses) }
+        if ($s.mpHostInfo -and $s.mpHostInfo.mpIpAddresses) { $sets.Add($s.mpHostInfo.mpIpAddresses) }
+        if ($s.iloIpAddress)                               { $sets.Add($s.iloIpAddress) }
+        if ($s.managementIP)                               { $sets.Add($s.managementIP) }
+    } else {
+        $sets.Add($ServerOrMpIpAddresses)
+    }
+
+    foreach ($set in $sets) {
+        if ($null -eq $set) { continue }
+        if ($set -isnot [System.Collections.ICollection]) { $set = @($set) }
+        foreach ($entry in $set) {
+            if ($null -eq $entry) { continue }
+            if ($entry -is [string]) {
+                if ($entry -match $ipPattern) { $out.Add($entry) }
+                continue
+            }
+            $values = if ($entry -is [System.Collections.IDictionary]) { $entry.Values } else { $entry.PSObject.Properties.Value }
+            foreach ($val in $values) {
+                if ($val -is [string] -and $val -match $ipPattern) { $out.Add($val) }
+            }
+        }
+    }
+    return $out
+}

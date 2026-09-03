@@ -15,7 +15,7 @@ Describe 'Get-OneViewVersion - basic invocation' {
 
     It 'Reports required module and local module state without an appliance' {
         $global:ConnectedSessions = $null
-        $r = Get-OneViewVersion -Quiet
+        $r = Get-OneViewVersion -PassThru -Quiet
         $r.RequiredModule | Should -Be 'HPEOneView.1000'
         $r.Appliance      | Should -Be $null
         $r.ContainsKey('LoadedModules')    | Should -Be $true
@@ -28,7 +28,7 @@ Describe 'Get-OneViewVersion - basic invocation' {
                 @{ currentVersion = 8200 }
             }
         }
-        $r = Get-OneViewVersion -OneViewHost 'oneview.example.com' -Quiet
+        $r = Get-OneViewVersion -OneViewHost 'oneview.example.com' -PassThru -Quiet
         $r.Appliance          | Should -Be 'oneview.example.com'
         $r.ApplianceReachable | Should -Be $true
         $r.ApplianceVersion   | Should -Be 8200
@@ -40,7 +40,7 @@ Describe 'Get-OneViewVersion - basic invocation' {
                 throw 'No such host is known.'
             }
         }
-        $r = Get-OneViewVersion -OneViewHost 'HPEOpenview.1000' -Quiet
+        $r = Get-OneViewVersion -OneViewHost 'HPEOpenview.1000' -PassThru -Quiet
         $r.ApplianceReachable | Should -Be $false
         $r.Error              | Should -Match 'version probe failed'
     }
@@ -55,7 +55,7 @@ Describe 'Get-OneViewVersion - basic invocation' {
             $global:ConnectedSessions = @(
                 [pscustomobject]@{ Name = 'ov-session.local'; SessionID = 'token-abc'; Connected = $true }
             )
-            $r = Get-OneViewVersion -Quiet
+            $r = Get-OneViewVersion -PassThru -Quiet
             $r.Appliance        | Should -Be 'ov-session.local'
             $r.ApplianceVersion | Should -Be '10.00'
         } finally {

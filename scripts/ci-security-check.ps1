@@ -136,6 +136,86 @@ Write-Output ''
 Write-Output "Analysing $($targets.Count) PowerShell files..."
 
 # -----------------------------------------------------------------------------
+# Supplementary credential-handling checks (custom rules)
+# -----------------------------------------------------------------------------
+# PSScriptAnalyzer's built-in rules do not cover two credential anti-patterns
+# specific to this codebase:
+#   * Disabling TLS certificate validation while retrieving credentials from
+#     CyberArk (CWE-295) - a MITM can steal the returned passwords.
+#   * Interpolating a resolved credential ($this.Password / $this.Cred[...])
+#     into a string that is later executed as a script/command (CWE-214/532).
+#
+# Findings are emitted in the same shape as Invoke-ScriptAnalyzer results so they
+# flow through the existing fingerprint / baseline / SAST-report pipeline and can
+# be risk-accepted like any other finding.
+function Get-CustomSecurityFindings {
+    param(
+        [Parameter(Mandatory)] [string[]] $Paths,
+        [Parameter(Mandatory)] [string]   $ProjectRoot
+    )
+
+    $results = [System.Collections.Generic.List[object]]::new()
+
+    $tlsRule = [PSCustomObject]@{
+        RuleName = 'CustomTlsValidationDisabled'
+        Severity = 'Error'
+        Message  = 'TLS certificate validation is disabled (the callback accepts any certificate). This exposes credentials to MITM interception (CWE-295). Validate the chain and pin the CyberArk certificate via CYBERARK_EXPECTED_THUMBP' +
+                    'RINT instead.'
+    }
+
+    $secretRule = [PSCustomObject]@{
+        RuleName = 'CustomEmbeddedSecret'
+        Severity = 'Warning'
+        Message  = "A resolved credential (`$this.Password / `$this.Cred['password'] / `$this.Cred['username']) is interpolated into a string that is later executed as a script or command. Pass secrets out-of-band via -Environment / -ArgumentList and a param() block instead (CWE-214 / CWE-532)."
+    }
+
+    $secretRegex = '\$\(\s*\$this\.(Password|Cred\[''password''\]|Cred\[''username''\])\s*\)'
+
+    foreach ($file in $Paths) {
+        try {
+            $content = [System.IO.File]::ReadAllText($file)
+        } catch {
+            continue
+        }
+        if ([string]::IsNullOrEmpty($content)) { continue }
+
+        # Rule 1: TLS validation disabled (accept-any-certificate callback).
+        foreach ($m in [regex]::Matches($content, 'ServerCertificateValidationCallback\s*=\s*\{.*?\}', [Text.RegularExpressions.RegexOptions]::Singleline)) {
+            $block = $m.Value.ToLowerInvariant()
+            $acceptAll = $block.Contains('$true') -and -not $block.Contains('sslpolicyerrors') -and -not $block.Contains('thumbprint')
+            if ($acceptAll) {
+                $lineNo = ($content.Substring(0, $m.Index) -split "`n").Count
+                $results.Add([PSCustomObject]@{
+                    RuleName   = $tlsRule.RuleName
+                    Severity   = $tlsRule.Severity
+                    Message    = $tlsRule.Message
+                    ScriptPath = $file
+                    Line       = $lineNo
+                    Column     = 1
+                    Extent     = [PSCustomObject]@{ Text = $m.Value }
+                })
+            }
+        }
+
+        # Rule 2: resolved credential interpolated into an executed string.
+        foreach ($m in [regex]::Matches($content, $secretRegex)) {
+            $lineNo = ($content.Substring(0, $m.Index) -split "`n").Count
+            $results.Add([PSCustomObject]@{
+                RuleName   = $secretRule.RuleName
+                Severity   = $secretRule.Severity
+                Message    = $secretRule.Message
+                ScriptPath = $file
+                Line       = $lineNo
+                Column     = 1
+                Extent     = [PSCustomObject]@{ Text = $m.Value }
+            })
+        }
+    }
+
+    return $results
+}
+
+# -----------------------------------------------------------------------------
 # Analysis
 # -----------------------------------------------------------------------------
 # Invoke-ScriptAnalyzer -Path takes a single string, so files are analysed
@@ -152,6 +232,11 @@ foreach ($file in $targets) {
         $analysisErrors.Add("${relative}: $($_.Exception.Message)")
     }
 }
+
+# Supplementary custom credential checks, emitted in PSSA-compatible shape so they
+# share the fingerprint / baseline / SAST-report machinery.
+$customFindings = Get-CustomSecurityFindings -Paths ($targets.FullName) -ProjectRoot $projectRoot
+foreach ($cf in $customFindings) { $findings.Add($cf) }
 
 if ($analysisErrors.Count -gt 0) {
     # A file that cannot be analysed is an unscanned file, which is a control

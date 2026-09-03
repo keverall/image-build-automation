@@ -21,41 +21,41 @@
         'PSPlaceOpenBrace'
     )
 
-    Rules = @{
+    Rules        = @{
         # Whitespace and Structural Positioning
         PSUseConsistentIndentation = @{
             Enable          = $true
             IndentationSize = 4
             Kind            = 'space'
         }
-        PSUseConsistentWhitespace = @{
-            Enable                         = $true
-            CheckInnerBrace                = $true
-            CheckOpenBrace                 = $true
-            CheckOpenParen                 = $true
-            CheckOperator                  = $true
-            CheckPipe                      = $true
+        PSUseConsistentWhitespace  = @{
+            Enable                          = $true
+            CheckInnerBrace                 = $true
+            CheckOpenBrace                  = $true
+            CheckOpenParen                  = $true
+            CheckOperator                   = $true
+            CheckPipe                       = $true
             CheckPipeForRedundantWhitespace = $true
-            CheckSeparator                 = $true
+            CheckSeparator                  = $true
         }
-        PSPlaceOpenBrace = @{
-            Enable     = $true
-            OnSameLine = $true  # Microsoft layout: Opening braces stay on the same line
+        PSPlaceOpenBrace           = @{
+            Enable       = $true
+            OnSameLine   = $true  # Microsoft layout: Opening braces stay on the same line
             NewLineAfter = $true
         }
-        PSPlaceCloseBrace = @{
+        PSPlaceCloseBrace          = @{
             Enable       = $true
             NewLineAfter = $true
         }
         
         # Casing, Naming conventions, and Aliases
-        PSUseCorrectCasing = @{
+        PSUseCorrectCasing         = @{
             Enable = $true
         }
-        PSUseSingularNouns = @{
+        PSUseSingularNouns         = @{
             Enable = $true
         }
-        PSAvoidUsingCmdletAliases = @{
+        PSAvoidUsingCmdletAliases  = @{
             Enable    = $true
             Whitelist = @(
                 'cat'    # Get-Content (interactive)
@@ -66,7 +66,7 @@
                 'll'     # eza alias (interactive)
             )
         }
-        PSAvoidUsingWriteHost = @{
+        PSAvoidUsingWriteHost      = @{
             Enable = $true
         }
     }

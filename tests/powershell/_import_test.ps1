@@ -28,7 +28,6 @@ $tests = @(
     'Invoke-NativeCommand',
     'Invoke-NativeCommandWithRetry',
     'Test-ClusterId',
-    'Test-ServerList',
     'Test-BuildParams',
     'Invoke-RoutedRequest',
     'New-ScomConnection',

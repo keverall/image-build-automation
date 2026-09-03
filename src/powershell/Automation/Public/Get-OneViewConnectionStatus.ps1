@@ -71,6 +71,14 @@ function Get-OneViewConnectionStatus {
         with a raw hashtable/json dump). Pass -PassThru to also return the structured
         [hashtable] for use by scripts or the module Router.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable status summary.
+
+    .PARAMETER Quiet
+        Suppress the human-readable status summary (use with -PassThru / -Json when
+        the caller handles display itself).
+
     .RETURNS
         Nothing by default (summary printed to host). With -PassThru, a [hashtable]
         with Success, Connected, Reachable, Authenticated, Appliance, Version
@@ -78,7 +86,8 @@ function Get-OneViewConnectionStatus {
         Server (optional), SessionSource ('HPEOneViewModule' when reusing an active
         session, 'Explicit' otherwise), ModuleName (the HPEOneView PowerShell library
         that serves the call), ModuleVersion, ModuleSource, VersionCompliant (bool) and
-        VersionWarning (optional, present only on a mismatch).
+        VersionWarning (optional, present only on a mismatch). With -Json, a JSON
+        [string] representation of the same data.
 
     .EXAMPLE
         Get-OneViewConnectionStatus -OneViewHost 'oneview.ad.example.com'
@@ -130,7 +139,9 @@ function Get-OneViewConnectionStatus {
         [Alias('Dry')]
         [switch] $DryRun,
         [Alias('PT')]
-        [switch] $PassThru
+        [switch] $PassThru,
+        [switch] $Json,
+        [switch] $Quiet
     )
 
     # Common logging: each command writes to its own isolated log under
@@ -142,9 +153,7 @@ function Get-OneViewConnectionStatus {
 
     if ($MockResult) {
         $logger.Info("Get-OneViewConnectionStatus returning MockResult")
-        if ($PassThru) { return $MockResult }
-        _Format-ConnectionStatusResult -Result $MockResult
-        return
+        return (_Emit-ConnectionStatusResult -Result $MockResult -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     $sessionToken = $null
@@ -170,9 +179,7 @@ function Get-OneViewConnectionStatus {
     } elseif (-not $OneViewHost) {
         $logger.Info("Get-OneViewConnectionStatus: no host and no active session - graceful failure")
         $noConn = @{ Success = $false; Connected = $false; Reachable = $false; Authenticated = $false; Appliance = $null; Error = $script:ONEVIEW_NO_SESSION_MSG }
-        if ($PassThru) { return $noConn }
-        _Format-ConnectionStatusResult -Result $noConn
-        return
+        return (_Emit-ConnectionStatusResult -Result $noConn -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # TERMINAL COMMAND: credentials come ONLY from -Credential or
@@ -192,9 +199,7 @@ function Get-OneViewConnectionStatus {
             Server = $null; SessionSource = $(if ($sessionToken) { 'HPEOneViewModule' } else { 'Explicit' })
             DryRun = $true
         }
-        if ($PassThru) { return $dryMap }
-        _Format-ConnectionStatusResult -Result $dryMap
-        return
+        return (_Emit-ConnectionStatusResult -Result $dryMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     $baseUrl = "https://$OneViewHost`:$Port"
@@ -323,9 +328,9 @@ function Get-OneViewConnectionStatus {
                             serial_number  = $srv.serialNumber
                             model          = $srv.model
                             power_state    = $srv.powerState
-                            health_status  = $srv.status
-                            ilo_ip         = ($srv.mpIpAddresses | Select-Object -First 1)
-                            enclosure_name = $srv.enclosureName
+                        health_status  = $srv.status
+                        ilo_ip         = (_ConvertTo-IloIpAddressList $srv) -join ', '
+                        enclosure_name = $srv.enclosureName
                             enclosure_bay  = $srv.position
                             connected      = ($srv.status -ne 'Disabled')
                             resolved_by    = $t
@@ -342,17 +347,31 @@ function Get-OneViewConnectionStatus {
         }
 
         $result.Success = $result.Connected
-        $logger.Info("Get-OneViewConnectionStatus result: Success=$($result.Success) Connected=$($result.Connected) Reachable=$($result.Reachable) Authenticated=$($result.Authenticated) Error='$($result.Error)'")
-        if ($PassThru) { return $result }
-        _Format-ConnectionStatusResult -Result $result
-        return
+        return (_Emit-ConnectionStatusResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {
         $result.Error = "OneView connection status failed: $($_.Exception.Message)"
         $logger.Error($result.Error)
-        if ($PassThru) { return $result }
-        _Format-ConnectionStatusResult -Result $result
-        return
+        return (_Emit-ConnectionStatusResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+    }
+}
+
+function _Emit-ConnectionStatusResult {
+    <#
+    .SYNOPSIS
+        Emits the connection-status result via the shared, DRY _Publish-Result
+        helper (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-ConnectionStatusResult -Result $r
     }
 }
 

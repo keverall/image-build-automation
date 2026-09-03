@@ -18,6 +18,21 @@ function Disconnect-OneView {
     .PARAMETER Force
         Force disconnection even if errors occur during cleanup.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream. By
+        default the command writes only the human-readable report and returns
+        nothing, so the terminal/log never receives a truncated hashtable dump.
+        Capture the result into a variable, e.g.
+        `$r = Disconnect-OneView -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .EXAMPLE
         Disconnect-OneView
 
@@ -29,10 +44,10 @@ function Disconnect-OneView {
         Force disconnection, suppressing any cleanup errors.
 
     .OUTPUTS
-        [hashtable] with keys:
-          Success     [bool]   - disconnection succeeded
-          Message     [string] - status message
-          Timestamp   [string] - UTC ISO 8601
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with keys Success, Message, Timestamp. With -Json, a JSON
+        [string] representation of the same data.
 
     .NOTES
         This command is the counterpart to Connect-OneView (and the underlying
@@ -43,11 +58,16 @@ function Disconnect-OneView {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [switch] $Force
+        [switch] $Force,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     $result = @{
         Success   = $false
+        Appliance = $null
         Message   = ''
         Timestamp = Get-UtcTimestamp
     }
@@ -57,8 +77,12 @@ function Disconnect-OneView {
         if (-not (Test-OneViewSessionActive)) {
             $result.Message = $script:ONEVIEW_NO_SESSION_MSG + ' Nothing to disconnect.'
             Write-Warning $result.Message
-            return $result
+            return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
+
+        # Identify the appliance we are disconnecting from (for clear client feedback).
+        $activeSession = Get-OneViewActiveSession
+        $appliance = if ($activeSession -and $activeSession.Name) { $activeSession.Name } else { 'OneView appliance' }
 
         # Disconnect using the HPE OneView module
         if ($Force) {
@@ -67,8 +91,9 @@ function Disconnect-OneView {
             Disconnect-OVMgmt -ErrorAction Stop
         }
 
-        $result.Success = $true
-        $result.Message = "Successfully disconnected from OneView appliance."
+        $result.Success   = $true
+        $result.Appliance = $appliance
+        $result.Message   = "Successfully disconnected from OneView appliance '$appliance'."
         $script:ActiveOneViewSession = $null
         Write-Host $result.Message -ForegroundColor Green
     }
@@ -81,5 +106,5 @@ function Disconnect-OneView {
         }
     }
 
-    return $result
+    return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
 }

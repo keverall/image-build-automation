@@ -64,30 +64,15 @@ Describe 'Test-ClusterId' {
     }
 }
 
-Describe 'Test-ServerList' {
-    It 'Returns a non-empty list for a valid server list' {
-        $result = Test-ServerList -ServerListPath (Join-Path $Script:ConfigDir 'server_list.txt') -PassThru
-        $result.Success | Should -Be $true
-        $result.Servers.Count | Should -BeGreaterThan 0
-        $result.Servers[0] | Should -BeOfType [string]
-    }
-
-    It 'Returns failure for a missing file' {
-        $result = Test-ServerList -ServerListPath 'C:\nonexistent_servers.txt' -PassThru
-        $result.Success | Should -Be $false
-        $result.Servers.Count | Should -Be 0
-    }
-}
-
 Describe 'Test-BuildParams' {
     It 'Fails when no ISO path is supplied' {
-        $result = Test-BuildParams -BaseIsoPath $null
+        $result = Test-BuildParams -BaseIsoPath $null -PassThru
         $result.Success | Should -Be $false
         $result.Errors | Should -Match 'required'
     }
 
     It 'Rejects a local drive path (iLO cannot reach local drives)' {
-        $result = Test-BuildParams -BaseIsoPath 'C:\nonexistent_iso.iso'
+        $result = Test-BuildParams -BaseIsoPath 'C:\nonexistent_iso.iso' -PassThru
         $result.Success | Should -Be $false
         $result.IsoUrl | Should -BeNullOrEmpty
         $result.Errors.Count | Should -BeGreaterThan 0
@@ -96,16 +81,23 @@ Describe 'Test-BuildParams' {
 
     It 'Resolves a UNC/SMB share to a cifs:// URL iLO can mount' {
         # Dry run skips existence check so the resolution is what we verify
-        $result = Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' -DryRun $true
+        $result = Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' -DryRun $true -PassThru
         $result.Success | Should -Be $true
         $result.IsoUrl | Should -Be 'cifs://fileserver/isos/WinSrv2025.iso'
     }
 
     It 'Reports an error for a non-existent network ISO path' {
         # Assumes no file at this abstract share
-        $result = Test-BuildParams -BaseIsoPath '\\fileserver\isos\nonexistent.iso'
+        $result = Test-BuildParams -BaseIsoPath '\\fileserver\isos\nonexistent.iso' -PassThru
         $result.Success | Should -Be $false
         $result.IsoUrl | Should -Be 'cifs://fileserver/isos/nonexistent.iso'
         $result.Errors | Should -Match 'not found or not accessible'
+    }
+
+    It 'Classifies errors as ISO-related vs firmware-file-related' {
+        $result = Test-BuildParams -BaseIsoPath 'C:\bad.iso' `
+            -FirmwareFolders @('C:\fw') -PassThru -DryRun $true
+        ($result.Errors | Where-Object { $_ -match '^Base ISO:' }).Count | Should -BeGreaterThan 0
+        ($result.Errors | Where-Object { $_ -match '^Firmware file:' }).Count | Should -BeGreaterThan 0
     }
 }

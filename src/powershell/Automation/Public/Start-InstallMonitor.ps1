@@ -38,8 +38,26 @@ function Start-InstallMonitor {
     .PARAMETER OpsRampConfig
         Path to opsramp_config.json.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Start-InstallMonitor -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with status, progress, and details.
+        By default, nothing is returned on the success stream (the human-readable
+        report is written to the host). With -PassThru, a [hashtable] with
+        Success (bool), Status (single) / Summary (all), and Details. With -Json,
+        a JSON [string] representation of the same data.
 
     .EXAMPLE
         Start-InstallMonitor -Server 'srv01.corp.local' -TimeoutSeconds 3600
@@ -61,18 +79,24 @@ function Start-InstallMonitor {
         [Alias('PollSec')]
         [Parameter(Mandatory = $false)][int]    $PollIntervalSeconds = 30,
         [Alias('OpsCfg')]
-        [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json'
+        [Parameter(Mandatory = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json',
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     Initialize-Logging -LogFile 'monitoring.log' -CommandName 'Start-InstallMonitor'
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        if (-not $resolved.Success) { return (_Publish-Result -Result @{ Success = $false; Error = $resolved.Error } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         $Server = $resolved.Identifier
         Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
     }
     if (-not $Server) {
         throw "Server or SerialNumber is required for install monitoring"
     }
+
+    # TERMINAL COMMAND: iLO credentials come ONLY from -IloCredential or a
 
     # TERMINAL COMMAND: iLO credentials come ONLY from -IloCredential or a
     # direct interactive prompt - never from config/env (see AGENTS.md).
@@ -94,27 +118,24 @@ function Start-InstallMonitor {
         $monitor.IloCredential = $IloCredential
         if ($Server) {
             $si = ($monitor.Servers | Where-Object { $_.Hostname -eq $Server } | Select-Object -First 1)
-            if (-not $si) { return @{ Success=$false; Error="Server not found: $Server" } }
+            if (-not $si) { return (_Publish-Result -Result @{ Success=$false; Error="Server not found: $Server" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
             $r = $monitor.MonitorServer($si, $TimeoutSeconds, $PollIntervalSeconds)
             $result = @{ Success = ($r.status -eq 'completed'); Status = $r.status; Details = $r }
-            _Format-InstallMonitorResult -Result $result
-            return $result
+            return (_Emit-InstallMonitorResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
         else {
             $summary = $monitor.MonitorAll($TimeoutSeconds)
             $result = @{ Success = ($summary['completed'] -gt 0); Summary = $summary }
-            _Format-InstallMonitorSummary -Result $result
-            return $result
+            return (_Emit-InstallMonitorSummary -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
         else {
             $summary = $monitor.MonitorAll($TimeoutSeconds)
             $result = @{ Success = ($summary['completed'] -gt 0); Summary = $summary }
-            _Format-InstallMonitorSummary -Result $result
-            return $result
+            return (_Emit-InstallMonitorSummary -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
     }
     catch {
-        return @{ Success = $false; Error = $_.Exception.Message }
+        return (_Publish-Result -Result @{ Success = $false; Error = $_.Exception.Message } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 }
 
@@ -558,6 +579,44 @@ function _Format-InstallMonitorSummary {
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
+}
+
+function _Emit-InstallMonitorResult {
+    <#
+    .SYNOPSIS
+        Emits the single-server install-monitor result via the shared, DRY
+        _Publish-Result helper (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-InstallMonitorResult -Result $r
+    }
+}
+
+function _Emit-InstallMonitorSummary {
+    <#
+    .SYNOPSIS
+        Emits the all-servers install-monitor summary via the shared, DRY
+        _Publish-Result helper (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-InstallMonitorSummary -Result $r
+    }
 }
 
 # vim: ts=4 sw=4 et

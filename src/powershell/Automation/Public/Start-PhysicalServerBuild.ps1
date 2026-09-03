@@ -1,23 +1,25 @@
 #
 # Public/Start-PhysicalServerBuild.ps1 - End-to-end physical server build orchestrator
 #
+# INTERNAL FUNCTION - not exported from the module. Called internally by
+# Configure-PhysicalBuild when the operator types APPROVE or passes -Deploy.
+# Do not call directly from the terminal; use Configure-PhysicalBuild instead.
+#
 # Orchestrates the full runbook workflow:
 #   1. Pre-build validation  (Test-PreBuildValidation)
-#   2. Build ConfigMgr bootable ISO  (New-IsoBuild)
-#   3. Publish ISO to HTTPS  (Publish-BootIso)
-#   4. Resolve iLO via OneView  (Get-OneViewServerTarget)
-#   5. Mount ISO + force one-time boot via iLO Redfish  (Invoke-IloRedfish)
-#   6. Monitor installation  (Start-InstallMonitor)
-#   7. Post-build validation  (Test-PostBuildValidation)
-#   8. Audit log entry
+#   2. Resolve iLO via OneView  (Get-OneViewServerTarget)
+#   3. Mount ISO + force one-time boot via iLO Redfish  (Invoke-IloRedfish)
+#   4. Monitor installation  (Start-InstallMonitor)
+#   5. Post-build validation  (Test-PostBuildValidation)
+#   6. Audit log entry
 #
-# All parameters are runtime - server identifier, OneView host, ConfigMgr
-# endpoints, etc. - supplied by the operator at invocation.
+# All parameters are runtime - server identifier, OneView host, ISO path,
+# etc. - supplied by the operator at invocation.
 #
-# Supports two ISO source modes:
-#   - Build mode (default): Builds a ConfigMgr bootable ISO, publishes it, deploys
+# Supported ISO source mode:
 #   - External ISO mode (-ExternalIsoPath): Deploys a client-supplied ISO directly
-#     (local path, UNC/SMB share, or HTTP/HTTPS URL)
+#     (UNC/SMB share, cifs://, smb://, HTTPS, NFS, or mapped network drive).
+#     ISO build/publish is no longer supported; supply -ExternalIsoPath.
 #
 
 
@@ -77,6 +79,76 @@ function Confirm-IsoDeployment {
     return $true
 }
 
+function _Enable-OneViewMaintenanceMode {
+    [CmdletBinding()]
+    param(
+        [string] $OneViewHost,
+        [string] $SerialNumber,
+        [string] $ServerName,
+        [System.Management.Automation.PSCredential] $OneViewCredential,
+        [switch] $DryRun
+    )
+    $targetName = if ($ServerName) { $ServerName } else { $SerialNumber }
+    Write-Host "`n  [OneView] Enabling maintenance mode for server '$targetName'..." -ForegroundColor Yellow
+    try {
+        $params = @{
+            Action       = 'enable'
+            Mode         = 'oneview'
+            OneViewHost  = $OneViewHost
+            Start        = 'now'
+            End          = '+4hours'
+            DryRun       = $DryRun
+        }
+        if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
+        else { $params['TargetId'] = $ServerName }
+        if ($OneViewCredential) { $params['Credential'] = $OneViewCredential }
+        $result = Set-MaintenanceMode @params
+        if ($result.Success) {
+            Write-Host "  [OneView] Maintenance mode ENABLED for '$targetName'." -ForegroundColor Green
+        } else {
+            Write-Warning "  [OneView] Failed to enable maintenance mode for '$targetName': $($result.Error)"
+        }
+        return $result
+    } catch {
+        Write-Warning "  [OneView] Error enabling maintenance mode for '$targetName': $($_.Exception.Message)"
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
+
+function _Disable-OneViewMaintenanceMode {
+    [CmdletBinding()]
+    param(
+        [string] $OneViewHost,
+        [string] $SerialNumber,
+        [string] $ServerName,
+        [System.Management.Automation.PSCredential] $OneViewCredential,
+        [switch] $DryRun
+    )
+    $targetName = if ($ServerName) { $ServerName } else { $SerialNumber }
+    Write-Host "`n  [OneView] Disabling maintenance mode for server '$targetName'..." -ForegroundColor Yellow
+    try {
+        $params = @{
+            Action      = 'disable'
+            Mode        = 'oneview'
+            OneViewHost = $OneViewHost
+            DryRun      = $DryRun
+        }
+        if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
+        else { $params['TargetId'] = $ServerName }
+        if ($OneViewCredential) { $params['Credential'] = $OneViewCredential }
+        $result = Set-MaintenanceMode @params
+        if ($result.Success) {
+            Write-Host "  [OneView] Maintenance mode DISABLED for '$targetName'." -ForegroundColor Green
+        } else {
+            Write-Warning "  [OneView] Failed to disable maintenance mode for '$targetName': $($result.Error)"
+        }
+        return $result
+    } catch {
+        Write-Warning "  [OneView] Error disabling maintenance mode for '$targetName': $($_.Exception.Message)"
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
+
 function Start-PhysicalServerBuild {
     <#
     .SYNOPSIS
@@ -84,10 +156,9 @@ function Start-PhysicalServerBuild {
         Callable from the module Router.
 
     .DESCRIPTION
-        One-call orchestrator for new HPE ProLiant server deployments.  Each step's
-        parameters are exposed individually with sensible defaults; skip switches
-        allow re-running individual phases (e.g. -SkipIsoBuild to retry the deploy
-        against an already-built ISO).
+        One-call orchestrator for new HPE ProLiant server deployments. Deploys a
+        client-supplied ISO directly from a network share or HTTPS URL. Each step
+        can be skipped with the -Skip* switches for re-running individual phases.
 
     .PARAMETER ServerIdentifier
         Target server identifier (name, serial, OneView name, iLO IP, bay). Required.
@@ -122,12 +193,6 @@ function Start-PhysicalServerBuild {
     .PARAMETER TaskSequenceName
         Optional task sequence name.
 
-    .PARAMETER RepoBaseUrl
-        HTTPS base URL of the ISO repository (used by Publish-BootIso).
-
-    .PARAMETER RepoLocalPath
-        Local filesystem path mirrored to RepoBaseUrl.
-
     .PARAMETER ExternalIsoPath
         Path to a client-supplied ISO for deployment (skip build/publish).
         Resolved by the single shared Resolve-ExternalIsoPath helper. Accepts:
@@ -147,7 +212,8 @@ function Start-PhysicalServerBuild {
           module does NOT auto-create SMB shares and does NOT require
           Administrator privileges. Supply an already-shared path instead.
 
-        When supplied, -SkipIsoBuild and -SkipPublish are implied.
+        When supplied, the ISO build/publish steps are skipped entirely.
+        See ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER MonitorTimeoutSeconds
         Install monitor timeout (default 7200).
@@ -156,29 +222,10 @@ function Start-PhysicalServerBuild {
         Install monitor poll interval (default 30).
 
     .PARAMETER SkipPreBuild
-    .PARAMETER SkipIsoBuild
-    .PARAMETER SkipPublish
     .PARAMETER SkipOneView
     .PARAMETER SkipMount
     .PARAMETER SkipMonitor
     .PARAMETER SkipPostBuild
-    .PARAMETER SkipFirmware
-        Skip the post-OS firmware update step. By default, if -FirmwareFolders
-        are supplied (or -FirmwareConfig is provided), Update-Firmware is invoked
-        after post-build validation.
-
-    .PARAMETER FirmwareFolders
-        Additional firmware component source directories (string array) passed
-        to Update-Firmware for post-OS firmware updates via HPE SUT.
-        Example: -FirmwareFolders @('C:\fw\BIOS', 'C:\fw\iLO5')
-
-    .PARAMETER FirmwareConfig
-        Path to a firmware manifest JSON passed to Update-Firmware.
-        Example: -FirmwareConfig 'configs\hpe_firmware_drivers_nov2025.json'
-
-    .PARAMETER Mock
-        Run with mocked calls - no network calls are made; useful for CI smoke tests.
-        When -Mock is set, all downstream steps run as if -DryRun was also set.
 
     .PARAMETER DryRun
         Validate inputs and print plan without performing any destructive action.
@@ -191,14 +238,15 @@ function Start-PhysicalServerBuild {
         Acknowledge that the target server is in an approved maintenance window. Required
         when -Force is not supplied and the server is currently On.
 
+    .PARAMETER OneViewMaintenanceMode
+        Enable HPE OneView maintenance mode before destructive operations (ISO mount,
+        reboot) and disable it after the build completes. Set to $false to skip
+        maintenance mode orchestration (e.g. when OneView is unavailable or the server
+        is not managed by OneView). Default is $true.
+
     .PARAMETER AllowUnknownIsoUrl
         Skip the head-verify check on the ISO URL during pre-build validation (use only
         when the build pipeline runs offline).
-
-    .PARAMETER SkipConfirmation
-        Skip the interactive confirmation prompt before deployment. By default, the
-        operator must type 'YES' to confirm the deployment plan (server details, ISO,
-        and actions). Use -SkipConfirmation for automated/unattended deployments.
 
     .PARAMETER GuardRail
         MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE
@@ -206,13 +254,34 @@ function Start-PhysicalServerBuild {
         destructive action. If it is OMITTED the command fails early with an
         expressive, logged error and performs no action. If it does NOT match the
         target, the build is aborted with no changes. When it matches, a destructive
-        confirmation (typing YES) is still required unless -SkipConfirmation/-DryRun
-        are supplied. Example (regex): -GuardRail 'quickview\.ilo0' matches server
+        confirmation (typing YES) is still required unless -DryRun is supplied.
+        Example (regex): -GuardRail 'quickview\.ilo0' matches server
         'quickview.ilo03.alp'. This prevents accidentally overwriting a production
         server when the client's test server lives on the production network.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+        When omitted, the command writes a human-readable report to the host
+        (terminal / transcript / logs) and does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Start-PhysicalServerBuild -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success, Steps (ordered list of step results), AuditFile.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success (bool), Steps (ordered list of step
+        results), and AuditFile (string). With -Json, a JSON [string]
+        representation of the same data.
 
     .EXAMPLE
         Start-PhysicalServerBuild `
@@ -221,8 +290,7 @@ function Start-PhysicalServerBuild {
             -IloIp '192.168.1.101' `
             -SiteCode 'P01' -ManagementPoint 'mp01.ad.example.com' -DistributionPoint 'dp01.ad.example.com' `
             -SiteServer 'cm01.ad.example.com' -BootImageName 'WinPE x64 - HPE' `
-            -RepoBaseUrl 'https://artifacts.internal.example.com/isos/' `
-            -RepoLocalPath 'C:\osdrepo\' -Domain 'ad.example.com'
+            -Domain 'ad.example.com'
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -233,45 +301,40 @@ function Start-PhysicalServerBuild {
         [string] $OneViewHost,
         [Alias('Ilo')]
         [string] $IloIp,
+        [Alias('OVCred')]
+        [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $ExpectedHostname = $null,
         [string] $Domain,
         [string] $SiteCode,
         [string] $ManagementPoint,
         [string] $DistributionPoint,
+        [string] $RepoBaseUrl,
         [string] $SiteServer,
         [string] $BootImageName,
         [string] $TaskSequenceName,
-        [string] $RepoBaseUrl,
-        [string] $RepoLocalPath,
         [Alias('ExtIso')]
         [string] $ExternalIsoPath,
         [int]    $MonitorTimeoutSeconds = 7200,
         [int]    $MonitorPollSeconds = 30,
         [switch] $SkipPreBuild,
-        [switch] $SkipIsoBuild,
-        [switch] $SkipPublish,
         [switch] $SkipOneView,
         [switch] $SkipMount,
         [switch] $SkipMonitor,
         [switch] $SkipPostBuild,
-        [switch] $Mock,
         [Alias('Dry')]
         [switch] $DryRun,
         [switch] $Force,
         [switch] $InMaintenanceWindow,
+        [switch] $OneViewMaintenanceMode = $true,
         [switch] $AllowUnknownIsoUrl,
         [Alias('SkipConf')]
         [switch] $SkipConfirmation,
-        [string[]] $FirmwareFolders = @(),
-        [string] $FirmwareConfig = $null,
-        [switch] $SkipFirmware,
-        [string] $GuardRail = $null
+        [string] $GuardRail = $null,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
-
-    if ($Mock -and -not $DryRun) {
-        Write-Verbose "-Mock supplied - forcing DryRun behaviour for all downstream steps"
-        $DryRun = $true
-    }
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
     # Fail early (graceful, logged) when omitted so we never overwrite an
@@ -283,7 +346,7 @@ function Start-PhysicalServerBuild {
         $grCheck['start_time']  = Get-UtcTimestamp
         $grCheck['end_time']    = Get-UtcTimestamp
         $grCheck['steps']       = @{}
-        return $grCheck
+        return (_Publish-Result -Result $grCheck -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # ── Parameter validation with actionable error messages ───────────────────
@@ -306,7 +369,7 @@ function Start-PhysicalServerBuild {
                 $logger = Get-Logger 'Start-PhysicalServerBuild'
                 $logger.Error($msg)
                 Write-Host "`n  [ERROR] $msg" -ForegroundColor Red
-                return @{ Success = $false; Error = $msg; Server = $ServerIdentifier }
+                return (_Publish-Result -Result @{ Success = $false; Error = $msg; Server = $ServerIdentifier } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
             }
         }
     }
@@ -319,9 +382,13 @@ function Start-PhysicalServerBuild {
         Write-Host "ISO Source: $ExternalIsoPath" -ForegroundColor Yellow
         
         # Resolve the ISO path to an accessible URL
-        $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath -RepoLocalPath $RepoLocalPath -RepoBaseUrl $RepoBaseUrl
+        try {
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath
+        } catch {
+            return (_Publish-Result -Result @{ Success = $false; Server = $ServerIdentifier; Error = "Failed to resolve -ExternalIsoPath '$ExternalIsoPath': $($_.Exception.Message)" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+        }
         if (-not $isoUrl) {
-            throw "Failed to resolve external ISO path to accessible URL"
+            return (_Publish-Result -Result @{ Success = $false; Server = $ServerIdentifier; Error = "Failed to resolve external ISO path to accessible URL" } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
         
         Write-Host "ISO URL for iLO: $isoUrl" -ForegroundColor Green
@@ -348,10 +415,10 @@ function Start-PhysicalServerBuild {
     $overall['steps'] = [ordered]@{}
 
     function _Step([string]$name, [hashtable]$r) {
-        $script:overall['steps'][$name] = $r
+        $overall['steps'][$name] = $r
         $ok = if ($r) { [bool]$r.Success } else { $false }
         Write-Output "[$(if($ok){'OK'}else{'FAIL'})] $name"
-        if (-not $ok) { $script:overall['success'] = $false }
+        if (-not $ok) { $overall['success'] = $false }
     }
 
     $overall['success'] = $true
@@ -360,44 +427,70 @@ function Start-PhysicalServerBuild {
     try {
         $isoPath = $null
         $isoUrl  = $null
-        if (-not $SkipIsoBuild) {
-            $r = New-IsoBuild -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
-                -DistributionPoint $DistributionPoint -BootImageName $BootImageName `
-                -TaskSequenceName $TaskSequenceName -SiteServer $SiteServer `
-                -DryRun:$DryRun
-            _Step 'iso_build' $r
-            $isoPath = $r.IsoPath
-            if (-not $r.Success -and -not $DryRun) { return $overall }
-        }
-
-        if (-not $SkipPublish -and $isoPath -and $RepoBaseUrl) {
-            $r = Publish-BootIso -IsoPath $isoPath -RepoBaseUrl $RepoBaseUrl `
-                -RepoLocalPath $RepoLocalPath -DryRun:$DryRun
-            _Step 'publish_iso' $r
-            if ($r.Success) { $isoUrl = $r.PublicUrl }
+        if ($ExternalIsoPath) {
+            # Deploy the client-supplied CIFS/SMB/HTTPS ISO directly.
+            $isoUrl = Resolve-ExternalIsoPath -IsoPath $ExternalIsoPath
+            $isoPath = $ExternalIsoPath
+            _Step 'resolve_iso' @{ Success = $true; IsoUrl = $isoUrl }
+        } else {
+            _Step 'resolve_iso' @{ Success = $false; Error = 'No -ExternalIsoPath supplied. The build pipeline now deploys a client-supplied CIFS/SMB/HTTPS ISO directly (ISO build/publish removed).' }
+            $overall['success'] = $false
+            return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
 
         if (-not $SkipPreBuild) {
             $r = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
                 -OneViewHost $OneViewHost -IloIp $IloIp `
+                -OneViewCredential $OneViewCredential `
                 -IsoUrl $isoUrl `
                 -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
                 -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
                 -SkipIsoUrl:([string]::IsNullOrEmpty($isoUrl) -or $AllowUnknownIsoUrl) `
                 -DryRun:$DryRun
             _Step 'pre_build_validation' $r
-            if (-not $r.Success -and -not $DryRun) { return $overall }
+            if (-not $r.Success -and -not $DryRun) { return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         }
 
         $oneview = $null
         if (-not $SkipOneView -and $OneViewHost) {
             $r = Get-OneViewServerTarget -OneViewHost $OneViewHost `
-                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun
+                -ServerIdentifier $ServerIdentifier -DryRun:$DryRun -PassThru -Credential $OneViewCredential
             _Step 'oneview_target' $r
             $oneview = $r
+            if (-not $r.Success -and -not $DryRun) {
+                # A failed OneView resolution is fatal - we cannot target a server we
+                # could not resolve, so stop instead of carrying on to the guard rail
+                # or any destructive iLO steps.
+                $overall['success'] = $false
+                $overall['error'] = "OneView resolution failed: $($r.Error)"
+                return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
             if ($r.Details -and $r.Details.ilo_ip -and -not $IloIp) {
                 $IloIp = $r.Details.ilo_ip
             }
+        }
+
+        # ── OneView Maintenance Mode (pre-destructive operations) ──────────────
+        # Put the server into OneView maintenance mode before any destructive action
+        # (ISO mount, reboot) so OneView stops pulling alerts / applying firmware
+        # compliance checks during the build. Skipped when OneView is unavailable,
+        # resolution failed, or -OneViewMaintenanceMode is $false.
+        $maintenanceModeEnabled = $false
+        $maintenanceSerial = if ($oneview -and $oneview.Details -and $oneview.Details.serial_number) { $oneview.Details.serial_number } else { $null }
+        $maintenanceServerName = if ($oneview -and $oneview.Details -and $oneview.Details.name) { $oneview.Details.name } else { $ServerIdentifier }
+        if ($OneViewMaintenanceMode -and $OneViewHost -and $maintenanceSerial) {
+            $maintResult = _Enable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
+                -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
+                -OneViewCredential $OneViewCredential -DryRun:$DryRun
+            _Step 'oneview_maintenance_enable' $maintResult
+            $maintenanceModeEnabled = $maintResult.Success
+            if (-not $maintResult.Success -and -not $DryRun) {
+                $overall['success'] = $false
+                $overall['error'] = "OneView maintenance mode enable failed: $($maintResult.Error)"
+                return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+        } elseif ($OneViewMaintenanceMode -and $OneViewHost) {
+            _Step 'oneview_maintenance_enable' @{ Success = $false; Error = 'OneView resolved target but no serial number available for maintenance mode' }
         }
 
         # ── Guard rail (build/deploy safety gate) ──────────────────────────────
@@ -414,7 +507,7 @@ function Start-PhysicalServerBuild {
             if (-not $guardOk) {
                 $overall['success'] = $false
                 $overall['guard_rail_blocked'] = $true
-                return $overall
+                return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
             }
         }
 
@@ -422,13 +515,13 @@ function Start-PhysicalServerBuild {
             # ── Confirmation Prompt ─────────────────────────────────────────────
             # When a -GuardRail was supplied it already performed the destructive
             # confirmation inside Assert-GuardRail, so we skip the generic prompt.
-            if (-not $SkipConfirmation -and -not $DryRun -and -not $GuardRail) {
+            if (-not $DryRun -and -not $GuardRail) {
                 $confirmed = Confirm-IsoDeployment -ServerIdentifier $ServerIdentifier `
                     -IloIp $IloIp -IsoUrl $isoUrl -OneViewDetails $oneview.Details -DryRun:$DryRun
                 if (-not $confirmed) {
                     $overall['success'] = $false
                     $overall['cancelled_by_user'] = $true
-                    return $overall
+                    return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
                 }
             }
 
@@ -442,7 +535,7 @@ function Start-PhysicalServerBuild {
                         PowerState = $powerState
                     }
                     $overall['success'] = $false
-                    return $overall
+                    return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
                 }
                 _Step 'ilo_maintenance_guard' @{
                     Success = $true; PowerState = $powerState
@@ -454,37 +547,25 @@ function Start-PhysicalServerBuild {
                 -DryRun:$DryRun -Force:($Force -or $DryRun)
             _Step 'ilo_mount_and_boot' $r
             if ($r.Success -and -not $DryRun) { $isoMounted = $true }
-            if (-not $r.Success -and -not $DryRun) { return $overall }
+            if (-not $r.Success -and -not $DryRun) { return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         }
 
         if (-not $SkipMonitor) {
             $r = Start-InstallMonitor -Server $ExpectedHostname `
                 -TimeoutSeconds $MonitorTimeoutSeconds `
                 -PollIntervalSeconds $MonitorPollSeconds `
+                -PassThru `
                 -ErrorAction SilentlyContinue
             _Step 'install_monitor' $r
         }
 
         if (-not $SkipPostBuild) {
             $r = Test-PostBuildValidation -Hostname $ExpectedHostname -Domain $Domain `
-                -DryRun:$DryRun
+                -DryRun:$DryRun -PassThru
             _Step 'post_build_validation' $r
         }
 
-        if (-not $SkipFirmware -and ($FirmwareFolders.Count -gt 0 -or $FirmwareConfig)) {
-            $fwParams = @{
-                Server   = $ExpectedHostname
-                OutputDir = 'output\firmware'
-                DryRun   = $DryRun
-            }
-            if ($FirmwareConfig)        { $fwParams.Config = $FirmwareConfig }
-            if ($FirmwareFolders.Count) { $fwParams.FirmwareFolders = $FirmwareFolders }
-            Write-Host "`n  Starting post-OS firmware update..." -ForegroundColor Cyan
-            $r = Update-Firmware @fwParams
-            _Step 'firmware_update' $r
-        }
-
-        return $overall
+        return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     finally {
         $overall['end_time'] = Get-UtcTimestamp
@@ -495,6 +576,26 @@ function Start-PhysicalServerBuild {
             } catch {
                 $overall['iso_ejected'] = $false
                 $overall['iso_eject_error'] = $_.Exception.Message
+            }
+        }
+        # ── OneView Maintenance Mode (post-build cleanup) ──────────────────────
+        # Take the server out of maintenance mode after the build completes (or
+        # fails). Only runs if we successfully enabled it earlier. Errors here are
+        # logged but do not fail the build — the build result is already determined.
+        if ($maintenanceModeEnabled -and $OneViewHost -and $maintenanceSerial -and -not $DryRun) {
+            try {
+                $disableResult = _Disable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
+                    -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
+                    -OneViewCredential $OneViewCredential -DryRun:$DryRun
+                $overall['oneview_maintenance_disable'] = $disableResult.Success
+                if (-not $disableResult.Success) {
+                    $overall['oneview_maintenance_disable_error'] = $disableResult.Error
+                    Write-Warning "Failed to disable OneView maintenance mode for '$maintenanceSerial': $($disableResult.Error)"
+                }
+            } catch {
+                $overall['oneview_maintenance_disable'] = $false
+                $overall['oneview_maintenance_disable_error'] = $_.Exception.Message
+                Write-Warning "Error disabling OneView maintenance mode: $($_.Exception.Message)"
             }
         }
         try {

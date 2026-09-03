@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/PathResolver.ps1
-generated: 2026-08-19
+generated: 2026-09-03
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

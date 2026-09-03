@@ -21,13 +21,13 @@ Describe 'Test-PostBuildValidation - basic invocation' {
     }
 
     It 'SkipRemote returns Success' {
-        $r = Test-PostBuildValidation -Hostname 'TEST' -SkipRemote
+        $r = Test-PostBuildValidation -Hostname 'TEST' -SkipRemote -PassThru -Quiet
         $r.Success                  | Should -Be $true
         $r.Checks.remote_checks_skipped.status | Should -Be 'PASS'
     }
 
     It 'DryRun fails without SkipRemote (WinRM unreachable)' {
-        $r = Test-PostBuildValidation -Hostname 'does-not-exist.invalid' -DryRun
+        $r = Test-PostBuildValidation -Hostname 'does-not-exist.invalid' -DryRun -PassThru -Quiet
         $r.Success                       | Should -Be $true
         $r.Checks.winrm_reachable.status | Should -Be 'PASS'
     }

@@ -16,8 +16,11 @@ function Get-OneViewServerList {
     .DESCRIPTION
         Queries GET /rest/server-hardware across all pages and returns a normalised
         list of servers (name, serial, model, power state, health, iLO IP, enclosure).
-        Supports an optional -Filter to narrow the result by health, power state, or
-        name (substring/wildcard match).
+        Each server also reports its HPE OneView maintenance mode
+        (InMaintenance / Operational) from the server-hardware resource's
+        MaintenanceModeEnabled flag.
+        Supports an optional -Filter to narrow the result by health, power state,
+        maintenance mode, or name (substring/wildcard match).
 
     .PARAMETER OneViewHost
         OneView appliance hostname or IP (e.g. oneview.ad.example.com).
@@ -61,6 +64,7 @@ function Get-OneViewServerList {
         also accept PowerShell-style wildcards:
           health:<value>   e.g. health:Critical, health:*Warning*
           power:<value>     e.g. power:On, power:Off
+          maintenance:<value>  e.g. maintenance:InMaintenance, maintenance:Operational
           name:<value>     e.g. name:PROD (substring), name:PROD-* (wildcard),
                             name:srv-0? (single-char wildcard)
 
@@ -76,6 +80,16 @@ function Get-OneViewServerList {
         raw hashtable/json dump). Pass -PassThru to also return the structured
         [hashtable] (Success, Count, Servers, Error) for use by scripts or the
         module Router.
+
+    .PARAMETER Summary
+        Print a condensed table with only Server Name, Serial, MaintMode, Health and
+        iLO IP. Useful for a quick fleet health/maintenance glance. Mutually exclusive
+        in intent with -Detail (default); -Detail is the explicit full-field view.
+
+    .PARAMETER Detail
+        Print the full table with every field (Server Name, Serial, MaintMode, State,
+        Health, Power, iLO IP, ROM, State Reason, Model). This is the default when
+        neither -Summary nor -Detail is specified.
 
     .RETURNS
         Nothing by default (table printed to host). With -PassThru, a [hashtable]
@@ -129,7 +143,13 @@ function Get-OneViewServerList {
         [Alias('Dry')]
         [switch] $DryRun,
         [Alias('PT')]
-        [switch] $PassThru
+        [switch] $PassThru,
+        [switch] $Json,
+        [switch] $Quiet,
+        [Alias('Sum')]
+        [switch] $Summary,
+        [Alias('Det')]
+        [switch] $Detail
     )
 
     # Common logging: each command writes to its own isolated log under
@@ -137,33 +157,33 @@ function Get-OneViewServerList {
     Initialize-Logging -CommandName 'Get-OneViewServerList' -LogName "Get-OneViewServerList-Host-$($OneViewHost ?? 'unspecified')"
     $logger = Get-Logger 'OneViewServerList'
 
+    $viewMode = if ($Summary) { 'Summary' } else { 'Detail' }
+
     if ($MockResult) {
         $logger.Info("Get-OneViewServerList returning MockResult (filter=$Filter)")
-        if ($PassThru) { return $MockResult }
-        return
+        return (_Emit-OneViewServerListResult -Result $MockResult -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -View $viewMode)
     }
 
     # Parse -Filter into predicate regexes (validate before connecting).
     # Matching is case-insensitive; substring-by-default with PowerShell-style
     # wildcards (*, ?) supported via the shared converter.
-    $healthRegex = $null; $powerRegex = $null; $nameRegex = $null
+    $healthRegex = $null; $powerRegex = $null; $maintRegex = $null; $nameRegex = $null
     if ($Filter) {
-        if ($Filter -match '^health:(.+)$')     { $healthRegex = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
-        elseif ($Filter -match '^power:(.+)$')   { $powerRegex  = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
-        elseif ($Filter -match '^name:(.+)$')    { $nameRegex   = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        if ($Filter -match '^health:(.+)$')          { $healthRegex = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^power:(.+)$')        { $powerRegex  = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^maintenance:(.+)$')  { $maintRegex  = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
+        elseif ($Filter -match '^name:(.+)$')          { $nameRegex   = [regex]::new((_ConvertToWildcardRegex $Matches[1].Trim()), 'IgnoreCase') }
         else {
             $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = "Unsupported -Filter '$Filter'. Use health:<status>, power:<state> or name:<value>." }
-            if ($PassThru) { return $errMap }
-            Write-Host $errMap.Error -ForegroundColor Red
-            return
+            return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -View $viewMode)
         }
     }
 
     if ($DryRun) {
         $msg = "[DRY RUN] Get-OneViewServerList Host=$OneViewHost Filter=$Filter"
         $logger.Info($msg); Write-Host $msg
-        if ($PassThru) { return @{ Success = $true; Count = 0; Servers = @(); DryRun = $true } }
-        return
+        $dryMap = @{ Success = $true; Count = 0; Servers = @(); DryRun = $true }
+        return (_Emit-OneViewServerListResult -Result $dryMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -View $viewMode)
     }
 
     # ── Resolve the OneView session ──────────────────────────────────────────
@@ -185,9 +205,7 @@ function Get-OneViewServerList {
     if (-not $OneViewHost) {
         $logger.Info("Get-OneViewServerList: no host and no active session - graceful failure")
         $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = $script:ONEVIEW_NO_SESSION_MSG }
-        if ($PassThru) { return $errMap }
-        Write-Host $errMap.Error -ForegroundColor Red
-        return
+        return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -View $viewMode)
     }
 
     # Reuse the active session directly when we derived the host from it; otherwise
@@ -198,9 +216,7 @@ function Get-OneViewServerList {
         if (-not $sess.Success) {
             $logger.Info("Get-OneViewServerList: session resolution failed. Error='$($sess.Error)'")
             $errMap = @{ Success = $false; Count = 0; Servers = @(); Error = $sess.Error }
-            if ($PassThru) { return $errMap }
-            Write-Host $errMap.Error -ForegroundColor Red
-            return
+            return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -View $viewMode)
         }
         $OneViewHost  = $sess.OneViewHost
         $sessionToken = $sess.SessionToken
@@ -237,16 +253,19 @@ function Get-OneViewServerList {
                     name           = $srv.name
                     serial_number  = $srv.serialNumber
                     model          = $srv.model
+                    model_number   = $srv.modelNumber
                     power_state    = $srv.powerState
                     health_status  = $srv.status
-                    ilo_ip         = ($srv.mpIpAddresses | Select-Object -First 1)
-                    enclosure_name = $srv.enclosureName
-                    enclosure_bay  = $srv.position
+                    ilo_ip         = (_ConvertTo-IloIpAddressList $srv) -join ', '
                     oneview_uri    = $srv.uri
                     rom_version    = $srv.romVersion
+                    maintenance_mode = if ($srv.MaintenanceModeEnabled) { 'Yes' } else { 'No' }
+                    state          = $srv.state
+                    state_reason   = $srv.stateReason
                 }
                 if ($healthRegex -and -not $healthRegex.IsMatch($entry.health_status)) { continue }
                 if ($powerRegex  -and -not $powerRegex.IsMatch($entry.power_state))    { continue }
+                if ($maintRegex  -and -not $maintRegex.IsMatch($entry.maintenance_mode)) { continue }
                 if ($nameRegex   -and -not $nameRegex.IsMatch($entry.name))           { continue }
                 $servers.Add($entry)
             }
@@ -255,17 +274,13 @@ function Get-OneViewServerList {
         } while ($start -lt $total -and $resp.members.Count -gt 0)
 
         $result = @{
-            Success = $true
-            Count   = $servers.Count
-            Servers = $servers.ToArray()
-            Error   = $null
+            Success   = $true
+            Count     = $servers.Count
+            Appliance = $OneViewHost
+            Servers   = $servers.ToArray()
+            Error     = $null
         }
-        _Format-ServerListResult -Result $result
-        $logger.Info("Get-OneViewServerList result: Success=$($result.Success) Count=$($result.Count)")
-        # By default emit ONLY the formatted table (no raw hashtable/json dump to the
-        # terminal). Scripts/consumers opt in to the structured object with -PassThru.
-        if ($PassThru) { return $result }
-        return
+        return (_Emit-OneViewServerListResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -View $viewMode)
     }
     catch {
         $err = "OneView server list failed: $($_.Exception.Message)"
@@ -276,9 +291,7 @@ function Get-OneViewServerList {
             Servers = @()
             Error   = $err
         }
-        if ($PassThru) { return $errMap }
-        Write-Host $err -ForegroundColor Red
-        return
+        return (_Emit-OneViewServerListResult -Result $errMap -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -View $viewMode)
     }
 }
 
@@ -305,10 +318,44 @@ function _ConvertToWildcardRegex {
     return ".*$($sb.ToString()).*"
 }
 
-function _Format-ServerListResult {
-    param([hashtable]$Result)
+function _Emit-OneViewServerListResult {
+    <#
+    .SYNOPSIS
+        Emits the server-list result via the shared, DRY _Publish-Result helper
+        (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet,
+        [string] $View = 'Detail'
+    )
 
-    if (-not $Result.Success) { return }
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-OneViewServerListResult -Result $r -View $View
+    }
+}
+
+function _Format-OneViewServerListResult {
+    param([hashtable]$Result, [string]$View = 'Detail')
+
+    if (-not $Result.Success) {
+        if ($Result.Error) {
+            Write-Host ""
+            Write-Host "  Error:   $($Result.Error)" -ForegroundColor Red
+            Write-Host ""
+        }
+        return
+    }
+
+    if ($Result.DryRun) {
+        Write-Host ""
+        Write-Host "DRY RUN - no servers queried." -ForegroundColor Yellow
+        Write-Host ""
+        return
+    }
 
     if ($Result.Count -eq 0) {
         Write-Host ""
@@ -320,27 +367,50 @@ function _Format-ServerListResult {
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host "  OneView Server List ($($Result.Count) servers)" -ForegroundColor Cyan
+    if ($Result.Appliance) {
+        Write-Host "  Appliance: $($Result.Appliance)" -ForegroundColor Cyan
+    }
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""
 
-    $nameWidth = ($Result.Servers | ForEach-Object { $_.name.Length } | Measure-Object -Maximum).Maximum
-    if ($nameWidth -lt 10) { $nameWidth = 10 }
-    if ($nameWidth -gt 50) { $nameWidth = 50 }
+    $colDefs = @{
+        name      = @{ Header = 'Server Name';  Prop = 'name';            Min = 10; Max = 50 }
+        serial    = @{ Header = 'Serial';       Prop = 'serial_number';   Min = 15; Max = 15 }
+        maintmode = @{ Header = 'MaintMode';    Prop = 'maintenance_mode';Min = 9;  Max = 9  }
+        state     = @{ Header = 'State';        Prop = 'state';           Min = 10; Max = 18 }
+        health    = @{ Header = 'Health';       Prop = 'health_status';   Min = 10; Max = 10 }
+        power     = @{ Header = 'Power';        Prop = 'power_state';     Min = 8;  Max = 8  }
+        ilo       = @{ Header = 'iLO IP';       Prop = 'ilo_ip';          Min = 15; Max = 40 }
+        rom       = @{ Header = 'ROM';          Prop = 'rom_version';     Min = 6;  Max = 30 }
+        reason    = @{ Header = 'State Reason'; Prop = 'state_reason';    Min = 10; Max = 24 }
+        model     = @{ Header = 'Model';        Prop = 'model';           Min = 10; Max = 30 }
+    }
+    $cols = if ($View -eq 'Summary') {
+        @('name', 'serial', 'maintmode', 'health', 'ilo')
+    } else {
+        @('name', 'serial', 'maintmode', 'state', 'health', 'power', 'ilo', 'rom', 'reason', 'model')
+    }
 
-    $serialWidth = 15
-    $powerWidth = 8
-    $healthWidth = 10
-    $iloWidth = 15
+    $widths = @(); $headerCells = @()
+    foreach ($c in $cols) {
+        $def = $colDefs[$c]
+        $maxDataLen = ($Result.Servers | ForEach-Object { "$($_.$($def.Prop))".Length } | Measure-Object -Maximum).Maximum
+        if ($null -eq $maxDataLen) { $maxDataLen = 0 }
+        $maxLen = [math]::Max($def.Header.Length, $maxDataLen)
+        $widths += [math]::Max($def.Min, [math]::Min($def.Max, $maxLen))
+        $headerCells += $def.Header
+    }
 
-    $header = "{0,-$nameWidth}  {1,-$serialWidth}  {2,-$powerWidth}  {3,-$healthWidth}  {4,-$iloWidth}" -f `
-        'Server Name', 'Serial Number', 'Power', 'Health', 'iLO IP'
+    $cellFormats = for ($i = 0; $i -lt $widths.Count; $i++) { "{$($i),-$($widths[$i])} " }
+    $fmt = "| $($cellFormats -join '| ')|"
+
+    $header = $fmt -f $headerCells
     Write-Host $header -ForegroundColor Yellow
-    Write-Host ("-" * $header.Length) -ForegroundColor Gray
+
+    $divider = '|' + (($widths | ForEach-Object { '-' * ($_ + 2) }) -join '|') + '|'
+    Write-Host $divider -ForegroundColor Gray
 
     foreach ($srv in $Result.Servers) {
-        $name = $srv.name
-        if ($name.Length -gt 50) { $name = $name.Substring(0, 47) + '...' }
-
         $powerColor = switch ($srv.power_state) {
             'On'  { 'Green' }
             'Off' { 'Red' }
@@ -353,11 +423,41 @@ function _Format-ServerListResult {
             default      { 'Gray' }
         }
 
-        $line = "{0,-$nameWidth}  {1,-$serialWidth}  {2,-$powerWidth}  {3,-$healthWidth}  {4,-$iloWidth}" -f `
-            $name, $srv.serial_number, $srv.power_state, $srv.health_status, $srv.ilo_ip
+        $cells = for ($i = 0; $i -lt $cols.Count; $i++) {
+            $def = $colDefs[$cols[$i]]
+            $val = $srv.$($def.Prop)
+            if ($val -eq 'NotApplicable') { $val = '' }
+            if ($null -ne $val -and $val.Length -gt $widths[$i]) {
+                $val.Substring(0, [math]::Max(0, $widths[$i] - 3)) + '...'
+            } else {
+                $val
+            }
+        }
+        $line = $fmt -f $cells
         Write-Host $line -ForegroundColor $healthColor
     }
 
+    Write-Host ""
+    Write-Host "KEY" -ForegroundColor Cyan
+    Write-Host "  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode." -ForegroundColor Gray
+    if ($cols -contains 'state') {
+        Write-Host "  State     : server lifecycle state from OneView:" -ForegroundColor Gray
+        Write-Host "               Monitored        = normal / being monitored (not in maintenance)" -ForegroundColor Gray
+        Write-Host "               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)" -ForegroundColor Gray
+        Write-Host "               NoProfileApplied = no server profile assigned" -ForegroundColor Gray
+        Write-Host "               ProfileApplying  = a server profile is being applied" -ForegroundColor Gray
+        Write-Host "               ProfileApplied   = a server profile has been applied" -ForegroundColor Gray
+        Write-Host "               ConfigureHardware = hardware configuration in progress" -ForegroundColor Gray
+        Write-Host "               ProfileError     = profile apply failed (NOT maintenance)" -ForegroundColor Gray
+        Write-Host "               Deleting         = server being removed" -ForegroundColor Gray
+    }
+    if ($cols -contains 'reason') {
+        Write-Host "  State Reason : additional context for the State value (blank when 'NotApplicable'):" -ForegroundColor Gray
+        Write-Host "               NotApplicable  = no special reason; state is self-explanatory (shown as blank)" -ForegroundColor Gray
+        Write-Host "               UserInitiated  = state change triggered by a user action" -ForegroundColor Gray
+        Write-Host "               Unmanaged      = hardware not managed by this OneView appliance" -ForegroundColor Gray
+        Write-Host "               Removed        = hardware has been removed from the appliance" -ForegroundColor Gray
+    }
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host ""

@@ -181,8 +181,6 @@ New-CMBootableMedia -MediaMode Dynamic -MediaType CdDvd -Path "\\fileserver\osdm
 2. Prefer HTTPS with controlled access and auditable hosting.
 3. Validate the full ISO path / URL before initiating the build.
 
-10.4 Identify and validate the target server in HPE OneView
-
 1. Query HPE OneView for the target physical server by name, serial number, Bay/Enclosure position, or other approved identifier.
 2. Verify the hardware state, power state, and health state before proceeding.
 3. Confirm the correct server has been selected and is approved for build / rebuild.
@@ -296,7 +294,6 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 - Do not hard-code production credentials in scripts.
 - Store OneView and iLO credentials in a secure secret store or pipeline secret vault.
 - Use Configuration Manager media passwords where appropriate.
-- Restrict ISO repository access to approved systems and service accounts.
 - Prefer trusted TLS certificates over certificate bypass methods used only in lab/testing.
 - Maintain audit logs showing who initiated the build, which server was targeted, which ISO was used, and the final outcome.
 

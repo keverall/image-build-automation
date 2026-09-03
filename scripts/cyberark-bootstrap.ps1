@@ -71,9 +71,19 @@ foreach ($secret in $SecretsToFetch) {
     Write-Output "Fetching $($secret.EnvVar)..." -NoNewline
 
     try {
-        # Disable SSL validation for internal CyberArk appliances with self-signed certs
-        # In production, use proper CA-signed certificates instead
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        # Validate TLS so the credential response cannot be intercepted via MITM.
+        # Trust the OS CA store by default, or pin the appliance certificate with
+        # CYBERARK_EXPECTED_THUMBPRINT. Never accept any certificate.
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        $pinnedThumbprint = ($env:CYBERARK_EXPECTED_THUMBPRINT ?? '').Replace(' ', '').ToUpperInvariant()
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {
+            param($sender, $cert, $chain, $sslPolicyErrors)
+            if ($sslPolicyErrors -eq [System.Net.Security.SslPolicyErrors]::None) { return $true }
+            if ($pinnedThumbprint -and $cert -and $cert.Thumbprint.ToUpperInvariant() -eq $pinnedThumbprint) {
+                return $true
+            }
+            return $false
+        }
 
         $response = Invoke-RestMethod -Uri $fullUrl -Method Get -TimeoutSec 10 -ErrorAction Stop
         

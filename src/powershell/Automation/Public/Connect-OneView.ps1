@@ -42,6 +42,10 @@ function Connect-OneView {
         Emit the result as a JSON string on the success stream instead of
         the human-readable report.
 
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .EXAMPLE
         Connect-OneView -OneViewHost oneview.example.com
 
@@ -81,7 +85,8 @@ function Connect-OneView {
         [switch] $DryRun,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Json
+        [switch] $Json,
+        [switch] $Quiet
     )
 
     # Guard against a stray double-dash flag (e.g. `--DryRun`) being swallowed as
@@ -155,34 +160,35 @@ function Connect-OneView {
     $active = Get-OneViewActiveSession
     if ($active -and -not $DryRun) {
         if ($OneViewHost -and $active.Name -ne $OneViewHost) {
-            Write-Warning "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost' - this would drop the live session. Run Disconnect-OneView first to switch appliances."
-            return @{
+            $alreadyMsg = "HPeOneView IS ALREADY CONNECTED TO $($active.Name) NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect"
+            Write-Host ("`e[1;31m" + $alreadyMsg + "`e[0m")
+            return (_Complete-ConnectOneViewResult -Result @{
                 Available      = $false
                 Mode           = 'oneview'
                 OneViewHost = $OneViewHost
                 Environment    = $(if ($PSBoundParameters.ContainsKey('Environment')) { $Environment } else { 'Prod' })
-                NetworkPing    = @{ DnsResolved = $false; Error = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost'." }
+                NetworkPing    = @{ DnsResolved = $false; Error = $alreadyMsg }
                 AuthConnect    = @{ Connected = $false; Error = "Skipped - already connected to '$($active.Name)'. Run Disconnect-OneView first to switch to '$OneViewHost'." }
                 Timestamp      = Get-UtcTimestamp
-                Message        = "Already connected to OneView appliance '$($active.Name)'. Cannot reconnect to '$OneViewHost'."
-            }
+                Message        = $alreadyMsg
+            } -PassThru:$PassThru -Json:$Json -Quiet:$Quiet -OneViewHost $OneViewHost)
         }
         # Same appliance (or no host supplied): reuse the live session, do not reconnect.
         Write-Verbose "Already connected to OneView appliance '$($active.Name)'. Reusing the existing session (not reconnecting)."
+        $alreadyMsg = "HPeOneView IS ALREADY CONNECTED TO $($active.Name) NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect"
+        Write-Host ("`e[1;31m" + $alreadyMsg + "`e[0m")
         $statusParams = @{ PingTimeoutMs = 3000 }
         if ($OneViewHost) { $statusParams['OneViewHost'] = $OneViewHost }
-        $result = Test-ServerConnectivity @statusParams -PassThru -Quiet
-        $result.Message = "Already connected to OneView appliance '$($active.Name)'."
+        # Connect-OneView has its own -Json switch. PowerShell's binder auto-binds this
+        # $Json to Test-ServerConnectivity's -Json when it is not explicitly passed,
+        # which would make the delegate return JSON instead of the structured object
+        # (and break the [hashtable] contract below). Shadow $Json in a child scope so
+        # the delegate always returns the hashtable; Connect-OneView emits its own
+        # -Json via _Complete-ConnectOneViewResult.
+        $result = & { $Json = $false; Test-ServerConnectivity @statusParams -PassThru -Quiet }
+        $result.Message = $alreadyMsg
         $logger.Info("Connect-OneView result: Available=$($result.Available) Message='$($result.Message)'")
-        if ($Json) {
-            $result | ConvertTo-Json -Depth 6 -Compress
-            return
-        }
-        _Format-ConnectivityResult -Result $result
-        if ($PassThru) {
-            return $result
-        }
-        return
+        return (_Complete-ConnectOneViewResult -Result $result -PassThru:$PassThru -Json:$Json -Quiet:$Quiet -OneViewHost $OneViewHost)
     }
 
     # ── -DryRun is a CRITICAL-priority, first-checked guard ─────────────────────
@@ -221,9 +227,15 @@ function Connect-OneView {
         }
     }
 
-    $result = Test-ServerConnectivity @params -PassThru -Quiet
+    # Connect-OneView has its own -Json switch. PowerShell's binder auto-binds this
+    # $Json to Test-ServerConnectivity's -Json when it is not explicitly passed,
+    # which would make the delegate return JSON instead of the structured object
+    # (and break the [hashtable] contract below). Shadow $Json in a child scope so
+    # the delegate always returns the hashtable; Connect-OneView emits its own
+    # -Json via _Complete-ConnectOneViewResult.
+    $result = & { $Json = $false; Test-ServerConnectivity @params -PassThru -Quiet }
 
-    return _Complete-ConnectOneViewResult -Result $result -PassThru:$PassThru -Json:$Json -OneViewHost $OneViewHost
+    return _Complete-ConnectOneViewResult -Result $result -PassThru:$PassThru -Json:$Json -Quiet:$Quiet -OneViewHost $OneViewHost
 }
 
 function _Complete-ConnectOneViewResult {
@@ -237,35 +249,32 @@ function _Complete-ConnectOneViewResult {
         [Parameter(Mandatory)] [hashtable] $Result,
         [switch] $PassThru,
         [switch] $Json,
+        [switch] $Quiet,
         [string] $OneViewHost
     )
 
-    if ($Result.Available) {
-        $Result.Message = "Connected to OneView appliance '$OneViewHost'."
-    } elseif ($Result.DryRun) {
-        $Result.Message = "Dry-run validation completed (no live connection made)."
-    } else {
-        $detail = if ($Result.AuthConnect.Error) {
-            $Result.AuthConnect.Error
-        } elseif ($Result.NetworkPing.Error) {
-            $Result.NetworkPing.Error
+    if (-not $Result.Message) {
+        if ($Result.Available) {
+            $Result.Message = "Connected to OneView appliance '$OneViewHost'."
+        } elseif ($Result.DryRun) {
+            $Result.Message = "Dry-run validation completed (no live connection made)."
         } else {
-            'Unknown failure'
+            $detail = if ($Result.AuthConnect.Error) {
+                $Result.AuthConnect.Error
+            } elseif ($Result.NetworkPing.Error) {
+                $Result.NetworkPing.Error
+            } else {
+                'Unknown failure'
+            }
+            $Result.Message = "Connection to '$OneViewHost' failed: $detail"
         }
-        $Result.Message = "Connection to '$OneViewHost' failed: $detail"
     }
 
     $logger = Get-Logger 'Connect-OneView'
     $logger.Info("Connect-OneView result: Available=$($Result.Available) Message='$($Result.Message)'")
 
-    if ($Json) {
-        $Result | ConvertTo-Json -Depth 6 -Compress
-        return
-    }
-
-    _Format-ConnectivityResult -Result $Result
-
-    if ($PassThru) {
-        return $Result
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-ConnectivityResult -Result $r
     }
 }

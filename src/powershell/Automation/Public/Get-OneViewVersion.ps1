@@ -45,12 +45,28 @@ function Get-OneViewVersion {
         Appliance probe timeout (default 15 s).
 
     .PARAMETER Quiet
-        Suppress the formatted console report; return only the hashtable.
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself). By default the command writes the report
+        to the host and returns nothing on the success stream.
+
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream. By
+        default the command writes only the report and returns nothing, so the
+        terminal/log never receives a truncated hashtable dump. Capture the
+        result into a variable, e.g. `$r = Get-OneViewVersion -PassThru`, for
+        scripting.
 
     .OUTPUTS
-        [hashtable] Success, RequiredModule, Compliant, LoadedModules,
-        InstalledModules, NonCompliantLoaded, NonCompliantInstalled,
-        Appliance, ApplianceVersion, ApplianceReachable, Error.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with keys Success, RequiredModule, Compliant, LoadedModules,
+        InstalledModules, NonCompliantLoaded, NonCompliantInstalled, Appliance,
+        ApplianceVersion, ApplianceReachable, Error. With -Json, a JSON [string]
+        representation of the same data.
 
     .EXAMPLE
         Get-OneViewVersion
@@ -73,7 +89,10 @@ function Get-OneViewVersion {
         [Alias('Q')]
         [switch] $Quiet,
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru
     )
 
     # Common logging: each command writes to its own isolated log under
@@ -108,7 +127,7 @@ function Get-OneViewVersion {
         $logger.Info($msg); Write-Host $msg
         $result.Appliance = $OneViewHost
         $result.DryRun    = $true
-        return $result
+        return (_Emit-GetOneViewVersionResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     if ($OneViewHost) {
@@ -130,53 +149,81 @@ function Get-OneViewVersion {
         $result.Error = (@($result.Error, "Unsupported HPE OneView module(s) loaded: $names. Only $($moduleStatus.RequiredModule) is supported. Run: Remove-Module $names -Force, then uninstall/delete the module folder.") | Where-Object { $_ }) -join ' | '
     }
 
-    if (-not $Quiet) {
-        Write-Output "=============================================="
-        Write-Output "  OneView Version Report"
-        Write-Output "=============================================="
-        Write-Output ""
-        Write-Output "  Required module: $($result.RequiredModule)"
-        Write-Output "  Policy compliant: $(if ($result.Compliant) { 'Yes' } else { 'NO - unsupported module loaded' })"
-        Write-Output ""
-        Write-Output "  --- Loaded HPEOneView modules (this session) ---"
-        if ($result.LoadedModules.Count -eq 0) {
-            Write-Output "    (none loaded)"
-        } else {
-            foreach ($m in $result.LoadedModules) {
-                Write-Output "    $($m.Name)  v$($m.Version)"
-                Write-Output "      $($m.Path)"
-            }
-        }
-        Write-Output ""
-        Write-Output "  --- Installed HPEOneView modules (PSModulePath) ---"
-        if ($result.InstalledModules.Count -eq 0) {
-            Write-Output "    (none found)"
-        } else {
-            foreach ($m in $result.InstalledModules) {
-                $flag = if ($m.Name -ne $result.RequiredModule) { '  <-- UNSUPPORTED, remove' } else { '' }
-                Write-Output "    $($m.Name)  v$($m.Version)$flag"
-                Write-Output "      $($m.Path)"
-            }
-        }
-        Write-Output ""
-        Write-Output "  --- Appliance ---"
-        if ($result.Appliance) {
-            Write-Output "    Host:              $($result.Appliance)"
-            Write-Output "    Reachable:         $(if ($result.ApplianceReachable) { 'Yes' } else { 'No' })"
-            Write-Output "    /rest/version:     $($result.ApplianceVersion) (appliance REST value - NOT the PS module version)"
-        } else {
-            Write-Output "    (no -OneViewHost supplied and no active session - appliance probe skipped)"
-        }
-        if ($result.Error) {
-            Write-Output ""
-            Write-Output "  Error: $($result.Error)"
-        }
-        Write-Output ""
-        Write-Output "=============================================="
-    }
-
     $logger.Info("Get-OneViewVersion result: Success=$($result.Success) Appliance='$($result.Appliance)' Reachable=$($result.ApplianceReachable) Version='$($result.ApplianceVersion)'")
-    return $result
+    return (_Emit-GetOneViewVersionResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+}
+
+# ── Result emission ───────────────────────────────────────────────────────────
+function _Emit-GetOneViewVersionResult {
+    <#
+    .SYNOPSIS
+        Emits the OneView version result via the shared, DRY _Publish-Result
+        helper (consistent with every other automation command).
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-GetOneViewVersionResult -Result $r
+    }
+}
+
+# ── Output formatting ─────────────────────────────────────────────────────────
+function _Format-GetOneViewVersionResult {
+    <#
+    .SYNOPSIS
+        Formats the OneView version result as a clean, readable report.
+    #>
+    param([hashtable] $Result)
+
+    Write-Host ""
+    Write-Host "=============================================="
+    Write-Host "  OneView Version Report"
+    Write-Host "=============================================="
+    Write-Host ""
+    Write-Host "  Required module: $($Result.RequiredModule)"
+    Write-Host "  Policy compliant: $(if ($Result.Compliant) { 'Yes' } else { 'NO - unsupported module loaded' })"
+    Write-Host ""
+    Write-Host "  --- Loaded HPEOneView modules (this session) ---"
+    if ($Result.LoadedModules.Count -eq 0) {
+        Write-Host "    (none loaded)"
+    } else {
+        foreach ($m in $Result.LoadedModules) {
+            Write-Host "    $($m.Name)  v$($m.Version)"
+            Write-Host "      $($m.Path)"
+        }
+    }
+    Write-Host ""
+    Write-Host "  --- Installed HPEOneView modules (PSModulePath) ---"
+    if ($Result.InstalledModules.Count -eq 0) {
+        Write-Host "    (none found)"
+    } else {
+        foreach ($m in $Result.InstalledModules) {
+            $flag = if ($m.Name -ne $Result.RequiredModule) { '  <-- UNSUPPORTED, remove' } else { '' }
+            Write-Host "    $($m.Name)  v$($m.Version)$flag"
+            Write-Host "      $($m.Path)"
+        }
+    }
+    Write-Host ""
+    Write-Host "  --- Appliance ---"
+    if ($Result.Appliance) {
+        Write-Host "    Host:              $($Result.Appliance)"
+        Write-Host "    Reachable:         $(if ($Result.ApplianceReachable) { 'Yes' } else { 'No' })"
+        Write-Host "    /rest/version:     $($Result.ApplianceVersion) (appliance REST value - NOT the PS module version)"
+    } else {
+        Write-Host "    (no -OneViewHost supplied and no active session - appliance probe skipped)"
+    }
+    if ($Result.Error) {
+        Write-Host ""
+        Write-Host "  Error: $($Result.Error)"
+    }
+    Write-Host ""
+    Write-Host "=============================================="
 }
 
 # vim: ts=4 sw=4 et
