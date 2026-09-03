@@ -27,9 +27,14 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 HEADERS = ("http://", "https://", "mailto:")
+
+# A4 portrait is 11906 x 16838 twips; landscape swaps the edges.
+LANDSCAPE_W = 16838
+LANDSCAPE_H = 11906
 _NAME_BAD = re.compile(r"[^A-Za-z0-9_-]")
 _HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
 _STANDALONE_ANCHOR = re.compile(r'^<a\s+(?:id|name)=["\']([^"\']+)["\']\s*></a>\s*$', re.I)
@@ -130,8 +135,158 @@ def preprocess(md: str) -> str:
     return text
 
 
+_TABLE_SEP = re.compile(r"^\s*\|?[\s:\-|]+\|?\s*$")
+
+
+def _has_markdown_table(md: str) -> bool:
+    """Return True if the markdown contains at least one pipe-table.
+
+    Mirror pandoc's pipe-table rule: a separator row (only ``-``, ``:`` and
+    ``|``) must be immediately preceded by a header row that also contains a
+    ``|``. This avoids false positives from horizontal rules (``---``) or prose
+    lines that merely happen to match the separator shape.
+    """
+    in_fence = False
+    lines = md.split("\n")
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if (
+            "|" in line
+            and "-" in line
+            and _TABLE_SEP.match(line)
+            and i > 0
+            and "|" in lines[i - 1]
+        ):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# DOCX post-processing: borders (dark-mode safe), landscape, autofit columns
+# ---------------------------------------------------------------------------
+#
+# pandoc emits tables with no borders (so they vanish on a dark page) and a
+# fixed column layout. Word also defaults to portrait, which clips the wide
+# command/fleet tables. We patch the generated OOXML to match the RTF rules:
+#   * every table gets single borders with w:color="auto" (black on a light
+#     page, white on a dark page) so they stay visible in either theme;
+#   * the column layout switches to "autofit" so Word sizes each column to its
+#     content (the DOCX-native equivalent of the RTF priority-based resize:
+#     first column natural/capped, a primary prose column takes the slack);
+#   * any document that actually contains a table is set to landscape so the
+#     full long-edge width is available.
+
+
+def _add_table_borders_and_autofit(xml: str) -> str:
+    def fix_tblpr(m: re.Match) -> str:
+        pr = m.group(0)
+        if re.search(r"<w:tblLayout\b", pr):
+            pr = re.sub(
+                r"<w:tblLayout\b[^>]*>",
+                '<w:tblLayout w:type="autofit"/>',
+                pr,
+            )
+        else:
+            pr = pr.replace(
+                "</w:tblPr>",
+                '<w:tblLayout w:type="autofit"/></w:tblPr>',
+                1,
+            )
+        if not re.search(r"<w:tblBorders\b", pr):
+            borders = (
+                "<w:tblBorders>"
+                '<w:top w:val="single" w:sz="6" w:space="0" w:color="auto"/>'
+                '<w:left w:val="single" w:sz="6" w:space="0" w:color="auto"/>'
+                '<w:bottom w:val="single" w:sz="6" w:space="0" w:color="auto"/>'
+                '<w:right w:val="single" w:sz="6" w:space="0" w:color="auto"/>'
+                '<w:insideH w:val="single" w:sz="6" w:space="0" w:color="auto"/>'
+                '<w:insideV w:val="single" w:sz="6" w:space="0" w:color="auto"/>'
+                "</w:tblBorders>"
+            )
+            pr = pr.replace("</w:tblPr>", borders + "</w:tblPr>", 1)
+        return pr
+
+    return re.sub(r"<w:tblPr>.*?</w:tblPr>", fix_tblpr, xml, flags=re.S)
+
+
+def _set_landscape(xml: str) -> str:
+    def fix_sect(m: re.Match) -> str:
+        sp = m.group(0)
+        sp = re.sub(r"<w:pgSz\b[^>]*/>", "", sp)
+        sp = re.sub(
+            r"(<w:sectPr\b[^>]*>)",
+            r'\1<w:pgSz w:w="%d" w:h="%d" w:orient="landscape"/>'
+            % (LANDSCAPE_W, LANDSCAPE_H),
+            sp,
+            count=1,
+        )
+        return sp
+
+    return re.sub(r"<w:sectPr\b.*?</w:sectPr>", fix_sect, xml, flags=re.S)
+
+
+def _ensure_default_font_auto(sxml: str) -> str:
+    """Defensively force the default run colour to "auto" (theme-aware)."""
+    if "<w:color w:val=\"auto\"" in sxml:
+        return sxml
+    if "<w:rPrDefault>" in sxml:
+        sxml = re.sub(
+            r"(<w:rPrDefault>\s*<w:rPr[^>]*>)",
+            r'\1<w:color w:val="auto"/>',
+            sxml,
+            count=1,
+        )
+        if "<w:color w:val=\"auto\"" not in sxml:
+            sxml = re.sub(
+                r"<w:rPrDefault>",
+                "<w:rPrDefault><w:rPr><w:color w:val=\"auto\"/></w:rPr>",
+                sxml,
+                count=1,
+            )
+    else:
+        sxml = re.sub(
+            r"(<w:docDefaults[^>]*>)",
+            r'\1<w:rPrDefault><w:rPr><w:color w:val="auto"/></w:rPr></w:rPrDefault>',
+            sxml,
+            count=1,
+        )
+    return sxml
+
+
+def _post_process_docx(path: Path, landscape: bool) -> None:
+    with zipfile.ZipFile(path, "r") as zin:
+        names = zin.namelist()
+        data = {n: zin.read(n) for n in names}
+
+    document = data.get("word/document.xml")
+    if document is not None:
+        xml = document.decode("utf-8")
+        xml = _add_table_borders_and_autofit(xml)
+        if landscape:
+            xml = _set_landscape(xml)
+        data["word/document.xml"] = xml.encode("utf-8")
+
+    styles = data.get("word/styles.xml")
+    if styles is not None:
+        data["word/styles.xml"] = _ensure_default_font_auto(
+            styles.decode("utf-8")
+        ).encode("utf-8")
+
+    tmp = path.with_name(path.name + ".tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for n in names:
+            zout.writestr(n, data[n])
+    tmp.replace(path)
+
+
 def convert_file(input_path: Path, output_path: Path, pandoc: str) -> int:
     md = preprocess(input_path.read_text(encoding="utf-8"))
+    landscape = _has_markdown_table(md)
     with tempfile.NamedTemporaryFile(
         "w", suffix=".md", delete=False, encoding="utf-8"
     ) as f:
@@ -153,6 +308,7 @@ def convert_file(input_path: Path, output_path: Path, pandoc: str) -> int:
             raise RuntimeError(msg)
     finally:
         tmp_md.unlink(missing_ok=True)
+    _post_process_docx(output_path, landscape)
     return output_path.stat().st_size
 
 
