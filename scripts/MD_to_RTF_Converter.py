@@ -192,6 +192,17 @@ def inline_to_rtf(text):
     parts = text.split("\x00")
     for i in range(0, len(parts), 2):
         parts[i] = rtf_escape(parts[i])
+        # Convert HTML anchor tags into RTF bookmarks so inline citations can
+        # jump to them; drop the now-empty closing </a> tags. Anchors appear
+        # both on their own line (handled at block level) and inline, e.g.
+        # "<a id="ref-1"></a>[1] ...". The bookmark control words are injected
+        # after escaping so they are not mangled.
+        parts[i] = re.sub(
+            r'<a\s+(?:name|id)=["\']([^"\']+)["\']\s*/?>',
+            r"{\\*\\bkmkstart \1}{\\*\\bkmkend \1}",
+            parts[i],
+        )
+        parts[i] = parts[i].replace("</a>", "")
     text = "\x00".join(parts)
 
     # External links -> HYPERLINK field.
@@ -201,6 +212,13 @@ def inline_to_rtf(text):
             r"{\field{\*\fldinst HYPERLINK \"%s\"}{\fldrslt %s}}"
             % (m.group(2), rtf_escape(m.group(1)))
         ),
+        text,
+    )
+    # Internal anchor links (#anchor) -> HYPERLINK \l "anchor" so citations
+    # like [3](#ref-3) remain clickable and jump to the reference bookmark.
+    text = re.sub(
+        r"\[([^\]]+)\]\(#([^)\s]+)\)",
+        r'{\\field{\\*\fldinst HYPERLINK \\l "\2"} {\\fldrslt \1}}',
         text,
     )
     # Any other link -> keep visible text only.
