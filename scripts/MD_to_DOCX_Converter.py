@@ -161,26 +161,29 @@ def discover_md_files(repo_root: Path):
     out_root = root / "docx"
 
     def pair(p: Path) -> tuple[Path, Path]:
-        rel = p.relative_to(root).with_suffix(".docx")
-        return p, out_root / rel
+        rel = p.relative_to(root)
+        parts = rel.parts
+        # Mirror the docs/ folder structure under docx/, stripping the leading
+        # "docs/" prefix (e.g. docs/Automation/foo.md -> docx/Automation/foo.docx)
+        # so the docx tree mirrors docs/. docs/-root files flatten to docx/ roots.
+        if len(parts) >= 2 and parts[0] == "docs":
+            rel = rel.relative_to("docs")
+        return p, out_root / rel.with_suffix(".docx")
 
-    readme = root / "README.md"
-    if readme.exists():
-        yield pair(readme)
+    # Root markdown docs (skip auto-generated agent instruction files).
+    for p in sorted(root.glob("*.md")):
+        if p.name in ("AGENTS.md", "CRUSH.md"):
+            continue
+        yield pair(p)
 
-    auto = root / "docs" / "Automation"
-    for name in (
-        "automation_commands.md",
-        "runbook-requirements.md",
-        "runbook-requirements-v2.md",
-    ):
-        p = auto / name
-        if p.exists():
+    docs = root / "docs"
+    if docs.exists():
+        for p in sorted(docs.rglob("*.md")):
             yield pair(p)
 
-    dcd = root / "docs" / "dynamic-code-docs"
-    if dcd.exists():
-        for p in sorted(dcd.glob("*.md")):
+    wip = root / "wip"
+    if wip.exists():
+        for p in sorted(wip.glob("*.md")):
             yield pair(p)
 
     wip = root / "wip"
