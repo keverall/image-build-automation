@@ -62,6 +62,45 @@
 
 ## Change details
 
+<a id="32-docx-documentation-replaces-rtf-converter-fix-and-project-root-output"></a>
+
+### 32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |
+| 2026-09-03 | 1. Removed `make rtf-docs` / `make rtf-docs-clean`, `scripts/MD_to_RTF_Converter.py`, and the `docs/rtf/` tree — RTF never resolved TOC/bookmark links reliably in Word (long/digit-leading bookmark names get hashed by Word+pandoc). 2. Added `make word-docs` / `make word-docs-clean`: Markdown → Word DOCX with native OOXML `<w:bookmarkStart>` / `<w:hyperlink w:anchor>` so TOC and citation links are active the moment the file opens (no field update). 3. Fixed `MD_to_DOCX_Converter.py` `_rewrite_link` bug: the `[text](#anchor)` regex captures the anchor *without* the leading `#`, so the `target.startswith("#")` guard was always false and **no** TOC/citation links were rewritten — pandoc then hashed long anchors into `X<hash>` and desynced bookmarks from links. Links now normalize to `secN` / `ref-N`. 4. Disabled pandoc's `tex_math_dollars` extension (`-f markdown-tex_math_dollars`) so PowerShell `$true` / `$false` / `$null` render literally instead of raising "Could not convert TeX math" warnings. 5. Expanded DOCX coverage from `wip/*.md` to all `docs/**/*.md` + `wip/*.md` (parity with the old RTF set). 6. Relocated DOCX output from `docs/docx/` to project-root `docx/`, mirroring the `docs/` folder structure (no `docs/` prefix). 7. Per-file graceful error handling: a failed conversion logs `[WARN] failed to convert <file>` and continues — no stack traces. | Kev Everall |
+
+<a name="root-cause-32"></a>
+
+#### Root cause
+
+Two independent problems blocked the DOCX route:
+
+- **RTF was broken by design**: Word (and pandoc) reject bookmark names that begin with a digit and silently rename any name longer than ~32 characters to a `SHA-1` hash (`X<hash>`). The RTF converter emitted long, digit-leading anchors (e.g. `61-prerequisites`), so the bookmarks Word created did not match the link targets in the TOC/citations — links never resolved without an interactive field-update.
+- **The DOCX converter's own `_rewrite_link` regressed**: `_INT_LINK = r"\[([^\]]+)\]\(#([^)\s]+)\)"` captures group 2 as the anchor *without* the leading `#` (the `#` is a literal in the pattern). The rewrite function then did `if target.startswith("#")`, which is always **False**, so it fell through to the `return m.group(0)` no-op branch. Every TOC/citation link was left pointing at the original long anchor, and pandoc hashed those into `X<hash>` bookmarks with no matching target.
+
+<a name="fix-32"></a>
+
+#### Fix
+
+- **`scripts/MD_to_RDF_Converter.py` is gone** (deleted along with `docs/rtf/`); Word DOCX now replaces RTF as the help-doc format.
+- **`scripts/MD_to_DOCX_Converter.py`**:
+  - `_rewrite_link` no longer tests for a leading `#` (the regex never captures it): it normalises `valid_bm_name(m.group(2))` and looks it up in `heading_map`, rewriting every TOC/citation target to its `secN`/`ref-N` bookmark id so bookmark and link target stay in sync.
+  - `pandoc` is now invoked with `-f markdown-tex_math_dollars` (math extension disabled) so `$true`/`$false`/`$null` PowerShell variables render as literal text; `capture_output=True` + explicit `returncode` check means a failing conversion raises a `RuntimeError(msg)` caught by the caller as a single `[WARN] failed to convert <file>` — no tracebacks, no stderr spam.
+  - `discover_md_files` now mirrors the old RTF source set exactly: root `README.md`, `docs/Automation/{automation_commands,runbook-requirements,runbook-requirements-v2}.md`, `docs/dynamic-code-docs/*.md`, and `wip/*.md`. (Root `README.md` is intentionally **not** emitted to `docx/` to avoid colliding with `docs/README.md` once the `docs/` prefix is stripped; it remains in-repo as `.md`.)
+  - Output relocated to project-root `docx/`, mirroring `docs/` (e.g. `docs/Automation/foo.md` → `docx/Automation/foo.docx`) with the leading `docs/` prefix removed.
+- **`Makefile`**: added `word-docs` / `word-docs-clean` targets and removed `rtf-docs` / `rtf-docs-clean` (plus their `.PHONY` entries).
+
+<a name="verification-32"></a>
+
+#### Verification
+
+- `make word-docs` → `Converted 267 markdown files to DOCX under .../docx`; `docx/` mirrors `docs/` + `wip/` (no `docs/` prefix).
+- `docx/wip/SSO.docx`: 56 bookmarks, **0** hashed `X<hash>` anchors, TOC bullets → `secN`, citation links → `ref-N`, all resolving in Word on open.
+- `make word-docs-clean`: removes `docx/`; re-running `make word-docs` reproduces cleanly.
+- `make lint-make` (checkmake) + `make lint-python` (ruff): clean, no issues.
+- 0 "Could not convert TeX math" warnings on the previously-noisy dynamic-code-docs.
+
 <a id="31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default"></a>
 
 ### 31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)
