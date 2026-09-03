@@ -7,6 +7,7 @@
 #   make setup   # Setup PowerShell environment (install modules)
 #   make test    # Run all Pester tests
 #   make lint    # Lint PowerShell with PSScriptAnalyzer
+#   make lint-python # Lint Python scripts with Ruff (check + autofix)
 #   make coverage # Run tests with code coverage
 #   make fix-docs # Fix broken markdown links (use -WhatIf to preview)
 # =============================================================================
@@ -48,7 +49,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs rtf-docs rtf-docs-clean
+.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs rtf-docs rtf-docs-clean
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: ## Setup PowerShell environment (install modules, configure profiles)
@@ -59,12 +60,16 @@ setup: ## Setup PowerShell environment (install modules, configure profiles)
 # Note: checkmake installation is now handled gracefully by setup-runner.ps1
 
 # ─── Linting ────────────────────────────────────────────────────────────────
-lint: lint-make lint-checkmake ## Lint PowerShell files and Makefile
+lint: lint-make lint-checkmake lint-python ## Lint PowerShell, Makefile, and Python (Ruff)
 	@echo "$(CYAN)[lint]$(NC) Running PSScriptAnalyzer..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
 lint-checkmake: ## Lint Makefile with checkmake (optional)
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-checkmake.ps1
+
+lint-python: ## Lint Python scripts with Ruff (check + autofix)
+	@echo "$(CYAN)[lint-python]$(NC) Running Ruff on Python scripts..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint-python.ps1
 
 lint-make: ## Lint Makefile syntax and style
 	@echo "$(CYAN)[lint-make]$(NC) Checking Makefile..."

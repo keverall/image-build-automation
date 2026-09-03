@@ -1,0 +1,15 @@
+# Ruff configuration for Python scripts (MD_to_HTML_Converter.py, MD_to_RTF_Converter.py).
+# Shared between `make lint` (lint-python) and editor integration.
+target-version = "py38"
+line-length = 100
+
+# Keep parity with the PowerShell linter's exclude set: don't touch vendored,
+# generated, or third-party module trees.
+extend-exclude = ["vendor", "generated", "bin", "scripts/modules", ".git"]
+
+[lint]
+select = ["E", "F", "W", "I"]
+
+[lint.isort]
+# Match the module grouping used in the existing converters.
+known-first-party = ["MD_to_HTML_Converter", "MD_to_RTF_Converter"]
