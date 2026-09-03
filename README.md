@@ -81,7 +81,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 
 | Document | Description |
 | --- | --- |
-| [📚 Documentation Index](docs/README.md#top) | Complete documentation overview |
+| [📚 Documentation Index](docs/HPEProLiantWindowsServerISOAutomationDocumentationIndex.md#top) | Complete documentation overview |
 | [🚀 Setup Guide](docs/SETUP-GUIDE.md#top) | **START HERE** - Profile setup, module installation, quick start |
 | [📡 PowerShell API Reference](docs/Generic/powershell_api_reference.md#top) | Module overview, cmdlet usage, orchestrator API |
 | [📗 Automation Command Reference](docs/Automation/automation_commands.md#top) | **All automation commands with full parameter tables** - functional reference linking to source |

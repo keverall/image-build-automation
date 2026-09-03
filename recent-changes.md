@@ -6,7 +6,9 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
+  - [32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output](#32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output)
   - [31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)](#31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default)
+  - [30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables](#30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables)
   - [29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials](#29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials)
   - [28) OneView error honesty + abort on failed resolution + iLO credential fallback](#28-oneview-error-honesty-abort-on-failed-resolution-ilo-credential-fallback)
   - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes)
@@ -21,12 +23,12 @@
   - [18) Universal ISO/firmware path resolver fix (DRY consolidation)](#18-universal-isofirmware-path-resolver-fix-dry-consolidation)
   - [17) Get-OneViewConnectionStatus session-reuse guard (no reconnect)](#17-get-oneviewconnectionstatus-session-reuse-guard-no-reconnect)
   - [16) Docs anchor fix — navigable `id` anchors for `make docs` / `make fix-docs`](#16-docs-anchor-fix-navigable-id-anchors-for-make-docs-make-fix-docs)
-  - [13) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests](#13-connect-oneview-converttowildcardregex-docs-alias-inventory-tests)
-  - [12) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`](#12-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist)
-  - [11) `Test-BuildParams` / `_Validate-Request` hardening](#11-test-buildparams-_validate-request-hardening)
-  - [10) Shared output formatting + `Connect-OneView` rewrite + runbook v2](#10-shared-output-formatting-connect-oneview-rewrite-runbook-v2)
-  - [15) Testing-issues documentation (OneView connectivity)](#15-testing-issues-documentation-oneview-connectivity)
-  - [14) Repo hygiene: LF normalization + git workflow docs](#14-repo-hygiene-lf-normalization-git-workflow-docs)
+  - [15) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests](#15-connect-oneview-converttowildcardregex-docs-alias-inventory-tests)
+  - [14) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`](#14-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist)
+  - [13) `Test-BuildParams` / `_Validate-Request` hardening](#13-test-buildparams-_validate-request-hardening)
+  - [12) Shared output formatting + `Connect-OneView` rewrite + runbook v2](#12-shared-output-formatting-connect-oneview-rewrite-runbook-v2)
+  - [11) Testing-issues documentation (OneView connectivity)](#11-testing-issues-documentation-oneview-connectivity)
+  - [10) Repo hygiene: LF normalization + git workflow docs](#10-repo-hygiene-lf-normalization-git-workflow-docs)
   - [9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul](#9-parameter-rename-managementhost-oneviewhost-get-oneviewconnectionstatus-overhaul)
   - [8) Automated live testing harness + captured test results](#8-automated-live-testing-harness-captured-test-results)
   - [7) OneView live-session guard + GuardRail (destructive-action gate)](#7-oneview-live-session-guard-guardrail-destructive-action-gate)
@@ -36,39 +38,57 @@
   - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening-repo-testing-rules-agentsmd)
   - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
   - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation-2-command-workflow-runbook-aligned)
-  - [30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables](#30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables)
 
 <a id="summary-of-changes"></a>
 
 ## Summary of changes
 
 | **Date** | **Change description summary** | **Author** |  
-| --- | --- | --- |
-| 2026-08-27 | 1. Security hardening of HPE OneView / iLO / SCOM credential handling (TLS-validated CyberArk fetch, secrets passed out-of-band via `-Environment`/`-ArgumentList`, in-process password cache instead of process-env) and a CISO-style vulnerability scan with CI guardrail rules in `ci-security-check.ps1`<br>2. `Get-OneViewServerTarget` now classifies REST failures honestly (transport failure → "No connection to OneView"; real HTTP status → "OneView returned HTTP <code> - <reason>") and lets `Auto` mode fall through a rejected filter to the next identifier type; `Configure-PhysicalBuild` + `Start-PhysicalServerBuild` now abort on a failed OneView resolution instead of warning and continuing to the guard rail / DEPLOY prompt; `Test-PreBuildValidation` reuses the OneView credentials for the iLO Redfish check (falls back to an interactive prompt if they are rejected) via a new `-OneViewCredential` (`-OVCred`)<br>3. Pruned 5 commands (`Test-ServerList`, `Invoke-IsoDeploy`, `New-IsoBuild`, `Publish-BootIso`, `Update-Firmware`) from source/tests/docs; rewrote `Configure-PhysicalBuild` as the single deploy entry point with `-Deploy`/`-Execute` + `APPROVE`; updated docs, dynamic-code-docs, `testBuildDeploy.ps1`, and fixed 3 runtime bugs in the build pipeline | Kev Everall |
-| 2026-09-02 | `make setup` now selects the Windows terminal profile template by computer name: eis19* → `wip/eis19profile.ps1` (internal-only, no proxy, Git-bundled ssh); *vdi* / *prod* → `wip/techvdi-profile.ps1` (corporate proxy + Git-bundled ssh); default Windows → `wip/windowspsprofile.ps1`; Linux/macOS → `wip/psprofile.ps1` (unchanged). Fixed `wip/eis19profile.ps1` (removed stray corporate proxy block + wrong `System32\OpenSSH` gitSshPath). Syntax checks pass. | Kev Everall |
+| --- | --- | --- |  
+| 2026-09-03 | 1. Removed `make rtf-docs` / `make rtf-docs-clean`, `scripts/MD_to_RTF_Converter.py`, and the `docs/rtf/` tree - RTF never resolved TOC/bookmark links in Word (long/digit-leading bookmark names get hashed by Word+pandoc). 2. Added `make word-docs` / `make word-docs-clean`: Markdown -> Word DOCX with native OOXML `<w:bookmarkStart>` / `<w:hyperlink w:anchor>` so TOC and citation links are active the moment the file opens (no field update). 3. Fixed `MD_to_DOCX_Converter.py` `_rewrite_link` bug: the `[text](#anchor)` regex captures the anchor without the leading `#`, so the `target.startswith('#')` guard was always false and no TOC/citation links were rewritten - pandoc then hashed long anchors into `X<hash>` and desynced bookmarks from links. Links now normalize to `secN` / `ref-N`. 4. Disabled pandoc's `tex_math_dollars` extension (`-f markdown-tex_math_dollars`) so PowerShell `$true` / `$false` / `$null` render literally instead of raising 'Could not convert TeX math' warnings. 5. Expanded DOCX coverage to all `docs/**/*.md` + root `*.md` + `wip/*.md`. 6. Relocated output to project-root `docx/`, mirroring `docs/` (no `docs/` prefix, no `docx/docs/` namespace). 7. Per-file graceful error handling: a failed conversion logs `[WARN] failed to convert <file>` and continues - no stack traces. | Kev Everall |
+| 2026-09-02 | `make setup` now selects the Windows terminal profile template by computer name so environments with different network constraints get the correct config | Kev Everall |
+| 2026-08-29 | RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables | Kev Everall |
+| 2026-08-27 | Security hardening of HPE OneView / iLO / SCOM credential handling (TLS-validated CyberArk fetch, secrets passed out-of-band via `-Environment`/`-ArgumentList`, in-process password cache instead of process-env) and a CISO-style vulnerability scan with CI guardrail rules in `ci-security-check.ps1` | Kev Everall |
+| 2026-08-27 | `Get-OneViewServerTarget` now classifies REST failures honestly (transport failure → "No connection to OneView"; real HTTP status → "OneView returned HTTP <code> - <reason>") and lets `Auto` mode fall through a rejected filter to the next identifier type; `Configure-PhysicalBuild` + `Start-PhysicalServerBuild` now abort on a failed OneView resolution instead of warning and continuing to the guard rail / DEPLOY prompt; `Test-PreBuildValidation` reuses the OneView credentials for the iLO Redfish check (falls back to an interactive prompt if they are rejected) via a new `-OneViewCredential` (`-OVCred`) | Kev Everall |
+| 2026-08-27 | Pruned 5 commands (`Test-ServerList`, `Invoke-IsoDeploy`, `New-IsoBuild`, `Publish-BootIso`, `Update-Firmware`) from source/tests/docs; rewrote `Configure-PhysicalBuild` as the single deploy entry point with `-Deploy`/`-Execute` + `APPROVE`; updated docs, dynamic-code-docs, `testBuildDeploy.ps1`, and fixed 3 runtime bugs in the build pipeline | Kev Everall |
 | 2026-08-26 | `Get-OneViewServerList` Detail view: fixed empty Model column, increased ROM column `Max` from 12→30 to prevent overflow misalignment, included header length in width calculation, added truncation safety net for over-width cells, render `NotApplicable` as blank in State Reason, added State Reason to KEY | Kev Everall |
-| 2026-08-21 | 1. Replaced the plain "Already connected to OneView appliance '&lt;host&gt;'." message in `Connect-OneView` with a bold-red banner: `HPeOneView IS ALREADY CONNECTED TO <host> NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect`, shown in both the same-appliance reuse path and the different-appliance refusal path<br>2. Enriched `Get-OneViewServerList` to show the connected appliance and the full set of available server fields (Model, Enclosure, Bay, ROM alongside name/serial/power/health/iLO IP); made iLO IP extraction robust to every OneView `mpIpAddresses` shape; `Disconnect-OneView` now names the appliance it disconnected from<br>3. Migrated `Get-OneViewServerList` to the shared `_Publish-Result` / `_Emit-*` output pattern (the 16th command, previously the outlier); fixed blank/missing iLO IP across the list/target/connection commands with a shared `_ConvertTo-IloIpAddressList` helper; made the server-list formatter render errors on failure; hardened `prune-logs.ps1` (removed the `-Include` scan hang + layered exception handling); removed `prune-logs` from non-log-creating `make` targets | Kev Everall |
+| 2026-08-21 | Replaced the plain "Already connected to OneView appliance '&lt;host&gt;'." message in `Connect-OneView` with a bold-red banner: `HPeOneView IS ALREADY CONNECTED TO <host> NO RECONNECTION ATTEMPTED, IF YOU WISH TO SWITCH APPLIANCES TYPE 'Disconnect-OneView' then reconnect`, shown in both the same-appliance reuse path and the different-appliance refusal path | Kev Everall |
+| 2026-08-21 | Enriched `Get-OneViewServerList` to show the connected appliance and the full set of available server fields (Model, Enclosure, Bay, ROM alongside name/serial/power/health/iLO IP); made iLO IP extraction robust to every OneView `mpIpAddresses` shape; `Disconnect-OneView` now names the appliance it disconnected from | Kev Everall |
+| 2026-08-21 | Migrated `Get-OneViewServerList` to the shared `_Publish-Result` / `_Emit-*` output pattern (the 16th command, previously the outlier); fixed blank/missing iLO IP across the list/target/connection commands with a shared `_ConvertTo-IloIpAddressList` helper; made the server-list formatter render errors on failure; hardened `prune-logs.ps1` (removed the `-Include` scan hang + layered exception handling); removed `prune-logs` from non-log-creating `make` targets | Kev Everall |
 | 2026-08-20 | Migrated 15 Public commands to the shared `_Publish-Result` / `-PassThru` output pattern so interactive runs no longer dump a truncated raw hashtable; added `-Json`/`-PassThru`/`-Quiet` to each and updated their tests | Kev Everall |
-| 2026-08-19 | 1. Clarified `Update-Firmware`, `Invoke-WindowsSecurityUpdate`, `Invoke-PowerShellScript`, `Invoke-OpsRampClient` ("What it does" / Destructive) and corrected obsolete ISO-repository references (ISOs/firmware now hosted on network shares, not an HTTPS repo)<br>2. Added concise "What it does" / Destructive annotations for `Start-InstallMonitor`, `Invoke-IloRedfish`, `Get-OneViewServerTarget`, `Test-PreBuildValidation`; added a "Safe vs destructive commands" callout; expanded the ISO path-requirements table to all accepted formats; updated `-ExternalIsoPath` help/parameter notes; regenerated `docs/dynamic-code-docs`<br>3. `Test-BuildParams` now validates firmware component locations (`-FirmwareFolders`) through the same shared resolver as the ISO, and skips local existence checks for URL locations<br>4. Fixed `Resolve-ExternalIsoPath` to accept HTTPS, NFS, `cifs://`, `smb://`, UNC (backslash + forward slash) and mapped network drives; removed duplicate copies from `Invoke-IsoDeploy.ps1` and `Start-PhysicalServerBuild.ps1` so every command resolves paths through one shared helper | Kev Everall |
-| 2026-08-18 | 1. Fixed `Get-OneViewConnectionStatus` to reuse the live OneView session (never reconnect) so `-OneViewHost` for the already-connected appliance reports status without a 401; also corrected the empty-string auth error message<br>2. Fixed `make docs` / `make fix-docs` (`add-anchors`) so generated TOC anchors use `<a id="…">` (navigable on GitHub / VS Code) instead of the deprecated `<a name="…">`, and stopped the generator from re-stacking a duplicate `id`+`name` anchor on re-runs<br>3. Documented `Connect-OneView`'s connectivity result handling (`_Complete-ConnectOneViewResult`) and `_ConvertToWildcardRegex`; added `OneViewAliasInventory.Unit.Tests.ps1` to verify documented aliases exist in parameter metadata<br>4. Renamed `-SrvrId` → `-ServerIdentifier` across commands/tests for consistency; `Get-OneViewServerList` gained a `-Filter` supporting PowerShell-style wildcards for name/health/power | Kev Everall |
-| 2026-08-17 | 1. `Test-BuildParams` now validates and resolves the base ISO path to an iLO boot URL (rejecting local drives) and returns a structured result; `_Validate-Request` + `Validators` tests hardened<br>2. Added `OutputFormatter.ps1` shared renderers + `_Publish-Result`; rewrote `Connect-OneView` to a status-check with `-Json`/`-PassThru` and a `_Format-ConnectivityResult` view; added `docs/Automation/runbook-requirements-v2.md` | Kev Everall |
+| 2026-08-19 | Clarified `Update-Firmware`, `Invoke-WindowsSecurityUpdate`, `Invoke-PowerShellScript`, `Invoke-OpsRampClient` ("What it does" / Destructive) and corrected obsolete ISO-repository references (ISOs/firmware now hosted on network shares, not an HTTPS repo) | Kev Everall |
+| 2026-08-19 | Added concise "What it does" / Destructive annotations for `Start-InstallMonitor`, `Invoke-IloRedfish`, `Get-OneViewServerTarget`, `Test-PreBuildValidation`; added a "Safe vs destructive commands" callout; expanded the ISO path-requirements table to all accepted formats; updated `-ExternalIsoPath` help/parameter notes; regenerated `docs/dynamic-code-docs` | Kev Everall |
+| 2026-08-19 | `Test-BuildParams` now validates firmware component locations (`-FirmwareFolders`) through the same shared resolver as the ISO, and skips local existence checks for URL locations | Kev Everall |
+| 2026-08-19 | Fixed `Resolve-ExternalIsoPath` to accept HTTPS, NFS, `cifs://`, `smb://`, UNC (backslash + forward slash) and mapped network drives; removed duplicate copies from `Invoke-IsoDeploy.ps1` and `Start-PhysicalServerBuild.ps1` so every command resolves paths through one shared helper | Kev Everall |
+| 2026-08-18 | Fixed `Get-OneViewConnectionStatus` to reuse the live OneView session (never reconnect) so `-OneViewHost` for the already-connected appliance reports status without a 401; also corrected the empty-string auth error message | Kev Everall |
+| 2026-08-18 | Fixed `make docs` / `make fix-docs` (`add-anchors`) so generated TOC anchors use `<a id="…">` (navigable on GitHub / VS Code) instead of the deprecated `<a name="…">`, and stopped the generator from re-stacking a duplicate `id`+`name` anchor on re-runs | Kev Everall |
+| 2026-08-18 | Documented `Connect-OneView`'s connectivity result handling (`_Complete-ConnectOneViewResult`) and `_ConvertToWildcardRegex`; added `OneViewAliasInventory.Unit.Tests.ps1` to verify documented aliases exist in parameter metadata | Kev Everall |
+| 2026-08-18 | Renamed `-SrvrId` → `-ServerIdentifier` across commands/tests for consistency; `Get-OneViewServerList` gained a `-Filter` supporting PowerShell-style wildcards for name/health/power | Kev Everall |
+| 2026-08-17 | `Test-BuildParams` now validates and resolves the base ISO path to an iLO boot URL (rejecting local drives) and returns a structured result; `_Validate-Request` + `Validators` tests hardened | Kev Everall |
+| 2026-08-17 | Added `OutputFormatter.ps1` shared renderers + `_Publish-Result`; rewrote `Connect-OneView` to a status-check with `-Json`/`-PassThru` and a `_Format-ConnectivityResult` view; added `docs/Automation/runbook-requirements-v2.md` | Kev Everall |
 | 2026-08-14 | Added `wip/testing-issues.md` capturing detailed OneView connectivity test issues and ongoing investigation notes | Kev Everall |
-| 2026-08-13 | 1. Added `.gitattributes` to normalise line endings (stop `.md`/`.ps1` churn across Stash/GitHub) and documented the rebase-hell-free git workflow in `git_process.md`<br>2. Renamed the OneView connectivity parameter from `-ManagementHost` to `-OneViewHost` across commands and tests; rewrote `Get-OneViewConnectionStatus` with a `_Format-ConnectionStatusResult` renderer and `-PassThru` | Kev Everall |
+| 2026-08-13 | Added `.gitattributes` to normalise line endings (stop `.md`/`.ps1` churn across Stash/GitHub) and documented the rebase-hell-free git workflow in `git_process.md` | Kev Everall |
+| 2026-08-13 | Renamed the OneView connectivity parameter from `-ManagementHost` to `-OneViewHost` across commands and tests; rewrote `Get-OneViewConnectionStatus` with a `_Format-ConnectionStatusResult` renderer and `-PassThru` | Kev Everall |
 | 2026-08-12 | Added an automated live-testing harness and captured a dated run of OneView connectivity/build results into `changes.md` | Kev Everall |
 | 2026-08-10 | Added a live OneView session guard (never drop/reconnect an active session) and a `GuardRail` regex gate that blocks build/deploy actions unless the resolved target server name matches, plus automated live test scripts (`testBuildDeploy.ps1`, `testConnectAndList.ps1`) | Kev Everall |
-| 2026-08-06 | 1. Rejected stray double-dash flags (e.g. `Connect-OneView --DryRun`) and made `-DryRun` non-interactive via a shared `Assert-ParameterNotFlag` helper<br>2. `Setup-Profile.ps1` now injects the Automation module into the user profile (plus `HPEOneView.1000` guarded by `$IsWindows`); added `Setup-Profile.Tests.ps1` regression test that verifies a fresh shell resolves `Connect-OneView`, and wired it into `make automation-mode-tests`<br>3. Added `Get-MaintenanceStatusReport` linking SCOM + HPE OneView; live mode discovers clusters from the SCOM appliance (not the catalogue), `-OneViewHost` param, serial/name cross-link; catalogue used only for `-DryRun` mock<br>4. Added `AGENTS.md` documenting mock-only testing rules; fixed `Configure-PhysicalBuild` confirmation to auto-cancel in non-interactive/automated mode so `make test` never blocks on `Read-Host`<br>5. Runbook alignment<br>6. Resolves full server identity from OneView, Fix ISO URL, Fix Test-PreBuildValidation, Prints comprehensive summary, added confirmation prompt | Kev Everall |
+| 2026-08-06 | Rejected stray double-dash flags (e.g. `Connect-OneView --DryRun`) and made `-DryRun` non-interactive via a shared `Assert-ParameterNotFlag` helper | Kev Everall |
+| 2026-08-06 | `Setup-Profile.ps1` now injects the Automation module into the user profile (plus `HPEOneView.1000` guarded by `$IsWindows`); added `Setup-Profile.Tests.ps1` regression test that verifies a fresh shell resolves `Connect-OneView`, and wired it into `make automation-mode-tests` | Kev Everall |
+| 2026-08-06 | Added `Get-MaintenanceStatusReport` linking SCOM + HPE OneView; live mode discovers clusters from the SCOM appliance (not the catalogue), `-OneViewHost` param, serial/name cross-link; catalogue used only for `-DryRun` mock | Kev Everall |
+| 2026-08-06 | Added `AGENTS.md` documenting mock-only testing rules; fixed `Configure-PhysicalBuild` confirmation to auto-cancel in non-interactive/automated mode so `make test` never blocks on `Read-Host` | Kev Everall |
+| 2026-08-06 | Runbook alignment | Kev Everall |
+| 2026-08-06 | Resolves full server identity from OneView, Fix ISO URL, Fix Test-PreBuildValidation, Prints comprehensive summary, added confirmation prompt | Kev Everall |
 
 <a id="change-details"></a>
 
 ## Change details
 
-<a id="32-docx-documentation-replaces-rtf-converter-fix-and-project-root-output"></a>
+<a id="32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output"></a>
 
 ### 32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
-| 2026-09-03 | 1. Removed `make rtf-docs` / `make rtf-docs-clean`, `scripts/MD_to_RTF_Converter.py`, and the `docs/rtf/` tree — RTF never resolved TOC/bookmark links reliably in Word (long/digit-leading bookmark names get hashed by Word+pandoc). 2. Added `make word-docs` / `make word-docs-clean`: Markdown → Word DOCX with native OOXML `<w:bookmarkStart>` / `<w:hyperlink w:anchor>` so TOC and citation links are active the moment the file opens (no field update). 3. Fixed `MD_to_DOCX_Converter.py` `_rewrite_link` bug: the `[text](#anchor)` regex captures the anchor *without* the leading `#`, so the `target.startswith("#")` guard was always false and **no** TOC/citation links were rewritten — pandoc then hashed long anchors into `X<hash>` and desynced bookmarks from links. Links now normalize to `secN` / `ref-N`. 4. Disabled pandoc's `tex_math_dollars` extension (`-f markdown-tex_math_dollars`) so PowerShell `$true` / `$false` / `$null` render literally instead of raising "Could not convert TeX math" warnings. 5. Expanded DOCX coverage from `wip/*.md` to all `docs/**/*.md` + `wip/*.md` (parity with the old RTF set). 6. Relocated DOCX output from `docs/docx/` to project-root `docx/`, mirroring the `docs/` folder structure (no `docs/` prefix). 7. Per-file graceful error handling: a failed conversion logs `[WARN] failed to convert <file>` and continues — no stack traces. | Kev Everall |
+| 2026-09-03 | 1. Removed `make rtf-docs` / `make rtf-docs-clean`, `scripts/MD_to_RTF_Converter.py`, and the `docs/rtf/` tree - RTF never resolved TOC/bookmark links in Word (long/digit-leading bookmark names get hashed by Word+pandoc). 2. Added `make word-docs` / `make word-docs-clean`: Markdown -> Word DOCX with native OOXML `<w:bookmarkStart>` / `<w:hyperlink w:anchor>` so TOC and citation links are active the moment the file opens (no field update). 3. Fixed `MD_to_DOCX_Converter.py` `_rewrite_link` bug: the `[text](#anchor)` regex captures the anchor without the leading `#`, so the `target.startswith('#')` guard was always false and no TOC/citation links were rewritten - pandoc then hashed long anchors into `X<hash>` and desynced bookmarks from links. Links now normalize to `secN` / `ref-N`. 4. Disabled pandoc's `tex_math_dollars` extension (`-f markdown-tex_math_dollars`) so PowerShell `$true` / `$false` / `$null` render literally instead of raising 'Could not convert TeX math' warnings. 5. Expanded DOCX coverage to all `docs/**/*.md` + root `*.md` + `wip/*.md`. 6. Relocated output to project-root `docx/`, mirroring `docs/` (no `docs/` prefix, no `docx/docs/` namespace). 7. Per-file graceful error handling: a failed conversion logs `[WARN] failed to convert <file>` and continues - no stack traces. | Kev Everall |  
 
 <a name="root-cause-32"></a>
 
@@ -83,19 +103,20 @@ Two independent problems blocked the DOCX route:
 
 #### Fix
 
-- **`scripts/MD_to_RDF_Converter.py` is gone** (deleted along with `docs/rtf/`); Word DOCX now replaces RTF as the help-doc format.
+- **`scripts/MD_to_RTF_Converter.py` is gone** (deleted along with `docs/rtf/`); Word DOCX now replaces RTF as the help-doc format.
 - **`scripts/MD_to_DOCX_Converter.py`**:
   - `_rewrite_link` no longer tests for a leading `#` (the regex never captures it): it normalises `valid_bm_name(m.group(2))` and looks it up in `heading_map`, rewriting every TOC/citation target to its `secN`/`ref-N` bookmark id so bookmark and link target stay in sync.
   - `pandoc` is now invoked with `-f markdown-tex_math_dollars` (math extension disabled) so `$true`/`$false`/`$null` PowerShell variables render as literal text; `capture_output=True` + explicit `returncode` check means a failing conversion raises a `RuntimeError(msg)` caught by the caller as a single `[WARN] failed to convert <file>` — no tracebacks, no stderr spam.
   - `discover_md_files` now mirrors the old RTF source set exactly: root `README.md`, `docs/Automation/{automation_commands,runbook-requirements,runbook-requirements-v2}.md`, `docs/dynamic-code-docs/*.md`, and `wip/*.md`. (Root `README.md` is intentionally **not** emitted to `docx/` to avoid colliding with `docs/README.md` once the `docs/` prefix is stripped; it remains in-repo as `.md`.)
   - Output relocated to project-root `docx/`, mirroring `docs/` (e.g. `docs/Automation/foo.md` → `docx/Automation/foo.docx`) with the leading `docs/` prefix removed.
 - **`Makefile`**: added `word-docs` / `word-docs-clean` targets and removed `rtf-docs` / `rtf-docs-clean` (plus their `.PHONY` entries).
+- **`wip/SSO.md` authoring**: the source is hand-written with a manual `## Table of Contents` of `[N) Title](#secN)` bullets, in-text citation links `[N](#ref-N)`, and a references section whose entries are `<a id="ref-N">…</a>`. The converter normalises that scheme into `secN`/`ref-N` OOXML bookmarks, so `docx/wip/SSO.docx` carries 56 native bookmarks with TOC→`secN` and citation→`ref-N` hyperlinks that fire in Word on open (no field update). This was the concrete test case that drove the `_rewrite_link` fix, the tex-math disable, and the graceful error handling.
 
 <a name="verification-32"></a>
 
 #### Verification
 
-- `make word-docs` → `Converted 267 markdown files to DOCX under .../docx`; `docx/` mirrors `docs/` + `wip/` (no `docs/` prefix).
+- `make word-docs` → `Converted 270 markdown files to DOCX under .../docx`; `docx/` mirrors `docs/` + `wip/` (no `docs/` prefix).
 - `docx/wip/SSO.docx`: 56 bookmarks, **0** hashed `X<hash>` anchors, TOC bullets → `secN`, citation links → `ref-N`, all resolving in Word on open.
 - `make word-docs-clean`: removes `docx/`; re-running `make word-docs` reproduces cleanly.
 - `make lint-make` (checkmake) + `make lint-python` (ruff): clean, no issues.
@@ -143,6 +164,57 @@ Fixed `wip/eis19profile.ps1`: removed the bogus proxy block and changed `$gitSsh
 
 - **VS Code profile** (`vscodeprofile.ps1`) is still shared/cross-platform and not machine-aware. If prod VDI needs git to work inside the VS Code integrated terminal, it'll need the proxy too — currently only the external-terminal profile gets it.
 - Hostnames are matched by substring (`eis19`, `vdi`, `prod`). If the real computer names differ (e.g. `EIS19-SRV` or `PROD-VDI-01`), confirm they still match, or adjust the regex in `Resolve-TerminalTemplate` (`scripts/Setup-Profile.ps1:119`).
+
+<a id="30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables"></a>
+
+### 30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables
+
+| **Date** | **Change description summary** | **Author** |  
+| --- | --- | --- |  
+| 2026-08-29 | RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables | Kev Everall |  
+
+RTF exports for `ConfigMgr-Build.md` and `OneView-Firmware.md` had poor readability: portrait orientation for wide tables, fixed-width columns that overflowed, TOC links that didn't navigate, and blockquote table rows that ran together. Refactored the shared `New-RtfDocument` helper and the two Markdown→RTF converters to fix all of it.
+
+**What changed**
+
+| Area | Before | After |
+|---|---|---|
+| Page orientation | Portrait (8.5×11) | Landscape (11×8.5) |
+| Table columns | Fixed 4.5 in / 2 in | Proportional with `\colsx` and flexible widths |
+| Section headings | Bold + underline | Section heading style with page break before |
+| TOC links | Plain text URLs | Working `\v` hyperlinks with `\ul` clickable entries |
+| Blockquote tables | Merged rows with no borders | Full cell borders + shading for readability |
+| Indentation | 0.5 in | 0.75 in for body + nested lists |
+| Page margins | 1 in all sides | 0.75 in all sides |
+
+**Files touched**
+
+- `src/Public/Documentation/New-RtfDocument.ps1` — orientation, margins, heading styles, proportional columns, TOC link format
+- `src/Public/Documentation/ConvertTo-RtfFromMarkdown.ps1` — blockquote-to-table border logic, heading style calls, TOC style
+- `src/Public/Documentation/ConvertTo-ConfigMgrBuildRtf.ps1` — column width ratios for wide firmware tables
+- `src/Public/Documentation/ConvertTo-OneViewFirmwareRtf.ps1` — same
+
+**Verification**
+
+Regenerated both RTF docs end-to-end and opened them in Word. Tables fit without horizontal scrolling, TOC entries navigate to the correct headings, blockquote firmware tables are easy to read across, and landscape orientation preserves the wide server-model columns.
+
+#### Tests: 488 passed, 0 failed, 1 pre-existing skip
+
+#### Runbook alignment verification
+
+| Runbook requirement | Covered by 2-command design |
+|---|---|
+| Target server identified in OneView | ✅ `Configure-PhysicalBuild` step 1 |
+| Target approved for imaging | ✅ 4-eye confirmation prompt |
+| ISO path validated and reachable | ✅ `Test-PreBuildValidation` |
+| iLO credentials verified | ✅ Redfish session check |
+| ISO mounted via iLO | ✅ `Invoke-IloRedfish -Action MountAndBoot` |
+| One-time boot override | ✅ `SetOneTimeBootCd` |
+| Task sequence execution | ✅ ConfigMgr handles post-WinPE |
+| Post-build validation | ✅ `Test-PostBuildValidation` (hostname, domain, OU, drivers, CM client) |
+| Firmware update post-OS | ✅ New `-FirmwareFolders` param |
+| Audit trail | ✅ Audit log in `$finally` block |
+| Rollback procedure | ⚠️ iLO eject on failure (partial) |
 
 <a id="29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials"></a>
 
@@ -424,7 +496,7 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 #### Scope
 
 - Many Public commands ended their main (and error) paths with a bare `return $result` (an unformatted hashtable). On an interactive run PowerShell rendered that as a truncated 2-column `Name / Value` table dumped to the terminal/transcript after the human-readable report — noisy and unreadable for nested structures.
-- The fix generalises the pattern already established by `Test-ServerConnectivity` / `Test-ServerList` (§10) to every remaining command that published a result.
+- The fix generalises the pattern already established by `Test-ServerConnectivity` / `Test-ServerList` (§12) to every remaining command that published a result.
 
 <a name="change-22"></a>
 
@@ -629,19 +701,19 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 - Ran `make fix-docs` after the fix: **83/83 markdown files pass**, 0 failures.
 - `wip/testing-issues.md` (the file that originally showed the bug): **0 `<a name=…>` anchors, 0 duplicate `id` slugs, 0 unresolved TOC links, 0 anchors trapped inside code fences, 0 MD012 runs.** The reported duplicate pair is now a single navigable `<a id="connect-oneview-oneviewhost-va-oneviewt-01-0"></a>`.
 
-<a id="13-connect-oneview-converttowildcardregex-docs-alias-inventory-tests"></a>
+<a id="15-connect-oneview-converttowildcardregex-docs-alias-inventory-tests"></a>
 
-### 13) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests
+### 15) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests
 
 | **Date** | **Change description summary** | **Author** |
 | --- | --- | --- |
 | 2026-08-18 | Documented `Connect-OneView`'s connectivity result handling (`_Complete-ConnectOneViewResult`) and `_ConvertToWildcardRegex`; added `OneViewAliasInventory.Unit.Tests.ps1` to verify documented aliases exist in parameter metadata | Kev Everall |
 
-<a name="docs-13"></a>
+<a name="docs-15"></a>
 
 #### Documentation
 
-- Added `docs/dynamic-code-docs/_Complete-ConnectOneViewResult.md` describing `Connect-OneView`'s connectivity result object, and `_ConvertToWildcardRegex.md` describing the PowerShell-wildcard → regex conversion used by the §12 filter.
+- Added `docs/dynamic-code-docs/_Complete-ConnectOneViewResult.md` describing `Connect-OneView`'s connectivity result object, and `_ConvertToWildcardRegex.md` describing the PowerShell-wildcard → regex conversion used by the §14 filter.
 - `automation_commands.md` and `runbook-requirements-v2.md` refreshed to match current signatures.
 
 <a name="alias-inventory-tests"></a>
@@ -650,21 +722,21 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 
 - New `tests/powershell/OneViewAliasInventory.Unit.Tests.ps1` validates that **every documented custom alias is present in the command's parameter metadata**, closing the gap between docs and implementation so an alias documented in `automation_commands.md` can never silently disappear from the code.
 
-<a name="verification-13"></a>
+<a name="verification-15"></a>
 
 #### Verification
 
 - `OneViewAliasInventory.Unit.Tests.ps1` parses the documented alias table and asserts each alias resolves on the real command; failures surface a missing alias immediately. Passes under `make test`.
 
-<a id="12-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist"></a>
+<a id="14-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist"></a>
 
-### 12) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`
+### 14) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`
 
 | **Date** | **Change description summary** | **Author** |
 | --- | --- | --- |
 | 2026-08-18 | Renamed `-SrvrId` → `-ServerIdentifier` across commands/tests for consistency; `Get-OneViewServerList` gained a `-Filter` supporting PowerShell-style wildcards for name/health/power | Kev Everall |
 
-<a name="rename-12"></a>
+<a name="rename-14"></a>
 
 #### Parameter rename `SrvrId` → `ServerIdentifier`
 
@@ -677,36 +749,36 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 - New `-Filter` parses `health:<value>` / `power:<value>` / `name:<value>` into case-insensitive predicate regexes validated before connecting. Matching is **substring-by-default** (e.g. `health:Critical`, `name:PROD`) and honours PowerShell wildcards (`*`, `?`) via the shared `_ConvertToWildcardRegex` (e.g. `name:PROD-*`, `name:srv-0?`).
 - `_ConvertToWildcardRegex` (anchored, case-insensitive) lives alongside the command; unsupported filter forms return a clear `Unsupported -Filter …` error with no connection attempted.
 
-<a name="verification-12"></a>
+<a name="verification-14"></a>
 
 #### Verification
 
 - `Get-OneViewServerList -Filter 'name:PROD-*'` matches `PROD-SRV-01`; `health:*Warning*` matches warning states; `power:On` filters by power; `name:PROD` substring-matches; an invalid filter returns the `Unsupported -Filter` error. `Get-OneViewServerTarget.Unit.Tests.ps1` (51 lines added) and the renamed-parameter tests pass.
 
-<a id="11-test-buildparams-_validate-request-hardening"></a>
+<a id="13-test-buildparams-_validate-request-hardening"></a>
 
-### 11) `Test-BuildParams` / `_Validate-Request` hardening
+### 13) `Test-BuildParams` / `_Validate-Request` hardening
 
 | **Date** | **Change description summary** | **Author** |
 | --- | --- | --- |
 | 2026-08-17 | `Test-BuildParams` now validates and resolves the base ISO path to an iLO boot URL (rejecting local drives) and returns a structured result; `_Validate-Request` + `Validators` tests hardened | Kev Everall |
 
-<a name="root-cause-11"></a>
+<a name="root-cause-13"></a>
 
 #### Change
 
 - `Test-BuildParams` shifted from "return a list of error strings" to "validate the base Windows ISO path and **resolve the iLO boot URL**". It now accepts a UNC/SMB or HTTPS path and produces a structured result (`Success`, `IsoUrl` → `cifs://…` or `https://…`), explicitly **rejecting local drive paths** on the automation host (consistent with the §1 admin-code-removal rule).
 - `_Validate-Request` tightened its checks; `Validators.Unit.Tests.ps1` expanded (32 lines) to cover the new resolution behaviour. `automation_commands.md` regenerated to reflect the revised contract.
 
-<a name="verification-11"></a>
+<a name="verification-13"></a>
 
 #### Verification
 
 - `Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'` → `Success=$true`, `IsoUrl='cifs://fileserver/isos/WinSrv2025.iso'`; `https://…` resolves to `https://…`; local-drive paths fail validation. `Validators` unit tests pass.
 
-<a id="10-shared-output-formatting-connect-oneview-rewrite-runbook-v2"></a>
+<a id="12-shared-output-formatting-connect-oneview-rewrite-runbook-v2"></a>
 
-### 10) Shared output formatting + `Connect-OneView` rewrite + runbook v2
+### 12) Shared output formatting + `Connect-OneView` rewrite + runbook v2
 
 | **Date** | **Change description summary** | **Author** |
 | --- | --- | --- |
@@ -731,15 +803,15 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 
 - Added `docs/Automation/runbook-requirements-v2.md` (331 lines) capturing the revised, runbook-aligned requirements; refreshed `automation_commands.md` to match the new parameter/output shapes.
 
-<a name="verification-10"></a>
+<a name="verification-12"></a>
 
 #### Verification
 
 - `Connect-OneView -DryRun` returns the structured result; `-Json` emits a compact JSON string; `-PassThru` returns the hashtable; `_Format-ConnectivityResult`/`_Format-HumanReadable` exercised by the updated `Connect-OneView.Tests.ps1`. `make test` green.
 
-<a id="15-testing-issues-documentation-oneview-connectivity"></a>
+<a id="11-testing-issues-documentation-oneview-connectivity"></a>
 
-### 15) Testing-issues documentation (OneView connectivity)
+### 11) Testing-issues documentation (OneView connectivity)
 
 | **Date** | **Change description summary** | **Author** |
 | --- | --- | --- |
@@ -752,9 +824,9 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 - `docs: add detailed testing issues documentation for OneView connectivity tests` introduced `wip/testing-issues.md` (694 lines) logging live-connectivity failures, environment/config gaps, and remediation ideas for the OneView test surface.
 - A later commit extended the same working file with further findings (843 lines added), keeping the investigation trail in one place under `wip/` rather than fragmenting it across commit messages.
 
-<a id="14-repo-hygiene-lf-normalization-git-workflow-docs"></a>
+<a id="10-repo-hygiene-lf-normalization-git-workflow-docs"></a>
 
-### 14) Repo hygiene: LF normalization + git workflow docs
+### 10) Repo hygiene: LF normalization + git workflow docs
 
 | **Date** | **Change description summary** | **Author** |
 | --- | --- | --- |
@@ -770,7 +842,7 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 
 #### Git workflow docs (`git_process.md`)
 
-- Added `git_process.md` describing a rebase-hell-free flow: `pull.ff only`, a Stash mirror, and a one-`reset` recovery path; later expanded for clarity/structure. (The standalone file was subsequently consolidated/removed in favour of the in-repo guidance — see §15 — leaving `.gitattributes` as the durable change.)
+- Added `git_process.md` describing a rebase-hell-free flow: `pull.ff only`, a Stash mirror, and a one-`reset` recovery path; later expanded for clarity/structure. (The standalone file was subsequently consolidated/removed in favour of the in-repo guidance — see §11 — leaving `.gitattributes` as the durable change.)
 
 <a id="9-parameter-rename-managementhost-oneviewhost-get-oneviewconnectionstatus-overhaul"></a>
 
@@ -1056,53 +1128,6 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 #### Tests: 488 passed, 0 failed, 1 pre-existing skip
 
 <a name="runbook-alignment-verification"></a>
-
-#### Runbook alignment verification
-
-| Runbook requirement | Covered by 2-command design |
-|---|---|
-| Target server identified in OneView | ✅ `Configure-PhysicalBuild` step 1 |
-| Target approved for imaging | ✅ 4-eye confirmation prompt |
-| ISO path validated and reachable | ✅ `Test-PreBuildValidation` |
-| iLO credentials verified | ✅ Redfish session check |
-| ISO mounted via iLO | ✅ `Invoke-IloRedfish -Action MountAndBoot` |
-| One-time boot override | ✅ `SetOneTimeBootCd` |
-| Task sequence execution | ✅ ConfigMgr handles post-WinPE |
-| Post-build validation | ✅ `Test-PostBuildValidation` (hostname, domain, OU, drivers, CM client) |
-| Firmware update post-OS | ✅ New `-FirmwareFolders` param |
-| Audit trail | ✅ Audit log in `$finally` block |
-| Rollback procedure | ⚠️ iLO eject on failure (partial) |
-
-<a id="30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables"></a>
-
-### 30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables
-
-RTF exports for `ConfigMgr-Build.md` and `OneView-Firmware.md` had poor readability: portrait orientation for wide tables, fixed-width columns that overflowed, TOC links that didn't navigate, and blockquote table rows that ran together. Refactored the shared `New-RtfDocument` helper and the two Markdown→RTF converters to fix all of it.
-
-**What changed**
-
-| Area | Before | After |
-|---|---|---|
-| Page orientation | Portrait (8.5×11) | Landscape (11×8.5) |
-| Table columns | Fixed 4.5 in / 2 in | Proportional with `\colsx` and flexible widths |
-| Section headings | Bold + underline | Section heading style with page break before |
-| TOC links | Plain text URLs | Working `\v` hyperlinks with `\ul` clickable entries |
-| Blockquote tables | Merged rows with no borders | Full cell borders + shading for readability |
-| Indentation | 0.5 in | 0.75 in for body + nested lists |
-| Page margins | 1 in all sides | 0.75 in all sides |
-
-**Files touched**
-
-- `src/Public/Documentation/New-RtfDocument.ps1` — orientation, margins, heading styles, proportional columns, TOC link format
-- `src/Public/Documentation/ConvertTo-RtfFromMarkdown.ps1` — blockquote-to-table border logic, heading style calls, TOC style
-- `src/Public/Documentation/ConvertTo-ConfigMgrBuildRtf.ps1` — column width ratios for wide firmware tables
-- `src/Public/Documentation/ConvertTo-OneViewFirmwareRtf.ps1` — same
-
-**Verification**
-
-Regenerated both RTF docs end-to-end and opened them in Word. Tables fit without horizontal scrolling, TOC entries navigate to the correct headings, blockquote firmware tables are easy to read across, and landscape orientation preserves the wide server-model columns.
-
-#### Tests: 488 passed, 0 failed, 1 pre-existing skip
 
 #### Runbook alignment verification
 
