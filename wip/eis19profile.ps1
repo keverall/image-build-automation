@@ -14,8 +14,7 @@ $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') +
 
 $env:HOME = $env:USERPROFILE
 
-# Path to Git SSH tools (Git's bundled ssh; Windows OpenSSH is blocked in this env)
-# (forward slashes: git passes this to a shell, which strips backslashes)
+# Path to Git SSH tools (forward slashes: git passes this to a shell, which strips backslashes)
 $gitSshPath = "$env:USERPROFILE/AppData/Local/Programs/Git/usr/bin"
 
 # Ensure it's in PATH
