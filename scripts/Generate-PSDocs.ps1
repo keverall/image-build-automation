@@ -92,13 +92,23 @@ function Get-FunctionCommentPairs {
         $comment = $null
 
         # Find the first <# ... #> block that opens AFTER the function '{'
+        # BUT only if it actually belongs to THIS function: stop if another
+        # function declaration appears before the comment block (otherwise a
+        # help block that follows a later function is wrongly attributed to a
+        # help-less function here).
         $cOpen = $content.IndexOf('<#', $openB)
         if ($cOpen -ge 0) {
-            $cClose = $content.IndexOf('#>', $cOpen + 2)
-            if ($cClose -ge 0) {
-                $inner = $content.Substring($cOpen + 2, $cClose - $cOpen - 2).Trim()
-                if ($inner.Length -gt 0 -and $inner -match '\.SYNOPSIS') {
-                    $comment = $inner -split "`n"
+            $between = $content.Substring($openB, $cOpen - $openB)
+            $nestedFn = [regex]::Match($between, 'function\s+[A-Za-z0-9_-]+\s*\{')
+            if ($nestedFn.Success) {
+                $comment = $null
+            } else {
+                $cClose = $content.IndexOf('#>', $cOpen + 2)
+                if ($cClose -ge 0) {
+                    $inner = $content.Substring($cOpen + 2, $cClose - $cOpen - 2).Trim()
+                    if ($inner.Length -gt 0 -and $inner -match '\.SYNOPSIS') {
+                        $comment = $inner -split "`n"
+                    }
                 }
             }
         }

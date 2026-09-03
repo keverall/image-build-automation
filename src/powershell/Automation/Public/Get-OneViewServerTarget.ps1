@@ -93,8 +93,12 @@ function Get-OneViewServerTarget {
         [int]    $TimeoutSec = 30,
         [Alias('Mock')]
         [hashtable] $MockResult = $null,
-         [Alias('Dry')]
-        [switch] $DryRun
+        [Alias('Dry')]
+        [switch] $DryRun,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Json,
+        [switch] $Quiet
     )
 
     # Common logging: each command writes to its own isolated log under
@@ -104,16 +108,16 @@ function Get-OneViewServerTarget {
 
     if ($MockResult) {
         $logger.Info("Get-OneViewServerTarget returning MockResult for Id=$ServerIdentifier")
-        return $MockResult
+        return (_Emit-ServerTargetResult -Result $MockResult -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     if ($DryRun) {
         $msg = "[DRY RUN] Get-OneViewServerTarget Host=$OneViewHost Id=$ServerIdentifier Type=$IdentifierType"
         $logger.Info($msg); Write-Host $msg
-        return @{
+        return (_Emit-ServerTargetResult -Result @{
             Success = $true; Server = $ServerIdentifier; DryRun = $true
             Details = @{ oneview_host = $OneViewHost; identifier = $ServerIdentifier; type = $IdentifierType }
-        }
+        } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 
     # Graceful no-session handling, mirroring the sibling read-only commands
@@ -125,7 +129,7 @@ function Get-OneViewServerTarget {
     if (-not $OneViewHost) {
         $activeSession = Get-OneViewActiveSession
         if (-not $activeSession) {
-            return @{ Success = $false; Server = $ServerIdentifier; Error = $script:ONEVIEW_NO_SESSION_MSG }
+            return (_Emit-ServerTargetResult -Result @{ Success = $false; Server = $ServerIdentifier; Error = $script:ONEVIEW_NO_SESSION_MSG } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
     }
 
@@ -136,7 +140,7 @@ function Get-OneViewServerTarget {
         -OneViewUser $OneViewUser -OneViewPassword $OneViewPassword
     if (-not $sess.Success) {
         $logger.Info("Get-OneViewServerTarget failed: no session. Error='$($sess.Error)'")
-        return @{ Success = $false; Server = $ServerIdentifier; Error = $sess.Error }
+        return (_Emit-ServerTargetResult -Result @{ Success = $false; Server = $ServerIdentifier; Error = $sess.Error } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     $OneViewHost  = $sess.OneViewHost
     $sessionToken = $sess.SessionToken
@@ -148,102 +152,228 @@ function Get-OneViewServerTarget {
         @('Serial','IloIp','EnclosureBay','Name')
     } else { @($IdentifierType) }
 
-    try {
-        foreach ($t in $typesToTry) {
-            $filter = switch ($t) {
-                'Name'         { "name='$ServerIdentifier'" }
-                'OneViewName'  { "name='$ServerIdentifier'" }
-                'Serial'       { "serialNumber='$ServerIdentifier'" }
-                'IloIp'        { "mpIpAddresses='$ServerIdentifier'" }
-                'EnclosureBay' { "position='$ServerIdentifier'" }
-            }
-            $url = "$apiBase/server-hardware?filter=`"$filter`""
+    $lastRequestError = $null
+    foreach ($t in $typesToTry) {
+        $filter = switch ($t) {
+            'Name'         { "name='$ServerIdentifier'" }
+            'OneViewName'  { "name='$ServerIdentifier'" }
+            'Serial'       { "serialNumber='$ServerIdentifier'" }
+            'IloIp'        { "mpIpAddresses='$ServerIdentifier'" }
+            'EnclosureBay' { "position='$ServerIdentifier'" }
+        }
+        $url = "$apiBase/server-hardware?filter=`"$filter`""
+        try {
             $resp = Invoke-RestMethod -Uri $url -Method Get `
                 -Headers @{ auth = $sessionToken } `
                 -SkipCertificateCheck:$SkipCertificateCheck `
                 -TimeoutSec $TimeoutSec -ErrorAction Stop
-            if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
-                # Single-server operations (attach/deploy/reboot/build) MUST target
-                # exactly one server. An ambiguous match is a hard failure - never
-                # silently pick the first, which could build the wrong machine.
-                if ($resp.members.Count -gt 1) {
-                    $matchedNames = ($resp.members | ForEach-Object { $_.name }) -join ', '
-                    return @{
-                        Success = $false
-                        Server  = $ServerIdentifier
-                        Error   = "Ambiguous target: '$ServerIdentifier' matched $($resp.members.Count) servers via $t ($matchedNames). Refusing to proceed - single-server operations require exactly one match. Supply a more specific identifier (e.g. serial number)."
-                    }
-                }
-                $srv = $resp.members[0]
-                $details = @{
-                    name              = $srv.name
-                    serial_number     = $srv.serialNumber
-                    model             = $srv.model
-                    power_state       = $srv.powerState
-                    health_status     = $srv.status
-                    ilo_ip            = ($srv.mpIpAddresses | Select-Object -First 1)
-                    enclosure_name    = $srv.enclosureName
-                    enclosure_bay     = $srv.position
-                    oneview_uri       = $srv.uri
-                    rom_version       = $srv.romVersion
-                }
-                if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
-                    return @{
-                        Success = $false
-                        Server  = $ServerIdentifier
-                        Error   = "Server health is $($details.health_status) - refusing to proceed"
-                        Details = $details
-                    }
-                }
-                $result = @{
-                    Success = $true
-                    Server  = $ServerIdentifier
-                    ResolvedBy = $t
-                    Details = $details
-                }
-                _Format-ServerTargetResult -Result $result
-                $logger.Info("Get-OneViewServerTarget resolved Id=$ServerIdentifier (ResolvedBy=$($result.ResolvedBy))")
-                return $result
-            }
         }
-        return @{
-            Success = $false
-            Server  = $ServerIdentifier
-            Error   = "Server '$ServerIdentifier' not found in OneView (tried: $($typesToTry -join ','))"
+        catch {
+            $classified = _Classify-OneViewRequestError -Exception $_.Exception -OneViewHost $OneViewHost
+            $lastRequestError = $classified
+            if ($classified.IsConnectionFailure) {
+                # Genuine transport failure: there is no working connection to OneView.
+                # Say so plainly rather than leaking a confusing raw exception message.
+                return (_Emit-ServerTargetResult -Result @{
+                    Success = $false
+                    Server  = $ServerIdentifier
+                    Error   = "No connection to OneView at '$OneViewHost'. $($classified.Message)."
+                } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+            # A real HTTP response (e.g. 400 from a rejected filter) means OneView IS
+            # reachable - just this identifier form did not match. Try the next type
+            # instead of aborting the whole resolution (important for -IdentifierType Auto).
+            $logger.Warning("Get-OneViewServerTarget: '$t' query returned $($classified.Message); trying next identifier type")
+            continue
+        }
+        if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
+            # Single-server operations (attach/deploy/reboot/build) MUST target
+            # exactly one server. An ambiguous match is a hard failure - never
+            # silently pick the first, which could build the wrong machine.
+            if ($resp.members.Count -gt 1) {
+                $matchedNames = ($resp.members | ForEach-Object { $_.name }) -join ', '
+                return (_Emit-ServerTargetResult -Result @{
+                    Success = $false
+                    Server  = $ServerIdentifier
+                    Error   = "Ambiguous target: '$ServerIdentifier' matched $($resp.members.Count) servers via $t ($matchedNames). Refusing to proceed - single-server operations require exactly one match. Supply a more specific identifier (e.g. serial number)."
+                } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+            $srv = $resp.members[0]
+            $details = @{
+                name              = $srv.name
+                serial_number     = $srv.serialNumber
+                model             = $srv.model
+                power_state       = $srv.powerState
+                health_status     = $srv.status
+                ilo_ip            = (_ConvertTo-IloIpAddressList $srv) -join ', '
+                enclosure_name    = $srv.enclosureName
+                enclosure_bay     = $srv.position
+                oneview_uri       = $srv.uri
+                rom_version       = $srv.romVersion
+            }
+            if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
+                return (_Emit-ServerTargetResult -Result @{
+                    Success = $false
+                    Server  = $ServerIdentifier
+                    Error   = "Server health is $($details.health_status) - refusing to proceed"
+                    Details = $details
+                } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            }
+            $result = @{
+                Success = $true
+                Server  = $ServerIdentifier
+                ResolvedBy = $t
+                Details = $details
+            }
+            $logger.Info("Get-OneViewServerTarget resolved Id=$ServerIdentifier (ResolvedBy=$($result.ResolvedBy))")
+            return (_Emit-ServerTargetResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
         }
     }
-    catch {
-        return @{
+    if ($lastRequestError) {
+        return (_Emit-ServerTargetResult -Result @{
             Success = $false
             Server  = $ServerIdentifier
-            Error   = "OneView query failed: $($_.Exception.Message)"
+            Error   = "OneView returned an error ($($lastRequestError.Message)); could not resolve '$ServerIdentifier' via any of: $($typesToTry -join ', ')"
+        } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+    }
+    return (_Emit-ServerTargetResult -Result @{
+        Success = $false
+        Server  = $ServerIdentifier
+        Error   = "Server '$ServerIdentifier' not found in OneView (tried: $($typesToTry -join ','))"
+    } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+}
+
+function _Classify-OneViewRequestError {
+    <#
+    .SYNOPSIS
+        Classifies a OneView REST exception into an honest, operator-readable result.
+
+    .DESCRIPTION
+        Distinguishes a genuine transport/connection failure (no working path to the
+        appliance) from an HTTP status response that OneView actually returned. This
+        keeps error messages truthful: a missing connection says "no connection"
+        rather than dumping a raw, hyperbolic exception string.
+    #>
+    [CmdletBinding()]
+    param(
+        [System.Exception] $Exception,
+        [string] $OneViewHost
+    )
+
+    $ex = $Exception
+    $isHttp     = $false
+    $statusCode = $null
+
+    if ($ex -is [Microsoft.PowerShell.Commands.HttpResponseException]) {
+        $isHttp = $true
+        if ($ex.Response -and $ex.Response.StatusCode) {
+            $statusCode = [int]$ex.Response.StatusCode
         }
+    }
+    if (-not $statusCode -and $ex.Message -match 'status code does not indicate success:\s*(\d+)') {
+        $isHttp     = $true
+        $statusCode = [int]$Matches[1]
+    }
+
+    if ($isHttp) {
+        $reason = switch ($statusCode) {
+            400     { 'Bad Request (the identifier/filter was rejected by OneView)' }
+            401     { 'Unauthorized (session expired or invalid credentials)' }
+            403     { 'Forbidden (insufficient permissions)' }
+            404     { 'Not Found (endpoint or resource missing)' }
+            500     { 'Internal Server Error' }
+            502     { 'Bad Gateway' }
+            503     { 'Service Unavailable' }
+            504     { 'Gateway Timeout' }
+            default { 'HTTP error' }
+        }
+        return [hashtable]@{
+            IsConnectionFailure = $false
+            Message             = "OneView returned HTTP $statusCode - $reason"
+            StatusCode          = $statusCode
+        }
+    }
+
+    return [hashtable]@{
+        IsConnectionFailure = $true
+        Message             = 'could not reach the appliance (check host, network/VPN, and that OneView is online)'
+        StatusCode          = $null
+    }
+}
+
+function _Emit-ServerTargetResult {
+    <#
+    .SYNOPSIS
+        Emits the server-target result via the shared, DRY _Publish-Result helper
+        (consistent with every other automation command). By default it prints a
+        clean, human-readable block and returns NOTHING on the success stream, so
+        the operator never sees the raw 'Details { [...] }' hashtable dump in the
+        terminal. Use -PassThru to also return the structured [hashtable] for scripts.
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-ServerTargetResult -Result $r
     }
 }
 
 function _Format-ServerTargetResult {
     param([hashtable]$Result)
 
-    if (-not $Result.Success -or -not $Result.Details) { return }
-
-    $d = $Result.Details
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
     Write-Host "  OneView Server Target" -ForegroundColor Cyan
     Write-Host "==============================================" -ForegroundColor Cyan
-    Write-Host ""
+
+    if (-not $Result.Success) {
+        if ($Result.DryRun) {
+            Write-Host ""
+            Write-Host "DRY RUN - no server queried." -ForegroundColor Yellow
+        }
+        if ($Result.Error) {
+            Write-Host ""
+            Write-Host "  Error:   $($Result.Error)" -ForegroundColor Red
+        }
+        Write-Host ""
+        Write-Host "==============================================" -ForegroundColor Cyan
+        Write-Host ""
+        return
+    }
+
+    $d = $Result.Details
+    if (-not $d) {
+        Write-Host ""
+        Write-Host "  (no details available)" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "==============================================" -ForegroundColor Cyan
+        Write-Host ""
+        return
+    }
 
     $powerColor = switch ($d.power_state) { 'On' { 'Green' } 'Off' { 'Red' } default { 'Yellow' } }
     $healthColor = switch -Wildcard ($d.health_status) { '*OK*' { 'Green' } '*Warning*' { 'Yellow' } '*Critical*' { 'Red' } default { 'Gray' } }
 
-    Write-Host "  Server:       $($d.name)" -ForegroundColor White
-    Write-Host "  Serial:       $($d.serial_number)"
-    Write-Host "  Model:        $($d.model)"
-    Write-Host "  Power:        $($d.power_state)" -ForegroundColor $powerColor
-    Write-Host "  Health:       $($d.health_status)" -ForegroundColor $healthColor
-    Write-Host "  iLO IP:       $($d.ilo_ip)"
-    Write-Host "  Enclosure:    $($d.enclosure_name) / $($d.enclosure_bay)"
-    Write-Host "  ROM Version:  $($d.rom_version)"
+    # Compact, comma-separated sentence of the key details on a single line (it is
+    # allowed to wrap to a second line on narrow terminals rather than being dumped
+    # as a raw '{ [...] }' hashtable).
+    $summaryParts = @(
+        "name=$($d.name)",
+        "serial=$($d.serial_number)",
+        "model=$($d.model)",
+        "power=$($d.power_state)",
+        "health=$($d.health_status)",
+        "ilo=$($d.ilo_ip)",
+        "enclosure=$($d.enclosure_name)/$($d.enclosure_bay)",
+        "rom=$($d.rom_version)"
+    )
+    Write-Host ""
+    Write-Host "  Details:   $($summaryParts -join ', ')" -ForegroundColor White
+    Write-Host ""
     Write-Host "  Resolved By:  $($Result.ResolvedBy)" -ForegroundColor Gray
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan

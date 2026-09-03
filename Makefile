@@ -7,6 +7,7 @@
 #   make setup   # Setup PowerShell environment (install modules)
 #   make test    # Run all Pester tests
 #   make lint    # Lint PowerShell with PSScriptAnalyzer
+#   make lint-python # Lint Python scripts with Ruff (check + autofix)
 #   make coverage # Run tests with code coverage
 #   make fix-docs # Fix broken markdown links (use -WhatIf to preview)
 # =============================================================================
@@ -48,10 +49,10 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs
+.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs word-docs word-docs-clean
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
-setup: prune-logs ## Setup PowerShell environment (install modules, configure profiles)
+setup: ## Setup PowerShell environment (install modules, configure profiles)
 	@echo "$(CYAN)[setup]$(NC) Setting up PowerShell environment..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-runner.ps1
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Setup-Profile.ps1
@@ -59,18 +60,22 @@ setup: prune-logs ## Setup PowerShell environment (install modules, configure pr
 # Note: checkmake installation is now handled gracefully by setup-runner.ps1
 
 # ─── Linting ────────────────────────────────────────────────────────────────
-lint: prune-logs lint-make lint-checkmake ## Lint PowerShell files and Makefile
+lint: lint-make lint-checkmake lint-python ## Lint PowerShell, Makefile, and Python (Ruff)
 	@echo "$(CYAN)[lint]$(NC) Running PSScriptAnalyzer..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint.ps1
 
 lint-checkmake: ## Lint Makefile with checkmake (optional)
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-checkmake.ps1
 
+lint-python: ## Lint Python scripts with Ruff (check + autofix)
+	@echo "$(CYAN)[lint-python]$(NC) Running Ruff on Python scripts..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint-python.ps1
+
 lint-make: ## Lint Makefile syntax and style
 	@echo "$(CYAN)[lint-make]$(NC) Checking Makefile..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/lint-make.ps1
 
-lint-test: prune-logs ## Lint and run tests (combined CI step)
+lint-test: ## Lint and run tests (combined CI step)
 	@$(MAKE) lint && $(MAKE) test
 
 # ─── PowerShell Testing ──────────────────────────────────────────────────────
@@ -103,7 +108,7 @@ coverage: prune-logs ## Run Pester tests with code coverage and generate report
 	@echo "$(CYAN)[coverage]$(NC) Running tests with code coverage and generating report..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/coverage-report.ps1
 
-docs: prune-logs gen-docs fix-links add-anchors ## Generate PowerShell Markdown docs, fix links, and add anchors/TOC
+docs: gen-docs fix-links add-anchors ## Generate PowerShell Markdown docs, fix links, and add anchors/TOC
 	@echo "$(GREEN)[docs]$(NC) Docs written to docs/dynamic-code-docs/"
 
 gen-docs: ## Generate PowerShell API reference docs (src/ + scripts/ -> docs/dynamic-code-docs)
@@ -122,21 +127,30 @@ fix-links: ## Validate and fix broken markdown links (shared by docs + fix-docs)
 	@echo "$(CYAN)[fix-links]$(NC) Validating and fixing markdown links..."
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs-links.ps1 $(WHATIF)
 
-fix-docs: prune-logs fix-links add-anchors ## Fix broken markdown links + anchors/TOC in configs/, docs/, and root
+fix-docs: fix-links add-anchors ## Fix broken markdown links + anchors/TOC in configs/, docs/, and root
 	@echo "$(GREEN)[fix-docs]$(NC) Done."
 
 fix-docs-dryrun: WHATIF=-WhatIf
 fix-docs-dryrun: DRYRUN=-DryRun
-fix-docs-dryrun: prune-logs ## Preview broken markdown link + anchor/TOC fixes (dry-run)
+fix-docs-dryrun: ## Preview broken markdown link + anchor/TOC fixes (dry-run)
 	@$(MAKE) fix-links
 	@$(MAKE) add-anchors
 
+# ─── Word DOCX Help Docs ───────────────────────────────────────────────────────
+word-docs: ## Convert Markdown docs to Word DOCX with clickable bookmarks/links
+	@echo "$(CYAN)[word-docs]$(NC) Converting Markdown docs to DOCX..."
+	@python3 scripts/MD_to_DOCX_Converter.py
+	@echo "$(GREEN)[word-docs]$(NC) DOCX docs written to docx/"
+
+word-docs-clean: ## Remove generated Word DOCX help docs
+	rm -rf docx/
+
 # ─── Default Target ──────────────────────────────────────────────────────────
-help: prune-logs ## Show this help message
+help: ## Show this help message
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Show-Help.ps1
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
-clean: prune-logs ## Remove build artifacts and temp files
+clean: ## Remove build artifacts and temp files
 	@echo "$(CYAN)[clean]$(NC) Removing build artifacts..."
 	@rm -rf generated/
 	@echo "$(GREEN)[clean]$(NC) Done"

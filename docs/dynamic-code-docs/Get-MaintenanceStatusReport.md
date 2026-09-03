@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-MaintenanceStatusReport.ps1
-generated: 2026-08-19
+generated: 2026-09-03
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -38,6 +38,9 @@ Discovers clusters/groups and their member servers from the connected SCOM manag
 | `-Format` | Output format: Csv (default, written to -Path), Json, or Table (console). |
 | `-Path` _(Aliases: -Out)_ | CSV output path. Defaults to generated/reports/MaintenanceStatusReport_<ts>.csv. |
 | `-DryRun` _(Aliases: -Dry)_ | Alias for -IncludeLive:$false - catalogue-only mock report, no connections. |
+| `-Json` | Emit the result rows as a JSON string on the success stream (for API integration / redirection) instead of the human-readable report. |
+| `-PassThru` _(Aliases: -PT)_ | Also return the structured [PSObject[]] result rows on the success stream. By default the command writes only the human-readable report (per -Format) and returns nothing, so the terminal/log never receives a truncated object dump. Capture the result into a variable, e.g. `$rows = Get-MaintenanceStatusReport -PassThru`, for scripting. |
+| `-Quiet` | Suppress the human-readable report (use with -PassThru / -Json when the caller handles display itself). When combined with -PassThru the report is suppressed but the objects are still returned. |
 
 <a id="examples"></a>
 
@@ -112,6 +115,27 @@ Invoke-RoutedRequest -RequestType 'maintmode_status_report' -Params @{ Environme
 
     .PARAMETER DryRun
         Alias for -IncludeLive:$false - catalogue-only mock report, no connections.
+
+    .PARAMETER Json
+        Emit the result rows as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured [PSObject[]] result rows on the success stream.
+        By default the command writes only the human-readable report (per -Format)
+        and returns nothing, so the terminal/log never receives a truncated
+        object dump. Capture the result into a variable, e.g.
+        `$rows = Get-MaintenanceStatusReport -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself). When combined with -PassThru the report
+        is suppressed but the objects are still returned.
+
+    .OUTPUTS
+        By default, nothing is returned on the success stream (the report is
+        written to the host per -Format, or to a CSV file). With -PassThru, the
+        [PSObject[]] result rows. With -Json, a JSON [string] of the same rows.
 
     .EXAMPLE
         Get-MaintenanceStatusReport -Environment Prod

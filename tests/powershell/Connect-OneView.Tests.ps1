@@ -41,7 +41,7 @@ Describe 'Connect-OneView - Refuse to Reconnect an Active Session' {
 
     It 'Should refuse to connect to a DIFFERENT appliance when already connected' {
         Mock -ModuleName Automation Test-ServerConnectivity { return $null }
-        $result = Connect-OneView -OneViewHost 'oneview-other.ad.example.com'
+        $result = Connect-OneView -OneViewHost 'oneview-other.ad.example.com' -PassThru
         $result.Available | Should -Be $false
         $result.Message   | Should -Match 'Already connected'
         $result.Message   | Should -Match 'oneview-active.ad.example.com'

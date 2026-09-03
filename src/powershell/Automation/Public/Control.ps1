@@ -167,23 +167,28 @@ function _Execute {
     param(
         [Parameter(Mandatory)][string]  $RequestType,
         [Parameter(Mandatory)][hashtable] $Params,
-        [Parameter(Mandatory)][string]  $Source
+        [Parameter(Mandatory)][string]  $Source,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     $errors = _Validate-Request $RequestType $Params
     if ($errors) {
-        return @{
+        $result = @{
             Success     = $false
             Errors      = , $errors
             Source      = $Source
             RequestType = $RequestType
             Timestamp   = Get-UtcTimestamp
         }
+        return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
-    $result = Start-AutomationOrchestrator -RequestType $RequestType -Params $Params
+    $result = Start-AutomationOrchestrator -RequestType $RequestType -Params $Params -PassThru
     $result['Source'] = $Source
     $result['RequestType'] = $RequestType
     $result['Timestamp'] = Get-UtcTimestamp
-    return $result
+    return (_Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -194,10 +199,14 @@ function Run-CIPipeline {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(ValueFromPipeline)][hashtable] $Params
+        [Parameter(ValueFromPipeline)][hashtable] $Params,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     $ctrl = _Build-CIParams -RawParams $Params
-    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'ci'
+    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'ci' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -219,10 +228,14 @@ function Run-IRequest {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(ValueFromPipeline)][hashtable] $FormData
+        [Parameter(ValueFromPipeline)][hashtable] $FormData,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     $ctrl = _Build-IRequestParams -FormData $FormData
-    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'irequest'
+    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'irequest' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -244,10 +257,14 @@ function Run-Scheduler {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(ValueFromPipeline)][hashtable] $TaskParams
+        [Parameter(ValueFromPipeline)][hashtable] $TaskParams,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     $ctrl = _Build-SchedulerParams -TaskParams $TaskParams
-    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'scheduler'
+    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'scheduler' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -301,10 +318,14 @@ function Run-GitLab {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(ValueFromPipeline)][hashtable] $Params
+        [Parameter(ValueFromPipeline)][hashtable] $Params,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     $ctrl = _Build-GitLabParams -Params $Params
-    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'gitlab'
+    return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'gitlab' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }
 
 # vim: ts=4 sw=4 et

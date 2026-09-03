@@ -115,6 +115,41 @@ Describe 'Get-OneViewServerList - pagination & filtering (mocked REST)' {
     }
 }
 
+Describe 'Get-OneViewServerList - maintenance mode (mocked REST)' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ total = 3; members = @(
+                    [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; MaintenanceModeEnabled = $true;  state = 'MaintenanceMode'; stateReason = 'Scheduled firmware update' },
+                    [pscustomobject]@{ name = 's2'; serialNumber = 'B'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0'; MaintenanceModeEnabled = $false; state = 'ProfileError';     stateReason = 'Profile apply failed' },
+                    [pscustomobject]@{ name = 's3'; serialNumber = 'C'; model = 'DL380'; powerState = 'On';  status = 'Warning';  mpIpAddresses = @('10.0.0.3'); enclosureName = 'Enc1'; position = 'Bay 3'; uri = '/rest/z'; romVersion = '1.0'; MaintenanceModeEnabled = $false; state = 'Monitored';        stateReason = '' }
+                ) }
+            }
+        }
+    }
+
+    It 'Reports Yes for MaintenanceModeEnabled servers' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
+        $r.Success | Should -Be $true
+        ($r.Servers | Where-Object { $_.name -eq 's1' }).maintenance_mode | Should -Be 'Yes'
+        ($r.Servers | Where-Object { $_.name -eq 's2' }).maintenance_mode | Should -Be 'No'
+    }
+
+    It 'Filters by maintenance:Yes' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:Yes' -PassThru
+        $r.Success | Should -Be $true
+        $r.Count   | Should -Be 1
+        $r.Servers[0].name | Should -Be 's1'
+    }
+
+    It 'Filters by maintenance:No' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Filter 'maintenance:No' -PassThru
+        $r.Success | Should -Be $true
+        $r.Count   | Should -Be 2
+    }
+}
+
 Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
     BeforeAll {
         InModuleScope Automation {
@@ -162,5 +197,120 @@ Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
         $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PageSize 2 -Filter 'health:Critical' -PassThru
         $r.Count | Should -Be 1
         $r.Servers[0].name | Should -Be 's2'
+    }
+}
+
+Describe 'Get-OneViewServerList - output rendering (regression)' {
+    # Regression: Get-OneViewServerList must render its own "OneView Server List" table
+    # and never emit a raw validation block / hashtable dump. These tests capture the
+    # rendered host output and assert the correct OneView table is emitted.
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession {
+                [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true }
+            }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{
+                    total   = 2
+                    members = @(
+                        [pscustomobject]@{ name = 'srv-alpha'; serialNumber = 'A1'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0' },
+                        [pscustomobject]@{ name = 'srv-beta';  serialNumber = 'B2'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0' }
+                    )
+                }
+            }
+        }
+    }
+
+    It 'Renders the OneView server table (not the shadowed Server List Validation block)' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru -InformationVariable hostRecords
+        $rendered = ($hostRecords | ForEach-Object { $_.MessageData }) -join "`n"
+        $rendered | Should -Match 'OneView Server List'
+        $rendered | Should -Match 'Server Name'
+        $rendered | Should -Match 'srv-alpha'
+        $rendered | Should -Match 'srv-beta'
+        $rendered | Should -Not -Match 'Server List Validation'
+        $rendered | Should -Not -Match 'System\.Collections\.Hashtable'
+    }
+
+    It 'Returns the structured result with -PassThru (servers as hashtables with names)' {
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
+        $r.Success         | Should -Be $true
+        $r.Count           | Should -Be 2
+        $r.Servers.Count   | Should -Be 2
+        $r.Servers[0].name | Should -Be 'srv-alpha'
+        $r.Servers[1].name | Should -Be 'srv-beta'
+    }
+}
+
+Describe 'Get-OneViewServerList - Summary and Detail views' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{
+                    total   = 2
+                    members = @(
+                        [pscustomobject]@{ name = 'srv-alpha'; serialNumber = 'A1'; model = 'DL380 Gen10'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); romVersion = 'P89 v2.92 (11/23/2021)'; MaintenanceModeEnabled = $false; state = 'Monitored'; stateReason = '' },
+                        [pscustomobject]@{ name = 'srv-beta';  serialNumber = 'B2'; model = 'DL380 Gen10'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); romVersion = 'U32 v3.50 (04/17/2025)'; MaintenanceModeEnabled = $true; state = 'MaintenanceMode'; stateReason = 'Fw' }
+                    )
+                }
+            }
+        }
+    }
+
+    It '-Summary shows only Server Name, Serial, MaintMode, Health, iLO IP' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Summary -InformationVariable hostRecords
+        $header = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1)
+        $header | Should -Match 'Server Name'
+        $header | Should -Match 'Serial'
+        $header | Should -Match 'MaintMode'
+        $header | Should -Match 'Health'
+        $header | Should -Match 'iLO IP'
+        $header | Should -Not -Match 'State'
+        $header | Should -Not -Match 'Power'
+        $header | Should -Not -Match 'ROM'
+        $header | Should -Not -Match 'Model'
+        $header | Should -Not -Match 'State Reason'
+    }
+
+    It '-Detail (explicit) shows the full field set including State and Model' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Detail -InformationVariable hostRecords
+        $header = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1)
+        $header | Should -Match 'State'
+        $header | Should -Match 'Power'
+        $header | Should -Match 'ROM'
+        $header | Should -Match 'Model'
+        $header | Should -Match 'State Reason'
+    }
+
+    It 'Neither switch defaults to the full (Detail) view' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -InformationVariable hostRecords
+        $header = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1)
+        $header | Should -Match 'State'
+        $header | Should -Match 'Model'
+    }
+
+    It '-Detail Model column contains actual model data (not empty)' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Detail -InformationVariable hostRecords
+        $dataRows = ($hostRecords | ForEach-Object { $_.MessageData } | Where-Object { $_ -match 'srv-alpha' -or $_ -match 'srv-beta' })
+        $dataRows | Should -Not -BeNullOrEmpty
+        $dataRows | Should -Match 'DL380 Gen10'
+    }
+
+    It '-Detail ROM column accommodates long version strings without misalignment' {
+        $hostRecords = $null
+        $null = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -Detail -InformationVariable hostRecords
+        $allRows = $hostRecords | ForEach-Object { $_.MessageData }
+        $dataLines = $allRows | Where-Object { $_ -match 'P89 v2.92' -or $_ -match 'U32 v3.50' }
+        $dataLines | Should -Not -BeNullOrEmpty
+        # Each data line should have the same number of pipe-delimited columns as the header
+        $headerLine = $allRows | Where-Object { $_ -match 'Server Name' } | Select-Object -First 1
+        $headerCols = ($headerLine -split '\|').Count
+        $dataLines | ForEach-Object { ($($_ -split '\|')).Count | Should -Be $headerCols }
     }
 }

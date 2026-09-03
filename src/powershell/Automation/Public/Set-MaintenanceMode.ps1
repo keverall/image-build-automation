@@ -1859,17 +1859,22 @@ function Test-ScomConnection {
     )
     
     try {
-        $escapedPass = $Password -replace "'", "''"
-        $escapedUser = $Username -replace "'", "''"
-        $escapedServer = $ManagementServer -replace "'", "''"
         $scriptContent = @"
+param([string]`$ScomUser = `$env:SCOM_CONN_TEST_USER, [string]`$ScomPass = `$env:SCOM_CONN_TEST_PASS, [string]`$ScomHost = `$env:SCOM_CONN_TEST_HOST)
 Import-Module $ModuleName -ErrorAction Stop
-`$securePass = ConvertTo-SecureString '$escapedPass' -AsPlainText -Force
-`$cred = New-Object System.Management.Automation.PSCredential('$escapedUser', `$securePass)
-`$conn = New-SCOMManagementGroupConnection -ComputerName '$escapedServer' -Credential `$cred -ErrorAction Stop
+`$securePass = ConvertTo-SecureString `$ScomPass -AsPlainText -Force
+`$cred = New-Object System.Management.Automation.PSCredential(`$ScomUser, `$securePass)
+`$conn = New-SCOMManagementGroupConnection -ComputerName `$ScomHost -Credential `$cred -ErrorAction Stop
 Write-Output "CONNECTED"
 "@
-        $result = Invoke-PowerShellScript -Script $scriptContent
+        # Secrets are passed out-of-band via the child process environment so they
+        # never appear in the process command line, transcripts, or error output.
+        $childEnv = @{
+            SCOM_CONN_TEST_USER = $Username
+            SCOM_CONN_TEST_PASS = $Password
+            SCOM_CONN_TEST_HOST = $ManagementServer
+        }
+        $result = Invoke-PowerShellScript -Script $scriptContent -Environment $childEnv
         return $result.Success -and ($result.Output -match 'CONNECTED')
     } catch {
         Write-Warning "SCOM connection test failed: $($_.Exception.Message)"
@@ -2075,10 +2080,22 @@ class SCOMManager {
             if (-not $this.Cred) {
                 return @{ Success = $false; Output = 'WinRM credentials not configured' } 
             }
+            # Credentials travel over the encrypted WinRM channel via -ArgumentList
+            # (the remote script declares a matching param() block).
             return Invoke-PowerShellWinRM -Script $Script `
-                -Server $this.MgmtServer -Username $this.Cred['username'] -Password $this.Cred['password']
+                -Server $this.MgmtServer -Username $this.Cred['username'] -Password $this.Cred['password'] `
+                -ArgumentList @($this.Cred['username'], $this.Cred['password'])
         } else {
-            return Invoke-PowerShellScript -Script $Script
+            # Credentials are passed out-of-band via the child process environment so
+            # they never appear in the process command line, transcripts, or error
+            # output (CWE-214 / CWE-532). When no credentials are configured (e.g. dry-run
+            # tests), pass empty values so the script can still run.
+            $envUser = if ($this.Cred) { $this.Cred['username'] } else { '' }
+            $envPass = if ($this.Cred) { $this.Cred['password'] } else { '' }
+            return Invoke-PowerShellScript -Script $Script -Environment @{
+                SCOM_CONN_USER = $envUser
+                SCOM_CONN_PASS = $envPass
+            }
         }
     }
 
@@ -2465,10 +2482,11 @@ if (-not `$group) { Write-Error "Group '$GroupDisplayName' not found"; exit 1 }
         # The REST script authenticates, resolves monitoring object IDs, calls POST /ScheduleMaintenance
         $serverJson = ($ServerHostnames | ForEach-Object { "`"$($_.Replace('"','\"'))`"" }) -join ","
         $script = @"
+param([string]`$SCOMUser = `$env:SCOM_CONN_USER, [string]`$SCOMPass = `$env:SCOM_CONN_PASS)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 `$server     = "$($this.MgmtServer)"
-`$user       = "$($this.Cred['username'])"
-`$pass       = "$($this.Cred['password'])"
+`$user       = `$SCOMUser
+`$pass       = `$SCOMPass
 `$baseUrl    = "http://`$server/OperationsManager"
 `$endTime    = [DateTime]::Parse('$EndTimeStr')
 `$endIso     = `$endTime.ToString('yyyy-MM-ddTHH:mm:ss')
@@ -2673,10 +2691,11 @@ foreach (`$inst in `$instances) {
         }
 
         $script = @"
+param([string]`$SCOMUser = `$env:SCOM_CONN_USER, [string]`$SCOMPass = `$env:SCOM_CONN_PASS)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 `$server     = "$($this.MgmtServer)"
-`$user       = "$($this.Cred['username'])"
-`$pass       = "$($this.Cred['password'])"
+`$user       = `$SCOMUser
+`$pass       = `$SCOMPass
 `$baseUrl    = "http://`$server/OperationsManager"
 
 # Authenticate
@@ -2873,12 +2892,13 @@ class OneViewClient {
             return @{ Success = $true; Message = "[DRY RUN] OneView maintenance for $TargetType '$Target'"; Objects = @() }
         }
         $scriptContent = @"
-Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
+ Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$objects = @()
@@ -2954,12 +2974,19 @@ if ('$TargetType' -eq 'ServerHardware') {
 `$result | ConvertTo-Json -Depth 5
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3001,12 +3028,13 @@ if ('$TargetType' -eq 'ServerHardware') {
             return @{ Success = $true; Message = "[DRY RUN] OneView disable maintenance for $TargetType '$Target'"; Objects = @() }
         }
         $scriptContent = @"
-Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
+ Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$objects = @()
@@ -3082,12 +3110,19 @@ if ('$TargetType' -eq 'ServerHardware') {
 `$result | ConvertTo-Json -Depth 5
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3129,11 +3164,12 @@ if ('$TargetType' -eq 'ServerHardware') {
         $ovModule = $this.ModuleName
         $ovAppliance = $this.Appliance
         $scriptContent = @"
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$server = Get-OVServer -Name '$TargetId' -ErrorAction SilentlyContinue
@@ -3152,12 +3188,19 @@ if (`$scope) {
 `$result | ConvertTo-Json -Depth 3
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3195,11 +3238,12 @@ if (`$scope) {
         $ovModule = $this.ModuleName
         $ovAppliance = $this.Appliance
         $scriptContent = @"
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 `$objects = @()
@@ -3257,12 +3301,19 @@ if ('$TargetType' -eq 'ServerHardware') {
 `$result | ConvertTo-Json -Depth 5
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{
@@ -3295,11 +3346,12 @@ if ('$TargetType' -eq 'ServerHardware') {
         $ovModule = $this.ModuleName
         $ovAppliance = $this.Appliance
         $scriptContent = @"
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
 `$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
 if (-not `$existingSession) {
-    `$securePass = ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential('$($this.Username)', `$securePass)
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
 }
 
@@ -3416,12 +3468,19 @@ if (`$server) {
 }
 "@
         try {
+            $output = $null
             if ($this.UseWinRM) {
                 $session = New-PSSession -ComputerName $this.WinRMServer
-                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent))
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
                 Remove-PSSession $session
             } else {
-                $output = Invoke-Expression $scriptContent
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
             }
             $result = $output | ConvertFrom-Json
             return @{

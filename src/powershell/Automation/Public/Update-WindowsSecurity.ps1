@@ -18,7 +18,9 @@ function Invoke-WindowsSecurityUpdate {
         to the mounted ISO image.
 
     .PARAMETER BaseIsoPath
-        Path to the base Windows Server ISO file.
+        Path to the base Windows Server ISO file. Accepts the same network-share
+        and URL formats as the other build commands; see
+        ../PathParameterFormats.md for the full list of accepted formats.
 
     .PARAMETER Server
         Server hostname for output naming. Mutually exclusive with -SerialNumber.
@@ -42,8 +44,28 @@ function Invoke-WindowsSecurityUpdate {
     .PARAMETER DryRun
         Simulate without making changes.
 
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream (for API
+        integration / redirection) instead of the human-readable report.
+        When omitted, the command writes a human-readable report to the host
+        (terminal / transcript / logs) and does NOT dump a raw hashtable.
+
+    .PARAMETER PassThru
+        Also return the structured [hashtable] result on the success stream.
+        By default the command writes only the human-readable report and
+        returns nothing, so the terminal/log never receives a truncated
+        hashtable dump. Capture the result into a variable, e.g.
+        `$r = Invoke-WindowsSecurityUpdate -PassThru`, for scripting.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru / -Json when the
+        caller handles display itself).
+
     .RETURNS
-        [hashtable] with Success (bool), PatchedIso (string), and details.
+        By default, nothing is returned on the success stream (the
+        human-readable report is written to the host). With -PassThru, a
+        [hashtable] with Success (bool), PatchedIso (string), and Error.
+        With -Json, a JSON [string] representation of the same data.
 
     .EXAMPLE
         Invoke-WindowsSecurityUpdate -BaseIsoPath 'C:\ISOs\WinServer2022.iso' -Server 'srv01' -DryRun
@@ -62,11 +84,15 @@ function Invoke-WindowsSecurityUpdate {
         [ValidateSet('dism', 'powershell')]
         [Parameter(Mandatory = $false)][Alias('m')][string] $Method = 'dism',
         [Alias('Dry')]
-        [Parameter(Mandatory = $false)][switch] $DryRun
+        [Parameter(Mandatory = $false)][switch] $DryRun,
+        [switch] $Json,
+        [Alias('PT')]
+        [switch] $PassThru,
+        [switch] $Quiet
     )
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
-        if (-not $resolved.Success) { return @{ Success = $false; Error = $resolved.Error } }
+        if (-not $resolved.Success) { return (_Publish-Result -Result @{ Success = $false; Error = $resolved.Error } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         $Server = $resolved.Identifier
         Write-Verbose "Resolved serial '$SerialNumber' -> $Server"
     }
@@ -74,7 +100,7 @@ function Invoke-WindowsSecurityUpdate {
     # -PatchesConfig, or under -DryRun (config is a dry-run helper). A live run
     # must not silently read the default patches path (see AGENTS.md).
     if (-not $DryRun -and -not $PSBoundParameters.ContainsKey('PatchesConfig')) {
-        return @{ Success = $false; Error = "A patch manifest is required for a live run. Supply -PatchesConfig <path-to-windows_patches.json> explicitly. The default config path is only used with -DryRun." }
+        return (_Publish-Result -Result @{ Success = $false; Error = "A patch manifest is required for a live run. Supply -PatchesConfig <path-to-windows_patches.json> explicitly. The default config path is only used with -DryRun." } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     if (-not $Script:WinSecLogDir -or $Script:WinSecLogDir -eq '') {
         $current = $PSScriptRoot
@@ -100,10 +126,10 @@ function Invoke-WindowsSecurityUpdate {
         $resultsDir = Join-Path $OutputDir 'results'
         Ensure-DirectoryExists -Path $resultsDir
         Save-Json -Data $result -Path (Join-Path $resultsDir "patch_result_$Server.json")
-        return @{ Success = $result.success; PatchedIso = $result.PatchedIso; Error = $result.Get_Item('error') }
+        return (_Publish-Result -Result @{ Success = $result.success; PatchedIso = $result.PatchedIso; Error = $result.Get_Item('error') } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
     catch {
-        return @{ Success = $false; Error = $_.Exception.Message }
+        return (_Publish-Result -Result @{ Success = $false; Error = $_.Exception.Message } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
     }
 }
 

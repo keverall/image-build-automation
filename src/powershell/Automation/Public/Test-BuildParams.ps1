@@ -20,7 +20,12 @@ function Test-BuildParams {
 
         Every location is resolved through the single shared Resolve-ExternalIsoPath helper,
         so the path-format handling is identical across Test-BuildParams, Invoke-IsoDeploy,
-        Configure-PhysicalBuild and Start-PhysicalServerBuild.
+        Configure-PhysicalBuild and Invoke-PhysicalServerBuild.
+
+        Output is rendered through the shared _Publish-Result helper: a clean, human-readable
+        report is written to the host (no truncated raw hashtable / OrderedDictionary dump),
+        while the structured object is still returned when captured or when -PassThru is used.
+        Use -Json to receive a JSON string for automation/API consumers.
 
         Accepted location formats (see Resolve-ExternalIsoPath for the full list):
           - HTTP/HTTPS URL : 'https://artifacts/win.iso'      (used directly)
@@ -42,31 +47,43 @@ function Test-BuildParams {
         Path to the base Windows ISO (required for ISO builds). Accepts an UNC/SMB share
         (\\server\share\file.iso or //server/share/file.iso), an HTTPS/NFS/CIFS/SMB URL,
         or a mapped network drive (H:\file.iso that maps to a network share). Local drive
-        paths are not supported by iLO.
+        paths are not supported by iLO. See ../PathParameterFormats.md for the full
+        list of accepted formats.
 
     .PARAMETER FirmwareFolders
         One or more firmware component source locations (directories or .zip files) passed
         to Update-Firmware for post-OS firmware updates via HPE SUT. Each is resolved and
         validated with the same shared helper as the ISO. Local drive paths are not
-        supported.
+        supported. See ../PathParameterFormats.md for the accepted path formats.
 
     .PARAMETER DryRun
         Resolve and validate the path format(s) without checking that the file(s) exist.
 
-    .EXAMPLE
-        $r = Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'
-        # $r.Success -> $true ; $r.IsoUrl -> 'cifs://fileserver/isos/WinSrv2025.iso'
+    .PARAMETER Json
+        Emit the result as a JSON string on the success stream instead of the
+        human-readable report.
+
+    .PARAMETER PassThru
+        Also return the structured result object on the success stream (for scripting /
+        capture into a variable). Without this, nothing is returned on the success stream
+        so the operator only sees the readable report.
+
+    .PARAMETER Quiet
+        Suppress the human-readable report (use with -PassThru or -Json when the caller
+        handles display itself).
 
     .EXAMPLE
-        $r = Test-BuildParams -BaseIsoPath '//fileserver/share/WinSrv2025.iso'
-        # $r.Success -> $true ; $r.IsoUrl -> 'cifs://fileserver/share/WinSrv2025.iso'
+        Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso'
+        # Prints a readable report; IsoUrl -> 'cifs://fileserver/isos/WinSrv2025.iso'
 
     .EXAMPLE
-        $r = Test-BuildParams -BaseIsoPath 'https://artifacts/isos/WinSrv2025.iso'
-        # $r.Success -> $true ; $r.IsoUrl -> 'https://artifacts/isos/WinSrv2025.iso'
+        Test-BuildParams -BaseIsoPath '//fileserver/share/WinSrv2025.iso'
 
     .EXAMPLE
-        $r = Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+        Test-BuildParams -BaseIsoPath 'https://artifacts/isos/WinSrv2025.iso'
+
+    .EXAMPLE
+        Test-BuildParams -BaseIsoPath '\\fileserver\isos\WinSrv2025.iso' `
             -FirmwareFolders @('\\fileserver\fw\BIOS', 'Y:\fw\iLO5')
         # Validates the ISO and both firmware locations through the shared resolver.
     #>
@@ -75,7 +92,10 @@ function Test-BuildParams {
     param(
         [string] $BaseIsoPath = $null,
         [string[]] $FirmwareFolders = @(),
-        [bool]  $DryRun      = $false
+        [bool]  $DryRun      = $false,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
     )
 
     $result = [ordered]@{
@@ -97,16 +117,16 @@ function Test-BuildParams {
             $result.IsoUrl = $isoUrl
             $result.ResolvedPath = $BaseIsoPath
         } catch {
-            $result.Errors += $_.Exception.Message
+            $result.Errors += "Base ISO: $($_.Exception.Message)"
         }
 
         if (-not $DryRun -and $result.IsoUrl -and -not (_IsUrl $BaseIsoPath)) {
             if (-not (Test-PathEx -Path $BaseIsoPath)) {
-                $result.Errors += "Base ISO not found or not accessible: $BaseIsoPath"
+                $result.Errors += "Base ISO: not found or not accessible: $BaseIsoPath"
             }
         }
     } else {
-        $result.Errors += 'BaseIsoPath is required (UNC/SMB share, HTTPS, NFS, CIFS/SMB URL, or a mapped network drive to the Windows ISO).'
+        $result.Errors += 'Base ISO: BaseIsoPath is required (UNC/SMB share, HTTPS, NFS, CIFS/SMB URL, or a mapped network drive to the Windows ISO).'
     }
 
     # ── Firmware location validation (same shared resolver for consistency) ────
@@ -122,8 +142,8 @@ function Test-BuildParams {
             $fwUrl = Resolve-ExternalIsoPath -IsoPath $fw
             $fwEntry.ResolvedUrl = $fwUrl
         } catch {
-            $fwEntry.Error = $_.Exception.Message
-            $result.Errors += "Firmware location '$fw': $($_.Exception.Message)"
+            $fwEntry.Error = "Firmware file: '$fw': $($_.Exception.Message)"
+            $result.Errors += $fwEntry.Error
             $result.FirmwareResults += $fwEntry
             continue
         }
@@ -132,8 +152,8 @@ function Test-BuildParams {
             $exists = Test-PathEx -Path $fw -PathType Any
             $fwEntry.Exists = $exists
             if (-not $exists) {
-                $fwEntry.Error = "Firmware location not found or not accessible: $fw"
-                $result.Errors += "Firmware location not found or not accessible: $fw"
+                $fwEntry.Error = "Firmware file: not found or not accessible: $fw"
+                $result.Errors += $fwEntry.Error
             }
         }
 
@@ -141,5 +161,112 @@ function Test-BuildParams {
     }
 
     $result.Success = ($result.Errors.Count -eq 0)
-    return $result
+
+    _Emit-BuildParamsResult -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
+}
+
+# ── Result emission ───────────────────────────────────────────────────────────
+function _Emit-BuildParamsResult {
+    <#
+    .SYNOPSIS
+        Emits the Test-BuildParams result via the shared, DRY _Publish-Result helper.
+    #>
+    param(
+        [hashtable] $Result,
+        [switch] $Json,
+        [switch] $PassThru,
+        [switch] $Quiet
+    )
+
+    _Publish-Result -Result $Result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView {
+        param($r)
+        _Format-BuildParamsResult -Result $r
+    }
+}
+
+# ── Output formatting ─────────────────────────────────────────────────────────
+function _Format-BuildParamsResult {
+    <#
+    .SYNOPSIS
+        Formats the build parameter validation result as a readable report.
+
+    .DESCRIPTION
+        Converts the structured result (including the FirmwareResults OrderedDictionary
+        entries) into a plain, human-readable list/table. Errors are grouped and shown
+        clearly as either ISO-related or firmware-file-related.
+    #>
+    param([hashtable]$Result)
+
+    $ok = $Result.Success
+    $hasErrors = ($Result.Errors -and $Result.Errors.Count -gt 0)
+    $dryRunTag = if ($Result.DryRun) { ' [DRY-RUN]' } else { '' }
+
+    $boldRed = "$([char]27)[1;31m"
+    $reset   = "$([char]27)[0m"
+    $green   = 'Green'
+    $cyan    = 'Cyan'
+    $yellow  = 'Yellow'
+
+    Write-Host ""
+    Write-Host "==============================================" -ForegroundColor $cyan
+    Write-Host "  Build Parameter Validation" -ForegroundColor $cyan
+    Write-Host "==============================================" -ForegroundColor $cyan
+    Write-Host ""
+
+    Write-Host "  Result:    $(if ($ok) { 'VALID' } else { 'INVALID' })${dryRunTag}" `
+        -ForegroundColor $(if ($ok) { $green } else { 'Red' })
+    Write-Host "  Base ISO:  $(if ($Result.BaseIsoPath) { $Result.BaseIsoPath } else { '(none)' })"
+    if ($Result.IsoUrl) {
+        Write-Host "  Resolved:  $($Result.IsoUrl)"
+    }
+
+    # ── Firmware results (one readable entry per location) ──
+    if ($Result.FirmwareResults -and $Result.FirmwareResults.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  Firmware locations:" -ForegroundColor $yellow
+        $idx = 1
+        foreach ($fw in $Result.FirmwareResults) {
+            Write-Host "    [$idx] $($fw.Location)"
+            if ($fw.ResolvedUrl) { Write-Host "        Resolved: $($fw.ResolvedUrl)" }
+            if ($null -ne $fw.Exists) {
+                $existsColor = if ($fw.Exists) { $green } else { 'Red' }
+                Write-Host "        Exists:   $($fw.Exists)" -ForegroundColor $existsColor
+            }
+            if ($fw.Error) {
+                Write-Host "        ${boldRed}Error:    $($fw.Error)${reset}"
+            }
+            $idx++
+        }
+    }
+
+    # ── PROMINENT ERROR BANNER ───────────────────────────────────────────────
+    # Only emitted when there really are errors, so a clean run shows nothing
+    # about Errors (no confusing empty "Errors {}" line).
+    if ($hasErrors) {
+        $isoErrors   = @($Result.Errors | Where-Object { $_ -match '^Base ISO' })
+        $fwErrors    = @($Result.Errors | Where-Object { $_ -match '^Firmware file' })
+        $otherErrors = @($Result.Errors | Where-Object { $_ -notmatch '^(Base ISO|Firmware file)' })
+
+        $bar = '############################################################'
+        Write-Host ""
+        Write-Host "${boldRed}${bar}${reset}"
+        Write-Host "${boldRed}#${reset}"
+        Write-Host "${boldRed}#  BUILD PARAMETER VALIDATION FAILED${reset}"
+        Write-Host "${boldRed}#${reset}"
+        if ($isoErrors.Count -gt 0) {
+            Write-Host "${boldRed}#  ISO-related errors:${reset}"
+            foreach ($e in $isoErrors) { Write-Host "${boldRed}#    - $($e -replace '^Base ISO:\s*', '')${reset}" }
+        }
+        if ($fwErrors.Count -gt 0) {
+            Write-Host "${boldRed}#  Firmware file errors:${reset}"
+            foreach ($e in $fwErrors) { Write-Host "${boldRed}#    - $($e -replace '^Firmware file:\s*', '')${reset}" }
+        }
+        if ($otherErrors.Count -gt 0) {
+            Write-Host "${boldRed}#  Other errors:${reset}"
+            foreach ($e in $otherErrors) { Write-Host "${boldRed}#    - $e${reset}" }
+        }
+        Write-Host "${boldRed}#${reset}"
+        Write-Host "${boldRed}${bar}${reset}"
+        Write-Host ""
+    }
 }

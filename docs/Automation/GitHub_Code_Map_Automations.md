@@ -132,14 +132,14 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 4. [`Get-RouteMap.ps1`](../../src/powershell/Automation/Public/Get-RouteMap.ps1) - routing introspection
 5. [`Invoke-GitLabMaintenanceTrigger.ps1`](../../src/powershell/Automation/Public/Invoke-GitLabMaintenanceTrigger.ps1) - GitLab CI/CD trigger
 6. [`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) - iLO Redfish virtual media / boot
-7. [`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) - ISO deployer orchestrator
+7. [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) - ISO deployer orchestrator
 8. [`Invoke-OpsRampClient.ps1`](../../src/powershell/Automation/Public/Invoke-OpsRampClient.ps1) - OpsRamp client
 9. [`Invoke-PowerShellScript.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellScript.ps1) - local PS execution
 10. [`Invoke-PowerShellWinRM.ps1`](../../src/powershell/Automation/Public/Invoke-PowerShellWinRM.ps1) - remote WinRM execution
-11. [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) - ConfigMgr bootable ISO builder
+11. [`Configure-PhysicalBuild.ps1`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1) - ConfigMgr bootable ISO builder
 12. [`New-OneViewMaintenanceScript.ps1`](../../src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1) - generate OneView maintenance scripts
 13. [`New-Uuid.ps1`](../../src/powershell/Automation/Public/New-Uuid.ps1) - deterministic UUID generator
-14. [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) - publish ISO to HTTPS repository
+14. [`Configure-PhysicalBuild.ps1`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1) - publish ISO to HTTPS repository
 15. [`Set-MaintenanceMode.ps1`](../../src/powershell/Automation/Public/Set-MaintenanceMode.ps1) - *see GitHub_Code_Map_Maitenance_Mode.md*
 16. [`Start-AutomationOrchestrator.ps1`](../../src/powershell/Automation/Public/Start-AutomationOrchestrator.ps1) - unified entry point
 17. [`Start-InstallMonitor.ps1`](../../src/powershell/Automation/Public/Start-InstallMonitor.ps1) - installation progress monitor
@@ -148,8 +148,8 @@ Loaded alphabetically by [`Automation.psm1`](../../src/powershell/Automation/Aut
 20. [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) - post-build validation
 21. [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) - pre-build validation
 22. [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1) - OneView connectivity check
-23. [`Test-ServerList.ps1`](../../src/powershell/Automation/Public/Test-ServerList.ps1) - server list validation
-24. [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) - standalone firmware ISO builder
+23. [`Test-BuildParams.ps1`](../../src/powershell/Automation/Public/Test-BuildParams.ps1) - server list validation
+24. [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) - standalone firmware ISO builder
 25. [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) - Windows security patcher
 
 ---
@@ -298,26 +298,26 @@ Skip switches: `-SkipPreBuild`, `-SkipIsoBuild`, `-SkipPublish`, `-SkipOneView`,
 
 ### 3.2 - ConfigMgr Bootable ISO Builder
 
-**[`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1#13)** - [`New-IsoBuild()`](../../src/powershell/Automation/Public/New-IsoBuild.ps1#13)
+**[`Configure-PhysicalBuild.ps1`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#13)** - [`New-IsoBuild()`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#13)
 
 Builds ConfigMgr bootable WinPE media (replaces old DSC/DISM firmware+patching pipeline). Uses `New-CMBootableMedia` from the ConfigurationManager module.
 
-- Auto-detects ConfigMgr context: local module or PSRemoting to site server at [L249](../../src/powershell/Automation/Public/New-IsoBuild.ps1#249)
+- Auto-detects ConfigMgr context: local module or PSRemoting to site server at [L249](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#249)
 - Output naming: `WinSrv2025_HPE_BootableMedia_v<Major.Minor>.iso`
-- Auto-increments version from existing ISOs at [L120](../../src/powershell/Automation/Public/New-IsoBuild.ps1#120)
-- DryRun mode at [L155](../../src/powershell/Automation/Public/New-IsoBuild.ps1#155)
-- Mock mode for tests at [L144](../../src/powershell/Automation/Public/New-IsoBuild.ps1#144)
-- Writes `deployment_metadata.json` at [L239](../../src/powershell/Automation/Public/New-IsoBuild.ps1#239)
+- Auto-increments version from existing ISOs at [L120](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#120)
+- DryRun mode at [L155](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#155)
+- Mock mode for tests at [L144](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#144)
+- Writes `deployment_metadata.json` at [L239](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#239)
 
 <a id="33-iso-publisher"></a>
 
 ### 3.3 - ISO Publisher
 
-**[`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1#12)** - [`Publish-BootIso()`](../../src/powershell/Automation/Public/Publish-BootIso.ps1#12)
+**[`Configure-PhysicalBuild.ps1`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#12)** - [`Publish-BootIso()`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#12)
 - Copies bootable ISO to HTTPS repository for iLO Redfish consumption
-- Verifies reachability with HTTP HEAD at [L114](../../src/powershell/Automation/Public/Publish-BootIso.ps1#114)
-- `RepoBaseUrl` from `$env:ISO_REPO_BASE_URL` at [L61](../../src/powershell/Automation/Public/Publish-BootIso.ps1#61)
-- `-ForceOverwrite` to replace existing ISOs at [L97](../../src/powershell/Automation/Public/Publish-BootIso.ps1#97)
+- Verifies reachability with HTTP HEAD at [L114](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#114)
+- `RepoBaseUrl` from `$env:ISO_REPO_BASE_URL` at [L61](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#61)
+- `-ForceOverwrite` to replace existing ISOs at [L97](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1#97)
 
 ---
 
@@ -331,17 +331,17 @@ Standalone firmware ISO generation via HPE SUT. Not part of the ConfigMgr end-to
 
 ### 4.1 - Firmware Update Function
 
-**[`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#19)** - [`Update-Firmware()`](../../src/powershell/Automation/Public/Update-Firmware.ps1#19)
+**[`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#19)** - [`Update-Firmware()`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#19)
 - Default config: `configs/hpe_firmware_drivers_nov2025.json`
 - Default output: `output/firmware`
-- Delegates to [`FirmwareUpdater`](../../src/powershell/Automation/Public/Update-Firmware.ps1#82) class at [L67](../../src/powershell/Automation/Public/Update-Firmware.ps1#67)
-- Saves per-server result JSON at [L73](../../src/powershell/Automation/Public/Update-Firmware.ps1#73)
+- Delegates to [`FirmwareUpdater`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#82) class at [L67](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#67)
+- Saves per-server result JSON at [L73](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#73)
 
 <a id="42-firmwareupdater-class"></a>
 
 ### 4.2 - FirmwareUpdater Class
 
-**[`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#82)** - class starts at [L82](../../src/powershell/Automation/Public/Update-Firmware.ps1#82)
+**[`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#82)** - class starts at [L82](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#82)
 
 | Property | Line | Purpose |
 |----------|------|---------|
@@ -356,15 +356,15 @@ Standalone firmware ISO generation via HPE SUT. Not part of the ConfigMgr end-to
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `FirmwareUpdater()` | [L94](../../src/powershell/Automation/Public/Update-Firmware.ps1#94) | Constructor: loads config, finds SUT binary, reads download credentials |
-| `_FindSut()` | [L110](../../src/powershell/Automation/Public/Update-Firmware.ps1#110) | Locates `hpe_sut` in `tools/`, Program Files, or PATH |
-| `_DetectGen()` | [L126](../../src/powershell/Automation/Public/Update-Firmware.ps1#126) | Detects Gen10 vs Gen10+ from server name |
-| `_ComponentsForGen()` | [L132](../../src/powershell/Automation/Public/Update-Firmware.ps1#132) | Resolves firmware/driver components for server generation |
-| `_Log()` | [L147](../../src/powershell/Automation/Public/Update-Firmware.ps1#147) | Adds timestamped build log entry |
-| `_RunSut()` | [L154](../../src/powershell/Automation/Public/Update-Firmware.ps1#154) | Invokes `hpe_sut create` via [`Invoke-NativeCommandWithRetry()`](../../src/powershell/Automation/Private/Executor.ps1#68) |
-| `Build()` | [L171](../../src/powershell/Automation/Public/Update-Firmware.ps1#171) | Full firmware ISO build: detect gen → resolve components → invoke SUT |
+| `FirmwareUpdater()` | [L94](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#94) | Constructor: loads config, finds SUT binary, reads download credentials |
+| `_FindSut()` | [L110](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#110) | Locates `hpe_sut` in `tools/`, Program Files, or PATH |
+| `_DetectGen()` | [L126](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#126) | Detects Gen10 vs Gen10+ from server name |
+| `_ComponentsForGen()` | [L132](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#132) | Resolves firmware/driver components for server generation |
+| `_Log()` | [L147](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#147) | Adds timestamped build log entry |
+| `_RunSut()` | [L154](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#154) | Invokes `hpe_sut create` via [`Invoke-NativeCommandWithRetry()`](../../src/powershell/Automation/Private/Executor.ps1#68) |
+| `Build()` | [L171](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#171) | Full firmware ISO build: detect gen → resolve components → invoke SUT |
 
-**SUT command** at [L201–202](../../src/powershell/Automation/Public/Update-Firmware.ps1#201-202):
+**SUT command** at [L201–202](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#201-202):
 ```
 hpe_sut create --server-generation {gen} --repository {url} --output {iso} --components {list} --include-drivers
 ```
@@ -421,19 +421,19 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 ### 6.1 - Invoke-IsoDeploy
 
-**[`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#20)** - [`Invoke-IsoDeploy()`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#20)
+**[`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#20)** - [`Invoke-IsoDeploy()`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#20)
 - Default ISO directory: `output/bootable_media`
 - Only supports `Method`: `redfish`
-- Creates [`ISODeployer`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#89) at [L72](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#72)
-- Single-server mode via `Deploy()` at [L182](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#182)
-- Bulk mode via `DeployAll()` at [L199](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#199)
-- Delegates actual mount+boot to `Invoke-IloRedfish` at [L175](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#175)
+- Creates [`ISODeployer`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#89) at [L72](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#72)
+- Single-server mode via `Deploy()` at [L182](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#182)
+- Bulk mode via `DeployAll()` at [L199](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#199)
+- Delegates actual mount+boot to `Invoke-IloRedfish` at [L175](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#175)
 
 <a id="62-isodeployer-class"></a>
 
 ### 6.2 - ISODeployer Class
 
-**[`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#89)** - class starts at [L89](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#89)
+**[`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#89)** - class starts at [L89](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#89)
 
 | Property | Line | Purpose |
 |----------|------|---------|
@@ -446,13 +446,13 @@ hpe_sut create --server-generation {gen} --repository {url} --output {iso} --com
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `ISODeployer()` | [L97](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#97) | Constructor: loads server list via `Load-ServerList()` |
-| `_FindServerPackage()` | [L106](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#106) | Resolves server name to `output/bootable_media/` subdirectory |
-| `_ResolveIsoUrl()` | [L125](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#125) | Resolves ISO URL from metadata + RepoBaseUrl |
-| `_Log()` | [L151](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#151) | Adds timestamped deploy log entry |
-| `_DeployViaRedfish()` | [L159](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#159) | Delegates to `Invoke-IloRedfish -Action MountAndBoot` |
-| `Deploy()` | [L182](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#182) | Dispatches to Redfish method |
-| `DeployAll()` | [L199](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1#199) | Iterates all servers, saves deployment summary JSON |
+| `ISODeployer()` | [L97](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#97) | Constructor: loads server list via `Load-ServerList()` |
+| `_FindServerPackage()` | [L106](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#106) | Resolves server name to `output/bootable_media/` subdirectory |
+| `_ResolveIsoUrl()` | [L125](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#125) | Resolves ISO URL from metadata + RepoBaseUrl |
+| `_Log()` | [L151](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#151) | Adds timestamped deploy log entry |
+| `_DeployViaRedfish()` | [L159](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#159) | Delegates to `Invoke-IloRedfish -Action MountAndBoot` |
+| `Deploy()` | [L182](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#182) | Dispatches to Redfish method |
+| `DeployAll()` | [L199](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#199) | Iterates all servers, saves deployment summary JSON |
 
 ---
 
@@ -738,7 +738,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | Function | File | Purpose |
 |----------|------|---------|
 | [`Test-BuildParams()`](../../src/powershell/Automation/Public/Test-BuildParams.ps1#5) | Validates base ISO path exists |
-| [`Test-ServerList()`](../../src/powershell/Automation/Public/Test-ServerList.ps1#5) | Validates server list file, strips comments and empty lines |
+| [`Test-ServerList()`](../../src/powershell/Automation/Public/Test-BuildParams.ps1#5) | Validates server list file, strips comments and empty lines |
 
 ---
 
@@ -754,7 +754,7 @@ Defined in [`Automation.psm1`](../../src/powershell/Automation/Automation.psm1#1
 | [`Invoke-NativeCommandWithRetry()`](../../src/powershell/Automation/Private/Executor.ps1#68) | L68 | Exponential back-off retry wrapper (default: 3 attempts, 5s base delay) |
 | [`New-CommandResult()`](../../src/powershell/Automation/Private/Executor.ps1#99) | L99 | Factory for `CommandResult` objects |
 
-**Used by**: [`FirmwareUpdater._RunSut()`](../../src/powershell/Automation/Public/Update-Firmware.ps1#154), [`WindowsPatcher._ApplyPatchesDism()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#138)
+**Used by**: [`FirmwareUpdater._RunSut()`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#154), [`WindowsPatcher._ApplyPatchesDism()`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#138)
 
 ---
 
@@ -898,7 +898,7 @@ All configs loaded from `configs/` directory:
 |------|---------|-----------|
 | **`request_types.json`** | Request type → handler mapping, CI stage map | [`Router.ps1`](../../src/powershell/Automation/Private/Router.ps1#9) |
 | **`server_list.txt`** | Server hostnames with optional IPMI/iLO IPs | [`Inventory.ps1`](../../src/powershell/Automation/Private/Inventory.ps1#5) |
-| **`hpe_firmware_drivers_nov2025.json`** | HPE SUT firmware/driver component manifest | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1#97) |
+| **`hpe_firmware_drivers_nov2025.json`** | HPE SUT firmware/driver component manifest | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1#97) |
 | **`windows_patches.json`** | Windows security patch KB list (MSU packages) | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1#100) |
 | **`opsramp_config.json`** | OpsRamp API credentials + base URL | [`OpsRamp_Client`](../../src/powershell/Automation/Automation.psm1#161) |
 | **`connection_hosts.json`** | OneView management hosts per environment | [`Test-ServerConnectivity.ps1`](../../src/powershell/Automation/Public/Test-ServerConnectivity.ps1#281) |
@@ -927,12 +927,12 @@ All configs loaded from `configs/` directory:
 | [`FileIO.Unit.Tests.ps1`](../../tests/powershell/FileIO.Unit.Tests.ps1) | Ensure-DirectoryExists, Save-Json, Load-Json, Save-JsonResult |
 | [`Get-OneViewServerTarget.Unit.Tests.ps1`](../../tests/powershell/Get-OneViewServerTarget.Unit.Tests.ps1) | OneView server query, identifier resolution |
 | [`Invoke-IloRedfish.Unit.Tests.ps1`](../../tests/powershell/Invoke-IloRedfish.Unit.Tests.ps1) | iLO Redfish actions (Mount, MountAndBoot, Eject, Status) |
-| [`Invoke-IsoDeploy.Unit.Tests.ps1`](../../tests/powershell/Invoke-IsoDeploy.Unit.Tests.ps1) | ISO deployment orchestrator |
+| [`Start-PhysicalServerBuild.Unit.Tests.ps1`](../../tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1) | ISO deployment orchestrator |
 | [`Invoke-OpsRampClient.Unit.Tests.ps1`](../../tests/powershell/Invoke-OpsRampClient.Unit.Tests.ps1) | OpsRamp client, token management |
-| [`New-IsoBuild.Unit.Tests.ps1`](../../tests/powershell/New-IsoBuild.Unit.Tests.ps1) | ConfigMgr bootable ISO builder |
+| [`Configure-PhysicalBuild.Unit.Tests.ps1`](../../tests/powershell/Configure-PhysicalBuild.Unit.Tests.ps1) | ConfigMgr bootable ISO builder |
 | [`New-OneViewMaintenanceScript.Unit.Tests.ps1`](../../tests/powershell/New-OneViewMaintenanceScript.Unit.Tests.ps1) | OneView maintenance script generation |
 | [`New-Uuid.Unit.Tests.ps1`](../../tests/powershell/New-Uuid.Unit.Tests.ps1) | Deterministic UUID generation |
-| [`Publish-BootIso.Unit.Tests.ps1`](../../tests/powershell/Publish-BootIso.Unit.Tests.ps1) | ISO publish to HTTPS repo |
+| [`Configure-PhysicalBuild.Unit.Tests.ps1`](../../tests/powershell/Configure-PhysicalBuild.Unit.Tests.ps1) | ISO publish to HTTPS repo |
 | [`Router.Unit.Tests.ps1`](../../tests/powershell/Router.Unit.Tests.ps1) | Invoke-RoutedRequest, Get-RouteMap, request type dispatch |
 | [`Set-MaintenanceMode.Unit.Tests.ps1`](../../tests/powershell/Set-MaintenanceMode.Unit.Tests.ps1) | *See GitHub maintenance mode code map* |
 | [`Start-AutomationOrchestrator.Unit.Tests.ps1`](../../tests/powershell/Start-AutomationOrchestrator.Unit.Tests.ps1) | Orchestrator entry point |
@@ -941,7 +941,7 @@ All configs loaded from `configs/` directory:
 | [`Test-PostBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PostBuildValidation.Unit.Tests.ps1) | Post-build validation checks |
 | [`Test-PreBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1) | Pre-build validation checks |
 | [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | OneView connectivity |
-| [`Update-Firmware.Unit.Tests.ps1`](../../tests/powershell/Update-Firmware.Unit.Tests.ps1) | Firmware ISO builder |
+| [`Start-PhysicalServerBuild.Unit.Tests.ps1`](../../tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1) | Firmware ISO builder |
 | [`Update-WindowsSecurity.Unit.Tests.ps1`](../../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
 
 <a id="192-test-execution-scripts"></a>
@@ -976,11 +976,11 @@ All configs loaded from `configs/` directory:
 | User Journey | Entry Point | Handler | Key File | Lines |
 |--------------|-------------|---------|----------|-------|
 | **End-to-end build** | `Start-PhysicalServerBuild` | Full runbook orchestrator | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) | L18–280 |
-| **Build ISO** | `New-IsoBuild` | ConfigMgr bootable media | [`New-IsoBuild.ps1`](../../src/powershell/Automation/Public/New-IsoBuild.ps1) | L13–291 |
-| **Publish ISO** | `Publish-BootIso` | HTTPS repo publish | [`Publish-BootIso.ps1`](../../src/powershell/Automation/Public/Publish-BootIso.ps1) | L12–134 |
+| **Build ISO** | `New-IsoBuild` | ConfigMgr bootable media | [`Configure-PhysicalBuild.ps1`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1) | L13–291 |
+| **Publish ISO** | `Publish-BootIso` | HTTPS repo publish | [`Configure-PhysicalBuild.ps1`](../../src/powershell/Automation/Public/Configure-PhysicalBuild.ps1) | L12–134 |
 | **iLO Redfish** | `Invoke-IloRedfish` | iLO Redfish actions | [`Invoke-IloRedfish.ps1`](../../src/powershell/Automation/Public/Invoke-IloRedfish.ps1) | L19–166 |
-| **Deploy ISO** | `Invoke-IsoDeploy` | Bulk deploy orchestrator | [`Invoke-IsoDeploy.ps1`](../../src/powershell/Automation/Public/Invoke-IsoDeploy.ps1) | L20–246 |
-| **Update firmware** | `Update-Firmware` | `FirmwareUpdater` | [`Update-Firmware.ps1`](../../src/powershell/Automation/Public/Update-Firmware.ps1) | L19–245 |
+| **Deploy ISO** | `Invoke-IsoDeploy` | Bulk deploy orchestrator | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) | L20–246 |
+| **Update firmware** | `Update-Firmware` | `FirmwareUpdater` | [`Start-PhysicalServerBuild.ps1`](../../src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1) | L19–245 |
 | **Patch Windows** | `Invoke-WindowsSecurityUpdate` | `WindowsPatcher` | [`Update-WindowsSecurity.ps1`](../../src/powershell/Automation/Public/Update-WindowsSecurity.ps1) | L8–237 |
 | **Pre-build check** | `Test-PreBuildValidation` | Validation checklist | [`Test-PreBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PreBuildValidation.ps1) | L15–184 |
 | **Post-build check** | `Test-PostBuildValidation` | Validation via WinRM | [`Test-PostBuildValidation.ps1`](../../src/powershell/Automation/Public/Test-PostBuildValidation.ps1) | L16–180 |
