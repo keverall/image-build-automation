@@ -30,25 +30,19 @@
 
 ## Overview
 
-GitLab CI/CD pipeline triggers bridge web-based ticketing systems (iRequest,
-ServiceNow, Jira) with automated backend PowerShell scripts. The GitLab
-self-hosted instance is the automation gateway - a REST architecture
-that bridges web-based ticketing systems with automated backend PowerShell scripts.
+GitLab CI/CD pipeline triggers bridge web-based ticketing systems (iRequest, ServiceNow, Jira) with automated backend PowerShell scripts. The self-hosted GitLab instance serves as the automation gateway.
 
 ```
 iRequest / ServiceNow / Jira
-            │
             │  HTTP POST  /api/v4/projects/{id}/trigger/pipeline
             ▼
      GitLab CI/CD Pipeline
-            │
             │  pipeline environment variables (ACTION, CLUSTER_ID …)
             ▼
-  Invoke-GitLabMaintenance.ps1  (scripts/gitlab/)
-            │
+   Invoke-GitLabMaintenance.ps1  (scripts/gitlab/)
             │  calls
             ▼
-   Set-MaintenanceMode  →  SCOM / iLO / OneView
+    Set-MaintenanceMode  →  SCOM / iLO / OneView
 ```
 
 ---
@@ -57,8 +51,7 @@ iRequest / ServiceNow / Jira
 
 ## Step 1 - Pipeline configuration (`.gitlab-ci.yml`)
 
-Pipeline jobs are defined as code in `.gitlab-ci.yml` and committed to the
-same repository as the automation scripts.
+Pipeline jobs are defined as code in `.gitlab-ci.yml`, committed to the same repository as the automation scripts.
 
 <a id="required-file"></a>
 
@@ -107,20 +100,13 @@ Set in **GitLab > Project Settings > CI/CD > Variables** (`/settings/ci_cd`).
 | `MAINTENANCE_CALLBACK_URL` | Webhook URL for completion callback (optional) |
 | `MAINTENANCE_API_KEY` | Password for callback authentication (optional) |
 
-Variables passed directly in the trigger API payload override the values set
-in the CI/CD Variables UI for that invocation only.
+Variables passed directly in the trigger API payload override these values for that invocation only.
 
 <a id="gitlab-ci-entry-point-script"></a>
 
 ### GitLab CI entry-point script
 
-**`scripts/gitlab/Invoke-GitLabMaintenance.ps1`**
-
-Executed as `pwsh -File`. Runs inside the CI runner (not dot-sourced). Calls the
-`Set-MaintenanceMode` cmdlet with the CI environment variables, emits
-a JSON result line, and writes an artifact to `generated/logs/audit/`.
-
-Key environment variables exported to the script:
+**`scripts/gitlab/Invoke-GitLabMaintenance.ps1`** - executed as `pwsh -File` inside the CI runner. Calls `Set-MaintenanceMode` with the CI environment variables, emits a JSON result line, and writes an artifact to `generated/logs/audit/`.
 
 | Variable | Description |
 |---|---|
@@ -130,7 +116,7 @@ Key environment variables exported to the script:
 | `CONFIG_DIR` | Config directory path |
 | `DRY_RUN` | Boolean string (`true` / `false`) |
 | `CI_PIPELINE_ID` | Pipeline ID (for traceability) |
-| `CI_JOB_ID` | Job ID (for log/artifact naming) |
+| `CI_JOB_ID` | Job ID (log/artifact naming) |
 | `CI_PROJECT_ID` | Project ID |
 | `MAINTENANCE_CALLBACK_URL` | Optional callback webhook |
 | `MAINTENANCE_API_KEY` | Optional callback auth header |
@@ -148,19 +134,13 @@ generated/logs/audit/maintenance_<CI_JOB_ID>_error.json    # on unhandled except
 
 ## Step 2 - Generate a Pipeline Trigger Token
 
-The Pipeline Trigger Token authenticates pipeline launches from external systems.
+1. Project → **Settings > CI/CD > Pipeline triggers** → **Add trigger**
+2. Give it a description (e.g., `iRequest-Link`)
+3. **Save** and **copy the token** - displayed **once only**
 
-1. In GitLab, navigate to the project → **Settings > CI/CD > Pipeline triggers**
-2. Click **Add trigger**
-3. Give it a description (e.g., `iRequest-Link`)
-4. Click **Save** and **copy the token** - it is displayed **once only**
+> A **Project Access Token** (`api` scope) can be used interchangeably. Trigger Tokens suit bare POST-body webhooks; PATs can also call non-trigger endpoints.
 
-> A **Project Access Token** (`api` scope) can be used interchangeably. Pipeline
-> Trigger Tokens are simpler for bare POST-body webhooks; Project Access Tokens
-> can also call non-trigger API endpoints.
-
-Keep in a secure secret store (CyberArk, Vault, etc.). The token value is
-required in both `Send-GitLabMaintenanceRequest.ps1` and any manual curl test.
+Store in a secure secret store (CyberArk, Vault). Required by both `Send-GitLabMaintenanceRequest.ps1` and manual curl.
 
 ---
 
@@ -185,11 +165,7 @@ variables[END]=2026-05-22T23:00:00Z&
 …
 ```
 
-The `project_id` is the numeric GitLab project ID, found at **Project Settings >
-General > Advanced > Project ID**.
-
-The `ref` parameter specifies the branch or tag the pipeline runs against
-(`main` in most cases).
+`project_id` is the numeric GitLab project ID (**Project Settings > General > Advanced > Project ID**). `ref` is the branch/tag (`main`).
 
 <a id="powershell-payload-irequest-powershell-engine"></a>
 
@@ -210,11 +186,7 @@ $Variables = @{
 }
 
 $Uri  = "$GitLabUrl/api/v4/projects/$ProjectId/trigger/pipeline"
-$Body = @{
-    token     = $TriggerToken
-    ref       = "main"
-    variables = $Variables
-}
+$Body = @{ token = $TriggerToken; ref = "main"; variables = $Variables }
 Invoke-RestMethod -Uri $Uri -Method Post -Body $Body -ContentType 'application/x-www-form-urlencoded'
 ```
 
@@ -238,14 +210,12 @@ curl -X POST "https://gitlab.example.com/api/v4/projects/1234/trigger/pipeline" 
 
 ### PowerShell helper - `Send-GitLabMaintenanceRequest`
 
-Instead of crafting the POST call directly, iRequest can call the pre-built
-function in **`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`**.
+Use the pre-built function in **`scripts/gitlab/Send-GitLabMaintenanceRequest.ps1`**:
 
 ```powershell
 # Dot-source the module
 . ./scripts/gitlab/Send-GitLabMaintenanceRequest.ps1
 
-# Trigger a pipeline and wait for completion
 Send-GitLabMaintenanceRequest `
     -Action         "enable" `
     -TargetId      "CLU-CLUSTER-01" `
@@ -259,16 +229,9 @@ Send-GitLabMaintenanceRequest `
     -TimeoutSeconds 600
 ```
 
-The function:
+The function: POSTs to `/trigger/pipeline`; optionally polls status via `Wait-GitLabMaintenanceResult` (using `GITLAB_JOB_TOKEN`); optionally sends a completion callback; returns a hashtable with `success`, `pipeline_id`, `web_url`, `status`.
 
-1. POSTs to `/trigger/pipeline` with the parameters encoded.
-2. Optionally polls the pipeline status by ID (via the
-   `Wait-GitLabMaintenanceResult` helper, using `GITLAB_JOB_TOKEN`).
-3. Optionally sends a completion callback to `MAINTENANCE_CALLBACK_URL`.
-4. Returns a result hashtable with `success`, `pipeline_id`, `web_url`, and
-   `status`.
-
-To run without blocking (fire-and-forget), pass `$null` for `-CallbackUrl`:
+Fire-and-forget (no callback wait):
 
 ```powershell
 Send-GitLabMaintenanceRequest -Action enable -TargetId CLU-CLUSTER-01 -CallbackUrl $null
@@ -278,14 +241,10 @@ Send-GitLabMaintenanceRequest -Action enable -TargetId CLU-CLUSTER-01 -CallbackU
 
 ### Control-layer integration (recommended)
 
-The `Run-GitLab` and `New-GitLabCtrl` send-cmdlets in the **Control module**
-(`src/powershell/Automation/Control.psm1`) wrap `Send-GitLabMaintenanceRequest`
-as another stop in the standard poller loop:
+The `Run-GitLab` and `New-GitLabCtrl` cmdlets in the **Control module** (`src/powershell/Automation/Control.psm1`) wrap `Send-GitLabMaintenanceRequest` as a stop in the standard poller loop:
 
 ```powershell
 Import-Module ./src/powershell/Automation/Control.psm1
-
-# Factory pattern
 $ctrl = New-GitLabCtrl -Params @{ TargetId = 'CLU-CLUSTER-01'; Action = 'enable' }
 $result = $ctrl | Run-GitLab
 ```
@@ -294,9 +253,7 @@ $result = $ctrl | Run-GitLab
 
 ### Dry-run mode
 
-Add `-DryRun` to any path (function call or trigger payload) to walk the
-enable/disable path with real-time logs and audit records while skipping all
-subsystem mutations.
+Add `-DryRun` to any path to walk the enable/disable flow with real-time logs and audit records while skipping all subsystem mutations.
 
 ```powershell
 Send-GitLabMaintenanceRequest -Action enable -TargetId 'CLU-CLUSTER-01' -DryRun
@@ -308,12 +265,7 @@ Send-GitLabMaintenanceRequest -Action enable -TargetId 'CLU-CLUSTER-01' -DryRun
 
 ## Completion callbacks
 
-When `MAINTENANCE_CALLBACK_URL` is set in the pipeline CI/CD variables,
-`Invoke-GitLabMaintenance.ps1` POSTs JSON back to that URL on success **and**
-on handled failure. `Send-GitLabMaintenanceRequest` does the same from the
-caller side.
-
-**Callback payload (POST JSON, `Content-Type: application/json`):**
+When `MAINTENANCE_CALLBACK_URL` is set, `Invoke-GitLabMaintenance.ps1` POSTs JSON on success **and** handled failure; `Send-GitLabMaintenanceRequest` does the same from the caller side.
 
 ```json
 {
@@ -327,8 +279,7 @@ caller side.
 }
 ```
 
-For iRequest callbacks, set the `X-API-Key` header from
-`MAINTENANCE_API_KEY`.
+For iRequest callbacks, set the `X-API-Key` header from `MAINTENANCE_API_KEY`.
 
 ---
 
@@ -336,11 +287,9 @@ For iRequest callbacks, set the `X-API-Key` header from
 
 ## Pipeline status polling via the GitLab API
 
-Directly query a pipeline without callbacks using the GitLab Pipelines API
-(GitLab ≥ 12.3).
+Query a pipeline directly (GitLab ≥ 12.3):
 
 ```powershell
-# Requires a job token (CI_JOB_TOKEN) scoped to the pipeline/project
 $Headers = @{ "JOB-TOKEN" = "$JobToken" }
 Invoke-RestMethod `
     -Uri  "https://gitlab.example.com/api/v4/projects/$ProjectId/pipelines/$PipelineId" `
@@ -348,7 +297,7 @@ Invoke-RestMethod `
     -Headers $Headers
 ```
 
-Response body:
+Response:
 
 ```json
 {
@@ -362,8 +311,7 @@ Response body:
 }
 ```
 
-Status values: `created`, `waiting_for_resource`, `preparing`, `pending`,
-`running`, `success`, `failed`, `canceled`, `skipped`, `manual`.
+Status values: `created`, `waiting_for_resource`, `preparing`, `pending`, `running`, `success`, `failed`, `canceled`, `skipped`, `manual`.
 
 ---
 
@@ -388,8 +336,7 @@ Cluster definitions live in `configs/clusters_catalogue.json`:
 }
 ```
 
-Maintenance scripts resolve the `CLUSTER_ID` against this catalogue before
-making any subsystem calls.
+Maintenance scripts resolve `CLUSTER_ID` against this catalogue before any subsystem calls.
 
 ---
 
@@ -415,13 +362,11 @@ making any subsystem calls.
 
 | Direction | Description |
 |---|---|
-| **iRequest → GitLab (TCP 443)** | iRequest / webhook runner must reach the GitLab HTTPS API URL |
+| **iRequest → GitLab (TCP 443)** | iRequest / webhook runner must reach the GitLab HTTPS API |
 | **GitLab Runner → GitLab (TCP 443)** | Runners fetch source and submit job results |
 | **Runner → targets (WinRM 5985/5986, HTTPS 443)** | Runner must reach servers for SCOM, iLO, OneView |
 
-If the GitLab instance uses a self-signed internal CA, the runner must trust
-that CA or be configured to skip certificate validation (`-SkipCertificateCheck`
-in PowerShell, `--insecure` in curl).
+If the GitLab instance uses a self-signed internal CA, the runner must trust it or be configured to skip validation (`-SkipCertificateCheck` in PowerShell, `--insecure` in curl).
 
 ---
 

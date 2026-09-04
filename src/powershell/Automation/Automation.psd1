@@ -95,6 +95,7 @@
         'Invoke-IloRedfish'
         'Test-PreBuildValidation'
         'Test-PostBuildValidation'
+        'Update-Firmware'
         'New-Uuid'
         # OpsRamp API client
         'Invoke-OpsRamp'

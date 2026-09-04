@@ -178,6 +178,9 @@ function Configure-PhysicalBuild {
         [string] $TaskSequenceName,
         [Alias('ExtIso')]
         [string] $ExternalIsoPath,
+        [string[]] $FirmwareFolders = @(),
+        [System.Management.Automation.PSCredential] $ServerCredential,
+        [switch] $SkipFirmware,
         [switch] $AllowUnknownIsoUrl,
         [switch] $InMaintenanceWindow,
         [switch] $OneViewMaintenanceMode = $true,
@@ -258,6 +261,7 @@ function Configure-PhysicalBuild {
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
             -ExternalIsoPath $ExternalIsoPath `
+            -FirmwareFolders $FirmwareFolders -ServerCredential $ServerCredential -SkipFirmware:$SkipFirmware `
             -SkipPreBuild:$SkipPreBuild -SkipOneView:$SkipOneView -SkipMount:$SkipIlo -SkipMonitor -SkipPostBuild `
             -InMaintenanceWindow:$InMaintenanceWindow -AllowUnknownIsoUrl:$AllowUnknownIsoUrl `
             -OneViewMaintenanceMode:$OneViewMaintenanceMode `
