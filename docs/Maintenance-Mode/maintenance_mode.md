@@ -4,6 +4,8 @@
 
 ## Table of Contents
 
+- [Two distinct maintenance modes: SCOM vs HPE OneView](#two-distinct-maintenance-modes-scom-vs-hpe-oneview)
+- [Automatic maintenance mode in the build pipeline](#automatic-maintenance-mode-in-the-build-pipeline)
 - [Flow](#flow)
 - [Architecture](#architecture)
 - [High-Level Flow](#high-level-flow)
@@ -22,12 +24,74 @@
   - [Maintenance Mode Test Runner](#maintenance-mode-test-runner)
 - [Change History](#change-history)
 
-Maintenance mode manages scheduled maintenance windows for clusters across two monitoring systems:
+Maintenance mode silences monitoring alerts during change windows. There are **two completely independent systems** with different scopes, and they do **not** affect each other (enabling one never enables the other):
 
-- **SCOM** (System Center Operations Manager) - maintenance mode on groups/servers
-- **HPE OneView** - via the HPEOneView PowerShell module (server hardware and scopes)
+- **SCOM** (System Center Operations Manager) — maintenance mode on software/cluster **monitoring objects** (groups, clusters, Windows servers). Suppresses OS/application/cluster alerts.
+- **HPE OneView** — maintenance mode on the **physical server-hardware** resource, via the HPEOneView PowerShell module. Suppresses hardware/firmware-compliance alerts and is what the automated build pipeline toggles.
 
 Features include audit logging, OpsRamp telemetry, email notifications, and automatic disable via OS task scheduling.
+
+> **The physical server build pipeline automatically enables HPE OneView maintenance mode** (and removes it afterwards) whenever it mounts an ISO or applies firmware. See [Automatic maintenance mode in the build pipeline](#automatic-maintenance-mode-in-the-build-pipeline). SCOM maintenance mode is **not** touched by the build — it is managed separately.
+
+---
+
+<a id="two-distinct-maintenance-modes-scom-vs-hpe-oneview"></a>
+
+## Two distinct maintenance modes: SCOM vs HPE OneView
+
+These are very different and must not be conflated. They target different layers and are enabled through different tools.
+
+| Aspect | SCOM maintenance mode | HPE OneView maintenance mode |
+|--------|----------------------|------------------------------|
+| What it acts on | SCOM **monitoring objects** — groups, clusters, and Windows servers | The **server-hardware** resource in OneView (the physical box) |
+| What gets silenced | OS / application / cluster alerts raised by SCOM | Hardware, iLO, and firmware-compliance alerts from OneView |
+| Typical use | Patching, reboots, cluster failovers at the OS level | iLO/Redfish operations, firmware updates, OS (re)deployment via iLO |
+| Target identity | Cluster ID or server name (`CLU-` prefix = cluster mode) | Server name, OneView name, or serial number |
+| Enabled via | SCOM cmdlets / schedule-maintenance REST API | HPEOneView PowerShell module (`Enable-OVMaintenanceMode`) |
+| Auto-expiry | Duration / end-time based; SCOM windows auto-expire | Set for a window (e.g. `+4hours`); removed explicitly by the build |
+| Toggled by the build pipeline? | **No** | **Yes** (automatic) |
+
+Because SCOM watches the OS/cluster and OneView watches the hardware, a full server rebuild that you want fully quiet may need **both**: OneView (automatic, via the build) for the hardware, and SCOM (manual/separate) for the OS-level monitoring.
+
+Enable them independently:
+
+```powershell
+# OneView (hardware) — normally handled for you by the build pipeline
+Set-MaintenanceMode -Action enable -Mode oneview -TargetId 'server01.ad.example.com' -Start 'now' -End '+4hours'
+
+# SCOM (OS/cluster) — enable separately if SCOM monitors the host
+Set-MaintenanceMode -Action enable -Mode scom -TargetId 'CLU-CLUSTER-01' -Environment Prod -Start 'now' -End '+4hours'
+```
+
+---
+
+<a id="automatic-maintenance-mode-in-the-build-pipeline"></a>
+
+## Automatic maintenance mode in the build pipeline
+
+When you run a build with `Configure-PhysicalBuild` / `Start-PhysicalServerBuild`, the pipeline **automatically** places the target server into **HPE OneView maintenance mode**:
+
+- **Enabled** before any destructive action — i.e. before the ISO is mounted and force-booted, and before post-OS firmware is applied via HPE SUT.
+- **Disabled** after the build completes (and also on failure, so the server is never stranded in maintenance).
+
+This stops OneView from raising hardware/firmware alerts or compliance checks while the server is being wiped, reinstalled, and reflashed — avoiding unnecessary on-call callouts.
+
+```powershell
+# OneView maintenance mode is ON by default during the build
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -FirmwareFolders @('\\fileserver\fw\BIOS') `
+    -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+
+# Skip it only when OneView is unavailable or the server is not OneView-managed
+Configure-PhysicalBuild -ServerIdentifier srv01 -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -NoMaintenanceMode -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+```
+
+Key points:
+
+- Controlled by `-OneViewMaintenanceMode` (default `$true`). Use `-NoMaintenanceMode` to skip.
+- Only **HPE OneView** maintenance mode is automated here. **SCOM maintenance mode is never toggled by the build** — the build operates at the hardware/iLO layer. If you also want to suppress SCOM alerts on the rebuilt host, enable SCOM maintenance mode separately with `Set-MaintenanceMode -Mode scom` (see above).
+- This behaviour is required by the runbook (`docs/Automation/runbook-requirements-v2.md`): maintenance mode is part of the standard build workflow, not an optional manual step.
 
 ---
 

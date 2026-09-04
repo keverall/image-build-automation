@@ -226,10 +226,6 @@ Until that `<http_iso_url>` is available the step is intentionally a no-op.
 
 | Priority | Item | Status | Detail |
 |---|---|---|---|
-| ✅ Fixed | `Invoke-IsoDeploy` broken syntax | Fixed | All `;,return,` / `$)($` artefacts removed; pure PS guards |
-| ✅ Fixed | `Update-WindowsSecurity` broken syntax | Fixed | All `;,return,` / `$)($` / `Disassemble-Image` artefacts removed |
-| ✅ Better | `Update-Firmware` no retry | Improved | Now uses `Invoke-NativeCommandWithRetry` with exponential back-off |
-| ✅ Done | `Update-WindowsSecurity` DISM loop | Done | `_ApplyPatchesDism` calls `Invoke-NativeCommand` per KB |
 | ⚠️ Partial | iLO virtual media mount in `Invoke-IsoDeploy` | Scaffold in place | Session login implemented; full `InsertVirtualMedia` POST requires an HTTPServing URL to be decided separately |
 | ⚠️ Partial | Redfish ISO mount in `Invoke-IsoDeploy` | Scaffold in place | Comment present; needs ISO URL first |
 
