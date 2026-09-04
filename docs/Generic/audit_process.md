@@ -127,7 +127,7 @@ Every script in this repository uses the `AuditLogger` class or `_log_step()` me
    - Events: event type, properties
    - API responses: status codes, acknowledgment IDs
 
-8. **Maintenance Mode Operations** (new)
+8. **Maintenance Mode Operations**
    - Cluster ID, action (enable/disable/validate), dry-run flag
     - Per-system results: SCOM status, iLO window creation, OneView status, email sent, OpsRamp metrics
    - Scheduled task creation/removal
@@ -401,7 +401,7 @@ Steps:
 5. **Automate report generation**: schedule weekly compliance email from OpsRamp
 6. **Secure log transport**: use TLS for remote logging (syslog-ng, fluentd)
 7. **Monitor log growth**: implement retention policies; archive old data to S3/Blob
-8. **Query structured logs with `jq`**: leverage JSON format for filtering and aggregation
+8. **Query structured logs with `jq`** for filtering and aggregation
 
 <a id="appendix-log-file-schemas"></a>
 

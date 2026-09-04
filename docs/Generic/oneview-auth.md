@@ -7,7 +7,6 @@
 - [OneView Session Management](#oneview-session-management)
   - [Establishing a Connection](#establishing-a-connection)
   - [Closing the Connection](#closing-the-connection)
-  - [Session Lifecycle](#session-lifecycle)
 - [Required Secrets (CyberArk Safe: `HPE-OneView`)](#required-secrets-cyberark-safe-hpe-oneview)
 - [Configuration Files](#configuration-files)
   - [`configs/oneview_config.json`](#configsoneview_configjson)
@@ -60,16 +59,6 @@ Disconnect-OneView -Force
 ```
 
 The session is also automatically closed when the PowerShell session ends.
-
-<a id="session-lifecycle"></a>
-
-### Session Lifecycle
-
-1. **Connect**: `Connect-OneView` establishes the session (delegates to `Test-ServerConnectivity`)
-2. **Use**: OneView commands reuse the existing session automatically
-3. **Disconnect**: `Disconnect-OneView` closes the session (or it closes when PowerShell exits)
-
-This model avoids repeated authentication overhead and aligns with the HPE OneView PowerShell module's session management.
 
 <a id="required-secrets-cyberark-safe-hpe-oneview"></a>
 

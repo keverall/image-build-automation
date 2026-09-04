@@ -20,18 +20,20 @@
 
 ## Overview
 
-Checkmake has been integrated into the build system to validate Makefile syntax and best practices.
+Checkmake validates Makefile syntax and best practices as part of the build system.
 
 <a id="installation"></a>
 
 ## Installation
 
-Checkmake is automatically installed during `make setup`:
+Automatically installed during `make setup`:
+
 ```bash
 make setup
 ```
 
-Or manually via the setup script:
+Or via the setup script:
+
 ```powershell
 pwsh -File scripts/setup-runner.ps1
 ```
@@ -56,19 +58,16 @@ make lint-checkmake
 make lint
 ```
 
-This runs:
-- `lint-make` - Makefile syntax checking
-- `lint-checkmake` - Makefile best practices validation
-- `pwsh-lint` - PowerShell PSScriptAnalyzer
+Runs `lint-make` (Makefile syntax), `lint-checkmake` (best practices), and `pwsh-lint` (PSScriptAnalyzer).
 
 <a id="how-it-works"></a>
 
 ## How It Works
 
-1. **Setup**: `scripts/setup-runner.ps1` downloads checkmake from GitHub releases based on OS/architecture
-2. **Fallback**: If GitHub download fails, tries package managers (brew, apt-get with Go)
-3. **Installation**: Places binary in `bin/checkmake` for offline use
-4. **Validation**: `make lint-checkmake` runs checkmake with a 5-second timeout
+1. `scripts/setup-runner.ps1` downloads checkmake from GitHub releases by OS/architecture
+2. Falls back to package managers (brew, apt-get with Go) if the download fails
+3. Places the binary in `bin/checkmake` for offline use
+4. `make lint-checkmake` runs it with a 5-second timeout
 
 <a id="troubleshooting"></a>
 
@@ -78,37 +77,27 @@ This runs:
 
 ### Checkmake hangs
 
-The lint-checkmake target has a built-in 5-second timeout. If it times out, it silently continues.
+The `lint-checkmake` target has a built-in 5-second timeout and silently continues if it times out.
 
 <a id="checkmake-not-found"></a>
 
 ### Checkmake not found
 
-Install manually:
 ```bash
-# Via Homebrew (macOS)
-brew install checkmake
-
-# Via Go
-go install github.com/mrtazz/checkmake@latest
-
-# Via the setup script
-pwsh -File scripts/setup-runner.ps1
+brew install checkmake                              # macOS
+go install github.com/mrtazz/checkmake@latest      # Go
+pwsh -File scripts/setup-runner.ps1                # setup script
 ```
 
 <a id="checkmake-finds-violations"></a>
 
 ### Checkmake finds violations
 
-Run with verbose output to see details:
 ```bash
 checkmake Makefile
 ```
 
-Common violations:
-- `maxbodylength`: Target body exceeds 5 lines
-- `phony`: Missing .PHONY declaration
-- `double-colon`: Using double colon rules
+Common violations: `maxbodylength` (target body > 5 lines), `phony` (missing `.PHONY`), `double-colon` (double-colon rules).
 
 <a id="configuration"></a>
 

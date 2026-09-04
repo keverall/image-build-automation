@@ -189,7 +189,8 @@ GET https://<oneview-appliance>/rest/server-hardware?filter="name='<ServerName>'
 1. Authenticate to OneView (service account) and resolve the single target server.
 2. Verify the hardware state, power state, and health state.
 3. Confirm the correct server has been selected and is approved for build / rebuild.
-4. Optionally place the server into OneView maintenance mode so alerts/callouts are suppressed during the build (re-enabled after the build completes).
+4. The build pipeline **automatically** places the server into **HPE OneView maintenance mode** before any destructive action (ISO mount + one-time boot, and post-OS firmware) and removes it again after the build completes (or if the build fails). This suppresses hardware/firmware alerting and avoids on-call callouts during the rebuild. It is controlled by `-OneViewMaintenanceMode` (default on; use `-NoMaintenanceMode` to skip).
+5. **SCOM maintenance mode is separate** and is **not** toggled by the build pipeline. SCOM watches the OS/cluster layer; if the rebuilt host is also monitored by SCOM and OS-level alerts must be suppressed, enable SCOM maintenance mode independently (e.g. `Set-MaintenanceMode -Mode scom`). See the Maintenance-Mode documentation for the SCOM/OneView distinction.
 
 <a id="mount-iso-via-hpe-ilo-and-force-one-time-boot"></a>
 

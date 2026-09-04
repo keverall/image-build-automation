@@ -109,16 +109,16 @@ must be tracked as their own change program.
 
 | # | Finding | Risk | Primary location |
 |---|---------|------|------------------|
-| 1 | `Set-MaintenanceMode.ps1` (3,802 lines) builds scripts as here-strings with **plaintext passwords interpolated**, then runs them through `Invoke-Expression` (5 sites) | Code injection + credential-in-source | `Public/Set-MaintenanceMode.ps1:1851,2946,3074,…` |
-| 2 | `cyberark-bootstrap.ps1:76` disables certificate validation **process-wide, inside a loop, never restored** — guarding the secrets-vault fetch | MITM on credential retrieval | `scripts/cyberark-bootstrap.ps1:76` |
+| 1 | `Set-MaintenanceMode.ps1` (3,878 lines) builds scripts as here-strings with **plaintext passwords interpolated**, then runs them through `Invoke-Expression` (5 sites) | Code injection + credential-in-source | `Public/Set-MaintenanceMode.ps1:1851,2946,3074,…` |
+| 2 | `cyberark-bootstrap.ps1` previously disabled cert validation during the secrets-vault fetch. **Now remediated:** it enforces TLS and pins `CYBERARK_EXPECTED_THUMBPRINT` (rejects any untrusted cert, `:70-82`). Confirm thumbprint pinning is configured in prod. | MITM on credential retrieval (mitigated) | `scripts/cyberark-bootstrap.ps1:70-82` |
 | 3 | Audit trail records **no actor identity**, is held in memory and lost on crash, no tamper-evidence | Fails EMIR traceability | `Automation.psm1:40-105`, `Private/Audit.ps1` |
 | 4 | `Set-StrictMode -Off` module-wide | Silent wrong behaviour in prod | `Automation.psm1:12` |
-| 5 | `SkipCertificateCheck = $true` by default + 9 non-overridable bypasses | No transport auth | multiple `Public/*.ps1` |
-| 6 | Zero `ShouldProcess`/`-WhatIf` on firmware flash / ISO deploy / monitoring suppression | Uncontrolled prod change | 0/80 files |
+| 5 | `SkipCertificateCheck = $true` by default in **5 files** (7 files reference it); most are overridable via `-SkipCertificateCheck:$false` | No transport auth by default | multiple `Public/*.ps1` |
+| 6 | Zero `ShouldProcess`/`-WhatIf` on firmware flash / ISO deploy / monitoring suppression | Uncontrolled prod change | 0/32 files |
 | 7 | Remote execution + all four validation functions have **no tests**; `run-tests.ps1` had no coverage config | Unverified critical path | §4 test audit |
-| 8 | Unverified binary download; `Install-Module -SkipPublisherCheck` | Supply-chain | `scripts/setup-runner.ps1:450,464` |
-| 9 | `.env` committed and not gitignored (values empty today, but tracked) | Secrets-in-repo pattern | `.env` → make `.env.example` |
-| 10 | Vendored `scripts/modules/HPEOneView.1000/Samples/*` contain real demo credentials; will trip scanners | Noise / false disclosure | `scripts/modules/.../Samples` |
+| 8 | Unverified binary download; `Install-Module -SkipPublisherCheck` (Pester install only) | Supply-chain | `scripts/Ensure-Pester.ps1:71` |
+| 9 | `.env` is **gitignored** (tracked copy is `.envexample`); historically a risk, now resolved | Secrets-in-repo pattern | `.gitignore` (`.env`), `.envexample` |
+| 10 | Vendored `scripts/modules/HPEOneView.1000/Samples/*` may contain demo config that trips scanners | Noise / false disclosure | `scripts/modules/.../Samples` |
 
 ---
 

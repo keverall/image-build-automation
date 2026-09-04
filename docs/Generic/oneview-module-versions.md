@@ -13,9 +13,7 @@
 - [Module Validation](#module-validation)
 - [Related Documentation](#related-documentation)
 
-This table helps you select the correct PowerShell module for your OneView appliance version.
-
-> **Project standard:** This automation uses `HPEOneView.1000` and requires **PowerShell 7+** (HPEOneView.1000 does not support Windows PowerShell 5.1). The pre-8.0 module rows below are historical only and are not used here.
+> **Project standard:** This automation uses `HPEOneView.1000` and requires **PowerShell 7+** (it does not support Windows PowerShell 5.1). The pre-8.0 rows below are historical only and not used here.
 
 | Module Name | PowerShell | .NET Standard | OneView Appliance Min | Notes |
 |-------------|------------|---------------|----------------------|-------|
@@ -57,36 +55,22 @@ Install-Module HPEOneView.720 -Scope AllUsers
 ## Installation Commands
 
 ```powershell
-# Install for current user
-Install-Module HPEOneView.1000 -Scope CurrentUser
-
-# Install for all users (requires elevation)
-Install-Module HPEOneView.1000 -Scope AllUsers
-
-# Offline install: save module to share
-Save-Module HPEOneView.1000 -Path C:\temp\oneview-modules
-
-# Import the module
+Install-Module HPEOneView.1000 -Scope CurrentUser          # current user
+Install-Module HPEOneView.1000 -Scope AllUsers             # all users (elevation)
+Save-Module HPEOneView.1000 -Path C:\temp\oneview-modules  # offline
 Import-Module HPEOneView.1000
 ```
 
-**Important:** Only ONE HPE OneView module version can be installed at a time. To switch versions:
+Only ONE HPE OneView module version can be installed at a time. To switch:
 
 ```powershell
-# Remove existing module(s)
 Uninstall-Module HPEOneView.1000 -Force -ErrorAction SilentlyContinue
 Uninstall-Module HPEOneView.900 -Force -ErrorAction SilentlyContinue
-
-# Install new version (may need -AllowClobber if conflicts exist)
 Install-Module HPEOneView.1000 -Scope CurrentUser -AllowClobber -Force
-
-# Or use Save-Module for offline deployment
 Save-Module HPEOneView.1000 -Path C:\temp\modules -Force
 ```
 
-Common errors if multiple versions exist:
-- `Connect-OVMgmt: The term 'Connect-OVMgmt' is not recognized`
-- Cmdlet name conflicts between module versions
+If multiple versions exist you may see `Connect-OVMgmt: The term 'Connect-OVMgmt' is not recognized` or cmdlet-name conflicts.
 
 <a id="connection-command"></a>
 
@@ -95,10 +79,8 @@ Common errors if multiple versions exist:
 All module versions use the same connection pattern:
 
 ```powershell
-# Connect using hostname
 Connect-OVMgmt -Hostname oneview.example.com -Credential $cred
-
-# Note: -Appliance is an alias for -Hostname in newer modules
+# -Appliance is an alias for -Hostname in newer modules
 Connect-OVMgmt -Appliance oneview.example.com -Credential $cred
 ```
 
@@ -106,17 +88,17 @@ Connect-OVMgmt -Appliance oneview.example.com -Credential $cred
 
 ## How the Automation Selects Modules
 
-1. **Explicit config**: `oneview_config.json` → `module_name` setting
-2. **Auto-detect**: Scans installed modules, picks highest version
-3. **Fallback**: Defaults to `HPEOneView.1000` if none found
+1. **Explicit config**: `oneview_config.json` → `module_name`
+2. **Auto-detect**: scans installed modules, picks highest version
+3. **Fallback**: defaults to `HPEOneView.1000` if none found
 
 <a id="module-validation"></a>
 
 ## Module Validation
 
-When `Set-MaintenanceMode` runs (non-dry-run), it validates:
+When `Set-MaintenanceMode` runs (non-dry-run) it validates:
 - Module exists on the target system
-- PowerShell version compatibility (warns if PowerShell 7+ is required but not available)
+- PowerShell version compatibility (warns if PS 7+ required but unavailable)
 - Logs the selected module name
 
 <a id="related-documentation"></a>
