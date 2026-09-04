@@ -545,7 +545,10 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-SiteServer` | No | ConfigMgr site server FQDN for PSRemoting fallback. |
 | `-BootImageName` | No | ConfigMgr boot image name to embed. |
 | `-TaskSequenceName` | No | ConfigMgr task sequence name (informational). |
-| `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). When supplied, ConfigMgr build/publish is skipped. |
+| `-ExternalIsoPath` | No | Client-supplied ISO (UNC/SMB incl. `//server/share`, `cifs://`/`smb://` URLs, HTTPS, NFS, or a mapped network drive; local paths not supported). When supplied, ConfigMgr build/publish is skipped. **Mandatory for a deploy** — there is no other image source. |
+| `-FirmwareFolders` | No | Array of client-supplied firmware folders / `.zip`s (UNC/SMB, `cifs://`, `smb://`, HTTPS, NFS, or a mapped network drive). When supplied, each is applied **post-OS** via HPE SUT/SUM. |
+| `-ServerCredential` | No | `PSCredential` for WinRM into the built OS, used by the firmware step. Falls back to `OS_ADMIN_USER` / `OS_ADMIN_PASSWORD` (env / CyberArk) or an interactive prompt. |
+| `-SkipFirmware` | No | Skip the post-OS firmware update even if `-FirmwareFolders` is supplied. |
 | `-GuardRail` | Yes | **MANDATORY** safety gate for shared/production networks. A CASE-INSENSITIVE **REGEX** the resolved target server name must match before the build plan is even produced. Omitting it aborts early with an expressive, logged error. If it does not match, the review is aborted. Example: `-GuardRail 'quickview\.ilo0'` matches server `quickview.ilo03.alp`. |
 | `-InMaintenanceWindow` | No | Acknowledge approved maintenance window. |
 | `-OneViewMaintenanceMode` | No | Enable HPE OneView maintenance mode before destructive operations (ISO mount, reboot) and disable it after the build completes. Default is `$true`. Set to `$false` to skip (e.g. when OneView is unavailable). |
@@ -595,6 +598,95 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 ```
 
 > **Automatic OneView maintenance mode:** `Configure-PhysicalBuild` automatically places the server into HPE OneView maintenance mode before destructive operations and removes it after the build completes. Use `-NoMaintenanceMode` to skip this behavior.
+
+<a id="iso-and-firmware-parameter-options"></a>
+
+### ISO & Firmware parameter options
+
+A deploy is **destructive** (it wipes/reinstalls the server). The two parameters that define *what* gets written are mandatory on a real deploy:
+
+- **`-ExternalIsoPath`** — the client-supplied Windows Server ISO (UNC/SMB, `cifs://`, `smb://`, HTTPS, NFS, or a mapped network drive). Local drives are rejected.
+- **`-GuardRail`** — a mandatory regex the resolved server name must match before anything happens.
+
+`-FirmwareFolders` is optional but, when supplied, firmware from each folder is applied **post-OS** via HPE SUT/SUM.
+
+#### `-ExternalIsoPath` (ISO) options
+
+All of the following resolve to a URL the iLO BMC can mount as virtual media:
+
+| Format | Example | Notes |
+|--------|---------|-------|
+| UNC/SMB (backslash) | `'\\fileserver\isos\WinSrv2025.iso'` | Converted to `cifs://…` |
+| UNC/SMB (forward slash) | `'//fileserver/isos/WinSrv2025.iso'` | Treated identically to `\\` |
+| CIFS/SMB URL | `'cifs://fileserver/isos/WinSrv2025.iso'` | Used directly |
+| SMB URL alias | `'smb://fileserver/isos/WinSrv2025.iso'` | Normalised to `cifs://…` |
+| HTTPS URL | `'https://artifacts.corp.local/isos/WinSrv2025.iso'` | iLO downloads directly |
+| NFS URL | `'nfs://fileserver/export/WinSrv2025.iso'` | iLO mounts via NFS |
+| Mapped network drive | `'H:\WinSrv2025.iso'` (H: → `\\fileserver\isos`) | Expanded to UNC, then `cifs://…` |
+
+```powershell
+# Backslash UNC (most common)
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+
+# Forward-slash UNC (identical result)
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '//fileserver/isos/WinSrv2025.iso' -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+
+# HTTPS (iLO downloads directly, no SMB share needed)
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath 'https://artifacts.corp.local/isos/WinSrv2025.iso' -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+
+# CIFS/SMB URL
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath 'cifs://fileserver/isos/WinSrv2025.iso' -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+```
+
+> A **local drive** path (`'C:\isos\WinSrv2025.iso'`, or an `H:\` that maps to a *local* disk) is rejected — the iLO BMC is a separate controller and cannot read local drives on the automation host.
+
+#### `-FirmwareFolders` options
+
+Supplied as an array. Each entry is resolved the same way as the ISO. For consistency the folder must be reachable from the **installed OS** (UNC / `cifs://` / `smb://` / `https://` / `nfs://` — a mapped drive on the automation host is expanded to its UNC). Firmware is applied **after** the OS install completes.
+
+```powershell
+# Two UNC firmware folders (BIOS + iLO5)
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExpectedHostname srv01.corp.local -Domain corp.local `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -FirmwareFolders @('\\fileserver\fw\BIOS', '\\fileserver\fw\iLO5') `
+    -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+
+# Mixed UNC + mapped drive (H: is expanded to its UNC automatically)
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -FirmwareFolders @('\\fileserver\fw\BIOS', 'H:\fw\iLO5') `
+    -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+
+# HTTPS firmware repository
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath 'https://artifacts.corp.local/isos/WinSrv2025.iso' `
+    -FirmwareFolders @('https://fwrepo.corp.local/fw/WinSrv2025') `
+    -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+
+# Validate firmware folders only (no change) — DryRun resolves + reports paths
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -FirmwareFolders @('\\fileserver\fw\BIOS', 'H:\fw\iLO5') `
+    -DryRun -GuardRail 'srv01'
+```
+
+> **OS credentials for firmware:** `Update-Firmware` WinRMs into the built server to run HPE SUT/SUM. Pass `-ServerCredential`, or set `OS_ADMIN_USER` / `OS_ADMIN_PASSWORD` (env / CyberArk). If neither is available the firmware step is recorded as **failed** (not silently skipped).
+
+#### Full destructive example (ISO + firmware)
+
+This is the exact end-to-end destructive command — note it still cannot run without a matching `-GuardRail`:
+
+```powershell
+Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local -IloIp 10.0.1.50 `
+    -ExpectedHostname srv01.corp.local -Domain corp.local -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -FirmwareFolders @('\\fileserver\fw\BIOS', 'H:\fw\iLO5') `
+    -InMaintenanceWindow -Deploy -GuardRail 'srv01'
+```
 
 <a id="dry-run-validate-without-changing-anything"></a>
 
@@ -719,6 +811,16 @@ Invoke-IloRedfish -Action Status -IloIp 10.0.1.50
 
 ```powershell
 Invoke-IloRedfish -Action Reset -IloIp 10.0.1.50 -Force
+```
+
+> **Destructive actions require `-Force` (or `-DryRun`).** `MountAndBoot` and `Reset` wipe/reboot the server. In a pipeline, the `-GuardRail` regex is enforced by `Configure-PhysicalBuild` (which calls `Invoke-IloRedfish` internally) — never call `Invoke-IloRedfish -Action MountAndBoot -Force` directly against a production server without the same guard.
+
+```powershell
+# Destructive: mount the ISO and immediately reboot into it (full reinstall)
+Invoke-IloRedfish -Action MountAndBoot -IloIp 10.0.1.50 -IsoUrl 'https://artifacts/isos/WinSrv2025_v1.0.iso' -Force
+
+# Non-destructive equivalent (review only — no reboot)
+Invoke-IloRedfish -Action Status -IloIp 10.0.1.50
 ```
 
 **Parameters:**

@@ -34,20 +34,18 @@
   - [Per-Object Status Reporting](#per-object-status-reporting)
   - [Safety Warnings](#safety-warnings)
 
-Complete guide to running and maintaining the Pester test suite for the `src/powershell/Automation` module.
-
----
+Guide to running and maintaining the Pester test suite for `src/powershell/Automation`.
 
 <a id="overview"></a>
 
 ## Overview
 
-The PowerShell module uses **Pester v6+** as its BDD-style testing framework. Tests are colocated with the source under `tests/powershell/`.
+The module uses **Pester v6+** (BDD-style). Tests colocate with source under `tests/powershell/`.
 
-**Framework:** [Pester](https://pester.dev/docs/quick-start/) v6.0.1  
-**Test runner command:** `Invoke-Pester`  
-**Test discovery:** `*.Unit.Tests.ps1`, `*.Tests.ps1` files in `tests/powershell/`  
-**Offline support:** All dependencies are bundled under `vendor/modules/`
+**Framework:** [Pester](https://pester.dev/docs/quick-start/) v6.0.1
+**Runner:** `Invoke-Pester`
+**Discovery:** `*.Unit.Tests.ps1`, `*.Tests.ps1` in `tests/powershell/`
+**Offline:** dependencies bundled under `vendor/modules/`
 
 <a id="bdd-keywords"></a>
 
@@ -62,28 +60,19 @@ The PowerShell module uses **Pester v6+** as its BDD-style testing framework. Te
 | `BeforeAll` / `AfterAll` | Test fixtures |
 | `Should` | Assertion |
 
----
-
 <a id="prerequisites"></a>
 
 ## Prerequisites
 
 ```powershell
-# Install Pester (scoped to current user, no admin required)
 Install-Module Pester -Scope CurrentUser -SkipPublisherCheck -Force
-
-# Verify installation
 Get-Module Pester -ListAvailable
 ```
-
-**Minimum supported versions:**
 
 | Runtime | Version |
 |---|---|
 | PowerShell 7 | 7.2+ |
 | Pester | 6.0.1 (bundled) |
-
----
 
 <a id="running-tests"></a>
 
@@ -94,10 +83,7 @@ Get-Module Pester -ListAvailable
 ### Run the Complete Test Suite
 
 ```powershell
-# Run all Pester tests under tests/powershell/
 Invoke-Pester -Path 'tests/powershell' -PassThru
-
-# Verbose output - shows every passing and failing test
 Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
 ```
 
@@ -106,20 +92,11 @@ Invoke-Pester -Path 'tests/powershell' -PassThru -Show All
 ### Run via Makefile
 
 ```bash
-# Run all tests (default, lint + test)
-make test
-
-# Run unit tests only
-make test-unit
-
-# Run integration tests only
-make test-integration
-
-# Run high-priority Set-MaintenanceMode tests (enable/disable/validate)
-make maint-mode-tests
-
-# Run lint + tests combined (CI step)
-make lint-test
+make test                 # default: lint + test
+make test-unit            # unit tests only
+make test-integration     # integration tests only
+make maint-mode-tests     # Set-MaintenanceMode enable/disable/validate
+make lint-test            # lint + tests (CI step)
 ```
 
 <a id="run-via-wrapper-script"></a>
@@ -127,11 +104,8 @@ make lint-test
 ### Run via Wrapper Script
 
 ```powershell
-# Run all tests with Pester auto-repair
-pwsh -File scripts/run-tests.ps1
-
-# Run high-priority maintenance mode tests only
-pwsh -File scripts/run-maint-mode-tests.ps1
+pwsh -File scripts/run-tests.ps1            # all tests, Pester auto-repair
+pwsh -File scripts/run-maint-mode-tests.ps1 # maintenance mode tests only
 ```
 
 <a id="run-a-single-test-file"></a>
@@ -147,10 +121,7 @@ Invoke-Pester -Path 'tests/powershell\Config.Unit.Tests.ps1'
 ### Run by Tag
 
 ```powershell
-# Run Config + FileIO tests only
 Invoke-Pester -Path 'tests/powershell' -Tag @('Config','FileIO') -PassThru
-
-# Exclude integration tests
 Invoke-Pester -Path 'tests/powershell' -ExcludeTag @('Integration') -PassThru
 ```
 
@@ -163,7 +134,6 @@ $result = Invoke-Pester -Path 'tests/powershell' -Tag 'Unit' `
             -OutputFile 'powershell-test-results.xml' `
             -OutputFormat NUnitXml `
             -PassThru
-
 Write-Output "Passed: $($result.PassedCount)  Failed: $($result.FailedCount)"
 exit $result.FailedCount
 ```
@@ -172,45 +142,30 @@ exit $result.FailedCount
 
 ### Code Coverage
 
-Pester generates code coverage data for the PowerShell source modules. By default, CI jobs produce `coverage-results.xml` (in Cobertura format) for GitLab integration.
+CI jobs produce `coverage-results.xml` (Cobertura) for GitLab integration.
 
-**To generate the coverage report:**
 ```bash
-# Via make
-make coverage
-
-# Direct script call
+make coverage                 # via make
 pwsh -File scripts/coverage-report.ps1
 ```
-*Output: `coverage-results.xml` (Cobertura XML format)*
 
-**For HTML visualization:**
-- Upload `coverage-results.xml` to [Coveralls](https://coveralls.io) or similar services
-- Use `cobertura-xml-to-html` or `lcov` tools to convert to HTML locally
-
----
+Visualize with Coveralls or `cobertura-xml-to-html` / `lcov`.
 
 <a id="test-file-structure"></a>
 
 ## Test File Structure
 
-Tests colocate with the module under `tests/powershell/`. Each Public cmdlet and key
-Private helper has a corresponding `*.Unit.Tests.ps1` (helper modules use `*.Tests.ps1`).
-Run the whole suite with `Invoke-Pester -Path tests/powershell`.
+Tests colocate under `tests/powershell/`. Each Public cmdlet and key Private helper has a `*.Unit.Tests.ps1` (helpers use `*.Tests.ps1`).
 
-Representative test files (not exhaustive):
-
-- `Set-MaintenanceMode.{Unit,Enable,Disable,Validation,Environment}.Tests.ps1` - core maintenance mode tests
+- `Set-MaintenanceMode.{Unit,Enable,Disable,Validation,Environment}.Tests.ps1` - core maintenance mode
 - `Start-AutomationOrchestrator.Unit.Tests.ps1`, `Router.Unit.Tests.ps1` - orchestrator/routing
-- `Get-OneViewServerTarget.Unit.Tests.ps1`, `Get-OneViewServerList.Unit.Tests.ps1`, `Get-OneViewConnectionStatus.Unit.Tests.ps1`, `Get-OneViewVersion.Unit.Tests.ps1`, `Test-ServerConnectivity.Tests.ps1` - OneView
+- `Get-OneViewServerTarget/List/ConnectionStatus/Version.Tests.ps1`, `Test-ServerConnectivity.Tests.ps1` - OneView
 - `New-ScomConnection.Unit.Tests.ps1`, `New-ScomMaintenanceScript.Unit.Tests.ps1` - SCOM
-- `New-IsoBuild.Unit.Tests.ps1`, `Publish-BootIso.Unit.Tests.ps1`, `Invoke-IsoDeploy.Unit.Tests.ps1`, `Invoke-IloRedfish.Unit.Tests.ps1`, `Start-InstallMonitor.Unit.Tests.ps1`, `Start-PhysicalServerBuild.Unit.Tests.ps1` - build/deploy
-- `Update-Firmware.Unit.Tests.ps1`, `Update-WindowsSecurity.Unit.Tests.ps1` - patching
-- `Test-PreBuildValidation.Unit.Tests.ps1`, `Test-PostBuildValidation.Unit.Tests.ps1` - validation
-- `Config`, `Credentials`, `Executor`, `FileIO`, `Inventory`, `Logging`, `Audit`, `Validators` - Private module tests
+- `New-IsoBuild`, `Publish-BootIso`, `Invoke-IsoDeploy`, `Invoke-IloRedfish`, `Start-InstallMonitor`, `Start-PhysicalServerBuild` - build/deploy
+- `Update-Firmware`, `Update-WindowsSecurity` - patching
+- `Test-PreBuildValidation`, `Test-PostBuildValidation` - validation
+- `Config`, `Credentials`, `Executor`, `FileIO`, `Inventory`, `Logging`, `Audit`, `Validators` - Private modules
 - `Pester.Integration.ps1`, `Test-GitLabIntegration.ps1`, `Test-GitLabCallback.ps1` - integration/CI
-
----
 
 <a id="writing-a-new-test"></a>
 
@@ -228,7 +183,6 @@ Describe 'My-Cmdlet' {
             $result | Should -Be $expected
         }
     }
-
     Context 'Given an invalid input' {
         It 'Throws a terminating error' {
             { My-Cmdlet -BadParam $value } | Should -Throw
@@ -250,13 +204,11 @@ Describe 'My-Cmdlet' {
 | BeGreaterThan | `$val \| Should -BeGreaterThan 0` |
 | BeOfType | `$val \| Should -BeOfType [int]` |
 
----
-
 <a id="mocking"></a>
 
 ## Mocking
 
-Pester's `Mock` keyword intercepts calls to a given command name inside the **currently executing scope**.
+`Mock` intercepts calls to a command within the currently executing scope.
 
 ```powershell
 Describe 'Invoke-PowerShellScript' {
@@ -269,15 +221,13 @@ Describe 'Invoke-PowerShellScript' {
 }
 ```
 
-**Scope note:** Mocks are scoped to the running `Describe` block. They do *not* leak across test files.
-
----
+Mocks are scoped to the running `Describe` block and do not leak across test files.
 
 <a id="ci-integration"></a>
 
 ## CI Integration
 
-The CI pipeline requires a Windows agent with PowerShell 7+. See [powershell_ci.md](powershell_ci.md#markdown-header-2-ci-pipeline-powershell-stage-requirements) for full pipeline configuration.
+Requires a Windows agent with PowerShell 7+. See [powershell_ci.md](powershell_ci.md#markdown-header-2-ci-pipeline-powershell-stage-requirements).
 
 ```groovy
 stage('PowerShell Tests') {
@@ -289,8 +239,7 @@ stage('PowerShell Tests') {
             }
             $result = Invoke-Pester -Path 'tests/powershell' -Tag 'Unit' `
                 -OutputFile 'powershell-test-results.xml' `
-                -OutputFormat NUnitXml `
-                -PassThru
+                -OutputFormat NUnitXml -PassThru
             if ($result.FailedCount -gt 0) { exit 1 }
         '''
     }
@@ -298,19 +247,15 @@ stage('PowerShell Tests') {
 }
 ```
 
----
-
 <a id="troubleshooting"></a>
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Import-Module : Module 'Automation' was not loaded` | `$Script:ModuleRoot` is not set | Run `Invoke-Pester -Path 'tests/powershell'` so shared `Tests.Tests.ps1` `BeforeAll` runs first |
-| `Mock` has no effect | Mock scope is outside the `Describe` block | `Mock` must be inside the same `Describe` context as the `It` that triggers it |
-| Tests never finish | Real network call blocking | Use `-Verifiable` on mocks and `Assert-MockCalled` to verify interception |
-
----
+| `Import-Module : Module 'Automation' was not loaded` | `$Script:ModuleRoot` not set | Run `Invoke-Pester -Path 'tests/powershell'` so shared `Tests.Tests.ps1` `BeforeAll` runs first |
+| `Mock` has no effect | Mock scope outside the `Describe` block | `Mock` must be inside the same `Describe` as the `It` that triggers it |
+| Tests never finish | Real network call blocking | Use `-Verifiable` mocks and `Assert-MockCalled` to verify interception |
 
 <a id="see-also"></a>
 
@@ -320,13 +265,11 @@ stage('PowerShell Tests') {
 - **Code quality:** [code_quality.md](code_quality.md#top)
 - **Pester documentation:** https://pester.dev/docs/quick-start/
 
----
-
 <a id="maintenance-mode-testing"></a>
 
 ## Maintenance Mode Testing
 
-Comprehensive testing for maintenance mode operations across SCOM and OneView systems.
+Testing for maintenance mode operations across SCOM and OneView.
 
 <a id="test-files"></a>
 
@@ -356,19 +299,10 @@ Comprehensive testing for maintenance mode operations across SCOM and OneView sy
 ### Running Maintenance Mode Tests
 
 ```powershell
-# Validate configuration first
 pwsh scripts/validate-maintenance-config.ps1 -Environment Test
-
-# Run specific test suite
 pwsh scripts/run-maintenance-tests.ps1 -TestSuite Environment -PassThru
-
-# Run all maintenance mode tests
 pwsh scripts/run-maintenance-tests.ps1 -TestSuite All -PassThru
-
-# Run with detailed output
 Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -Output Detailed
-
-# Quick test: validate a cluster
 Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test -DryRun
 ```
 
@@ -378,8 +312,8 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 
 | Area | Description | Test File |
 |------|-------------|----------|
-| Environment parameter | Test/Prod environment selection | Set-MaintenanceMode.Environment.Tests.ps1 |
-| Host override | OneViewHost parameter and env var | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Environment parameter | Test/Prod selection | Set-MaintenanceMode.Environment.Tests.ps1 |
+| Host override | OneViewHost parameter / env var | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Credential parameters | Username parameter | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Relative time formats | +Xhours, +Xminutes, +Xdays, +Xseconds | Set-MaintenanceMode.Environment.Tests.ps1 |
 | Absolute time formats | YYYY-MM-DD HH:MM, ISO 8601 | Set-MaintenanceMode.Environment.Tests.ps1 |
@@ -392,66 +326,25 @@ Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Enviro
 
 ### Interpreting Test Results
 
-**Test Status Indicators:**
+Pester symbols: `✓` passed, `✗` failed, `!` skipped (prerequisites not met).
 
-```powershell
-# Pester output symbols
-✓  # Test passed
-✗  # Test failed
-!  # Test skipped (prerequisites not met)
 ```
-
-**Success Criteria:**
-
-```powershell
-# All tests pass
-Tests Passed: 100, Failed: 0, Skipped: 0, Duration: 25s
-
-# Some tests skipped (e.g., requires actual SCOM server)
-Tests Passed: 95, Failed: 0, Skipped: 5, Duration: 30s
-
-# Test failure - investigate
-Tests Passed: 90, Failed: 10, Skipped: 0, Duration: 25s
+Tests Passed: 100, Failed: 0, Skipped: 0, Duration: 25s   # ideal
+Tests Passed: 95, Failed: 0, Skipped: 5, Duration: 30s    # some require real SCOM server
+Tests Passed: 90, Failed: 10, Skipped: 0, Duration: 25s   # failure - investigate
 ```
-
-**Test Output Analysis:**
-
-```powershell
-# Each test shows:
-[+] Should connect to SCOM with admin credentials 150ms  # Passed
-[-] Should handle invalid environment 50ms                # Failed
-    Expected: $true but got: $false
-[!] Should test OneView maintenance mode 20ms             # Skipped (no OneView server)
-```
-
-**Common Test Failures:**
 
 | Failure | Cause | Solution |
 |---------|-------|----------|
 | "SCOM host not configured" | Missing environment config | Add to `connection_hosts.json` or set `$env:MAINTENANCE_HOST` |
-| "Missing credentials" | No credentials provided | Set `$env:SCOM_ADMIN_USER` and `$env:SCOM_ADMIN_PASSWORD` |
+| "Missing credentials" | No credentials provided | Set `$env:SCOM_ADMIN_USER` / `$env:SCOM_ADMIN_PASSWORD` |
 | "Failed to connect" | Network/auth issue | Verify server URL and credentials |
 | "Invalid environment" | Wrong parameter value | Use `Test` or `Prod` only |
-| "Module not found" | Pester not installed | Run `make setup` or install Pester manually |
-
-**Troubleshooting Tips:**
-
-```powershell
-# Run with verbose output
-Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -Output Detailed
-
-# Run specific test
-Invoke-Pester -Path tests/powershell/Set-MaintenanceMode.Environment.Tests.ps1 -TestName "*Environment parameter*"
-
-# Export results to XML
-Invoke-Pester -Path tests/powershell/ -OutputFile test-results.xml -OutputFormat NUnitXml
-```
+| "Module not found" | Pester not installed | `make setup` or install Pester manually |
 
 <a id="manual-testing-checklist"></a>
 
 ### Manual Testing Checklist
-
-Before deploying maintenance mode changes:
 
 - [ ] **Configuration valid** - `pwsh scripts/validate-maintenance-config.ps1`
 - [ ] **Test environment works** - `-Environment Test -DryRun`
@@ -459,23 +352,15 @@ Before deploying maintenance mode changes:
 - [ ] **Host override works** - `-OneViewHost backup-server.local`
 - [ ] **Relative time formats work** - `-Start now -End +1hour`
 - [ ] **Absolute time formats work** - `-Start 2025-01-15T10:00:00Z -End 2025-01-15T12:00:00Z`
-- [ ] **Serial number lookup works** - Only OneView mode, requires real OneView server
-- [ ] **Connection validation works** - Use `Set-MaintenanceMode -Action validate -Mode scom` for SCOM, `Test-ServerConnectivity` for OneView
-- [ ] **Credential resolution works** - Environment vars and interactive prompt
+- [ ] **Serial number lookup works** - OneView mode only, requires real OneView server
+- [ ] **Connection validation works** - `Set-MaintenanceMode -Action validate -Mode scom` (SCOM), `Test-ServerConnectivity` (OneView)
+- [ ] **Credential resolution works** - env vars and interactive prompt
 - [ ] **JSON output works** - `-Json` flag
-- [ ] **Backward compatibility** - Old command syntax still works
+- [ ] **Backward compatibility** - old command syntax still works
 
-**SCOM-specific checks:**
-- [ ] Group mode applies to all cluster objects
-- [ ] Post-disable wait works (`-PostDisableWaitSeconds`)
-- [ ] SCOM version detection works
-- [ ] REST API connection works (SCOM 2019+)
-- [ ] PowerShell cmdlet fallback works (legacy versions)
+**SCOM-specific:** group mode applies to all cluster objects; post-disable wait (`-PostDisableWaitSeconds`); SCOM version detection; REST API (2019+); PowerShell cmdlet fallback (legacy).
 
-**OneView-specific checks:**
-- [ ] Server scope resolution works
-- [ ] Maintenance window creation works
-- [ ] Per-object status reporting works
+**OneView-specific:** server scope resolution; maintenance window creation; per-object status reporting.
 
 <a id="maintenance-mode-behavior"></a>
 
@@ -486,105 +371,46 @@ Before deploying maintenance mode changes:
 | `scom` | SCOM cluster maintenance | Group name from `clusters_catalogue.json` |
 | `oneview` | OneView server maintenance | Server hardware from OneView API |
 
-**SCOM Mode:**
-- Applies maintenance mode to entire cluster group
-- Includes all nested objects (servers, databases, services)
-- Uses REST API for SCOM 2019+, PowerShell cmdlets for legacy
-- Optional post-disable wait for stability
+**SCOM Mode:** applies to entire cluster group (all nested objects); REST API for SCOM 2019+, PowerShell cmdlets for legacy; optional post-disable wait.
 
-**OneView Mode:**
-- Applies maintenance mode to specific server or scope
-- Creates maintenance window in OneView
-- Supports serial number lookup
-- Per-object status with ACK/NACK details
+**OneView Mode:** applies to specific server or scope; creates maintenance window; supports serial number lookup; per-object status with ACK/NACK.
 
-**Environment Resolution:**
-1. `-OneViewHost` parameter (highest priority)
-2. `$env:MAINTENANCE_HOST` environment variable
-3. `connection_hosts.json` → Environment config
+**Environment Resolution:** 1. `-OneViewHost` parameter, 2. `$env:MAINTENANCE_HOST`, 3. `connection_hosts.json` → Environment config.
 
-**Credential Resolution:**
-
-*Username:*
-1. `-Username` parameter
-2. `$env:SCOM_ADMIN_USER` (SCOM) or `$env:ONEVIEW_USER` (OneView)
-3. Interactive prompt (not recommended for automation)
-
-*Password:*
-1. `$env:SCOM_ADMIN_PASSWORD` (SCOM) or `$env:ONEVIEW_PASSWORD` (OneView)
-2. Interactive prompt
+**Credential Resolution:** Username: 1. `-Username`, 2. `$env:SCOM_ADMIN_USER`/`$env:ONEVIEW_USER`, 3. interactive prompt. Password: 1. `$env:SCOM_ADMIN_PASSWORD`/`$env:ONEVIEW_PASSWORD`, 2. interactive prompt.
 
 <a id="maintenance-mode-testing-examples"></a>
 
 ### Maintenance Mode Testing Examples
 
-**Example 1: Basic Validation (No Changes)**
 ```powershell
-Set-MaintenanceMode `
-    -Action validate `
-    -TargetId CLU-CLUSTER-01 `
-    -Mode scom `
-    -Environment Test`
-```
+# 1. Basic validation (no changes)
+Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom -Environment Test
 
-**Example 2: Dry Run Enable**
-```powershell
-Set-MaintenanceMode `
-    -Action enable `
-    -TargetId CLU-CLUSTER-01 `
-    -Mode scom `
-    -Start now `
-    -End '+1hour' `
-    -Environment Test `
-    -DryRun
-```
+# 2. Dry-run enable
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom `
+    -Start now -End '+1hour' -Environment Test -DryRun
 
-**Example 3: Host Override**
-```powershell
-Set-MaintenanceMode `
-    -Action validate `
-    -TargetId CLU-CLUSTER-01 `
-    -Mode scom `
-    -Environment Prod `
-    -OneViewHost backup-scom.local `
-    -DryRun`
-```
+# 3. Host override
+Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 -Mode scom `
+    -Environment Prod -OneViewHost backup-scom.local -DryRun
 
-**Example 4: OneView with Serial Number**
-```powershell
-Set-MaintenanceMode `
-    -Action enable `
-    -Mode oneview `
-    -TargetId '' `
-    -SerialNumber 'ABC123XYZ' `
-    -Start now `
-    -End '+1hour' `
-    -Environment Test `
-    -DryRun
-```
+# 4. OneView with serial number
+Set-MaintenanceMode -Action enable -Mode oneview -TargetId '' -SerialNumber 'ABC123XYZ' `
+    -Start now -End '+1hour' -Environment Test -DryRun
 
-**Example 5: JSON Output for Automation**
-```powershell
-$result = Set-MaintenanceMode `
-    -Action validate `
-    -TargetId CLU-CLUSTER-01 `
-    -Mode scom `
-    -Environment Test `
-    -Json | ConvertFrom-Json
-
-# Check success
-if ($result.Success) {
-    Write-Output "Validation passed: $($result.State)"
-}
+# 5. JSON output for automation
+$result = Set-MaintenanceMode -Action validate -TargetId CLU-CLUSTER-01 `
+    -Mode scom -Environment Test -Json | ConvertFrom-Json
+if ($result.Success) { Write-Output "Validation passed: $($result.State)" }
 ```
 
 <a id="per-object-status-reporting"></a>
 
 ### Per-Object Status Reporting
 
-When maintenance mode is enabled or disabled, the response includes detailed status for each object:
+Enable/disable responses include detailed status per object:
 
-**Enable Response:**
 ```json
 {
   "Cluster": "CLU-CLUSTER-01",
@@ -594,61 +420,29 @@ When maintenance mode is enabled or disabled, the response includes detailed sta
   "Environment": "Test",
   "DryRun": false,
   "PerObjectStatus": [
-    {
-      "Name": "PROD-SERVER-01",
-      "Mode": "scom",
-      "Status": "Success",
-      "Message": "Maintenance mode enabled successfully",
-      "AckRequired": false,
-      "NackReason": null
-    },
-    {
-      "Name": "PROD-SERVER-02",
-      "Mode": "scom",
-      "Status": "Failed",
-      "Message": "Maintenance mode failed",
-      "AckRequired": false,
-      "NackReason": "Server not in maintenance window"
-    }
+    { "Name": "PROD-SERVER-01", "Mode": "scom", "Status": "Success",
+      "Message": "Maintenance mode enabled successfully", "AckRequired": false, "NackReason": null },
+    { "Name": "PROD-SERVER-02", "Mode": "scom", "Status": "Failed",
+      "Message": "Maintenance mode failed", "AckRequired": false, "NackReason": "Server not in maintenance window" }
   ]
 }
 ```
 
-**Status Values:**
-
 | Status | Description | Requires Ack |
 |--------|-------------|--------------|
-| `Success` | Maintenance mode applied successfully | No |
-| `Failed` | Maintenance mode failed | No |
+| `Success` | Applied successfully | No |
+| `Failed` | Failed | No |
 | `NeedsAck` | Waiting for acknowledgment | Yes |
 | `Unknown` | Status unknown | No |
 
-**Common NACK Reasons:**
-- Permission denied
-- SCOM agent unreachable
-- Object not found in SCOM
-- Agent not found in SCOM
-- SCOM operation failed
+Common NACK reasons: permission denied; SCOM agent unreachable; object/agent not found in SCOM; SCOM operation failed.
 
-**Testing Per-Object Reporting:**
 ```powershell
-# Enable and check status
-$result = Set-MaintenanceMode `
-    -Action enable `
-    -TargetId CLU-CLUSTER-01 `
-    -Mode scom `
-    -Environment Test `
-    -Start now `
-    -End '+1hour' `
-    -Json | ConvertFrom-Json
-
-# Analyze per-object status
+$result = Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom `
+    -Environment Test -Start now -End '+1hour' -Json | ConvertFrom-Json
 $result.PerObjectStatus | Format-Table Name, Status, Message -AutoSize
-
-# Count successes and failures
 $successes = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Success' }).Count
-$failures = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Failed' }).Count
-
+$failures  = ($result.PerObjectStatus | Where-Object { $_.Status -eq 'Failed' }).Count
 Write-Output "Successes: $successes, Failures: $failures"
 ```
 
@@ -656,34 +450,13 @@ Write-Output "Successes: $successes, Failures: $failures"
 
 ### Safety Warnings
 
-⚠️ **Always test with `-DryRun` first**
+⚠️ Always test with `-DryRun` first. `-DryRun` and `-Action validate` make no system changes; `-Action enable`/`disable` without `-DryRun` WILL change maintenance state. Review dry-run output, use `-Environment Test` for initial runs, and verify credentials before production.
 
 ```powershell
-# DryRun is safe - no changes to systems
-Set-MaintenanceMode `
-    -Action enable `
-    -TargetId CLU-CLUSTER-01 `
-    -Mode scom `
-    -Environment Test `
-    -Start now `
-    -End '+1hour' `
-    -DryRun
-
-# Remove -DryRun to ACTUALLY enable maintenance mode
-Set-MaintenanceMode `
-    -Action enable `
-    -TargetId CLU-CLUSTER-01 `
-    -Mode scom `
-    -Environment Test `
-    -Start now `
-    -End '+1hour'
+# Safe - no changes
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom `
+    -Environment Test -Start now -End '+1hour' -DryRun
+# Actually enable - remove -DryRun
+Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom `
+    -Environment Test -Start now -End '+1hour'
 ```
-
-**Safety Checklist:**
-- ✅ `-DryRun` mode does NOT modify any systems
-- ✅ `-Action validate` only checks configuration
-- ⚠️  `-Action enable` without `-DryRun` WILL enable maintenance mode
-- ⚠️  `-Action disable` without `-DryRun` WILL disable maintenance mode
-- ✅ Always review dry-run output before removing `-DryRun`
-- ✅ Use `-Environment Test` for initial testing
-- ✅ Verify credentials before applying to production

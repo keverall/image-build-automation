@@ -314,6 +314,9 @@ function Start-PhysicalServerBuild {
         [string] $TaskSequenceName,
         [Alias('ExtIso')]
         [string] $ExternalIsoPath,
+        [string[]] $FirmwareFolders = @(),
+        [System.Management.Automation.PSCredential] $ServerCredential,
+        [switch] $SkipFirmware,
         [int]    $MonitorTimeoutSeconds = 7200,
         [int]    $MonitorPollSeconds = 30,
         [switch] $SkipPreBuild,
@@ -557,6 +560,33 @@ function Start-PhysicalServerBuild {
                 -PassThru `
                 -ErrorAction SilentlyContinue
             _Step 'install_monitor' $r
+        }
+
+        # ── Post-OS firmware update (HPE SUT/SUM) ───────────────────────────────
+        # Applied AFTER the OS is installed and reachable. Runs only when firmware
+        # folders were supplied. Each folder is treated as an SUT/SUM repository by
+        # Update-Firmware. A failure here is recorded but does not abort the cleanup
+        # path (maintenance-mode disable / audit) that follows.
+        if ($FirmwareFolders -and $FirmwareFolders.Count -gt 0 -and -not $SkipFirmware) {
+            $fwCred = $ServerCredential
+            if (-not $fwCred) {
+                $osUser = Get-EnvCredential -EnvVarName 'OS_ADMIN_USER' -Default ''
+                $osPass = Get-EnvCredential -EnvVarName 'OS_ADMIN_PASSWORD' -Default ''
+                if ($osUser -and $osPass) {
+                    $fwCred = [System.Management.Automation.PSCredential]::new($osUser, (ConvertTo-SecureString $osPass -AsPlainText -Force))
+                } elseif (-not $DryRun -and [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected) {
+                    $fwCred = Get-Credential -Message "OS admin credentials for firmware (WinRM) on '$ExpectedHostname'"
+                }
+            }
+            if (-not $fwCred) {
+                _Step 'firmware_update' @{ Success = $false; Error = 'OS credential required for firmware step (supply -ServerCredential or set OS_ADMIN_USER/OS_ADMIN_PASSWORD).' }
+                $overall['success'] = $false
+            } else {
+                $r = Update-Firmware -FirmwareFolders $FirmwareFolders -Server $ExpectedHostname `
+                    -Credential $fwCred -DryRun:$DryRun -SkipConfirmation -PassThru
+                _Step 'firmware_update' $r
+                if (-not $r.Success -and -not $DryRun) { $overall['success'] = $false }
+            }
         }
 
         if (-not $SkipPostBuild) {

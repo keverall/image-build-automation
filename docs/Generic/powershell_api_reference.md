@@ -28,7 +28,7 @@
 
 ## Overview
 
-**PowerShell** provides the end-to-end automation - physical server builds using Configuration Manager bootable media, HPE OneView targeting, and iLO Redfish virtual-media boot; firmware/driver ISO builds; Windows security patching; ISO deployment to iLO; installation monitoring; SCOM maintenance-mode orchestration; and OpsRamp telemetry - implemented as a native PowerShell module.
+A native PowerShell module providing end-to-end automation: physical server builds via Configuration Manager bootable media, HPE OneView targeting, and iLO Redfish virtual-media boot; firmware/driver ISO builds; Windows security patching; ISO deployment to iLO; installation monitoring; SCOM maintenance-mode orchestration; and OpsRamp telemetry.
 
 ---
 
@@ -44,9 +44,9 @@
 | .NET | .NET 6+ (PS 7) |
 
 Optional modules:
-- `powershell-yaml` (`Install-Module powershell-yaml`) - for YAML config support
-- `Pester` (v6.0.1, bundled) - for testing
-- Posh-SSH - for SSH-based integrations (not yet implemented)
+- `powershell-yaml` (`Install-Module powershell-yaml`) - YAML config support
+- `Pester` (v6.0.1, bundled) - testing
+- Posh-SSH - SSH-based integrations (not yet implemented)
 
 ---
 
@@ -82,11 +82,8 @@ Import-Module 'C:\path\to\powershell\Automation\Automation.psd1'
 
 ### Auto-Generated Documentation
 
-A complete reference for all PowerShell cmdlets is auto-generated and available at:
-- **[Auto-Generated Cmdlet Reference](../dynamic-code-docs/INDEX.md#top)** - Full parameter tables, examples, and source locations
-- **[Automation Command Reference](../Automation/automation_commands.md#top)** - Concise functional command reference with every parameter for all automation commands
-docs\dynamic-code-docs\INDEX.md
----
+- **[Auto-Generated Cmdlet Reference](../dynamic-code-docs/INDEX.md#top)** - full parameter tables, examples, source locations
+- **[Automation Command Reference](../Automation/automation_commands.md#top)** - concise functional reference with every parameter
 
 <a id="generate-a-deterministic-uuid"></a>
 
@@ -134,35 +131,33 @@ Start-PhysicalServerBuild -ServerIdentifier 'PROD-SERVER-01' `
 Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom -Start now
 
 # Enable with explicit timestamps
-Set-MaintenanceMode -Action enable `
-    -TargetId 'CLU-CLUSTER-01' `
-    -Mode scom `
-    -Start   '2026-05-16 22:00' `
-    -End     '2026-05-17 06:00'
+Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom `
+    -Start '2026-05-16 22:00' -End '2026-05-17 06:00'
 
 # Disable immediately
 Set-MaintenanceMode -Action disable -TargetId 'CLU-CLUSTER-01' -Mode scom
 
 # Dry-run - no SCOM/iLO/OneView changes
-Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' `
-    -Mode scom `
+Set-MaintenanceMode -Action enable -TargetId 'CLU-CLUSTER-01' -Mode scom `
     -Start '2026-05-16 22:00' -End '2026-05-17 06:00' -DryRun
 ```
 
 For architecture, prerequisites, configuration, scheduling, audit logging, OpsRamp integration, environment variables, and troubleshooting see [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md#top).
 
+---
+
 <a id="physical-server-build-workflow"></a>
 
 ## Physical Server Build Workflow
 
-The runbook workflow (`runbook-requirements.md` / `runbook-changes.md`) is implemented by the commands below. Each step can be run standalone or together through the orchestrator.
+Implemented by the commands below; each step can run standalone or via the orchestrator.
 
 | Step | Command | Purpose |
 | --- | --- | --- |
 | 1. Pre-build validation | `Test-PreBuildValidation` | Verify OneView target, ISO URL, iLO credentials, MP/DP reachability. |
 | 2. Build ISO | `New-IsoBuild` | Create a ConfigMgr WinPE bootable media ISO. |
 | 3. Publish ISO | `Publish-BootIso` | Copy the ISO to an HTTPS repository reachable by iLO. |
-| 4. Resolve target | `Get-OneViewServerTarget` | Query OneView for server identity, health, and iLO IP. |
+| 4. Resolve target | `Get-OneViewServerTarget` | Query OneView for server identity, health, iLO IP. |
 | 5. Mount and boot | `Invoke-IloRedfish` | Mount the ISO via Redfish, set one-time boot, restart. |
 | 6. Monitor | `Start-InstallMonitor` | Poll iLO/WinRM until installation completes or fails. |
 | 7. Post-build validation | `Test-PostBuildValidation` | Verify hostname, domain, OS, drivers, ConfigMgr client. |
@@ -176,7 +171,7 @@ See [Automation Command Reference](../Automation/automation_commands.md#top) for
 
 ## Orchestrator API Reference
 
-The orchestrator/routing layer is the **primary programmatic entry point** for all automation integrations.
+The orchestrator/routing layer is the primary programmatic entry point for all automation integrations.
 
 | Concept | PowerShell Symbol |
 |---------|-------------------|
@@ -244,14 +239,13 @@ $result = Start-AutomationOrchestrator -RequestType '<type>' -Params @{ ... }
 
 ### Request Flow
 
-```text
+```
 Caller
   │
   ▼
 Start-AutomationOrchestrator(RequestType, Params)
   │
   ├─► _Validate-Request(RequestType, Params)
-  │       │
   │       └── errors?  YES → return validation-failure envelope
   │                     NO  → continue
   ▼
@@ -273,19 +267,12 @@ Result envelope  ──► Orchestrator stamps RequestType + Timestamp  ──�
 ## Running Tests
 
 ```powershell
-# Install Pester if necessary
-# Note: Pester 6.0.1 is bundled under vendor/modules/Pester/6.0.1/
-# The setup script (make setup) installs it automatically
+# Pester 6.0.1 is bundled under vendor/modules/Pester/6.0.1/ (make setup installs it)
 Install-Module Pester -RequiredVersion 6.0.1 -Scope CurrentUser -SkipPublisherCheck -Force
 
-# Run all tests
-pwsh -File scripts/run-tests.ps1
-
-# Run maintenance mode tests only
-pwsh -File scripts/run-maint-mode-tests.ps1
-
-# Run a subset
-Invoke-Pester -Path 'tests/powershell/New-Uuid.Unit.Tests.ps1'
+pwsh -File scripts/run-tests.ps1                  # all tests
+pwsh -File scripts/run-maint-mode-tests.ps1       # maintenance mode tests
+Invoke-Pester -Path 'tests/powershell/New-Uuid.Unit.Tests.ps1'   # subset
 ```
 
 See [testing.md](testing.md#top) for the full Pester guide.
@@ -296,9 +283,9 @@ See [testing.md](testing.md#top) for the full Pester guide.
 
 ## See Also
 
-- [Automation Command Reference](../Automation/automation_commands.md#top) - full parameter reference for all automation commands
-- [Runbook Requirements](../Automation/runbook-requirements.md#top) - operational runbook for physical HPE server builds
-- [Runbook Changes](../Automation/runbook-changes.md#top) - implementation plan for the ConfigMgr bootable-media workflow
+- [Automation Command Reference](../Automation/automation_commands.md#top)
+- [Runbook Requirements](../Automation/runbook-requirements.md#top)
+- [Runbook Changes](../Automation/runbook-changes.md#top)
 - [CI Run Requirements](../Generic/powershell_ci.md#top)
 - [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md#top)
 - [Code Quality & Security](../Generic/code_quality.md#top)
