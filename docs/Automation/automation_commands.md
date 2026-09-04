@@ -19,6 +19,7 @@
 - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
   - [Configure build (4-eye review)](#configure-build-4-eye-review)
   - [Full build (most common)](#full-build-most-common)
+  - [ISO & Firmware parameter options](#iso-firmware-parameter-options)
   - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
   - [Re-run monitoring after deployment](#re-run-monitoring-after-deployment)
   - [Build with custom domain and post-build checks](#build-with-custom-domain-and-post-build-checks)
@@ -599,7 +600,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 > **Automatic OneView maintenance mode:** `Configure-PhysicalBuild` automatically places the server into HPE OneView maintenance mode before destructive operations and removes it after the build completes. Use `-NoMaintenanceMode` to skip this behavior.
 
-<a id="iso-and-firmware-parameter-options"></a>
+<a id="iso-firmware-parameter-options"></a>
 
 ### ISO & Firmware parameter options
 
