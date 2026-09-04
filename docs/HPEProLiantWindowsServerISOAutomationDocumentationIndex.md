@@ -71,9 +71,10 @@ image-build-automation/
 
 | Document | Description |
 |---|---|
-| [Runbook Requirements](Automation/runbook-requirements.md#top) | Operational runbook for automating physical HPE server builds with ConfigMgr + OneView + iLO Redfish |
-| [Runbook Changes](Automation/runbook-changes.md#top) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
-| [Automation Command Reference](Automation/automation_commands.md#top) | Command-level reference for the physical server build functions |
+| [Runbook Requirements (current)](Automation/runbook-requirements-v2.md#top) | Operational runbook for automating physical HPE server builds — client-supplied Windows ISO mounted via iLO Redfish + OneView target resolution; firmware applied post-OS via HPE SUT. **No ConfigMgr.** |
+| [Runbook Requirements (legacy)](Automation/runbook-requirements.md#top) | Previous ConfigMgr + bootable-media runbook. Superseded by the current runbook above. |
+| [Runbook Changes (superseded)](Automation/runbook-changes.md#top) | Retired ConfigMgr bootable-media design plan; retained as an audit stub. |
+| [Automation Command Reference](Automation/automation_commands.md#top) | Command-level reference for the physical server build functions (incl. ISO/firmware parameter options) |
 | [PowerShell API Reference](Generic/powershell_api_reference.md#top) | Orchestrator and workflow overview for the physical server build |
 
 <a id="maintenance-mode-scheduling"></a>

@@ -32,6 +32,7 @@ Verify the commands are available:
 
 ```powershell
 Get-Command Set-MaintenanceMode
+Get-Command Configure-PhysicalBuild   # physical HPE server build (client-supplied ISO + iLO Redfish)
 ```
 
 ---
@@ -50,10 +51,14 @@ Get-Command Set-MaintenanceMode
 
 ## Manual Setup (if `make setup` fails)
 
-Add the module import to your PowerShell profile (`$PROFILE`):
+Add the module import to your PowerShell profile (`$PROFILE`). Use the **absolute**
+repo path — `$PSScriptRoot` resolves to the profile's own directory when the snippet
+lives in `$PROFILE`, not to the project root (the `make setup` / `Setup-Profile.ps1`
+path injects the absolute path for this reason):
 
 ```powershell
-$AutomationModulePath = Join-Path $PSScriptRoot 'src/powershell/Automation/Automation.psd1'
+$ProjectRoot = 'C:\path\to\image-build-automation'   # set to your repo checkout
+$AutomationModulePath = Join-Path $ProjectRoot 'src/powershell/Automation/Automation.psd1'
 if (Test-Path $AutomationModulePath) {
     Import-Module $AutomationModulePath -WarningAction SilentlyContinue
 }
@@ -103,4 +108,6 @@ pwsh -File scripts/Setup-Profile.ps1 -Uninstall
 ## Next Steps
 
 - [Maintenance Mode Shortcuts](Maintenance-Mode/MAINTENANCE_MODE_SHORTCUTS.md#top) — usage examples
+- [Runbook Requirements (current)](Automation/runbook-requirements-v2.md#top) — physical HPE server build (no ConfigMgr)
+- [Automation Command Reference](Automation/automation_commands.md#top) — every parameter for the build/firmware commands
 - [Project README](../README.md#top) — overview and architecture
