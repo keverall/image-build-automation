@@ -138,6 +138,8 @@ fix-docs-dryrun: ## Preview broken markdown link + anchor/TOC fixes (dry-run)
 
 # ─── Word DOCX Help Docs ───────────────────────────────────────────────────────
 word-docs: ## Convert Markdown docs to Word DOCX with clickable bookmarks/links
+	@echo "$(CYAN)[word-docs]$(NC) Clearing docx/ so renamed/removed sources don't leave stale files..."
+	@rm -rf docx/
 	@echo "$(CYAN)[word-docs]$(NC) Converting Markdown docs to DOCX..."
 	@python3 scripts/MD_to_DOCX_Converter.py
 	@echo "$(GREEN)[word-docs]$(NC) DOCX docs written to docx/"
