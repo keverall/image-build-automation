@@ -18,9 +18,18 @@
 > system under EMIR Art. 34 and DORA Art. 8–10. This document records the
 > execution evidence for those controls, mirroring the Automation and OneView
 > test plans.
+>
+> **Command-surface correction (04/09/2026):** the automation command surface was
+> consolidated — `New-IsoBuild`, `Publish-BootIso`, `Invoke-IsoDeploy` and
+> `Start-PhysicalServerBuild` are merged into the single build command
+> `Configure-PhysicalBuild`, and firmware is applied as part of that build step.
+> The destructive-operation findings below therefore pertain to
+> `Configure-PhysicalBuild` (gated by the mandatory `-GuardRail` regex) and
+> `Invoke-IloRedfish` (gated by `-Force`), not to the retired commands. See
+> [`AUTOMATION_TEST_PLAN.md`](./AUTOMATION_TEST_PLAN.md#top).
 
 <!-- BEGIN:run-date -->
-<p class="report-run-date"><strong>Run date:</strong> 01/08/2026 20:43 UTC</p>
+<p class="report-run-date"><strong>Run date:</strong> 04/09/2026 08:35 UTC</p>
 <!-- END:run-date -->
 
 <a id="1-standards-scope"></a>
@@ -108,7 +117,7 @@ Code coverage measured by the pipeline `test-unit` job. Recorded per pipeline ru
 | --- | --- | --- | --- | --- | --- |
 | 1 | 01/08/2026 20:32:39 UTC | N/A | 70 | report | Baseline snapshot; coverage measured on next pipeline run |
 | 2 | 01/08/2026 20:43:27 UTC | N/A | 70 | report | SAST/Secret Detection + security gate + coverage + compliance evidence |
-| 3 | 01/08/2026 20:43:27 UTC |  |  |  |  |
+| 3 | 04/09/2026 08:35:00 UTC |  |  |  | Command surface consolidated; validation functions now covered, remaining gaps tracked in AUTOMATION_TEST_PLAN.md §8 |
 <!-- END:gitlab-coverage-rows -->
 
 <a id="6-known-findings-baseline"></a>
@@ -128,8 +137,8 @@ an EMIR review (and are tracked as a separate code-remediation program) are:
 | 3 | Audit trail has no actor identity, lost on crash, no tamper-evidence | `Automation.psm1`, `Private/Audit.ps1` |
 | 4 | `Set-StrictMode -Off` module-wide | `Automation.psm1:12` |
 | 5 | `SkipCertificateCheck = $true` by default + non-overridable bypasses | multiple `Public/*.ps1` |
-| 6 | Zero `ShouldProcess`/`-WhatIf` on destructive ops | 0/80 files |
-| 7 | Remote execution + all 4 validation functions untested | `src/powershell` |
+| 6 | Zero `ShouldProcess`/`-WhatIf` on destructive ops (mitigated in practice by `-DryRun`/`-Force`/`-GuardRail` gates on `Configure-PhysicalBuild` & `Invoke-IloRedfish`) | 0/80 files |
+| 7 | Validation coverage gap: `Test-PreBuildValidation` & `Test-PostBuildValidation` now have unit tests; remaining gaps are `Test-BuildParams`, `Invoke-PowerShellScript`, `Invoke-PowerShellWinRM` (see `AUTOMATION_TEST_PLAN.md` §8) | `tests/powershell/*`, `scripts/*.ps1` |
 | 8 | Unverified binary download; `Install-Module -SkipPublisherCheck` | `scripts/setup-runner.ps1` |
 | 9 | `.env` committed & not gitignored (values empty today) | `.env` → `.env.example` |
 | 10 | Vendored `HPEOneView.1000/Samples/*` contain demo credentials (scanner noise) | `scripts/modules/.../Samples` |
@@ -147,5 +156,5 @@ Append a row with `make gitlab-hardening-update` or from the GitLab
 | --- | --- | --- | --- | --- | --- |
 | 1 | 01/08/2026 20:32:39 UTC | gitlab-ci (security + compliance) | GitLab CI | Partial (report-only gate) | Initial hardening controls introduced (SAST/Secret Detection + security gate + coverage + compliance evidence) |
 | 2 | 01/08/2026 20:43:27 UTC | gitlab-ci security+compliance | GitLab CI | Partial (report-only gate) | SAST/Secret Detection + security gate + coverage + compliance evidence |
-| 3 | 01/08/2026 20:43:27 UTC | gitlab-ci (security + compliance) | GitLab CI | Partial (report-only gate) |  |
+| 3 | 04/09/2026 08:35:00 UTC | gitlab-ci (security + compliance) | GitLab CI | Partial (report-only gate) | Doc corrected to consolidated command surface (Configure-PhysicalBuild) |
 <!-- END:gitlab-hardening-evidence-rows -->
