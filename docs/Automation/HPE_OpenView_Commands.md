@@ -6,8 +6,8 @@
 
 - [1. Connection Lifecycle (run first)](#1-connection-lifecycle-run-first)
 - [2. Server Queries (read-only)](#2-server-queries-read-only)
-- [3. Build Parameter & Validation Checks (read-only)](#3-build-parameter--validation-checks-read-only)
-- [4. ⚠ Destructive — ISO Installation & Maintenance](#4--destructive--iso-installation--maintenance)
+- [3. Build Parameter & Validation Checks (read-only)](#3-build-parameter-validation-checks-read-only)
+- [4. ⚠ Destructive — ISO Installation & Maintenance](#4-destructive-iso-installation-maintenance)
 - [5. Quick Health Check](#5-quick-health-check)
 - [Notes](#notes)
 
@@ -68,7 +68,7 @@ Get-OneViewServerTarget -OneViewHost oneview.ad.example.com -ServerIdentifier MX
 Get-OneViewServerTarget -OneViewHost oneview.ad.example.com -ServerIdentifier MXQ1234567 -IdentifierType Serial
 ```
 
-<a id="3-build-parameter--validation-checks-read-only"></a>
+<a id="3-build-parameter-validation-checks-read-only"></a>
 
 ## 3. Build Parameter & Validation Checks (read-only)
 
@@ -91,7 +91,7 @@ Start-InstallMonitor -Server srv01
 Start-InstallMonitor -SerialNumber MXQ1234567 -OneViewHost oneview.ad.example.com
 ```
 
-<a id="4--destructive--iso-installation--maintenance"></a>
+<a id="4-destructive-iso-installation-maintenance"></a>
 
 ## 4. ⚠ Destructive — ISO Installation & Maintenance
 

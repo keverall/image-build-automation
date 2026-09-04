@@ -4,16 +4,16 @@
 
 ## Table of Contents
 
-- [How to execute (runner reference)](#how-to-execute-runner-reference)
+- [How to execute (runner reference):](#how-to-execute-runner-reference)
 - [1. Connection Lifecycle (run this FIRST)](#1-connection-lifecycle-run-this-first)
-- [2. Non-Destructive Lookup, Validation & Monitoring](#2-non-destructive-lookup-validation--monitoring)
+- [2. Non-Destructive Lookup, Validation & Monitoring](#2-non-destructive-lookup-validation-monitoring)
 - [3. Build-Time ISO Patching (writes a file, not a server)](#3-build-time-iso-patching-writes-a-file-not-a-server)
-- [4. ⚠ DESTRUCTIVE — ISO Installation & Maintenance (highlighted)](#4--destructive--iso-installation--maintenance-highlighted)
-- [5. Orchestration, Routing & Utility](#5-orchestration-routing--utility)
-- [6. Shared / Infrastructure Modules](#6-shared--infrastructure-modules)
+- [4. ⚠ DESTRUCTIVE — ISO Installation & Maintenance (highlighted)](#4-destructive-iso-installation-maintenance-highlighted)
+- [5. Orchestration, Routing & Utility](#5-orchestration-routing-utility)
+- [6. Shared / Infrastructure Modules](#6-shared-infrastructure-modules)
 - [7. Test Run Summary (filled per cycle)](#7-test-run-summary-filled-per-cycle)
   - [Run log](#run-log)
-- [8. Coverage Gaps & Legacy/Removed Commands](#8-coverage-gaps--legacyremoved-commands)
+- [8. Coverage Gaps & Legacy/Removed Commands](#8-coverage-gaps-legacyremoved-commands)
 - [9. Notes for the Delivery Lead](#9-notes-for-the-delivery-lead)
 
 <!-- BEGIN:run-date -->
@@ -66,7 +66,7 @@
 
 ---
 
-<a id="2-non-destructive-lookup-validation--monitoring"></a>
+<a id="2-non-destructive-lookup-validation-monitoring"></a>
 
 ## 2. Non-Destructive Lookup, Validation & Monitoring
 
@@ -101,7 +101,7 @@ All commands here are **safe on the live appliance** (read-only lookups, path/va
 
 ---
 
-<a id="4--destructive--iso-installation--maintenance-highlighted"></a>
+<a id="4-destructive-iso-installation-maintenance-highlighted"></a>
 
 ## 4. ⚠ DESTRUCTIVE — ISO Installation & Maintenance (highlighted)
 
@@ -128,7 +128,7 @@ All commands here are **safe on the live appliance** (read-only lookups, path/va
 
 ---
 
-<a id="5-orchestration-routing--utility"></a>
+<a id="5-orchestration-routing-utility"></a>
 
 ## 5. Orchestration, Routing & Utility
 
@@ -142,7 +142,7 @@ All commands here are **safe on the live appliance** (read-only lookups, path/va
 
 ---
 
-<a id="6-shared--infrastructure-modules"></a>
+<a id="6-shared-infrastructure-modules"></a>
 
 ## 6. Shared / Infrastructure Modules
 
@@ -200,7 +200,7 @@ Latest Full test run output (from `make test` / `make automation-mode-tests`):
 
 ---
 
-<a id="8-coverage-gaps--legacyremoved-commands"></a>
+<a id="8-coverage-gaps-legacyremoved-commands"></a>
 
 ## 8. Coverage Gaps & Legacy/Removed Commands
 

@@ -22,7 +22,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Extracts test summary from the latest automation test log, prompts for test run details, and updates the Execution Evidence tables in both AUTOMATION_TEST_PLAN.md and ONEVIEW_TEST_PLAN.md. Then regenerates HTML.
+Extracts test summary from the latest automation test log, prompts for test run details, and updates the Execution Evidence tables in both AUTOMATION_TEST_PLAN.md and HPeOneView_Image_Build_Test_Plan.md. Then regenerates HTML.
 
 <a id="parameters"></a>
 
@@ -32,7 +32,7 @@ Extracts test summary from the latest automation test log, prompts for test run 
 |-----------|-------------|
 | `-LogPath` | Path to the test log file. If not specified, uses the latest log. |
 | `-TestPlanPath` | Path to AUTOMATION_TEST_PLAN.md. Defaults to docs/Automation/AUTOMATION_TEST_PLAN.md. |
-| `-OneViewTestPlanPath` | Path to ONEVIEW_TEST_PLAN.md. Defaults to docs/Automation/ONEVIEW_TEST_PLAN.md. |
+| `-OneViewTestPlanPath` | Path to HPeOneView_Image_Build_Test_Plan.md. Defaults to docs/Automation/HPeOneView_Image_Build_Test_Plan.md. |
 | `-Reason` | Reason for full testing rerun (Automation section 7). |
 | `-CommandSuite` | Command/Suite executed (Automation section 7). |
 | `-Environment` | Environment where tests ran (Automation section 7). |
@@ -85,7 +85,7 @@ Non-interactive mode with explicit parameters.
 .DESCRIPTION
     Extracts test summary from the latest automation test log, prompts for
     test run details, and updates the Execution Evidence tables in both
-    AUTOMATION_TEST_PLAN.md and ONEVIEW_TEST_PLAN.md. Then regenerates HTML.
+    AUTOMATION_TEST_PLAN.md and HPeOneView_Image_Build_Test_Plan.md. Then regenerates HTML.
 
 .PARAMETER LogPath
     Path to the test log file. If not specified, uses the latest log.
@@ -94,7 +94,7 @@ Non-interactive mode with explicit parameters.
     Path to AUTOMATION_TEST_PLAN.md. Defaults to docs/Automation/AUTOMATION_TEST_PLAN.md.
 
 .PARAMETER OneViewTestPlanPath
-    Path to ONEVIEW_TEST_PLAN.md. Defaults to docs/Automation/ONEVIEW_TEST_PLAN.md.
+    Path to HPeOneView_Image_Build_Test_Plan.md. Defaults to docs/Automation/HPeOneView_Image_Build_Test_Plan.md.
 
 .PARAMETER Reason
     Reason for full testing rerun (Automation section 7).
