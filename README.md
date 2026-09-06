@@ -2,12 +2,9 @@
 
 <a id="top"></a>
 
-## Technical Component Overview
-
-![Technical Component Overview](docs/assets/architecture.svg)
-
 ## Table of Contents
 
+- [Technical Component Overview](#technical-component-overview)
 - [Summary](#summary)
 - [🚀 Quick Start - Setup & Installation](#quick-start-setup-installation)
   - [TL;DR - One-Line Setup](#tldr-one-line-setup)
@@ -22,7 +19,13 @@
 - [Contributing](#contributing)
 - [Support](#support)
 - [License](#license)
-- [HPe Doc](#hpe-doc)
+- [HPE Doc](#hpe-doc)
+
+<a id="technical-component-overview"></a>
+
+## Technical Component Overview
+
+![Technical Component Overview](docs/assets/architecture.svg)
 
 <a id="summary"></a>
 
