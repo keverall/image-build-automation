@@ -4,71 +4,7 @@
 
 ## Technical Component Overview
 
-```mermaid
-flowchart TB
-    subgraph Dev["Developer / CI"]
-        DevCLI["Developer / Makefile<br/>make build · test · lint"]
-        GL["<img src='docs/assets/icons/gitlab.svg' width='18'/> GitLab CI/CD<br/>PowerShell 7.4 container"]
-        CA["CyberArk<br/>Secret bootstrap"]
-    end
-
-    subgraph Core["Automation Core (src/powershell/Automation)"]
-        Pub["Public Cmdlets<br/>(30+)"]
-        Priv["Private Helpers<br/>(12 modules)"]
-        Audit["AuditLogger<br/>structured JSON"]
-    end
-
-    subgraph Targets["Build Targets"]
-        ISO["Windows Server<br/>ISO Builder"]
-        Phys["Physical Server Build<br/>MCM boot media"]
-    end
-
-    subgraph MS["Microsoft MCM"]
-        MCM["<img src='docs/assets/icons/microsoft.svg' width='18'/> Microsoft Configuration<br/>Manager (MCM)"]
-    end
-
-    subgraph HPE["HPE APIs"]
-        OV["<img src='docs/assets/icons/hpe.svg' width='18'/> HPE OneView<br/>(session mgmt)"]
-        iLO["<img src='docs/assets/icons/hpe.svg' width='18'/> HPE iLO<br/>Redfish"]
-    end
-
-    subgraph Observe["Observability & Compliance"]
-        Ops["OpsRamp"]
-        SNOW["ServiceNow"]
-        Logs["generated/logs/**<br/>audit + build reports"]
-    end
-
-    DevCLI --> Pub
-    GL --> CA
-    GL --> Pub
-    Pub --> Priv
-    Priv --> OV
-    Priv --> iLO
-    Priv --> MCM
-    Pub --> ISO
-    Pub --> Phys
-    Phys --> MCM
-    ISO --> Audit
-    Phys --> Audit
-    Priv --> Audit
-    Audit --> Logs
-    Logs --> Ops
-    Logs --> SNOW
-
-    classDef dev fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
-    classDef core fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
-    classDef target fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12;
-    classDef ms fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e;
-    classDef hpe fill:#fae8ff,stroke:#a21caf,stroke-width:2px,color:#701a75;
-    classDef obs fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#881337;
-
-    class DevCLI,GL,CA dev;
-    class Pub,Priv,Audit core;
-    class ISO,Phys target;
-    class MCM ms;
-    class OV,iLO hpe;
-    class Ops,SNOW,Logs obs;
-```
+![Technical Component Overview](docs/assets/architecture.svg)
 
 ## Table of Contents
 
