@@ -8,7 +8,7 @@
 flowchart TB
     subgraph Dev["Developer / CI"]
         DevCLI["Developer / Makefile<br/>make build · test · lint"]
-        GL["GitLab CI/CD<br/>PowerShell 7.4 container"]
+        GL["simple-icons:gitlab GitLab CI/CD<br/>PowerShell 7.4 container"]
         CA["CyberArk<br/>Secret bootstrap"]
     end
 
@@ -20,13 +20,16 @@ flowchart TB
 
     subgraph Targets["Build Targets"]
         ISO["Windows Server<br/>ISO Builder"]
-        Phys["Physical Server Build<br/>ConfigMgr boot media"]
+        Phys["Physical Server Build<br/>MCM boot media"]
     end
 
-    subgraph HPE["HPE / Infra APIs"]
-        OV["HPE OneView<br/>(session mgmt)"]
-        iLO["HPE iLO<br/>Redfish"]
-        SCOM["SCOM<br/>Maintenance Mode"]
+    subgraph MS["Microsoft MCM"]
+        MCM["simple-icons:microsoft Microsoft Configuration<br/>Manager (MCM)"]
+    end
+
+    subgraph HPE["HPE APIs"]
+        OV["simple-icons:hewlettpackard HPE OneView<br/>(session mgmt)"]
+        iLO["simple-icons:hewlettpackard HPE iLO<br/>Redfish"]
     end
 
     subgraph Observe["Observability & Compliance"]
@@ -41,15 +44,30 @@ flowchart TB
     Pub --> Priv
     Priv --> OV
     Priv --> iLO
-    Priv --> SCOM
+    Priv --> MCM
     Pub --> ISO
     Pub --> Phys
+    Phys --> MCM
     ISO --> Audit
     Phys --> Audit
     Priv --> Audit
     Audit --> Logs
     Logs --> Ops
     Logs --> SNOW
+
+    classDef dev fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
+    classDef core fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef target fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12;
+    classDef ms fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e;
+    classDef hpe fill:#fae8ff,stroke:#a21caf,stroke-width:2px,color:#701a75;
+    classDef obs fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#881337;
+
+    class DevCLI,GL,CA dev;
+    class Pub,Priv,Audit core;
+    class ISO,Phys target;
+    class MCM ms;
+    class OV,iLO hpe;
+    class Ops,SNOW,Logs obs;
 ```
 
 ## Table of Contents
