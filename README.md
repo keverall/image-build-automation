@@ -2,6 +2,56 @@
 
 <a id="top"></a>
 
+## Technical Component Overview
+
+```mermaid
+flowchart TB
+    subgraph Dev["Developer / CI"]
+        DevCLI["Developer / Makefile<br/>make build · test · lint"]
+        GL["GitLab CI/CD<br/>PowerShell 7.4 container"]
+        CA["CyberArk<br/>Secret bootstrap"]
+    end
+
+    subgraph Core["Automation Core (src/powershell/Automation)"]
+        Pub["Public Cmdlets<br/>(30+)"]
+        Priv["Private Helpers<br/>(12 modules)"]
+        Audit["AuditLogger<br/>structured JSON"]
+    end
+
+    subgraph Targets["Build Targets"]
+        ISO["Windows Server<br/>ISO Builder"]
+        Phys["Physical Server Build<br/>ConfigMgr boot media"]
+    end
+
+    subgraph HPE["HPE / Infra APIs"]
+        OV["HPE OneView<br/>(session mgmt)"]
+        iLO["HPE iLO<br/>Redfish"]
+        SCOM["SCOM<br/>Maintenance Mode"]
+    end
+
+    subgraph Observe["Observability & Compliance"]
+        Ops["OpsRamp"]
+        SNOW["ServiceNow"]
+        Logs["generated/logs/**<br/>audit + build reports"]
+    end
+
+    DevCLI --> Pub
+    GL --> CA
+    GL --> Pub
+    Pub --> Priv
+    Priv --> OV
+    Priv --> iLO
+    Priv --> SCOM
+    Pub --> ISO
+    Pub --> Phys
+    ISO --> Audit
+    Phys --> Audit
+    Priv --> Audit
+    Audit --> Logs
+    Logs --> Ops
+    Logs --> SNOW
+```
+
 ## Table of Contents
 
 - [Summary](#summary)
