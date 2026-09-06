@@ -8,7 +8,7 @@
 flowchart TB
     subgraph Dev["Developer / CI"]
         DevCLI["Developer / Makefile<br/>make build · test · lint"]
-        GL["simple-icons:gitlab GitLab CI/CD<br/>PowerShell 7.4 container"]
+        GL["<img src='docs/assets/icons/gitlab.svg' width='18'/> GitLab CI/CD<br/>PowerShell 7.4 container"]
         CA["CyberArk<br/>Secret bootstrap"]
     end
 
@@ -24,12 +24,12 @@ flowchart TB
     end
 
     subgraph MS["Microsoft MCM"]
-        MCM["simple-icons:microsoft Microsoft Configuration<br/>Manager (MCM)"]
+        MCM["<img src='docs/assets/icons/microsoft.svg' width='18'/> Microsoft Configuration<br/>Manager (MCM)"]
     end
 
     subgraph HPE["HPE APIs"]
-        OV["simple-icons:hewlettpackardenterprise HPE OneView<br/>(session mgmt)"]
-        iLO["simple-icons:hewlettpackardenterprise HPE iLO<br/>Redfish"]
+        OV["<img src='docs/assets/icons/hpe.svg' width='18'/> HPE OneView<br/>(session mgmt)"]
+        iLO["<img src='docs/assets/icons/hpe.svg' width='18'/> HPE iLO<br/>Redfish"]
     end
 
     subgraph Observe["Observability & Compliance"]
