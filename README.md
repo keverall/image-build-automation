@@ -28,8 +28,8 @@ flowchart TB
     end
 
     subgraph HPE["HPE APIs"]
-        OV["simple-icons:hewlettpackard HPE OneView<br/>(session mgmt)"]
-        iLO["simple-icons:hewlettpackard HPE iLO<br/>Redfish"]
+        OV["simple-icons:hewlettpackardenterprise HPE OneView<br/>(session mgmt)"]
+        iLO["simple-icons:hewlettpackardenterprise HPE iLO<br/>Redfish"]
     end
 
     subgraph Observe["Observability & Compliance"]
