@@ -85,6 +85,9 @@
         # ── Entry-point handlers invoked by Invoke-RoutedRequest ────────────────
         'Invoke-WindowsSecurityUpdate'
         'Set-MaintenanceMode'
+        'Enable-OneViewMaintenanceMode'
+        'Disable-OneViewMaintenanceMode'
+        'Get-OneViewMaintenanceMode'
         'Start-InstallMonitor'
         'Configure-PhysicalBuild'
         'Start-PhysicalServerBuild'

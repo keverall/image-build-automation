@@ -41,6 +41,9 @@ param(
     [Alias('h', 'help', '?')][switch] $ShowHelp
 )
 
+# OneView maintenance mode lives in a separate file (SCOM is out of scope).
+. (Join-Path $PSScriptRoot 'OneViewMaintenanceMode.ps1')
+
 # Handle help flag - display practical help and exit
 if ($ShowHelp) {
     Write-Output ""
