@@ -3175,7 +3175,7 @@ if (-not `$existingSession) {
 `$server = Get-OVServer -Name '$TargetId' -ErrorAction SilentlyContinue
 if (`$server) {
     `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; SerialNumber = `$server.serialNumber; MaintenanceModeEnabled = [bool]`$server.MaintenanceModeEnabled; Model = `$server.model; State = `$server.state; Message = 'Found server' }
-    `$result | ConvertTo-Json -Depth 5
+s    `$result | ConvertTo-Json -Depth 5
     return
 }
 `$scope = Get-OVSCOPE -Name '$TargetId' -ErrorAction SilentlyContinue
