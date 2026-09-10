@@ -5,6 +5,8 @@
 ## Table of Contents
 
 - [Two distinct maintenance modes: SCOM vs HPE OneView](#two-distinct-maintenance-modes-scom-vs-hpe-oneview)
+- [HPeOneView Maintenance Mode](#hpeoneview-maintenance-mode)
+  - [Commands that alter HPE OneView maintenance mode:](#commands-that-alter-hpe-oneview-maintenance-mode)
 - [Automatic maintenance mode in the build pipeline](#automatic-maintenance-mode-in-the-build-pipeline)
 - [Flow](#flow)
 - [Architecture](#architecture)
@@ -64,6 +66,33 @@ Set-MaintenanceMode -Action enable -Mode scom -TargetId 'CLU-CLUSTER-01' -Enviro
 ```
 
 ---
+
+<a id="hpeoneview-maintenance-mode"></a>
+
+## HPeOneView Maintenance Mode
+
+<a id="commands-that-alter-hpe-oneview-maintenance-mode"></a>
+
+### Commands that alter HPE OneView maintenance mode:
+
+#### Standalone OneView commands (src/powershell/Automation/Public/OneViewMaintenanceMode.ps1):
+
+- Enable-OneViewMaintenanceMode — OneViewMaintenanceMode.ps1:978
+- Disable-OneViewMaintenanceMode — OneViewMaintenanceMode.ps1:1067
+
+#### Orchestrator:
+
+  - Set-MaintenanceMode -Mode oneview -Action enable|disable - Set-MaintenanceMode.ps1:187 (dot-sources the file above and routes to those functions).  - Action validate only reads state.
+
+#### Automatic (during a build):
+
+- Configure-PhysicalBuild -Deploy / Start-PhysicalServerBuild — automatically enable OneView maintenance mode before destructive operations and disable it afterwards, via internal `_Enable-OneViewMaintenanceMode / _Disable-OneViewMaintenanceMode` helpers (Start-PhysicalServerBuild.ps1:84, :120) that call Set-MaintenanceMode -Mode oneview. Gated by -OneViewMaintenanceMode (default $true); pass -NoMaintenanceMode to skip.
+
+#### Read-only (do NOT alter state):
+
+- Get-OneViewMaintenanceMode — OneViewMaintenanceMode.ps1:1150
+- Get-OneViewServerList — shows a MaintMode column (Get-OneViewServerList.ps1:264)
+- Get-MaintenanceStatusReport — links SCOM + OneView maintenance state, never mutates (Get-MaintenanceStatusReport.ps1:14)
 
 <a id="automatic-maintenance-mode-in-the-build-pipeline"></a>
 

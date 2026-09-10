@@ -72,6 +72,8 @@ Set-MaintenanceMode -Action enable -TargetId CLU-CLUSTER-01 -Mode scom -Environm
 ```
 
 > **Tip — short parameter aliases:** the OneView commands accept short aliases so they are faster to type. For example: `Get-OneViewConnectionStatus -SrvrId MXQ1234567 -IdTyp Serial` is equivalent to `Get-OneViewConnectionStatus -ServerIdentifier MXQ1234567 -IdentifierType Serial`. The long and short forms are interchangeable (see the [Automation Command Reference](docs/Automation/automation_commands.md#top) for the full alias table).
+>
+> **Built-in `-Help`:** every main `Automation` command accepts a `-Help` switch that prints a man-like reference (synopsis, mandatory/optional parameters, types, allowed `ValidateSet` values, and the source-link) and returns without doing anything else — so you never need `Get-Help`. For example: `Get-OneViewServerList -Help`. See the [Built-in command help (`-Help`)](docs/Automation/automation_commands.md#built-in-command-help--help) section for the full output format.
 
 ```powershell
 
@@ -225,6 +227,7 @@ This project is Makefile-driven. The canonical way to run day-to-day tasks is:
 | Target | Description |
 | --- | --- |
 | `make help` | List all Makefile targets with descriptions |
+| `make list-commands` | List all available `Automation` module commands (32) with synopses |
 | `make setup` | Provision the PowerShell environment, profiles, and CI runner (module install, oh-my-posh, checkmake, make) |
 | `make lint` | Run the full lint suite: PowerShell (`PSScriptAnalyzer`), Makefile (`checkmake`), and Python (`Ruff`) |
 | `make lint-python` | Lint and autofix Python scripts with Ruff (resolved via `uv run ruff`) |

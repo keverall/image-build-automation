@@ -153,7 +153,7 @@ help: ## Show this help message
 
 # ─── Command Listing ──────────────────────────────────────────────────────────
 list-commands: ## List all available Automation module commands (incl. -Help support)
-	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/List-Commands.ps1
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/list-commands.ps1
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
 clean: ## Remove build artifacts and temp files

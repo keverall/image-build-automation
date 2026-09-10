@@ -6,11 +6,11 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
-   - [33) HPE OneView Maintenance Mode documentation — enable/disable procedures, alert handling, Windows Forms integration, `.maintenanceMode` refactor, JSON fix, OpsRamp firewall docs](#33-hpe-oneview-maintenance-mode-documentation-enable-disable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs)
-   - [34) Git SSH authentication — PowerShell profile hardening + troubleshooting guides (Fix-GitSSH.md, testing-issue.md)](#34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides)
-   - [35) README architecture & branding — SVG icons, technical component overview diagram, MS Configuration Manager flowchart, HPE/OneView/iLO branding](#35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpe-oneview-ilo-branding)
-   - [36) Documentation & tooling updates — maintenance mode / Checkmake / security pipeline docs, ISO & Firmware parameter options, Makefile + SETUP-GUIDE + doc index refactor](#36-documentation-tooling-updates-maintenance-mode-checkmake-security-pipeline-docs-iso-firmware-parameter-options-makefile-setup-guide-doc-index-refactor)
-   - [32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output](#32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output)
+  - [33) HPE OneView Maintenance Mode documentation — enable/disable procedures, alert handling, Windows Forms integration, `.maintenanceMode` refactor, JSON fix, OpsRamp firewall docs](#33-hpe-oneview-maintenance-mode-documentation-enabledisable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs)
+  - [34) Git SSH authentication — PowerShell profile hardening + troubleshooting guides (Fix-GitSSH.md, testing-issue.md)](#34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides-fix-gitsshmd-testing-issuemd)
+  - [35) README architecture & branding — SVG icons, technical component overview diagram, MS Configuration Manager flowchart, HPE/OneView/iLO branding](#35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpeoneviewilo-branding)
+  - [36) Documentation & tooling updates — maintenance mode / Checkmake / security pipeline docs, ISO & Firmware parameter options, Makefile + SETUP-GUIDE + doc index refactor](#36-documentation-tooling-updates-maintenance-mode-checkmake-security-pipeline-docs-iso-firmware-parameter-options-makefile-setup-guide-doc-index-refactor)
+  - [32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output](#32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output)
   - [31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)](#31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default)
   - [30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables](#30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables)
   - [29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials](#29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials)
@@ -90,7 +90,7 @@
 
 ## Change details
 
-<a id="33-hpe-oneview-maintenance-mode-documentation-enable-disable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs"></a>
+<a id="33-hpe-oneview-maintenance-mode-documentation-enabledisable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs"></a>
 
 ### 33) HPE OneView Maintenance Mode documentation — enable/disable procedures, alert handling, Windows Forms integration, `.maintenanceMode` refactor, JSON fix, OpsRamp firewall docs
 
@@ -123,7 +123,7 @@
 - `Set-MaintenanceMode.ps1` parses cleanly (stray `s` removed); the embedded conversion snippet is valid PowerShell.
 - `wip/maintenance-mode-code.md` and the OpsRamp firewall section are present and consistent with the cmdlet signatures.
 
-<a id="34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides"></a>
+<a id="34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides-fix-gitsshmd-testing-issuemd"></a>
 
 ### 34) Git SSH authentication — PowerShell profile hardening + troubleshooting guides (Fix-GitSSH.md, testing-issue.md)
 
@@ -157,7 +157,7 @@
 - `wip/Fix-GitSSH.md` added as a dedicated step-by-step Git SSH authentication troubleshooting guide.
 - Profiles parse under the PowerShell parser; the `techvdi-profile.ps1` merge-conflict markers introduced during the `SSH_AUTH_SOCK` rework were resolved.
 
-<a id="35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpe-oneview-ilo-branding"></a>
+<a id="35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpeoneviewilo-branding"></a>
 
 ### 35) README architecture & branding — SVG icons, technical component overview diagram, MS Configuration Manager flowchart, HPE/OneView/iLO branding
 
