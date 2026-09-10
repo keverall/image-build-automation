@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/bitbucket-md-anchor-toc.ps1
-generated: 2026-09-08
+generated: 2026-09-10
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
