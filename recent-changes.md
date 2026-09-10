@@ -6,7 +6,11 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
-  - [32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output](#32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output)
+   - [33) HPE OneView Maintenance Mode documentation — enable/disable procedures, alert handling, Windows Forms integration, `.maintenanceMode` refactor, JSON fix, OpsRamp firewall docs](#33-hpe-oneview-maintenance-mode-documentation-enable-disable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs)
+   - [34) Git SSH authentication — PowerShell profile hardening + troubleshooting guides (Fix-GitSSH.md, testing-issue.md)](#34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides)
+   - [35) README architecture & branding — SVG icons, technical component overview diagram, MS Configuration Manager flowchart, HPE/OneView/iLO branding](#35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpe-oneview-ilo-branding)
+   - [36) Documentation & tooling updates — maintenance mode / Checkmake / security pipeline docs, ISO & Firmware parameter options, Makefile + SETUP-GUIDE + doc index refactor](#36-documentation-tooling-updates-maintenance-mode-checkmake-security-pipeline-docs-iso-firmware-parameter-options-makefile-setup-guide-doc-index-refactor)
+   - [32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output](#32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output)
   - [31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)](#31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default)
   - [30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables](#30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables)
   - [29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials](#29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials)
@@ -45,6 +49,10 @@
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |  
+| 2026-09-10 | HPE OneView Maintenance Mode documentation: new `wip/maintenance-mode-code.md` with enable/disable procedures, alert handling, and Windows Forms integration cmdlet instructions; `Set-MaintenanceMode.ps1` now reads the OneView `maintenanceMode` property (`On`/`Off`) instead of the non-existent `MaintenanceModeEnabled`, and `Get-OneViewServerList` reports maintenance state from the same property; fixed a stray `s` typo that broke the embedded JSON conversion in `Set-MaintenanceMode.ps1`; added HPE OpsRamp firewall-rules documentation and a `.maintenanceMode` property refactor across the maintenance-mode scripts | Kev Everall |
+| 2026-09-10 | Git SSH authentication hardening: PowerShell profiles (`eis19` / `techvdi` / `windowspsprofilecurrentvdi`) gained SSH-agent responsiveness checks + key loading, pinned `GIT_SSH_COMMAND` to Git's bundled ssh with `-i <key> -o IdentitiesOnly=yes`, clear stale `SSH_AUTH_SOCK`, and disable posh-git for performance; new `wip/Fix-GitSSH.md` troubleshooting guide plus extensive `wip/testing-issue.md` SSH troubleshooting revisions (debug output, key-exchange warning, user/git-level SSH override checks) | Kev Everall |
+| 2026-09-06 | README visual overhaul: added SVG icons for GitLab/HPE/Microsoft, a technical component overview diagram, and a flowchart reflecting Microsoft Configuration Manager; corrected HPE OneView / iLO branding on the architecture diagram and added `docs/assets/architecture.svg` | Kev Everall |
+| 2026-09-04 | Documentation & tooling updates: maintenance mode / Checkmake integration / security-pipeline docs refreshed; ISO & Firmware parameter-options section added to automation commands; Makefile, SETUP-GUIDE, and the documentation index refactored | Kev Everall |
 | 2026-09-03 | 1. Removed `make rtf-docs` / `make rtf-docs-clean`, `scripts/MD_to_RTF_Converter.py`, and the `docs/rtf/` tree - RTF never resolved TOC/bookmark links in Word (long/digit-leading bookmark names get hashed by Word+pandoc). 2. Added `make word-docs` / `make word-docs-clean`: Markdown -> Word DOCX with native OOXML `<w:bookmarkStart>` / `<w:hyperlink w:anchor>` so TOC and citation links are active the moment the file opens (no field update). 3. Fixed `MD_to_DOCX_Converter.py` `_rewrite_link` bug: the `[text](#anchor)` regex captures the anchor without the leading `#`, so the `target.startswith('#')` guard was always false and no TOC/citation links were rewritten - pandoc then hashed long anchors into `X<hash>` and desynced bookmarks from links. Links now normalize to `secN` / `ref-N`. 4. Disabled pandoc's `tex_math_dollars` extension (`-f markdown-tex_math_dollars`) so PowerShell `$true` / `$false` / `$null` render literally instead of raising 'Could not convert TeX math' warnings. 5. Expanded DOCX coverage to all `docs/**/*.md` + root `*.md` + `wip/*.md`. 6. Relocated output to project-root `docx/`, mirroring `docs/` (no `docs/` prefix, no `docx/docs/` namespace). 7. Per-file graceful error handling: a failed conversion logs `[WARN] failed to convert <file>` and continues - no stack traces. | Kev Everall |
 | 2026-09-02 | `make setup` now selects the Windows terminal profile template by computer name so environments with different network constraints get the correct config | Kev Everall |
 | 2026-08-29 | RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables | Kev Everall |
@@ -82,13 +90,125 @@
 
 ## Change details
 
+<a id="33-hpe-oneview-maintenance-mode-documentation-enable-disable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs"></a>
+
+### 33) HPE OneView Maintenance Mode documentation — enable/disable procedures, alert handling, Windows Forms integration, `.maintenanceMode` refactor, JSON fix, OpsRamp firewall docs
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-10 | HPE OneView Maintenance Mode documentation: new `wip/maintenance-mode-code.md` with enable/disable procedures, alert handling, and Windows Forms integration cmdlet instructions; `Set-MaintenanceMode.ps1` now reads the OneView `maintenanceMode` property (`On`/`Off`) instead of the non-existent `MaintenanceModeEnabled`, and `Get-OneViewServerList` reports maintenance state from the same property; fixed a stray `s` typo that broke the embedded JSON conversion in `Set-MaintenanceMode.ps1`; added HPE OpsRamp firewall-rules documentation and a `.maintenanceMode` property refactor across the maintenance-mode scripts | Kev Everall |
+
+<a name="root-cause-33"></a>
+
+#### Root cause
+
+- **Wrong maintenance-mode property**: the maintenance-mode scripts read `$server.MaintenanceModeEnabled`, a property that does not exist on the OneView `ServerHardware` resource. OneView exposes the state as the string property `maintenanceMode` (`On` / `Off`), so the old check always evaluated as `$false`/empty and every server was reported as "not in maintenance" even while OneView showed it in maintenance mode. `Get-OneViewServerList` rendered the column from the same non-existent property.
+- **Embedded JSON conversion broken**: `Set-MaintenanceMode.ps1` includes an embedded PowerShell snippet (for the SCOM/OneView bridge) whose `ConvertTo-Json` line had a stray leading `s` — `s    $result | ConvertTo-Json -Depth 5` — which made the generated script syntactically invalid.
+- **Missing operations docs**: enable/disable procedures, alert-suppression handling, and the Windows Forms integration cmdlet set had no consolidated reference; OpsRamp firewall rules were undocumented.
+
+<a name="fix-33"></a>
+
+#### Fix
+
+- **`maintenanceMode` property** (`OneViewMaintenanceMode.ps1`, `New-OneViewMaintenanceScript.ps1`, `Set-MaintenanceMode.ps1`, `Get-OneViewServerList.ps1`): replaced every `$server.MaintenanceModeEnabled` read with `$server.maintenanceMode`, and `Get-OneViewServerList` now maps `maintenanceMode` not in `@('Off', $false, $null)` to `Yes` / otherwise `No`. The already-in-maintenance / already-not-in-maintenance short-circuits and the enable/disable loops now key off the real property.
+- **JSON conversion typo** (`Set-MaintenanceMode.ps1`): removed the stray `s` so the embedded snippet reads `$result | ConvertTo-Json -Depth 5`.
+- **`wip/maintenance-mode-code.md`**: new consolidated reference covering enable/disable procedures, alert handling details, and the HPE OneView Maintenance Mode cmdlets plus their integration into a Windows Forms front-end.
+- **OpsRamp firewall docs**: added the HPE OpsRamp integration firewall-rules section (ports/protocols required for the OpsRamp agent ↔ gateway link).
+
+<a name="verification-33"></a>
+
+#### Verification
+
+- `Get-OneViewServerList.Unit.Tests.ps1`: updated assertions for the `maintenance_mode` column now pass (server with `maintenanceMode = 'On'` reports `Yes`; `Off`/`$null` reports `No`).
+- `Set-MaintenanceMode.ps1` parses cleanly (stray `s` removed); the embedded conversion snippet is valid PowerShell.
+- `wip/maintenance-mode-code.md` and the OpsRamp firewall section are present and consistent with the cmdlet signatures.
+
+<a id="34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides"></a>
+
+### 34) Git SSH authentication — PowerShell profile hardening + troubleshooting guides (Fix-GitSSH.md, testing-issue.md)
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-10 | Git SSH authentication hardening: PowerShell profiles (`eis19` / `techvdi` / `windowspsprofilecurrentvdi`) gained SSH-agent responsiveness checks + key loading, pinned `GIT_SSH_COMMAND` to Git's bundled ssh with `-i <key> -o IdentitiesOnly=yes`, clear stale `SSH_AUTH_SOCK`, and disable posh-git for performance; new `wip/Fix-GitSSH.md` troubleshooting guide plus extensive `wip/testing-issue.md` SSH troubleshooting revisions | Kev Everall |
+
+<a name="root-cause-34"></a>
+
+#### Root cause
+
+- **Morning breakage from a dead ssh-agent socket**: profiles trusted `$env:SSH_AUTH_SOCK` to mean a live agent, but a stale socket (agent process gone) caused `git` to talk to a dead endpoint and offer no key — intermittent auth failures with no clear cause.
+- **Windows OpenSSH blocked in the locked-down VDI**: `GIT_SSH` / `GIT_SSH_COMMAND` had to be pinned to Git's bundled `ssh.exe` (forward slashes, since git hands `GIT_SSH` to a shell that treats `\` as an escape) with `IdentitiesOnly=yes` so the correct `id_ed25519` key is always offered.
+- **No consolidated troubleshooting path**: SSH key-permission, user/git-level SSH override, and environment-variable conflicts had to be diagnosed ad hoc.
+
+<a name="fix-34"></a>
+
+#### Fix
+
+- **`wip/techvdi-profile.ps1` / `wip/eis19profile.ps1` / `wip/windowspsprofilecurrentvdi.ps1`**:
+  - Added `Test-SshAgentResponsive` — `ssh-add -l` must return exit 0 (keys present) or "no identities" (alive but empty); otherwise the socket is treated as dead and a fresh agent is started via `Start-SshAgentAndLoadKey`, which loads `id_ed25519`.
+  - Pinned `GIT_SSH_COMMAND` to Git's bundled `ssh.exe -i <key> -o IdentitiesOnly=yes` and persist it to the user env so VS Code's git (separate process) reuses it.
+  - Clear stale `SSH_AUTH_SOCK` (process + user env) on load since direct key auth needs no agent.
+  - Disabled posh-git import and set max history / de-dupe for faster shell startup; module path made user-relative.
+
+<a name="verification-34"></a>
+
+#### Verification
+
+- `wip/testing-issue.md` gained SSH debug output (verbose `ssh -vT`), a key-exchange (algorithm) vulnerability warning, and checks for user `~/.ssh/config`, git-level `GIT_SSH_COMMAND`/`core.sshCommand` overrides, and `SSH_AUTH_SOCK`/`GIT_SSH` environment settings.
+- `wip/Fix-GitSSH.md` added as a dedicated step-by-step Git SSH authentication troubleshooting guide.
+- Profiles parse under the PowerShell parser; the `techvdi-profile.ps1` merge-conflict markers introduced during the `SSH_AUTH_SOCK` rework were resolved.
+
+<a id="35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpe-oneview-ilo-branding"></a>
+
+### 35) README architecture & branding — SVG icons, technical component overview diagram, MS Configuration Manager flowchart, HPE/OneView/iLO branding
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-06 | README visual overhaul: added SVG icons for GitLab/HPE/Microsoft, a technical component overview diagram, and a flowchart reflecting Microsoft Configuration Manager; corrected HPE OneView / iLO branding on the architecture diagram and added `docs/assets/architecture.svg` | Kev Everall |
+
+<a name="change-35"></a>
+
+#### Change
+
+- **`docs/assets/icons/{gitlab,hpe,microsoft}.svg`** — added brand SVG icons and switched the README to reference them inline.
+- **`docs/assets/architecture.svg`** — added a dedicated architecture diagram asset (refactored out of the README's embedded markup) for the technical component overview.
+- **`README.md`** — added a *Technical component overview* diagram and reworked the pipeline flowchart to reflect **Microsoft Configuration Manager** (was mislabelled), corrected the HPE OneView / iLO node branding on the flowchart, and switched flowchart/overview icons to the new SVG brand assets.
+
+<a name="verification-35"></a>
+
+#### Verification
+
+- `README.md` renders the component-overview diagram, the corrected ConfigMgr flowchart, and the GitLab/HPE/Microsoft SVG icons; `docs/assets/{architecture.svg,icons/*.svg}` exist and are referenced.
+
+<a id="36-documentation-tooling-updates-maintenance-mode-checkmake-security-pipeline-docs-iso-firmware-parameter-options-makefile-setup-guide-doc-index-refactor"></a>
+
+### 36) Documentation & tooling updates — maintenance mode / Checkmake / security pipeline docs, ISO & Firmware parameter options, Makefile + SETUP-GUIDE + doc index refactor
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-04 | Documentation & tooling updates: maintenance mode / Checkmake integration / security-pipeline docs refreshed; ISO & Firmware parameter-options section added to automation commands; Makefile, SETUP-GUIDE, and the documentation index refactored | Kev Everall |
+
+<a name="change-36"></a>
+
+#### Change
+
+- **Maintenance mode docs** (`docs/Maintenance-Mode/maintenance_mode.md`) — refreshed enable/disable + alert handling content.
+- **Checkmake + security pipeline** (`docs/Generic/CHECKMAKE_INTEGRATION.md`, `docs/compliance/SECURITY_PIPELINE.md`, `docs/Generic/{audit_process,code_quality,oneview-auth,oneview-module-versions,powershell_ci}.md`, `docs/Automation/runbook-requirements-v2.md`) — updated to reflect current Checkmake integration and the hardened security pipeline.
+- **ISO & Firmware parameter options** (`docs/Automation/automation_commands.md`) — added a dedicated section documenting the accepted ISO/firmware path formats and the `-ExternalIsoPath` / `-FirmwareFolders` parameter options.
+- **Build/setup refactor** (`Makefile`, `docs/SETUP-GUIDE.md`, `docs/HPEProLiantWindowsServerISOAutomationDocumentationIndex.md`) — restructured setup and documentation-index wiring for clarity and consistency.
+
+<a name="verification-36"></a>
+
+#### Verification
+
+- Affected `.md` docs render; `make` targets referenced in `Makefile` and `SETUP-GUIDE.md` remain consistent; the documentation index lists the current doc set.
+
 <a id="32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output"></a>
 
 ### 32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |
-| 2026-09-03 | 1. Removed `make rtf-docs` / `make rtf-docs-clean`, `scripts/MD_to_RTF_Converter.py`, and the `docs/rtf/` tree - RTF never resolved TOC/bookmark links in Word (long/digit-leading bookmark names get hashed by Word+pandoc). 2. Added `make word-docs` / `make word-docs-clean`: Markdown -> Word DOCX with native OOXML `<w:bookmarkStart>` / `<w:hyperlink w:anchor>` so TOC and citation links are active the moment the file opens (no field update). 3. Fixed `MD_to_DOCX_Converter.py` `_rewrite_link` bug: the `[text](#anchor)` regex captures the anchor without the leading `#`, so the `target.startswith('#')` guard was always false and no TOC/citation links were rewritten - pandoc then hashed long anchors into `X<hash>` and desynced bookmarks from links. Links now normalize to `secN` / `ref-N`. 4. Disabled pandoc's `tex_math_dollars` extension (`-f markdown-tex_math_dollars`) so PowerShell `$true` / `$false` / `$null` render literally instead of raising 'Could not convert TeX math' warnings. 5. Expanded DOCX coverage to all `docs/**/*.md` + root `*.md` + `wip/*.md`. 6. Relocated output to project-root `docx/`, mirroring `docs/` (no `docs/` prefix, no `docx/docs/` namespace). 7. Per-file graceful error handling: a failed conversion logs `[WARN] failed to convert <file>` and continues - no stack traces. | Kev Everall |  
+| 2026-09-03 | 1. Removed `make rtf-docs` / `make rtf-docs-clean`, `scripts/MD_to_RTF_Converter.py`, and the `docs/rtf/` tree - RTF never resolved TOC/bookmark links in Word (long/digit-leading bookmark names get hashed by Word+pandoc). 2. Added `make word-docs` / `make word-docs-clean`: Markdown -> Word DOCX with native OOXML `<w:bookmarkStart>` / `<w:hyperlink w:anchor>` so TOC and citation links are active the moment the file opens (no field update). 3. Fixed `MD_to_DOCX_Converter.py` `_rewrite_link` bug: the `[text](#anchor)` regex captures the anchor without the leading `#`, so the `target.startswith('#')` guard was always false and no TOC/citation links were rewritten - pandoc then hashed long anchors into `X<hash>` and desynced bookmarks from links. Links now normalize to `secN` / `ref-N`. 4. Disabled pandoc's `tex_math_dollars` extension (`-f markdown-tex_math_dollars`) so PowerShell `$true` / `$false` / `$null` render literally instead of raising 'Could not convert TeX math' warnings. 5. Expanded DOCX coverage to all `docs/**/*.md` + root `*.md` + `wip/*.md`. 6. Relocated output to project-root `docx/`, mirroring `docs/` (no `docs/` prefix, no `docx/docs/` namespace). 7. Per-file graceful error handling: a failed conversion logs `[WARN] failed to convert <file>` and continues - no stack traces. | Kev Everall |
 
 <a name="root-cause-32"></a>
 
