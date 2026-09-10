@@ -93,8 +93,10 @@ function Test-ScomMaintenanceConnectivity {
         [int] $PingTimeoutMs = 3000,
         [switch] $Json,
         [switch] $JsonConfig,
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-ScomMaintenanceConnectivity'; return }
 
     $ErrorActionPreference = 'Continue'
     $Mode = 'scom'

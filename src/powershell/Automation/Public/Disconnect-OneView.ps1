@@ -62,8 +62,10 @@ function Disconnect-OneView {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Disconnect-OneView'; return }
 
     $result = @{
         Success   = $false

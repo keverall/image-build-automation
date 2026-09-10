@@ -1,4 +1,4 @@
-﻿#
+#
 # Public/Test-BuildParams.ps1 - Validate and resolve build parameters.
 #
 
@@ -95,8 +95,10 @@ function Test-BuildParams {
         [bool]  $DryRun      = $false,
         [switch] $Json,
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-BuildParams'; return }
 
     $result = [ordered]@{
         Success         = $false

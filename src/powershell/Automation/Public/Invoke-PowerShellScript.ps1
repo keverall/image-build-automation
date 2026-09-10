@@ -45,8 +45,10 @@ function Invoke-PowerShellScript {
         [Parameter(Mandatory = $false)][bool]      $CaptureOutput  = $true,
         [Parameter(Mandatory = $false)][int]       $TimeoutSeconds = 300,
         [Parameter(Mandatory = $false)][string]    $ExecutionPolicy = 'Bypass',
-        [Parameter(Mandatory = $false)][hashtable] $Environment
+        [Parameter(Mandatory = $false)][hashtable] $Environment,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Invoke-PowerShellScript'; return }
     $psArgs = @(
         '-ExecutionPolicy', $ExecutionPolicy,
         '-NoProfile',

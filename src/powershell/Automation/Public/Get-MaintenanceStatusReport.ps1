@@ -120,8 +120,10 @@ function Get-MaintenanceStatusReport {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Get-MaintenanceStatusReport'; return }
 
     if ($DryRun) {
         $IncludeLive = $false 

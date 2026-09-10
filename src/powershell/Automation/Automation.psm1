@@ -589,6 +589,7 @@ $_privateOrder = @(
     'Logging.ps1',      # Initialize-Logging, Get-Logger
     'OutputFormatter.ps1', # _Publish-Result, _Format-HumanReadable (shared DRY output rendering)
     'GuardRail.ps1',    # Assert-GuardRail (destructive-action safety gate for build/deploy)
+    'Help.ps1',         # Get-CommandHelp (man-page help) + _ShouldShowHelp (per-command -Help guard)
     'Router.ps1',       # Invoke-RoutedRequest (loads from request_types.json)
     'Base.ps1'          # AutomationBase class + New-AutomationBase factory
     'ExternalIso.ps1'   # Resolve-ExternalIsoPath (shared by Start-PhysicalServerBuild)
@@ -705,6 +706,8 @@ Export-ModuleMember -Function @(
     'Invoke-RoutedRequest'
     # Debug / introspection
     'Get-RouteMap'
+    # Man-page style help (Get-CommandHelp) - powers -Help on every main command
+    'Get-CommandHelp'
     # Base / factories
     'New-AutomationBase'
     # SCOM

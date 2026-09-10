@@ -15,8 +15,10 @@ function Test-OneViewConnection {
         [string]$Appliance,
         [string]$Username,
         [string]$Password,
-        [string]$ModuleName = 'HPEOneView.1000'
+        [string]$ModuleName = 'HPEOneView.1000',
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-OneViewConnection'; return }
     
     try {
         $cred = [System.Management.Automation.PSCredential]::new(
@@ -987,8 +989,10 @@ function Enable-OneViewMaintenanceMode {
         [Alias('Dry')][switch] $DryRun,
         [Alias('NoSchedule')][switch] $NoSchedule,
         [Alias('Json')][switch] $Json,
-        [Alias('PT')][switch] $PassThru
+        [Alias('PT')][switch] $PassThru,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Enable-OneViewMaintenanceMode'; return }
 
     $ovConfig = $null
     if ($PSBoundParameters.ContainsKey('ConfigDir')) {
@@ -1073,8 +1077,10 @@ function Disable-OneViewMaintenanceMode {
         [Alias('Dry')][switch] $DryRun,
         [Alias('NoSchedule')][switch] $NoSchedule,
         [Alias('Json')][switch] $Json,
-        [Alias('PT')][switch] $PassThru
+        [Alias('PT')][switch] $PassThru,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Disable-OneViewMaintenanceMode'; return }
 
     $ovConfig = $null
     if ($PSBoundParameters.ContainsKey('ConfigDir')) {
@@ -1153,8 +1159,10 @@ function Get-OneViewMaintenanceMode {
         [Alias('CfgDir')][string] $ConfigDir = 'configs',
         [Alias('Dry')][switch] $DryRun,
         [Alias('Json')][switch] $Json,
-        [Alias('PT')][switch] $PassThru
+        [Alias('PT')][switch] $PassThru,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Get-OneViewMaintenanceMode'; return }
 
     $ovConfig = $null
     if ($PSBoundParameters.ContainsKey('ConfigDir')) {

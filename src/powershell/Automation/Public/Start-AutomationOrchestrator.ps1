@@ -55,8 +55,10 @@ Execute an automation request with validation and routing.
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Start-AutomationOrchestrator'; return }
     Write-Verbose "Executing $RequestType"
     $errors = _Validate-Request $RequestType $Params
     if ($errors) {

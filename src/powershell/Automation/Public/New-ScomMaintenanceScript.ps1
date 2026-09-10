@@ -57,8 +57,10 @@ function New-ScomMaintenanceScript {
         [Alias('Op')]
         [Parameter(Mandatory = $false)][string]      $Operation = 'start',
         [Alias('Cluster')]
-        [Parameter(Mandatory = $false)][switch]      $UseClusterMode
+        [Parameter(Mandatory = $false)][switch]      $UseClusterMode,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-ScomMaintenanceScript'; return }
 
     $safeComment = $Comment.Replace("'", "''")
     $serversBlock = if ($ServerHostnames -and $ServerHostnames.Count -gt 0) {

@@ -25,8 +25,10 @@ function New-ScomConnection {
     [CmdletBinding()]
     [OutputType([string])]
     param(
-        [Parameter(Mandatory, Position = 0)][string] $ManagementServer
+        [Parameter(Mandatory, Position = 0)][string] $ManagementServer,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-ScomConnection'; return }
     return @"
 Import-Module OperationsManager -ErrorAction Stop
 `$conn = New-SCOMManagementGroupConnection -ComputerName "$ManagementServer" -ErrorAction Stop
@@ -59,8 +61,10 @@ function New-ScomRestConnection {
     [OutputType([string])]
     param(
         [Parameter(Mandatory, Position = 0)][string] $ManagementServer,
-        [Parameter(Mandatory, Position = 1)][System.Management.Automation.PSCredential] $Credential
+        [Parameter(Mandatory, Position = 1)][System.Management.Automation.PSCredential] $Credential,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-ScomRestConnection'; return }
     $UserName = $Credential.UserName
     $Password = $Credential.GetNetworkCredential().Password
     return @"

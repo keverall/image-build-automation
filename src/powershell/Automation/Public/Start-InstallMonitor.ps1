@@ -1,4 +1,4 @@
-﻿#
+#
 # Start-InstallMonitor.ps1 - Windows installation progress monitor
 #
 # Contains: Start-InstallMonitor wrapper function, InstallationMonitor class,
@@ -83,8 +83,10 @@ function Start-InstallMonitor {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Start-InstallMonitor'; return }
     Initialize-Logging -LogFile 'monitoring.log' -CommandName 'Start-InstallMonitor'
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun

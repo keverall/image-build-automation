@@ -98,8 +98,10 @@ function Get-OneViewServerTarget {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Json,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Get-OneViewServerTarget'; return }
 
     # Common logging: each command writes to its own isolated log under
     # generated/logs/commands/Get-OneViewServerTarget/.

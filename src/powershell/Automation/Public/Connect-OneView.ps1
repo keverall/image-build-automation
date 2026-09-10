@@ -86,8 +86,10 @@ function Connect-OneView {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Json,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Connect-OneView'; return }
 
     # Guard against a stray double-dash flag (e.g. `--DryRun`) being swallowed as
     # the management host. In PowerShell `--` means "end of parameters", so

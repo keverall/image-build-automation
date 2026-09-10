@@ -1,4 +1,4 @@
-﻿#
+#
 # Public/Update-WindowsSecurity.ps1 - Windows security patcher / ISO builder
 # Equivalent of reference implementation cli/patch_windows_security.py
 #
@@ -88,8 +88,10 @@ function Invoke-WindowsSecurityUpdate {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Invoke-WindowsSecurityUpdate'; return }
     if ($SerialNumber) {
         $resolved = Resolve-OneViewTarget -SerialNumber $SerialNumber -OneViewHost $OneViewHost -DryRun:$DryRun
         if (-not $resolved.Success) { return (_Publish-Result -Result @{ Success = $false; Error = $resolved.Error } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }

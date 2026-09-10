@@ -92,8 +92,10 @@ function Get-OneViewVersion {
         [switch] $DryRun,
         [switch] $Json,
         [Alias('PT')]
-        [switch] $PassThru
+        [switch] $PassThru,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Get-OneViewVersion'; return }
 
     # Common logging: each command writes to its own isolated log under
     # generated/logs/commands/Get-OneViewVersion/.

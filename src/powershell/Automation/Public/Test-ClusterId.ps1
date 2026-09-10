@@ -34,8 +34,10 @@ function Test-ClusterId {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory, Position = 0)][string] $TargetId,
-        [string] $CataloguePath = 'configs\clusters_catalogue.json'
+        [string] $CataloguePath = 'configs\clusters_catalogue.json',
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-ClusterId'; return }
     if (-not $TargetId) {
         return @{
             Success = $false

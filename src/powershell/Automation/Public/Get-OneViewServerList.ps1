@@ -149,8 +149,10 @@ function Get-OneViewServerList {
         [Alias('Sum')]
         [switch] $Summary,
         [Alias('Det')]
-        [switch] $Detail
+        [switch] $Detail,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Get-OneViewServerList'; return }
 
     # Common logging: each command writes to its own isolated log under
     # generated/logs/commands/Get-OneViewServerList/.

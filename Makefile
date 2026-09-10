@@ -49,7 +49,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs word-docs word-docs-clean
+.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs word-docs word-docs-clean list-commands
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: ## Setup PowerShell environment (install modules, configure profiles)
@@ -150,6 +150,10 @@ word-docs-clean: ## Remove generated Word DOCX help docs
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Show-Help.ps1
+
+# ─── Command Listing ──────────────────────────────────────────────────────────
+list-commands: ## List all available Automation module commands (incl. -Help support)
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/List-Commands.ps1
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
 clean: ## Remove build artifacts and temp files

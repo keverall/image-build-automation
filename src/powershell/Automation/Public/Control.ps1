@@ -126,8 +126,10 @@ function New-CIPipelineCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $Params
+        [Parameter(Mandatory)][hashtable] $Params,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-CIPipelineCtrl'; return }
     $ctrl = _Build-CIParams -RawParams $Params
     return [pscustomobject]$ctrl
 }
@@ -139,8 +141,10 @@ function New-IRequestCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $FormData
+        [Parameter(Mandatory)][hashtable] $FormData,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-IRequestCtrl'; return }
     $ctrl = _Build-IRequestParams -FormData $FormData
     return [pscustomobject]$ctrl
 }
@@ -152,8 +156,10 @@ function New-SchedulerCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $TaskParams
+        [Parameter(Mandatory)][hashtable] $TaskParams,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-SchedulerCtrl'; return }
     $ctrl = _Build-SchedulerParams -TaskParams $TaskParams
     return [pscustomobject]$ctrl
 }
@@ -203,8 +209,10 @@ function Run-CIPipeline {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Run-CIPipeline'; return }
     $ctrl = _Build-CIParams -RawParams $Params
     return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'ci' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }
@@ -232,8 +240,10 @@ function Run-IRequest {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Run-IRequest'; return }
     $ctrl = _Build-IRequestParams -FormData $FormData
     return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'irequest' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }
@@ -261,8 +271,10 @@ function Run-Scheduler {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Run-Scheduler'; return }
     $ctrl = _Build-SchedulerParams -TaskParams $TaskParams
     return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'scheduler' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }
@@ -293,8 +305,10 @@ function New-GitLabCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $Params
+        [Parameter(Mandatory)][hashtable] $Params,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-GitLabCtrl'; return }
     $ctrl = _Build-GitLabParams -Params $Params
     return [pscustomobject]$ctrl
 }
@@ -322,8 +336,10 @@ function Run-GitLab {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Run-GitLab'; return }
     $ctrl = _Build-GitLabParams -Params $Params
     return _Execute -RequestType $ctrl.RequestType -Params $ctrl.Params -Source 'gitlab' -Json:$Json -PassThru:$PassThru -Quiet:$Quiet
 }

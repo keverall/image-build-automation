@@ -104,8 +104,10 @@ function Test-PreBuildValidation {
         [switch] $SkipDpMp,
         [switch] $SkipIsoUrl,
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-PreBuildValidation'; return }
 
     $checks = [ordered]@{}
     $overallSuccess = $true

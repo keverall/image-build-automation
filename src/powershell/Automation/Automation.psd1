@@ -164,6 +164,8 @@
         'Test-ScomMaintenanceConnectivity'
         # ── SCOM + OneView status report ──────────────────────────────────────
         'Get-MaintenanceStatusReport'
+        # ── Man-page style help (-Help support on every main command) ──────────
+        'Get-CommandHelp'
     )
 
     # Cmdlets to export from this module

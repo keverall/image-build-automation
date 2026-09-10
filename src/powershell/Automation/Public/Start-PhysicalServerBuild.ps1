@@ -35,8 +35,10 @@ function Confirm-IsoDeployment {
         [string] $IloIp,
         [string] $IsoUrl,
         [hashtable] $OneViewDetails,
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Confirm-IsoDeployment'; return }
 
     Write-Host "`n========================================" -ForegroundColor Yellow
     Write-Host "  DEPLOYMENT CONFIRMATION REQUIRED" -ForegroundColor Yellow
@@ -336,8 +338,10 @@ function Start-PhysicalServerBuild {
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Start-PhysicalServerBuild'; return }
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
     # Fail early (graceful, logged) when omitted so we never overwrite an

@@ -37,8 +37,10 @@ function New-OneViewMaintenanceScript {
         [Alias('Op')]
         [Parameter(Mandatory, Position = 2)][ValidateSet('enable', 'disable')][string] $Operation,
         [Parameter(Mandatory = $false)][bool] $Async = $true,
-        [Parameter(Mandatory = $false)][string] $ModuleName
+        [Parameter(Mandatory = $false)][string] $ModuleName,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-OneViewMaintenanceScript'; return }
     
     if (-not $ModuleName) {
         # 1. Explicit env override wins.

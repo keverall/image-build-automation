@@ -90,8 +90,10 @@ function Invoke-IloRedfish {
         [int]    $TimeoutSec = 30,
         [switch] $Force,
         [Alias('Dry')]
-        [switch] $DryRun
+        [switch] $DryRun,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Invoke-IloRedfish'; return }
 
     $destructiveActions = @('MountAndBoot','Boot','Reset')
     if ($Action -in $destructiveActions -and -not $Force -and -not $DryRun) {

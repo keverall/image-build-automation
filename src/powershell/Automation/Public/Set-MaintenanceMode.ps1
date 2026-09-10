@@ -340,8 +340,10 @@ function Set-MaintenanceMode {
         [switch] $DryRun,
         [Alias('MockState')]
         [ValidateSet('enable', 'disable', 'partial')][string] $MockMaintenanceState = 'disable',
-        [switch] $NoSchedule
+        [switch] $NoSchedule,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Set-MaintenanceMode'; return }
 
     $ErrorActionPreference = 'Continue'
 
@@ -1858,8 +1860,10 @@ function Test-ScomConnection {
         [string]$ManagementServer,
         [string]$Username,
         [string]$Password,
-        [string]$ModuleName = 'OperationsManager'
+        [string]$ModuleName = 'OperationsManager',
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-ScomConnection'; return }
     
     try {
         $scriptContent = @"
@@ -1895,8 +1899,10 @@ function Test-OneViewConnection {
         [string]$Appliance,
         [string]$Username,
         [string]$Password,
-        [string]$ModuleName = 'HPEOneView.1000'
+        [string]$ModuleName = 'HPEOneView.1000',
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-OneViewConnection'; return }
     
     try {
         $cred = [System.Management.Automation.PSCredential]::new(

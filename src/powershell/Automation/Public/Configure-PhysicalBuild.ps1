@@ -197,8 +197,10 @@ function Configure-PhysicalBuild {
         [switch] $PassThru,
         [switch] $Json,
         [Alias('Execute')]
-        [switch] $Deploy
+        [switch] $Deploy,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Configure-PhysicalBuild'; return }
 
     if (-not $ExpectedHostname) {
         $ExpectedHostname = $ServerIdentifier 

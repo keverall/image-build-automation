@@ -87,8 +87,10 @@ function Invoke-GitLabMaintenanceTrigger {
         [Alias('Timeout')]
         [int] $TimeoutSeconds = 600,
         [Alias('JobTok')]
-        [string] $JobToken = $env:GITLAB_JOB_TOKEN
+        [string] $JobToken = $env:GITLAB_JOB_TOKEN,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Invoke-GitLabMaintenanceTrigger'; return }
 
     # Import the Send-GitLabMaintenanceRequest function if not already loaded
     $scriptsRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..' '..' '..' 'scripts' 'gitlab')).ProviderPath

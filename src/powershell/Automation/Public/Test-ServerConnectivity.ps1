@@ -118,8 +118,10 @@ function Test-ServerConnectivity {
         [switch] $DryRun,
         [Alias('PT')]
         [switch] $PassThru,
-        [switch] $Quiet
+        [switch] $Quiet,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Test-ServerConnectivity'; return }
 
     $ErrorActionPreference = 'Continue'
     $Mode = 'oneview'

@@ -1,4 +1,4 @@
-﻿#
+#
 # New-Uuid.ps1 - Deterministic UUID generator
 #
 # Usage:  pwsh -File New-Uuid.ps1 -ServerName 'srv01.corp.local'
@@ -44,8 +44,10 @@ Generate a deterministic UUID from server name + timestamp using SHA-256.
         [Alias('Ts')]
         [string] $Timestamp = $null,
         [Alias('OutPath')]
-        [string] $OutputPath = $null
+        [string] $OutputPath = $null,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'New-Uuid'; return }
 
     if (-not $Timestamp) { $Timestamp = [DateTimeOffset]::UtcNow.ToString('o') }
 

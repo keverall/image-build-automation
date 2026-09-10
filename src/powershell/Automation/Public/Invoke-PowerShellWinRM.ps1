@@ -1,4 +1,4 @@
-﻿#
+#
 # Public/Invoke-PowerShellWinRM.ps1 - Execute a PowerShell script on a remote server via WinRM.
 #
 
@@ -51,8 +51,10 @@ function Invoke-PowerShellWinRM {
         [Parameter(Mandatory, Position = 3)][SecureString] $Password,
         [Parameter(Mandatory = $false)][string]    $Transport  = 'NTLM',
         [Parameter(Mandatory = $false)][int]       $TimeoutSeconds = 300,
-        [Parameter(Mandatory = $false)][object[]]  $ArgumentList
+        [Parameter(Mandatory = $false)][object[]]  $ArgumentList,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Invoke-PowerShellWinRM'; return }
     try {
         $cred    = New-Object System.Management.Automation.PSCredential($Username, $Password)
         $session = New-PSSession -ComputerName $Server -Credential $cred -Authentication $Transport -ErrorAction Stop

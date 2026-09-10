@@ -21,8 +21,10 @@ function Invoke-OpsRampClient {
     [CmdletBinding()]
     [OutputType([OpsRamp_Client])]
     param(
-        [Parameter(Mandatory, Position = 0)][string] $ConfigPath
+        [Parameter(Mandatory, Position = 0)][string] $ConfigPath,
+        [switch] $Help
     )
+    if ($Help) { Get-CommandHelp -Name 'Invoke-OpsRampClient'; return }
     return [OpsRamp_Client]::new($ConfigPath)
 }
 
