@@ -33,6 +33,8 @@
   - [Patch Windows ISO with security updates](#patch-windows-iso-with-security-updates)
 - [Maintenance Mode](#maintenance-mode)
   - [Examples](#examples)
+  - [Enable OneView maintenance mode](#enable-oneview-maintenance-mode)
+  - [Disable OneView maintenance mode](#disable-oneview-maintenance-mode)
 - [PowerShell Execution and Utility](#powershell-execution-and-utility)
   - [Run a local PowerShell script](#run-a-local-powershell-script)
   - [Run a remote PowerShell script via WinRM](#run-a-remote-powershell-script-via-winrm)
@@ -1097,6 +1099,75 @@ See [`CLIENT-QUICK-START.md`](../CLIENT-QUICK-START.md#top) for the full guide.
 ```powershell
 Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Environment Test
 ```
+
+---
+
+<a id="enable-oneview-maintenance-mode"></a>
+
+### Enable OneView maintenance mode
+
+`Enable-OneViewMaintenanceMode` places a single HPE OneView server (or scope) into maintenance mode. It is the standalone OneView equivalent of `Set-MaintenanceMode -Mode oneview -Action enable` — use this when you only need to touch OneView and not SCOM. The appliance host is taken from `-OneViewHost` or from `oneview_config.json` (`appliance`); credentials are read from the env vars named in that config.
+
+| Parameter | Type | Mandatory | Notes |
+| --- | --- | --- | --- |
+| `-TargetId` | string | No | Server or scope name (position 0). Ignored if `-SerialNumber` is supplied. |
+| `-TargetType` | string | **Yes** | `ServerHardware` (default) or `Scope` (position 1, ValidateSet). |
+| `-Environment` | string | No | `Test` or `Prod`. |
+| `-OneViewHost` | string | No | OneView appliance host. Alias: `OVHost`. |
+| `-SerialNumber` | string | No | Resolve the target server by serial instead of `-TargetId`. Alias: `Srl`. |
+| `-Start` / `-End` | string | No | Maintenance window. If only `-Start` is given, `-End` defaults to a sensible window. |
+| `-ConfigDir` | string | No | Config dir holding `oneview_config.json` (default `configs`). Alias: `CfgDir`. |
+| `-DryRun` | switch | No | Resolve + validate without actually enabling. Alias: `Dry`. |
+| `-NoSchedule` | switch | No | Skip scheduling a future auto-disable. Alias: `NoSchedule`. |
+| `-Json` | switch | No | Return the raw result object as JSON. |
+| `-PassThru` | switch | No | Return the result object. Alias: `PT`. |
+| `-Help` | switch | No | Print the command reference and exit (no action taken). |
+
+```powershell
+# Enable by server name
+Enable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -Environment Prod
+
+# Enable by serial number, scheduled window
+Enable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -Start 'now' -End '+4hours' -Environment Prod
+
+# Validate first without changing anything
+Enable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -DryRun
+```
+
+Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Enable-OneViewMaintenanceMode`](https://github.com/.../blob/main/src/powershell/Automation/Public/OneViewMaintenanceMode.ps1)
+
+---
+
+<a id="disable-oneview-maintenance-mode"></a>
+
+### Disable OneView maintenance mode
+
+`Disable-OneViewMaintenanceMode` takes a server (or scope) out of HPE OneView maintenance mode. It is the standalone OneView equivalent of `Set-MaintenanceMode -Mode oneview -Action disable`. Parameters mirror `Enable-OneViewMaintenanceMode`, with one extra:
+
+| Parameter | Type | Mandatory | Notes |
+| --- | --- | --- | --- |
+| `-TargetId` | string | No | Server or scope name (position 0). Ignored if `-SerialNumber` is supplied. |
+| `-TargetType` | string | **Yes** | `ServerHardware` (default) or `Scope` (position 1, ValidateSet). |
+| `-Environment` | string | No | `Test` or `Prod`. |
+| `-OneViewHost` | string | No | OneView appliance host. Alias: `OVHost`. |
+| `-SerialNumber` | string | No | Resolve the target server by serial instead of `-TargetId`. Alias: `Srl`. |
+| `-PostDisableWaitSeconds` | int | No | Seconds to wait after disabling (ValidateRange 0–3600, default 0). Alias: `WaitSec`. |
+| `-ConfigDir` | string | No | Config dir holding `oneview_config.json` (default `configs`). Alias: `CfgDir`. |
+| `-DryRun` | switch | No | Resolve + validate without actually disabling. Alias: `Dry`. |
+| `-NoSchedule` | switch | No | Alias: `NoSchedule`. |
+| `-Json` | switch | No | Return the raw result object as JSON. |
+| `-PassThru` | switch | No | Return the result object. Alias: `PT`. |
+| `-Help` | switch | No | Print the command reference and exit (no action taken). |
+
+```powershell
+# Disable by server name
+Disable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -Environment Prod
+
+# Disable by serial number, wait 60s afterwards
+Disable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -PostDisableWaitSeconds 60 -Environment Prod
+```
+
+Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Disable-OneViewMaintenanceMode`](https://github.com/.../blob/main/src/powershell/Automation/Public/OneViewMaintenanceMode.ps1)
 
 ---
 
