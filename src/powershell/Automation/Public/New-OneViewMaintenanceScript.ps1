@@ -97,7 +97,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
-    if (-not `$s.MaintenanceModeEnabled) {
+    if (-not `$s.maintenanceMode) {
         Enable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
         Write-Output "Maintenance enabled: `$(`$s.Name)"
     }
@@ -112,7 +112,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
-    if (`$s.MaintenanceModeEnabled) {
+    if (`$s.maintenanceMode) {
         Disable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
         Write-Output "Maintenance disabled: `$(`$s.Name)"
     }

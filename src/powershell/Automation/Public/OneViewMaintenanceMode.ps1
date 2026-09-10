@@ -148,7 +148,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         Message = ''
     }
     try {
-        if (`$server.MaintenanceModeEnabled) {
+        if (`$server.maintenanceMode) {
             `$obj.Status = 'already_in_maintenance'
             `$obj.Message = 'Already in maintenance mode'
             `$alreadyInMaintenance++
@@ -179,7 +179,7 @@ if ('$TargetType' -eq 'ServerHardware') {
             Message = ''
         }
         try {
-            if (`$server.MaintenanceModeEnabled) {
+            if (`$server.maintenanceMode) {
                 `$obj.Status = 'already_in_maintenance'
                 `$obj.Message = 'Already in maintenance mode'
                 `$alreadyInMaintenance++
@@ -295,7 +295,7 @@ if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
     `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
     try {
-        if (`$server.MaintenanceModeEnabled) {
+        if (`$server.maintenanceMode) {
             `$obj.Status = 'already_in_maintenance'
             `$obj.Message = 'Already in maintenance mode'
             `$alreadyInMaintenance++
@@ -321,7 +321,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         if (-not `$server) { continue }
         `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
         try {
-            if (`$server.MaintenanceModeEnabled) {
+            if (`$server.maintenanceMode) {
                 `$obj.Status = 'already_in_maintenance'
                 `$obj.Message = 'Already in maintenance mode'
                 `$alreadyInMaintenance++
@@ -438,7 +438,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         Message = ''
     }
     try {
-        if (-not `$server.MaintenanceModeEnabled) {
+        if (-not `$server.maintenanceMode) {
             `$obj.Status = 'already_not_in_maintenance'
             `$obj.Message = 'Already not in maintenance mode'
             `$notInMaintenance++
@@ -467,7 +467,7 @@ if ('$TargetType' -eq 'ServerHardware') {
             Message = ''
         }
         try {
-            if (-not `$server.MaintenanceModeEnabled) {
+            if (-not `$server.maintenanceMode) {
                 `$obj.Status = 'already_not_in_maintenance'
                 `$obj.Message = 'Already not in maintenance mode'
                 `$notInMaintenance++
@@ -575,7 +575,7 @@ if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
     `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
     try {
-        if (-not `$server.MaintenanceModeEnabled) {
+        if (-not `$server.maintenanceMode) {
             `$obj.Status = 'already_not_in_maintenance'
             `$obj.Message = 'Already not in maintenance mode'
             `$notInMaintenance++
@@ -599,7 +599,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         if (-not `$server) { continue }
         `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
         try {
-            if (-not `$server.MaintenanceModeEnabled) {
+            if (-not `$server.maintenanceMode) {
                 `$obj.Status = 'already_not_in_maintenance'
                 `$obj.Message = 'Already not in maintenance mode'
                 `$notInMaintenance++
@@ -699,8 +699,8 @@ if ('$TargetType' -eq 'ServerHardware') {
     `$out.Objects += @{
         Name              = `$server.Name
         Type              = `$server.Type
-        InMaintenanceMode = [bool]`$server.MaintenanceModeEnabled
-        MaintenanceModeState = if (`$server.MaintenanceModeEnabled) { 'Enabled' } else { 'Disabled' }
+        InMaintenanceMode = [bool]`$server.maintenanceMode
+        MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
     }
 } elseif ('$TargetType' -eq 'Scope') {
     `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
@@ -712,8 +712,8 @@ if ('$TargetType' -eq 'ServerHardware') {
         `$out.Objects += @{
             Name              = `$server.Name
             Type              = `$server.Type
-            InMaintenanceMode = [bool]`$server.MaintenanceModeEnabled
-            MaintenanceModeState = if (`$server.MaintenanceModeEnabled) { 'Enabled' } else { 'Disabled' }
+            InMaintenanceMode = [bool]`$server.maintenanceMode
+            MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
         }
     }
 }
@@ -775,8 +775,8 @@ if ('$TargetType' -eq 'ServerHardware') {
     `$out.Objects += @{
         Name = `$server.Name
         Type = `$server.Type
-        InMaintenanceMode = [bool]`$server.MaintenanceModeEnabled
-        MaintenanceModeState = if (`$server.MaintenanceModeEnabled) { 'Enabled' } else { 'Disabled' }
+        InMaintenanceMode = [bool]`$server.maintenanceMode
+        MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
     }
 } elseif ('$TargetType' -eq 'Scope') {
     `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
@@ -788,8 +788,8 @@ if ('$TargetType' -eq 'ServerHardware') {
         `$out.Objects += @{
             Name = `$server.Name
             Type = `$server.Type
-            InMaintenanceMode = [bool]`$server.MaintenanceModeEnabled
-            MaintenanceModeState = if (`$server.MaintenanceModeEnabled) { 'Enabled' } else { 'Disabled' }
+            InMaintenanceMode = [bool]`$server.maintenanceMode
+            MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
         }
     }
 }
