@@ -643,6 +643,10 @@ Export-ModuleMember -Function @(
     # Entry-point handlers (called by Invoke-RoutedRequest)
     'Invoke-WindowsSecurityUpdate'
     'Set-MaintenanceMode'
+    # OneView maintenance mode (standalone enable/disable/get)
+    'Enable-OneViewMaintenanceMode'
+    'Disable-OneViewMaintenanceMode'
+    'Get-OneViewMaintenanceMode'
     'Start-InstallMonitor'
     'Get-OneViewServerTarget'
     'Get-OneViewConnectionStatus'
