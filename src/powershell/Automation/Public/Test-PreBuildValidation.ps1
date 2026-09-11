@@ -86,7 +86,7 @@ function Test-PreBuildValidation {
     [OutputType([hashtable])]
     param(
         [Alias('SrvrId')]
-        [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $ServerIdentifier,
         [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('Ilo')]
@@ -105,7 +105,7 @@ function Test-PreBuildValidation {
         [switch] $SkipIsoUrl,
         [Alias('Dry')]
         [switch] $DryRun,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-PreBuildValidation'; return }
 

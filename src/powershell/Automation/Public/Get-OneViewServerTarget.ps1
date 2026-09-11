@@ -77,7 +77,7 @@ function Get-OneViewServerTarget {
         [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('SrvrId')]
-        [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $ServerIdentifier,
         [Alias('IdTyp')]
         [ValidateSet('Auto','Name','Serial','OneViewName','IloIp','EnclosureBay')][string] $IdentifierType = 'Auto',
         [Alias('Cred')]
@@ -99,7 +99,7 @@ function Get-OneViewServerTarget {
         [switch] $PassThru,
         [switch] $Json,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Get-OneViewServerTarget'; return }
 

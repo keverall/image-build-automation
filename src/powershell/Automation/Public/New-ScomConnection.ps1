@@ -25,8 +25,8 @@ function New-ScomConnection {
     [CmdletBinding()]
     [OutputType([string])]
     param(
-        [Parameter(Mandatory, Position = 0)][string] $ManagementServer,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $ManagementServer,
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-ScomConnection'; return }
     return @"
@@ -60,9 +60,9 @@ function New-ScomRestConnection {
     [CmdletBinding()]
     [OutputType([string])]
     param(
-        [Parameter(Mandatory, Position = 0)][string] $ManagementServer,
-        [Parameter(Mandatory, Position = 1)][System.Management.Automation.PSCredential] $Credential,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $ManagementServer,
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 1)][System.Management.Automation.PSCredential] $Credential,
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-ScomRestConnection'; return }
     $UserName = $Credential.UserName

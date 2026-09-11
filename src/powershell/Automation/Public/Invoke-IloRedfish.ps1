@@ -74,9 +74,9 @@ function Invoke-IloRedfish {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][ValidateSet('Mount','MountAndBoot','Boot','Reset','Eject','Status')][string] $Action,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][ValidateSet('Mount','MountAndBoot','Boot','Reset','Eject','Status')][string] $Action,
         [Alias('Ilo')]
-        [Parameter(Mandatory)][string] $IloIp,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $IloIp,
         [Alias('IloU')]
         [string] $IloUser  = $null,
         [Alias('IloP')]
@@ -91,7 +91,7 @@ function Invoke-IloRedfish {
         [switch] $Force,
         [Alias('Dry')]
         [switch] $DryRun,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Invoke-IloRedfish'; return }
 

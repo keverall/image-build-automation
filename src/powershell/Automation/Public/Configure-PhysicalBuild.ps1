@@ -159,7 +159,7 @@ function Configure-PhysicalBuild {
     [OutputType([hashtable])]
     param(
         [Alias('SrvrId')]
-        [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $ServerIdentifier,
         [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('Ilo')]
@@ -198,7 +198,7 @@ function Configure-PhysicalBuild {
         [switch] $Json,
         [Alias('Execute')]
         [switch] $Deploy,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Configure-PhysicalBuild'; return }
 

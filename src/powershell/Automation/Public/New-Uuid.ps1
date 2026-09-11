@@ -40,12 +40,12 @@ Generate a deterministic UUID from server name + timestamp using SHA-256.
     [OutputType([string])]
     param(
         [Alias('SrvrName')]
-        [Parameter(Mandatory, Position = 0)][string] $ServerName,
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $ServerName,
         [Alias('Ts')]
         [string] $Timestamp = $null,
         [Alias('OutPath')]
         [string] $OutputPath = $null,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-Uuid'; return }
 

@@ -62,6 +62,43 @@ function Get-CommandHelp {
     $out = [System.Collections.Generic.List[string]]::new()
     $add = { param([string]$s) $out.Add($s) }.GetNewClosure()
 
+    # ── Command → section anchor in docs/Automation/automation_commands.md ──────────
+    # The EXAMPLES section links to the per-command section (via its table-of-contents
+    # anchor) in the Automation command reference, which holds the runnable examples.
+    $commandDocAnchors = @{
+        'Test-ServerConnectivity'      = 'test-oneview-connectivity'
+        'Connect-OneView'              = 'connect-to-oneview'
+        'Disconnect-OneView'           = 'disconnect-from-oneview'
+        'Get-OneViewConnectionStatus'  = 'get-oneview-connection-status'
+        'Get-OneViewServerList'        = 'get-oneview-server-list'
+        'Test-BuildParams'             = 'validate-build-parameters'
+        'Configure-PhysicalBuild'      = 'configure-build-4-eye-review'
+        'Start-InstallMonitor'         = 'monitor-installation-progress'
+        'Invoke-IloRedfish'            = 'ilo-redfish-operations'
+        'Get-OneViewServerTarget'      = 'resolve-server-target-via-oneview'
+        'Test-PreBuildValidation'      = 'pre-build-validation'
+        'Test-PostBuildValidation'     = 'post-build-validation'
+        'Invoke-WindowsSecurityUpdate' = 'patch-windows-iso-with-security-updates'
+        'Invoke-OpsRamp'               = 'opsramp-api-client'
+        'Set-MaintenanceMode'          = 'maintenance-mode'
+        'Enable-OneViewMaintenanceMode'= 'enable-oneview-maintenance-mode'
+        'Disable-OneViewMaintenanceMode'= 'disable-oneview-maintenance-mode'
+        'Invoke-PowerShellScript'      = 'run-a-local-powershell-script'
+        'Invoke-PowerShellWinRM'       = 'run-a-remote-powershell-script-via-winrm'
+        'New-Uuid'                     = 'generate-a-deterministic-uuid'
+        'Invoke-OpsRampClient'         = 'opsramp-api-client'
+        'Start-AutomationOrchestrator' = 'orchestrator-unified-entry-point'
+        'Get-RouteMap'                 = 'view-the-route-map'
+        'Run-CIPipeline'               = 'control-surface-factories-and-runners'
+        'Run-IRequest'                 = 'control-surface-factories-and-runners'
+        'Run-Scheduler'                = 'control-surface-factories-and-runners'
+        'Run-GitLab'                   = 'control-surface-factories-and-runners'
+        'New-CIPipelineCtrl'           = 'control-surface-factories-and-runners'
+        'New-IRequestCtrl'             = 'control-surface-factories-and-runners'
+        'New-SchedulerCtrl'            = 'control-surface-factories-and-runners'
+        'Invoke-GitLabMaintenanceTrigger' = 'gitlab-maintenance-trigger'
+    }
+
     # ── NAME ────────────────────────────────────────────────────────────────────
     & $add "${cBold}${cCyan}NAME${cReset}"
     & $add "    $($cmd.Name)"
@@ -83,6 +120,11 @@ function Get-CommandHelp {
         'OutBuffer', 'PipelineVariable', 'ProgressAction', 'Confirm', 'WhatIf'
     )
     foreach ($set in $cmd.ParameterSets) {
+        # Skip the dedicated -Help parameter set: it carries only -Help (plus
+        # common parameters) and would otherwise render as a redundant usage line.
+        $setSpecific = @($set.Parameters | Where-Object { $_.Name -notin $commonParams })
+        if ($setSpecific.Count -eq 1 -and $setSpecific[0].Name -eq 'Help') { continue }
+
         $segments = [System.Collections.Generic.List[string]]::new()
         $segments.Add("$($cmd.Name)")
         foreach ($p in $set.Parameters) {
@@ -134,7 +176,12 @@ function Get-CommandHelp {
     # Preserve declaration order from the command's metadata where possible.
     foreach ($p in $docParams) {
         $typeName = if ($p.ParameterType.Name -eq 'SwitchParameter') { 'switch' } else { $p.ParameterType.Name }
-        $isMandatory = ($p.Attributes | Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] -and $_.Mandatory }) -ne $null
+        # A parameter is "mandatory" for the operator only if it is required in a
+        # non-Help parameter set; -Help is mandatory solely to enter its own set.
+        $isMandatory = ($p.Attributes | Where-Object {
+            $_ -is [System.Management.Automation.ParameterAttribute] -and
+            $_.Mandatory -and $_.ParameterSetName -ne 'Help'
+        }) -ne $null
         $status = if ($isMandatory) { "${cRed}mandatory${cReset}" } else { "${cGreen}optional${cReset}" }
 
         & $add "    ${cYellow}-$($p.Name)${cReset} <$typeName>  [$status]"
@@ -202,17 +249,39 @@ function Get-CommandHelp {
     }
 
     # ── EXAMPLES ────────────────────────────────────────────────────────────────────
-    if ($help.PSObject.Properties['Examples'] -and $help.Examples) {
-        & $add "${cBold}${cCyan}EXAMPLES${cReset}"
-        foreach ($ex in $help.Examples) {
-            $title = if ($ex.PSObject.Properties['Title']) { "$($ex.Title)".Trim() } else { '' }
-            $code  = if ($ex.PSObject.Properties['Code'])  { "$($ex.Code)".Trim() }  else { '' }
-            $remarks = if ($ex.PSObject.Properties['Remarks']) { "$($ex.Remarks)".Trim() } else { '' }
-            if ($title) { & $add "    ${cBold}$title${cReset}" }
-            if ($code)  { & $add "        $code" }
-            if ($remarks) { & $add "        ${cGray}$remarks${cReset}" }
-            & $add ""
+    # The runnable examples live in the Automation command reference; link to the
+    # per-command table-of-contents entry rather than duplicating the examples here.
+    # Resolve a full, clickable GitHub blob URL (repo included) when run inside the
+    # repo, so the link works straight from a terminal; fall back to a repo-relative
+    # path otherwise.
+    $docRel  = 'docs/Automation/automation_commands.md'
+    # Default to the canonical repo URL so the link is always a full, clickable
+    # GitHub blob URL (repo name included), even outside a git checkout. When run
+    # inside the repo, the live `git remote` overrides this.
+    $docBase = 'https://github.com/keverall/image-build-automation/blob/main/docs/Automation/automation_commands.md'
+    try {
+        $tl = & git -C $PSScriptRoot rev-parse --show-toplevel 2>$null
+        if ($tl) {
+            $remote = & git -C $tl remote get-url origin 2>$null
+            if ($remote) {
+                $web = $null
+                if     ($remote -match '^git@(.+):(.+)$')              { $web = "https://$($Matches[1])/$($Matches[2])" }
+                elseif ($remote -match '^ssh://git@(.+):(.+)$')        { $web = "https://$($Matches[1])/$($Matches[2])" }
+                elseif ($remote -match '^https?://(.+)$')              { $web = "https://$($Matches[1])" }
+                if ($web) { $web = $web -replace '\.git$'; $docBase = "$web/blob/main/$docRel" }
+            }
         }
+    } catch { }
+
+    $anchor  = $null
+    if ($commandDocAnchors.ContainsKey($cmd.Name)) { $anchor = $commandDocAnchors[$cmd.Name] }
+    & $add "${cBold}${cCyan}EXAMPLES${cReset}"
+    if ($anchor) {
+        & $add "    See the Automation command reference for runnable examples:"
+        & $add "        ${cCyan}$docBase#$anchor${cReset}"
+    } else {
+        & $add "    See the Automation command reference (Table of Contents) for runnable examples:"
+        & $add "        ${cCyan}$docBase${cReset}"
     }
 
     # ── NOTES ──────────────────────────────────────────────────────────────────────

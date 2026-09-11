@@ -322,7 +322,7 @@ function Set-MaintenanceMode {
         [Parameter(Position = 0)][ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [Alias('TgtId')]
         [Parameter(Position = 1)][string] $TargetId,
-        [Parameter(Mandatory, Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 2)][ValidateSet('scom', 'oneview')][string] $Mode,
         [Alias('Env')]
         [ValidateSet('Test', 'Prod')][string] $Environment,
         [Alias('OVHost')]
@@ -341,7 +341,7 @@ function Set-MaintenanceMode {
         [Alias('MockState')]
         [ValidateSet('enable', 'disable', 'partial')][string] $MockMaintenanceState = 'disable',
         [switch] $NoSchedule,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Set-MaintenanceMode'; return }
 
@@ -1861,7 +1861,7 @@ function Test-ScomConnection {
         [string]$Username,
         [string]$Password,
         [string]$ModuleName = 'OperationsManager',
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-ScomConnection'; return }
     
@@ -1900,7 +1900,7 @@ function Test-OneViewConnection {
         [string]$Username,
         [string]$Password,
         [string]$ModuleName = 'HPEOneView.1000',
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-OneViewConnection'; return }
     

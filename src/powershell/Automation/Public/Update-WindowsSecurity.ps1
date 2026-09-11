@@ -73,23 +73,23 @@ function Invoke-WindowsSecurityUpdate {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][Alias('BaseIso', 'b')][string] $BaseIsoPath,
-        [Parameter(Mandatory)][Alias('ServerName', 's')][string] $Server,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][Alias('BaseIso', 'b')][string] $BaseIsoPath,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][Alias('ServerName', 's')][string] $Server,
         [Alias('Srl')]
-        [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $SerialNumber = $null,
         [Alias('OVHost')]
-        [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
-        [Parameter(Mandatory = $false)][Alias('p')][string] $PatchesConfig = 'configs\windows_patches.json',
-        [Parameter(Mandatory = $false)][Alias('o')][string] $OutputDir = 'output\patched',
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $OneViewHost = $null,
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][Alias('p')][string] $PatchesConfig = 'configs\windows_patches.json',
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][Alias('o')][string] $OutputDir = 'output\patched',
         [ValidateSet('dism', 'powershell')]
-        [Parameter(Mandatory = $false)][Alias('m')][string] $Method = 'dism',
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][Alias('m')][string] $Method = 'dism',
         [Alias('Dry')]
-        [Parameter(Mandatory = $false)][switch] $DryRun,
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][switch] $DryRun,
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Invoke-WindowsSecurityUpdate'; return }
     if ($SerialNumber) {

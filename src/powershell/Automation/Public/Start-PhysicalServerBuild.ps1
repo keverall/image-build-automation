@@ -36,7 +36,7 @@ function Confirm-IsoDeployment {
         [string] $IsoUrl,
         [hashtable] $OneViewDetails,
         [switch] $DryRun,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Confirm-IsoDeployment'; return }
 
@@ -298,7 +298,7 @@ function Start-PhysicalServerBuild {
     [OutputType([hashtable])]
     param(
         [Alias('SrvrId')]
-        [Parameter(Mandatory)][string] $ServerIdentifier,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $ServerIdentifier,
         [Alias('OVHost')]
         [string] $OneViewHost,
         [Alias('Ilo')]
@@ -339,7 +339,7 @@ function Start-PhysicalServerBuild {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Start-PhysicalServerBuild'; return }
 

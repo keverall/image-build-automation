@@ -31,14 +31,14 @@ function New-OneViewMaintenanceScript {
     [OutputType([string])]
     param(
         [Alias('Appl')]
-        [Parameter(Mandatory, Position = 0)][string] $Appliance,
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $Appliance,
         [Alias('Scope')]
-        [Parameter(Mandatory, Position = 1)][string] $ScopeName,
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 1)][string] $ScopeName,
         [Alias('Op')]
-        [Parameter(Mandatory, Position = 2)][ValidateSet('enable', 'disable')][string] $Operation,
-        [Parameter(Mandatory = $false)][bool] $Async = $true,
-        [Parameter(Mandatory = $false)][string] $ModuleName,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 2)][ValidateSet('enable', 'disable')][string] $Operation,
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][bool] $Async = $true,
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $ModuleName,
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-OneViewMaintenanceScript'; return }
     

@@ -28,7 +28,7 @@ function _Build-CIParams {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][hashtable] $RawParams
+        [Parameter(Mandatory, ParameterSetName = 'Run')][hashtable] $RawParams
     )
     $stage = $RawParams.Get_Item('BUILD_STAGE')
     $dryRun = [bool]($RawParams.Get_Item('DRY_RUN'))
@@ -65,7 +65,7 @@ function _Build-IRequestParams {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][hashtable] $FormData
+        [Parameter(Mandatory, ParameterSetName = 'Run')][hashtable] $FormData
     )
     $clusterId = $FormData.Get_Item('cluster_id')
     $action = $FormData.Get_Item('action')
@@ -93,7 +93,7 @@ function _Build-SchedulerParams {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][hashtable] $TaskParams
+        [Parameter(Mandatory, ParameterSetName = 'Run')][hashtable] $TaskParams
     )
     $task = $TaskParams.Get_Item('task')
     $dryRun = [bool]($TaskParams.Get_Item('dry_run'))
@@ -126,10 +126,14 @@ function New-CIPipelineCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $Params,
-        [switch] $Help
+        [hashtable] $Params,
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-CIPipelineCtrl'; return }
+    if (-not $Params) {
+        Write-Error "New-CIPipelineCtrl requires -Params (a hashtable of CI variables). Supply it, or use -Help for usage."
+        return
+    }
     $ctrl = _Build-CIParams -RawParams $Params
     return [pscustomobject]$ctrl
 }
@@ -141,10 +145,14 @@ function New-IRequestCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $FormData,
-        [switch] $Help
+        [hashtable] $FormData,
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-IRequestCtrl'; return }
+    if (-not $FormData) {
+        Write-Error "New-IRequestCtrl requires -FormData (a hashtable of iRequest fields). Supply it, or use -Help for usage."
+        return
+    }
     $ctrl = _Build-IRequestParams -FormData $FormData
     return [pscustomobject]$ctrl
 }
@@ -156,10 +164,14 @@ function New-SchedulerCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $TaskParams,
-        [switch] $Help
+        [hashtable] $TaskParams,
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-SchedulerCtrl'; return }
+    if (-not $TaskParams) {
+        Write-Error "New-SchedulerCtrl requires -TaskParams (a hashtable of scheduler task variables). Supply it, or use -Help for usage."
+        return
+    }
     $ctrl = _Build-SchedulerParams -TaskParams $TaskParams
     return [pscustomobject]$ctrl
 }
@@ -171,9 +183,9 @@ function _Execute {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][string]  $RequestType,
-        [Parameter(Mandatory)][hashtable] $Params,
-        [Parameter(Mandatory)][string]  $Source,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string]  $RequestType,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][hashtable] $Params,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string]  $Source,
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
@@ -210,7 +222,7 @@ function Run-CIPipeline {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-CIPipeline'; return }
     $ctrl = _Build-CIParams -RawParams $Params
@@ -241,7 +253,7 @@ function Run-IRequest {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-IRequest'; return }
     $ctrl = _Build-IRequestParams -FormData $FormData
@@ -272,7 +284,7 @@ function Run-Scheduler {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-Scheduler'; return }
     $ctrl = _Build-SchedulerParams -TaskParams $TaskParams
@@ -286,7 +298,7 @@ function _Build-GitLabParams {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][hashtable] $Params
+        [Parameter(Mandatory, ParameterSetName = 'Run')][hashtable] $Params
     )
     return @{
         RequestType = "gitlab_maintenance"
@@ -305,8 +317,8 @@ function New-GitLabCtrl {
     [CmdletBinding()]
     [OutputType([psobject])]
     param(
-        [Parameter(Mandatory)][hashtable] $Params,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Run')][hashtable] $Params,
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-GitLabCtrl'; return }
     $ctrl = _Build-GitLabParams -Params $Params
@@ -337,7 +349,7 @@ function Run-GitLab {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-GitLab'; return }
     $ctrl = _Build-GitLabParams -Params $Params

@@ -50,13 +50,13 @@ Execute an automation request with validation and routing.
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory, Position = 0)][string] $RequestType,
+        [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $RequestType,
         [hashtable] $Params = @{},
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Start-AutomationOrchestrator'; return }
     Write-Verbose "Executing $RequestType"

@@ -63,8 +63,8 @@ function Update-Firmware {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][string[]] $FirmwareFolders,
-        [Parameter(Mandatory)][string] $Server,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string[]] $FirmwareFolders,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $Server,
         [System.Management.Automation.PSCredential] $Credential,
         [string] $SutToolPath,
         [Alias('SkipConf')]
@@ -75,7 +75,7 @@ function Update-Firmware {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Update-Firmware'; return }
 

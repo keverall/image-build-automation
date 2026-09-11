@@ -87,7 +87,7 @@ function Connect-OneView {
         [switch] $PassThru,
         [switch] $Json,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Connect-OneView'; return }
 
@@ -248,7 +248,7 @@ function _Complete-ConnectOneViewResult {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)] [hashtable] $Result,
+        [Parameter(Mandatory, ParameterSetName = 'Run')] [hashtable] $Result,
         [switch] $PassThru,
         [switch] $Json,
         [switch] $Quiet,

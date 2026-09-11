@@ -81,11 +81,11 @@ function Test-PostBuildValidation {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param(
-        [Parameter(Mandatory)][string] $Hostname,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $Hostname,
         [Alias('Srl')]
-        [Parameter(Mandatory = $false)][string] $SerialNumber = $null,
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $SerialNumber = $null,
         [Alias('OVHost')]
-        [Parameter(Mandatory = $false)][string] $OneViewHost = $null,
+        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $OneViewHost = $null,
         [string] $ExpectedHostname = $null,
         [string] $Domain,
         [string] $ExpectedOsVersion,
@@ -98,7 +98,7 @@ function Test-PostBuildValidation {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [switch] $Help
+        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-PostBuildValidation'; return }
     if ($SerialNumber) {
