@@ -227,7 +227,7 @@ This project is Makefile-driven. The canonical way to run day-to-day tasks is:
 | Target | Description |
 | --- | --- |
 | `make help` | List all Makefile targets with descriptions |
-| `make list-commands` | List all available `Automation` module commands (32) with synopses |
+| `make list-commands` | List all available `Automation` module commands (28) with synopses |
 | `make setup` | Provision the PowerShell environment, profiles, and CI runner (module install, oh-my-posh, checkmake, make) |
 | `make lint` | Run the full lint suite: PowerShell (`PSScriptAnalyzer`), Makefile (`checkmake`), and Python (`Ruff`) |
 | `make lint-python` | Lint and autofix Python scripts with Ruff (resolved via `uv run ruff`) |

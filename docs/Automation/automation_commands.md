@@ -110,7 +110,7 @@ SOURCE
 
 When `-Help` is passed, the command returns immediately after printing the reference and performs no other work. `Get-CommandHelp` reads the command's metadata directly (parameters, `ValidateSet`/`ValidatePattern` rules, pipeline binding, and source file) so the reference always matches the real function definition.
 
-> **Listing every command:** `make list-commands` (or `.\scripts\list-commands.ps1`) prints a table of all 32 main `Automation` commands with their synopses — a quick inventory of what `-Help` is available for.
+> **Listing every command:** `make list-commands` (or `.\scripts\list-commands.ps1`) prints a table of all 28 main `Automation` commands with their synopses — a quick inventory of what `-Help` is available for.
 
 ---
 

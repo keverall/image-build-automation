@@ -1,15 +1,23 @@
 param()
 
 <#
-.SYNOPSIS
-    List all main (exported) commands provided by the Automation module.
-
 .DESCRIPTION
-    Parses the public command files under src/powershell/Automation/Public and
-    prints a bordered table of each command with its synopsis. This is the
-    companion to `Get-CommandHelp` / the per-command `-Help` switch: it gives a
-    quick inventory of "what commands exist", while `Get-CommandHelp <Name>`
-    (or `<Name> -Help`) shows the detailed man-page reference for one command.
+    Parses docs/Automation/automation_commands.md to determine which commands
+    are documented, intersects that set with the real functions declared under
+    src/powershell/Automation/Public, and prints a bordered table of each
+    command with its synopsis.
+
+    This is the companion to `Get-CommandHelp` / the per-command `-Help`
+    switch: it gives a quick inventory of "what commands exist", while
+    `Get-CommandHelp <Name>` (or `<Name> -Help`) shows the detailed man-page
+    reference for one command.
+
+    Sources-of-truth:
+      * docs/Automation/automation_commands.md — the allowlist of commands.
+        SCOM-only helpers (New-ScomConnection, New-ScomMaintenanceScript,
+        Test-ScomMaintenanceConnectivity, ...) are intentionally absent from
+        the doc and therefore excluded from this table automatically.
+      * src/powershell/Automation/Public/*.ps1  — the real function definitions.
 
     Uses Write-Output with ANSI escape codes (not Write-Host) so that the
     PSScriptAnalyzer AvoidUsingWriteHost rule is not triggered, while still
@@ -21,8 +29,9 @@ param()
 
 # Resolve paths relative to the repository root (parent of scripts/).
 $scriptDir = $PSScriptRoot
-$repoRoot = Split-Path $scriptDir -Parent
+$repoRoot  = Split-Path $scriptDir -Parent
 $publicDir = Join-Path $repoRoot 'src/powershell/Automation/Public'
+$docPath   = Join-Path $repoRoot 'docs/Automation/automation_commands.md'
 
 # ── ANSI palette ────────────────────────────────────────────────────────────────
 $Cyan   = "$([char]27)[36m"
@@ -74,45 +83,72 @@ function Wrap-Text {
     return $lines.ToArray()
 }
 
-function Get-Synopsis {
-    param([string]$Content)
-    $m = [regex]::Match($Content, '(?s)\.SYNOPSIS\s*\r?\n(.*?)(?=\.\w+\s|#>)')
+function Get-SynopsisForFunction {
+    param([string]$Content, [string]$FunctionName)
+    # Locate this function's own declaration, then read the .SYNOPSIS that
+    # belongs to its (inline) comment-based help block.
+    $mFn = [regex]::Match($Content, "(?m)^\s*function\s+$([regex]::Escape($FunctionName))\b")
+    if (-not $mFn.Success) { return '' }
+    $rest = $Content.Substring($mFn.Index)
+    $m = [regex]::Match($rest, '(?s)\.SYNOPSIS\s*\r?\n(.*?)(?=\.\w+\s|#>)')
     if (-not $m.Success) { return '' }
     $lines = $m.Groups[1].Value -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^\.' }
     if ($lines.Count -eq 0) { return '' }
     return (($lines | Select-Object -First 1) -join ' ').Trim()
 }
 
-function Get-CommandName {
-    param([string]$Content)
-    # First non-internal (no leading underscore) function declaration.
-    $m = [regex]::Match($Content, '(?m)^\s*function\s+([A-Za-z][A-Za-z0-9_-]*)')
-    if ($m.Success) { return $m.Groups[1].Value }
-    return ''
+# ── Build the allowlist from the documentation ─────────────────────────────────
+# docs/Automation/automation_commands.md is the single source of truth for which
+# commands are surfaced by `make list-commands`. Only Verb-Noun tokens that also
+# exist as real functions under Public/ are included, so the doc's occasional
+# references to external library cmdlets (e.g. Connect-OVMgmt, Enable-OVMgmt,
+# Get-Help) are filtered out. SCOM-only commands are absent from the doc, so they
+# are excluded automatically.
+$documented = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+if (Test-Path $docPath) {
+    $docText = Get-Content $docPath -Raw
+    foreach ($m in [regex]::Matches($docText, '(?<![\w-])[A-Z][a-z]+-[A-Z][a-zA-Z0-9-]+(?![\w-])')) {
+        [void]$documented.Add($m.Value)
+    }
 }
 
-# ── Collect commands ──────────────────────────────────────────────────────────
-$entries = [System.Collections.Generic.List[PSCustomObject]]::new()
+# ── Map every non-internal function declared in Public/ to its source content ────
+$allPublicFunctions = @{}
 if (Test-Path $publicDir) {
-    Get-ChildItem $publicDir -Filter '*.ps1' | Sort-Object Name | ForEach-Object {
+    Get-ChildItem $publicDir -Filter '*.ps1' | ForEach-Object {
         $content = Get-Content $_.FullName -Raw
-        $name = Get-CommandName $content
-        if ($name -and -not $name.StartsWith('_')) {
-            $entries.Add([PSCustomObject]@{
-                Name = $name
-                Desc = Get-Synopsis $content
-            })
+        foreach ($m in [regex]::Matches($content, '(?m)^\s*function\s+([A-Za-z][A-Za-z0-9_-]*)')) {
+            $fn = $m.Groups[1].Value
+            if ($fn -and -not $fn.StartsWith('_') -and -not $allPublicFunctions.ContainsKey($fn)) {
+                $allPublicFunctions[$fn] = $content
+            }
         }
     }
 }
 
+# ── Collect commands ──────────────────────────────────────────────────────────
+$entries = [System.Collections.Generic.List[PSCustomObject]]::new()
+foreach ($name in $documented) {
+    if ($allPublicFunctions.ContainsKey($name)) {
+        $entries.Add([PSCustomObject]@{
+            Name = $name
+            Desc = Get-SynopsisForFunction -Content $allPublicFunctions[$name] -FunctionName $name
+        })
+    }
+}
+
+# Sort by command name for a stable, predictable table.
+$sortedEntries = $entries | Sort-Object Name
+$entries = [System.Collections.Generic.List[PSCustomObject]]::new()
+foreach ($e in $sortedEntries) { $entries.Add($e) }
+
 if ($entries.Count -eq 0) {
-    Write-Output "${Yellow}No commands found in $publicDir${Reset}"
+    Write-Output "${Yellow}No documented commands found in $publicDir (doc: $docPath)${Reset}"
     exit 0
 }
 
 # ── Column widths ───────────────────────────────────────────────────────────────
-$nameW = ($entries | ForEach-Object { Get-DisplayWidth -Text $_.Name } | Measure-Object -Maximum).Maximum
+$nameW  = ($entries | ForEach-Object { Get-DisplayWidth -Text $_.Name } | Measure-Object -Maximum).Maximum
 $descMax = ($entries | ForEach-Object { Get-DisplayWidth -Text $_.Desc } | Measure-Object -Maximum).Maximum
 
 try { $termW = $Host.UI.RawUI.WindowSize.Width } catch { $termW = 0 }
@@ -141,10 +177,17 @@ $top    = "$Cyan╔$('═' * $innerName)╦$('═' * $innerDesc)╗$Reset"
 $header = "$Cyan╠$('═' * $innerName)╬$('═' * $innerDesc)╣$Reset"
 $bottom = "$Cyan╚$('═' * $innerName)╩$('═' * $innerDesc)╝$Reset"
 
+# Dynamic banner width: 2 (borders) + nameW + 3 (sep+pad) + descW + 2 (pad+border).
+$bannerW = $innerName + $innerDesc + 6
+$bannerLine = '═' * [Math]::Max($bannerW, 80)
+$countStr = $entries.Count.ToString()
+$label    = "HPE ProLiant ISO Automation - Available Commands ($countStr)"
+$padCount = [Math]::Max(0, $bannerW - 2 - $label.Length)
+
 Write-Output ''
-Write-Output "${Cyan}╔════════════════════════════════════════════════════════════════════════════════╗${Reset}"
-Write-Output "${Cyan}║  HPE ProLiant ISO Automation - Available Commands ($($entries.Count))                ║${Reset}"
-Write-Output "${Cyan}╚════════════════════════════════════════════════════════════════════════════════╝${Reset}"
+Write-Output "${Cyan}╔${bannerLine}╗${Reset}"
+Write-Output "${Cyan}║  ${label}$(' ' * $padCount)║${Reset}"
+Write-Output "${Cyan}╚${bannerLine}╝${Reset}"
 Write-Output ''
 
 Write-Output $top

@@ -18,6 +18,9 @@ function Get-RouteMap {
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
-    param()
+    param(
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
+    )
+    if ($Help) { Get-CommandHelp -Name 'Get-RouteMap'; return }
     return $script:RouteMap
 }

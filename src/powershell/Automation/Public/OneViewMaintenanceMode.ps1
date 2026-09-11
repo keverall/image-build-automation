@@ -987,8 +987,8 @@ function Enable-OneViewMaintenanceMode {
         [string] $End,
         [Alias('CfgDir')][string] $ConfigDir = 'configs',
         [Alias('Dry')][switch] $DryRun,
-        [Alias('NoSchedule')][switch] $NoSchedule,
-        [Alias('Json')][switch] $Json,
+        [switch] $NoSchedule,
+        [switch] $Json,
         [Alias('PT')][switch] $PassThru,
         [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
@@ -1075,8 +1075,8 @@ function Disable-OneViewMaintenanceMode {
         [Alias('WaitSec')][ValidateRange(0, 3600)][int] $PostDisableWaitSeconds = 0,
         [Alias('CfgDir')][string] $ConfigDir = 'configs',
         [Alias('Dry')][switch] $DryRun,
-        [Alias('NoSchedule')][switch] $NoSchedule,
-        [Alias('Json')][switch] $Json,
+        [switch] $NoSchedule,
+        [switch] $Json,
         [Alias('PT')][switch] $PassThru,
         [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
@@ -1158,7 +1158,7 @@ function Get-OneViewMaintenanceMode {
         [Alias('MockState')][ValidateSet('enable', 'disable', 'partial')][string] $MockMaintenanceState = 'disable',
         [Alias('CfgDir')][string] $ConfigDir = 'configs',
         [Alias('Dry')][switch] $DryRun,
-        [Alias('Json')][switch] $Json,
+        [switch] $Json,
         [Alias('PT')][switch] $PassThru,
         [Parameter(ParameterSetName = 'Help')][switch]$Help
     )

@@ -19,7 +19,6 @@ function Invoke-OpsRampClient {
         $client = Invoke-OpsRampClient -ConfigPath 'configs\opsramp_config.json'
     #>
     [CmdletBinding()]
-    [OutputType([OpsRamp_Client])]
     param(
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $ConfigPath,
         [Parameter(ParameterSetName = 'Help')][switch]$Help
@@ -46,7 +45,11 @@ function Invoke-OpsRamp {
     #>
     [CmdletBinding()]
     [OutputType([bool])]
-    param([string]$ConfigPath = 'configs\opsramp_config.json')
+    param(
+        [string]$ConfigPath = 'configs\opsramp_config.json',
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
+    )
+    if ($Help) { Get-CommandHelp -Name 'Invoke-OpsRamp'; return }
     $client = [OpsRamp_Client]::new($ConfigPath)
     return $client.EnsureToken()
 }
