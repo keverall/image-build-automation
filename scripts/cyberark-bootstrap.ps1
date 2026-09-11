@@ -59,16 +59,16 @@ $FetchedSecrets = @{}
 $FailedSecrets = @()
 
 Write-Host "=== CyberArk Secret Bootstrap ===" -ForegroundColor Cyan
-Write-Output "Target URL: $CyberArkUrl"
-Write-Output "App ID: $AppId"
-Write-Output ""
+Write-Host "Target URL: $CyberArkUrl"
+Write-Host "App ID: $AppId"
+Write-Host ""
 
 foreach ($secret in $SecretsToFetch) {
     $query = "Safe=$($secret.Safe);Object=$($secret.Object)"
     $queryEnc = [System.Uri]::EscapeDataString($query)
     $fullUrl = "$CyberArkUrl?AppID=$AppId&Query=$queryEnc"
 
-    Write-Output "Fetching $($secret.EnvVar)..." -NoNewline
+    Write-Host "Fetching $($secret.EnvVar)..." -NoNewline
 
     try {
         # Validate TLS so the credential response cannot be intercepted via MITM.
@@ -105,7 +105,7 @@ foreach ($secret in $SecretsToFetch) {
     }
 }
 
-Write-Output ""
+Write-Host ""
 Write-Host "=== Bootstrap Summary ===" -ForegroundColor Cyan
 
 if ($FailedSecrets.Count -gt 0) {
@@ -115,9 +115,11 @@ if ($FailedSecrets.Count -gt 0) {
 
 Write-Host "Successfully fetched $($FetchedSecrets.Count) secret(s)" -ForegroundColor Green
 
-# Export for GitLab CI
+# Export for GitLab CI. Only the dotenv KEY=value lines below are written to
+# stdout (CI redirects stdout to secrets.env); every progress/banner line uses
+# Write-Host so it never pollutes the generated secrets file.
 if ($ExportForGitLab) {
-    Write-Output ""
+    Write-Host ""
     Write-Host "=== GitLab CI Export ===" -ForegroundColor Cyan
     foreach ($key in $FetchedSecrets.Keys) {
         # GitLab CI dotenv format: KEY=value (no quotes)
