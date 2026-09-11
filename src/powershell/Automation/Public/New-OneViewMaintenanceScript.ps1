@@ -36,9 +36,9 @@ function New-OneViewMaintenanceScript {
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 1)][string] $ScopeName,
         [Alias('Op')]
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 2)][ValidateSet('enable', 'disable')][string] $Operation,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][bool] $Async = $true,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $ModuleName,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][bool] $Async = $true,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string] $ModuleName,
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-OneViewMaintenanceScript'; return }
     

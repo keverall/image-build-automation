@@ -16,7 +16,7 @@ function Test-OneViewConnection {
         [string]$Username,
         [string]$Password,
         [string]$ModuleName = 'HPEOneView.1000',
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-OneViewConnection'; return }
     
@@ -990,7 +990,7 @@ function Enable-OneViewMaintenanceMode {
         [Alias('NoSchedule')][switch] $NoSchedule,
         [Alias('Json')][switch] $Json,
         [Alias('PT')][switch] $PassThru,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Enable-OneViewMaintenanceMode'; return }
 
@@ -1078,7 +1078,7 @@ function Disable-OneViewMaintenanceMode {
         [Alias('NoSchedule')][switch] $NoSchedule,
         [Alias('Json')][switch] $Json,
         [Alias('PT')][switch] $PassThru,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Disable-OneViewMaintenanceMode'; return }
 
@@ -1160,7 +1160,7 @@ function Get-OneViewMaintenanceMode {
         [Alias('Dry')][switch] $DryRun,
         [Alias('Json')][switch] $Json,
         [Alias('PT')][switch] $PassThru,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Get-OneViewMaintenanceMode'; return }
 

@@ -49,10 +49,10 @@ function Invoke-PowerShellWinRM {
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 1)][string] $Server,
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 2)][string] $Username,
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 3)][SecureString] $Password,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string]    $Transport  = 'NTLM',
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][int]       $TimeoutSeconds = 300,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][object[]]  $ArgumentList,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string]    $Transport  = 'NTLM',
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][int]       $TimeoutSeconds = 300,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][object[]]  $ArgumentList,
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Invoke-PowerShellWinRM'; return }
     try {

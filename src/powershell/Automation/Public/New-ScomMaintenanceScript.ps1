@@ -46,19 +46,19 @@ function New-ScomMaintenanceScript {
     [OutputType([string])]
     param(
         [Alias('Grp')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false, Position = 0)][string] $GroupDisplayName,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run', Position = 0)][string] $GroupDisplayName,
         [Alias('SrvrHosts')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string[]]    $ServerHostnames,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string[]]    $ServerHostnames,
         [Alias('EndTime')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string]      $EndTimeStr,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string]      $Reason = 'PlannedOther',
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string]      $EndTimeStr,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string]      $Reason = 'PlannedOther',
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 1)][string] $Comment,
         [ValidateSet('start', 'stop')]
         [Alias('Op')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string]      $Operation = 'start',
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string]      $Operation = 'start',
         [Alias('Cluster')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][switch]      $UseClusterMode,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][switch]      $UseClusterMode,
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-ScomMaintenanceScript'; return }
 

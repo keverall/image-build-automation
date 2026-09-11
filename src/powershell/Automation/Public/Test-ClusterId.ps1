@@ -35,7 +35,7 @@ function Test-ClusterId {
     param(
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $TargetId,
         [string] $CataloguePath = 'configs\clusters_catalogue.json',
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-ClusterId'; return }
     if (-not $TargetId) {

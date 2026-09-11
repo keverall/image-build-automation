@@ -127,7 +127,7 @@ function New-CIPipelineCtrl {
     [OutputType([psobject])]
     param(
         [hashtable] $Params,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-CIPipelineCtrl'; return }
     if (-not $Params) {
@@ -146,7 +146,7 @@ function New-IRequestCtrl {
     [OutputType([psobject])]
     param(
         [hashtable] $FormData,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-IRequestCtrl'; return }
     if (-not $FormData) {
@@ -165,7 +165,7 @@ function New-SchedulerCtrl {
     [OutputType([psobject])]
     param(
         [hashtable] $TaskParams,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-SchedulerCtrl'; return }
     if (-not $TaskParams) {
@@ -222,7 +222,7 @@ function Run-CIPipeline {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-CIPipeline'; return }
     $ctrl = _Build-CIParams -RawParams $Params
@@ -253,7 +253,7 @@ function Run-IRequest {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-IRequest'; return }
     $ctrl = _Build-IRequestParams -FormData $FormData
@@ -284,7 +284,7 @@ function Run-Scheduler {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-Scheduler'; return }
     $ctrl = _Build-SchedulerParams -TaskParams $TaskParams
@@ -318,7 +318,7 @@ function New-GitLabCtrl {
     [OutputType([psobject])]
     param(
         [Parameter(Mandatory, ParameterSetName = 'Run')][hashtable] $Params,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'New-GitLabCtrl'; return }
     $ctrl = _Build-GitLabParams -Params $Params
@@ -349,7 +349,7 @@ function Run-GitLab {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Run-GitLab'; return }
     $ctrl = _Build-GitLabParams -Params $Params

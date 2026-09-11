@@ -341,7 +341,7 @@ function Set-MaintenanceMode {
         [Alias('MockState')]
         [ValidateSet('enable', 'disable', 'partial')][string] $MockMaintenanceState = 'disable',
         [switch] $NoSchedule,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Set-MaintenanceMode'; return }
 
@@ -1861,7 +1861,7 @@ function Test-ScomConnection {
         [string]$Username,
         [string]$Password,
         [string]$ModuleName = 'OperationsManager',
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-ScomConnection'; return }
     
@@ -1900,7 +1900,7 @@ function Test-OneViewConnection {
         [string]$Username,
         [string]$Password,
         [string]$ModuleName = 'HPEOneView.1000',
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-OneViewConnection'; return }
     

@@ -75,7 +75,7 @@ function Update-Firmware {
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Update-Firmware'; return }
 

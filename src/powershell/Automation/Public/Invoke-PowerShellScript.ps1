@@ -42,11 +42,11 @@ function Invoke-PowerShellScript {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory, ParameterSetName = 'Run', Position = 0)][string] $Script,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][bool]      $CaptureOutput  = $true,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][int]       $TimeoutSeconds = 300,
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string]    $ExecutionPolicy = 'Bypass',
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][hashtable] $Environment,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][bool]      $CaptureOutput  = $true,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][int]       $TimeoutSeconds = 300,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string]    $ExecutionPolicy = 'Bypass',
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][hashtable] $Environment,
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Invoke-PowerShellScript'; return }
     $psArgs = @(

@@ -105,7 +105,7 @@ function Test-PreBuildValidation {
         [switch] $SkipIsoUrl,
         [Alias('Dry')]
         [switch] $DryRun,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Test-PreBuildValidation'; return }
 

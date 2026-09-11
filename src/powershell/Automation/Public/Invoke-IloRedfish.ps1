@@ -91,7 +91,7 @@ function Invoke-IloRedfish {
         [switch] $Force,
         [Alias('Dry')]
         [switch] $DryRun,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Invoke-IloRedfish'; return }
 

@@ -65,7 +65,7 @@ function Invoke-GitLabMaintenanceTrigger {
     [CmdletBinding()]
     param(
         [Alias('TgtId')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $true)][string] $TargetId,
+        [Parameter(Mandatory, ParameterSetName = 'Run')][string] $TargetId,
         [ValidateSet('enable', 'disable', 'validate')][string] $Action = 'enable',
         [string] $Start,
         [string] $End,
@@ -88,7 +88,7 @@ function Invoke-GitLabMaintenanceTrigger {
         [int] $TimeoutSeconds = 600,
         [Alias('JobTok')]
         [string] $JobToken = $env:GITLAB_JOB_TOKEN,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Invoke-GitLabMaintenanceTrigger'; return }
 

@@ -56,7 +56,7 @@ Execute an automation request with validation and routing.
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Start-AutomationOrchestrator'; return }
     Write-Verbose "Executing $RequestType"

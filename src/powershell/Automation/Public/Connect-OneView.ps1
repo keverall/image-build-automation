@@ -87,7 +87,7 @@ function Connect-OneView {
         [switch] $PassThru,
         [switch] $Json,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Connect-OneView'; return }
 

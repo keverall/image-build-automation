@@ -198,7 +198,7 @@ function Configure-PhysicalBuild {
         [switch] $Json,
         [Alias('Execute')]
         [switch] $Deploy,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Configure-PhysicalBuild'; return }
 

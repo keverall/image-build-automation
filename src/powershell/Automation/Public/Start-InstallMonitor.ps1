@@ -65,26 +65,26 @@ function Start-InstallMonitor {
     [CmdletBinding()]
     param(
         [Alias('Srvr')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $Server    = $null,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string] $Server    = $null,
         [Alias('Srl')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $SerialNumber = $null,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string] $SerialNumber = $null,
         [Alias('OVHost')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $OneViewHost = $null,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string] $OneViewHost = $null,
         [Alias('SrvrList')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $ServerList  = 'configs\server_list.txt',
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string] $ServerList  = 'configs\server_list.txt',
         [Alias('IloCred')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][System.Management.Automation.PSCredential] $IloCredential,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][System.Management.Automation.PSCredential] $IloCredential,
         [Alias('Timeout')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][int]    $TimeoutSeconds  = 7200,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][int]    $TimeoutSeconds  = 7200,
         [Alias('PollSec')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][int]    $PollIntervalSeconds = 30,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][int]    $PollIntervalSeconds = 30,
         [Alias('OpsCfg')]
-        [Parameter(Mandatory, ParameterSetName = 'Run' = $false)][string] $OpsRampConfig = 'configs\opsramp_config.json',
+        [Parameter(Mandatory = $false, ParameterSetName = 'Run')][string] $OpsRampConfig = 'configs\opsramp_config.json',
         [switch] $Json,
         [Alias('PT')]
         [switch] $PassThru,
         [switch] $Quiet,
-        [Parameter(Mandatory, ParameterSetName = 'Help')][switch]$Help
+        [Parameter(ParameterSetName = 'Help')][switch]$Help
     )
     if ($Help) { Get-CommandHelp -Name 'Start-InstallMonitor'; return }
     Initialize-Logging -LogFile 'monitoring.log' -CommandName 'Start-InstallMonitor'
