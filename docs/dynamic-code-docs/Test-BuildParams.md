@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-BuildParams.ps1
-generated: 2026-09-10
+generated: 2026-09-11
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

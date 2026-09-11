@@ -203,12 +203,83 @@ function Remove-ExistingAnchors([string[]]$lines) {
     return $result.ToArray()
 }
 
+function Sort-NumberedTocRuns([object[]]$entries) {
+    <#
+    .SYNOPSIS
+        Normalises the order of numbered TOC entries (e.g. "37) Title").
+
+    .DESCRIPTION
+        The TOC is otherwise generated in raw document order, so a change log whose
+        sections were appended out of sequence produces a TOC such as
+        "37, 33, 34, 35, 36, 32 ...". A change log is read newest-first, so its
+        numbered sections must run from the highest number down to 1.
+
+        Each maximal run of consecutive, same-level, numbered entries is reordered
+        into the numeric direction the document already intends, inferred from the
+        run's first vs last number:
+
+            first > last  -> descending (change log: newest / highest first)
+            first < last  -> ascending  (procedural doc: 1..N)
+
+        An already-correctly-ordered run is left untouched, so this is idempotent.
+        Un-numbered entries, and entries at other heading levels, keep their
+        document order.
+
+    .PARAMETER Entries
+        TOC entries as objects with Level / Title / Anchor properties.
+    #>
+    if ($null -eq $entries -or $entries.Count -lt 2) { return $entries }
+
+    $ordered = [System.Collections.Generic.List[object]]::new()
+    $i = 0
+    while ($i -lt $entries.Count) {
+        $level = $entries[$i].Level
+
+        # Collect a maximal run of consecutive, same-level, numbered entries.
+        $run = [System.Collections.Generic.List[object]]::new()
+        $j   = $i
+        while ($j -lt $entries.Count -and $entries[$j].Level -eq $level) {
+            $m = [regex]::Match($entries[$j].Title, '^\s*(\d+)\s*\)')
+            if (-not $m.Success) { break }
+            $run.Add([pscustomobject]@{
+                    Entry = $entries[$j]
+                    Num   = [int]$m.Groups[1].Value
+                })
+            $j++
+        }
+
+        if ($run.Count -lt 2) {
+            $ordered.Add($entries[$i])
+            $i++
+            continue
+        }
+
+        $first = $run[0].Num
+        $last  = $run[$run.Count - 1].Num
+
+        if ($first -gt $last) {
+            $sorted = $run | Sort-Object -Property Num -Descending
+        } elseif ($first -lt $last) {
+            $sorted = $run | Sort-Object -Property Num
+        } else {
+            $sorted = $run
+        }
+
+        foreach ($r in $sorted) { $ordered.Add($r.Entry) }
+        $i = $j
+    }
+
+    return $ordered.ToArray()
+}
+
 function Build-CanonicalContent([string[]]$lines) {
     $cleaned = Remove-ExistingToc $lines
     $cleaned = Remove-ExistingAnchors $cleaned
 
     $updatedContent = [System.Collections.Generic.List[string]]::new()
-    $toc            = [System.Collections.Generic.List[string]]::new()
+    # Holds Level/Title/Anchor objects (not pre-formatted strings) so that
+    # numbered change-log runs can be reordered before the TOC is rendered.
+    $toc            = [System.Collections.Generic.List[object]]::new()
     $anchorsSeen    = @{}
     $needBlankBeforeNext = $false
 
@@ -239,8 +310,9 @@ function Build-CanonicalContent([string[]]$lines) {
 
             if ($level -le 3) {
                 $anchor = Get-Anchor $title ([ref]$anchorsSeen)
-                $indent = '  ' * ($level - 2)
-                $toc.Add("$indent- [$title](#$anchor)")
+                # Stored structurally (not as a formatted string) so numbered runs
+                # can be reordered before the TOC block is rendered.
+                $toc.Add([pscustomobject]@{ Level = $level; Title = $title; Anchor = $anchor })
 
                 $updatedContent.Add("<a id=""$anchor""></a>")
                 $updatedContent.Add('')
@@ -259,7 +331,12 @@ function Build-CanonicalContent([string[]]$lines) {
     $tocBlock = [System.Collections.Generic.List[string]]::new()
     $tocBlock.Add("## Table of Contents")
     $tocBlock.Add("")
-    foreach ($entry in $toc) { $tocBlock.Add($entry) }
+    # Numbered change-log entries are normalised to the document's intended
+    # numeric direction (newest/highest first) rather than raw document order.
+    foreach ($entry in (Sort-NumberedTocRuns $toc.ToArray())) {
+        $indent = '  ' * ($entry.Level - 2)
+        $tocBlock.Add("$indent- [$($entry.Title)](#$($entry.Anchor))")
+    }
     $tocBlock.Add("")
 
     $finalContent = [System.Collections.Generic.List[string]]::new()

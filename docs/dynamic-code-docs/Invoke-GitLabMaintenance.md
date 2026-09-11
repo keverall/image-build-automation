@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/gitlab/Invoke-GitLabMaintenance.ps1
-generated: 2026-09-10
+generated: 2026-09-11
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
