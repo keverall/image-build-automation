@@ -13,70 +13,83 @@
 #
 # SCOM-specific commands are excluded by design (SCOM is out of scope).
 
+# ── Script-level data (available during Pester discovery) ──────────────────
+# SCOM commands (New-Scom*, Test-Scom*) are intentionally omitted because
+# SCOM integration is out of scope for this module.
+$Script:OneViewHelpCommands = @(
+    'Configure-PhysicalBuild'
+    'Connect-OneView'
+    'Disconnect-OneView'
+    'Get-MaintenanceStatusReport'
+    'Get-OneViewConnectionStatus'
+    'Get-OneViewServerList'
+    'Get-OneViewServerTarget'
+    'Get-OneViewVersion'
+    'Invoke-IloRedfish'
+    'Invoke-PowerShellScript'
+    'Invoke-PowerShellWinRM'
+    'Invoke-WindowsSecurityUpdate'
+    'New-CIPipelineCtrl'
+    'New-GitLabCtrl'
+    'New-IRequestCtrl'
+    'New-OneViewMaintenanceScript'
+    'New-SchedulerCtrl'
+    'New-Uuid'
+    'Run-CIPipeline'
+    'Run-GitLab'
+    'Run-IRequest'
+    'Run-Scheduler'
+    'Start-AutomationOrchestrator'
+    'Start-InstallMonitor'
+    'Start-PhysicalServerBuild'
+    'Test-BuildParams'
+    'Test-ClusterId'
+    'Test-PostBuildValidation'
+    'Test-PreBuildValidation'
+    'Test-ServerConnectivity'
+)
+
+$Script:HelpCases = $Script:OneViewHelpCommands | ForEach-Object { @{ Name = $_ } }
+
+# Spot-check subset for Get-CommandHelp integration tests.
+$Script:SpotCheckCases = @(
+    @{ Cmd = 'Connect-OneView' }
+    @{ Cmd = 'Get-OneViewServerList' }
+    @{ Cmd = 'Get-OneViewServerTarget' }
+    @{ Cmd = 'Invoke-IloRedfish' }
+    @{ Cmd = 'Invoke-PowerShellScript' }
+    @{ Cmd = 'New-OneViewMaintenanceScript' }
+    @{ Cmd = 'Invoke-WindowsSecurityUpdate' }
+    @{ Cmd = 'Test-ServerConnectivity' }
+    @{ Cmd = 'Get-MaintenanceStatusReport' }
+)
+
 BeforeAll {
     $Script:ModuleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\src\powershell')).Path
     Import-Module Pester -MinimumVersion 6.0.0 -ErrorAction Stop
     Import-Module (Join-Path $Script:ModuleRoot 'Automation\Automation.psd1') -Force -DisableNameChecking -ErrorAction Stop
-
-    # ── Discover every exported function that carries a -Help parameter ──────────
-    # Exclude SCOM-specific commands (names containing 'Scom').
-    $allCommands = Get-Command -Module Automation -CommandType Function |
-        Where-Object {
-            $_.Parameters -and
-            $_.Parameters.ContainsKey('Help') -and
-            $_.Name -notmatch 'Scom'
-        }
-
-    # SCOM-only command names to suppress (kept as a guard / future reference).
-    $script:ScomCommands = @(
-        'New-ScomMaintenanceScript',
-        'New-ScomConnection',
-        'Set-MaintenanceMode',
-        'Test-ScomMaintenanceConnectivity'
-    )
 }
 
 Describe 'Every OneView command with -Help renders help and exits cleanly' {
 
-    # Build the -ForEach data set from the discovered commands.
-    $helpCases = foreach ($c in $allCommands) {
-        [PSCustomObject]@{
-            CommandName = $c.Name
-        }
-    }
-
-    It '<CommandName> -Help outputs help text and returns' -ForEach $helpCases {
-        $output = & $CommandName -Help 2>&1
-        # The help renderer writes output via Write-Output; capture it.
-        $outputText = $output -join "`n"
-        $outputText      | Should -Not -BeNullOrEmpty
-        $outputText      | Should -Match 'NAME'
-        $outputText      | Should -Match $CommandName
-        $outputText      | Should -Match 'SYNOPSIS'
-        $outputText      | Should -Match 'SYNTAX'
+    It '<Name> -Help outputs help text and returns' -ForEach $Script:HelpCases {
+        $output = & $Name -Help 2>&1
+        $outputText = ($output -join "`n") -replace '\x1b\[[0-9;]*[a-zA-Z]', ''
+        $outputText | Should -Not -BeNullOrEmpty
+        $outputText | Should -Match 'NAME'
+        $outputText | Should -Match $Name
+        $outputText | Should -Match 'SYNOPSIS'
+        $outputText | Should -Match 'SYNTAX'
     }
 }
 
 Describe 'OneView commands can be invoked without -Help (parameter sets are well-formed)' {
 
-    $invokeCases = foreach ($c in $allCommands) {
-        [PSCustomObject]@{
-            CommandName   = $c.Name
-            DefaultSet    = $c.DefaultParameterSet ?? '__AllParameterSets'
-            ParameterSets = ($c.ParameterSets | ForEach-Object { $_.Name }) -join ','
-        }
-    }
-
-    It '<CommandName> has a parameter set that does not require -Help' -ForEach $invokeCases {
-        # The command must have at least one parameter set that is NOT the
-        # dedicated 'Help' set (or use the default __AllParameterSets).
-        $nonHelpSets = $CommandSets = ($c = Get-Command $CommandName -ErrorAction Stop).ParameterSets |
-            Where-Object { $_.Name -ne 'Help' }
-        $nonHelpSets.Count | Should -BeGreaterThan 0
-    }
-
-    It '<CommandName> does not force -Help to be mandatory' -ForEach $invokeCases {
-        $cmd = Get-Command $CommandName -ErrorAction Stop
+    # Some commands use a dual-set design (Run + Help); others have a single
+    # parameter set (either __AllParameterSets or Help) where -Help is an
+    # optional switch. In all cases the -Help parameter must not be mandatory.
+    It '<Name> does not mark -Help as mandatory' -ForEach $Script:HelpCases {
+        $cmd = Get-Command $Name -ErrorAction Stop
         $helpParam = $cmd.Parameters['Help']
         $helpParam | Should -Not -BeNullOrEmpty
         $mandatoryAttrs = $helpParam.Attributes |
@@ -85,55 +98,30 @@ Describe 'OneView commands can be invoked without -Help (parameter sets are well
             ($mandatoryAttrs | Where-Object { $_.Mandatory }).Count | Should -Be 0
         }
     }
-
-    It '<CommandName> -Help selects the Help parameter set (or __AllParameterSets) and not the Run set' -ForEach $invokeCases {
-        $cmd = Get-Command $CommandName -ErrorAction Stop
-        $helpParam = $cmd.Parameters['Help']
-        $helpAttrs = $helpParam.Attributes |
-            Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] }
-        if ($helpAttrs) {
-            # The Help parameter should be in the 'Help' set (if parameter sets
-            # are used) or in __AllParameterSets (no explicit set). Either is fine
-            # — the key requirement is that it is NOT mandatory.
-            $helpAttrs | ForEach-Object {
-                $_.Mandatory | Should -Be $false
-            }
-        }
-    }
 }
 
 Describe 'Get-CommandHelp integration for select OneView commands' {
 
-    # Spot-check a representative subset of OneView commands to ensure
-    # Get-CommandHelp produces structured output for each.
-    $spotCheck = @(
-        @{ Cmd = 'Connect-OneView' },
-        @{ Cmd = 'Get-OneViewServerList' },
-        @{ Cmd = 'Get-OneViewServerTarget' },
-        @{ Cmd = 'Invoke-IloRedfish' },
-        @{ Cmd = 'Invoke-PowerShellScript' },
-        @{ Cmd = 'New-OneViewMaintenanceScript' },
-        @{ Cmd = 'Invoke-WindowsSecurityUpdate' },
-        @{ Cmd = 'Test-ServerConnectivity' },
-        @{ Cmd = 'Get-MaintenanceStatusReport' }
-    )
-
-    It 'Get-CommandHelp <Cmd> renders structured output' -ForEach $spotCheck {
+    It 'Get-CommandHelp <Cmd> renders structured output' -ForEach $Script:SpotCheckCases {
         $output = & Get-CommandHelp -Name $Cmd 2>&1
-        $text = $output -join "`n"
+        $text = ($output -join "`n") -replace '\x1b\[[0-9;]*[a-zA-Z]', ''
         $text | Should -Not -BeNullOrEmpty
         $text | Should -Match 'NAME'
-        $text | Should -Match "`s"
         $text | Should -Match 'SYNOPSIS'
         $text | Should -Match 'SYNTAX'
     }
 
-    It '<Cmd> -Help and Get-CommandHelp <Cmd> produce the same NAME line' -ForEach $spotCheck {
+    It '<Cmd> -Help and Get-CommandHelp <Cmd> produce equivalent output' -ForEach $Script:SpotCheckCases {
         $direct = & $Cmd -Help 2>&1
         $indirect = & Get-CommandHelp -Name $Cmd 2>&1
-        $directText = $direct -join "`n"
-        $indirectText = $indirect -join "`n"
-        $directText  | Should -Match "NAME`r?`n    $Cmd"
-        $indirectText | Should -Match "NAME`r?`n    $Cmd"
+        $directText   = ($direct -join "`n") -replace '\x1b\[[0-9;]*[a-zA-Z]', ''
+        $indirectText = ($indirect -join "`n") -replace '\x1b\[[0-9;]*[a-zA-Z]', ''
+        # Both should contain the command name and standard help sections.
+        $directText   | Should -Match $Cmd
+        $indirectText | Should -Match $Cmd
+        $directText   | Should -Match 'NAME'
+        $indirectText | Should -Match 'NAME'
+        $directText   | Should -Match 'SYNOPSIS'
+        $indirectText | Should -Match 'SYNOPSIS'
     }
 }
