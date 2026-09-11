@@ -73,7 +73,7 @@ function New-ScomMaintenanceScript {
     if ($Operation -eq 'start') {
         if ($UseClusterMode) {
             # ─── CLUSTER MODE ─────────────────────────────────────────────────────
-            # Strategy (per wip/HPe-Openview-maintenance-mode.ps1 + MS Learn SCOM docs):
+            # Strategy (per MS Learn SCOM docs, cluster-centric maintenance requirements):
             #   1. For each server hostname, resolve its SCOM agent
             #   2. If agent is cluster-managed, get the Microsoft.Windows.Cluster class instance
             #   3. Call ScheduleMaintenanceMode on the cluster instance (Recursive → all nodes)

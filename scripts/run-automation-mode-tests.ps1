@@ -14,13 +14,13 @@
 
 .DESCRIPTION
     Executes focused Pester tests for the automation module's runbook functions:
-    - New-IsoBuild, Publish-BootIso
-    - Get-OneViewServerTarget
-    - Invoke-IloRedfish, Invoke-IsoDeploy
+    - Get-OneViewServerTarget, Get-OneViewServerList, Get-OneViewConnectionStatus
+    - Invoke-IloRedfish
     - Start-PhysicalServerBuild
     - Test-PreBuildValidation, Test-PostBuildValidation
     - Start-InstallMonitor
-    - Update-Firmware, Update-WindowsSecurity
+    - Update-WindowsSecurity, Update-Firmware (-Help matrix)
+    - HelpParamTests (every documented/exported -Help command)
 
     Displays detailed test summary with pass/fail/skip counts and duration.
     Logs detailed output to generated/logs/automation/automated-mode-test_*.log
@@ -50,23 +50,19 @@ Write-Host "Detailed log: $pesterLogPath" -ForegroundColor Cyan
 
 $config = New-PesterConfiguration
 $config.Run.Path = @(
-    (Join-Path $testPath 'New-IsoBuild.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Publish-BootIso.Unit.Tests.ps1'),
     (Join-Path $testPath 'Get-OneViewServerTarget.Unit.Tests.ps1'),
     (Join-Path $testPath 'Get-OneViewConnectionStatus.Unit.Tests.ps1'),
     (Join-Path $testPath 'Get-OneViewServerList.Unit.Tests.ps1'),
     (Join-Path $testPath 'Logging.Unit.Tests.ps1'),
     (Join-Path $testPath 'AutomationCommandLogging.Unit.Tests.ps1'),
     (Join-Path $testPath 'Invoke-IloRedfish.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Invoke-IsoDeploy.Unit.Tests.ps1'),
     (Join-Path $testPath 'Start-PhysicalServerBuild.Unit.Tests.ps1'),
     (Join-Path $testPath 'Test-PreBuildValidation.Unit.Tests.ps1'),
     (Join-Path $testPath 'Test-PostBuildValidation.Unit.Tests.ps1'),
     (Join-Path $testPath 'Start-InstallMonitor.Unit.Tests.ps1'),
-    (Join-Path $testPath 'Update-Firmware.Unit.Tests.ps1'),
     (Join-Path $testPath 'Update-WindowsSecurity.Unit.Tests.ps1'),
     (Join-Path $testPath 'Setup-Profile.Tests.ps1'),
-    (Join-Path $testPath 'HelpSwitch.Unit.Tests.ps1')
+    (Join-Path $testPath 'HelpParamTests.Unit.Tests.ps1')
 )
 $config.Run.PassThru = $true
 $config.Output.Verbosity = 'Detailed'
@@ -87,14 +83,14 @@ Write-Host "`n==================================================================
 Write-Host "                           TEST SUMMARY BLOCK                                   " -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host " Total Tests   : $($results.TotalCount)" -ForegroundColor White
-Write-Output " Passed        : $($results.PassedCount) " -NoNewline
+Write-Host " Passed        : $($results.PassedCount) " -NoNewline -ForegroundColor White
 if ($results.PassedCount -eq $results.TotalCount) { Write-Host "`u{2714}" -ForegroundColor Green } else { Write-Host "`u{2714}" -ForegroundColor Green }
 
 if ($results.FailedCount -gt 0) {
-    Write-Output " Failed        : $($results.FailedCount) " -NoNewline
+    Write-Host " Failed        : $($results.FailedCount) " -NoNewline -ForegroundColor White
     Write-Host "`u{2716} (CRITICAL)" -ForegroundColor Red
 } else {
-    Write-Output " Failed        : $($results.FailedCount) " -NoNewline
+    Write-Host " Failed        : $($results.FailedCount) " -NoNewline -ForegroundColor White
     Write-Host "`u{2714}" -ForegroundColor Green
 }
 

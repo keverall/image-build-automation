@@ -655,6 +655,7 @@ Export-ModuleMember -Function @(
     'Invoke-IloRedfish'
     'Test-PreBuildValidation'
     'Test-PostBuildValidation'
+    'Update-Firmware'
     'New-Uuid'
     # OpsRamp
     'Invoke-OpsRamp'

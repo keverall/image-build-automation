@@ -119,16 +119,40 @@ function Get-CommandHelp {
         'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable',
         'OutBuffer', 'PipelineVariable', 'ProgressAction', 'Confirm', 'WhatIf'
     )
+    $renderSets = [System.Collections.Generic.List[object]]::new()
     foreach ($set in $cmd.ParameterSets) {
-        # Skip the dedicated -Help parameter set: it carries only -Help (plus
-        # common parameters) and would otherwise render as a redundant usage line.
+        # A -Help-carrying set is an implementation detail of the help switch.
+        # Because optional run parameters are not scoped to a named set, they leak
+        # into the Help set, so it is NOT Help-only and the naive skip below would
+        # render a second, redundant usage line containing [-Help <switch>].
         $setSpecific = @($set.Parameters | Where-Object { $_.Name -notin $commonParams })
         if ($setSpecific.Count -eq 1 -and $setSpecific[0].Name -eq 'Help') { continue }
 
+        $renderSets.Add([PSCustomObject]@{
+            Set     = $set
+            HasHelp = [bool](@($setSpecific | Where-Object { $_.Name -eq 'Help' }).Count)
+        })
+    }
+
+    # Drop help-bearing sets when a genuine (non-Help) set exists ...
+    if (@($renderSets | Where-Object { -not $_.HasHelp }).Count -gt 0) {
+        $renderSets = [System.Collections.Generic.List[object]]::new(@($renderSets | Where-Object { -not $_.HasHelp }))
+    }
+    # ... otherwise (commands with no dedicated run set) keep exactly one usage line.
+    if ($renderSets.Count -gt 1) {
+        $renderSets = [System.Collections.Generic.List[object]]::new(@($renderSets[0]))
+    }
+    # A command that takes nothing but -Help still deserves a usage line.
+    if ($renderSets.Count -eq 0) {
+        & $add ("    $($cmd.Name) [<CommonParameters>]")
+    }
+
+    foreach ($entry in $renderSets) {
         $segments = [System.Collections.Generic.List[string]]::new()
         $segments.Add("$($cmd.Name)")
-        foreach ($p in $set.Parameters) {
+        foreach ($p in $entry.Set.Parameters) {
             if ($p.Name -in $commonParams) { continue }
+            if ($p.Name -eq 'Help') { continue }
             $typeName = if ($p.ParameterType.Name -eq 'SwitchParameter') { 'switch' } else { $p.ParameterType.Name }
             $seg = if ($p.IsMandatory) {
                 "-$($p.Name) <$typeName>"

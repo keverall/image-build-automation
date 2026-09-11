@@ -6,6 +6,9 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
+  - [41) Data-driven `-Help` test matrix (38 commands), `Update-Firmware` export fix, runner output fix & wip cleanup](#41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup)
+  - [40) Parameter-set mandatory enforcement + `-Help` EXAMPLES link to command reference](#40-parameter-set-mandatory-enforcement-help-examples-link-to-command-reference)
+  - [39) Update-Firmware re-added — post-OS HPE firmware flash integrated into the build](#39-update-firmware-re-added-post-os-hpe-firmware-flash-integrated-into-the-build)
   - [38) Consistent newest-first ordering — change-log body, summary table, TOC generator + maintenance guide](#38-consistent-newest-first-ordering-change-log-body-summary-table-toc-generator-maintenance-guide)
   - [37) Unified `-Help` switch across all 28 documented commands + doc-driven `make list-commands`](#37-unified-help-switch-across-all-28-documented-commands-doc-driven-make-list-commands)
   - [36) Documentation & tooling updates — maintenance mode / Checkmake / security pipeline docs, ISO & Firmware parameter options, Makefile + SETUP-GUIDE + doc index refactor](#36-documentation-tooling-updates-maintenance-mode-checkmake-security-pipeline-docs-iso-firmware-parameter-options-makefile-setup-guide-doc-index-refactor)
@@ -51,6 +54,9 @@
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |  
+| 2026-09-11 | Added a data-driven `-Help` test matrix (`scripts/HelpParamTests.txt`, 38 commands) with a completeness guard that fails when an exported Automation `-Help` command is missing from the list, plus `tests/powershell/HelpParamTests.Unit.Tests.ps1` (44 assertions: output ownership, section structure/order, no exceptions, `-Help` ≡ `Get-CommandHelp`), a focused `scripts/run-help-param-tests.ps1` runner and a `make help-param-tests` target; fixed the root-module `Export-ModuleMember` that omitted `Update-Firmware` (present in the manifest but never actually exported, so `-Help` was unreachable); fixed `Get-CommandHelp` to render a single usage line with no `-Help` token (32 of 38 commands previously showed a redundant `-Help` line because optional run parameters leaked into the `Help` set); fixed the `Write-Output … -NoNewline` literal in the four Pester runners; retired `HelpSwitch.Unit.Tests.ps1` and retargeted `automation-mode-tests` (dropping four references to deleted test files); corrected §40's mandatory-`-Help`/usage-line wording; and pruned the `wip/` scratch docs, vendored font trees and stale references as part of the wip cleanup (test count 598 → 564) | Kev Everall |
+| 2026-09-11 | Enforced mandatory parameters per parameter set across the Public commands: run-path parameters are now `[Parameter(Mandatory, ParameterSetName = 'Run')]` and `-Help` is an optional `[Parameter(ParameterSetName = 'Help')]`, so a bare command surfaces a real "missing mandatory parameter" error instead of demanding `-Help`, while `-Help` alone renders usage without requiring run parameters; `Get-CommandHelp` links its EXAMPLES section to each command's section (clickable GitHub blob URL) in `docs/Automation/automation_commands.md` | Kev Everall |
+| 2026-09-04 | Re-introduced `Update-Firmware` (204-line Public command, pruned in change 27) to flash HPE firmware from client-supplied folders after OS installation: new `-Server`, `-FirmwareFolders`, `-Credential`, `-SutToolPath`, and `-SkipConfirmation` parameters; wired into `Start-PhysicalServerBuild` and `Configure-PhysicalBuild` so a build flashes BIOS / iLO / Smart Array / NIC / drivers via HPE SUT/SUM when firmware folders are supplied (or records a clean failure when credentials are absent); module manifest + `automation_commands.md` updated | Kev Everall |
 | 2026-09-11 | Made `recent-changes.md` ordering consistent newest-first: physically reordered the `## Change details` sections and the `## Summary of changes` table to `38 … 1` (they were `38, 37, 33, 34, 35, 36, 32 …`), and aligned a truncated §34 date row with its summary row; added `Sort-NumberedTocRuns` to `scripts/Docs.Common.ps1` so `make fix-docs` emits numbered TOC runs in the document's intended numeric direction (change log = newest/highest first); corrected `docs/recent-changes-maintenance.md`, whose "DO NOT run `make fix-docs` on this file" and hand-maintained-TOC guidance no longer matched how the generator behaves | Kev Everall |
 | 2026-09-11 | Unified `-Help` switch across all 28 documented commands: added `-Help` support to `Get-RouteMap` (was missing the parameter entirely), `Invoke-OpsRamp` (was missing the parameter entirely), and `Invoke-OpsRampClient` (removed `[OutputType([OpsRamp_Client])]` that threw on systems where the class wasn't loaded, breaking `-Help` on Linux); fixed parameter alias conflicts in `OneViewMaintenanceMode.ps1` where `[Alias('NoSchedule')]` on `$NoSchedule` and `[Alias('Json')]` on `$Json` were invalid (alias == parameter name); rewrote `scripts/list-commands.ps1` as a doc-driven allowlist that parses `docs/Automation/automation_commands.md` for the command list, intersects with actual Public functions, and automatically excludes SCOM-only commands; updated `README.md` and `docs/Automation/automation_commands.md` command count 32 → 28 | Kev Everall |
 | 2026-09-04 | Documentation & tooling updates: maintenance mode / Checkmake integration / security-pipeline docs refreshed; ISO & Firmware parameter-options section added to automation commands; Makefile, SETUP-GUIDE, and the documentation index refactored | Kev Everall |
@@ -93,6 +99,115 @@
 <a id="change-details"></a>
 
 ## Change details
+
+<a id="41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup"></a>
+
+### 41) Data-driven `-Help` test matrix (38 commands), `Update-Firmware` export fix, runner output fix & wip cleanup
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-11 | Added a data-driven `-Help` test matrix, fixed the `Update-Firmware` export and `Get-CommandHelp` usage-line rendering, corrected the Pester runner summary output, and completed the `wip/` cleanup (test count 598 → 564) | Kev Everall |
+
+<a name="root-cause-41"></a>
+
+#### Root cause
+
+- **`-Help` coverage was a hardcoded list that had already drifted.** `HelpSwitch.Unit.Tests.ps1` carried its own command array (30 entries) that no longer matched `scripts/HelpParamTests.txt` (28 documented commands, which itself omitted 10 exported commands that expose `-Help`). Nothing tied the two together, and no test proved the rendered help actually belonged to the invoked command or that every canonical section was present.
+- **`Update-Firmware` was documented and manifested but never exported.** `Automation.psd1` `FunctionsToExport` listed `Update-Firmware` and `docs/Automation/automation_commands.md` documented it, but the root module's `Export-ModuleMember -Function @(...)` in `Automation.psm1` omitted it. `Get-Command Update-Firmware` therefore failed, so the command and its `-Help` were unreachable — the §39 changelog claim that it was re-exported was only true of the manifest, not of runtime.
+- **`Get-CommandHelp` only skipped a `-Help`-*only* parameter set.** `Private/Help.ps1` skipped a set whose set-specific parameters were exactly `{ Help }`. Because optional run parameters are not scoped to a named set, they leak into the `Help` set, so it is not `-Help`-only and the skip never fired — 32 of 38 commands rendered a second, redundant usage line containing `[-Help <switch>]`.
+- **Four Pester runners printed a literal `-NoNewline`.** The summary blocks used `Write-Output "…" -NoNewline`; `Write-Output` has no `-NoNewline` parameter, so PowerShell emitted the token itself as an extra output line.
+- **`wip/` had accumulated scratch docs and vendored font trees.** `wip/Fix-GitSSH.md`, `wip/changes.md`, `CONSOLIDATION_SUMMARY.md`, `IMPLEMENTATION_SUMMARY.md`, `questions.md`, `setup-error.md`, `HPe-Openview-maintenance-mode.ps1`, `tempcachyospsprofile.ps1` and the `wip/Hack` + `wip/Meslo` font trees were no longer maintained, and `testing-issue.md` was a 551-line captured transcript.
+
+<a name="fix-41"></a>
+
+#### Fix
+
+- **`scripts/HelpParamTests.txt` is now the single source of truth (38 commands).** The 28 documented commands plus the 10 other exported OneView commands that expose `-Help` (`Get-OneViewMaintenanceMode`, `Get-OneViewVersion`, `New-CIPipelineCtrl`, `New-GitLabCtrl`, `New-IRequestCtrl`, `New-OneViewMaintenanceScript`, `New-SchedulerCtrl`, `Run-IRequest`, `Start-PhysicalServerBuild`, `Test-ClusterId`).
+- **`tests/powershell/HelpParamTests.Unit.Tests.ps1` (new).** Reads the matrix and, per command, asserts `-Help` throws nothing and writes no error records; the `NAME`, `SYNOPSIS`, `SYNTAX`, `PARAMETERS`, `EXAMPLES` sections are present and ordered; the `NAME` line, every `SYNTAX` usage line and the `PARAMETERS` table belong to *that* command with no `-Help` token; `EXAMPLES` links `automation_commands.md`; and `-Help` output is byte-identical to `Get-CommandHelp -Name`. A completeness guard fails if any exported non-SCOM Automation command exposing `-Help` is missing from the matrix.
+- **`scripts/run-help-param-tests.ps1` (new) + `make help-param-tests`.** Focused runner with a JUnit report and the standard summary block; added to `.PHONY` alongside the other group-test targets.
+- **`Automation.psm1`**: `Export-ModuleMember` now includes `Update-Firmware`, making the §39 manifest claim true at runtime.
+- **`Private/Help.ps1`**: the USAGE renderer drops `-Help`-bearing sets when a dedicated run set exists, never prints a `-Help` token, and falls back to `Name [<CommonParameters>]` for commands that take nothing but `-Help` — so every command renders one clean usage line.
+- **Pester runners** (`run-tests.ps1`, `run-maint-mode-tests.ps1`, `run-automation-mode-tests.ps1`, `run-test-progress-rpt-tests.ps1`): summary `Write-Output … -NoNewline` → `Write-Host … -NoNewline`.
+- **Retired `HelpSwitch.Unit.Tests.ps1`** (superseded) and retargeted `scripts/run-automation-mode-tests.ps1` at `HelpParamTests`, removing four references to test files deleted in earlier prunes (`New-IsoBuild`, `Publish-BootIso`, `Invoke-IsoDeploy`, `Update-Firmware` unit tests).
+- **Changelog corrections**: §40's summary/body rows no longer claim `-Help` is `[Parameter(Mandatory, ParameterSetName = 'Help')]` (it is intentionally optional) and no longer reference the deleted `HelpSwitch.Unit.Tests.ps1`.
+- **wip cleanup**: deleted the scratch docs and vendored font trees listed above; trimmed `wip/testing-issue.md` to its SSH root-cause summary (structure re-anchored and re-TOC'd); reworded the SCOM comment in `New-ScomMaintenanceScript.ps1` and the note in `configs/scom_config.json` that pointed at the removed `wip/HPe-Openview-maintenance-mode.ps1`; and updated the root `changes.md` note that referenced the removed `wip/changes.md`.
+
+<a name="verification-41"></a>
+
+#### Verification
+
+- `make help-param-tests` → **44 passed, 0 failed**; `make automation-mode-tests` → **166 passed, 0 failed**.
+- `make test` → **564 passed, 0 failed** (598 − 78 retired `HelpSwitch` tests + 44 new `HelpParamTests`); `make lint` → PSScriptAnalyzer **149 files clean**, checkmake clean, Ruff clean.
+- Renderer check: **0 of 38** commands render a `-Help` token in `SYNTAX`; **38 of 38** render at least one usage line.
+- `Get-Command Update-Firmware` resolves and `Update-Firmware -Help` renders its reference.
+- Completeness guard sensitivity: reverting the matrix to the original 28 lines fails the guard, naming exactly the 10 missing commands.
+- `wip/testing-issue.md` passes `scripts/bitbucket-md-anchor-toc.ps1 -InputFileName wip/testing-issue.md -DryRun`.
+
+> Historical note: the wip cleanup removed `wip/Fix-GitSSH.md`, `wip/changes.md` and the other scratch docs. References to them in §34 and older entries are historical; the referenced design/requirements were reworded into the code and configs that remain.
+
+<a id="40-parameter-set-mandatory-enforcement-help-examples-link-to-command-reference"></a>
+
+### 40) Parameter-set mandatory enforcement + `-Help` EXAMPLES link to command reference
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-11 | Enforced mandatory parameters per parameter set across the Public commands: run-path parameters are now `[Parameter(Mandatory, ParameterSetName = 'Run')]` and `-Help` is an optional `[Parameter(ParameterSetName = 'Help')]`, so a bare command surfaces a real "missing mandatory parameter" error instead of demanding `-Help`, while `-Help` alone renders usage without requiring run parameters; `Get-CommandHelp` links its EXAMPLES section to each command's section (clickable GitHub blob URL) in `docs/Automation/automation_commands.md` | Kev Everall |
+
+<a name="root-cause-40"></a>
+
+#### Root cause
+
+- **Mandatory applied to every parameter set.** Parameters were declared `[Parameter(Mandatory)]` with no `ParameterSetName`, so the mandatory flag bound to *all* sets — including the new `-Help` set. Typing `-Help` alone (e.g. `Configure-PhysicalBuild -Help`) first forced the run-only mandatory params (e.g. `-ServerIdentifier`), defeating the help switch.
+- **`-Help` was an unbound optional switch.** With no parameter set, PowerShell could not separate the help path from the run path, so the help guard fired but the command was still subject to the global mandatory requirement.
+- **EXAMPLES were duplicated or empty.** `Get-CommandHelp` rendered an EXAMPLES block from comment-based help that was usually absent, while the runnable examples lived only in `docs/Automation/automation_commands.md`, so `-Help` never pointed operators to the real, tested examples.
+
+<a name="fix-40"></a>
+
+#### Fix
+
+- **Run-path mandatory, Help-path explicit** in the Public commands — e.g. `Configure-PhysicalBuild` / `Start-PhysicalServerBuild` `$ServerIdentifier` → `[Parameter(Mandatory, ParameterSetName = 'Run')]`; `-Help` → an optional `[Parameter(ParameterSetName = 'Help')]` in `Configure-PhysicalBuild`, `Start-PhysicalServerBuild`, `Connect-OneView`, `Control` (`Run-CIPipeline` / `Run-IRequest` / `Run-Scheduler` / `Run-GitLab`), `Get-OneViewServerTarget`, `Invoke-GitLabMaintenanceTrigger`, `Invoke-IloRedfish`, `Invoke-OpsRampClient`, `Invoke-PowerShellScript`, `Invoke-PowerShellWinRM`, `New-OneViewMaintenanceScript`, `New-ScomConnection`, `New-ScomMaintenanceScript`, `New-Uuid`, `OneViewMaintenanceMode`, `Set-MaintenanceMode`, `Start-AutomationOrchestrator`, `Start-InstallMonitor`, `Test-ClusterId`, `Test-PostBuildValidation`, `Test-PreBuildValidation`, `Update-Firmware`, and `Update-WindowsSecurity`.
+- **Explicit run-parameter guards** in `Control.ps1` (`New-CIPipelineCtrl`, `New-IRequestCtrl`, `New-SchedulerCtrl`): `$Params` / `$FormData` / `$TaskParams` are no longer globally mandatory, so each now `Write-Error`s with a clear message and returns when the value is missing — preserving the prior hard-fail on the run path without forcing it on the help path.
+- **`Get-CommandHelp` (`Private/Help.ps1`)**: added a `$commandDocAnchors` map (command → section anchor in `automation_commands.md`); the USAGE renderer drops `-Help`-bearing parameter sets when a dedicated run set exists and never prints a `-Help` token, so each command renders a single, non-redundant usage line; mandatory status is computed only against non-`Help` parameter sets; the EXAMPLES section now emits a clickable link — resolved to a full GitHub blob URL via `git remote` when available — to the per-command reference section instead of duplicating examples.
+
+<a name="verification-40"></a>
+
+#### Verification
+
+- `Configure-PhysicalBuild -Help` renders help without demanding `-ServerIdentifier`.
+- `Configure-PhysicalBuild` (no params) → PowerShell parameter-binding error *"Missing an argument for parameter 'ServerIdentifier'…"* (correct run-path enforcement).
+- `Get-CommandHelp -Name Configure-PhysicalBuild` shows a single run usage line with `-ServerIdentifier` marked mandatory (no `-Help`-only line).
+- `HelpParamTests.Unit.Tests.ps1` (data-driven over `scripts/HelpParamTests.txt`) validates the `-Help` switch, section structure and parameter-set wiring across every listed command — passes.
+- `make test` green for the affected commands.
+
+<a id="39-update-firmware-re-added-post-os-hpe-firmware-flash-integrated-into-the-build"></a>
+
+### 39) Update-Firmware re-added — post-OS HPE firmware flash integrated into the build
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-04 | Re-introduced `Update-Firmware` (204-line Public command, pruned in change 27) to flash HPE firmware from client-supplied folders after OS installation: new `-Server`, `-FirmwareFolders`, `-Credential`, `-SutToolPath`, and `-SkipConfirmation` parameters; wired into `Start-PhysicalServerBuild` and `Configure-PhysicalBuild` so a build flashes BIOS / iLO / Smart Array / NIC / drivers via HPE SUT/SUM when firmware folders are supplied (or records a clean failure when credentials are absent); module manifest + `automation_commands.md` updated | Kev Everall |
+
+<a name="root-cause-39"></a>
+
+#### Root cause
+
+- **Firmware flashing lost in the command prune.** Change 27 removed `Update-Firmware` (and its tests/docs) when collapsing to a 2-command workflow, but the runbook still requires post-OS firmware flashing on the freshly built server, so the capability had to be restored as a first-class, gated step rather than re-implemented ad hoc each time.
+
+<a name="fix-39"></a>
+
+#### Fix
+
+- **`Update-Firmware.ps1` restored** (204 lines): WinRMs into the built server (`-Server` / `-Credential`, or `OS_ADMIN_USER` / `OS_ADMIN_PASSWORD` from env / CyberArk) and runs HPE SUT/SUM over the supplied `-FirmwareFolders`; missing credentials → recorded as failed (not silently skipped).
+- **Build integration**: `Start-PhysicalServerBuild` and `Configure-PhysicalBuild` now invoke `Update-Firmware` post-OS when firmware folders are provided, behind the existing `-GuardRail` gate.
+- **Manifest + docs**: `Automation.psd1` re-exports `Update-Firmware`; `automation_commands.md`, `runbook-requirements-v2.md`, and the testing docs updated for the new firmware flow.
+
+<a name="verification-39"></a>
+
+#### Verification
+
+- `Update-Firmware -Server srv01 -FirmwareFolders @('C:\fw\BIOS_v2.80')` flashes firmware standalone.
+- `Configure-PhysicalBuild -ServerIdentifier srv01 -FirmwareFolders …` carries the firmware step into the deploy flow.
+- `Import-Module Automation.psd1` resolves `Update-Firmware` and the script passes the PowerShell parser; `automation_commands.md` lists the command with What-it-does / Destructive annotations.
 
 <a id="38-consistent-newest-first-ordering-change-log-body-summary-table-toc-generator-maintenance-guide"></a>
 
@@ -262,7 +377,7 @@
 #### Verification
 
 - `wip/testing-issue.md` gained SSH debug output (verbose `ssh -vT`), a key-exchange (algorithm) vulnerability warning, and checks for user `~/.ssh/config`, git-level `GIT_SSH_COMMAND`/`core.sshCommand` overrides, and `SSH_AUTH_SOCK`/`GIT_SSH` environment settings.
-- `wip/Fix-GitSSH.md` added as a dedicated step-by-step Git SSH authentication troubleshooting guide.
+- `wip/Fix-GitSSH.md` added as a dedicated step-by-step Git SSH authentication troubleshooting guide (since removed in the wip cleanup — see §41).
 - Profiles parse under the PowerShell parser; the `techvdi-profile.ps1` merge-conflict markers introduced during the `SSH_AUTH_SOCK` rework were resolved.
 
 <a id="33-hpe-oneview-maintenance-mode-documentation-enabledisable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs"></a>

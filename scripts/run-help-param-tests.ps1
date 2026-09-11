@@ -1,27 +1,26 @@
 #!/usr/bin/env pwsh
 # =============================================================================
-# HPE ProLiant Windows Server ISO Automation - Test Progress Report Tests
+# HPE ProLiant Windows Server ISO Automation - Help Parameter Test Runner
 # =============================================================================
-# Runs Pester tests covering the test-plan progress generator:
-# - TestProgress.Common.ps1 (pure string-transformation helpers)
-# - Update-TestProgress.ps1 (end-to-end script tests)
-# - MD_to_HTML_Converter.py (HTML comment stripping)
+# Runs the data-driven -Help tests for every command in
+# scripts/HelpParamTests.txt (help output ownership, section structure, and
+# no exceptions) with a Jest/Pytest-style summary block.
 
 <#
 .SYNOPSIS
-    Run test progress report generator tests.
+    Run -Help parameter tests for every command in scripts/HelpParamTests.txt.
 
 .DESCRIPTION
-    Executes Pester tests for the test-plan progress update pipeline:
-    - Update-TestProgress.Unit.Tests.ps1 (all helper functions + E2E + HTML)
+    Executes Pester tests covering the -Help switch on every listed command:
+    - HelpParamTests.Unit.Tests.ps1 (all commands + matrix completeness guard)
 
     Displays detailed test summary with pass/fail/skip counts and duration.
-    Logs detailed output to generated/logs/testing/test_progress_rpt_tests_*.log
+    Logs detailed output to generated/logs/testing/help_param_tests_*.log
 
     Exits with code 1 if any tests fail.
 
 .EXAMPLE
-    pwsh -File scripts/run-test-progress-rpt-tests.ps1
+    pwsh -File scripts/run-help-param-tests.ps1
 #>
 
 $ErrorActionPreference = 'Stop'
@@ -34,14 +33,14 @@ $testPath = Join-Path $PROJECT_ROOT 'tests/powershell'
 $envName = if ([string]::IsNullOrWhiteSpace($env:ENVIRONMENT)) { 'testing' } else { $env:ENVIRONMENT }
 $logDir = Join-Path $PROJECT_ROOT "generated/logs/$envName"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
-$pesterLogPath = Join-Path $logDir "test_progress_rpt_tests_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
+$pesterLogPath = Join-Path $logDir "help_param_tests_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').log"
 
-Write-Host "Running test progress report generator tests..." -ForegroundColor Cyan
+Write-Host "Running -Help parameter tests..." -ForegroundColor Cyan
 Write-Host "Detailed log: $pesterLogPath" -ForegroundColor Cyan
 
 $config = New-PesterConfiguration
 $config.Run.Path = @(
-    (Join-Path $testPath 'Update-TestProgress.Unit.Tests.ps1')
+    (Join-Path $testPath 'HelpParamTests.Unit.Tests.ps1')
 )
 $config.Run.PassThru = $true
 $config.Output.Verbosity = 'Detailed'
@@ -50,7 +49,7 @@ $config.Output.RenderMode = 'Auto'
 # Machine-readable test results for CI artifact collection (GitLab junit report).
 # JUnitXml requires Pester 5.2+; fall back to NUnitXml on older 5.x.
 $pesterVersion = (Get-Module Pester).Version
-$junitPath = Join-Path $logDir "test_progress_rpt_tests_junit_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').xml"
+$junitPath = Join-Path $logDir "help_param_tests_junit_$(Get-Date -Format 'yyyy-MM-ddTHH-mm-ssZ').xml"
 $config.TestResult.Enabled = $true
 $config.TestResult.OutputFormat = if ($pesterVersion -ge [version]'5.2.0') { 'JUnitXml' } else { 'NUnitXml' }
 $config.TestResult.OutputPath = $junitPath
@@ -80,13 +79,13 @@ if ($results.FailedCount -gt 0) {
     Write-Host " Failed        : $($results.FailedCount) " -NoNewline -ForegroundColor White
     Write-Host "✔" -ForegroundColor Green
 }
-
 Write-Host " Skipped       : $($results.SkippedCount)" -ForegroundColor Yellow
 Write-Host " Duration      : $($results.Duration.TotalSeconds.ToString('0.00'))s" -ForegroundColor White
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host " JUnit report  : $junitPath" -ForegroundColor Cyan
 
-# Persist the summary to the log file
+# Persist the summary to the log file (the block above is written to the host
+# after Stop-Transcript, so it never lands in the transcript).
 $summaryLines = @(
     '',
     '================================================================================',

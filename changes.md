@@ -24,9 +24,9 @@ aligned with the automation HPE OneView requirements in
 This changelog starts on **2026-07-30**; earlier changes are available in git
 history (`git log`).
 
-> Note: `wip/changes.md` is an unrelated scratch file with stale/incorrect paths
-> and is excluded from documentation. This root `changes.md` is the canonical
-> changelog.
+> Note: `wip/changes.md` was an unrelated scratch file with stale/incorrect paths
+> and was removed in the wip cleanup (see `recent-changes.md` §41). This root
+> `changes.md` is the canonical changelog.
 
 <a id="standards"></a>
 
