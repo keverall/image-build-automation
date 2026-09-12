@@ -149,7 +149,14 @@ Thumbs.db
 
 # ---- BUILD OUT, LOGS & GENERATED CORES ----
 /generated/
-# /wip/
+# Local scratch workspace: purged from git history (see docs/compliance/SECRET_SCANNING.md).
+/wip/
+# Generated Word/RTF mirrors of wip/ scratch (same content, binary). Kept out
+# of git so scratch material - including any embedded SSH keys - cannot be
+# re-committed via `make word-docs`.
+/docx/wip/
+/docs/rtf/wip/
+/doc/windows/help/rtf/wip/
 .env
 secrets.env
 

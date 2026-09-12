@@ -495,7 +495,10 @@ $codeQuality = @(
     }
 )
 $codeQualityPath = Join-Path $OutputDirectory 'secret-scan-code-quality.json'
-ConvertTo-Json -InputObject $codeQuality -Depth 6 -AsArray | Set-Content -LiteralPath $codeQualityPath -Encoding utf8
+# Serialize an explicit object[] so the artifact is always a flat JSON array:
+# [] when there are no findings, [{...}] otherwise. Do NOT use -AsArray here -
+# with -InputObject it double-wraps an array on Windows PowerShell 5.1.
+ConvertTo-Json -InputObject ([object[]]$codeQuality) -Depth 6 | Set-Content -LiteralPath $codeQualityPath -Encoding utf8
 
 # Machine-readable report (includes markdown findings and allowlist state).
 $reportPath = Join-Path $OutputDirectory 'secret-scan-report.json'
