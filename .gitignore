@@ -123,6 +123,24 @@ secret.*
 config.private.*
 *.ps1xml
 
+# ---- CRYPTOGRAPHIC MATERIAL (never commit) ----
+# Private keys and certificate stores. Gitleaks + scripts/secret-scan.ps1
+# detect these in content; these patterns stop the files being staged at all.
+*.pem
+*.key
+*.pfx
+*.p12
+*.ppk
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+known_hosts
+# Scanner output / local suppression files (not the committed allowlist).
+secret-scan-report.json
+secret-scan-code-quality.json
+*.secret-scan.bak
+
 # ---- IDE WORKSPACES & SYSTEM ----
 .vscode/
 .idea/

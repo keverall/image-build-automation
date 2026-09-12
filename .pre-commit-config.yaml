@@ -1,0 +1,29 @@
+# =============================================================================
+# Pre-commit hooks - fail closed before a secret ever reaches the remote
+# =============================================================================
+# Install once per clone:
+#   pipx install pre-commit
+#   pre-commit install
+#
+# Gitleaks is the same engine GitLab-managed Secret Detection runs in CI, so a
+# clean local run predicts a clean CI run. scripts/secret-scan.ps1 adds the
+# repo-specific Markdown-vs-code policy and the SSH public key rule. Both run
+# here; either one failing blocks the commit.
+#
+# `pre-commit autoupdate` refreshes the pinned gitleaks revision.
+# =============================================================================
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: secret-scan
+        name: PowerShell secret scan (tokens / SHA keys / SSH keys)
+        description: Repo-policy secret scan; fails on code/config findings, reports Markdown findings.
+        entry: pwsh -NoProfile -File scripts/secret-scan.ps1 -Mode enforce
+        language: system
+        pass_filenames: false
+        always_run: true

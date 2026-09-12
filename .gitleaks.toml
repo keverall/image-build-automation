@@ -1,0 +1,150 @@
+# =============================================================================
+# Gitleaks configuration - authoritative secret scanner (CI + local)
+# =============================================================================
+# Consumed by:
+#   * GitLab-managed Secret Detection job (Jobs/Secret-Detection.gitlab-ci.yml)
+#   * `gitleaks detect` for local / pre-commit use
+#
+# `useDefault = true` keeps the full upstream Gitleaks ruleset (AWS, GCP, Azure,
+# private keys, generic API keys, ...) and layers this repository's rules on top.
+# Do NOT replace it with a hand-rolled substring scan - see
+# scripts/ci-security-check.ps1 header for why that was removed.
+#
+# Categories required by the platform security standard:
+#   1. Tokens        - GitLab / GitHub / cloud / Slack / JWT / bearer
+#   2. SHA keys      - HMAC / signing / symmetric / checksum keys and salts
+#   3. SSH keys      - private (OpenSSH/RSA/EC/DSA/PGP/PuTTY) and public key bodies
+#   4. Connection strings / storage account keys
+#
+# Placeholders and documentation examples are allowlisted narrowly. Do not add
+# broad allowlists: a real finding must never be hidden to reduce noise.
+# =============================================================================
+
+[extend]
+useDefault = true
+
+# -----------------------------------------------------------------------------
+# 1. Tokens
+# -----------------------------------------------------------------------------
+[[rules]]
+id = "gitlab-personal-access-token"
+description = "GitLab personal/project/group access token"
+regex = '''gl(?:pat|ptt|dt|rt|soat|cbt|ft|imt|agent|ffct)-[0-9A-Za-z_\-]{20,}'''
+keywords = ["glpat-", "glptt-", "gldt-", "glrt-"]
+tags = ["token", "gitlab"]
+
+[[rules]]
+id = "github-token"
+description = "GitHub personal access / app / refresh token"
+regex = '''(?:ghp|gho|ghu|ghs|ghr)_[0-9A-Za-z]{36,}|github_pat_[0-9A-Za-z_]{60,}'''
+keywords = ["ghp_", "gho_", "ghs_", "github_pat_"]
+tags = ["token", "github"]
+
+[[rules]]
+id = "slack-token"
+description = "Slack bot/user/app/refresh token"
+regex = '''xox[baprs]-[0-9A-Za-z\-]{10,}'''
+keywords = ["xoxb-", "xoxp-", "xoxa-", "xoxr-", "xoxs-"]
+tags = ["token", "slack"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google/Firebase API key"
+regex = '''AIza[0-9A-Za-z_\-]{35}'''
+keywords = ["AIza"]
+tags = ["token", "google"]
+
+[[rules]]
+id = "aws-access-key-id"
+description = "AWS access key ID"
+regex = '''(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+keywords = ["AKIA", "ASIA", "AROA"]
+tags = ["token", "aws"]
+
+[[rules]]
+id = "jwt"
+description = "JSON Web Token"
+regex = '''eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}'''
+keywords = ["eyJ"]
+tags = ["token", "jwt"]
+
+[[rules]]
+id = "bearer-token"
+description = "Hardcoded Bearer token"
+regex = '''(?i)bearer\s+[A-Za-z0-9_\-\.=]{20,}'''
+keywords = ["bearer"]
+tags = ["token"]
+
+# -----------------------------------------------------------------------------
+# 2. SHA / HMAC / signing keys
+# -----------------------------------------------------------------------------
+[[rules]]
+id = "sha-hmac-signing-key"
+description = "Hardcoded SHA/HMAC/signing/symmetric key or salt"
+regex = '''(?i)(?:sha[0-9]*|hmac|signing|signature|symmetric|master|encryption|crypto)[_\- ]?(?:key|secret|salt)\s*[:=]\s*["']?[A-Za-z0-9+/=_\-]{16,}'''
+keywords = ["hmac", "signing", "symmetric", "sha256", "sha512", "encryptionkey", "signingkey"]
+tags = ["key", "crypto"]
+
+# -----------------------------------------------------------------------------
+# 3. SSH keys
+# -----------------------------------------------------------------------------
+[[rules]]
+id = "ssh-private-key"
+description = "SSH/PGP private key block"
+regex = '''-----BEGIN (?:OPENSSH|RSA|EC|DSA|ECDSA|PGP|ENCRYPTED)? ?PRIVATE KEY-----'''
+keywords = ["PRIVATE KEY"]
+tags = ["key", "ssh", "private"]
+
+[[rules]]
+id = "putty-private-key"
+description = "PuTTY private key file"
+regex = '''PuTTY-User-Key-File-[0-9]+'''
+keywords = ["PuTTY-User-Key-File"]
+tags = ["key", "ssh", "private"]
+
+[[rules]]
+id = "ssh-public-key"
+description = "SSH public key body (authorized_keys material)"
+regex = '''(?:ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-nistp(?:256|384|521))[ \t]+AAAA[A-Za-z0-9+/]{40,}={0,3}'''
+keywords = ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2"]
+tags = ["key", "ssh", "public"]
+
+# -----------------------------------------------------------------------------
+# 4. Connection strings / storage keys
+# -----------------------------------------------------------------------------
+[[rules]]
+id = "connection-string-credential"
+description = "Credential embedded in a connection string"
+regex = '''(?i)(?:AccountKey|SharedAccessKey|SharedAccessSignature|Password|Pwd)\s*=\s*[^;"'\s]{8,}'''
+keywords = ["AccountKey=", "SharedAccessKey=", "Password=", "Pwd="]
+tags = ["key", "connection-string"]
+
+# -----------------------------------------------------------------------------
+# Allowlist (narrow, reviewable)
+# -----------------------------------------------------------------------------
+[allowlist]
+description = "Vendored third-party code, generated output, and explicit documentation placeholders only."
+# Vendored modules ship HPE/Microsoft sample files with deliberate demo
+# credentials. They are dependency-scanned, not secret-scanned (see
+# SECRET_DETECTION_EXCLUDED_PATHS in .gitlab-ci.yml).
+paths = [
+    '''scripts/modules/''',
+    '''vendor/''',
+    '''generated/''',
+    '''bin/''',
+    '''node_modules/''',
+    '''\.git/''',
+]
+# Explicit placeholder / interpolation syntax, mirroring the allowlist in
+# scripts/secret-scan.ps1. These are values that are structurally not secrets.
+regexes = [
+    '''(?i)(?:xxxx|xxxxxx|redacted|placeholder|changeme|change_me|your[_-]?(?:token|key|password|secret)|fake|dummy|example|sample|test[_-]?only|mysecret)''',
+    '''\$\{?[A-Za-z_][A-Za-z0-9_]*\}?''',
+    '''%[A-Za-z_][A-Za-z0-9_]*%''',
+    '''\{\{[^}]+\}\}''',
+    '''<[A-Za-z_][A-Za-z0-9_\- ]*>''',
+]
+stopwords = [
+    "example", "placeholder", "changeme", "redacted", "dummy",
+    "sample", "fake", "your_token", "your_key", "your_password",
+]

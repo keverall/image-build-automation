@@ -49,7 +49,7 @@ else
   NC := $(ESCAPE)[0m
 endif
 
-.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests help-param-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs word-docs word-docs-clean list-commands
+.PHONY: setup lint lint-make lint-checkmake lint-python lint-test test test-unit test-integration automation-mode-tests maint-mode-tests help-param-tests test-progress-rpt-tests coverage gen-docs add-anchors docs clean prune-logs help all ci fix-docs word-docs word-docs-clean list-commands sec-scan sec-scan-enforce sec-scan-fix secret-scan
 
 # ─── PowerShell Setup ───────────────────────────────────────────────────────
 setup: ## Setup PowerShell environment (install modules, configure profiles)
@@ -77,6 +77,25 @@ lint-make: ## Lint Makefile syntax and style
 
 lint-test: ## Lint and run tests (combined CI step)
 	@$(MAKE) lint && $(MAKE) test
+
+# ─── Secret Scanning ─────────────────────────────────────────────────────────
+# Offline, in-repo scanner for tokens, SHA/HMAC keys and SSH private/public
+# keys. Complements GitLab Secret Detection (Gitleaks); Markdown findings are
+# reported but never gated.
+sec-scan: ## Scan repo for tokens, SHA/HMAC keys, SSH keys (report-only)
+	@echo "$(CYAN)[sec-scan]$(NC) Scanning for secrets (tokens / SHA keys / SSH keys)..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/secret-scan.ps1 -Mode report
+
+sec-scan-enforce: ## Secret scan that fails the build on code/config findings
+	@echo "$(CYAN)[sec-scan]$(NC) Scanning for secrets (enforce)..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/secret-scan.ps1 -Mode enforce -FailOn Warning
+
+sec-scan-fix: ## Secret scan and rewrite hardcoded PowerShell secrets to $env: references
+	@echo "$(CYAN)[sec-scan]$(NC) Scanning and fixing hardcoded secrets..."
+	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/secret-scan.ps1 -Mode report -Fix
+
+# Alias: 'secret-scan' mirrors the script name for discoverability.
+secret-scan: sec-scan
 
 # ─── PowerShell Testing ──────────────────────────────────────────────────────
 test: prune-logs ## Run all Pester PowerShell tests with verbose output
@@ -173,7 +192,7 @@ prune-logs: ## Prune log files older than 30 days
 all: lint test ## Run linting and tests
 
 # CI pipeline target
-ci: lint coverage ## Run full CI pipeline
+ci: lint sec-scan coverage ## Run full CI pipeline
 
 # ─── Test Progress Updates ───────────────────────────────────────────────────
 test-progress-update: ## Update test plans with today's test execution progress (interactive)

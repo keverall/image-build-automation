@@ -31,7 +31,7 @@ infrastructure. It treats the pipeline itself as an in-scope ICT system.
 | validate | `validate-pipeline`, `validate-config` | Fail fast on broken pipeline / config | any |
 | lint | `lint-powershell` | Parsing + PSScriptAnalyzer *style* rules | any |
 | test | `test-unit` | Pester with Cobertura + JUnit, coverage measured vs 70% | any |
-| security | `sast-powershell`, `secret_detection`, `semgrep-sast`, `iac-sast`, dependency + container scanning | Find injection, insecure creds, secrets, IaC/dep CVEs | SD: Free; rest Free/Ultimate |
+| security | `sast-powershell`, `secret-scan-local`, `secret_detection`, `semgrep-sast`, `iac-sast`, dependency + container scanning | Find injection, insecure creds, secrets, IaC/dep CVEs | SD: Free; rest Free/Ultimate |
 | compliance | `compliance-evidence` | Single retained record of which controls ran | any |
 | maintenance | `maintenance-*` | Production change jobs (manual / trigger only) | any |
 
@@ -45,6 +45,13 @@ important thing for a reviewer to understand.
 
 Secret Detection (Gitleaks) **is** available on all tiers and runs a
 **historic** scan, so it catches credentials committed and later "removed".
+Gitleaks uses the repository ruleset `.gitleaks.toml`, which extends the
+upstream defaults with SSH public-key, SHA/HMAC-key and GitLab/GitHub token
+rules. The complementary `secret-scan-local` job runs
+`scripts/secret-scan.ps1` for the repository's Markdown-vs-code policy and the
+`-Fix` remediation path. See `docs/compliance/SECRET_SCANNING.md` for the full
+tooling decision (including why Snyk is not recommended here) and the audit
+red-flag inventory.
 
 ---
 

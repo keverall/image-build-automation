@@ -367,6 +367,38 @@ sast-powershell-guard:
       when: never
     - when: never
 
+# --- In-repo secret scanner (complements Gitleaks) ---------------------------
+# Offline PowerShell scanner covering tokens, SHA/HMAC keys and SSH
+# private/public keys. It adds the repo policy Gitleaks does not apply:
+# Markdown findings are report-only, code/config findings are gate-eligible, and
+# -Fix can rewrite a hardcoded PowerShell secret into a $env: reference.
+# Gitleaks (secret_detection) remains authoritative for full-history scanning;
+# this job is the repo-policy/allowlist gate and uses .gitleaks.toml's sibling
+# .secret-scan-allowlist.json for documented risk acceptance.
+secret-scan-local:
+  stage: security
+  before_script:
+    - *module_setup
+  script:
+    - pwsh -NoProfile -File ./scripts/secret-scan.ps1
+      -Mode "$SECURITY_ENFORCEMENT_MODE"
+      -FailOn "$SECURITY_FAIL_ON"
+      -OutputDirectory generated/output/security
+  artifacts:
+    when: always
+    reports:
+      codequality: generated/output/security/secret-scan-code-quality.json
+    paths:
+      - generated/output/security/
+    expire_in: 1 year
+  # Report-only while SECURITY_ENFORCEMENT_MODE is 'report'; the script itself
+  # exits non-zero when the mode is 'enforce', which is the cutover signal.
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
 # --- GitLab-managed analyzer configuration -----------------------------------
 secret_detection:
   stage: security
@@ -374,15 +406,18 @@ secret_detection:
     # Scan the entire history, not just the current ref. A credential committed
     # and then deleted in a later commit is still a disclosed credential.
     SECRET_DETECTION_HISTORIC_SCAN: "true"
+    # Use the repository ruleset (.gitleaks.toml extends the upstream defaults
+    # with SSH public key, SHA/HMAC key and GitLab/GitHub token rules).
+    GITLEAKS_CONFIG: ".gitleaks.toml"
   artifacts:
     when: always
     paths:
       - gl-secret-detection-report.json
     expire_in: 1 year
-  # Report-only during the remediation window. Note that .env is tracked in this
-  # repository and WILL be flagged; its committed values are empty, so it is a
-  # template rather than a disclosure, but it should become .env.example and be
-  # gitignored.
+  # Report-only during the remediation window. The tracked template is
+  # .envexample (empty values, safe); the real .env is gitignored and is NOT
+  # scanned by CI. Historically a .env was committed, which is recorded in
+  # docs/compliance/SECURITY_PIPELINE.md as resolved.
   allow_failure: true
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
