@@ -1050,13 +1050,13 @@ function Enable-OneViewMaintenanceMode {
     # parameters are never bound to $null (which throws "cannot convert null to
     # type 'system.datetime'") and the resulting schedule is sane.
     $startDt = if ($Start) { _Parse-Datetime $Start } else { [DateTime]::UtcNow }
-    $endDt   = if ($End)   { _Parse-Datetime $End }
+    $endDt = if ($End) { _Parse-Datetime $End }
     elseif ($Start) { _Compute-DefaultEnd $startDt }
-    else            { $startDt.AddHours(4) }
+    else { $startDt.AddHours(4) }
 
     $result = $oneviewMgr.SetMaintenance($resolvedTarget, $resolvedType, $startDt, $endDt, $DryRun)
-    $result['TargetId']     = $TargetId
-    $result['SerialNumber']  = $SerialNumber
+    $result['TargetId']      = $TargetId
+    $result['SerialNumber']   = $SerialNumber
     $result['ResolvedTarget'] = $resolvedTarget
     $result['ResolvedType']   = $resolvedType
     $result['Appliance']      = $ovHost
