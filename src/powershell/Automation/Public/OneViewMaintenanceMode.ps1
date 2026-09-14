@@ -1043,21 +1043,25 @@ function Enable-OneViewMaintenanceMode {
         }
     }
 
-    $startDt = $null; $endDt = $null
-    if ($Start -and $End) {
-        $startDt = _Parse-Datetime $Start
-        $endDt   = _Parse-Datetime $End
-    } elseif ($Start) {
-        $startDt = _Parse-Datetime $Start
-        $endDt   = _Compute-DefaultEnd $startDt
-    }
+    # OneView maintenance mode does not take a scheduled window the way SCOM does,
+    # but the OneViewClient.SetMaintenance method is typed ([DateTime]) and emits
+    # StartTime/EndTime into its audit output. When the caller omits -Start/-End,
+    # default to an immediate start (now, UTC) with a 4-hour window so the typed
+    # parameters are never bound to $null (which throws "cannot convert null to
+    # type 'system.datetime'") and the resulting schedule is sane.
+    $startDt = if ($Start) { _Parse-Datetime $Start } else { [DateTime]::UtcNow }
+    $endDt   = if ($End)   { _Parse-Datetime $End }
+    elseif ($Start) { _Compute-DefaultEnd $startDt }
+    else            { $startDt.AddHours(4) }
 
     $result = $oneviewMgr.SetMaintenance($resolvedTarget, $resolvedType, $startDt, $endDt, $DryRun)
-    $result['TargetId']   = $TargetId
-    $result['SerialNumber'] = $SerialNumber
+    $result['TargetId']     = $TargetId
+    $result['SerialNumber']  = $SerialNumber
     $result['ResolvedTarget'] = $resolvedTarget
     $result['ResolvedType']   = $resolvedType
     $result['Appliance']      = $ovHost
+    $result['StartTime']      = $startDt
+    $result['EndTime']        = $endDt
 
     if ($Json) { return $result | ConvertTo-Json -Depth 64 }
     if ($PassThru) { return $result }
