@@ -60,4 +60,18 @@ Describe 'Disable-OneViewMaintenanceMode - parameter integrity and dry run' {
         $result = Disable-OneViewMaintenanceMode -TargetId 'srv01' -OneViewHost 'bogus.example' -DryRun -ErrorAction Stop
         $result.Success | Should -Be $true
     }
+
+    It 'Live run without credentials returns a clear message instead of a cryptic conversion error' {
+        $result = Disable-OneViewMaintenanceMode -TargetId 'srv01' -OneViewHost 'bogus.example' -ErrorAction SilentlyContinue
+        $result.Success | Should -Be $false
+        $result.Message | Should -Match 'credentials? not configured'
+    }
+}
+
+Describe 'Enable-OneViewMaintenanceMode - credentials guard' {
+    It 'Live run without credentials returns a clear message instead of the empty-string bind error' {
+        $result = Enable-OneViewMaintenanceMode -TargetId 'srv01' -OneViewHost 'bogus.example' -ErrorAction SilentlyContinue
+        $result.Success | Should -Be $false
+        $result.Message | Should -Match 'credentials? not configured'
+    }
 }

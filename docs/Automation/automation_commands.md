@@ -1118,7 +1118,7 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 | `-Start` / `-End` | string | No | Maintenance window. If only `-Start` is given, `-End` defaults to a sensible window. |
 | `-ConfigDir` | string | No | Config dir holding `oneview_config.json` (default `configs`). Alias: `CfgDir`. |
 | `-DryRun` | switch | No | Resolve + validate without actually enabling. Alias: `Dry`. |
-| `-NoSchedule` | switch | No | Skip scheduling a future auto-disable. Alias: `NoSchedule`. |
+| `-NoSchedule` | switch | No | Accepted for API symmetry with `Set-MaintenanceMode`, but OneView maintenance mode is an immediate toggle (no Windows Task Scheduler auto-disable is created in this path). No effect. |
 | `-Json` | switch | No | Return the raw result object as JSON. |
 | `-PassThru` | switch | No | Return the result object. Alias: `PT`. |
 | `-Help` | switch | No | Print the command reference and exit (no action taken). |
@@ -1154,7 +1154,7 @@ Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Enab
 | `-PostDisableWaitSeconds` | int | No | Seconds to wait after disabling (ValidateRange 0–3600, default 0). Alias: `WaitSec`. |
 | `-ConfigDir` | string | No | Config dir holding `oneview_config.json` (default `configs`). Alias: `CfgDir`. |
 | `-DryRun` | switch | No | Resolve + validate without actually disabling. Alias: `Dry`. |
-| `-NoSchedule` | switch | No | Alias: `NoSchedule`. |
+| `-NoSchedule` | switch | No | Accepted for API symmetry with `Set-MaintenanceMode`, but OneView maintenance mode is an immediate toggle (no Windows Task Scheduler auto-disable is created in this path). No effect. |
 | `-Json` | switch | No | Return the raw result object as JSON. |
 | `-PassThru` | switch | No | Return the result object. Alias: `PT`. |
 | `-Help` | switch | No | Print the command reference and exit (no action taken). |

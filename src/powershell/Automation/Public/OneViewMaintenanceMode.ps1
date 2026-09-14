@@ -142,14 +142,17 @@ if (-not `$existingSession) {
 `$failed = 0
 `$alreadyInMaintenance = 0
 if ('$TargetType' -eq 'ServerHardware') {
-    `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
     `$obj = @{
-        Name = `$server.Name
-        Type = `$server.Type
+        Name = '$Target'
+        Type = '$TargetType'
         Status = 'unknown'
         Message = ''
     }
     try {
+        if (-not '$Target') { throw "Server target name is empty" }
+        `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+        `$obj.Name = `$server.Name
+        `$obj.Type = `$server.Type
         if (`$server.maintenanceMode) {
             `$obj.Status = 'already_in_maintenance'
             `$obj.Message = 'Already in maintenance mode'
@@ -169,37 +172,48 @@ if ('$TargetType' -eq 'ServerHardware') {
     }
     `$objects += `$obj
 } elseif ('$TargetType' -eq 'Scope') {
-    `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
-    `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
-    foreach (`$member in `$servers) {
-        `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
-        if (-not `$server) { continue }
-        `$obj = @{
-            Name = `$server.Name
-            Type = `$server.Type
-            Status = 'unknown'
-            Message = ''
-        }
-        try {
-            if (`$server.maintenanceMode) {
-                `$obj.Status = 'already_in_maintenance'
-                `$obj.Message = 'Already in maintenance mode'
-                `$alreadyInMaintenance++
-            } else {
-                Enable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
-                `$obj.Status = 'success'
-                `$obj.Message = 'Maintenance mode enabled'
-                `$success++
-            }
-        } catch {
-            `$obj.Status = 'failed'
-            `$obj.Message = `$_.Exception.Message
-            `$obj.NackReason = 'OneView API error: ' + `$_.Exception.Message
-            `$obj.Resolution = 'Check OneView appliance logs and permissions'
-            `$failed++
-        }
-        `$objects += `$obj
+    `$obj = @{
+        Name = '$Target'
+        Type = '$TargetType'
+        Status = 'unknown'
+        Message = ''
     }
+    try {
+        `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
+        `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
+        foreach (`$member in `$servers) {
+            `$server = Get-OVServer -Name `$member.Name -ErrorAction Stop
+            if (-not `$server) { continue }
+            `$obj.Status = 'unknown'
+            `$obj.Message = ''
+            try {
+                if (`$server.maintenanceMode) {
+                    `$obj.Status = 'already_in_maintenance'
+                    `$obj.Message = 'Already in maintenance mode'
+                    `$alreadyInMaintenance++
+                } else {
+                    Enable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+                    `$obj.Status = 'success'
+                    `$obj.Message = 'Maintenance mode enabled'
+                    `$success++
+                }
+            } catch {
+                `$obj.Status = 'failed'
+                `$obj.Message = `$_.Exception.Message
+                `$obj.NackReason = 'OneView API error: ' + `$_.Exception.Message
+                `$obj.Resolution = 'Check OneView appliance logs and permissions'
+                `$failed++
+            }
+            `$objects += `$obj
+        }
+    } catch {
+        `$obj.Status = 'failed'
+        `$obj.Message = `$_.Exception.Message
+        `$obj.NackReason = 'OneView API error: ' + `$_.Exception.Message
+        `$obj.Resolution = 'Check OneView appliance logs and permissions'
+        `$failed++
+    }
+    `$objects += `$obj
 }
 `$out = @{
     Success      = `$failed -eq 0
@@ -432,14 +446,17 @@ if (-not `$existingSession) {
 `$failed = 0
 `$notInMaintenance = 0
 if ('$TargetType' -eq 'ServerHardware') {
-    `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
     `$obj = @{
-        Name = `$server.Name
-        Type = `$server.Type
+        Name = '$Target'
+        Type = '$TargetType'
         Status = 'unknown'
         Message = ''
     }
     try {
+        if (-not '$Target') { throw "Server target name is empty" }
+        `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+        `$obj.Name = `$server.Name
+        `$obj.Type = `$server.Type
         if (-not `$server.maintenanceMode) {
             `$obj.Status = 'already_not_in_maintenance'
             `$obj.Message = 'Already not in maintenance mode'
@@ -457,35 +474,44 @@ if ('$TargetType' -eq 'ServerHardware') {
     }
     `$objects += `$obj
 } elseif ('$TargetType' -eq 'Scope') {
-    `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
-    `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
-    foreach (`$member in `$servers) {
-        `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
-        if (-not `$server) { continue }
-        `$obj = @{
-            Name = `$server.Name
-            Type = `$server.Type
-            Status = 'unknown'
-            Message = ''
-        }
-        try {
-            if (-not `$server.maintenanceMode) {
-                `$obj.Status = 'already_not_in_maintenance'
-                `$obj.Message = 'Already not in maintenance mode'
-                `$notInMaintenance++
-            } else {
-                Disable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
-                `$obj.Status = 'success'
-                `$obj.Message = 'Maintenance mode disabled'
-                `$success++
-            }
-        } catch {
-            `$obj.Status = 'failed'
-            `$obj.Message = `$_.Exception.Message
-            `$failed++
-        }
-        `$objects += `$obj
+    `$obj = @{
+        Name = '$Target'
+        Type = '$TargetType'
+        Status = 'unknown'
+        Message = ''
     }
+    try {
+        `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
+        `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
+        foreach (`$member in `$servers) {
+            `$server = Get-OVServer -Name `$member.Name -ErrorAction Stop
+            if (-not `$server) { continue }
+            `$obj.Status = 'unknown'
+            `$obj.Message = ''
+            try {
+                if (-not `$server.maintenanceMode) {
+                    `$obj.Status = 'already_not_in_maintenance'
+                    `$obj.Message = 'Already not in maintenance mode'
+                    `$notInMaintenance++
+                } else {
+                    Disable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+                    `$obj.Status = 'success'
+                    `$obj.Message = 'Maintenance mode disabled'
+                    `$success++
+                }
+            } catch {
+                `$obj.Status = 'failed'
+                `$obj.Message = `$_.Exception.Message
+                `$failed++
+            }
+            `$objects += `$obj
+        }
+    } catch {
+        `$obj.Status = 'failed'
+        `$obj.Message = `$_.Exception.Message
+        `$failed++
+    }
+    `$objects += `$obj
 }
 `$out = @{
     Success        = `$failed -eq 0
@@ -1030,6 +1056,17 @@ function Enable-OneViewMaintenanceMode {
         }
     })
 
+    if (-not $DryRun -and (-not $oneviewMgr.Username -or -not $oneviewMgr.Password)) {
+        $userEnv = 'ONEVIEW_USER'; $passEnv = 'ONEVIEW_PASSWORD'
+        if ($ovConfig -and $ovConfig['oneview'] -and $ovConfig['oneview']['credentials']) {
+            $creds = $ovConfig['oneview']['credentials']
+            $userEnv = $creds['username_env']  ?? $userEnv
+            $passEnv = $creds['password_env']  ?? $passEnv
+        }
+        Write-Error "OneView credentials are not configured for appliance '$ovHost'. Set the $userEnv / $passEnv environment variables, or populate the credentials block of oneview_config.json."
+        return @{ Success = $false; Message = "OneView credentials not configured for '$ovHost'" }
+    }
+
     $resolvedTarget = $TargetId
     $resolvedType = $TargetType
     if ($SerialNumber) {
@@ -1041,6 +1078,11 @@ function Enable-OneViewMaintenanceMode {
             Write-Error "Serial number '$SerialNumber' not found in OneView: $($resolved.Message)"
             return @{ Success = $false; Message = $resolved.Message }
         }
+    }
+
+    if (-not $resolvedTarget) {
+        Write-Error "No target could be resolved for OneView maintenance (TargetId and SerialNumber are both empty)."
+        return @{ Success = $false; Message = 'OneView maintenance target is empty' }
     }
 
     # OneView maintenance mode does not take a scheduled window the way SCOM does,
@@ -1122,6 +1164,17 @@ function Disable-OneViewMaintenanceMode {
         }
     })
 
+    if (-not $DryRun -and (-not $oneviewMgr.Username -or -not $oneviewMgr.Password)) {
+        $userEnv = 'ONEVIEW_USER'; $passEnv = 'ONEVIEW_PASSWORD'
+        if ($ovConfig -and $ovConfig['oneview'] -and $ovConfig['oneview']['credentials']) {
+            $creds = $ovConfig['oneview']['credentials']
+            $userEnv = $creds['username_env']  ?? $userEnv
+            $passEnv = $creds['password_env']  ?? $passEnv
+        }
+        Write-Error "OneView credentials are not configured for appliance '$ovHost'. Set the $userEnv / $passEnv environment variables, or populate the credentials block of oneview_config.json."
+        return @{ Success = $false; Message = "OneView credentials not configured for '$ovHost'" }
+    }
+
     $resolvedTarget = $TargetId
     $resolvedType = $TargetType
     if ($SerialNumber) {
@@ -1133,6 +1186,11 @@ function Disable-OneViewMaintenanceMode {
             Write-Error "Serial number '$SerialNumber' not found in OneView: $($resolved.Message)"
             return @{ Success = $false; Message = $resolved.Message }
         }
+    }
+
+    if (-not $resolvedTarget) {
+        Write-Error "No target could be resolved for OneView maintenance (TargetId and SerialNumber are both empty)."
+        return @{ Success = $false; Message = 'OneView maintenance target is empty' }
     }
 
     if ($PostDisableWaitSeconds -gt 0) {
