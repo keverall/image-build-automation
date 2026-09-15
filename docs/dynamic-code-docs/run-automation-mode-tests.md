@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/run-automation-mode-tests.ps1
-generated: 2026-09-11
+generated: 2026-09-15
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -19,7 +19,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Executes focused Pester tests for the automation module's runbook functions: - New-IsoBuild, Publish-BootIso - Get-OneViewServerTarget - Invoke-IloRedfish, Invoke-IsoDeploy - Start-PhysicalServerBuild - Test-PreBuildValidation, Test-PostBuildValidation - Start-InstallMonitor - Update-Firmware, Update-WindowsSecurity Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/automation/automated-mode-test_*.log Exits with code 1 if any tests fail.
+Executes focused Pester tests for the automation module's runbook functions: - Get-OneViewServerTarget, Get-OneViewServerList, Get-OneViewConnectionStatus - Invoke-IloRedfish - Start-PhysicalServerBuild - Test-PreBuildValidation, Test-PostBuildValidation - Start-InstallMonitor - Update-WindowsSecurity, Update-Firmware (-Help matrix) - HelpParamTests (every documented/exported -Help command) Displays detailed test summary with pass/fail/skip counts and duration. Logs detailed output to generated/logs/automation/automated-mode-test_*.log Exits with code 1 if any tests fail.
 
 <a id="examples"></a>
 
@@ -43,13 +43,13 @@ pwsh -File scripts/run-automation-mode-tests.ps1
 
 .DESCRIPTION
     Executes focused Pester tests for the automation module's runbook functions:
-    - New-IsoBuild, Publish-BootIso
-    - Get-OneViewServerTarget
-    - Invoke-IloRedfish, Invoke-IsoDeploy
+    - Get-OneViewServerTarget, Get-OneViewServerList, Get-OneViewConnectionStatus
+    - Invoke-IloRedfish
     - Start-PhysicalServerBuild
     - Test-PreBuildValidation, Test-PostBuildValidation
     - Start-InstallMonitor
-    - Update-Firmware, Update-WindowsSecurity
+    - Update-WindowsSecurity, Update-Firmware (-Help matrix)
+    - HelpParamTests (every documented/exported -Help command)
 
     Displays detailed test summary with pass/fail/skip counts and duration.
     Logs detailed output to generated/logs/automation/automated-mode-test_*.log
