@@ -1,43 +1,11 @@
 # =============================================================================
 # PowerShell Profile — Windows Terminal (Windows Server)
-# =============================================================================
-# Fast load, coding productivity, stability. Loaded automatically by pwsh.
-# eis19profile.ps1 and techvdi-profile.ps1 must stay IDENTICAL apart from the
-# proxy block below — keep both in sync; only techvdi carries proxy settings.
-# =============================================================================
-# ---------------------------------------------------------------------------
-# Environment
-# ---------------------------------------------------------------------------
-
 $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') +
     ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
 
 $env:HOME = $env:USERPROFILE
-
-# ---------------------------------------------------------------------------
-# Corporate Proxy (VDI only)
-# ---------------------------------------------------------------------------
-
 $env:HTTP_PROXY  = "http://webcorp.prd.aib.pri:8082"
 $env:HTTPS_PROXY = "http://webcorp.prd.aib.pri:8082"
-
-# $env:NO_PROXY = "localhost,127.0.0.1,*.ad.aib.pri,*.aib.pri,10.*"
-
-# ---------------------------------------------------------------------------
-# Git SSH Configuration (Agent-Based Authentication)
-# ---------------------------------------------------------------------------
-# The old block trusted whatever SSH_AUTH_SOCK was lying around from a
-# previous session / VDI reconnect and parsed ssh-agent's output with a regex
-# that swallowed the surrounding single quotes, so the socket path came out
-# malformed ('C:\...\agent.sock) and ssh could never open it. The key was
-# therefore never offered and every push failed with
-#   git@gitstash.aib.pri: permission denied (publickey)
-# until the key was re-registered on the server.
-#
-# This spawns a *fresh* agent every profile load, strips quotes correctly,
-# and re-adds the key, so the working socket + loaded key are guaranteed at
-# startup. A dead socket can no longer masquerade as a live agent.
-# ---------------------------------------------------------------------------
 
 $gitSshPath = "$env:USERPROFILE/AppData/Local/Programs/Git/usr/bin"
 
@@ -46,13 +14,8 @@ if ($env:PATH -notlike "*$gitSshPath*")
     $env:PATH += ";$gitSshPath"
 }
 
-# Ensure Git uses Git-for-Windows SSH, not Windows OpenSSH
 $env:GIT_SSH = "$gitSshPath/ssh.exe"
 
-# Spawn a fresh agent. ssh-agent -s prints lines like
-#   export SSH_AUTH_SOCK='C:\Users\...\.ssh\agent.sock';
-#   export SSH_PID=1234;
-# We parse and strip the surrounding quotes so the socket path is exact.
 $agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
 
 foreach ($line in $agentOutput)
@@ -70,10 +33,6 @@ foreach ($line in $agentOutput)
 # Never let a per-command GIT_SSH_COMMAND override bypass the agent above.
 Remove-Item Env:GIT_SSH_COMMAND -ErrorAction SilentlyContinue
 
-# Guarantee the key is loaded into the *current* agent, every profile load.
-# A lingering agent from a previous session is not trusted: it may have
-# dropped the key, so we verify and re-add if absent. This is what stops the
-# daily "agent outlived its key -> permission denied (publickey)" drift.
 $keyPath = Join-Path $env:USERPROFILE ".ssh\id_ed25519"
 
 if (Test-Path $keyPath)
@@ -88,8 +47,6 @@ if (Test-Path $keyPath)
     }
 }
 
-# Diagnostics: distinguishes client (agent/socket/key) from server-side
-# key invalidation. Run `sshdiag` after a failed push.
 function global:sshdiag
 {
     $sock = $env:SSH_AUTH_SOCK
@@ -106,8 +63,6 @@ function global:sshdiag
 }
 
 # ─── Modules ─────────────────────────────────────────────────────────────────
-# posh-git is intentionally not imported: it recomputes git status on every
-# prompt, duplicating what oh-my-posh's prompt segment already does.
 function Import-ModuleSafe
 {
     param([string]$Name)
@@ -149,10 +104,6 @@ else
     }
 }
 
-# ─── PSReadLine ──────────────────────────────────────────────────────────────
-# Inline history prediction is off: it polls the history file on every
-# keystroke and stalls input on a slow VDI. Arrow-key recall is kept — it's
-# cheap and only runs on demand.
 if ($PSVersionTable.PSVersion.Major -ge 7) { Set-PSReadLineOption -PredictionSource None }
 Set-PSReadLineOption -EditMode Windows
 Set-PSReadLineOption -MaximumHistoryCount 1000 -HistoryNoDuplicates
@@ -262,9 +213,6 @@ function Refresh-Path
 }
 Set-Alias rpath Refresh-Path
 
-# ─── Image Build Automation / HPE OneView ───────────────────────────────────
-# Repo root differs per host (eis19: products/repos, VDI: repos) — try both
-# so this line is identical on every machine.
 $ibaRepo = @(
     (Join-Path $env:USERPROFILE 'products/repos/image-build-automation'),
     (Join-Path $env:USERPROFILE 'repos/image-build-automation')
@@ -276,6 +224,4 @@ if ($ibaRepo)
     if (Test-Path $automationModulePath) { Import-Module $automationModulePath -WarningAction SilentlyContinue }
 }
 
-# HPEOneView.1000 only — stray versions (.820/.860) are rejected by
-# Connect-OneViewSession's module guard. No-op where the module isn't installed.
 if ($IsWindows) { Import-Module HPEOneView.1000 -ErrorAction SilentlyContinue }
