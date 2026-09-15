@@ -1476,3 +1476,20 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Firmware update post-OS | ✅ New `-FirmwareFolders` param |
 | Audit trail | ✅ Audit log in `$finally` block |
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
+
+
+
+
+git push gitstash
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+git@gitstash.aib.pri: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  main  sshdiag
+SSH_AUTH_SOCK = /c/Users/98253/.ssh/agent/s.mLwBaXVyuk.agent.Oqig6FzXF8; export SSH_AUTH_SOCK
+  -> socket file missing (stale pointer)
+     image-build-automation  main  
