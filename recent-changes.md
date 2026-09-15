@@ -1642,3 +1642,10 @@ if (Test-Path $keyPath)
         Where-Object { $_ -match 'ED25519' } | Select-Object -First 1
     if (-not $present) { & "$gitSshPath/ssh-add.exe" $keyPath 2>$null }
 }        
+
+
+image-build-automation  main  sshdiag                                     0  15:14:11 
+SSH_AUTH_SOCK = C:\\Users\\98253\\.ssh\\agent\\ssh-agent.sock; export SSH_AUTH_SOCK
+  -> socket file missing (stale pointer)
+     image-build-automation  main                                   code $profile 15:14:27 
+     image-build-automation  main  
