@@ -171,6 +171,9 @@
       - [Admin code removal](#admin-code-removal)
       - [Tests: 488 passed, 0 failed, 1 pre-existing skip](#tests-488-passed-0-failed-1-pre-existing-skip-1)
       - [Runbook alignment verification](#runbook-alignment-verification-1)
+- [─── Git SSH (agent-based) ────────────────────────────────────────────────────](#-git-ssh-agent-based-)
+- [Reuse a live agent; only start one if the socket is missing/dead.](#reuse-a-live-agent-only-start-one-if-the-socket-is-missingdead)
+- [Always ensure the key is loaded into THIS agent.](#always-ensure-the-key-is-loaded-into-this-agent)
 
 <a id="summary-of-changes"></a>
 
@@ -1602,20 +1605,40 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
 
 
-SSH_AUTH_SOCK=C:\\Users\\98253\\.ssh\\agent\\ssh-agent.sock; export SSH_AUTH_SOCK;
-echo Agent pid 942;
-     image-build-automation  main                                                     0  14:51:11 
-     image-build-automation  main                                                     0  14:51:12 
-     image-build-automation  main  sshdiag                                            0  14:51:13 
-SSH_AUTH_SOCK = C:\Users\98253\.ssh\agent\ssh-agent.sock
-  -> key LOADED: 256 SHA256:cKK5iVC2SbxxpvcJKyM4Ku5bkSiCUEzoCc9xY9PhFkQ Kevin.X.Everall@aib.ie (ED25519)
-     image-build-automation  main  git push gitstash                           0  518ms  14:53:14 
-** WARNING: connection is not using a post-quantum key exchange algorithm.
-** This session may be vulnerable to "store now, decrypt later" attacks.
-** The server may need to be upgraded. See https://openssh.com/pq.html
-git@gitstash.aib.pri: Permission denied (publickey).
-fatal: Could not read from remote repository.
+# ─── Git SSH (agent-based) ────────────────────────────────────────────────────
+$gitSshPath = "$env:USERPROFILE\AppData\Local\Programs\Git\usr/bin"
+if ($env:PATH -notlike "*$gitSshPath*") { $env:PATH += ";$gitSshPath" }
+$env:GIT_SSH = "$gitSshPath/ssh.exe"
+Remove-Item Env:GIT_SSH_COMMAND -ErrorAction SilentlyContinue
 
-Please make sure you have the correct access rights
-and the repository exists.
-     image-build-automation  main             
+# Reuse a live agent; only start one if the socket is missing/dead.
+$agentAlive = $false
+if ($env:SSH_AUTH_SOCK -and (Test-Path $env:SSH_AUTH_SOCK))
+{
+    & "$gitSshPath/ssh-add.exe" -l 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { $agentAlive = $true }
+}
+
+if (-not $agentAlive)
+{
+    # -s forks to background and prints env to stdout — MUST capture+eval,
+    # never let it hit the terminal (that's what froze new terminals).
+    $agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
+    foreach ($line in $agentOutput)
+    {
+        if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
+        {
+            $val = $matches[2].Trim().TrimEnd(';').Trim("'").Trim('"')
+            if ($val) { Set-Item -Path "Env:$($matches[1])" -Value $val -ErrorAction SilentlyContinue }
+        }
+    }
+}
+
+# Always ensure the key is loaded into THIS agent.
+$keyPath = Join-Path $env:USERPROFILE ".ssh\id_ed25519"
+if (Test-Path $keyPath)
+{
+    $present = & "$gitSshPath/ssh-add.exe" -l 2>$null |
+        Where-Object { $_ -match 'ED25519' } | Select-Object -First 1
+    if (-not $present) { & "$gitSshPath/ssh-add.exe" $keyPath 2>$null }
+}        

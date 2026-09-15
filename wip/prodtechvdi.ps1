@@ -18,7 +18,7 @@ $env:GIT_SSH = "$gitSshPath/ssh.exe"
 
 # Use a FIXED socket path so the pointer can't be orphaned by a
 # random-per-session socket that dies when the terminal/VDI recycles.
-$agentSockDir = Join-Path $env:USERPROFILE ".ssh\agent"
+$agentSockDir  = Join-Path $env:USERPROFILE ".ssh\agent"
 $agentSockPath = Join-Path $agentSockDir "ssh-agent.sock"
 
 # Reuse an existing, reachable agent instead of spawning a new one every
@@ -37,24 +37,20 @@ if (-not $agentAlive)
     if (Test-Path $agentSockPath) { Remove-Item $agentSockPath -Force }
     if (-not (Test-Path $agentSockDir)) { New-Item -ItemType Directory -Path $agentSockDir -Force | Out-Null }
 
-    # -D = daemonize (survive the profile/terminal exiting)
-    # -a = bind the fixed socket path
-    & "$gitSshPath/ssh-agent.exe" -D -a $agentSockPath 2>$null
-
+    # ssh-agent -s forks to the background and prints the env vars to stdout;
+    # we MUST capture and eval them (never let them hit the terminal - that
+    # is what froze new terminals). No -D/-a: those keep it in the foreground
+    # and block the profile until you Ctrl-C.
     $env:SSH_AUTH_SOCK = $agentSockPath
     Remove-Item Env:SSH_AGENT_PID -ErrorAction SilentlyContinue
 
-    # Confirm the agent actually came up; if not, fall back to -s shell mode.
-    if (-not (Test-Path $agentSockPath))
+    $agentOutput = & "$gitSshPath/ssh-agent.exe" -a $agentSockPath -s 2>$null
+    foreach ($line in $agentOutput)
     {
-        $agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
-        foreach ($line in $agentOutput)
+        if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
         {
-            if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
-            {
-                $val = $matches[2].Trim().TrimEnd(';').Trim("'").Trim('"')
-                if ($val) { Set-Item -Path "Env:$($matches[1])" -Value $val -ErrorAction SilentlyContinue }
-            }
+            $val = $matches[2].Trim().TrimEnd(';').Trim("'").Trim('"')
+            if ($val) { Set-Item -Path "Env:$($matches[1])" -Value $val -ErrorAction SilentlyContinue }
         }
     }
 }
