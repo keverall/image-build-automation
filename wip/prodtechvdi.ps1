@@ -16,16 +16,45 @@ if ($env:PATH -notlike "*$gitSshPath*")
 
 $env:GIT_SSH = "$gitSshPath/ssh.exe"
 
-$agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
+# Use a FIXED socket path so the pointer can't be orphaned by a
+# random-per-session socket that dies when the terminal/VDI recycles.
+$agentSockDir = Join-Path $env:USERPROFILE ".ssh\agent"
+$agentSockPath = Join-Path $agentSockDir "ssh-agent.sock"
 
-foreach ($line in $agentOutput)
+# Reuse an existing, reachable agent instead of spawning a new one every
+# profile load (that is what left stale SSH_AUTH_SOCK pointers behind).
+$agentAlive = $false
+if ($env:SSH_AUTH_SOCK -and (Test-Path $env:SSH_AUTH_SOCK))
 {
-    if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
+    & "$gitSshPath/ssh-add.exe" -l 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { $agentAlive = $true }
+}
+
+if (-not $agentAlive)
+{
+    # Kill any orphaned agents and clear the socket so it can be rebound.
+    Get-Process ssh-agent -ErrorAction SilentlyContinue | Stop-Process -Force
+    if (Test-Path $agentSockPath) { Remove-Item $agentSockPath -Force }
+    if (-not (Test-Path $agentSockDir)) { New-Item -ItemType Directory -Path $agentSockDir -Force | Out-Null }
+
+    # -D = daemonize (survive the profile/terminal exiting)
+    # -a = bind the fixed socket path
+    & "$gitSshPath/ssh-agent.exe" -D -a $agentSockPath 2>$null
+
+    $env:SSH_AUTH_SOCK = $agentSockPath
+    Remove-Item Env:SSH_AGENT_PID -ErrorAction SilentlyContinue
+
+    # Confirm the agent actually came up; if not, fall back to -s shell mode.
+    if (-not (Test-Path $agentSockPath))
     {
-        $val = $matches[2].Trim().TrimEnd(';').Trim("'").Trim('"')
-        if ($val)
+        $agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
+        foreach ($line in $agentOutput)
         {
-            Set-Item -Path "Env:$($matches[1])" -Value $val -ErrorAction SilentlyContinue
+            if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
+            {
+                $val = $matches[2].Trim().TrimEnd(';').Trim("'").Trim('"')
+                if ($val) { Set-Item -Path "Env:$($matches[1])" -Value $val -ErrorAction SilentlyContinue }
+            }
         }
     }
 }
