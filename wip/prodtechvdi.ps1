@@ -26,6 +26,18 @@ $env:HTTPS_PROXY = "http://webcorp.prd.aib.pri:8082"
 # ---------------------------------------------------------------------------
 # Git SSH Configuration (Agent-Based Authentication)
 # ---------------------------------------------------------------------------
+# The old block trusted whatever SSH_AUTH_SOCK was lying around from a
+# previous session / VDI reconnect and parsed ssh-agent's output with a regex
+# that swallowed the surrounding single quotes, so the socket path came out
+# malformed ('C:\...\agent.sock) and ssh could never open it. The key was
+# therefore never offered and every push failed with
+#   git@gitstash.aib.pri: permission denied (publickey)
+# until the key was re-registered on the server.
+#
+# This spawns a *fresh* agent every profile load, strips quotes correctly,
+# and re-adds the key, so the working socket + loaded key are guaranteed at
+# startup. A dead socket can no longer masquerade as a live agent.
+# ---------------------------------------------------------------------------
 
 $gitSshPath = "$env:USERPROFILE/AppData/Local/Programs/Git/usr/bin"
 
@@ -37,51 +49,61 @@ if ($env:PATH -notlike "*$gitSshPath*")
 # Ensure Git uses Git-for-Windows SSH, not Windows OpenSSH
 $env:GIT_SSH = "$gitSshPath/ssh.exe"
 
-$agentOK = $false
+# Spawn a fresh agent. ssh-agent -s prints lines like
+#   export SSH_AUTH_SOCK='C:\Users\...\.ssh\agent.sock';
+#   export SSH_PID=1234;
+# We parse and strip the surrounding quotes so the socket path is exact.
+$agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
 
-if ($env:SSH_AUTH_SOCK)
+foreach ($line in $agentOutput)
 {
-    & "$gitSshPath/ssh-add.exe" -l *> $null
-    $agentOK = ($LASTEXITCODE -eq 0)
-}
-
-if (-not $agentOK)
-{
-    $agentOutput = & "$gitSshPath/ssh-agent.exe" -s
-
-    foreach ($line in $agentOutput)
+    if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
     {
-        if ($line -match '^(\w+)=(.+?);')
+        $val = $matches[2].Trim().TrimEnd(';').Trim("'").Trim('"')
+        if ($val)
         {
-            Set-Item -Path "Env:$($matches[1])" -Value $matches[2]
+            Set-Item -Path "Env:$($matches[1])" -Value $val -ErrorAction SilentlyContinue
         }
     }
-
 }
 
+# Never let a per-command GIT_SSH_COMMAND override bypass the agent above.
+Remove-Item Env:GIT_SSH_COMMAND -ErrorAction SilentlyContinue
 
-# Ensure key exists
+# Guarantee the key is loaded into the *current* agent, every profile load.
+# A lingering agent from a previous session is not trusted: it may have
+# dropped the key, so we verify and re-add if absent. This is what stops the
+# daily "agent outlived its key -> permission denied (publickey)" drift.
 $keyPath = Join-Path $env:USERPROFILE ".ssh\id_ed25519"
 
 if (Test-Path $keyPath)
 {
-    $keyLoaded = $false
+    $present = & "$gitSshPath/ssh-add.exe" -l 2>$null |
+        Where-Object { $_ -match 'ED25519' } |
+        Select-Object -First 1
 
-    $loadedKeys = & "$gitSshPath/ssh-add.exe" -l 2>$null
-
-    if ($LASTEXITCODE -eq 0)
+    if (-not $present)
     {
-        $keyLoaded = $loadedKeys -match "ED25519"
-    }
-
-    if (-not $keyLoaded)
-    {
-        & "$gitSshPath/ssh-add.exe" $keyPath
+        & "$gitSshPath/ssh-add.exe" $keyPath 2>$null
     }
 }
 
-# Explicitly remove any direct-key overrides
-Remove-Item Env:GIT_SSH_COMMAND -ErrorAction SilentlyContinue
+# Diagnostics: distinguishes client (agent/socket/key) from server-side
+# key invalidation. Run `sshdiag` after a failed push.
+function global:sshdiag
+{
+    $sock = $env:SSH_AUTH_SOCK
+    "SSH_AUTH_SOCK = $sock"
+    if (-not $sock) { "  -> no agent socket set (agent did not start)" ; return }
+
+    if (-not (Test-Path $sock)) { "  -> socket file missing (stale pointer)" ; return }
+
+    $keys = & "$gitSshPath/ssh-add.exe" -l 2>$null
+    if ($LASTEXITCODE -ne 0) { "  -> agent reachable but ssh-add -l failed (exit $LASTEXITCODE)" ; return }
+
+    if ($keys -match 'ED25519') { "  -> key LOADED: $($keys -join ' | ')" }
+    else { "  -> agent alive but NO key loaded (re-add needed)" }
+}
 
 # ─── Modules ─────────────────────────────────────────────────────────────────
 # posh-git is intentionally not imported: it recomputes git status on every
