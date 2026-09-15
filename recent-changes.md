@@ -1602,3 +1602,20 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
 
 
+SSH_AUTH_SOCK=C:\\Users\\98253\\.ssh\\agent\\ssh-agent.sock; export SSH_AUTH_SOCK;
+echo Agent pid 942;
+     image-build-automation  main                                                     0  14:51:11 
+     image-build-automation  main                                                     0  14:51:12 
+     image-build-automation  main  sshdiag                                            0  14:51:13 
+SSH_AUTH_SOCK = C:\Users\98253\.ssh\agent\ssh-agent.sock
+  -> key LOADED: 256 SHA256:cKK5iVC2SbxxpvcJKyM4Ku5bkSiCUEzoCc9xY9PhFkQ Kevin.X.Everall@aib.ie (ED25519)
+     image-build-automation  main  git push gitstash                           0  518ms  14:53:14 
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+git@gitstash.aib.pri: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+     image-build-automation  main             
