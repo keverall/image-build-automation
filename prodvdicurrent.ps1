@@ -17,11 +17,6 @@ if ($env:PATH -notlike "*$gitSshPath*")
 
 $env:GIT_SSH = "$gitSshPath/ssh.exe"
 
-# Use a FIXED socket path so the pointer can't be orphaned by a
-# random-per-session socket that dies when the terminal/VDI recycles.
-$agentSockDir  = Join-Path $env:USERPROFILE ".ssh\agent"
-$agentSockPath = Join-Path $agentSockDir "ssh-agent.sock"
-
 # Reuse an existing, reachable agent instead of spawning a new one every
 # profile load (that is what left stale SSH_AUTH_SOCK pointers behind).
 $agentAlive = $false
@@ -33,19 +28,13 @@ if ($env:SSH_AUTH_SOCK -and (Test-Path $env:SSH_AUTH_SOCK))
 
 if (-not $agentAlive)
 {
-    # Kill any orphaned agents and clear the socket so it can be rebound.
+    # Kill any orphaned agents.
     Get-Process ssh-agent -ErrorAction SilentlyContinue | Stop-Process -Force
-    if (Test-Path $agentSockPath) { Remove-Item $agentSockPath -Force }
-    if (-not (Test-Path $agentSockDir)) { New-Item -ItemType Directory -Path $agentSockDir -Force | Out-Null }
 
-    # ssh-agent -s forks to the background and prints the env vars to stdout;
-    # we MUST capture and eval them (never let them hit the terminal - that
-    # is what froze new terminals). No -D/-a: those keep it in the foreground
-    # and block the profile until you Ctrl-C.
-    $env:SSH_AUTH_SOCK = $agentSockPath
-    Remove-Item Env:SSH_AGENT_PID -ErrorAction SilentlyContinue
-
-    $agentOutput = & "$gitSshPath/ssh-agent.exe" -a $agentSockPath -s 2>$null
+    # ssh-agent -s forks to background and prints env to stdout;
+    # we MUST capture+eval it (never let it hit the terminal — that froze new terminals).
+    # No -a/-D: -a combined with -s is unreliable on Windows Git; -D blocks the profile.
+    $agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
     foreach ($line in $agentOutput)
     {
         if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
