@@ -157,7 +157,7 @@ Implemented by the commands below; each step can run standalone or via the orche
 | 1. Pre-build validation | `Test-PreBuildValidation` | Verify OneView target, ISO URL, iLO credentials, MP/DP reachability. |
 | 2. Build ISO | `New-IsoBuild` | Create a ConfigMgr WinPE bootable media ISO. |
 | 3. Publish ISO | `Publish-BootIso` | Copy the ISO to an HTTPS repository reachable by iLO. |
-| 4. Resolve target | `Get-OneViewServerTarget` | Query OneView for server identity, health, iLO IP. |
+| 4. Resolve target | `Get-OneViewServerTarget` | Query OneView for server identity, health, iLO IP, and maintenance-mode state. |
 | 5. Mount and boot | `Invoke-IloRedfish` | Mount the ISO via Redfish, set one-time boot, restart. |
 | 6. Monitor | `Start-InstallMonitor` | Poll iLO/WinRM until installation completes or fails. |
 | 7. Post-build validation | `Test-PostBuildValidation` | Verify hostname, domain, OS, drivers, ConfigMgr client. |

@@ -1085,12 +1085,19 @@ function Enable-OneViewMaintenanceMode {
         return @{ Success = $false; Message = 'OneView maintenance target is empty' }
     }
 
-    # OneView maintenance mode does not take a scheduled window the way SCOM does,
-    # but the OneViewClient.SetMaintenance method is typed ([DateTime]) and emits
-    # StartTime/EndTime into its audit output. When the caller omits -Start/-End,
-    # default to an immediate start (now, UTC) with a 4-hour window so the typed
-    # parameters are never bound to $null (which throws "cannot convert null to
-    # type 'system.datetime'") and the resulting schedule is sane.
+    # OneView's `Enable-OVMaintenanceMode` cmdlet is a pure toggle: it takes no
+    # start/end window and OneView has no scheduled auto-disable for server hardware,
+    # and this standalone cmdlet creates no disable task either. Maintenance mode
+    # therefore stays on until you explicitly run Disable-OneViewMaintenanceMode.
+    # (The scheduled auto-disable task lives only in Set-MaintenanceMode -Mode
+    # oneview, which is a different command.)
+    #
+    # -Start/-End are accepted for symmetry with Set-MaintenanceMode but are INERT
+    # here - they are never sent to OneView and no task is created. They are still
+    # parsed and defaulted (now / +4h) purely so the typed [DateTime] params used
+    # downstream are never bound to $null, which previously threw "cannot convert
+    # null to type 'system.datetime'". They are recorded in the result as
+    # StartTime/EndTime for audit consistency only.
     $startDt = if ($Start) { _Parse-Datetime $Start } else { [DateTime]::UtcNow }
     $endDt = if ($End) { _Parse-Datetime $End }
     elseif ($Start) { _Compute-DefaultEnd $startDt }
@@ -1193,9 +1200,11 @@ function Disable-OneViewMaintenanceMode {
         return @{ Success = $false; Message = 'OneView maintenance target is empty' }
     }
 
-    if ($PostDisableWaitSeconds -gt 0) {
-        Write-Warning "PostDisableWaitSeconds=$PostDisableWaitSeconds is accepted but not enforced in the OneView path (OneView does not define an equivalent stabilization delay)."
-    }
+    # OneView's `Disable-OVMaintenanceMode` cmdlet is a pure toggle - it takes no
+    # start/end window, no stabilization delay, and this standalone cmdlet creates
+    # no scheduled task. Maintenance mode simply turns off. (The stabilization wait
+    # and scheduled auto-disable live only in Set-MaintenanceMode -Mode scom / oneview,
+    # which are different commands.)
 
     $result = $oneviewMgr.DisableMaintenance($resolvedTarget, $resolvedType, $DryRun)
     $result['TargetId']        = $TargetId

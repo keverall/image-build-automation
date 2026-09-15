@@ -167,6 +167,48 @@ Describe 'Get-OneViewServerTarget - output rendering (no raw hashtable dump)' {
     }
 }
 
+Describe 'Get-OneViewServerTarget - maintenance mode state' {
+    BeforeAll {
+        $Script:TargetCred = [System.Management.Automation.PSCredential]::new(
+            'admin', (ConvertTo-SecureString 'test-password' -AsPlainText -Force))
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-maint'; serialNumber = 'M1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; maintenanceMode = 'On' }
+                )}
+            }
+        }
+    }
+
+    It 'Reports maintenance_mode = Yes when OneView has the server in maintenance mode' {
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'M1' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
+        $r.Success                   | Should -Be $true
+        $r.Details.maintenance_mode  | Should -Be 'Yes'
+    }
+}
+
+Describe 'Get-OneViewServerTarget - maintenance mode not in maintenance' {
+    BeforeAll {
+        $Script:TargetCred = [System.Management.Automation.PSCredential]::new(
+            'admin', (ConvertTo-SecureString 'test-password' -AsPlainText -Force))
+        InModuleScope Automation {
+            Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-norm'; serialNumber = 'N1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; maintenanceMode = 'Off' }
+                )}
+            }
+        }
+    }
+
+    It 'Reports maintenance_mode = No when OneView reports maintenanceMode Off' {
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'N1' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
+        $r.Success                   | Should -Be $true
+        $r.Details.maintenance_mode  | Should -Be 'No'
+    }
+}
+
 Describe 'Get-OneViewServerTarget - honest error classification' {
     BeforeAll {
         $Script:TargetCred = [System.Management.Automation.PSCredential]::new(

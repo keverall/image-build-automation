@@ -360,7 +360,7 @@ Tests Passed: 90, Failed: 10, Skipped: 0, Duration: 25s   # failure - investigat
 
 **SCOM-specific:** group mode applies to all cluster objects; post-disable wait (`-PostDisableWaitSeconds`); SCOM version detection; REST API (2019+); PowerShell cmdlet fallback (legacy).
 
-**OneView-specific:** server scope resolution; maintenance window creation; per-object status reporting.
+**OneView-specific:** server scope resolution; per-object status reporting. (OneView's `Enable-OVMaintenanceMode` cmdlet is a pure toggle — it takes no window and creates no scheduled task; the only scheduled part of OneView maintenance is the auto-disable task created by `Set-MaintenanceMode -Mode oneview`.)
 
 <a id="maintenance-mode-behavior"></a>
 

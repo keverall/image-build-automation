@@ -381,14 +381,14 @@ Each row also shows the server's **HPE OneView maintenance mode** and lifecycle 
 
 | Column | Source field | Meaning |
 |--------|--------------|---------|
-| `MaintMode` | `MaintenanceModeEnabled` | `Yes` when the server is IN HPE OneView maintenance mode, otherwise `No`. This is the definitive "in/out of maintenance?" flag. |
+| `MaintMode` | `maintenanceMode` | `Yes` when the server is IN HPE OneView maintenance mode, otherwise `No`. This is the definitive "in/out of maintenance?" flag. |
 | `State` | `state` | Lifecycle state: `Monitored` (normal), `MaintenanceMode`, `ConfigureHardware`, `NoProfileApplied`, `ProfileApplying`, `ProfileApplied`, `ProfileError`, `Deleting`. |
 | `State Reason` | `stateReason` | Optional free-text reason for the current state (often populated for maintenance). |
 | `Model` | `modelNumber` | Short, stable HPE model **code** (e.g. `867963-B21`) — placed last because it varies in length and would otherwise break column alignment. The full descriptive model string is still available in the `-PassThru` object as `model`. |
 
 > **Maintenance mode vs other states:** `MaintMode = Yes` **only** when the server is in maintenance mode (and `State` will read `MaintenanceMode`). A server in `ProfileError`, `Monitored`, `NoProfileApplied`, etc. shows in `State` but `MaintMode` stays `No` — so the two columns are independent and an engineer reads `MaintMode = Yes` as the definitive maintenance signal. None of your fleet being in maintenance is expected when every row reads `MaintMode = No`; you would only see `MaintenanceMode` in `State` (and `MaintMode = Yes`) for a server that's actually been placed into maintenance.
 >
-> **Note on dates:** OneView maintenance mode is a manual toggle on the server-hardware resource — there is **no start/end timestamp** for it. Scheduled maintenance *windows* with start/end dates come from SCOM (see `Get-MaintenanceStatusReport`), not from OneView.
+> **Note on dates:** OneView's `maintenanceMode` property is a manual toggle (`On`/`Off`) with **no start/end timestamp** of its own — the `MaintMode` column tells you in/out, not *when* it was set. If you need the window, look at the audit JSON written by `Set-MaintenanceMode -Mode oneview` (it records `StartTime`/`EndTime`), not at the OneView resource.
 
 **Connection behaviour (shared helper):** An existing OneView connection always takes priority - if a session is already active, the command reuses it and never reconnects (reconnecting could drop the live session and cause incidents); if you supplied a different `-OneViewHost`, it warns you which appliance you are connected to and to run `Disconnect-OneView` first to switch. When nothing is connected, supplying `-OneViewHost` establishes a persistent session automatically, prompting for username and password interactively as needed (exactly like `Test-ServerConnectivity`). If there is no host and no active session, it returns an exception explaining there is none and how to connect. The session persists - this command never disconnects (only `Disconnect-OneView` does).
 
@@ -904,7 +904,7 @@ Invoke-IloRedfish -Action Status -IloIp 10.0.1.50
 **What it does (functionality):**
 - Resolves **one** server from OneView by name, serial, iLO IP, or bay.
 - **Strict single-server:** if a name/serial matches more than one server it **fails** (never silently picks one) — this protects the destructive steps that follow.
-- Validates the resolved server (power state, health, iLO IP, maintenance mode).
+- Validates the resolved server (power state, health, iLO IP, **maintenance mode**).
 - Reuses an active OneView connection if present; otherwise connects with the supplied `-OneViewHost` (prompts for credentials). It never disconnects.
 - **Read-only / non-destructive** — it only looks up and validates; it changes nothing.
 - This is the single resolver every build/deploy command uses, so targeting stays consistent.
@@ -941,6 +941,8 @@ Get-OneViewServerTarget -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 > **One-parameter targeting:** `-IdentifierType` defaults to `Auto`, which tries Name, Serial, OneViewName, iLO IP, then EnclosureBay in turn. So `-ServerIdentifier <value>` (or its alias `-SrvrId <value>`) alone resolves the server - you do **not** need to pass `-IdentifierType`. The explicit type is only required to disambiguate when a value could match more than one form.
 
 **Returns:** `[hashtable]` with `Success`, `Server`, `ResolvedBy`, `Details`, and `Error`.
+
+`Details` is a normalized object mapping directly to the HPE OneView `ServerHardware` resource: `name`, `serial_number`, `model`, `power_state`, `health_status`, `maintenance_mode`, `ilo_ip`, `enclosure_name`, `enclosure_bay`, `oneview_uri`, `rom_version`. `maintenance_mode` is `Yes` when OneView has the server in maintenance mode and `No` otherwise (read from the OneView `maintenanceMode` property, the same field used by `Get-OneViewServerList`).
 
 ---
 
@@ -1106,7 +1108,7 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 
 ### Enable OneView maintenance mode
 
-`Enable-OneViewMaintenanceMode` places a single HPE OneView server (or scope) into maintenance mode. It is the standalone OneView equivalent of `Set-MaintenanceMode -Mode oneview -Action enable` — use this when you only need to touch OneView and not SCOM. The appliance host is taken from `-OneViewHost` or from `oneview_config.json` (`appliance`); credentials are read from the env vars named in that config.
+`Enable-OneViewMaintenanceMode` places a single HPE OneView server (or scope) into maintenance mode. It is the standalone OneView equivalent of `Set-MaintenanceMode -Mode oneview -Action enable` — use this when you only need to touch OneView. The appliance host is taken from `-OneViewHost` or from `oneview_config.json` (`appliance`); credentials are read from the env vars named in that config.
 
 | Parameter | Type | Mandatory | Notes |
 | --- | --- | --- | --- |
@@ -1115,10 +1117,10 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 | `-Environment` | string | No | `Test` or `Prod`. |
 | `-OneViewHost` | string | No | OneView appliance host. Alias: `OVHost`. |
 | `-SerialNumber` | string | No | Resolve the target server by serial instead of `-TargetId`. Alias: `Srl`. |
-| `-Start` / `-End` | string | No | Maintenance window. If only `-Start` is given, `-End` defaults to a sensible window. |
+| `-Start` / `-End` | string | No | **Accepted for symmetry with `Set-MaintenanceMode` but INERT in this standalone cmdlet** — OneView's `Enable-OVMaintenanceMode` takes no window, no disable task is created, and the values are never sent to OneView. They are parsed and defaulted (now / +4h) only so the typed `[DateTime]` params downstream are never bound to $null, and are recorded in the result as `StartTime`/`EndTime` for audit consistency. Maintenance mode stays on until you run `Disable-OneViewMaintenanceMode`. |
 | `-ConfigDir` | string | No | Config dir holding `oneview_config.json` (default `configs`). Alias: `CfgDir`. |
 | `-DryRun` | switch | No | Resolve + validate without actually enabling. Alias: `Dry`. |
-| `-NoSchedule` | switch | No | Accepted for API symmetry with `Set-MaintenanceMode`, but OneView maintenance mode is an immediate toggle (no Windows Task Scheduler auto-disable is created in this path). No effect. |
+| `-NoSchedule` | switch | No | **No effect in this standalone cmdlet** — `Enable-OneViewMaintenanceMode` never creates a Windows Task Scheduler task. The scheduled auto-disable task lives only in `Set-MaintenanceMode -Mode oneview`. Accepted for parameter symmetry only. |
 | `-Json` | switch | No | Return the raw result object as JSON. |
 | `-PassThru` | switch | No | Return the result object. Alias: `PT`. |
 | `-Help` | switch | No | Print the command reference and exit (no action taken). |
@@ -1127,8 +1129,8 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 # Enable by server name
 Enable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -Environment Prod
 
-# Enable by serial number, scheduled window
-Enable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -Start 'now' -End '+4hours' -Environment Prod
+# Enable by serial number
+Enable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -Environment Prod
 
 # Validate first without changing anything
 Enable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -DryRun
@@ -1151,10 +1153,10 @@ Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Enab
 | `-Environment` | string | No | `Test` or `Prod`. |
 | `-OneViewHost` | string | No | OneView appliance host. Alias: `OVHost`. |
 | `-SerialNumber` | string | No | Resolve the target server by serial instead of `-TargetId`. Alias: `Srl`. |
-| `-PostDisableWaitSeconds` | int | No | Seconds to wait after disabling (ValidateRange 0–3600, default 0). Alias: `WaitSec`. |
+| `-PostDisableWaitSeconds` | int | No | **Accepted for symmetry with `Set-MaintenanceMode` but INERT in this standalone cmdlet** — OneView's `Disable-OVMaintenanceMode` has no stabilization delay and no task is created. Accepted only so the param exists; nothing is waited. Alias: `WaitSec`. |
 | `-ConfigDir` | string | No | Config dir holding `oneview_config.json` (default `configs`). Alias: `CfgDir`. |
 | `-DryRun` | switch | No | Resolve + validate without actually disabling. Alias: `Dry`. |
-| `-NoSchedule` | switch | No | Accepted for API symmetry with `Set-MaintenanceMode`, but OneView maintenance mode is an immediate toggle (no Windows Task Scheduler auto-disable is created in this path). No effect. |
+| `-NoSchedule` | switch | No | **No effect in this standalone cmdlet** — `Disable-OneViewMaintenanceMode` never creates a Windows Task Scheduler task. The scheduled auto-disable task lives only in `Set-MaintenanceMode -Mode oneview`. Accepted for parameter symmetry only. |
 | `-Json` | switch | No | Return the raw result object as JSON. |
 | `-PassThru` | switch | No | Return the result object. Alias: `PT`. |
 | `-Help` | switch | No | Print the command reference and exit (no action taken). |
@@ -1163,8 +1165,8 @@ Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Enab
 # Disable by server name
 Disable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -Environment Prod
 
-# Disable by serial number, wait 60s afterwards
-Disable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -PostDisableWaitSeconds 60 -Environment Prod
+# Disable by serial number
+Disable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -Environment Prod
 ```
 
 Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Disable-OneViewMaintenanceMode`](https://github.com/.../blob/main/src/powershell/Automation/Public/OneViewMaintenanceMode.ps1)

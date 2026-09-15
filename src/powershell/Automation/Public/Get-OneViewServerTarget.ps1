@@ -22,6 +22,11 @@ function Get-OneViewServerTarget {
         a normalized hashtable describing the server.  Validates health (must be OK)
         and tolerates power state Off or On.
 
+        Reports the server's maintenance-mode state from the OneView `maintenanceMode`
+        property (`On`/`Off`), normalized to Yes/No in `Details.maintenance_mode`,
+        so an operator can see at a glance whether OneView has the server in
+        maintenance mode. This is the same property used by Get-OneViewServerList.
+
         STRICT SINGLE-SERVER: this command must resolve to exactly one server. A
         query that matches more than one server is a hard failure (Success=$false)
         rather than a warning - it never silently picks the first match, because it
@@ -201,6 +206,9 @@ function Get-OneViewServerTarget {
                 } -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
             }
             $srv = $resp.members[0]
+            # OneView exposes maintenance mode as the string property `maintenanceMode`
+            # (`On`/`Off`), NOT as a boolean. Normalize to Yes/No so the value is
+            # never ambiguous (see Get-OneViewServerList for the same mapping).
             $details = @{
                 name              = $srv.name
                 serial_number     = $srv.serialNumber
@@ -212,6 +220,7 @@ function Get-OneViewServerTarget {
                 enclosure_bay     = $srv.position
                 oneview_uri       = $srv.uri
                 rom_version       = $srv.romVersion
+                maintenance_mode  = if ($srv.maintenanceMode -and $srv.maintenanceMode -notin @('Off', $false, $null)) { 'Yes' } else { 'No' }
             }
             if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
                 return (_Emit-ServerTargetResult -Result @{
@@ -369,6 +378,7 @@ function _Format-ServerTargetResult {
         "model=$($d.model)",
         "power=$($d.power_state)",
         "health=$($d.health_status)",
+        "maint=$($d.maintenance_mode)",
         "ilo=$($d.ilo_ip)",
         "enclosure=$($d.enclosure_name)/$($d.enclosure_bay)",
         "rom=$($d.rom_version)"
