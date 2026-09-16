@@ -87,7 +87,6 @@ function _Enable-OneViewMaintenanceMode {
         [string] $OneViewHost,
         [string] $SerialNumber,
         [string] $ServerName,
-        [System.Management.Automation.PSCredential] $OneViewCredential,
         [switch] $DryRun
     )
     $targetName = if ($ServerName) { $ServerName } else { $SerialNumber }
@@ -103,7 +102,6 @@ function _Enable-OneViewMaintenanceMode {
         }
         if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
         else { $params['TargetId'] = $ServerName }
-        if ($OneViewCredential) { $params['Credential'] = $OneViewCredential }
         $result = Set-MaintenanceMode @params
         if ($result.Success) {
             Write-Host "  [OneView] Maintenance mode ENABLED for '$targetName'." -ForegroundColor Green
@@ -123,7 +121,6 @@ function _Disable-OneViewMaintenanceMode {
         [string] $OneViewHost,
         [string] $SerialNumber,
         [string] $ServerName,
-        [System.Management.Automation.PSCredential] $OneViewCredential,
         [switch] $DryRun
     )
     $targetName = if ($ServerName) { $ServerName } else { $SerialNumber }
@@ -137,7 +134,6 @@ function _Disable-OneViewMaintenanceMode {
         }
         if ($SerialNumber) { $params['SerialNumber'] = $SerialNumber }
         else { $params['TargetId'] = $ServerName }
-        if ($OneViewCredential) { $params['Credential'] = $OneViewCredential }
         $result = Set-MaintenanceMode @params
         if ($result.Success) {
             Write-Host "  [OneView] Maintenance mode DISABLED for '$targetName'." -ForegroundColor Green
@@ -488,7 +484,7 @@ function Start-PhysicalServerBuild {
         if ($OneViewMaintenanceMode -and $OneViewHost -and $maintenanceSerial) {
             $maintResult = _Enable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
                 -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
-                -OneViewCredential $OneViewCredential -DryRun:$DryRun
+                -DryRun:$DryRun
             _Step 'oneview_maintenance_enable' $maintResult
             $maintenanceModeEnabled = $maintResult.Success
             if (-not $maintResult.Success -and -not $DryRun) {
@@ -620,7 +616,7 @@ function Start-PhysicalServerBuild {
             try {
                 $disableResult = _Disable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
                     -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
-                    -OneViewCredential $OneViewCredential -DryRun:$DryRun
+                    -DryRun:$DryRun
                 $overall['oneview_maintenance_disable'] = $disableResult.Success
                 if (-not $disableResult.Success) {
                     $overall['oneview_maintenance_disable_error'] = $disableResult.Error

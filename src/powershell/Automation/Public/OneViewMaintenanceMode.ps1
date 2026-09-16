@@ -131,8 +131,10 @@ class OneViewClient {
 param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
@@ -297,8 +299,10 @@ param([string]`$OVUser, [string]`$OVPwd)
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
@@ -435,8 +439,10 @@ param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PAS
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
@@ -589,8 +595,10 @@ param([string]`$OVUser, [string]`$OVPwd)
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
@@ -714,8 +722,10 @@ param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PAS
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
@@ -790,8 +800,10 @@ param([string]`$OVUser, [string]`$OVPwd)
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
@@ -853,8 +865,10 @@ if ('$TargetType' -eq 'ServerHardware') {
         $scriptContent = @"
 Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not '$($this.Username)') { throw "No active OneView session and credentials not configured for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential (New-Object System.Management.Automation.PSCredential('$($this.Username)', (ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force))) -ErrorAction Stop
 }
 `$server = Get-OVServer -Name '$Name' -ErrorAction Stop
@@ -902,8 +916,10 @@ param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PAS
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
 if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
