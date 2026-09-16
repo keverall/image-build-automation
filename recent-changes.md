@@ -1634,18 +1634,79 @@ if (-not $agentAlive)
     }
 }
 
-# Always ensure the key is loaded into THIS agent.
-$keyPath = Join-Path $env:USERPROFILE ".ssh\id_ed25519"
-if (Test-Path $keyPath)
-{
-    $present = & "$gitSshPath/ssh-add.exe" -l 2>$null |
-        Where-Object { $_ -match 'ED25519' } | Select-Object -First 1
-    if (-not $present) { & "$gitSshPath/ssh-add.exe" $keyPath 2>$null }
-}        
 
 
-image-build-automation  main  sshdiag                                     0  15:14:11 
-SSH_AUTH_SOCK = C:\\Users\\98253\\.ssh\\agent\\ssh-agent.sock; export SSH_AUTH_SOCK
-  -> socket file missing (stale pointer)
-     image-build-automation  main                                   code $profile 15:14:27 
-     image-build-automation  main  
+Set-MaintenanceMode                                                                                                                                 0  1s 5ms  10:50:51 
+Name                           Value 
+----                           ----- 
+Error                          Mode is required and must be either 'scom' or 'oneview'.
+Success                        False
+
+   image-build-automation  main  pwsh -File ./src/powershell/Automation/Public/Set-MaintenanceMode.ps1 -Action enable -TargetId 'PROD-CLUSTER-01' -Mode scom -DryRun^C                          10:50:58    image-build-automation  main  Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber CZ22420JCM                                                                                   0  10:52:08 Enter OneView username: 
+adm_98253 
+Enter OneView password: *************** 
+
+Name                           Value
+----                           -----
+Success                        False
+Error                          OneView could not resolve server with serial number 'CZ22420JCM': Resolve by serial failed: No such host is known. (oneview.ad.example.com:443) 
+SerialNumber                   CZ22420JCM
+
+   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId alp-qlikview-03ilo -OneViewHost va-oneviewt-01                                                           0  26s 931ms  10:53:17 Enable-OneViewMaintenanceMode: OneView credentials are not configured for appliance 'va-oneviewt-01'. Set the ONEVIEW_USER / ONEVIEW_PASSWORD environment variables, or populate the credentials block of oneview_config.json.
+   image-build-automation  main  $ONEVIEW_USER="adm_98253"                                                                                                                            1  519ms  10:54:26    image-build-automation  main  $ONEVIEW_PASSWORD="CribCussRev89a$$"                                                                                                                        0  10:58:13    image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId alp-qlikview-03ilo -OneViewHost va-oneviewt-01                                                                      0  10:59:05 Enable-OneViewMaintenanceMode: OneView credentials are not configured for appliance 'va-oneviewt-01'. Set the ONEVIEW_USER / ONEVIEW_PASSWORD environment variables, or populate the credentials block of oneview_config.json.
+   image-build-automation  main  $env:ONEVIEW_USER="adm_98253"                                                                                                                     1  5s 140ms  10:59:14    image-build-automation  main  $env:ONEVIEW_PASSWORD="CribCussRev89a$$"                                                                                                                    0  10:59:29    image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId alp-qlikview-03ilo -OneViewHost va-oneviewt-01                                                                      0  10:59:55 WARNING: You are already connected to va-oneviewt-01 
+
+Name                           Value 
+----                           ----- 
+Total                          1     
+DryRun                         True 
+TargetId                       alp-qlikview-03ilo
+Objects                        {@{Status=already_in_maintenance; Name=alp-qlikview-03ilo; Message=Already in maintenance mode; Type=server-hardware-12}}
+Success                        True
+Target                         alp-qlikview-03ilo
+FailedCount                    0
+ResolvedType                   ServerHardware
+TargetType                     ServerHardware
+StartTime                      16/09/2026 09:59:59
+Message                        OneView maintenance mode enabled: 0 succeeded, 0 failed, 1 already in maintenance (total 1)
+ResolvedTarget                 alp-qlikview-03ilo
+SuccessCount                   0
+Module                         HPEOneView.1000
+EndTime                        16/09/2026 13:59:59
+SerialNumber
+Appliance                      va-oneviewt-01
+AlreadyCount                   1
+
+   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                                                                                                          0  921ms  11:00:00 
+==============================================
+  OneView Server List (6 servers)
+  Appliance: va-oneviewt-01
+==============================================
+
+| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     | 
+|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------| 
+| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      | 
+| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      | 
+| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      | 
+| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
+| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
+| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
+
+KEY
+  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
+  State     : server lifecycle state from OneView:
+               Monitored        = normal / being monitored (not in maintenance)
+               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
+               NoProfileApplied = no server profile assigned
+               ProfileApplying  = a server profile is being applied 
+               ProfileApplied   = a server profile has been applied
+               ConfigureHardware = hardware configuration in progress
+               ProfileError     = profile apply failed (NOT maintenance)
+               Deleting         = server being removed
+  State Reason : additional context for the State value (blank when 'NotApplicable'):
+               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
+               UserInitiated  = state change triggered by a user action
+               Unmanaged      = hardware not managed by this OneView appliance
+               Removed        = hardware has been removed from the appliance
+
+==============================================

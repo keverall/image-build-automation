@@ -1,6 +1,14 @@
 
 # =============================================================================
 # PowerShell Profile — Windows Terminal (Windows Server)
+
+# When SSH fails for gitstash push run these 3 lines below:
+#
+# sshdiag
+# ssh -vvT git@gitstash.aib.pri
+# ssh-keygen -lf $HOME\.ssh\id_ed25519.pub
+#####
+
 $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') +
     ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
 
