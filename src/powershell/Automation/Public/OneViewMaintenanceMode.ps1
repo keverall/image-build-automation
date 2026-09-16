@@ -228,7 +228,7 @@ if ('$TargetType' -eq 'ServerHardware') {
     Target       = '$Target'
     StartTime    = '$($StartDt.ToString('o'))'
     EndTime      = '$($EndDt.ToString('o'))'
-    DryRun       = '$DryRun'
+    DryRun       = $DryRun
     Message      = "OneView maintenance mode enabled: `$success succeeded, `$failed failed, `$alreadyInMaintenance already in maintenance (total `$(`$objects.Count))"
 }
 `$out | ConvertTo-Json -Depth 5
@@ -370,7 +370,7 @@ if ('$TargetType' -eq 'ServerHardware') {
     Target       = '$Target'
     StartTime    = '$($StartDt.ToString('o'))'
     EndTime      = '$($EndDt.ToString('o'))'
-    DryRun       = '$DryRun'
+    DryRun       = $DryRun
     Message      = "OneView maintenance mode enabled: `$success succeeded, `$failed failed, `$alreadyInMaintenance already in maintenance (total `$(`$objects.Count))"
 }
 `$out | ConvertTo-Json -Depth 5
@@ -524,7 +524,7 @@ if ('$TargetType' -eq 'ServerHardware') {
     Module         = '$ovModule'
     TargetType     = '$TargetType'
     Target         = '$Target'
-    DryRun         = '$DryRun'
+    DryRun         = $DryRun
     Message        = "OneView maintenance mode disabled: `$success succeeded, `$failed failed, `$notInMaintenance already not in maintenance (total `$(`$objects.Count))"
 }
 `$out | ConvertTo-Json -Depth 5
@@ -656,7 +656,7 @@ if ('$TargetType' -eq 'ServerHardware') {
     Module         = '$ovModule'
     TargetType     = '$TargetType'
     Target         = '$Target'
-    DryRun         = '$DryRun'
+    DryRun         = $DryRun
     Message        = "OneView maintenance mode disabled: `$success succeeded, `$failed failed, `$notInMaintenance already not in maintenance (total `$(`$objects.Count))"
 }
 `$out | ConvertTo-Json -Depth 5
