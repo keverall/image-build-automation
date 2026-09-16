@@ -1038,8 +1038,13 @@ function Enable-OneViewMaintenanceMode {
         $ovHost = $ovConfig['oneview']['appliance']
     }
 
+    $activeSession = Get-OneViewActiveSession
+    if (-not $ovHost -and $activeSession) {
+        $ovHost = $activeSession.Name
+    }
+
     if (-not $ovHost) {
-        Write-Error "OneView appliance host not supplied. Pass -OneViewHost or set appliance in oneview_config.json."
+        Write-Error "OneView appliance host not supplied. Pass -OneViewHost, connect first with 'Connect-OneView -OneViewHost <host>', or set appliance in oneview_config.json (DryRun only)."
         return @{ Success = $false; Message = 'OneView appliance host not configured' }
     }
 
@@ -1056,15 +1061,23 @@ function Enable-OneViewMaintenanceMode {
         }
     })
 
-    if (-not $DryRun -and (-not $oneviewMgr.Username -or -not $oneviewMgr.Password)) {
-        $userEnv = 'ONEVIEW_USER'; $passEnv = 'ONEVIEW_PASSWORD'
-        if ($ovConfig -and $ovConfig['oneview'] -and $ovConfig['oneview']['credentials']) {
-            $creds = $ovConfig['oneview']['credentials']
-            $userEnv = $creds['username_env']  ?? $userEnv
-            $passEnv = $creds['password_env']  ?? $passEnv
+    if (-not $DryRun) {
+        if ($activeSession) {
+            if ($PSBoundParameters.ContainsKey('OneViewHost') -and $OneViewHost -and $activeSession.Name -ne $ovHost) {
+                Write-Error "Already connected to OneView appliance '$($activeSession.Name)'. Cannot run maintenance on '$ovHost' - run Disconnect-OneView first to switch appliances."
+                return @{ Success = $false; Message = "Already connected to '$($activeSession.Name)'; use Disconnect-OneView before switching to '$ovHost'" }
+            }
+            Write-Verbose "Reusing active OneView session to appliance '$($activeSession.Name)'. Credentials are not required."
+        } elseif (-not $oneviewMgr.Username -or -not $oneviewMgr.Password) {
+            $userEnv = 'ONEVIEW_USER'; $passEnv = 'ONEVIEW_PASSWORD'
+            if ($ovConfig -and $ovConfig['oneview'] -and $ovConfig['oneview']['credentials']) {
+                $creds = $ovConfig['oneview']['credentials']
+                $userEnv = $creds['username_env']  ?? $userEnv
+                $passEnv = $creds['password_env']  ?? $passEnv
+            }
+            Write-Error "OneView credentials are not configured for appliance '$ovHost'. Connect first with 'Connect-OneView -OneViewHost $ovHost', or set the $userEnv / $passEnv environment variables, or run interactively to be prompted. (The credentials block of oneview_config.json is only used for -DryRun.)"
+            return @{ Success = $false; Message = "OneView credentials not configured for '$ovHost'" }
         }
-        Write-Error "OneView credentials are not configured for appliance '$ovHost'. Set the $userEnv / $passEnv environment variables, or populate the credentials block of oneview_config.json."
-        return @{ Success = $false; Message = "OneView credentials not configured for '$ovHost'" }
     }
 
     $resolvedTarget = $TargetId
@@ -1153,8 +1166,13 @@ function Disable-OneViewMaintenanceMode {
         $ovHost = $ovConfig['oneview']['appliance']
     }
 
+    $activeSession = Get-OneViewActiveSession
+    if (-not $ovHost -and $activeSession) {
+        $ovHost = $activeSession.Name
+    }
+
     if (-not $ovHost) {
-        Write-Error "OneView appliance host not supplied. Pass -OneViewHost or set appliance in oneview_config.json."
+        Write-Error "OneView appliance host not supplied. Pass -OneViewHost, connect first with 'Connect-OneView -OneViewHost <host>', or set appliance in oneview_config.json (DryRun only)."
         return @{ Success = $false; Message = 'OneView appliance host not configured' }
     }
 
@@ -1171,15 +1189,23 @@ function Disable-OneViewMaintenanceMode {
         }
     })
 
-    if (-not $DryRun -and (-not $oneviewMgr.Username -or -not $oneviewMgr.Password)) {
-        $userEnv = 'ONEVIEW_USER'; $passEnv = 'ONEVIEW_PASSWORD'
-        if ($ovConfig -and $ovConfig['oneview'] -and $ovConfig['oneview']['credentials']) {
-            $creds = $ovConfig['oneview']['credentials']
-            $userEnv = $creds['username_env']  ?? $userEnv
-            $passEnv = $creds['password_env']  ?? $passEnv
+    if (-not $DryRun) {
+        if ($activeSession) {
+            if ($PSBoundParameters.ContainsKey('OneViewHost') -and $OneViewHost -and $activeSession.Name -ne $ovHost) {
+                Write-Error "Already connected to OneView appliance '$($activeSession.Name)'. Cannot run maintenance on '$ovHost' - run Disconnect-OneView first to switch appliances."
+                return @{ Success = $false; Message = "Already connected to '$($activeSession.Name)'; use Disconnect-OneView before switching to '$ovHost'" }
+            }
+            Write-Verbose "Reusing active OneView session to appliance '$($activeSession.Name)'. Credentials are not required."
+        } elseif (-not $oneviewMgr.Username -or -not $oneviewMgr.Password) {
+            $userEnv = 'ONEVIEW_USER'; $passEnv = 'ONEVIEW_PASSWORD'
+            if ($ovConfig -and $ovConfig['oneview'] -and $ovConfig['oneview']['credentials']) {
+                $creds = $ovConfig['oneview']['credentials']
+                $userEnv = $creds['username_env']  ?? $userEnv
+                $passEnv = $creds['password_env']  ?? $passEnv
+            }
+            Write-Error "OneView credentials are not configured for appliance '$ovHost'. Connect first with 'Connect-OneView -OneViewHost $ovHost', or set the $userEnv / $passEnv environment variables, or run interactively to be prompted. (The credentials block of oneview_config.json is only used for -DryRun.)"
+            return @{ Success = $false; Message = "OneView credentials not configured for '$ovHost'" }
         }
-        Write-Error "OneView credentials are not configured for appliance '$ovHost'. Set the $userEnv / $passEnv environment variables, or populate the credentials block of oneview_config.json."
-        return @{ Success = $false; Message = "OneView credentials not configured for '$ovHost'" }
     }
 
     $resolvedTarget = $TargetId

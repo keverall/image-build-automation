@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Private/Help.ps1
-generated: 2026-09-15
+generated: 2026-09-16
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

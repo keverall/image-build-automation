@@ -39,10 +39,24 @@ if (-not $agentAlive)
     # Kill any orphaned agents.
     Get-Process ssh-agent -ErrorAction SilentlyContinue | Stop-Process -Force
 
+    # Verify ssh-agent.exe exists before trying to start it.
+    $agentExe = Join-Path $gitSshPath "ssh-agent.exe"
+    if (-not (Test-Path $agentExe))
+    {
+        Write-Warning "ssh-agent.exe not found at $agentExe — check Git for Windows install path"
+        return
+    }
+
     # ssh-agent -s forks to background and prints env to stdout;
     # we MUST capture+eval it (never let it hit the terminal — that froze new terminals).
-    # No -a/-D: -a combined with -s is unreliable on Windows Git; -D blocks the profile.
-    $agentOutput = & "$gitSshPath/ssh-agent.exe" -s 2>$null
+    # If it produces NO output, something is wrong — don't leave a stale env var.
+    $agentOutput = & $agentExe -s
+    if (-not $agentOutput)
+    {
+        Write-Warning "ssh-agent.exe -s produced no output — agent failed to start"
+        return
+    }
+
     foreach ($line in $agentOutput)
     {
         if ($line -match '^\s*(?:export\s+)?(\w+)=(.+)$')
@@ -50,6 +64,13 @@ if (-not $agentAlive)
             $val = $matches[2].Trim().TrimEnd(';').Trim("'").Trim('"')
             if ($val) { Set-Item -Path "Env:$($matches[1])" -Value $val -ErrorAction SilentlyContinue }
         }
+    }
+
+    # Verify the agent actually came up.
+    if (-not $env:SSH_AUTH_SOCK -or -not (Test-Path $env:SSH_AUTH_SOCK))
+    {
+        Write-Warning "Agent started but SSH_AUTH_SOCK not set or socket missing"
+        return
     }
 }
 
