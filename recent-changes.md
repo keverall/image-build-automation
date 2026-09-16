@@ -6,7 +6,8 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
-  - [41) Data-driven `-Help` test matrix (38 commands), `Update-Firmware` export fix, runner output fix & wip cleanup](#41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup)
+   - [42) OneView Maintenance Mode hardening (session reuse, credentials, default window, DryRun fix) + secret scanning + SSH agent profile management](#42-oneview-maintenance-mode-hardening-session-reuse-credentials-default-window-dryrun-fix-secret-scanning-ssh-agent-profile-management)
+   - [41) Data-driven `-Help` test matrix (38 commands), `Update-Firmware` export fix, runner output fix & wip cleanup](#41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup)
   - [40) Parameter-set mandatory enforcement + `-Help` EXAMPLES link to command reference](#40-parameter-set-mandatory-enforcement-help-examples-link-to-command-reference)
   - [39) Update-Firmware re-added — post-OS HPE firmware flash integrated into the build](#39-update-firmware-re-added-post-os-hpe-firmware-flash-integrated-into-the-build)
   - [38) Consistent newest-first ordering — change-log body, summary table, TOC generator + maintenance guide](#38-consistent-newest-first-ordering-change-log-body-summary-table-toc-generator-maintenance-guide)
@@ -54,6 +55,7 @@
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |  
+| 2026-09-16 | OneView maintenance mode hardening: active OneView session reuse (no re-connect when already connected to the correct appliance, with a guard that blocks switching appliances without `Disconnect-OneView` first), actionable credential error messages that now read "OneView credentials are not configured for appliance '<host>'. Connect first with 'Connect-OneView -OneViewHost <host>', or set the ONEVIEW_USER / ONEVIEW_PASSWORD environment variables, or run interactively to be prompted", default 4-hour UTC maintenance window when `-Start`/`-End` are omitted (OneView's enable/disable are pure toggles, so `-Start`/`-End` are inert and recorded for audit only), and a `DryRun` boolean serialization fix in all four `OneViewClient` embedded script blocks (`_SetViaModule`, `_SetViaWinRM`, `_DisableViaModule`, `_DisableViaWinRM`) where `DryRun = '$DryRun'` produced a JSON string `"False"` that `[bool]` cast to `$true` — now `DryRun = $DryRun` emits a proper JSON boolean; `Get-OneViewServerTarget` now reports the `maintenanceMode` (`On`/`Off`) property as Yes/No; secret scanning via pre-commit gitleaks (`.gitleaks.toml`, `.pre-commit-config.yaml`, `scripts/secret-scan.ps1` with flat-array JSON output) and `.gitignore` scratch/generated exclusions; SSH agent management in PowerShell profile scripts (fixed socket path, live-agent reuse, stale-socket cleanup, orphaned-connection prevention) + troubleshooting notes; dynamic docs regeneration | Kev Everall |
 | 2026-09-11 | Added a data-driven `-Help` test matrix (`scripts/HelpParamTests.txt`, 38 commands) with a completeness guard that fails when an exported Automation `-Help` command is missing from the list, plus `tests/powershell/HelpParamTests.Unit.Tests.ps1` (44 assertions: output ownership, section structure/order, no exceptions, `-Help` ≡ `Get-CommandHelp`), a focused `scripts/run-help-param-tests.ps1` runner and a `make help-param-tests` target; fixed the root-module `Export-ModuleMember` that omitted `Update-Firmware` (present in the manifest but never actually exported, so `-Help` was unreachable); fixed `Get-CommandHelp` to render a single usage line with no `-Help` token (32 of 38 commands previously showed a redundant `-Help` line because optional run parameters leaked into the `Help` set); fixed the `Write-Output … -NoNewline` literal in the four Pester runners and moved `cyberark-bootstrap.ps1` progress output to `Write-Host` so it no longer pollutes `secrets.env`; retired `HelpSwitch.Unit.Tests.ps1` and retargeted `automation-mode-tests` (dropping four references to deleted test files); corrected §40's mandatory-`-Help`/usage-line wording; and pruned the `wip/` scratch docs, vendored font trees, the superseded root `changes.md` and stale references as part of the wip cleanup (test count 598 → 564) | Kev Everall |
 | 2026-09-11 | Enforced mandatory parameters per parameter set across the Public commands: run-path parameters are now `[Parameter(Mandatory, ParameterSetName = 'Run')]` and `-Help` is an optional `[Parameter(ParameterSetName = 'Help')]`, so a bare command surfaces a real "missing mandatory parameter" error instead of demanding `-Help`, while `-Help` alone renders usage without requiring run parameters; `Get-CommandHelp` links its EXAMPLES section to each command's section (clickable GitHub blob URL) in `docs/Automation/automation_commands.md` | Kev Everall |
 | 2026-09-04 | Re-introduced `Update-Firmware` (204-line Public command, pruned in change 27) to flash HPE firmware from client-supplied folders after OS installation: new `-Server`, `-FirmwareFolders`, `-Credential`, `-SutToolPath`, and `-SkipConfirmation` parameters; wired into `Start-PhysicalServerBuild` and `Configure-PhysicalBuild` so a build flashes BIOS / iLO / Smart Array / NIC / drivers via HPE SUT/SUM when firmware folders are supplied (or records a clean failure when credentials are absent); module manifest + `automation_commands.md` updated | Kev Everall |
@@ -99,6 +101,48 @@
 <a id="change-details"></a>
 
 ## Change details
+
+<a id="42-oneview-maintenance-mode-hardening-session-reuse-credentials-default-window-dryrun-fix-secret-scanning-ssh-agent-profile-management"></a>
+
+### 42) OneView Maintenance Mode hardening (session reuse, credentials, default window, DryRun fix) + secret scanning + SSH agent profile management
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-16 | OneView maintenance mode hardening: active OneView session reuse (no re-connect when already connected to the correct appliance, with a guard that blocks switching appliances without `Disconnect-OneView` first), actionable credential error messages that now read "OneView credentials are not configured for appliance '<host>'. Connect first with 'Connect-OneView -OneViewHost <host>', or set the ONEVIEW_USER / ONEVIEW_PASSWORD environment variables, or run interactively to be prompted", default 4-hour UTC maintenance window when `-Start`/`-End` are omitted (OneView's enable/disable are pure toggles, so `-Start`/`-End` are inert and recorded for audit only), and a `DryRun` boolean serialization fix in all four `OneViewClient` embedded script blocks (`_SetViaModule`, `_SetViaWinRM`, `_DisableViaModule`, `_DisableViaWinRM`) where `DryRun = '$DryRun'` produced a JSON string `"False"` that `[bool]` cast to `$true` — now `DryRun = $DryRun` emits a proper JSON boolean; `Get-OneViewServerTarget` now reports the `maintenanceMode` (`On`/`Off`) property as Yes/No; secret scanning via pre-commit gitleaks (`.gitleaks.toml`, `.pre-commit-config.yaml`, `scripts/secret-scan.ps1` with flat-array JSON output) and `.gitignore` scratch/generated exclusions; SSH agent management in PowerShell profile scripts (fixed socket path, live-agent reuse, stale-socket cleanup, orphaned-connection prevention) + troubleshooting notes; dynamic docs regeneration | Kev Everall |
+
+<a name="root-cause-42"></a>
+
+#### Root cause
+
+- **`DryRun` was serialized as a string, not a boolean.** In all four `OneViewClient` embedded script blocks (`_SetViaModule`, `_SetViaWinRM`, `_DisableViaModule`, `_DisableViaWinRM` — `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1`), the output hashtable assigned `DryRun = '$DryRun'` — single-quoted inside a double-quoted here-string. The single quotes forced the `[bool]` value into a string literal (`"True"`/`"False"`), which `ConvertTo-Json` serialized as `"DryRun":"False"`, and `[bool]$result.DryRun` then cast that non-empty string to `$true` — so `DryRun` was always reported as `$true` regardless of the actual value. `Set-MaintenanceMode` and `Get-MaintenanceStatusReport` are affected because they delegate to these `OneViewClient` methods.
+- **Credentials were required even when an active OneView session existed.** `Enable-OneViewMaintenanceMode` and `Disable-OneViewMaintenanceMode` always demanded `OneViewHost` + credentials, ignoring an already-connected session — forcing redundant authentication on a machine already connected to the correct appliance, and producing a cryptic "credentials not configured" error even when a valid session was active.
+- **Omitting `-Start`/`-End` passed `$null` into `[DateTime]`-typed parameters.** The `OneViewClient.SetMaintenance` method is typed `[DateTime]` for `StartDt`/`EndDt`; binding `$null` threw "Cannot convert null to type 'system.datetime'" when the user omitted the schedule parameters, despite OneView's `Enable-OVMaintenanceMode`/``Disable-OVMaintenanceMode` being pure toggles that take no schedule.
+- **`Get-OneViewServerTarget` did not report maintenance-mode state.** Operators had no way to see at a glance whether OneView already had a server in maintenance, requiring a separate `Get-OneViewServerList` call.
+- **No secret scanning in CI or pre-commit.** Credentials, SHA/HMAC keys, and SSH private/public keys could be committed without detection.
+- **SSH agent management was ad-hoc.** PowerShell profile scripts spawned agents without reusing existing ones or cleaning up stale sockets, leading to orphaned processes.
+
+<a name="fix-42"></a>
+
+#### Fix
+
+- **DryRun boolean serialization** (`OneViewMaintenanceMode.ps1`): changed `DryRun = '$DryRun'` → `DryRun = $DryRun` (unquoted) in all 4 embedded script blocks, so the generated code emits a bare boolean literal that serializes to JSON `true`/`false` and round-trips correctly through `[bool]$result.DryRun`.
+- **Active session reuse** (`OneViewMaintenanceMode.ps1`): `Enable-OneViewMaintenanceMode` and `Disable-OneViewMaintenanceMode` now call `Get-OneViewActiveSession` to detect an existing OneView session; if the appliance host is not supplied but an active session exists, that host is used; if connected to the *same* appliance, credentials are not required (session reuse); if connected to a *different* appliance, a clear error directs the user to `Disconnect-OneView` first.
+- **Actionable credential error messages** (`OneViewMaintenanceMode.ps1`): the credential-guard error now reads "OneView credentials are not configured for appliance '<host>'. Connect first with 'Connect-OneView -OneViewHost <host>', or set the $userEnv / $passEnv environment variables, or run interactively to be prompted. (The credentials block of oneview_config.json is only used for -DryRun.)" instead of the prior terse message.
+- **Default 4-hour maintenance window** (`OneViewMaintenanceMode.ps1`): when `-Start`/`-End` are omitted, the schedule defaults to now (UTC) / +4h so the `[DateTime]`-typed parameters are never bound to `$null`. The comment block documents that OneView's enable/disable are pure toggles and `-Start`/`-End` are inert in the standalone cmdlets (recorded for audit only).
+- **`Get-OneViewServerTarget`** now reports the OneView `maintenanceMode` (`On`/`Off`) property as Yes/No in `Details.maintenance_mode`, and the formatted output includes a `maint=Yes/No` field.
+- **Secret scanning** (`.gitleaks.toml`, `.pre-commit-config.yaml`, `scripts/secret-scan.ps1`): pre-commit integration scans for tokens, SHA/HMAC keys, and SSH private/public keys; `secret-scan.ps1` JSON output standardized to a flat array; `.gitignore` updated to exclude local scratch workspace and generated documents.
+- **SSH agent profile management** (`wip/prodtechvdi.ps1`, `prodvdicurrent.ps1`): detect and reuse a live SSH agent, implement a fixed socket path, clean up stale `SSH_AUTH_SOCK` pointers, and prevent orphaned connections; added troubleshooting notes for SSH failures.
+- **Tests + docs**: `OneViewMaintenanceMode.Unit.Tests.ps1` expanded with credential-guard and default-scheduling regression tests; `Get-OneViewServerTarget.Unit.Tests.ps1` added; `docs/Automation/automation_commands.md`, `docs/Generic/powershell_api_reference.md`, `docs/Generic/testing.md`, and `docs/dynamic-code-docs/` regenerated.
+
+<a name="verification-42"></a>
+
+#### Verification
+
+- `OneViewMaintenanceMode.Unit.Tests.ps1` → **6 passed, 0 failed**.
+- DryRun round-trip simulation: `DryRun:$false` → JSON `"DryRun":false` → `[bool]` = `False`; `DryRun:$true` → JSON `"DryRun":true` → `[bool]` = `True` (both correct; previously both reported `$true`).
+- PowerShell parser: `OneViewMaintenanceMode.ps1` parses with zero syntax errors.
+- `Enable-OneViewMaintenanceMode -TargetId srv01 -OneViewHost bogus -DryRun` completes without throwing.
+- `make lint` (PSScriptAnalyzer) reports no new issues at the changed lines.
 
 <a id="41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup"></a>
 
