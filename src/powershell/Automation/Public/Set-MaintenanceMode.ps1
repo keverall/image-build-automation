@@ -2904,7 +2904,7 @@ class OneViewClient {
 param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -3040,7 +3040,7 @@ if ('$TargetType' -eq 'ServerHardware') {
 param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -3175,7 +3175,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         $scriptContent = @"
 param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -3249,7 +3249,7 @@ if (`$scope) {
         $scriptContent = @"
 param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -3357,7 +3357,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         $scriptContent = @"
 param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -3368,13 +3368,13 @@ if (-not `$existingSession) {
 
 `$session = `$null
 try {
-    `$session = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -and `$_.Name -like '*$ovAppliance*' } | Select-Object -First 1
+    `$session = `$ConnectedSessions | Where-Object { (`$_.Connected -eq `$true -or `$_.Connected -eq 'True') -and `$_.Name -like '*$ovAppliance*' } | Select-Object -First 1
     if (-not `$session) {
-        `$session = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+        `$session = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
     }
 } catch {
     try {
-        `$session = Get-OVApplianceSession | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+        `$session = Get-OVApplianceSession | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
     } catch { }
 }
 

@@ -108,11 +108,11 @@ function _Enable-OneViewMaintenanceMode {
         if ($result.Success) {
             Write-Host "  [OneView] Maintenance mode ENABLED for '$targetName'." -ForegroundColor Green
         } else {
-            Write-Warning "  [OneView] Failed to enable maintenance mode for '$targetName': $($result.Error)"
+            Write-Host "  [OneView] FAILED to enable maintenance mode for '$targetName': $($result.Error)" -ForegroundColor Red
         }
         return $result
     } catch {
-        Write-Warning "  [OneView] Error enabling maintenance mode for '$targetName': $($_.Exception.Message)"
+        Write-Host "  [OneView] ERROR enabling maintenance mode for '$targetName': $($_.Exception.Message)" -ForegroundColor Red
         return @{ Success = $false; Error = $_.Exception.Message }
     }
 }
@@ -142,11 +142,11 @@ function _Disable-OneViewMaintenanceMode {
         if ($result.Success) {
             Write-Host "  [OneView] Maintenance mode DISABLED for '$targetName'." -ForegroundColor Green
         } else {
-            Write-Warning "  [OneView] Failed to disable maintenance mode for '$targetName': $($result.Error)"
+            Write-Host "  [OneView] FAILED to disable maintenance mode for '$targetName': $($result.Error)" -ForegroundColor Red
         }
         return $result
     } catch {
-        Write-Warning "  [OneView] Error disabling maintenance mode for '$targetName': $($_.Exception.Message)"
+        Write-Host "  [OneView] ERROR disabling maintenance mode for '$targetName': $($_.Exception.Message)" -ForegroundColor Red
         return @{ Success = $false; Error = $_.Exception.Message }
     }
 }
@@ -624,12 +624,12 @@ function Start-PhysicalServerBuild {
                 $overall['oneview_maintenance_disable'] = $disableResult.Success
                 if (-not $disableResult.Success) {
                     $overall['oneview_maintenance_disable_error'] = $disableResult.Error
-                    Write-Warning "Failed to disable OneView maintenance mode for '$maintenanceSerial': $($disableResult.Error)"
+                    Write-Host "Failed to disable OneView maintenance mode for '$maintenanceSerial': $($disableResult.Error)" -ForegroundColor Red
                 }
             } catch {
                 $overall['oneview_maintenance_disable'] = $false
                 $overall['oneview_maintenance_disable_error'] = $_.Exception.Message
-                Write-Warning "Error disabling OneView maintenance mode: $($_.Exception.Message)"
+                Write-Host "Error disabling OneView maintenance mode: $($_.Exception.Message)" -ForegroundColor Red
             }
         }
         try {

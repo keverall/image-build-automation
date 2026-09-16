@@ -131,7 +131,7 @@ class OneViewClient {
 param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -297,7 +297,7 @@ param([string]`$OVUser, [string]`$OVPwd)
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -435,7 +435,7 @@ param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PAS
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -589,7 +589,7 @@ param([string]`$OVUser, [string]`$OVPwd)
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -714,7 +714,7 @@ param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PAS
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -790,7 +790,7 @@ param([string]`$OVUser, [string]`$OVPwd)
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
@@ -853,7 +853,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         $scriptContent = @"
 Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     Connect-OVMgmt -Appliance '$ovAppliance' -Credential (New-Object System.Management.Automation.PSCredential('$($this.Username)', (ConvertTo-SecureString '$($this.Password)' -AsPlainText -Force))) -ErrorAction Stop
 }
@@ -902,7 +902,7 @@ param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PAS
  `$ErrorActionPreference = 'Stop'
  Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
 Import-Module $ovModule -ErrorAction Stop
-`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true } | Select-Object -First 1
+`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1
 if (-not `$existingSession) {
     `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
     `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
