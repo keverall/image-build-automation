@@ -6,50 +6,50 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
-   - [44) OneView maintenance mode: serial/name `-TargetId` resolution + `maintenanceMode` (`On`/`Off`) string truthiness fix](#44-oneview-maintenance-mode-serialname-targetid-resolution-maintenancemode-onoff-string-truthiness-fix)
-   - [43) OneView session-check regression fix — use active session, guard empty credentials, remove invalid `-Credential` passthrough + red error output for maintenance mode failures](#43-oneview-session-check-regression-fix-connected-string-handling)
-   - [42) OneView Maintenance Mode hardening (session reuse, credentials, default window, DryRun fix) + secret scanning + SSH agent profile management](#42-oneview-maintenance-mode-hardening-session-reuse-credentials-default-window-dryrun-fix-secret-scanning-ssh-agent-profile-management)
-   - [41) Data-driven `-Help` test matrix (38 commands), `Update-Firmware` export fix, runner output fix & wip cleanup](#41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup)
-   - [40) Parameter-set mandatory enforcement + `-Help` EXAMPLES link to command reference](#40-parameter-set-mandatory-enforcement-help-examples-link-to-command-reference)
-   - [39) Update-Firmware re-added — post-OS HPE firmware flash integrated into the build](#39-update-firmware-re-added-post-os-hpe-firmware-flash-integrated-into-the-build)
-   - [38) Consistent newest-first ordering — change-log body, summary table, TOC generator + maintenance guide](#38-consistent-newest-first-ordering-change-log-body-summary-table-toc-generator-maintenance-guide)
-   - [37) Unified `-Help` switch across all 28 documented commands + doc-driven `make list-commands`](#37-unified-help-switch-across-all-28-documented-commands-doc-driven-make-list-commands)
-   - [36) Documentation & tooling updates — maintenance mode / Checkmake / security pipeline docs, ISO & Firmware parameter options, Makefile + SETUP-GUIDE + doc index refactor](#36-documentation-tooling-updates-maintenance-mode-checkmake-security-pipeline-docs-iso-firmware-parameter-options-makefile-setup-guide-doc-index-refactor)
-   - [35) README architecture & branding — SVG icons, technical component overview diagram, MS Configuration Manager flowchart, HPE/OneView/iLO branding](#35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpeoneviewilo-branding)
-   - [34) Git SSH authentication — PowerShell profile hardening + troubleshooting guides (Fix-GitSSH.md, testing-issue.md)](#34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides-fix-gitsshmd-testing-issuemd)
-   - [33) HPE OneView Maintenance Mode documentation — enable/disable procedures, alert handling, Windows Forms integration, `.maintenanceMode` refactor, JSON fix, OpsRamp firewall docs](#33-hpe-oneview-maintenance-mode-documentation-enabledisable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs)
-   - [32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output](#32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output)
-   - [31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)](#31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default)
-   - [30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables](#30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables)
-   - [29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials](#29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials)
-   - [28) OneView error honesty + abort on failed resolution + iLO credential fallback](#28-oneview-error-honesty-abort-on-failed-resolution-ilo-credential-fallback)
-   - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes)
-   - [26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking](#26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking)
-   - [25) `Connect-OneView` "already connected" message → bold red (no reconnection)](#25-connect-oneview-already-connected-message-bold-red-no-reconnection)
-   - [24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming](#24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming)
-   - [23) `Get-OneViewServerList` DRY output migration + iLO IP fix + `prune-logs` hardening](#23-get-oneviewserverlist-dry-output-migration-ilo-ip-fix-prune-logs-hardening)
-   - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-_publish-result-passthru-output-migration-15-public-commands)
-   - [21) Command documentation clarity — firmware/security/utility + repository corrections](#21-command-documentation-clarity-firmwaresecurityutility-repository-corrections)
-   - [20) Command documentation clarity — functionality + safe/destructive](#20-command-documentation-clarity-functionality-safedestructive)
-   - [19) Test-BuildParams firmware-location validation](#19-test-buildparams-firmware-location-validation)
-   - [18) Universal ISO/firmware path resolver fix (DRY consolidation)](#18-universal-isofirmware-path-resolver-fix-dry-consolidation)
-   - [17) Get-OneViewConnectionStatus session-reuse guard (no reconnect)](#17-get-oneviewconnectionstatus-session-reuse-guard-no-reconnect)
-   - [16) Docs anchor fix — navigable `id` anchors for `make docs` / `make fix-docs`](#16-docs-anchor-fix-navigable-id-anchors-for-make-docs-make-fix-docs)
-   - [15) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests](#15-connect-oneview-converttowildcardregex-docs-alias-inventory-tests)
-   - [14) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`](#14-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist)
-   - [13) `Test-BuildParams` / `_Validate-Request` hardening](#13-test-buildparams-_validate-request-hardening)
-   - [12) Shared output formatting + `Connect-OneView` rewrite + runbook v2](#12-shared-output-formatting-connect-oneview-rewrite-runbook-v2)
-   - [11) Testing-issues documentation (OneView connectivity)](#11-testing-issues-documentation-oneview-connectivity)
-   - [10) Repo hygiene: LF normalization + git workflow docs](#10-repo-hygiene-lf-normalization-git-workflow-docs)
-   - [9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul](#9-parameter-rename-managementhost-oneviewhost-get-oneviewconnectionstatus-overhaul)
-   - [8) Automated live testing harness + captured test results](#8-automated-live-testing-harness-captured-test-results)
-   - [7) OneView live-session guard + GuardRail (destructive-action gate)](#7-oneview-live-session-guard-guardrail-destructive-action-gate)
-   - [6) Parameter-usage guard + non-interactive `-DryRun` (`--DryRun`/`-DryRun`)](#6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun)
-   - [5) Profile auto-load fix + Setup-Profile regression test (catches "Connect-OneView not recognized")](#5-profile-auto-load-fix-setup-profile-regression-test-catches-connect-oneview-not-recognized)
-   - [4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)](#4-scom-oneview-maintenance-status-report-get-maintenancestatusreport)
-   - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening-repo-testing-rules-agentsmd)
-   - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
-   - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation-2-command-workflow-runbook-aligned)
+  - [44) OneView maintenance mode: serial/name `-TargetId` resolution + `maintenanceMode` (`On`/`Off`) string truthiness fix](#44-oneview-maintenance-mode-serialname-targetid-resolution-maintenancemode-onoff-string-truthiness-fix)
+  - [43) OneView session-check regression fix — use active session, guard empty credentials, remove invalid `-Credential` passthrough + red error output for maintenance mode failures](#43-oneview-session-check-regression-fix-use-active-session-guard-empty-credentials-remove-invalid-credential-passthrough-red-error-output-for-maintenance-mode-failures)
+  - [42) OneView Maintenance Mode hardening (session reuse, credentials, default window, DryRun fix) + secret scanning + SSH agent profile management](#42-oneview-maintenance-mode-hardening-session-reuse-credentials-default-window-dryrun-fix-secret-scanning-ssh-agent-profile-management)
+  - [41) Data-driven `-Help` test matrix (38 commands), `Update-Firmware` export fix, runner output fix & wip cleanup](#41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup)
+  - [40) Parameter-set mandatory enforcement + `-Help` EXAMPLES link to command reference](#40-parameter-set-mandatory-enforcement-help-examples-link-to-command-reference)
+  - [39) Update-Firmware re-added — post-OS HPE firmware flash integrated into the build](#39-update-firmware-re-added-post-os-hpe-firmware-flash-integrated-into-the-build)
+  - [38) Consistent newest-first ordering — change-log body, summary table, TOC generator + maintenance guide](#38-consistent-newest-first-ordering-change-log-body-summary-table-toc-generator-maintenance-guide)
+  - [37) Unified `-Help` switch across all 28 documented commands + doc-driven `make list-commands`](#37-unified-help-switch-across-all-28-documented-commands-doc-driven-make-list-commands)
+  - [36) Documentation & tooling updates — maintenance mode / Checkmake / security pipeline docs, ISO & Firmware parameter options, Makefile + SETUP-GUIDE + doc index refactor](#36-documentation-tooling-updates-maintenance-mode-checkmake-security-pipeline-docs-iso-firmware-parameter-options-makefile-setup-guide-doc-index-refactor)
+  - [35) README architecture & branding — SVG icons, technical component overview diagram, MS Configuration Manager flowchart, HPE/OneView/iLO branding](#35-readme-architecture-branding-svg-icons-technical-component-overview-diagram-ms-configuration-manager-flowchart-hpeoneviewilo-branding)
+  - [34) Git SSH authentication — PowerShell profile hardening + troubleshooting guides (Fix-GitSSH.md, testing-issue.md)](#34-git-ssh-authentication-powershell-profile-hardening-troubleshooting-guides-fix-gitsshmd-testing-issuemd)
+  - [33) HPE OneView Maintenance Mode documentation — enable/disable procedures, alert handling, Windows Forms integration, `.maintenanceMode` refactor, JSON fix, OpsRamp firewall docs](#33-hpe-oneview-maintenance-mode-documentation-enabledisable-procedures-alert-handling-windows-forms-integration-maintenancemode-refactor-json-fix-opsramp-firewall-docs)
+  - [32) DOCX documentation replaces RTF — converter fix, full docs coverage, project-root output](#32-docx-documentation-replaces-rtf-converter-fix-full-docs-coverage-project-root-output)
+  - [31) Make setup machine-aware PowerShell profile selection (eis19 / prod-VDI / default)](#31-make-setup-machine-aware-powershell-profile-selection-eis19-prod-vdi-default)
+  - [30) RTF documentation overhaul — landscape pages, proportional table widths, working TOC links, blockquote tables](#30-rtf-documentation-overhaul-landscape-pages-proportional-table-widths-working-toc-links-blockquote-tables)
+  - [29) Credential hardening & CISO vulnerability scan — secure storage/handling of HPE OneView / iLO / SCOM credentials](#29-credential-hardening-ciso-vulnerability-scan-secure-storagehandling-of-hpe-oneview-ilo-scom-credentials)
+  - [28) OneView error honesty + abort on failed resolution + iLO credential fallback](#28-oneview-error-honesty-abort-on-failed-resolution-ilo-credential-fallback)
+  - [27) Command prune + doc update: deploy flow, deleted commands, bug fixes](#27-command-prune-doc-update-deploy-flow-deleted-commands-bug-fixes)
+  - [26) `Get-OneViewServerList` Detail table fixes: empty Model, ROM column overflow, NotApplicable blanking](#26-get-oneviewserverlist-detail-table-fixes-empty-model-rom-column-overflow-notapplicable-blanking)
+  - [25) `Connect-OneView` "already connected" message → bold red (no reconnection)](#25-connect-oneview-already-connected-message-bold-red-no-reconnection)
+  - [24) `Get-OneViewServerList` field enrichment + robust iLO IP extraction + `Disconnect-OneView` appliance naming](#24-get-oneviewserverlist-field-enrichment-robust-ilo-ip-extraction-disconnect-oneview-appliance-naming)
+  - [23) `Get-OneViewServerList` DRY output migration + iLO IP fix + `prune-logs` hardening](#23-get-oneviewserverlist-dry-output-migration-ilo-ip-fix-prune-logs-hardening)
+  - [22) Shared `_Publish-Result` / `-PassThru` output migration (15 Public commands)](#22-shared-_publish-result-passthru-output-migration-15-public-commands)
+  - [21) Command documentation clarity — firmware/security/utility + repository corrections](#21-command-documentation-clarity-firmwaresecurityutility-repository-corrections)
+  - [20) Command documentation clarity — functionality + safe/destructive](#20-command-documentation-clarity-functionality-safedestructive)
+  - [19) Test-BuildParams firmware-location validation](#19-test-buildparams-firmware-location-validation)
+  - [18) Universal ISO/firmware path resolver fix (DRY consolidation)](#18-universal-isofirmware-path-resolver-fix-dry-consolidation)
+  - [17) Get-OneViewConnectionStatus session-reuse guard (no reconnect)](#17-get-oneviewconnectionstatus-session-reuse-guard-no-reconnect)
+  - [16) Docs anchor fix — navigable `id` anchors for `make docs` / `make fix-docs`](#16-docs-anchor-fix-navigable-id-anchors-for-make-docs-make-fix-docs)
+  - [15) `Connect-OneView` & `ConvertToWildcardRegex` docs + alias inventory tests](#15-connect-oneview-converttowildcardregex-docs-alias-inventory-tests)
+  - [14) Parameter rename `SrvrId` → `ServerIdentifier` + wildcard filtering in `Get-OneViewServerList`](#14-parameter-rename-srvrid-serveridentifier-wildcard-filtering-in-get-oneviewserverlist)
+  - [13) `Test-BuildParams` / `_Validate-Request` hardening](#13-test-buildparams-_validate-request-hardening)
+  - [12) Shared output formatting + `Connect-OneView` rewrite + runbook v2](#12-shared-output-formatting-connect-oneview-rewrite-runbook-v2)
+  - [11) Testing-issues documentation (OneView connectivity)](#11-testing-issues-documentation-oneview-connectivity)
+  - [10) Repo hygiene: LF normalization + git workflow docs](#10-repo-hygiene-lf-normalization-git-workflow-docs)
+  - [9) Parameter rename `ManagementHost` → `OneViewHost` + `Get-OneViewConnectionStatus` overhaul](#9-parameter-rename-managementhost-oneviewhost-get-oneviewconnectionstatus-overhaul)
+  - [8) Automated live testing harness + captured test results](#8-automated-live-testing-harness-captured-test-results)
+  - [7) OneView live-session guard + GuardRail (destructive-action gate)](#7-oneview-live-session-guard-guardrail-destructive-action-gate)
+  - [6) Parameter-usage guard + non-interactive `-DryRun` (`--DryRun`/`-DryRun`)](#6-parameter-usage-guard-non-interactive-dryrun-dryrun-dryrun)
+  - [5) Profile auto-load fix + Setup-Profile regression test (catches "Connect-OneView not recognized")](#5-profile-auto-load-fix-setup-profile-regression-test-catches-connect-oneview-not-recognized)
+  - [4) SCOM + OneView maintenance status report (`Get-MaintenanceStatusReport`)](#4-scom-oneview-maintenance-status-report-get-maintenancestatusreport)
+  - [3) Mock-only test hardening + repo testing rules (AGENTS.md)](#3-mock-only-test-hardening-repo-testing-rules-agentsmd)
+  - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
+  - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation-2-command-workflow-runbook-aligned)
 
 <a id="summary-of-changes"></a>
 
@@ -140,7 +140,7 @@
 - `Enable-OneViewMaintenanceMode -TargetId CZ22420JCM -OneViewHost bogus -DryRun` resolves the serial and returns `Success = $true`, `ResolvedTarget = CZ22420JCM`.
 - `make lint` (PSScriptAnalyzer) → no new issues at the changed lines.
 
-<a id="43-oneview-session-check-regression-fix-connected-string-handling"></a>
+<a id="43-oneview-session-check-regression-fix-use-active-session-guard-empty-credentials-remove-invalid-credential-passthrough-red-error-output-for-maintenance-mode-failures"></a>
 
 ### 43) OneView session-check regression fix — use active session, guard empty credentials, remove invalid `-Credential` passthrough + red error output for maintenance mode failures
 
@@ -1595,10 +1595,6 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Firmware update post-OS | ✅ New `-FirmwareFolders` param |
 | Audit trail | ✅ Audit log in `$finally` block |
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
-
-
-
-
 
   Connect-OneView -OneViewHost va-oneviewt-01                                                                                                                                                  0  09:37:13 2026-09-17 08:37:26 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-01' DryRun=False PassThru=False Json=False 
 Enter OneView username for 'va-oneviewt-01': adm_98253 
