@@ -456,10 +456,10 @@ foreach (`$g in `$groups) {
                 } else {
                     'Name' 
                 }
-                $ovState = if ($ovObj.InMaintenanceMode) {
-                    'InMaintenance' 
+                $ovState = if ($ovObj.maintenanceState -eq 'Maintenance' -or $ovObj.maintenanceWindow.maintenanceState -eq 'Maintenance' -or $ovObj.InMaintenanceMode -eq $true) {
+                    'InMaintenance'
                 } else {
-                    'NotInMaintenance' 
+                    'NotInMaintenance'
                 }
             } elseif (-not $IncludeLive -and $dryOvIndex) {
                 # Mock: link from dry config (servers_catalogue.oneview.json) - no live state
