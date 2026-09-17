@@ -1596,42 +1596,111 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Audit trail | ✅ Audit log in `$finally` block |
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
 
-  Connect-OneView -OneViewHost va-oneviewt-01                                                                                                                                                  0  09:37:13 2026-09-17 08:37:26 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-01' DryRun=False PassThru=False Json=False 
-Enter OneView username for 'va-oneviewt-01': adm_98253 
-Enter OneView password for 'va-oneviewt-01': : **************** 
-2026-09-17 08:37:45 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
-2026-09-17 08:37:45 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 14ms) 
-This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective action including termination, civil and/or criminal penalties. 
+ 
 
-2026-09-17 08:38:05 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True) 
-2026-09-17 08:38:05 - Connect-OneView - INFO - Connect-OneView result: Available=True Message='Connected to OneView appliance 'va-oneviewt-01'.' 
+
+
+omg-qlikview-03ilo
+
+Server Hardware
+  
+1 match out of 16
+
+Add server hardwareMigrate server hardware
+ 
+Name Server Name Server Profile Model   
+
+omg-qlikview-03ilo omg-qlikview-03 
+none 
+DL360 Gen10 Plus 
+
+omg-qlikview-03ilo
+
+
+Activity
+
+Actions
+
+Enable maintenance mode
+  
+Completed
+ 
+adm_98253
+ 
+‎17‎/‎09‎/‎26  ‎10‎:‎17‎:‎35
+ 
+ 
+All owners
+
+Name Date State Owner 
+
+Enable maintenance mode
+ 
+‎17‎/‎09‎/‎26  ‎10‎:‎17‎:‎35
+
+5 hours ago 
+Completed1s 
+adm_98253 
+
+Disable maintenance mode
+ 
+‎17‎/‎09‎/‎26  ‎10‎:‎16‎:‎04
+
+5 hours ago 
+Completed1s 
+adm_98253 
+
+
+
+ Get-OneViewServerList  -Filter 'name:03ilo'                             0  1m 8s 857ms  14:48:05 
+============================================== 
+  OneView Server List (6 servers)
+  Appliance: va-oneviewt-01
+==============================================
+
+| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     |
+|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------|
+| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus |
+| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus |
+
+
+
+Get-OneViewServerTarget -ServerIdentifier CZ22420JCN                                 0  14:50:45 
+2026-09-17 14:04:21 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
 
 ============================================== 
-  OneView Connectivity Test 
-==============================================
+  OneView Server Target
+============================================== 
 
-  Status:     AVAILABLE
-  Mode:       oneview
-  Host:       va-oneviewt-01
-  Environment:Prod 
-  Timestamp:  2026-09-17T08:38:05.5872189Z
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=On, health=OK, maint=No, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025)
 
-  --- Phase 1: Network Ping ---
-    DNS:       Resolved
-    IP:        10.239.124.79
-    TCP:       Open (port 443, 14ms)
-
-  --- Phase 2: Auth Connect ---
-    Module:    Loaded 
-    OneView PS module: HPEOneView.1000  v10.0.4265.2221 (module used for all OneView calls on this server)
-    Appliance OneView version: 8200
-    Connected: Yes (session active)
+  Resolved By:  Serial
 
 ==============================================
 
-   image-build-automation  main  Test-ServerConnectivity                                                                                                                                                           0  38s 938ms  09:38:05 2026-09-17 08:43:10 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
-2026-09-17 08:43:10 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 3ms) 
-2026-09-17 08:43:11 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True) 
+   image-build-automation  main                                                                                                             0  15:04:21 
+
+
+
+Connect-OneView -OneViewHost va-oneviewt-01                                              4:46:15 2026-09-17 13:46:56 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-01' DryRun=False PassThru=False Json=False
+Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : **************** 
+2026-09-17 13:47:15 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-09-17 13:47:15 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 16ms) 
+This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective action including termination, civil and/or criminal penalties.
+
+2026-09-17 13:48:05 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True)
+2026-09-17 13:48:05 - Connect-OneView - INFO - Connect-OneView result: Available=True Message='Connected to OneView appliance 'va-oneviewt-01'.'
 
 ============================================== 
   OneView Connectivity Test
@@ -1641,265 +1710,22 @@ This management appliance is a company owned asset and provided for the exclusiv
   Mode:       oneview
   Host:       va-oneviewt-01
   Environment:Prod
-  Timestamp:  2026-09-17T08:43:11.5123486Z
- 
+  Timestamp:  2026-09-17T13:48:05.4807078Z 
+
   --- Phase 1: Network Ping ---
     DNS:       Resolved
     IP:        10.239.124.79
-    TCP:       Open (port 443, 3ms)
+    TCP:       Open (port 443, 16ms)       
 
-  --- Phase 2: Auth Connect --- 
+  --- Phase 2: Auth Connect ---
     Module:    Loaded
-    OneView PS module: HPEOneView.1000 (module used for all OneView calls on this server)
+    OneView PS module: HPEOneView.1000  v10.0.4265.2221 (module used for all OneView calls on this server) 
+    Appliance OneView version: 8200
     Connected: Yes (session active)
 
 ==============================================
 
-   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                                                                                                                                           0  869ms  09:43:12 
-==============================================
-  OneView Server List (6 servers)
-  Appliance: va-oneviewt-01
-==============================================
-
-| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     |
-|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------|
-| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
-| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
-
-KEY
-  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
-  State     : server lifecycle state from OneView:
-               Monitored        = normal / being monitored (not in maintenance)
-               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
-               NoProfileApplied = no server profile assigned
-               ProfileApplying  = a server profile is being applied
-               ProfileApplied   = a server profile has been applied
-               ConfigureHardware = hardware configuration in progress
-               ProfileError     = profile apply failed (NOT maintenance)
-               Deleting         = server being removed
-  State Reason : additional context for the State value (blank when 'NotApplicable'):
-               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
-               UserInitiated  = state change triggered by a user action
-               Unmanaged      = hardware not managed by this OneView appliance
-               Removed        = hardware has been removed from the appliance
-
-==============================================
-
-   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCM' -OneViewHost va-oneviewt-01                                                                                                             0  09:43:21 
-Name                           Value
-----                           -----
-ResolvedTarget                 CZ22420JCM
-ResolvedType                   ServerHardware
-Success                        False
-TargetId                       CZ22420JCM
-EndTime                        17/09/2026 12:43:34
-Total                          1
-Appliance                      va-oneviewt-01
-DryRun                         False
-SuccessCount                   0
-TargetType                     ServerHardware
-Module                         HPEOneView.1000
-FailedCount                    1
-Target                         CZ22420JCM
-SerialNumber
-Objects                        {@{Message=Server Hardware 'CZ22420JCM' not found on 'va-oneviewt-01' appliance connection. Please check the name again, and try again.; NackReason=OneView API error: Server Hardware 'CZ22420JCM' not found… 
-AlreadyCount                   0
-Message                        OneView maintenance mode enabled: 0 succeeded, 1 failed, 0 already in maintenance (total 1)
-StartTime                      17/09/2026 08:43:34
-
-   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCN' -OneViewHost va-oneviewt-01                                                                                                      0  910ms  09:43:35  
-Name                           Value
-----                           -----
-ResolvedTarget                 CZ22420JCN
-ResolvedType                   ServerHardware
-Success                        False
-TargetId                       CZ22420JCN
-EndTime                        17/09/2026 12:44:22
-Total                          1
-Appliance                      va-oneviewt-01
-DryRun                         False
-SuccessCount                   0
-TargetType                     ServerHardware
-Module                         HPEOneView.1000
-FailedCount                    1
-Target                         CZ22420JCN
-SerialNumber
-Objects                        {@{Message=Server Hardware 'CZ22420JCN' not found on 'va-oneviewt-01' appliance connection. Please check the name again, and try again.; NackReason=OneView API error: Server Hardware 'CZ22420JCN' not found… 
-AlreadyCount                   0
-Message                        OneView maintenance mode enabled: 0 succeeded, 1 failed, 0 already in maintenance (total 1)
-StartTime                      17/09/2026 08:44:22
-
-   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCN'                                                                                                                                  0  749ms  09:44:23 
-Name                           Value
-----                           -----
-ResolvedTarget                 CZ22420JCN
-ResolvedType                   ServerHardware
-Success                        False
-TargetId                       CZ22420JCN
-EndTime                        17/09/2026 12:44:46
-Total                          1
-Appliance                      va-oneviewt-01
-DryRun                         False
-SuccessCount                   0
-TargetType                     ServerHardware
-Module                         HPEOneView.1000
-FailedCount                    1
-Target                         CZ22420JCN
-SerialNumber
-Objects                        {@{Message=Server Hardware 'CZ22420JCN' not found on 'va-oneviewt-01' appliance connection. Please check the name again, and try again.; NackReason=OneView API error: Server Hardware 'CZ22420JCN' not found… 
-AlreadyCount                   0
-Message                        OneView maintenance mode enabled: 0 succeeded, 1 failed, 0 already in maintenance (total 1)
-StartTime                      17/09/2026 08:44:46
-
-   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'alp-qlikview-03ilo' -OneViewHost va-oneviewt-01                                                                                                     0  09:44:46 
-Name                           Value
-----                           -----
-ResolvedTarget                 alp-qlikview-03ilo
-ResolvedType                   ServerHardware
-Success                        True
-TargetId                       alp-qlikview-03ilo
-EndTime                        17/09/2026 12:45:12
-Total                          1
-Appliance                      va-oneviewt-01
-DryRun                         False
-SuccessCount                   0
-TargetType                     ServerHardware
-Module                         HPEOneView.1000
-FailedCount                    0
-Target                         alp-qlikview-03ilo
-SerialNumber
-Objects                        {@{Status=already_in_maintenance; Message=Already in maintenance mode; Name=alp-qlikview-03ilo; Type=server-hardware-12}}
-AlreadyCount                   1
-Message                        OneView maintenance mode enabled: 0 succeeded, 0 failed, 1 already in maintenance (total 1)
-StartTime                      17/09/2026 08:45:12
-
-   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                                                                                                                                                  0  09:45:13 
-==============================================
-  OneView Server List (6 servers)
-  Appliance: va-oneviewt-01
-==============================================
-
-| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     |
-|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------|
-| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
-| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
- 
-KEY
-  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
-  State     : server lifecycle state from OneView:
-               Monitored        = normal / being monitored (not in maintenance)
-               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
-               NoProfileApplied = no server profile assigned
-               ProfileApplying  = a server profile is being applied
-               ProfileApplied   = a server profile has been applied
-               ConfigureHardware = hardware configuration in progress
-               ProfileError     = profile apply failed (NOT maintenance)
-               Deleting         = server being removed
-  State Reason : additional context for the State value (blank when 'NotApplicable'):
-               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
-               UserInitiated  = state change triggered by a user action
-               Unmanaged      = hardware not managed by this OneView appliance
-               Removed        = hardware has been removed from the appliance
-
-==============================================
-
-   image-build-automation  main  Disable-OneViewMaintenanceMode -TargetId 'alp-qlikview-03ilo' -OneViewHost va-oneviewt-01                                                                                                    0  09:45:23 WARNING: Disabling maintenance mode will cause email notifications to return to normal.
-
-Confirm
-Are you sure you want to perform this action?
-Performing the operation "disable maintenance mode for server hardware" on target "alp-qlikview-03ilo".
-[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
-
-Name                           Value
-----                           -----
-Module                         HPEOneView.1000
-Target                         alp-qlikview-03ilo
-NotInCount                     0
-Appliance                      va-oneviewt-01
-Message                        OneView maintenance mode disabled: 1 succeeded, 0 failed, 0 already not in maintenance (total 1)
-ResolvedType                   ServerHardware 
-FailedCount                    0
-SerialNumber
-Total                          1
-Success                        True
-DryRun                         False
-ResolvedTarget                 alp-qlikview-03ilo
-TargetType                     ServerHardware
-Objects                        {@{Status=success; Message=Maintenance mode disabled; Name=alp-qlikview-03ilo; Type=server-hardware-12}}
-TargetId                       alp-qlikview-03ilo
-SuccessCount                   1
-
-   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                                                                                                                                       0  30s 796ms  09:46:44 
-==============================================
-  OneView Server List (6 servers)
-  Appliance: va-oneviewt-01
-==============================================
-
-| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     |
-|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------|
-| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
-| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
-
-KEY
-  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
-  State     : server lifecycle state from OneView:
-               Monitored        = normal / being monitored (not in maintenance)
-               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
-               NoProfileApplied = no server profile assigned
-               ProfileApplying  = a server profile is being applied
-               ProfileApplied   = a server profile has been applied
-               ConfigureHardware = hardware configuration in progress
-               ProfileError     = profile apply failed (NOT maintenance)
-               Deleting         = server being removed
-  State Reason : additional context for the State value (blank when 'NotApplicable'):
-               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
-               UserInitiated  = state change triggered by a user action
-               Unmanaged      = hardware not managed by this OneView appliance
-               Removed        = hardware has been removed from the appliance
-
-==============================================
-
-   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'alp-qlikview-03ilo' -OneViewHost va-oneviewt-01                                                                                                     0  09:46:54 WARNING: Enabling maintenance mode will prevent this appliance from sending any email notifications related to server hardware alp-qlikview-03ilo and its associated profile. Maintenance mode will not affect normal server or profile operations.
-
-Confirm
-Are you sure you want to perform this action?
-Performing the operation "enable maintenance mode for server hardware" on target "alp-qlikview-03ilo".
-[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
-
-Name                           Value
-----                           -----
-ResolvedTarget                 alp-qlikview-03ilo
-ResolvedType                   ServerHardware
-Success                        True
-TargetId                       alp-qlikview-03ilo
-EndTime                        17/09/2026 12:47:07
-Total                          1
-Appliance                      va-oneviewt-01
-DryRun                         False
-SuccessCount                   1
-TargetType                     ServerHardware
-Module                         HPEOneView.1000
-FailedCount                    0
-Target                         alp-qlikview-03ilo
-SerialNumber
-Objects                        {@{Status=success; Message=Maintenance mode enabled; Name=alp-qlikview-03ilo; Type=server-hardware-12}}
-AlreadyCount                   0
-Message                        OneView maintenance mode enabled: 1 succeeded, 0 failed, 0 already in maintenance (total 1)
-StartTime                      17/09/2026 08:47:07
-
-   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                                                                                                                                        0  5s 658ms  09:47:13 
+   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                             0  1m 8s 857ms  14:48:05 
 ============================================== 
   OneView Server List (6 servers)
   Appliance: va-oneviewt-01
@@ -1907,12 +1733,18 @@ StartTime                      17/09/2026 08:47:07
 
 | Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     |
 |---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------|
-| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      | 
-| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |               | ProLiant DL380 Gen10      |
-| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
-| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |               | ProLiant DL360 Gen10 Plus |
+| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus |
+| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus |
 
 KEY
   MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
@@ -1920,7 +1752,7 @@ KEY
                Monitored        = normal / being monitored (not in maintenance)
                MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
                NoProfileApplied = no server profile assigned
-               ProfileApplying  = a server profile is being applied 
+               ProfileApplying  = a server profile is being applied
                ProfileApplied   = a server profile has been applied
                ConfigureHardware = hardware configuration in progress
                ProfileError     = profile apply failed (NOT maintenance)
@@ -1930,22 +1762,11 @@ KEY
                UserInitiated  = state change triggered by a user action
                Unmanaged      = hardware not managed by this OneView appliance
                Removed        = hardware has been removed from the appliance
- 
-==============================================
-
-   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCM                                                                                                                                         0  09:47:24 2026-09-17 08:48:02 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial)
-
-==============================================
-  OneView Server Target
-==============================================
-
-  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK, maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
-
-  Resolved By:  Serial
 
 ==============================================
 
-   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCN                                                                                                                                         0  09:48:03 2026-09-17 08:48:33 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial)
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCN                                 0  14:50:45 
+2026-09-17 14:04:21 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial)
 
 ==============================================
   OneView Server Target
@@ -1957,7 +1778,71 @@ KEY
 
 ==============================================
 
-   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCM                                                                                                                                         0  09:48:33 2026-09-17 08:48:39 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial)
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCM                                                       0  15:04:21 2026-09-17 14:10:10 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial)
+ 
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK, maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCN'                                                       0  15:10:11 
+Name                           Value
+----                           -----
+SuccessCount                   0
+Module                         HPEOneView.1000
+TargetId                       CZ22420JCN
+StartTime                      17/09/2026 14:10:25
+TargetType                     ServerHardware
+AlreadyCount                   1
+EndTime                        17/09/2026 18:10:25
+FailedCount                    0
+SerialNumber
+ResolvedTarget                 omg-qlikview-03ilo
+DryRun                         False
+ResolvedType                   ServerHardware
+Objects                        {@{Status=already_in_maintenance; Type=server-hardware-12; Name=omg-qlikview-03ilo; Message=Already in maintenance mode}}    
+Message                        OneView maintenance mode enabled: 0 succeeded, 0 failed, 1 already in maintenance (total 1)
+ResolvedBy                     Serial
+Total                          1
+Target                         omg-qlikview-03ilo
+Success                        True
+Appliance                      va-oneviewt-01
+ 
+   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCM'                                             0  1s 885ms  15:10:26 WARNING: Enabling maintenance mode will prevent this appliance from sending any email notifications related to server hardware alp-qlikview-03ilo and its associated profile. Maintenance mode will not affect normal server or profile operations.
+
+Confirm
+Are you sure you want to perform this action?
+Performing the operation "enable maintenance mode for server hardware" on target "alp-qlikview-03ilo".
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
+
+Name                           Value
+----                           -----
+SuccessCount                   1
+Module                         HPEOneView.1000
+TargetId                       CZ22420JCM
+StartTime                      17/09/2026 14:10:39
+TargetType                     ServerHardware
+AlreadyCount                   0
+EndTime                        17/09/2026 18:10:39
+FailedCount                    0
+SerialNumber
+ResolvedTarget                 alp-qlikview-03ilo
+DryRun                         False
+ResolvedType                   ServerHardware
+Objects                        {@{Status=success; Type=server-hardware-12; Name=alp-qlikview-03ilo; Message=Maintenance mode enabled}}
+Message                        OneView maintenance mode enabled: 1 succeeded, 0 failed, 0 already in maintenance (total 1)
+ResolvedBy                     Serial
+Total                          1 
+Target                         alp-qlikview-03ilo
+Success                        True
+Appliance                      va-oneviewt-01
+
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCM                                             0  7s 440ms  15:10:46 2026-09-17 14:11:03 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
 ==============================================
   OneView Server Target
@@ -1969,7 +1854,119 @@ KEY
 
 ==============================================
 
-   image-build-automation  main  Disable-OneViewMaintenanceMode -TargetId 'alp-qlikview-03ilo' -OneViewHost va-oneviewt-01                                                                                                    0  09:48:39 WARNING: Disabling maintenance mode will cause email notifications to return to normal.
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCN                                                       0  15:11:03 2026-09-17 14:11:11 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
+
+============================================== 
+  OneView Server Target
+============================================== 
+
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=On, health=OK, maint=No, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                                                                0  15:11:11 
+============================================== 
+  OneView Server List (6 servers)
+  Appliance: va-oneviewt-01
+==============================================
+
+| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     |
+|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------|
+| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10      |
+| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus |
+| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus |
+
+KEY
+  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
+  State     : server lifecycle state from OneView:
+               Monitored        = normal / being monitored (not in maintenance)
+               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
+               NoProfileApplied = no server profile assigned
+               ProfileApplying  = a server profile is being applied
+               ProfileApplied   = a server profile has been applied
+               ConfigureHardware = hardware configuration in progress
+               ProfileError     = profile apply failed (NOT maintenance)
+               Deleting         = server being removed 
+  State Reason : additional context for the State value (blank when 'NotApplicable'):
+               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
+               UserInitiated  = state change triggered by a user action
+               Unmanaged      = hardware not managed by this OneView appliance
+               Removed        = hardware has been removed from the appliance
+
+==============================================
+
+   image-build-automation  main  Get-OneViewServerList                                                                                      0  15:12:07 
+==============================================
+  OneView Server List (16 servers)
+  Appliance: va-oneviewt-01
+==============================================
+
+| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                          |
+|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|--------------------------------|
+| OMG-STARWAY-01ILO.AD.AIB.PRI    | CZJ831052N      | No        | Monitored        | OK         | On       | 10.239.230.72   | U32 v3.50 (04/17/2025) |     
+          | ProLiant DL360 Gen10           |
+| ALP-WISCLU-01ilo                | CZ3508PYS5      | No        | Monitored        | OK         | On       | 10.30.13.115    | P89 v2.92 (11/23/2021) |     
+          | ProLiant DL380 Gen9            |
+| OMG-WISCLU-01ilo                | CZJ5500337      | No        | Monitored        | OK         | On       | 10.30.52.142    | P89 v2.92 (11/23/2021) |     
+          | ProLiant DL380 Gen9            |
+| ALP-STARWAY-01ILO               | CZJ831052R      | No        | Monitored        | OK         | On       | 10.239.228.76   | U32 v3.50 (04/17/2025) |     
+          | ProLiant DL360 Gen10           |
+| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| OMG-CONSTC2-02ilo               | CZ2D3701LY      | No        | ProfileApplied   | OK         | On       | 10.239.231.29   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| ALP-CONSTC1-01ilo               | CZ2D3701LT      | No        | ProfileApplied   | OK         | On       | 10.239.229.64   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| ALP-CONSTC2-01ilo               | CZ2D3701LV      | No        | ProfileApplied   | OK         | On       | 10.239.229.65   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| OMG-CONSTC1-02ilo               | CZ2D3701LZ      | No        | ProfileApplied   | OK         | On       | 10.239.231.28   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus      |
+| alp-qliksen-02ilo               | CZ22420JCZ      | No        | NoProfileApplied | OK         | On       | 10.30.14.17     | U46 v2.24 (10/04/2024) |     
+          | ProLiant DL360 Gen10 Plus      |
+| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus      |
+| omg-qliksen-02ilo               | CZ22420JD0      | No        | NoProfileApplied | OK         | On       | 10.30.54.21     | U46 v2.24 (10/04/2024) |     
+          | ProLiant DL360 Gen10 Plus      |
+
+KEY
+  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
+  State     : server lifecycle state from OneView:
+               Monitored        = normal / being monitored (not in maintenance)
+               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
+               NoProfileApplied = no server profile assigned
+               ProfileApplying  = a server profile is being applied
+               ProfileApplied   = a server profile has been applied
+               ConfigureHardware = hardware configuration in progress
+               ProfileError     = profile apply failed (NOT maintenance)
+               Deleting         = server being removed
+  State Reason : additional context for the State value (blank when 'NotApplicable'):
+               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
+               UserInitiated  = state change triggered by a user action
+               Unmanaged      = hardware not managed by this OneView appliance
+               Removed        = hardware has been removed from the appliance
+
+==============================================
+
+   image-build-automation  main  Disable-OneViewMaintenanceMode -TargetId 'CZ22420JCM'                                                      0  15:12:20 WARNING: Disabling maintenance mode will cause email notifications to return to normal.
 
 Confirm
 Are you sure you want to perform this action?
@@ -1978,33 +1975,191 @@ Performing the operation "disable maintenance mode for server hardware" on targe
 
 Name                           Value
 ----                           -----
-Module                         HPEOneView.1000
-Target                         alp-qlikview-03ilo
+Success                        True
 NotInCount                     0
+SuccessCount                   1
 Appliance                      va-oneviewt-01
+TargetType                     ServerHardware
+SerialNumber
+Objects                        {@{Status=success; Type=server-hardware-12; Name=alp-qlikview-03ilo; Message=Maintenance mode disabled}}
+ResolvedTarget                 alp-qlikview-03ilo
 Message                        OneView maintenance mode disabled: 1 succeeded, 0 failed, 0 already not in maintenance (total 1)
+Total                          1
+Module                         HPEOneView.1000
+FailedCount                    0
+Target                         alp-qlikview-03ilo
 ResolvedType                   ServerHardware
+ResolvedBy                     Serial
+DryRun                         False
+TargetId                       CZ22420JCM
+
+   image-build-automation  main  Disable-OneViewMaintenanceMode -TargetId 'omg-qlikview-03ilo' -OneViewHost va-oneviewt-01        0  3s 715ms  15:12:45 WARNING: Disabling maintenance mode will cause email notifications to return to normal.
+
+Confirm
+Are you sure you want to perform this action?
+Performing the operation "disable maintenance mode for server hardware" on target "omg-qlikview-03ilo".
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
+
+Name                           Value
+----                           -----
+Success                        True
+NotInCount                     0
+SuccessCount                   1
+Appliance                      va-oneviewt-01
+TargetType                     ServerHardware
+SerialNumber
+Objects                        {@{Status=success; Type=server-hardware-12; Name=omg-qlikview-03ilo; Message=Maintenance mode disabled}}
+ResolvedTarget                 omg-qlikview-03ilo
+Message                        OneView maintenance mode disabled: 1 succeeded, 0 failed, 0 already not in maintenance (total 1)
+Total                          1
+Module                         HPEOneView.1000
+FailedCount                    0
+Target                         omg-qlikview-03ilo
+ResolvedType                   ServerHardware
+ResolvedBy                     Name
+DryRun                         False
+TargetId                       omg-qlikview-03ilo
+
+   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'omg-qlikview-03ilo' -OneViewHost va-oneviewt-01         0  4s 830ms  15:14:16 WARNING: Enabling maintenance mode will prevent this appliance from sending any email notifications related to server hardware omg-qlikview-03ilo and its associated profile. Maintenance mode will not affect normal server or profile operations.
+
+Confirm
+Are you sure you want to perform this action?
+Performing the operation "enable maintenance mode for server hardware" on target "omg-qlikview-03ilo".
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
+
+Name                           Value
+----                           -----
+SuccessCount                   1
+Module                         HPEOneView.1000
+TargetId                       omg-qlikview-03ilo
+StartTime                      17/09/2026 14:15:10
+TargetType                     ServerHardware
+AlreadyCount                   0
+EndTime                        17/09/2026 18:15:10
 FailedCount                    0
 SerialNumber
-Total                          1
-Success                        True
+ResolvedTarget                 omg-qlikview-03ilo
 DryRun                         False
-ResolvedTarget                 alp-qlikview-03ilo
-TargetType                     ServerHardware
-Objects                        {@{Status=success; Message=Maintenance mode disabled; Name=alp-qlikview-03ilo; Type=server-hardware-12}}
-TargetId                       alp-qlikview-03ilo
+ResolvedType                   ServerHardware
+Objects                        {@{Status=success; Type=server-hardware-12; Name=omg-qlikview-03ilo; Message=Maintenance mode enabled}}
+Message                        OneView maintenance mode enabled: 1 succeeded, 0 failed, 0 already in maintenance (total 1)
+ResolvedBy                     Name
+Total                          1
+Target                         omg-qlikview-03ilo
+Success                        True
+Appliance                      va-oneviewt-01
+
+   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'alp-qlikview-03ilo' -OneViewHost va-oneviewt-01         0  3s 748ms  15:15:14 WARNING: Enabling maintenance mode will prevent this appliance from sending any email notifications related to server hardware alp-qlikview-03ilo and its associated profile. Maintenance mode will not affect normal server or profile operations.
+
+Confirm
+Are you sure you want to perform this action?
+Performing the operation "enable maintenance mode for server hardware" on target "alp-qlikview-03ilo".
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"):
+
+Name                           Value
+----                           -----
 SuccessCount                   1
+Module                         HPEOneView.1000
+TargetId                       alp-qlikview-03ilo
+StartTime                      17/09/2026 14:16:04
+TargetType                     ServerHardware
+AlreadyCount                   0
+EndTime                        17/09/2026 18:16:04
+FailedCount                    0
+SerialNumber
+ResolvedTarget                 alp-qlikview-03ilo
+DryRun                         False
+ResolvedType                   ServerHardware
+Objects                        {@{Status=success; Type=server-hardware-12; Name=alp-qlikview-03ilo; Message=Maintenance mode enabled}}
+Message                        OneView maintenance mode enabled: 1 succeeded, 0 failed, 0 already in maintenance (total 1)
+ResolvedBy                     Name
+Total                          1
+Target                         alp-qlikview-03ilo
+Success                        True
+Appliance                      va-oneviewt-01
 
-   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCM                                                                                                                               0  5s 177ms  09:55:11 2026-09-17 08:55:23 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
-
+   image-build-automation  main  Get-OneViewServerList                                                                            0  4s 420ms  15:16:08 
 ==============================================
-  OneView Server Target 
+  OneView Server List (16 servers)
+  Appliance: va-oneviewt-01
 ==============================================
 
-  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK, maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                          |
+|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|--------------------------------|
+| OMG-STARWAY-01ILO.AD.AIB.PRI    | CZJ831052N      | No        | Monitored        | OK         | On       | 10.239.230.72   | U32 v3.50 (04/17/2025) |     
+          | ProLiant DL360 Gen10           |
+| ALP-WISCLU-01ilo                | CZ3508PYS5      | No        | Monitored        | OK         | On       | 10.30.13.115    | P89 v2.92 (11/23/2021) |     
+          | ProLiant DL380 Gen9            |
+| OMG-WISCLU-01ilo                | CZJ5500337      | No        | Monitored        | OK         | On       | 10.30.52.142    | P89 v2.92 (11/23/2021) |     
+          | ProLiant DL380 Gen9            |
+| ALP-STARWAY-01ILO               | CZJ831052R      | No        | Monitored        | OK         | On       | 10.239.228.76   | U32 v3.50 (04/17/2025) |     
+          | ProLiant DL360 Gen10           |
+| gam-isechost-02-03ilo.ad.ad.pri | CZ29350B60      | No        | NoProfileApplied | OK         | On       | 10.30.14.83     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| gamdmzhost-01-03ilo.AD.AIB.PRI  | CZ29350B5Y      | No        | NoProfileApplied | OK         | On       | 10.30.14.80     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| gamdmzhost-02-03ilo             | CZ29350B5Z      | No        | NoProfileApplied | OK         | On       | 10.30.14.81     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| gamisechost-01-03ilo.AD.AIB.PRI | CZ29350B61      | No        | NoProfileApplied | Critical   | On       | 10.30.14.82     | U30 v3.42 (02/21/2025) |     
+          | ProLiant DL380 Gen10           |
+| OMG-CONSTC2-02ilo               | CZ2D3701LY      | No        | ProfileApplied   | OK         | On       | 10.239.231.29   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| ALP-CONSTC1-01ilo               | CZ2D3701LT      | No        | ProfileApplied   | OK         | On       | 10.239.229.64   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| ALP-CONSTC2-01ilo               | CZ2D3701LV      | No        | ProfileApplied   | OK         | On       | 10.239.229.65   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| OMG-CONSTC1-02ilo               | CZ2D3701LZ      | No        | ProfileApplied   | OK         | On       | 10.239.231.28   | U68 v1.52 (10/03/2025) |     
+          | HPE ProLiant Compute DL380 ... |
+| alp-qlikview-03ilo              | CZ22420JCM      | No        | NoProfileApplied | OK         | On       | 10.30.14.15     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus      |
+| alp-qliksen-02ilo               | CZ22420JCZ      | No        | NoProfileApplied | OK         | On       | 10.30.14.17     | U46 v2.24 (10/04/2024) |     
+          | ProLiant DL360 Gen10 Plus      |
+| omg-qlikview-03ilo              | CZ22420JCN      | No        | NoProfileApplied | OK         | On       | 10.30.54.22     | U46 v2.42 (06/13/2025) |     
+          | ProLiant DL360 Gen10 Plus      |
+| omg-qliksen-02ilo               | CZ22420JD0      | No        | NoProfileApplied | OK         | On       | 10.30.54.21     | U46 v2.24 (10/04/2024) |     
+          | ProLiant DL360 Gen10 Plus      |
+
+KEY
+  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
+  State     : server lifecycle state from OneView: 
+               Monitored        = normal / being monitored (not in maintenance)
+               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
+               NoProfileApplied = no server profile assigned
+               ProfileApplying  = a server profile is being applied
+               ProfileApplied   = a server profile has been applied
+               ConfigureHardware = hardware configuration in progress
+               ProfileError     = profile apply failed (NOT maintenance)
+               Deleting         = server being removed
+  State Reason : additional context for the State value (blank when 'NotApplicable'):
+               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
+               UserInitiated  = state change triggered by a user action
+               Unmanaged      = hardware not managed by this OneView appliance
+               Removed        = hardware has been removed from the appliance
+
+============================================== 
+
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCN                                                       0  15:16:15 2026-09-17 14:16:31 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
+
+============================================== 
+  OneView Server Target
+==============================================
+
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=On, health=OK, maint=No, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025)
 
   Resolved By:  Serial
 
 ==============================================
 
-   image-build-automation  main                                                                                                                                                                                               0  09:55:23 
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier omg-qlikview-03ilo                                               0  15:16:31 WARNING: 2026-09-17 14:16:42 - Get-OneViewServerTarget - WARNING - Get-OneViewServerTarget: 'IloIp' query returned OneView returned HTTP 400 - Bad Request (the identifier/filter was rejected by OneView); trying next identifier type
+WARNING: 2026-09-17 14:16:42 - Get-OneViewServerTarget - WARNING - Get-OneViewServerTarget: 'EnclosureBay' query returned OneView returned HTTP 400 - Bad Request (the identifier/filter was rejected by OneView); trying next identifier type
+2026-09-17 14:16:42 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=omg-qlikview-03ilo (ResolvedBy=Name) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=On, health=OK, maint=No, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Name 
+
+==============================================
