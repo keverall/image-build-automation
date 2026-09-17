@@ -2918,6 +2918,7 @@ if (-not `$existingSession) {
 `$alreadyInMaintenance = 0
 if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
     `$obj = @{
         Name = `$server.Name
         Type = `$server.Type
@@ -2925,7 +2926,8 @@ if ('$TargetType' -eq 'ServerHardware') {
         Message = ''
     }
     try {
-        if (`$server.maintenanceMode) {
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+        if (`$inMaint) {
             `$obj.Status = 'already_in_maintenance'
             `$obj.Message = 'Already in maintenance mode'
             `$alreadyInMaintenance++
@@ -2956,7 +2958,8 @@ if ('$TargetType' -eq 'ServerHardware') {
             Message = ''
         }
         try {
-            if (`$server.maintenanceMode) {
+            `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+            if (`$inMaint) {
                 `$obj.Status = 'already_in_maintenance'
                 `$obj.Message = 'Already in maintenance mode'
                 `$alreadyInMaintenance++
@@ -3056,6 +3059,7 @@ if (-not `$existingSession) {
 `$notInMaintenance = 0
 if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
     `$obj = @{
         Name = `$server.Name
         Type = `$server.Type
@@ -3063,7 +3067,8 @@ if ('$TargetType' -eq 'ServerHardware') {
         Message = ''
     }
     try {
-        if (-not `$server.maintenanceMode) {
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+        if (-not `$inMaint) {
             `$obj.Status = 'not_in_maintenance'
             `$obj.Message = 'Not in maintenance mode'
             `$notInMaintenance++
@@ -3094,7 +3099,8 @@ if ('$TargetType' -eq 'ServerHardware') {
             Message = ''
         }
         try {
-            if (-not `$server.maintenanceMode) {
+            `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+            if (-not `$inMaint) {
                 `$obj.Status = 'not_in_maintenance'
                 `$obj.Message = 'Not in maintenance mode'
                 `$notInMaintenance++
@@ -3189,8 +3195,8 @@ if (-not `$existingSession) {
 }
 `$server = Get-OVServer -Name '$TargetId' -ErrorAction SilentlyContinue
 if (`$server) {
-    `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; SerialNumber = `$server.serialNumber; MaintenanceModeEnabled = [bool]`$server.maintenanceMode; Model = `$server.model; State = `$server.state; Message = 'Found server' }
-s    `$result | ConvertTo-Json -Depth 5
+    `$result = @{ Success = `$true; TargetType = 'ServerHardware'; TargetName = `$server.Name; SerialNumber = `$server.serialNumber; MaintenanceModeEnabled = [bool](`$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)); Model = `$server.model; State = `$server.state; Message = 'Found server' }
+    `$result | ConvertTo-Json -Depth 5
     return
 }
 `$scope = Get-OVSCOPE -Name '$TargetId' -ErrorAction SilentlyContinue
@@ -3269,14 +3275,16 @@ if (-not `$existingSession) {
 `$failed = 0
 if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    if (-not `$server) { throw "Server hardware '$Target' not found in OneView." }
+    `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
     `$obj = @{
         Name = `$server.Name
         Type = `$server.Type
-        InMaintenanceMode = `$server.maintenanceMode
-        Status = if (`$server.maintenanceMode) { 'in_maintenance' } else { 'not_in_maintenance' }
-        Message = if (`$server.maintenanceMode) { 'Server is in maintenance mode' } else { 'Server is not in maintenance mode' }
+        InMaintenanceMode = [bool]`$inMaint
+        Status = if (`$inMaint) { 'in_maintenance' } else { 'not_in_maintenance' }
+        Message = if (`$inMaint) { 'Server is in maintenance mode' } else { 'Server is not in maintenance mode' }
     }
-    if (`$server.maintenanceMode) {
+    if (`$inMaint) {
         `$inMaintenance++
     } else {
         `$notInMaintenance++
@@ -3288,14 +3296,15 @@ if ('$TargetType' -eq 'ServerHardware') {
     foreach (`$member in `$servers) {
         `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
         if (-not `$server) { continue }
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
         `$obj = @{
             Name = `$server.Name
             Type = `$server.Type
-            InMaintenanceMode = `$server.maintenanceMode
-            Status = if (`$server.maintenanceMode) { 'in_maintenance' } else { 'not_in_maintenance' }
-            Message = if (`$server.maintenanceMode) { 'Server is in maintenance mode' } else { 'Server is not in maintenance mode' }
+            InMaintenanceMode = [bool]`$inMaint
+            Status = if (`$inMaint) { 'in_maintenance' } else { 'not_in_maintenance' }
+            Message = if (`$inMaint) { 'Server is in maintenance mode' } else { 'Server is not in maintenance mode' }
         }
-        if (`$server.maintenanceMode) {
+        if (`$inMaint) {
             `$inMaintenance++
         } else {
             `$notInMaintenance++

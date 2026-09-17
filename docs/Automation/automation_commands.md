@@ -1112,7 +1112,7 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 
 | Parameter | Type | Mandatory | Notes |
 | --- | --- | --- | --- |
-| `-TargetId` | string | No | Server or scope name (position 0). Ignored if `-SerialNumber` is supplied. |
+| `-TargetId` | string | No | Server name, scope name, **or serial number** (position 0) — resolved automatically via `Resolve-OneViewMaintTarget`. Ignored if `-SerialNumber` is supplied. |
 | `-TargetType` | string | **Yes** | `ServerHardware` (default) or `Scope` (position 1, ValidateSet). |
 | `-Environment` | string | No | `Test` or `Prod`. |
 | `-OneViewHost` | string | No | OneView appliance host. Alias: `OVHost`. |
@@ -1129,12 +1129,17 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 # Enable by server name
 Enable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -Environment Prod
 
-# Enable by serial number
+# Enable by serial number (explicit -SerialNumber switch)
 Enable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -Environment Prod
+
+# Enable by serial number passed positionally as -TargetId (resolved automatically)
+Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCM' -OneViewHost oneview.example.com -Environment Prod
 
 # Validate first without changing anything
 Enable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -DryRun
 ```
+
+**Returns:** `[hashtable]` with `Success`, `TargetType`, `Objects` (per-server `Status`/`Message`), `ResolvedTarget`, `ResolvedType`, `SerialNumber`, `ResolvedBy` (`Name`/`Serial`), `Appliance`, `StartTime`, `EndTime`, and `Message`. `ResolvedTarget`/`ResolvedBy` report how `-TargetId`/`-SerialNumber` was resolved (a name or serial passed as `-TargetId` is resolved to the exact server name, so the operation never silently acts on the wrong server).
 
 Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Enable-OneViewMaintenanceMode`](https://github.com/.../blob/main/src/powershell/Automation/Public/OneViewMaintenanceMode.ps1)
 
@@ -1148,7 +1153,7 @@ Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Enab
 
 | Parameter | Type | Mandatory | Notes |
 | --- | --- | --- | --- |
-| `-TargetId` | string | No | Server or scope name (position 0). Ignored if `-SerialNumber` is supplied. |
+| `-TargetId` | string | No | Server name, scope name, **or serial number** (position 0) — resolved automatically via `Resolve-OneViewMaintTarget`. Ignored if `-SerialNumber` is supplied. |
 | `-TargetType` | string | **Yes** | `ServerHardware` (default) or `Scope` (position 1, ValidateSet). |
 | `-Environment` | string | No | `Test` or `Prod`. |
 | `-OneViewHost` | string | No | OneView appliance host. Alias: `OVHost`. |
@@ -1165,9 +1170,14 @@ Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Enab
 # Disable by server name
 Disable-OneViewMaintenanceMode -TargetId 'server01' -OneViewHost oneview.example.com -Environment Prod
 
-# Disable by serial number
+# Disable by serial number (explicit -SerialNumber switch)
 Disable-OneViewMaintenanceMode -SerialNumber ABC123XYZ -Environment Prod
+
+# Disable by serial number passed positionally as -TargetId (resolved automatically)
+Disable-OneViewMaintenanceMode -TargetId 'CZ22420JCM' -OneViewHost oneview.example.com -Environment Prod
 ```
+
+**Returns:** `[hashtable]` with `Success`, `TargetType`, `Objects` (per-server `Status`/`Message`), `ResolvedTarget`, `ResolvedType`, `SerialNumber`, `ResolvedBy` (`Name`/`Serial`), `Appliance`, and `Message`. `ResolvedTarget`/`ResolvedBy` report how `-TargetId`/`-SerialNumber` was resolved.
 
 Source: `src/powershell/Automation/Public/OneViewMaintenanceMode.ps1` → [`Disable-OneViewMaintenanceMode`](https://github.com/.../blob/main/src/powershell/Automation/Public/OneViewMaintenanceMode.ps1)
 

@@ -75,3 +75,21 @@ Describe 'Enable-OneViewMaintenanceMode - credentials guard' {
         $result.Message | Should -Match 'credentials? not configured'
     }
 }
+
+Describe 'Enable/Disable-OneViewMaintenanceMode - serial number accepted as -TargetId' {
+    It 'DryRun accepts a serial passed positionally as -TargetId (resolver is invoked in live runs)' {
+        # Reproduces the reported failure: operators pass the serial number as the
+        # positional -TargetId. The cmdlet must not require a server NAME to bind,
+        # and must attempt serial resolution on a live run (which DryRun skips).
+        $result = Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCM' -OneViewHost 'bogus.example' -DryRun -ErrorAction Stop
+        $result.Success          | Should -Be $true
+        $result.TargetId         | Should -Be 'CZ22420JCM'
+        $result.ResolvedTarget   | Should -Be 'CZ22420JCM'
+    }
+
+    It 'DryRun accepts an explicit -SerialNumber and records it' {
+        $result = Disable-OneViewMaintenanceMode -TargetId 'srv01' -SerialNumber 'CZ22420JCM' -OneViewHost 'bogus.example' -DryRun -ErrorAction Stop
+        $result.Success        | Should -Be $true
+        $result.SerialNumber   | Should -Be 'CZ22420JCM'
+    }
+}

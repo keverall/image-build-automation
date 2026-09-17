@@ -153,9 +153,11 @@ if ('$TargetType' -eq 'ServerHardware') {
     try {
         if (-not '$Target') { throw "Server target name is empty" }
         `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+        if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
         `$obj.Name = `$server.Name
         `$obj.Type = `$server.Type
-        if (`$server.maintenanceMode) {
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+        if (`$inMaint) {
             `$obj.Status = 'already_in_maintenance'
             `$obj.Message = 'Already in maintenance mode'
             `$alreadyInMaintenance++
@@ -189,7 +191,8 @@ if ('$TargetType' -eq 'ServerHardware') {
             `$obj.Status = 'unknown'
             `$obj.Message = ''
             try {
-                if (`$server.maintenanceMode) {
+                `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+                if (`$inMaint) {
                     `$obj.Status = 'already_in_maintenance'
                     `$obj.Message = 'Already in maintenance mode'
                     `$alreadyInMaintenance++
@@ -313,9 +316,11 @@ if (-not `$existingSession) {
 `$alreadyInMaintenance = 0
 if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
     `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
     try {
-        if (`$server.maintenanceMode) {
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+        if (`$inMaint) {
             `$obj.Status = 'already_in_maintenance'
             `$obj.Message = 'Already in maintenance mode'
             `$alreadyInMaintenance++
@@ -341,7 +346,8 @@ if ('$TargetType' -eq 'ServerHardware') {
         if (-not `$server) { continue }
         `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
         try {
-            if (`$server.maintenanceMode) {
+            `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+            if (`$inMaint) {
                 `$obj.Status = 'already_in_maintenance'
                 `$obj.Message = 'Already in maintenance mode'
                 `$alreadyInMaintenance++
@@ -461,9 +467,11 @@ if ('$TargetType' -eq 'ServerHardware') {
     try {
         if (-not '$Target') { throw "Server target name is empty" }
         `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+        if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
         `$obj.Name = `$server.Name
         `$obj.Type = `$server.Type
-        if (-not `$server.maintenanceMode) {
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+        if (-not `$inMaint) {
             `$obj.Status = 'already_not_in_maintenance'
             `$obj.Message = 'Already not in maintenance mode'
             `$notInMaintenance++
@@ -495,7 +503,8 @@ if ('$TargetType' -eq 'ServerHardware') {
             `$obj.Status = 'unknown'
             `$obj.Message = ''
             try {
-                if (-not `$server.maintenanceMode) {
+                `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+                if (-not `$inMaint) {
                     `$obj.Status = 'already_not_in_maintenance'
                     `$obj.Message = 'Already not in maintenance mode'
                     `$notInMaintenance++
@@ -609,9 +618,11 @@ if (-not `$existingSession) {
 `$notInMaintenance = 0
 if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
     `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
     try {
-        if (-not `$server.maintenanceMode) {
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+        if (-not `$inMaint) {
             `$obj.Status = 'already_not_in_maintenance'
             `$obj.Message = 'Already not in maintenance mode'
             `$notInMaintenance++
@@ -635,7 +646,8 @@ if ('$TargetType' -eq 'ServerHardware') {
         if (-not `$server) { continue }
         `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
         try {
-            if (-not `$server.maintenanceMode) {
+            `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
+            if (-not `$inMaint) {
                 `$obj.Status = 'already_not_in_maintenance'
                 `$obj.Message = 'Already not in maintenance mode'
                 `$notInMaintenance++
@@ -733,12 +745,14 @@ if (-not `$existingSession) {
 `$out = @{ Success = `$false; Objects = @(); Message = '' }
 if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    if (-not `$server) { throw "Server hardware '$Target' not found in OneView." }
+    `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
     `$out.Success = `$true
     `$out.Objects += @{
         Name              = `$server.Name
         Type              = `$server.Type
-        InMaintenanceMode = [bool]`$server.maintenanceMode
-        MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
+        InMaintenanceMode = [bool]`$inMaint
+        MaintenanceModeState = if (`$inMaint) { 'Enabled' } else { 'Disabled' }
     }
 } elseif ('$TargetType' -eq 'Scope') {
     `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
@@ -746,12 +760,13 @@ if ('$TargetType' -eq 'ServerHardware') {
     foreach (`$member in `$servers) {
         `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
         if (-not `$server) { continue }
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
         `$out.Success = `$true
         `$out.Objects += @{
             Name              = `$server.Name
             Type              = `$server.Type
-            InMaintenanceMode = [bool]`$server.maintenanceMode
-            MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
+            InMaintenanceMode = [bool]`$inMaint
+            MaintenanceModeState = if (`$inMaint) { 'Enabled' } else { 'Disabled' }
         }
     }
 }
@@ -811,12 +826,14 @@ if (-not `$existingSession) {
 `$out = @{ Success = `$false; Objects = @(); Message = '' }
 if ('$TargetType' -eq 'ServerHardware') {
     `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+    if (-not `$server) { throw "Server hardware '$Target' not found in OneView." }
+    `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
     `$out.Success = `$true
     `$out.Objects += @{
         Name = `$server.Name
         Type = `$server.Type
-        InMaintenanceMode = [bool]`$server.maintenanceMode
-        MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
+        InMaintenanceMode = [bool]`$inMaint
+        MaintenanceModeState = if (`$inMaint) { 'Enabled' } else { 'Disabled' }
     }
 } elseif ('$TargetType' -eq 'Scope') {
     `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
@@ -824,12 +841,13 @@ if ('$TargetType' -eq 'ServerHardware') {
     foreach (`$member in `$servers) {
         `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
         if (-not `$server) { continue }
+        `$inMaint = `$server.maintenanceMode -and `$server.maintenanceMode -notin @('Off', `$false, `$null)
         `$out.Success = `$true
         `$out.Objects += @{
             Name = `$server.Name
             Type = `$server.Type
-            InMaintenanceMode = [bool]`$server.maintenanceMode
-            MaintenanceModeState = if (`$server.maintenanceMode) { 'Enabled' } else { 'Disabled' }
+            InMaintenanceMode = [bool]`$inMaint
+            MaintenanceModeState = if (`$inMaint) { 'Enabled' } else { 'Disabled' }
         }
     }
 }
@@ -1015,6 +1033,166 @@ if (`$server) {
             }
         }
     }
+
+    [hashtable] _ResolveServerTarget([string]$Identifier) {
+        $ovModule = $this.ModuleName
+        $ovAppliance = $this.Appliance
+        $scriptContent = @"
+param([string]`$OVUser = `$env:OV_CONN_USER, [string]`$OVPwd = `$env:OV_CONN_PASS)
+ `$ErrorActionPreference = 'Stop'
+ Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ovModule' } | Remove-Module -Force -ErrorAction SilentlyContinue
+Import-Module $ovModule -ErrorAction Stop
+`$existingSession = Get-OneViewActiveSession
+if (-not `$existingSession) {`$existingSession = `$ConnectedSessions | Where-Object { `$_.Connected -eq `$true -or `$_.Connected -eq 'True' } | Select-Object -First 1}
+if (-not `$existingSession) {
+    if (-not `$OVUser) { throw "No active OneView session and ONEVIEW_USER is not set for appliance '$ovAppliance'. Connect first with 'Connect-OneView -OneViewHost $ovAppliance', or set ONEVIEW_USER / ONEVIEW_PASSWORD environment variables." }
+    `$securePass = ConvertTo-SecureString `$OVPwd -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$OVUser, `$securePass)
+    Connect-OVMgmt -Appliance '$ovAppliance' -Credential `$cred -ErrorAction Stop
+}
+`$serverName = `$null
+`$serial = `$null
+`$model = `$null
+`$state = `$null
+`$resolvedBy = `$null
+# 1) Try the identifier as a server NAME first (exact/wildcard match).
+try {
+    `$byName = Get-OVServer -Name '$Identifier' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (`$byName) {
+        `$serverName = `$byName.name
+        `$serial = `$byName.serialNumber
+        `$model = `$byName.model
+        `$state = `$byName.state
+        `$resolvedBy = 'Name'
+    }
+} catch { }
+# 2) Fall back to a serial-number lookup (REST exact filter, then module fallback).
+if (-not `$serverName) {
+    try {
+        `$headers = @{ 'X-API-Version' = '1200'; 'Content-Type' = 'application/json' }
+        `$r = Invoke-RestMethod -Uri "https://$ovAppliance/rest/server-hardware?filter=serialNumber='$Identifier'" -Headers `$headers -Method Get -ErrorAction Stop
+        if (`$r.members -and `$r.members.Count -gt 0) {
+            `$m = `$r.members[0]
+            `$serverName = `$m.name
+            `$serial = `$m.serialNumber
+            `$model = `$m.model
+            `$state = `$m.state
+            `$resolvedBy = 'Serial'
+        }
+    } catch { }
+    if (-not `$serverName) {
+        try {
+            `$cmd = Get-Command Get-OVServer -ErrorAction Stop
+            if (`$cmd.Parameters.ContainsKey('SerialNumber')) {
+                `$ovServer = Get-OVServer -SerialNumber '$Identifier' -ErrorAction SilentlyContinue | Select-Object -First 1
+            } else {
+                `$ovServer = Get-OVServer -ErrorAction Stop | Where-Object { `$_.serialNumber -eq '$Identifier' } | Select-Object -First 1
+            }
+            if (`$ovServer) {
+                `$serverName = `$ovServer.name
+                `$serial = `$ovServer.serialNumber
+                `$model = `$ovServer.model
+                `$state = `$ovServer.state
+                `$resolvedBy = 'Serial'
+            }
+        } catch { }
+    }
+}
+if (`$serverName) {
+    `$out = @{ Success = `$true; ServerName = `$serverName; SerialNumber = `$serial; Model = `$model; State = `$state; ResolvedBy = `$resolvedBy; Message = "Resolved by `$resolvedBy" }
+    `$out | ConvertTo-Json -Depth 5
+} else {
+    `$out = @{ Success = `$false; ServerName = `$null; SerialNumber = '$Identifier'; Message = "No server found for identifier '$Identifier' (as name or serial) in OneView appliance '$ovAppliance' (module $ovModule)" }
+    `$out | ConvertTo-Json -Depth 3
+}
+"@
+        try {
+            $output = $null
+            if ($this.UseWinRM) {
+                $session = New-PSSession -ComputerName $this.WinRMServer
+                $output = Invoke-Command -Session $session -ScriptBlock ([scriptblock]::Create($scriptContent)) -ArgumentList @($this.Username, $this.Password)
+                Remove-PSSession $session
+            } else {
+                $env:OV_CONN_USER = $this.Username
+                $env:OV_CONN_PASS = $this.Password
+                try {
+                    $output = Invoke-Expression $scriptContent
+                } finally {
+                    Remove-Item Env:OV_CONN_USER, Env:OV_CONN_PASS -ErrorAction SilentlyContinue
+                }
+            }
+            $result = $output | ConvertFrom-Json
+            return @{
+                Success      = $result.Success
+                ServerName   = $result.ServerName
+                SerialNumber = $result.SerialNumber
+                Model        = $result.Model
+                State        = $result.State
+                ResolvedBy   = $result.ResolvedBy
+                Message      = $result.Message
+            }
+        } catch {
+            return @{
+                Success      = $false
+                ServerName   = $null
+                SerialNumber = $Identifier
+                Model        = $null
+                State        = $null
+                ResolvedBy   = $null
+                Message      = "Resolve target failed: $($_.Exception.Message)"
+            }
+        }
+    }
+}
+
+function Resolve-OneViewMaintTarget {
+    <#
+    .SYNOPSIS
+        Resolves a maintenance-mode target (server name or serial) to the exact
+        server-hardware NAME the HPEOneView module needs.
+
+    .DESCRIPTION
+        Bug-fix helper for the serial-number problem: callers were expected to pass
+        the server NAME, but operators routinely pass the serial number as the
+        positional -TargetId. The module's Get-OVServer -Name cannot resolve a
+        serial (it returns nothing / "not found"), so the operation failed.
+
+        This resolves a ServerHardware target by trying, in order:
+          1. the explicit -SerialNumber (if supplied), then
+          2. the identifier as a server NAME, then
+          3. the identifier as a serial number (REST + module fallbacks).
+        Scope targets are left untouched (their -TargetId is a scope name).
+
+        In DryRun we deliberately skip the live lookup: the downstream
+        OneViewClient methods short-circuit on DryRun and never query the
+        appliance, so returning the raw -TargetId is sufficient and keeps a
+        -DryRun truly offline.
+    #>
+    [CmdletBinding()]
+    param(
+        [OneViewClient] $OneViewClient,
+        [string]        $TargetId,
+        [string]        $SerialNumber,
+        [string]        $TargetType,
+        [bool]          $DryRun
+    )
+    if ($SerialNumber -and -not $DryRun) {
+        $resolved = $OneViewClient._ResolveServerBySerial($SerialNumber)
+        if ($resolved.Success) {
+            return @{ Ok = $true; ResolvedTarget = $resolved.ServerName; ResolvedType = 'ServerHardware'; ResolvedBy = 'Serial' }
+        }
+        return @{ Ok = $false; Error = "Serial number '$SerialNumber' not found in OneView: $($resolved.Message)" }
+    }
+
+    if ($TargetType -eq 'ServerHardware' -and -not $DryRun) {
+        $resolved = $OneViewClient._ResolveServerTarget($TargetId)
+        if ($resolved.Success) {
+            return @{ Ok = $true; ResolvedTarget = $resolved.ServerName; ResolvedType = 'ServerHardware'; ResolvedBy = $resolved.ResolvedBy }
+        }
+        return @{ Ok = $false; Error = "Target '$TargetId' not found in OneView (neither a server name nor a serial number): $($resolved.Message)" }
+    }
+
+    return @{ Ok = $true; ResolvedTarget = $TargetId; ResolvedType = $TargetType; ResolvedBy = 'Name' }
 }
 
 function Enable-OneViewMaintenanceMode {
@@ -1096,18 +1274,15 @@ function Enable-OneViewMaintenanceMode {
         }
     }
 
-    $resolvedTarget = $TargetId
-    $resolvedType = $TargetType
-    if ($SerialNumber) {
-        $resolved = $oneviewMgr._ResolveServerBySerial($SerialNumber)
-        if ($resolved.Success) {
-            $resolvedTarget = $resolved.ServerName
-            $resolvedType = 'ServerHardware'
-        } else {
-            Write-Error "Serial number '$SerialNumber' not found in OneView: $($resolved.Message)"
-            return @{ Success = $false; Message = $resolved.Message }
-        }
+    $resolved = Resolve-OneViewMaintTarget -OneViewClient $oneviewMgr -TargetId $TargetId `
+        -SerialNumber $SerialNumber -TargetType $TargetType -DryRun $DryRun
+    if (-not $resolved.Ok) {
+        Write-Error $resolved.Error
+        return @{ Success = $false; Message = $resolved.Error }
     }
+    $resolvedTarget = $resolved.ResolvedTarget
+    $resolvedType = $resolved.ResolvedType
+    $resolvedBy = $resolved.ResolvedBy
 
     if (-not $resolvedTarget) {
         Write-Error "No target could be resolved for OneView maintenance (TargetId and SerialNumber are both empty)."
@@ -1137,6 +1312,7 @@ function Enable-OneViewMaintenanceMode {
     $result['SerialNumber']   = $SerialNumber
     $result['ResolvedTarget'] = $resolvedTarget
     $result['ResolvedType']   = $resolvedType
+    $result['ResolvedBy']     = $resolvedBy
     $result['Appliance']      = $ovHost
     $result['StartTime']      = $startDt
     $result['EndTime']        = $endDt
@@ -1224,18 +1400,15 @@ function Disable-OneViewMaintenanceMode {
         }
     }
 
-    $resolvedTarget = $TargetId
-    $resolvedType = $TargetType
-    if ($SerialNumber) {
-        $resolved = $oneviewMgr._ResolveServerBySerial($SerialNumber)
-        if ($resolved.Success) {
-            $resolvedTarget = $resolved.ServerName
-            $resolvedType = 'ServerHardware'
-        } else {
-            Write-Error "Serial number '$SerialNumber' not found in OneView: $($resolved.Message)"
-            return @{ Success = $false; Message = $resolved.Message }
-        }
+    $resolved = Resolve-OneViewMaintTarget -OneViewClient $oneviewMgr -TargetId $TargetId `
+        -SerialNumber $SerialNumber -TargetType $TargetType -DryRun $DryRun
+    if (-not $resolved.Ok) {
+        Write-Error $resolved.Error
+        return @{ Success = $false; Message = $resolved.Error }
     }
+    $resolvedTarget = $resolved.ResolvedTarget
+    $resolvedType = $resolved.ResolvedType
+    $resolvedBy = $resolved.ResolvedBy
 
     if (-not $resolvedTarget) {
         Write-Error "No target could be resolved for OneView maintenance (TargetId and SerialNumber are both empty)."
@@ -1253,6 +1426,7 @@ function Disable-OneViewMaintenanceMode {
     $result['SerialNumber']    = $SerialNumber
     $result['ResolvedTarget']  = $resolvedTarget
     $result['ResolvedType']    = $resolvedType
+    $result['ResolvedBy']      = $resolvedBy
     $result['Appliance']       = $ovHost
 
     if ($Json) { return $result | ConvertTo-Json -Depth 64 }
@@ -1313,17 +1487,19 @@ function Get-OneViewMaintenanceMode {
         }
     })
 
-    $resolvedTarget = $TargetId
-    $resolvedType = $TargetType
-    if ($SerialNumber) {
-        $resolved = $oneviewMgr._ResolveServerBySerial($SerialNumber)
-        if ($resolved.Success) {
-            $resolvedTarget = $resolved.ServerName
-            $resolvedType = 'ServerHardware'
-        } else {
-            Write-Error "Serial number '$SerialNumber' not found in OneView: $($resolved.Message)"
-            return @{ Success = $false; Message = $resolved.Message }
-        }
+    $resolved = Resolve-OneViewMaintTarget -OneViewClient $oneviewMgr -TargetId $TargetId `
+        -SerialNumber $SerialNumber -TargetType $TargetType -DryRun $DryRun
+    if (-not $resolved.Ok) {
+        Write-Error $resolved.Error
+        return @{ Success = $false; Message = $resolved.Error }
+    }
+    $resolvedTarget = $resolved.ResolvedTarget
+    $resolvedType = $resolved.ResolvedType
+    $resolvedBy = $resolved.ResolvedBy
+
+    if (-not $resolvedTarget) {
+        Write-Error "No target could be resolved for OneView maintenance (TargetId and SerialNumber are both empty)."
+        return @{ Success = $false; Message = 'OneView maintenance target is empty' }
     }
 
     $result = $oneviewMgr.GetMaintenanceStatus($resolvedTarget, $resolvedType)
@@ -1331,6 +1507,7 @@ function Get-OneViewMaintenanceMode {
     $result['SerialNumber']   = $SerialNumber
     $result['ResolvedTarget'] = $resolvedTarget
     $result['ResolvedType']   = $resolvedType
+    $result['ResolvedBy']     = $resolvedBy
     $result['Appliance']      = $ovHost
 
     if ($Json) { return $result | ConvertTo-Json -Depth 64 }

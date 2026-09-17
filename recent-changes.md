@@ -6,6 +6,7 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
+   - [44) OneView maintenance mode: serial/name `-TargetId` resolution + `maintenanceMode` (`On`/`Off`) string truthiness fix](#44-oneview-maintenance-mode-serialname-targetid-resolution-maintenancemode-onoff-string-truthiness-fix)
    - [43) OneView session-check regression fix — use active session, guard empty credentials, remove invalid `-Credential` passthrough + red error output for maintenance mode failures](#43-oneview-session-check-regression-fix-connected-string-handling)
    - [42) OneView Maintenance Mode hardening (session reuse, credentials, default window, DryRun fix) + secret scanning + SSH agent profile management](#42-oneview-maintenance-mode-hardening-session-reuse-credentials-default-window-dryrun-fix-secret-scanning-ssh-agent-profile-management)
    - [41) Data-driven `-Help` test matrix (38 commands), `Update-Firmware` export fix, runner output fix & wip cleanup](#41-data-driven-help-test-matrix-38-commands-update-firmware-export-fix-runner-output-fix-wip-cleanup)
@@ -56,6 +57,7 @@
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |  
+| 2026-09-17 | OneView maintenance mode: `Enable-`/`Disable-OneViewMaintenanceMode` now resolve a serial number or server name passed as `-TargetId` (via `Resolve-OneViewMaintTarget`, returning `ResolvedTarget`/`SerialNumber`/`ResolvedBy`); fixed OneView's `maintenanceMode` being a string (`On`/`Off`) not a boolean — the old `if ($server.maintenanceMode)` truthiness evaluated the truthy string `'Off'` as `$true`, so enable silently skipped in-scope servers, disable toggled servers not actually in maintenance, and status reports (`InMaintenanceMode`/`maintenance_mode`) were inverted; `Get-OneViewServerList`, `Get-OneViewServerTarget`, `New-OneViewMaintenanceScript` and the `OneViewClient` embedded scripts now normalize with `maintenanceMode -notin @('Off', $false, $null)`; tests added. | Kev Everall |
 | 2026-09-16 | OneView session-check regression fix: embedded scripts now call `Get-OneViewActiveSession` (checks both `$script:ActiveOneViewSession` and `$global:ConnectedSessions`) before falling back to `$ConnectedSessions`, so live sessions tracked by the Automation module are found even when `$ConnectedSessions` misses them; credential creation is guarded so an empty `ONEVIEW_USER` throws a clear "connect first" error instead of "Cannot bind argument to parameter 'String' because it is an empty string"; `Start-PhysicalServerBuild` `_Enable-OneViewMaintenanceMode`/`_Disable-OneViewMaintenanceMode` no longer pass the invalid `-Credential` parameter to `Set-MaintenanceMode` (which lacks it) — the active OneView session is used directly instead of env vars/config files; `Write-Warning` replaced with `Write-Host -ForegroundColor Red` for OneView maintenance mode enable/disable failures so errors are visually distinct in CI and interactive runs. | Kev Everall |
 | 2026-09-16 | OneView maintenance mode hardening: active OneView session reuse (no re-connect when already connected to the correct appliance, with a guard that blocks switching appliances without `Disconnect-OneView` first), actionable credential error messages that now read "OneView credentials are not configured for appliance '<host>'. Connect first with 'Connect-OneView -OneViewHost <host>', or set the ONEVIEW_USER / ONEVIEW_PASSWORD environment variables, or run interactively to be prompted", default 4-hour UTC maintenance window when `-Start`/`-End` are omitted (OneView's enable/disable are pure toggles, so `-Start`/`-End` are inert and recorded for audit only), and a `DryRun` boolean serialization fix in all four `OneViewClient` embedded script blocks (`_SetViaModule`, `_SetViaWinRM`, `_DisableViaModule`, `_DisableViaWinRM`) where `DryRun = '$DryRun'` produced a JSON string `"False"` that `[bool]` cast to `$true` — now `DryRun = $DryRun` emits a proper JSON boolean; `Get-OneViewServerTarget` now reports the `maintenanceMode` (`On`/`Off`) property as Yes/No; secret scanning via pre-commit gitleaks (`.gitleaks.toml`, `.pre-commit-config.yaml`, `scripts/secret-scan.ps1` with flat-array JSON output) and `.gitignore` scratch/generated exclusions; SSH agent management in PowerShell profile scripts (fixed socket path, live-agent reuse, stale-socket cleanup, orphaned-connection prevention) + troubleshooting notes; dynamic docs regeneration | Kev Everall |
 | 2026-09-11 | Added a data-driven `-Help` test matrix (`scripts/HelpParamTests.txt`, 38 commands) with a completeness guard that fails when an exported Automation `-Help` command is missing from the list, plus `tests/powershell/HelpParamTests.Unit.Tests.ps1` (44 assertions: output ownership, section structure/order, no exceptions, `-Help` ≡ `Get-CommandHelp`), a focused `scripts/run-help-param-tests.ps1` runner and a `make help-param-tests` target; fixed the root-module `Export-ModuleMember` that omitted `Update-Firmware` (present in the manifest but never actually exported, so `-Help` was unreachable); fixed `Get-CommandHelp` to render a single usage line with no `-Help` token (32 of 38 commands previously showed a redundant `-Help` line because optional run parameters leaked into the `Help` set); fixed the `Write-Output … -NoNewline` literal in the four Pester runners and moved `cyberark-bootstrap.ps1` progress output to `Write-Host` so it no longer pollutes `secrets.env`; retired `HelpSwitch.Unit.Tests.ps1` and retargeted `automation-mode-tests` (dropping four references to deleted test files); corrected §40's mandatory-`-Help`/usage-line wording; and pruned the `wip/` scratch docs, vendored font trees, the superseded root `changes.md` and stale references as part of the wip cleanup (test count 598 → 564) | Kev Everall |
@@ -103,6 +105,40 @@
 <a id="change-details"></a>
 
 ## Change details
+
+<a id="44-oneview-maintenance-mode-serialname-targetid-resolution-maintenancemode-onoff-string-truthiness-fix"></a>
+
+### 44) OneView maintenance mode: serial/name `-TargetId` resolution + `maintenanceMode` (`On`/`Off`) string truthiness fix
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-17 | OneView maintenance mode: `Enable-`/`Disable-OneViewMaintenanceMode` now resolve a serial number or server name passed as `-TargetId` (via `Resolve-OneViewMaintTarget`, returning `ResolvedTarget`/`SerialNumber`/`ResolvedBy`); fixed OneView's `maintenanceMode` being a string (`On`/`Off`) not a boolean — the old `if ($server.maintenanceMode)` truthiness evaluated the truthy string `'Off'` as `$true`, so enable silently skipped in-scope servers, disable toggled servers not actually in maintenance, and status reports (`InMaintenanceMode`/`maintenance_mode`) were inverted; `Get-OneViewServerList`, `Get-OneViewServerTarget`, `New-OneViewMaintenanceScript` and the `OneViewClient` embedded scripts now normalize with `maintenanceMode -notin @('Off', $false, $null)`; tests added. | Kev Everall |
+
+<a name="root-cause-44"></a>
+
+#### Root cause
+
+- **Operators pass the serial number as `-TargetId`.** `Enable-`/`Disable-OneViewMaintenanceMode` documented `-TargetId` as "server or scope name" and only resolved a serial via the separate `-SerialNumber` parameter. In practice operators pass the HPE serial (e.g. `CZ22420JCM`) positionally as `-TargetId`; the old resolver only treated `-TargetId` as a server NAME, so a serial there was "not found" and the operation failed.
+- **OneView's `maintenanceMode` is a string, not a boolean.** The `ServerHardware` resource exposes maintenance state as the string property `maintenanceMode` with values `On`/`Off`. Every truthiness check in the maintenance-mode code did `if ($server.maintenanceMode)` (or `if (-not $server.maintenanceMode)`). A non-empty string is always truthy in PowerShell, so `'Off'` evaluated to `$true` — the opposite of intent.
+
+<a name="fix-44"></a>
+
+#### Fix
+
+- **Target resolution** (`OneViewMaintenanceMode.ps1`): added `Resolve-OneViewMaintTarget` (with `_ResolveServerBySerial` REST + module fallbacks) used by `Enable-`/`Disable-OneViewMaintenanceMode`. Resolution tries, in order: the explicit `-SerialNumber`, then `-TargetId` as a server/scope name, then `-TargetId` as a serial number (REST `filter=serialNumber=...` then module `Get-OVServer -SerialNumber`). The result carries `ResolvedTarget`, `ResolvedType`, `SerialNumber`, and `ResolvedBy` (`Name`/`Serial`); the cmdlet surfaces `TargetId`, `SerialNumber`, `ResolvedTarget`, `ResolvedBy` on its result hashtable.
+- **`maintenanceMode` string normalization** across all maintenance-mode code: replaced bare truthiness with `$inMaint = $server.maintenanceMode -and $server.maintenanceMode -notin @('Off', $false, $null)`. Applied in `OneViewMaintenanceMode.ps1` (all four `OneViewClient` embedded script blocks — enable/disable decision + `already_in_maintenance`/`already_not_in_maintenance` inner checks + `Get-OneViewMaintenanceMode` status `InMaintenanceMode`/`MaintenanceModeState`), `Set-MaintenanceMode.ps1` (embedded enable/disable script blocks + resolution `MaintenanceModeEnabled` + status blocks), `Get-OneViewServerList.ps1` and `Get-OneViewServerTarget.ps1` (`maintenance_mode` Yes/No, also treating `state -eq 'MaintenanceMode'` as in-maintenance), and `New-OneViewMaintenanceScript.ps1` (generated enable/disable branches).
+- **Stray typo fix** (`Set-MaintenanceMode.ps1`): removed a stray `s` character that sat between the resolution result hashtable and its `ConvertTo-Json` call, which would have broken the OneView-server resolution path.
+- **Tests** (`OneViewMaintenanceMode.Unit.Tests.ps1`): added serial-number-as-`-TargetId` regression tests (positional serial on enable DryRun; explicit `-SerialNumber` on disable DryRun).
+
+<a name="verification-44"></a>
+
+#### Verification
+
+- `OneViewMaintenanceMode.Unit.Tests.ps1` → **8 passed, 0 failed** (was 6; +2 serial-resolution tests).
+- PowerShell parser: `OneViewMaintenanceMode.ps1`, `Set-MaintenanceMode.ps1`, `Get-OneViewServerList.ps1`, `Get-OneViewServerTarget.ps1`, `New-OneViewMaintenanceScript.ps1` parse with zero syntax errors.
+- Maintenance-mode truthiness simulation: with `maintenanceMode = 'Off'`, the normalized check reports `$inMaint = $false` (previously the bare check reported `$true` and enable was silently skipped); with `maintenanceMode = 'On'` it reports `$true`.
+- `Enable-OneViewMaintenanceMode -TargetId CZ22420JCM -OneViewHost bogus -DryRun` resolves the serial and returns `Success = $true`, `ResolvedTarget = CZ22420JCM`.
+- `make lint` (PSScriptAnalyzer) → no new issues at the changed lines.
 
 <a id="43-oneview-session-check-regression-fix-connected-string-handling"></a>
 
