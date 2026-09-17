@@ -6,6 +6,7 @@
 
 - [Summary of changes](#summary-of-changes)
 - [Change details](#change-details)
+  - [45) OneView maintenance mode display fix — listing/reporting paths now check `maintenanceState`/`maintenanceWindow.maintenanceState`](#45-oneview-maintenance-mode-display-fix-listingreporting-paths-now-check-maintenancestatemaintenancewindowmaintenancestate)
   - [44) OneView maintenance mode: serial/name `-TargetId` resolution + `maintenanceMode` (`On`/`Off`) string truthiness fix](#44-oneview-maintenance-mode-serialname-targetid-resolution-maintenancemode-onoff-string-truthiness-fix)
   - [43) OneView session-check regression fix — use active session, guard empty credentials, remove invalid `-Credential` passthrough + red error output for maintenance mode failures](#43-oneview-session-check-regression-fix-use-active-session-guard-empty-credentials-remove-invalid-credential-passthrough-red-error-output-for-maintenance-mode-failures)
   - [42) OneView Maintenance Mode hardening (session reuse, credentials, default window, DryRun fix) + secret scanning + SSH agent profile management](#42-oneview-maintenance-mode-hardening-session-reuse-credentials-default-window-dryrun-fix-secret-scanning-ssh-agent-profile-management)
@@ -57,6 +58,7 @@
 
 | **Date** | **Change description summary** | **Author** |  
 | --- | --- | --- |  
+| 2026-09-17 | OneView maintenance mode display fix: `Get-OneViewServerList`, `Get-OneViewServerTarget`, and `Get-MaintenanceStatusReport` were checking a `maintenanceMode` property path that the live `GET /rest/server-hardware` payload does not reliably expose, so servers already in maintenance mode displayed `MaintMode = No`; the listing/target/report paths now check `maintenanceState -eq 'Maintenance'` and `maintenanceWindow.maintenanceState -eq 'Maintenance'` first, then fall back to `state -eq 'MaintenanceMode'` and the legacy `maintenanceMode` truthiness check, so live OneView maintenance mode is reported correctly while preserving compatibility with existing tests and older API shapes. | Kev Everall |
 | 2026-09-17 | OneView maintenance mode: `Enable-`/`Disable-OneViewMaintenanceMode` now resolve a serial number or server name passed as `-TargetId` (via `Resolve-OneViewMaintTarget`, returning `ResolvedTarget`/`SerialNumber`/`ResolvedBy`); fixed OneView's `maintenanceMode` being a string (`On`/`Off`) not a boolean — the old `if ($server.maintenanceMode)` truthiness evaluated the truthy string `'Off'` as `$true`, so enable silently skipped in-scope servers, disable toggled servers not actually in maintenance, and status reports (`InMaintenanceMode`/`maintenance_mode`) were inverted; `Get-OneViewServerList`, `Get-OneViewServerTarget`, `New-OneViewMaintenanceScript` and the `OneViewClient` embedded scripts now normalize with `maintenanceMode -notin @('Off', $false, $null)`; tests added. | Kev Everall |
 | 2026-09-16 | OneView session-check regression fix: embedded scripts now call `Get-OneViewActiveSession` (checks both `$script:ActiveOneViewSession` and `$global:ConnectedSessions`) before falling back to `$ConnectedSessions`, so live sessions tracked by the Automation module are found even when `$ConnectedSessions` misses them; credential creation is guarded so an empty `ONEVIEW_USER` throws a clear "connect first" error instead of "Cannot bind argument to parameter 'String' because it is an empty string"; `Start-PhysicalServerBuild` `_Enable-OneViewMaintenanceMode`/`_Disable-OneViewMaintenanceMode` no longer pass the invalid `-Credential` parameter to `Set-MaintenanceMode` (which lacks it) — the active OneView session is used directly instead of env vars/config files; `Write-Warning` replaced with `Write-Host -ForegroundColor Red` for OneView maintenance mode enable/disable failures so errors are visually distinct in CI and interactive runs. | Kev Everall |
 | 2026-09-16 | OneView maintenance mode hardening: active OneView session reuse (no re-connect when already connected to the correct appliance, with a guard that blocks switching appliances without `Disconnect-OneView` first), actionable credential error messages that now read "OneView credentials are not configured for appliance '<host>'. Connect first with 'Connect-OneView -OneViewHost <host>', or set the ONEVIEW_USER / ONEVIEW_PASSWORD environment variables, or run interactively to be prompted", default 4-hour UTC maintenance window when `-Start`/`-End` are omitted (OneView's enable/disable are pure toggles, so `-Start`/`-End` are inert and recorded for audit only), and a `DryRun` boolean serialization fix in all four `OneViewClient` embedded script blocks (`_SetViaModule`, `_SetViaWinRM`, `_DisableViaModule`, `_DisableViaWinRM`) where `DryRun = '$DryRun'` produced a JSON string `"False"` that `[bool]` cast to `$true` — now `DryRun = $DryRun` emits a proper JSON boolean; `Get-OneViewServerTarget` now reports the `maintenanceMode` (`On`/`Off`) property as Yes/No; secret scanning via pre-commit gitleaks (`.gitleaks.toml`, `.pre-commit-config.yaml`, `scripts/secret-scan.ps1` with flat-array JSON output) and `.gitignore` scratch/generated exclusions; SSH agent management in PowerShell profile scripts (fixed socket path, live-agent reuse, stale-socket cleanup, orphaned-connection prevention) + troubleshooting notes; dynamic docs regeneration | Kev Everall |
@@ -105,6 +107,39 @@
 <a id="change-details"></a>
 
 ## Change details
+
+<a id="45-oneview-maintenance-mode-display-fix-listingreporting-paths-now-check-maintenancestatemaintenancewindowmaintenancestate"></a>
+
+### 45) OneView maintenance mode display fix — listing/reporting paths now check `maintenanceState`/`maintenanceWindow.maintenanceState`
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-17 | OneView maintenance mode display fix: `Get-OneViewServerList`, `Get-OneViewServerTarget`, and `Get-MaintenanceStatusReport` were checking a `maintenanceMode` property path that the live `GET /rest/server-hardware` payload does not reliably expose, so servers already in maintenance mode displayed `MaintMode = No`; the listing/target/report paths now check `maintenanceState -eq 'Maintenance'` and `maintenanceWindow.maintenanceState -eq 'Maintenance'` first, then fall back to `state -eq 'MaintenanceMode'` and the legacy `maintenanceMode` truthiness check, so live OneView maintenance mode is reported correctly while preserving compatibility with existing tests and older API shapes. | Kev Everall |
+
+<a name="root-cause-45"></a>
+
+#### Root cause
+
+- **`maintenanceMode` is not the reliable live payload path.** The `GET /rest/server-hardware` response used by `Get-OneViewServerList` and `Get-OneViewServerTarget` does not expose maintenance mode through a root-level `maintenanceMode` property in the form the previous check expected. Because `$srv.maintenanceMode` evaluated to `$null`, the expression fell through to `$srv.state -eq 'MaintenanceMode'`, but OneView keeps the lifecycle state as `ProfileApplied`/`Monitored` while maintenance is active, so every server rendered `MaintMode = No`.
+- **`Get-MaintenanceStatusReport` mapped the wrong property.** The report path checked `$ovObj.InMaintenanceMode` only; when that property was not set or mapped from the API response, servers in maintenance were reported as `NotInMaintenance`.
+
+<a name="fix-45"></a>
+
+#### Fix
+
+- **`Get-OneViewServerList` and `Get-OneViewServerTarget`** (`maintenance_mode` display): replaced the single-path check with a prioritized cascade: `maintenanceState -eq 'Maintenance'` → `maintenanceWindow.maintenanceState -eq 'Maintenance'` → `state -eq 'MaintenanceMode'` → legacy `maintenanceMode` truthiness fallback. This matches the live OneView server-hardware payload shape while keeping older mocks/tests working.
+- **`Get-MaintenanceStatusReport`** (`$ovState`): added `$ovObj.maintenanceState -eq 'Maintenance'` and `$ovObj.maintenanceWindow.maintenanceState -eq 'Maintenance'` as primary signals before the existing `$ovObj.InMaintenanceMode -eq $true` fallback.
+- **Enable/disable path unchanged.** `OneViewMaintenanceMode.ps1`, `Set-MaintenanceMode.ps1`, and `New-OneViewMaintenanceScript.ps1` were already using the correct `maintenanceMode -notin @('Off', $false, $null)` normalization for enable/disable operations; only the display/reporting paths were incorrect.
+
+<a name="verification-45"></a>
+
+#### Verification
+
+- `OneViewMaintenanceMode.Unit.Tests.ps1` → **8 passed, 0 failed**.
+- `Get-OneViewServerList.Unit.Tests.ps1` → **25 passed, 0 failed**.
+- `Get-OneViewServerTarget.Unit.Tests.ps1` → **19 passed, 0 failed**.
+- PowerShell parser: `Get-OneViewServerList.ps1`, `Get-OneViewServerTarget.ps1`, and `Get-MaintenanceStatusReport.ps1` parse with zero syntax errors.
+- `make lint` (PSScriptAnalyzer) → no new issues at the changed lines.
 
 <a id="44-oneview-maintenance-mode-serialname-targetid-resolution-maintenancemode-onoff-string-truthiness-fix"></a>
 
