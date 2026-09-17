@@ -22,7 +22,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Queries GET /rest/server-hardware across all pages and returns a normalised list of servers (name, serial, model, power state, health, iLO IP, enclosure). Each server also reports its HPE OneView maintenance mode (InMaintenance / Operational) from the server-hardware resource's MaintenanceModeEnabled flag. Supports an optional -Filter to narrow the result by health, power state, maintenance mode, or name (substring/wildcard match).
+Queries GET /rest/server-hardware across all pages and returns a normalised list of servers (name, serial, model, power state, health, iLO IP, enclosure). Each server also reports its HPE OneView maintenance mode in the `MaintMode` column as `Yes` or `No`, derived from the server-hardware resource's maintenance state fields. Supports an optional -Filter to narrow the result by health, power state, maintenance mode, or name (substring/wildcard match).
 
 <a id="parameters"></a>
 
@@ -38,7 +38,7 @@ Queries GET /rest/server-hardware across all pages and returns a normalised list
 | `-SkipCertificateCheck` _(Aliases: -SkipCert)_ | Skip SSL certificate verification for the REST calls that fetch the list. Most OneView appliances in lab/test use a self-signed or internal-CA certificate, so the default is $true. Only relevant while a NEW connection is being established - when an active session is reused it has no effect. Set to $false only against an appliance presenting a fully trusted cert. |
 | `-TimeoutSec` _(Aliases: -Timeout)_ | Per-call timeout (default 30 s) for each paginated REST request. Only relevant while a NEW connection is established or when fetching very large fleets over a slow link; the default is fine for normal use. |
 | `-PageSize` _(Aliases: -Page)_ | Servers fetched per page (default 100, max 1000). |
-| `-Filter` | Optional client-side filter. Matching is case-insensitive and, by default, a SUBSTRING match, so partial values still match (health:Critical matches "Critical", name:PROD matches "PROD-SRV-01"). The name/power/health values also accept PowerShell-style wildcards: health:<value>   e.g. health:Critical, health:*Warning* power:<value>     e.g. power:On, power:Off maintenance:<value>  e.g. maintenance:InMaintenance, maintenance:Operational name:<value>     e.g. name:PROD (substring), name:PROD-* (wildcard), name:srv-0? (single-char wildcard) |
+| `-Filter` | Optional client-side filter. Matching is case-insensitive and, by default, a SUBSTRING match, so partial values still match (health:Critical matches "Critical", name:PROD matches "PROD-SRV-01"). The name/power/health values also accept PowerShell-style wildcards: health:<value>   e.g. health:Critical, health:*Warning* power:<value>     e.g. power:On, power:Off           maintenance:<value>  e.g. maintenance:Yes, maintenance:No name:<value>     e.g. name:PROD (substring), name:PROD-* (wildcard), name:srv-0? (single-char wildcard) |
 | `-MockResult` _(Aliases: -Mock)_ | Hashtable to return without making any HTTP calls. Used for tests. |
 | `-DryRun` _(Aliases: -Dry)_ | Print the query without performing it. |
 | `-PassThru` _(Aliases: -PT)_ | By default the command only prints a human-readable table to the terminal and emits NO object to the pipeline (so the console is not cluttered with a raw hashtable/json dump). Pass -PassThru to also return the structured [hashtable] (Success, Count, Servers, Error) for use by scripts or the module Router. |
@@ -85,8 +85,7 @@ Get-OneViewServerList Runs without parameters: reuses an active OneView session 
         Queries GET /rest/server-hardware across all pages and returns a normalised
         list of servers (name, serial, model, power state, health, iLO IP, enclosure).
         Each server also reports its HPE OneView maintenance mode
-        (InMaintenance / Operational) from the server-hardware resource's
-        MaintenanceModeEnabled flag.
+        as `Yes` or `No` in the `MaintMode` column.
         Supports an optional -Filter to narrow the result by health, power state,
         maintenance mode, or name (substring/wildcard match).
 
@@ -132,7 +131,7 @@ Get-OneViewServerList Runs without parameters: reuses an active OneView session 
         also accept PowerShell-style wildcards:
           health:<value>   e.g. health:Critical, health:*Warning*
           power:<value>     e.g. power:On, power:Off
-          maintenance:<value>  e.g. maintenance:InMaintenance, maintenance:Operational
+          maintenance:<value>  e.g. maintenance:Yes, maintenance:No
           name:<value>     e.g. name:PROD (substring), name:PROD-* (wildcard),
                             name:srv-0? (single-char wildcard)
 
