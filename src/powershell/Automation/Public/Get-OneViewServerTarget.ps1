@@ -190,10 +190,10 @@ function Get-OneViewServerTarget {
             # A real HTTP response (e.g. 400 from a rejected filter) means OneView IS
             # reachable - just this identifier form did not match. Try the next type
             # instead of aborting the whole resolution (important for -IdentifierType Auto).
-            # For a 400 this is expected for non-applicable identifier types - downgrade
-            # to Verbose so it doesn't clutter output as a Warning.
+            # For a 400 this is expected for non-applicable identifier types - record
+            # via the logger's Info method (Debug-level diagnostics are noisy for tests).
             if ($classified.StatusCode -eq 400) {
-                $logger.Verbose("Get-OneViewServerTarget: '$t' filter rejected by OneView (HTTP 400); trying next identifier type")
+                $logger.Info("Get-OneViewServerTarget: '$t' filter rejected by OneView (HTTP 400); trying next identifier type")
             } else {
                 $logger.Warning("Get-OneViewServerTarget: '$t' query returned $($classified.Message); trying next identifier type")
             }

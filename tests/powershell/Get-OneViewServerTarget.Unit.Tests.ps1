@@ -289,9 +289,7 @@ Describe 'Get-OneViewServerTarget - honest error classification' {
 
     It 'Auto mode does not attempt the EnclosureBay (position=) filter that OneView rejects with HTTP 400' {
         InModuleScope Automation {
-            $uriLog = [System.Collections.Generic.List[string]]::new()
             Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
-                $uriLog.Add($Uri)
                 if ($Uri -like "*name='alp-srv'*") {
                     return @{ count = 1; members = @(
                         [pscustomobject]@{ name = 'alp-srv'; serialNumber = 'SN1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0' }
@@ -299,10 +297,12 @@ Describe 'Get-OneViewServerTarget - honest error classification' {
                 }
                 return @{ count = 0; members = @() }
             }
+            $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'alp-srv' -Credential $Script:TargetCred -PassThru
+            $r.Success | Should -Be $true
+            $r.ResolvedBy | Should -Be 'Name'
+            # Auto mode tries Serial, IloIp, Name — NOT EnclosureBay (position=)
+            Should -Invoke Invoke-RestMethod -Times 1 -ParameterFilter { $Uri -like "*name='alp-srv'*" }
+            Should -Invoke Invoke-RestMethod -Times 0 -ParameterFilter { $Uri -like '*position=*' }
         }
-        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'alp-srv' -Credential $Script:TargetCred -PassThru
-        $r.Success | Should -Be $true
-        # Ensure no URI contains position= (the EnclosureBay filter that causes HTTP 400)
-        $uriLog | Where-Object { $_ -like '*position=*' } | Should -Be @()
     }
 }
