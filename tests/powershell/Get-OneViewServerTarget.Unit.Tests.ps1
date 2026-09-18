@@ -186,6 +186,32 @@ Describe 'Get-OneViewServerTarget - maintenance mode state' {
         $r.Success                   | Should -Be $true
         $r.Details.maintenance_mode  | Should -Be 'Yes'
     }
+
+    It 'Reports maintenance_mode = Yes when maintenanceModeEnabled is true (boolean fallback)' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-bool'; serialNumber = 'B1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0'; state = 'Monitored'; maintenanceModeEnabled = $true }
+                )}
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'B1' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
+        $r.Success                   | Should -Be $true
+        $r.Details.maintenance_mode  | Should -Be 'Yes'
+    }
+
+    It 'Reports maintenance_mode = Yes even when maintenanceState has leading whitespace' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ count = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-ws'; serialNumber = 'W1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0'; state = 'On'; maintenanceState = ' Maintenance'; maintenanceMode = 'On' }
+                )}
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'W1' -IdentifierType Serial -Credential $Script:TargetCred -PassThru
+        $r.Success                   | Should -Be $true
+        $r.Details.maintenance_mode  | Should -Be 'Yes'
+    }
 }
 
 Describe 'Get-OneViewServerTarget - maintenance mode not in maintenance' {
@@ -259,5 +285,24 @@ Describe 'Get-OneViewServerTarget - honest error classification' {
         $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'alp-srv' -Credential $Script:TargetCred -PassThru
         $r.Success     | Should -Be $true
         $r.ResolvedBy | Should -Be 'Name'
+    }
+
+    It 'Auto mode does not attempt the EnclosureBay (position=) filter that OneView rejects with HTTP 400' {
+        InModuleScope Automation {
+            $uriLog = [System.Collections.Generic.List[string]]::new()
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                $uriLog.Add($Uri)
+                if ($Uri -like "*name='alp-srv'*") {
+                    return @{ count = 1; members = @(
+                        [pscustomobject]@{ name = 'alp-srv'; serialNumber = 'SN1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0' }
+                    )}
+                }
+                return @{ count = 0; members = @() }
+            }
+        }
+        $r = Get-OneViewServerTarget -OneViewHost 'h' -SrvrId 'alp-srv' -Credential $Script:TargetCred -PassThru
+        $r.Success | Should -Be $true
+        # Ensure no URI contains position= (the EnclosureBay filter that causes HTTP 400)
+        $uriLog | Where-Object { $_ -like '*position=*' } | Should -Be @()
     }
 }

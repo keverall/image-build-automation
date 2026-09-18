@@ -294,7 +294,7 @@ function Get-OneViewConnectionStatus {
         # 3. Optional single-server lookup (reuses the same endpoint shape)
         if ($result.Connected -and $ServerIdentifier) {
             $typesToTry = if ($IdentifierType -eq 'Auto') {
-                @('Serial','IloIp','EnclosureBay','Name')
+                @('Serial','IloIp','Name')
             } else { @($IdentifierType) }
 
             foreach ($t in $typesToTry) {
@@ -340,7 +340,9 @@ function Get-OneViewConnectionStatus {
                         break
                     }
                 } catch {
-                    # try next identifier type
+                    # A 400 from an inapplicable identifier type is expected during
+                    # Auto resolution (e.g. a filter that OneView doesn't support for
+                    # that identifier form). Just try the next type silently.
                 }
             }
             if (-not $result.Server) {

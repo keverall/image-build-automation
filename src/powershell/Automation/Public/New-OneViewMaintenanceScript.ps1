@@ -99,7 +99,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
-    if (-not (`$s.maintenanceMode -and `$s.maintenanceMode -notin @('Off', `$false, `$null))) {
+    if (-not (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$')))) {
         Enable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
         Write-Output "Maintenance enabled: `$(`$s.Name)"
     }
@@ -114,7 +114,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
-    if (`$s.maintenanceMode -and `$s.maintenanceMode -notin @('Off', `$false, `$null)) {
+    if (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$'))) {
         Disable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
         Write-Output "Maintenance disabled: `$(`$s.Name)"
     }

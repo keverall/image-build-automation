@@ -148,6 +148,32 @@ Describe 'Get-OneViewServerList - maintenance mode (mocked REST)' {
         $r.Success | Should -Be $true
         $r.Count   | Should -Be 2
     }
+
+    It 'Reports Yes when maintenanceModeEnabled is the only maintenance flag (boolean property fallback)' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ total = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-bool'; serialNumber = 'B1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0'; state = 'Monitored'; maintenanceModeEnabled = $true }
+                ) }
+            }
+        }
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
+        $r.Success | Should -Be $true
+        ($r.Servers | Where-Object { $_.name -eq 'srv-bool' }).maintenance_mode | Should -Be 'Yes'
+    }
+
+    It 'Reports Yes even when state/maintenanceState have leading whitespace' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ total = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-ws'; serialNumber = 'W1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0'; state = 'Monitored'; maintenanceState = ' Maintenance' }
+                ) }
+            }
+        }
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
+        $r.Success | Should -Be $true
+        ($r.Servers | Where-Object { $_.name -eq 'srv-ws' }).maintenance_mode | Should -Be 'Yes'
+    }
 }
 
 Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {

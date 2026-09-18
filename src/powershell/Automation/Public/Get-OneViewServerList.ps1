@@ -261,7 +261,7 @@ function Get-OneViewServerList {
                     ilo_ip         = (_ConvertTo-IloIpAddressList $srv) -join ', '
                     oneview_uri    = $srv.uri
                     rom_version    = $srv.romVersion
-                    maintenance_mode = if ($srv.maintenanceState -eq 'Maintenance' -or $srv.maintenanceWindow.maintenanceState -eq 'Maintenance' -or $srv.state -eq 'MaintenanceMode' -or ($srv.maintenanceMode -and $srv.maintenanceMode -notin @('Off', $false, $null))) { 'Yes' } else { 'No' }
+                    maintenance_mode = if ($srv.maintenanceState -match 'Maintenance' -or ($srv.maintenanceWindow -and $srv.maintenanceWindow.maintenanceState -match 'Maintenance') -or ($srv.state -and $srv.state.Trim() -eq 'MaintenanceMode') -or ($srv.maintenanceModeEnabled -eq $true) -or ($srv.maintenanceMode -and $srv.maintenanceMode -notmatch '(?i)^(off|false|0|null|)$')) { 'Yes' } else { 'No' }
                     state          = $srv.state
                     state_reason   = $srv.stateReason
                 }

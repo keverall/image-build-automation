@@ -156,7 +156,7 @@ function Get-OneViewServerTarget {
     $apiBase = "$baseUrl/rest"
 
     $typesToTry = if ($IdentifierType -eq 'Auto') {
-        @('Serial','IloIp','EnclosureBay','Name')
+        @('Serial','IloIp','Name')
     } else { @($IdentifierType) }
 
     $lastRequestError = $null
@@ -190,7 +190,13 @@ function Get-OneViewServerTarget {
             # A real HTTP response (e.g. 400 from a rejected filter) means OneView IS
             # reachable - just this identifier form did not match. Try the next type
             # instead of aborting the whole resolution (important for -IdentifierType Auto).
-            $logger.Warning("Get-OneViewServerTarget: '$t' query returned $($classified.Message); trying next identifier type")
+            # For a 400 this is expected for non-applicable identifier types - downgrade
+            # to Verbose so it doesn't clutter output as a Warning.
+            if ($classified.StatusCode -eq 400) {
+                $logger.Verbose("Get-OneViewServerTarget: '$t' filter rejected by OneView (HTTP 400); trying next identifier type")
+            } else {
+                $logger.Warning("Get-OneViewServerTarget: '$t' query returned $($classified.Message); trying next identifier type")
+            }
             continue
         }
         if ($resp.count -gt 0 -and $resp.members.Count -gt 0) {
@@ -220,7 +226,7 @@ function Get-OneViewServerTarget {
                 enclosure_bay     = $srv.position
                 oneview_uri       = $srv.uri
                 rom_version       = $srv.romVersion
-                maintenance_mode  = if ($srv.maintenanceState -eq 'Maintenance' -or $srv.maintenanceWindow.maintenanceState -eq 'Maintenance' -or $srv.state -eq 'MaintenanceMode' -or ($srv.maintenanceMode -and $srv.maintenanceMode -notin @('Off', $false, $null))) { 'Yes' } else { 'No' }
+                maintenance_mode  = if ($srv.maintenanceState -match 'Maintenance' -or ($srv.maintenanceWindow -and $srv.maintenanceWindow.maintenanceState -match 'Maintenance') -or ($srv.state -and $srv.state.Trim() -eq 'MaintenanceMode') -or ($srv.maintenanceModeEnabled -eq $true) -or ($srv.maintenanceMode -and $srv.maintenanceMode -notmatch '(?i)^(off|false|0|null|)$')) { 'Yes' } else { 'No' }
             }
             if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
                 return (_Emit-ServerTargetResult -Result @{
