@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Get-OneViewServerTarget.ps1
-generated: 2026-09-17
+generated: 2026-09-18
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -21,7 +21,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Sends a query against the OneView /rest/server-hardware endpoint and returns a normalized hashtable describing the server.  Validates health (must be OK) and tolerates power state Off or On. Reports the server's maintenance-mode state from the OneView server-hardware resource, normalized to Yes/No in `Details.maintenance_mode`, so an operator can see at a glance whether OneView has the server in maintenance mode. This uses the same maintenance-mode detection as Get-OneViewServerList. STRICT SINGLE-SERVER: this command must resolve to exactly one server. A query that matches more than one server is a hard failure (Success=$false) rather than a warning - it never silently picks the first match, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). Connection to the appliance is handled by the shared Resolve-OneViewSession helper (prompts for the host/credentials when needed) and the session persists; this command never disconnects.
+Sends a query against the OneView /rest/server-hardware endpoint and returns a normalized hashtable describing the server.  Validates health (must be OK) and tolerates power state Off or On. Reports the server's maintenance-mode state from the OneView `maintenanceMode` property (`On`/`Off`), normalized to Yes/No in `Details.maintenance_mode`, so an operator can see at a glance whether OneView has the server in maintenance mode. This is the same property used by Get-OneViewServerList. STRICT SINGLE-SERVER: this command must resolve to exactly one server. A query that matches more than one server is a hard failure (Success=$false) rather than a warning - it never silently picks the first match, because it underpins destructive operations (ISO attach/deploy, reboot, OS build). Connection to the appliance is handled by the shared Resolve-OneViewSession helper (prompts for the host/credentials when needed) and the session persists; this command never disconnects.
 
 <a id="parameters"></a>
 
@@ -74,10 +74,10 @@ Get-OneViewServerTarget -OneViewHost 'oneview.ad.example.com' -ServerIdentifier 
         a normalized hashtable describing the server.  Validates health (must be OK)
         and tolerates power state Off or On.
 
-        Reports the server's maintenance-mode state as Yes/No in
-        `Details.maintenance_mode`, so an operator can see at a glance whether
-        OneView has the server in maintenance mode. This uses the same
-        maintenance-mode detection as Get-OneViewServerList.
+        Reports the server's maintenance-mode state from the OneView `maintenanceMode`
+        property (`On`/`Off`), normalized to Yes/No in `Details.maintenance_mode`,
+        so an operator can see at a glance whether OneView has the server in
+        maintenance mode. This is the same property used by Get-OneViewServerList.
 
         STRICT SINGLE-SERVER: this command must resolve to exactly one server. A
         query that matches more than one server is a hard failure (Success=$false)

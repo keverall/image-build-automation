@@ -52,6 +52,27 @@
   - [2) Maintenance mode progress report for DL](#2-maintenance-mode-progress-report-for-dl)
   - [1) Command consolidation — 2-command workflow (runbook-aligned)](#1-command-consolidation-2-command-workflow-runbook-aligned)
 
+- [](#)
+- [BUILD PARAMETER VALIDATION FAILED](#build-parameter-validation-failed)
+- [](#-1)
+- [ISO-related errors:](#iso-related-errors)
+- [- not found or not accessible: Y:\\WN2019Auto.iso](#--not-found-or-not-accessible-ywn2019autoiso)
+- [](#-2)
+- [Build Parameter Validation](#build-parameter-validation-2)
+- [Physical Build Configuration Review](#physical-build-configuration-review)
+- [Physical Build Configuration Review](#physical-build-configuration-review-1)
+- [OneView Server Target](#oneview-server-target-1)
+- [GUARD RAIL MATCH - DESTRUCTIVE ACTION](#guard-rail-match---destructive-action)
+- [OneView Server Target](#oneview-server-target-2)
+- [Physical Build Configuration Review](#physical-build-configuration-review-2)
+- [OneView Server Target](#oneview-server-target-3)
+- [GUARD RAIL MATCH - DESTRUCTIVE ACTION](#guard-rail-match---destructive-action-1)
+- [OneView Server Target](#oneview-server-target-4)
+- [RESULT: CANCELLED](#result-cancelled)
+- [Get-OneViewServerList                                                                                                                                                     0  14:41:34 ](#get-oneviewserverlist-----------------------------------------------------------------------------------------------------------------------------------------------------0--144134-)
+- [Appliance: va-oneviewt-01](#appliance-va-oneviewt-01-3)
+- [Inspect the raw JSON members directly from your last session data](#inspect-the-raw-json-members-directly-from-your-last-session-data)
+
 <a id="summary-of-changes"></a>
 
 ## Summary of changes
@@ -1633,11 +1654,6 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 
  
 
-
-
-
-
-
  Get-OneViewServerList                                                           0  14:19:59 
 
 ==============================================
@@ -2259,3 +2275,7 @@ KEY
 ==============================================
 
    image-build-automation  main                                                                                                                                                                            0  14:41:42 
+
+$srvList = Get-OneViewServerList -PassThru
+# Inspect the raw JSON members directly from your last session data
+$srvList.Servers | Where-Object { $_.name -like "*your-maint-server*" } | Format-List *

@@ -262,8 +262,8 @@ function Get-OneViewServerList {
                     oneview_uri    = $srv.uri
                     rom_version    = $srv.romVersion
                     maintenance_mode = if (
-                        ($srv.maintenanceState -eq 'Maintenance') -or
-                        ($srv.maintenanceWindow -and $srv.maintenanceWindow.maintenanceState -eq 'Maintenance') -or
+                        ($srv.maintenanceState -and $srv.maintenanceState.Trim() -eq 'Maintenance') -or
+                        ($srv.maintenanceWindow -and $srv.maintenanceWindow.maintenanceState -and $srv.maintenanceWindow.maintenanceState.Trim() -eq 'Maintenance') -or
                         ($srv.state -eq 'MaintenanceMode') -or
                         ($srv.maintenanceModeEnabled -eq $true) -or
                         ($srv.maintenanceMode -notin @('Off', 'False', $false, $null, 0))
