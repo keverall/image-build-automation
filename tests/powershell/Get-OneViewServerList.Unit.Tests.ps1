@@ -174,6 +174,19 @@ Describe 'Get-OneViewServerList - maintenance mode (mocked REST)' {
         $r.Success | Should -Be $true
         ($r.Servers | Where-Object { $_.name -eq 'srv-ws' }).maintenance_mode | Should -Be 'Yes'
     }
+
+    It 'Reports Yes when maintenanceState is Maintenance (clean value)' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
+                return @{ total = 1; members = @(
+                    [pscustomobject]@{ name = 'srv-clean'; serialNumber = 'C1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); uri = '/rest/x'; romVersion = '1.0'; state = 'Monitored'; maintenanceState = 'Maintenance' }
+                ) }
+            }
+        }
+        $r = Get-OneViewServerList -OneViewHost 'h' -Credential $Script:TestCred -PassThru
+        $r.Success | Should -Be $true
+        ($r.Servers | Where-Object { $_.name -eq 'srv-clean' }).maintenance_mode | Should -Be 'Yes'
+    }
 }
 
 Describe 'Get-OneViewServerList - Filter wildcard matching (mocked REST)' {
