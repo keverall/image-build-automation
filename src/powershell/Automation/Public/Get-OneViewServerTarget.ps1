@@ -226,7 +226,13 @@ function Get-OneViewServerTarget {
                 enclosure_bay     = $srv.position
                 oneview_uri       = $srv.uri
                 rom_version       = $srv.romVersion
-                maintenance_mode  = if ($srv.maintenanceState -match 'Maintenance' -or ($srv.maintenanceWindow -and $srv.maintenanceWindow.maintenanceState -match 'Maintenance') -or ($srv.state -and $srv.state.Trim() -eq 'MaintenanceMode') -or ($srv.maintenanceModeEnabled -eq $true) -or ($srv.maintenanceMode -and $srv.maintenanceMode -notmatch '(?i)^(off|false|0|null|)$')) { 'Yes' } else { 'No' }
+                maintenance_mode  = if (
+                    ($srv.maintenanceState -eq 'Maintenance') -or
+                    ($srv.maintenanceWindow -and $srv.maintenanceWindow.maintenanceState -eq 'Maintenance') -or
+                    ($srv.state -eq 'MaintenanceMode') -or
+                    ($srv.maintenanceModeEnabled -eq $true) -or
+                    ($srv.maintenanceMode -notin @('Off', 'False', $false, $null, 0))
+                ) { 'Yes' } else { 'No' }
             }
             if ($details.health_status -and $details.health_status -ne 'OK' -and $details.health_status -ne 'Normal') {
                 return (_Emit-ServerTargetResult -Result @{

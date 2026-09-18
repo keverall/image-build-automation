@@ -456,7 +456,7 @@ foreach (`$g in `$groups) {
                 } else {
                     'Name' 
                 }
-                $ovState = if ($ovObj.maintenanceState -match 'Maintenance' -or ($ovObj.maintenanceWindow -and $ovObj.maintenanceWindow.maintenanceState -match 'Maintenance') -or ($ovObj.InMaintenanceMode -eq $true) -or ($ovObj.maintenanceModeEnabled -eq $true) -or ($ovObj.maintenanceMode -and "$ovObj.maintenanceMode" -notmatch '(?i)^(off|false|0|null|)$')) {
+                $ovState = if ($ovObj.maintenance_mode -eq 'Yes') {
                     'InMaintenance'
                 } else {
                     'NotInMaintenance'
