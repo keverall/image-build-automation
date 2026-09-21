@@ -217,6 +217,9 @@
 - [Get-OneViewServerList                                                                                                                                                     0  14:41:34 ](#get-oneviewserverlist-----------------------------------------------------------------------------------------------------------------------------------------------------0--144134-)
 - [Appliance: va-oneviewt-01](#appliance-va-oneviewt-01-3)
 - [Inspect the raw JSON members directly from your last session data](#inspect-the-raw-json-members-directly-from-your-last-session-data)
+- [Without expand=all — see what properties are available by default](#without-expandall--see-what-properties-are-available-by-default)
+- [With expand=all — see all properties](#with-expandall--see-all-properties)
+- [Compare properties with/without expand=all](#compare-properties-withwithout-expandall)
 
 <a id="summary-of-changes"></a>
 
@@ -2468,3 +2471,26 @@ Import-Module ./src/powershell/Automation/Automation.psd1 -Force
 $cred = Get-Credential
 $r = Invoke-RestMethod -Uri "https://your-appliance:443/rest/server-hardware" -Headers @{ auth = $cred.GetNetworkCredential().Password } -Method Get -SkipCertificateCheck
 $r.members | Where-Object { $_.name -like '*qlikview*' } | Select-Object name, state, maintenanceState, maintenanceMode, maintenanceModeEnabled, maintenanceWindow | ConvertTo-Json -Depth 5
+
+$cred = Get-Credential
+$r = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1&expand=all" -Credential $cred -Method Get -SkipCertificateCheck
+$r.members[0] | ConvertTo-Json -Depth 5
+
+$cred = Get-Credential
+
+# Without expand=all — see what properties are available by default
+$r1 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1" -Credential $cred -Method Get -SkipCertificateCheck
+Write-Host "=== WITHOUT expand=all ==="
+$r1.members[0] | ConvertTo-Json -Depth 3
+
+# With expand=all — see all properties
+$r2 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1&expand=all" -Credential $cred -Method Get -SkipCertificateCheck
+Write-Host "=== WITH expand=all ==="
+$r2.members[0] | ConvertTo-Json -Depth 5
+
+# Compare properties with/without expand=all
+$cred = Get-Credential
+$r1 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1" -Credential $cred -Method Get -SkipCertificateCheck
+$r1.members[0] | ConvertTo-Json -Depth 3   # default — likely missing maintenanceMode
+$r2 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1&expand=all" -Credential $cred -Method Get -SkipCertificateCheck
+$r2.members[0] | ConvertTo-Json -Depth 5   # expanded — should include maintenanceMode
