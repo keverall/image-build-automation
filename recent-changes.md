@@ -194,6 +194,9 @@
 - [Login](#login)
 - [GET individual server hardware resource (same URI that Enable-OVMaintenanceMode PATCHes)](#get-individual-server-hardware-resource-same-uri-that-enable-ovmaintenancemode-patches)
 - [Try GETting maintenance mode as a sub-resource](#try-getting-maintenance-mode-as-a-sub-resource)
+- [Login](#login-1)
+- [GET individual server hardware resource (no expand=all)](#get-individual-server-hardware-resource-no-expandall)
+- [GET individual server hardware resource (with expand=all)](#get-individual-server-hardware-resource-with-expandall)
 
 <a id="summary-of-changes"></a>
 
@@ -2253,3 +2256,30 @@ Invoke-RestMethod:
   "nestedErrors": [],
   "errorCode": "GENERIC_HTTP_404"
 }
+
+
+
+
+
+
+
+$cred = Get-Credential
+
+# Login
+$login = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/login-sessions" `
+    -ContentType "application/json" -Method Post `
+    -Body "{""userName"":""$($cred.UserName)"",""password"":""$($cred.GetNetworkCredential().Password)"",""authLoginDomain"":""LOCAL""}" `
+    -SkipCertificateCheck
+$token = $login.sessionID
+
+# GET individual server hardware resource (no expand=all)
+$r6 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Write-Host "=== INDIVIDUAL (no expand=all) ==="
+$r6 | ConvertTo-Json -Depth 10
+
+# GET individual server hardware resource (with expand=all)
+$r7 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E?expand=all" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Write-Host "=== INDIVIDUAL (with expand=all) ==="
+$r7 | ConvertTo-Json -Depth 10
