@@ -220,6 +220,10 @@
 - [Without expand=all — see what properties are available by default](#without-expandall--see-what-properties-are-available-by-default)
 - [With expand=all — see all properties](#with-expandall--see-all-properties)
 - [Compare properties with/without expand=all](#compare-properties-withwithout-expandall)
+- [Step 1: Login to get session token](#step-1-login-to-get-session-token)
+- [Step 2: Without expand=all](#step-2-without-expandall)
+- [Step 3: With expand=all](#step-3-with-expandall)
+- [Step 4: Check a known maintenance mode server specifically](#step-4-check-a-known-maintenance-mode-server-specifically)
 
 <a id="summary-of-changes"></a>
 
@@ -2494,3 +2498,34 @@ $r1 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?st
 $r1.members[0] | ConvertTo-Json -Depth 3   # default — likely missing maintenanceMode
 $r2 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1&expand=all" -Credential $cred -Method Get -SkipCertificateCheck
 $r2.members[0] | ConvertTo-Json -Depth 5   # expanded — should include maintenanceMode
+
+
+
+
+$cred = Get-Credential
+
+# Step 1: Login to get session token
+$login = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/login-sessions" `
+    -ContentType "application/json" -Method Post `
+    -Body "{""userName"":""$($cred.UserName)"",""password"":""$($cred.GetNetworkCredential().Password)"",""loginMsgAck"":""true""}" `
+    -SkipCertificateCheck
+$token = $login.sessionID
+Write-Host "Session token: $token"
+
+# Step 2: Without expand=all
+$r1 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Write-Host "=== WITHOUT expand=all ==="
+$r1.members[0] | ConvertTo-Json -Depth 3
+
+# Step 3: With expand=all
+$r2 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=1&expand=all" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Write-Host "=== WITH expand=all ==="
+$r2.members[0] | ConvertTo-Json -Depth 5
+
+# Step 4: Check a known maintenance mode server specifically
+$r3 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?filter=`"name='omg-qlikview-03ilo'`"&expand=all" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Write-Host "=== MAINTENANCE MODE SERVER (omg-qlikview-03ilo) ==="
+$r3.members[0] | ConvertTo-Json -Depth 5
