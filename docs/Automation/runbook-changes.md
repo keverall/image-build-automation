@@ -13,7 +13,7 @@
 > (`-GuardRail`, `-Force`, `-DryRun`) described here are no longer current.
 >
 > **Authoritative references (use these instead):**
-> - Current design / runbook authority: [`runbook-requirements.md`](./runbook-requirements.md#top)
+> - Current design / runbook authority: [`runbook-requirements-v2.md`](./runbook-requirements-v2.md#top)
 > - Current command surface: [`automation_commands.md`](./automation_commands.md#top)
 > - Current test authority: [`AUTOMATION_TEST_PLAN.md`](./AUTOMATION_TEST_PLAN.md#top)
 >

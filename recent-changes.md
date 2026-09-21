@@ -1605,7 +1605,7 @@ A security review of how OneView / iLO / SCOM usernames and passwords are **stor
 
 #### Runbook alignment:  
 
-Per `runbook-requirements.md`, maintenance mode is a **separate operational concern** from the ISO build/deploy pipeline. The 2-command workflow (`Configure-PhysicalBuild` + `Start-PhysicalBuild`) does not include maintenance mode commands — they're standalone SCOM/OneView orchestration tools.
+Per `runbook-requirements-v2.md`, maintenance mode is a **separate operational concern** from the ISO build/deploy pipeline. The 2-command workflow (`Configure-PhysicalBuild` + `Start-PhysicalBuild`) does not include maintenance mode commands — they're standalone SCOM/OneView orchestration tools.
 
 <a id="1-command-consolidation-2-command-workflow-runbook-aligned"></a>
 
@@ -2996,3 +2996,4 @@ gamdmzhost-01-03ilo.AD.AIB.PRI  NoProfileApplied /rest/server-hardware/37383638-
 gamdmzhost-02-03ilo             NoProfileApplied /rest/server-hardware/37383638-3330-5A43-3239-33353042355A
 gamisechost-01-03ilo.AD.AIB.PRI NoProfileApplied /rest/server-hardware/37383638-3330-5A43-3239-333530423631
 omg-qliksen-02ilo               NoProfileApplied /rest/server-hardware/39383250-3834-5A43-3232-3432304A4430
+you 

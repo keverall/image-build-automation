@@ -105,7 +105,7 @@ Set-MaintenanceMode -Action disable -TargetId CLU-CLUSTER-01 -Mode scom -Environ
 
 | Document | Description |
 | --- | --- |
-| [📋 Runbook Requirements](docs/Automation/runbook-requirements.md#top) | Operational runbook for physical HPE server builds via ConfigMgr + OneView + iLO Redfish |
+| [📋 Runbook Requirements](docs/Automation/runbook-requirements-v2.md#top) | Operational runbook for physical HPE server builds via OneView + iLO Redfish |
 | [📋 Runbook Changes](docs/Automation/runbook-changes.md#top) | Implementation plan and design decisions for the ConfigMgr bootable-media workflow |
 | [📗 Automation Command Reference](docs/Automation/automation_commands.md#top) | Command-level reference for the physical server build functions |
 

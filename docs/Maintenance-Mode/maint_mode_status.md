@@ -177,7 +177,7 @@
 
 ## 5. Runbook Alignment
 
-Per `docs/Automation/runbook-requirements.md`:
+Per `docs/Automation/runbook-requirements-v2.md`:
 
 | Runbook requirement | Maintenance mode coverage |
 |---|---|

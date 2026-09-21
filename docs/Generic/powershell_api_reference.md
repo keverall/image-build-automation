@@ -284,7 +284,7 @@ See [testing.md](testing.md#top) for the full Pester guide.
 ## See Also
 
 - [Automation Command Reference](../Automation/automation_commands.md#top)
-- [Runbook Requirements](../Automation/runbook-requirements.md#top)
+- [Runbook Requirements](../Automation/runbook-requirements-v2.md#top)
 - [Runbook Changes](../Automation/runbook-changes.md#top)
 - [CI Run Requirements](../Generic/powershell_ci.md#top)
 - [Maintenance Mode](../Maintenance-Mode/maintenance_mode.md#top)

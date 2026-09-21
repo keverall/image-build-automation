@@ -36,7 +36,7 @@ This guide explains what the automation test suite for the HPE physical server b
 
 It is intentionally written without requiring scripting or development knowledge.
 
-The companion technical document is the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md#top). This guide explains the tests; the runbook explains the process the tests are protecting.
+The companion technical document is the runbook at [docs/Automation/runbook-requirements-v2.md](./runbook-requirements-v2.md#top). This guide explains the tests; the runbook explains the process the tests are protecting.
 
 <a id="who-this-is-for"></a>
 
@@ -91,7 +91,7 @@ How to interpret it:
 
 ## Tests by runbook stage
 
-Each test file maps to one stage of the runbook at [docs/Automation/runbook-requirements.md](./runbook-requirements.md#top). They are listed below in the order the build actually happens. The first stage — connection — is the most important to get right, because every later stage reuses that live session; losing it mid-build is an incident.
+Each test file maps to one stage of the runbook at [docs/Automation/runbook-requirements-v2.md](./runbook-requirements-v2.md#top). They are listed below in the order the build actually happens. The first stage — connection — is the most important to get right, because every later stage reuses that live session; losing it mid-build is an incident.
 
 <a id="1-connection-connectivity-test-serverconnectivity-connect-oneview"></a>
 
@@ -366,7 +366,7 @@ Process and CAB members do not need to run the suite themselves; they need to se
 
 ## Related documents
 
-- [Runbook: automating the build of physical HPE servers](./runbook-requirements.md#top) — the process this test suite protects.
+- [Runbook: automating the build of physical HPE servers](./runbook-requirements-v2.md#top) — the process this test suite protects.
 - [Automation test plan](./AUTOMATION_TEST_PLAN.md#top) — the engineer-facing, followable test plan (connection-first ordering, full parameter matrices, highlighted destructive section).
 - [HPE OneView commands](./HPE_OpenView_Commands.md#top) — the quick-reference of the public command surface.
 - [Code map of the automations](./Code_Map_Automations.md#top) — the engineering-level map of the same functions.
