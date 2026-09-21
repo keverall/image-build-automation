@@ -316,7 +316,7 @@ POST /redfish/v1/Systems/1/Actions/ComputerSystem.Reset
 
 - `Get-OneViewServerTarget.ps1` – retrieves and validates the server object from OneView.
 - `Invoke-IloRedfish.ps1` – mounts the ISO through Redfish, sets one-time boot override, and restarts the server.
-- `Configure-PhysicalBuild.ps1` – 4-eye review / approval gate (resolves target, validates ISO + firmware reachability, prints the plan, requires `APPROVE`/`Deploy` and a guard-rail match).
+- `Configure-PhysicalBuild.ps1` – 4-eye review / approval gate (resolves target, validates ISO + firmware reachability, prints the plan, requires `APPROVE` entered at the input prompt of the Configure-Build command and a guard-rail match).
 - `Start-PhysicalServerBuild.ps1` – wrapper/orchestrator (OneView resolution, iLO mount + boot, install monitoring, post-OS firmware via SUT, post-build validation, maintenance-mode cleanup, audit).
 - `Test-PreBuildValidation.ps1` / `Test-PostBuildValidation.ps1` – read-only readiness and post-build checks.
 

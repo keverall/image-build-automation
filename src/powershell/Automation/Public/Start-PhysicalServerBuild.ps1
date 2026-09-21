@@ -420,7 +420,7 @@ function Start-PhysicalServerBuild {
     function _Step([string]$name, [hashtable]$r) {
         $overall['steps'][$name] = $r
         $ok = if ($r) { [bool]$r.Success } else { $false }
-        Write-Output "[$(if($ok){'OK'}else{'FAIL'})] $name"
+        Write-Host "[$(if($ok){'OK'}else{'FAIL'})] $name"
         if (-not $ok) { $overall['success'] = $false }
     }
 
@@ -630,9 +630,9 @@ function Start-PhysicalServerBuild {
         }
         try {
             $auditDir = Join-Path (Get-ProjectRoot) 'generated/logs/audit'
-            Ensure-DirectoryExists -Path $auditDir
+            $null = Ensure-DirectoryExists -Path $auditDir
             $overall['audit_file'] = Join-Path $auditDir "build_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json"
-            Save-Json -Data $overall -Path $overall['audit_file']
+            $null = Save-Json -Data $overall -Path $overall['audit_file']
         } catch { Write-Warning "Audit log write failed: $($_.Exception.Message)" }
     }
 }

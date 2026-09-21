@@ -615,8 +615,9 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-SkipIlo` | No | Skip iLO credential check. |
 | `-SkipDpMp` | No | Skip MP/DP reachability check. |
 | `-SkipIsoUrl` | No | Skip ISO URL reachability check. |
-| `-Force` | No | Acknowledge server power state is On (informational only — no reboot performed). |
+ | `-Force` | No | Acknowledge server power state is On (informational only — no reboot performed). |
 | `-Deploy` | No | Authorize the destructive build immediately (alias `-Execute`). Skips the interactive `APPROVE` prompt. |
+| `-Quiet` | No | Suppress human-readable output; only the structured result is emitted. |
 | `-PassThru` | No | Return the structured result hashtable on the success stream (for scripting). |
 | `-Json` | No | Emit the result as a JSON string on the success stream. |
 

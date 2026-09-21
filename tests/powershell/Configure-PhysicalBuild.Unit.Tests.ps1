@@ -51,13 +51,14 @@ Describe 'Configure-PhysicalBuild - basic invocation' {
         $r.Reason  | Should -Match 'Failed to resolve'
     }
 
-    It 'Sets cancelled=true when operator does not confirm (non-interactive)' {
-        # AUTOMATED_MODE prevents interactive prompt
-        $env:AUTOMATED_MODE = 'true'
-        $r = Configure-PhysicalBuild -SrvrId 'srv01' -GuardRail '.*' -SkipPreBuild -SkipOneView -PassThru
-        $env:AUTOMATED_MODE = $null
+    It 'Cancels when operator does not confirm with APPROVE' {
+        $r = InModuleScope Automation {
+            Mock Read-Host { return 'NO' }
+            Configure-PhysicalBuild -SrvrId 'srv01' -GuardRail '.*' -SkipPreBuild -SkipOneView -PassThru
+        }
         $r.Cancelled | Should -Be $true
         $r.Success | Should -Be $false
+        $r.Reason | Should -Match 'did not confirm'
     }
 
     It 'Deploys immediately when -Deploy is passed (non-interactive authorization)' {
@@ -65,6 +66,15 @@ Describe 'Configure-PhysicalBuild - basic invocation' {
             -ExternalIsoPath 'https://artifacts/isos/win.iso' `
             -SkipPreBuild -SkipOneView -Deploy -PassThru
         $r.Success | Should -Be $true
+    }
+
+    It 'Returns a single hashtable (not array) with .Success and .audit_file when -Deploy -PassThru' {
+        $r = Configure-PhysicalBuild -SrvrId 'srv02' -GuardRail '.*' `
+            -ExternalIsoPath 'https://artifacts/isos/win.iso' `
+            -SkipPreBuild -SkipOneView -Deploy -PassThru
+        @($r).Count | Should -Be 1
+        $r.Success | Should -Be $true
+        $r.audit_file | Should -Not -BeNullOrEmpty
     }
 
     It 'Fails early (graceful, logged) when -GuardRail is omitted' {
@@ -90,13 +100,28 @@ Describe 'Configure-PhysicalBuild - aborts when OneView resolution fails' {
             # through to the guard rail - this throws to prove the abort actually stops it.
             Mock Assert-GuardRail { throw 'Assert-GuardRail must NOT run when OneView resolution failed' }
         }
-        $env:AUTOMATED_MODE = 'true'
     }
-    AfterAll { $env:AUTOMATED_MODE = $null }
 
     It 'Returns failure and never reaches the guard rail / deploy plan when OneView target resolution fails' {
         $r = Configure-PhysicalBuild -ServerIdentifier 'alp-qlikview-03ilo' -OneViewHost 'h' -GuardRail '.*' -PassThru
         $r.Success       | Should -Be $false
         $r.ServerIdentity | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Configure-PhysicalBuild - APPROVE prompt flow' {
+    BeforeAll {
+        InModuleScope Automation {
+            Mock Read-Host { return 'APPROVE' }
+        }
+    }
+
+    It 'Accepts APPROVE via prompt and proceeds to deploy (single hashtable, not array)' {
+        $r = Configure-PhysicalBuild -SrvrId 'srv01' -GuardRail '.*' `
+            -ExternalIsoPath 'https://artifacts/isos/win.iso' `
+            -SkipPreBuild -SkipOneView -PassThru
+        @($r).Count | Should -Be 1
+        $r.Success | Should -Be $true
+        $r.audit_file | Should -Not -BeNullOrEmpty
     }
 }

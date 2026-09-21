@@ -196,6 +196,7 @@ function Configure-PhysicalBuild {
         [string] $GuardRail = $null,
         [switch] $PassThru,
         [switch] $Json,
+        [switch] $Quiet,
         [Alias('Execute')]
         [switch] $Deploy,
         [Parameter(ParameterSetName = 'Help')][switch]$Help
@@ -248,16 +249,16 @@ function Configure-PhysicalBuild {
         }
     }
     function _Emit([hashtable]$result) {
-        _Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -CustomView $resultView
+        _Publish-Result -Result $result -Json:$Json -PassThru:$PassThru -Quiet:$Quiet -CustomView $resultView
     }
 
     function _InvokeBuild {
         # Reuse the parameters already supplied to Configure-PhysicalBuild so the
-        # operator never re-types them. Start-PhysicalServerBuild performs the actual
+        # operator never re-types them. Start-PhysicalBuild performs the actual
         # mount/reboot/install; approval was already given here (interactive APPROVE
         # or explicit -Deploy), so we pass -SkipConfirmation to bypass the guard-rail
         # confirmation inside Start-PhysicalServerBuild.
-        Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
+        return (Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
             -IloIp $IloIp -ExpectedHostname $ExpectedHostname `
             -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
@@ -267,7 +268,9 @@ function Configure-PhysicalBuild {
             -SkipPreBuild:$SkipPreBuild -SkipOneView:$SkipOneView -SkipMount:$SkipIlo -SkipMonitor -SkipPostBuild `
             -InMaintenanceWindow:$InMaintenanceWindow -AllowUnknownIsoUrl:$AllowUnknownIsoUrl `
             -OneViewMaintenanceMode:$OneViewMaintenanceMode `
-            -GuardRail $GuardRail -Force:$Force -SkipConfirmation -PassThru:$PassThru
+            -OneViewCredential $OneViewCredential `
+            -GuardRail $GuardRail -Force:$Force -SkipConfirmation `
+            -DryRun:$DryRun -Json:$Json -Quiet:$Quiet -PassThru:$PassThru)
     }
 
     # ── Guard rail is MANDATORY on build/deploy commands ──────────────────────
@@ -482,11 +485,11 @@ function Configure-PhysicalBuild {
         Write-Host "  ║  This server will be put into HPE OneView maintenance mode           ║" -ForegroundColor White
         Write-Host "  ║  BEFORE the build starts. This stops unnecessary alerting            ║" -ForegroundColor White
         Write-Host "  ║  and avoids on-call callouts during the deployment.                  ║" -ForegroundColor White
-        Write-Host "  ║                                                                      ║" - ForegroundColor White
-        Write-Host "  ║  Maintenance mode will be automatically removed when the             ║" - ForegroundColor White
-        Write-Host "  ║  build completes (or if it fails).                                   ║" - ForegroundColor White
-        Write-Host "  ║                                                                      ║" - ForegroundColor White
-        Write-Host "  ║  To skip this, use -NoMaintenanceMode.                               ║" - ForegroundColor Yellow
+        Write-Host "  ║                                                                      ║" -ForegroundColor White
+        Write-Host "  ║  Maintenance mode will be automatically removed when the             ║" -ForegroundColor White
+        Write-Host "  ║  build completes (or if it fails).                                   ║" -ForegroundColor White
+        Write-Host "  ║                                                                      ║" -ForegroundColor White
+        Write-Host "  ║  To skip this, use -NoMaintenanceMode.                               ║" -ForegroundColor Yellow
         Write-Host "  ╚══════════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
     } else {
         Write-Host ""
@@ -494,7 +497,7 @@ function Configure-PhysicalBuild {
         Write-Host "  ║  ⚠  ONEVIEW MAINTENANCE MODE (disabled)                              ║" -ForegroundColor Yellow
         Write-Host "  ╠══════════════════════════════════════════════════════════════════════╣" -ForegroundColor Yellow
         Write-Host "  ║  OneView maintenance mode is DISABLED for this build.                ║" -ForegroundColor White
-        Write-Host "  ║  Alerts and callouts may be triggered during deployment.             ║" - ForegroundColor White
+        Write-Host "  ║  Alerts and callouts may be triggered during deployment.             ║" -ForegroundColor White
         Write-Host "  ╚══════════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
     }
 
@@ -553,25 +556,9 @@ function Configure-PhysicalBuild {
     # reviews and returns the plan; it never deploys.
     $doDeploy = [bool]$Deploy
     if (-not $doDeploy -and -not $DryRun) {
-        $isAutomated = ($env:AUTOMATED_MODE -eq 'true') -or ($env:CI -eq 'true')
-        $isInteractive = ([Console]::IsInputRedirected -eq $false) -and ($Host.UI.RawUI -ne $null)
-        if ($isAutomated -or -not $isInteractive) {
-            Write-Host "`n  Non-interactive / automated mode detected - explicit -Deploy authorization required to proceed." -ForegroundColor Yellow
-            return (_Emit @{
-                    Success          = $false
-                    Cancelled        = $true
-                    Server           = $ExpectedHostname
-                    Reason           = "Non-interactive mode: explicit -Deploy authorization required to proceed"
-                    ServerIdentity   = $serverIdentity
-                    IsoUrl           = $isoUrl
-                    ValidationChecks = if ($preBuildResult) {
-                        $preBuildResult.Checks 
-                    } else {
-                        $null 
-                    }
-                })
-        }
-
+        # Interactive or piped-input: prompt for APPROVE. Read-Host works with both
+        # TTY input and piped stdin (e.g. `echo APPROVE | pwsh -File ...`). In
+        # -NonInteractive mode it throws — caught so the operator gets a clear message.
         Write-Host "  ╔════════════════════════════════════════════════════════╗" -ForegroundColor Red
         Write-Host "  ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║" -ForegroundColor Red
         Write-Host "  ║  You are authorizing a destructive deploy to this     ║" -ForegroundColor Red
@@ -581,8 +568,12 @@ function Configure-PhysicalBuild {
         Write-Host "  ║  APPROVE to proceed. Anything else cancels.            ║" -ForegroundColor Red
         Write-Host "  ╚════════════════════════════════════════════════════════╝" -ForegroundColor Red
         Write-Host ""
-        $response = Read-Host "  Type APPROVE to authorize the ISO + firmware deploy to '$ExpectedHostname', or anything else to cancel"
-        if ($response -ne 'APPROVE') {
+        try {
+            $response = Read-Host "  Type APPROVE to authorize the ISO + firmware deploy to '$ExpectedHostname', or anything else to cancel"
+        } catch {
+            $response = $null
+        }
+        if ($null -eq $response -or $response.Trim() -ne 'APPROVE') {
             Write-Host "  Build CANCELLED by operator." -ForegroundColor Yellow
             return (_Emit @{
                     Success          = $false
