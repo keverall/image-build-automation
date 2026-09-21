@@ -197,6 +197,9 @@
 - [Login](#login-1)
 - [GET individual server hardware resource (no expand=all)](#get-individual-server-hardware-resource-no-expandall)
 - [GET individual server hardware resource (with expand=all)](#get-individual-server-hardware-resource-with-expandall)
+- [Login](#login-2)
+- [Query servers in maintenance mode](#query-servers-in-maintenance-mode)
+- [Compare: all servers](#compare-all-servers)
 
 <a id="summary-of-changes"></a>
 
@@ -2283,3 +2286,38 @@ $r7 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39
     -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
 Write-Host "=== INDIVIDUAL (with expand=all) ==="
 $r7 | ConvertTo-Json -Depth 10
+
+
+
+$cred = Get-Credential
+
+# Login
+$login = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/login-sessions" `
+    -ContentType "application/json" -Method Post `
+    -Body "{""userName"":""$($cred.UserName)"",""password"":""$($cred.GetNetworkCredential().Password)"",""authLoginDomain"":""LOCAL""}" `
+    -SkipCertificateCheck
+$token = $login.sessionID
+
+# Query servers in maintenance mode
+$r_mm = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=-1&query=`"maintenanceMode:'true'`"" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Write-Host "=== SERVERS IN MAINTENANCE MODE ==="
+$r_mm | ConvertTo-Json -Depth 3
+Write-Host "Total: $($r_mm.total)"
+
+# Compare: all servers
+$r_all = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware?start=0&count=-1" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Write-Host "=== ALL SERVERS ==="
+Write-Host "Total: $($r_all.total)"
+
+
+
+
+
+
+Import-Module HPEOneView.1000
+Connect-OVMgmt -Appliance va-oneviewt-01 -Credential $cred
+$mm_servers = Get-OVServer -MaintenanceMode:$true
+Write-Host "Maintenance mode servers: $($mm_servers.Count)"
+$mm_servers | Select-Object name, state, uri
