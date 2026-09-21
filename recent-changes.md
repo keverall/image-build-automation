@@ -2441,3 +2441,25 @@ $r = Get-OneViewServerList -OneViewHost 'your-appliance' -Credential $cred -Pass
 $maint = $r.Servers | Where-Object { $_.maintenance_mode -eq 'No' } | Select-Object -First 1
 $maint | Format-List *
 $maint | Get-Member -MemberType NoteProperty
+
+ image-build-automation  main  $maint = $r.Servers | ForEach-Object { "$_.name) | maintenance_mode=$($_. maintenance_mode) | state=$($_.state)                                 1  10:20:24 >    
+> }^C 
+   image-build-automation  main  $r.Servers | ForEach-Object { "$_.name) | maintenance_mode=$($_. maintenance_mode) | state=$($_.state)}                                         1  10:56:45 > ^C 
+   image-build-automation  main                                                                                                                                                  1  10:58:23    image-build-automation  main  $r.Servers | ForEach-Object { "$_.name) | maintenance_mode=$($_. maintenance_mode) | state=$($_.state)  }                                       1  10:58:25 > ^C 
+   image-build-automation  main  $r.Servers | ForEach-Object { "$($_.name) | maintenance_mode=$($_. maintenance_mode) | state=$($_.state)"  }                                    1  10:59:11 
+OMG-STARWAY-01ILO.AD.AIB.PRI | maintenance_mode=No | state=Monitored
+ALP-WISCLU-01ilo | maintenance_mode=No | state=Monitored
+OMG-WISCLU-01ilo | maintenance_mode=No | state=Monitored
+ALP-STARWAY-01ILO | maintenance_mode=No | state=Monitored
+gam-isechost-02-03ilo.ad.ad.pri | maintenance_mode=No | state=NoProfileApplied 
+gamdmzhost-01-03ilo.AD.AIB.PRI | maintenance_mode=No | state=NoProfileApplied  
+gamdmzhost-02-03ilo | maintenance_mode=No | state=NoProfileApplied
+gamisechost-01-03ilo.AD.AIB.PRI | maintenance_mode=No | state=NoProfileApplied 
+OMG-CONSTC2-02ilo | maintenance_mode=No | state=ProfileApplied
+ALP-CONSTC1-01ilo | maintenance_mode=No | state=ProfileApplied
+ALP-CONSTC2-01ilo | maintenance_mode=No | state=ProfileApplied
+OMG-CONSTC1-02ilo | maintenance_mode=No | state=ProfileApplied
+alp-qlikview-03ilo | maintenance_mode=No | state=ProfileApplied
+alp-qliksen-02ilo | maintenance_mode=No | state=NoProfileApplied
+omg-qlikview-03ilo | maintenance_mode=No | state=ProfileApplied
+omg-qliksen-02ilo | maintenance_mode=No | state=NoProfileApplied
