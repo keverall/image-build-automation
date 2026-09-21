@@ -187,43 +187,13 @@
       - [Admin code removal](#admin-code-removal)
       - [Tests: 488 passed, 0 failed, 1 pre-existing skip](#tests-488-passed-0-failed-1-pre-existing-skip-1)
       - [Runbook alignment verification](#runbook-alignment-verification-1)
-- [Appliance: va-oneviewt-01](#appliance-va-oneviewt-01)
-- [   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'](#---image-build-automation--main--get-oneviewserverlist---filter-name03ilo)
-- [Appliance: va-oneviewt-01](#appliance-va-oneviewt-01-1)
-- [   image-build-automation  main  Get-OneViewServerList  -Filter 'name:qlikview-03ilo'](#---image-build-automation--main--get-oneviewserverlist---filter-nameqlikview-03ilo)
-- [Appliance: va-oneviewt-01](#appliance-va-oneviewt-01-2)
-- [OneView Server Target](#oneview-server-target)
-- [OneView Connectivity Test](#oneview-connectivity-test)
-- [OneView Connectivity Test](#oneview-connectivity-test-1)
-- [Build Parameter Validation](#build-parameter-validation)
-- [Build Parameter Validation](#build-parameter-validation-1)
-- [](#)
-- [BUILD PARAMETER VALIDATION FAILED](#build-parameter-validation-failed)
-- [](#-1)
-- [ISO-related errors:](#iso-related-errors)
-- [- not found or not accessible: Y:\\WN2019Auto.iso](#--not-found-or-not-accessible-ywn2019autoiso)
-- [](#-2)
-- [Build Parameter Validation](#build-parameter-validation-2)
-- [Physical Build Configuration Review](#physical-build-configuration-review)
-- [Physical Build Configuration Review](#physical-build-configuration-review-1)
-- [OneView Server Target](#oneview-server-target-1)
-- [GUARD RAIL MATCH - DESTRUCTIVE ACTION](#guard-rail-match---destructive-action)
-- [OneView Server Target](#oneview-server-target-2)
-- [Physical Build Configuration Review](#physical-build-configuration-review-2)
-- [OneView Server Target](#oneview-server-target-3)
-- [GUARD RAIL MATCH - DESTRUCTIVE ACTION](#guard-rail-match---destructive-action-1)
-- [OneView Server Target](#oneview-server-target-4)
-- [RESULT: CANCELLED](#result-cancelled)
-- [Get-OneViewServerList                                                                                                                                                     0  14:41:34 ](#get-oneviewserverlist-----------------------------------------------------------------------------------------------------------------------------------------------------0--144134-)
-- [Appliance: va-oneviewt-01](#appliance-va-oneviewt-01-3)
-- [Inspect the raw JSON members directly from your last session data](#inspect-the-raw-json-members-directly-from-your-last-session-data)
-- [Without expand=all — see what properties are available by default](#without-expandall--see-what-properties-are-available-by-default)
-- [With expand=all — see all properties](#with-expandall--see-all-properties)
-- [Compare properties with/without expand=all](#compare-properties-withwithout-expandall)
 - [Step 1: Login to get session token](#step-1-login-to-get-session-token)
 - [Step 2: Without expand=all](#step-2-without-expandall)
 - [Step 3: With expand=all](#step-3-with-expandall)
 - [Step 4: Check a known maintenance mode server specifically](#step-4-check-a-known-maintenance-mode-server-specifically)
+- [Login](#login)
+- [GET individual server hardware resource (same URI that Enable-OVMaintenanceMode PATCHes)](#get-individual-server-hardware-resource-same-uri-that-enable-ovmaintenancemode-patches)
+- [Try GETting maintenance mode as a sub-resource](#try-getting-maintenance-mode-as-a-sub-resource)
 
 <a id="summary-of-changes"></a>
 
@@ -2081,3 +2051,24 @@ WARNING: Resulting JSON is truncated as serialization has exceeded the set depth
   "uuid": "39383250-3834-5A43-3232-3432304A434E",
   "virtualSerialNumber": null,
   "virtualUuid": null
+
+
+
+  $cred = Get-Credential
+
+# Login
+$login = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/login-sessions" `
+    -ContentType "application/json" -Method Post `
+    -Body "{""userName"":""$($cred.UserName)"",""password"":""$($cred.GetNetworkCredential().Password)"",""authLoginDomain"":""LOCAL""}" `
+    -SkipCertificateCheck
+$token = $login.sessionID
+
+# GET individual server hardware resource (same URI that Enable-OVMaintenanceMode PATCHes)
+$r4 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+$r4 | ConvertTo-Json -Depth 10
+
+# Try GETting maintenance mode as a sub-resource
+$r5 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E/maintenanceMode" `
+    -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+$r5 | ConvertTo-Json -Depth 3
