@@ -2463,3 +2463,8 @@ alp-qlikview-03ilo | maintenance_mode=No | state=ProfileApplied
 alp-qliksen-02ilo | maintenance_mode=No | state=NoProfileApplied
 omg-qlikview-03ilo | maintenance_mode=No | state=ProfileApplied
 omg-qliksen-02ilo | maintenance_mode=No | state=NoProfileApplied
+
+Import-Module ./src/powershell/Automation/Automation.psd1 -Force
+$cred = Get-Credential
+$r = Invoke-RestMethod -Uri "https://your-appliance:443/rest/server-hardware" -Headers @{ auth = $cred.GetNetworkCredential().Password } -Method Get -SkipCertificateCheck
+$r.members | Where-Object { $_.name -like '*qlikview*' } | Select-Object name, state, maintenanceState, maintenanceMode, maintenanceModeEnabled, maintenanceWindow | ConvertTo-Json -Depth 5
