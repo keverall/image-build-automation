@@ -2072,3 +2072,184 @@ $r4 | ConvertTo-Json -Depth 10
 $r5 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E/maintenanceMode" `
     -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
 $r5 | ConvertTo-Json -Depth 3
+
+
+
+
+
+
+ $r4 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E" `                    0  917ms  15:54:49 >     -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+   image-build-automation  main  $r4 | ConvertTo-Json -Depth 10                                                                                                                  0  15:55:23 
+{
+  "type": "server-hardware-1",
+  "name": "omg-qlikview-03ilo",
+  "state": "ProfileApplied",
+  "stateReason": "NotApplicable",        
+  "assetTag": "",
+  "category": "server-hardware",
+  "created": "2026-05-27T13:54:53.991Z", 
+  "description": null,
+  "eTag": "1790002502209",
+  "formFactor": "1U",
+  "licensingIntent": "OneViewNoiLO",
+  "locationUri": null,
+  "memoryMb": 1048576,
+  "model": "ProLiant DL360 Gen10 Plus",
+  "modified": "2026-09-21T14:55:02.209Z",
+  "mpDnsName": "omg-qlikview-03ilo",
+  "mpFirmwareVersion": "3.14 Jun 16 2025",
+  "mpIpAddress": "10.30.54.22",
+  "mpModel": "iLO5",
+  "partNumber": "P28948-B21",
+  "portMap": {
+    "deviceSlots": [
+      {
+        "deviceName": "Marvell 2P 10GbE SFP+ QL41132HQCU-HC OCP3 Adapter",
+        "location": "Ocp",
+        "oaSlotNumber": 4,
+        "physicalPorts": [
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "5C:BA:2C:00:7B:78",
+            "portNumber": 1,
+            "type": "Ethernet",
+            "virtualPorts": []
+          },
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "5C:BA:2C:00:7B:79",
+            "portNumber": 2,
+            "type": "Ethernet",
+            "virtualPorts": []
+          }
+        ],
+        "slotNumber": 10
+      },
+      {
+        "deviceName": "HPE SN1610Q 32Gb 2p FC HBA",
+        "location": "Pci",
+        "oaSlotNumber": 1,
+        "physicalPorts": [
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "51:40:2E:C0:17:36:A1:D4",
+            "portNumber": 1,
+            "type": "FibreChannel",
+            "virtualPorts": []
+          },
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "51:40:2E:C0:17:36:A1:D6",
+            "portNumber": 2,
+            "type": "FibreChannel",
+            "virtualPorts": []
+          }
+        ],
+        "slotNumber": 3
+      },
+      {
+        "deviceName": "HPE SN1610Q 32Gb 2p FC HBA",
+        "location": "Pci",
+        "oaSlotNumber": 2,
+        "physicalPorts": [
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "51:40:2E:C0:17:36:A1:DC",
+            "portNumber": 1,
+            "type": "FibreChannel",
+            "virtualPorts": []
+          },
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "51:40:2E:C0:17:36:A1:DE",
+            "portNumber": 2,
+            "type": "FibreChannel",
+            "virtualPorts": []
+          }
+        ],
+        "slotNumber": 1
+      },
+      {
+        "deviceName": "Marvell FastLinQ 41000 Series - 2P 10GbE SFP+ QL41132HLCU-HC MD2 Adapter - NIC",
+        "location": "Pci",
+        "oaSlotNumber": 3,
+        "physicalPorts": [
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "5C:ED:8C:82:EA:1A",
+            "portNumber": 1,
+            "type": "Ethernet",
+            "virtualPorts": []
+          },
+          {
+            "interconnectPort": 0,
+            "interconnectUri": null,
+            "mac": "5C:ED:8C:82:EA:1B",
+            "portNumber": 2,
+            "type": "Ethernet",
+            "virtualPorts": []
+          }
+        ],
+        "slotNumber": 2
+      }
+    ]
+  },
+  "position": 0,
+  "powerLock": false,
+  "powerState": "Off",
+  "processorCoreCount": 32,
+  "processorCount": 2,
+  "processorSpeedMhz": 2000,
+  "processorType": "Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz",
+  "refreshState": "NotRefreshing",
+  "romVersion": "U46 v2.42 (06/13/2025)",
+  "serialNumber": "CZ22420JCN",
+  "serverGroupUri": null,
+  "serverHardwareTypeUri": "/rest/server-hardware-types/B1B1ACD6-7D82-4880-8508-958FED9C5417",
+  "serverProfileUri": "/rest/server-profiles/353a5d94-4c08-4374-a6e2-883f241ad7c9",
+  "shortModel": "DL360 Gen10 Plus",
+  "signature": null,
+  "status": "OK",
+  "uri": "/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E",
+  "uuid": "39383250-3834-5A43-3232-3432304A434E",
+  "virtualSerialNumber": null,
+  "virtualUuid": null
+}
+   image-build-automation  main  $r5 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E/maintenanceMode" `           0  15:55:31 >     -Headers @{ auth = $token } -Method Get -SkipCertificateCheck
+Invoke-RestMethod:                                                                                                       
+{
+  "errorSource": null,
+  "data": {},
+  "details": "The requested resource could not be found.",    
+  "message": "Not Found",
+  "recommendedActions": [
+    "Check the request URI, then resend the request.",        
+    "Verify if the request requires an X-API-Version header." 
+  ],
+  "messageParameters": [],
+  "errorCode": "GENERIC_HTTP_404",
+  "nestedErrors": []
+}
+   image-build-automation  main  $r5 | ConvertTo-Json -Depth 3                                                                                                                   1  15:56:02 null 
+   image-build-automation  main  $r5 = Invoke-RestMethod -Uri "https://va-oneviewt-01:443/rest/server-hardware/39383250-3834-5A43-3232-3432304A434E/maintenanceMode" `           0  15:57:01 >     -Headers @{ auth = $token } -Method Get -SkipCertificateCheck 
+Invoke-RestMethod:                                                                                                       
+{
+  "recommendedActions": [
+    "Check the request URI, then resend the request.",        
+    "Verify if the request requires an X-API-Version header." 
+  ],
+  "errorSource": null,
+  "details": "The requested resource could not be found.",    
+  "data": {},
+  "message": "Not Found",
+  "messageParameters": [],
+  "nestedErrors": [],
+  "errorCode": "GENERIC_HTTP_404"
+}
