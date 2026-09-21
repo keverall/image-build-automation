@@ -2434,3 +2434,10 @@ $r = Get-OneViewServerList -OneViewHost 'your-appliance' -Credential $cred -Pass
 $maint = $r.Servers | Where-Object { $_.maintenance_mode -eq 'No' } | Select-Object -First 1
 $maint | Format-List *
 $maint | Get-Member -MemberType NoteProperty
+
+
+Import-Module ./src/powershell/Automation/Automation.psd1 -Force
+$r = Get-OneViewServerList -OneViewHost 'your-appliance' -Credential $cred -PassThru
+$maint = $r.Servers | Where-Object { $_.maintenance_mode -eq 'No' } | Select-Object -First 1
+$maint | Format-List *
+$maint | Get-Member -MemberType NoteProperty
