@@ -16,9 +16,9 @@ function Get-OneViewServerList {
     .DESCRIPTION
         Queries GET /rest/server-hardware across all pages and returns a normalised
         list of servers (name, serial, model, power state, health, iLO IP, enclosure).
-        Each server also reports its HPE OneView maintenance mode
-        (InMaintenance / Operational) from the server-hardware resource's
-        MaintenanceModeEnabled flag.
+        Each server also reports its HPE OneView maintenance mode (Yes/No) - the
+        HPEOneView module's Get-OVServer is the preferred source because the REST
+        list endpoint does not reliably expose maintenance state.
         Supports an optional -Filter to narrow the result by health, power state,
         maintenance mode, or name (substring/wildcard match).
 
@@ -60,13 +60,14 @@ function Get-OneViewServerList {
     .PARAMETER Filter
         Optional client-side filter. Matching is case-insensitive and, by default,
         a SUBSTRING match, so partial values still match (health:Critical matches
-        "Critical", name:PROD matches "PROD-SRV-01"). The name/power/health values
-        also accept PowerShell-style wildcards:
-          health:<value>   e.g. health:Critical, health:*Warning*
-          power:<value>     e.g. power:On, power:Off
-          maintenance:<value>  e.g. maintenance:InMaintenance, maintenance:Operational
-          name:<value>     e.g. name:PROD (substring), name:PROD-* (wildcard),
-                            name:srv-0? (single-char wildcard)
+        "Critical", name:PROD matches "PROD-SRV-01"). The name/power/health/maintenance
+        values also accept PowerShell-style wildcards:
+          health:<value>        e.g. health:Critical, health:*Warning*
+          power:<value>         e.g. power:On, power:Off
+          maintenance:<value>   e.g. maintenance:Yes, maintenance:No
+                               (Yes = in maintenance / zero alerting; No = normal)
+          name:<value>          e.g. name:PROD (substring), name:PROD-* (wildcard),
+                                name:srv-0? (single-char wildcard)
 
     .PARAMETER MockResult
         Hashtable to return without making any HTTP calls. Used for tests.
@@ -505,6 +506,12 @@ function _Format-OneViewServerListResult {
     $divider = '|' + (($widths | ForEach-Object { '-' * ($_ + 2) }) -join '|') + '|'
     Write-Host $divider -ForegroundColor Gray
 
+    # Index of the MaintMode column in $cols (for per-cell colouring). Maintenance
+    # mode is the one field where the "wrong" state suppresses alerting, so it gets
+    # its own colour: Red = IN maintenance (zero alerting - should not be left),
+    # Green = NOT in maintenance (normal).
+    $maintIdx = if ($cols -contains 'maintmode') { $cols.IndexOf('maintmode') } else { -1 }
+
     foreach ($srv in $Result.Servers) {
         $powerColor = switch ($srv.power_state) {
             'On'  { 'Green' }
@@ -518,6 +525,18 @@ function _Format-OneViewServerListResult {
             default      { 'Gray' }
         }
 
+        # Per-cell colour overrides. The row's base colour is the health colour
+        # (as before); the MaintMode cell overrides it so the zero-alerting state
+        # is unmistakable regardless of the server's health.
+        $cellColors = [System.Collections.Generic.List[string]]::new()
+        for ($i = 0; $i -lt $cols.Count; $i++) {
+            if ($i -eq $maintIdx) {
+                $cellColors.Add((if ($srv.maintenance_mode -eq 'Yes') { 'Red' } else { 'Green' })) | Out-Null
+            } else {
+                $cellColors.Add($healthColor)
+            }
+        }
+
         $cells = for ($i = 0; $i -lt $cols.Count; $i++) {
             $def = $colDefs[$cols[$i]]
             $val = $srv.$($def.Prop)
@@ -528,13 +547,26 @@ function _Format-OneViewServerListResult {
                 $val
             }
         }
-        $line = $fmt -f $cells
-        Write-Host $line -ForegroundColor $healthColor
+        # Emit each cell with its own colour, padded to the column width and
+        # bracketed by Gray pipe separators so the rendered line keeps the same
+        # pipe-delimited structure as the header (the column-count assertion in
+        # the test suite relies on it). The MaintMode cell overrides the row's
+        # base colour: Red = IN maintenance (zero alerting - do not leave a
+        # server here), Green = NOT in maintenance (normal).
+        for ($i = 0; $i -lt $cells.Count; $i++) {
+            $cellText = $cells[$i]
+            $padLen   = [math]::Max(0, $widths[$i] - "$cellText".Length)
+            Write-Host ' ' -NoNewline -ForegroundColor Gray
+            Write-Host $cellText -NoNewline -ForegroundColor $cellColors[$i]
+            Write-Host (' ' * $padLen) -NoNewline -ForegroundColor $cellColors[$i]
+        }
+        Write-Host ' |' -ForegroundColor Gray
     }
 
     Write-Host ""
     Write-Host "KEY" -ForegroundColor Cyan
     Write-Host "  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode." -ForegroundColor Gray
+    Write-Host "               Colour: Red = Yes (zero alerting - do not leave a server here); Green = No (normal)." -ForegroundColor Gray
     if ($cols -contains 'state') {
         Write-Host "  State     : server lifecycle state from OneView:" -ForegroundColor Gray
         Write-Host "               Monitored        = normal / being monitored (not in maintenance)" -ForegroundColor Gray
