@@ -3426,3 +3426,81 @@ Import-Module "$env:PROJECT_ROOT\src\powershell\Automation\Automation.psd1" -For
 
 The one-liner that matters most:
 Import-Module "C:\path\to\image-build-automation\src\powershell\Automation\Automation.psd1" -Force -DisableNameChecking
+
+
+
+
+ Connect-OneView -OneViewHost va-oneviewt-01                                                                          0  16:2026-09-22 15:28:47 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-01' DryRun=False PassThru=False Json=False 
+Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : **************** 
+2026-09-22 15:29:02 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-09-22 15:29:02 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 43ms) 
+This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may learrective action including termination, civil and/or criminal penalties.
+
+2026-09-22 15:29:22 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True) 
+2026-09-22 15:29:22 - Connect-OneView - INFO - Connect-OneView result: Available=True Message='Connected to OneView appliance 'va-oneviewt-01'.' 
+
+============================================== 
+  OneView Connectivity Test
+============================================== 
+
+  Status:     AVAILABLE      
+  Mode:       oneview        
+  Host:       va-oneviewt-01 
+  Environment:Prod
+  Timestamp:  2026-09-22T15:29:22.9148711Z 
+
+  --- Phase 1: Network Ping ---      
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 43ms) 
+
+  --- Phase 2: Auth Connect ---      
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000  v10.0.4265.2221 (module used for all OneView calls on this server) 
+    Appliance OneView version: 8200
+    Connected: Yes (session active)
+
+==============================================
+
+   image-build-automation  main  Get-OneViewServerList                                                                                     0  35s 739ms  16:
+============================================== 
+  OneView Server List (16 servers)
+  Appliance: va-oneviewt-01
+============================================== 
+
+tem -Path "$env:USERPROFILE\Documents\WindowsPowerShell\Scripts\Automation" -Recurse -Force -ErrorAction SilentlyContinue   image-build-automation  main  Remove-Item -Path "$env:USERPROFILE\Documents\WindowsPowerShell\Scripts" -Recurse -Force -ErrorAction SilentlyContinue  16:38:44    image-build-automation  main  Remove-Item -Path "$env:ProgramFiles\WindowsPowerShell\Scripts\Automation" -Recurse -Force -ErrorAction SilentlyContinue            image-build-automation  main  Remove-Item -Path "$env:USERPROFILE\Documents\WindowsPowerShell\Scripts" -Recurse -Force -ErrorAction SilentlyContinue  16:38:53    image-build-automation  main  Remove-Item -Path "$env:USERPROFILE\Documents\WindowsPowerShell\Scripts\Automation" -Recurse -Force -ErrorAction SilentlyContinue   image-build-automation  main  Import-Module "$env:PROJECT_ROOT\src\powershell\Automation\Automation.psd1" -Force -DisableNameChecking -ErrorAction Stop6:39:04 Import-Module: The specified module '\src\powershell\Automation\Automation.psd1' was not loaded because no valid module file was found in any module directory.  
+   image-build-automation  main  pwd                                                                                                                  1  16:39:17 
+Path
+----
+C:\Users\adm_98253\products\repos\image-build-automation
+
+   image-build-automation  main  $env:PROJECT_ROOT="C:\Users\adm_98253\products\repos\image-build-automation"                                         0  16:39:31    image-build-automation  main   $env:PROJECT_ROOT
+ 0  16:40:13 C:\Users\adm_98253\products\repos\image-build-automation
+   image-build-automation  main  Import-Module "$env:PROJECT_ROOT\src\powershell\Automation\Automation.psd1" -Force -DisableNameChecking -ErrorAction Stop6:40:24    image-build-automation  main  Import-Module "$env:PROJECT_ROOT\src\powershell\Automation\Automation.psd1" -Force -DisableNameChecking
+ 0  16:40:32    image-build-automation  main  Get-OneViewServerList
+                    
+==============================================
+  OneView Server List (16 servers)
+  Appliance: va-oneviewt-01
+==============================================
+
+| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                          |
+|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|--------------------------------|
+
+  Error:   OneView server list failed: The term 'if' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+
+   image-build-automation  main                                                                                                             0  1s 233ms  16:41:34 
+
+
+
+
+
+
+
+
+
+
+
+
