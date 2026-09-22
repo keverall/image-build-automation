@@ -213,10 +213,9 @@
 - [OneView Server Target](#oneview-server-target)
 - [OneView Server Target](#oneview-server-target-1)
 - [OneView Server Target](#oneview-server-target-2)
-- [Clear the PowerShell module cache (stale .psd1/.psm1 copies)](#clear-the-powershell-module-cache-stale-psd1psm1-copies)
-- [Clear the PSModulePath module cache](#clear-the-psmodulepath-module-cache)
-- [Remove the loaded module from the current session](#remove-the-loaded-module-from-the-current-session)
-- [Reload fresh](#reload-fresh)
+- [1. Drop the loaded module from the current session](#1-drop-the-loaded-module-from-the-current-session)
+- [2. Clear the PowerShell module cache (this is where the stale parse tree lives)](#2-clear-the-powershell-module-cache-this-is-where-the-stale-parse-tree-lives)
+- [3. Reload fresh with -Force (forces a re-parse of the .psd1/.psm1)](#3-reload-fresh-with--force-forces-a-re-parse-of-the-psd1psm1)
 
 <a id="summary-of-changes"></a>
 
@@ -3414,29 +3413,16 @@ but Get-OneViewServerTarget -ServerIdentifier CZ22420JCM    is incorrct this ser
 
 
 
+# 1. Drop the loaded module from the current session
+Remove-Module Automation -ErrorAction SilentlyContinue
 
-
-
-  # Clear the PowerShell module cache (stale .psd1/.psm1 copies)
-Remove-Item -Path "$env:ProgramFiles\WindowsPowerShell\Scripts" -Recurse -Force -ErrorAction SilentlyContinue
+# 2. Clear the PowerShell module cache (this is where the stale parse tree lives)
+Remove-Item -Path "$env:ProgramFiles\WindowsPowerShell\Scripts\Automation" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:USERPROFILE\Documents\WindowsPowerShell\Scripts\Automation" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:USERPROFILE\Documents\WindowsPowerShell\Scripts" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:ProgramFiles\WindowsPowerShell\Scripts\Automation" -Recurse -Force -ErrorAction SilentlyContinue
 
-# Clear the PSModulePath module cache
-Remove-Item -Path "$env:ProgramFiles\WindowsPowerShell\Scripts\Automation" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:PSModulePath" -Recurse -Force -ErrorAction SilentlyContinue
+# 3. Reload fresh with -Force (forces a re-parse of the .psd1/.psm1)
+Import-Module "$env:PROJECT_ROOT\src\powershell\Automation\Automation.psd1" -Force -DisableNameChecking -ErrorAction Stop
 
-# Remove the loaded module from the current session
-Remove-Module Automation -ErrorAction SilentlyContinue
-
-# Reload fresh
-Import-Module Automation -Force -DisableNameChecking
-
-
-
-
-
-
-
-Remove-Module Automation -ErrorAction SilentlyContinue
-Import-Module (Join-Path $PSScriptRoot 'src\powershell\Automation\Automation.psd1') -Force -DisableNameChecking
+The one-liner that matters most:
+Import-Module "C:\path\to\image-build-automation\src\powershell\Automation\Automation.psd1" -Force -DisableNameChecking
