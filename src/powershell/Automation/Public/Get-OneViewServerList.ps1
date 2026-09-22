@@ -531,7 +531,8 @@ function _Format-OneViewServerListResult {
         $cellColors = [System.Collections.Generic.List[string]]::new()
         for ($i = 0; $i -lt $cols.Count; $i++) {
             if ($i -eq $maintIdx) {
-                $cellColors.Add((if ($srv.maintenance_mode -eq 'Yes') { 'Red' } else { 'Green' })) | Out-Null
+                $maintColor = if ($srv.maintenance_mode -eq 'Yes') { 'Red' } else { 'Green' }
+                $cellColors.Add($maintColor) | Out-Null
             } else {
                 $cellColors.Add($healthColor)
             }
@@ -547,20 +548,19 @@ function _Format-OneViewServerListResult {
                 $val
             }
         }
-        # Emit each cell with its own colour, padded to the column width and
-        # bracketed by Gray pipe separators so the rendered line keeps the same
-        # pipe-delimited structure as the header (the column-count assertion in
-        # the test suite relies on it). The MaintMode cell overrides the row's
-        # base colour: Red = IN maintenance (zero alerting - do not leave a
-        # server here), Green = NOT in maintenance (normal).
-        for ($i = 0; $i -lt $cells.Count; $i++) {
+        # Build the row as a single pipe-delimited string with the same
+        # structure as the header (the column-count assertion in the test suite
+        # relies on one Information record per data line). The MaintMode cell
+        # overrides the row colour: Red = IN maintenance (zero alerting - do not
+        # leave a server here), Green = NOT in maintenance (normal).
+        $rowParts = for ($i = 0; $i -lt $cells.Count; $i++) {
             $cellText = $cells[$i]
             $padLen   = [math]::Max(0, $widths[$i] - "$cellText".Length)
-            Write-Host ' ' -NoNewline -ForegroundColor Gray
-            Write-Host $cellText -NoNewline -ForegroundColor $cellColors[$i]
-            Write-Host (' ' * $padLen) -NoNewline -ForegroundColor $cellColors[$i]
+            ' ' + $cellText + (' ' * $padLen)
         }
-        Write-Host ' |' -ForegroundColor Gray
+        $rowText = "| $($rowParts -join '| ')|"
+        $rowColor = if ($maintIdx -ge 0 -and $srv.maintenance_mode -eq 'Yes') { 'Red' } else { $healthColor }
+        Write-Host $rowText -ForegroundColor $rowColor
     }
 
     Write-Host ""
