@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/CoverageSummary.ps1
-generated: 2026-09-21
+generated: 2026-09-22
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
