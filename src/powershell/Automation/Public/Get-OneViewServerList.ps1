@@ -506,13 +506,18 @@ function _Format-OneViewServerListResult {
     $divider = '|' + (($widths | ForEach-Object { '-' * ($_ + 2) }) -join '|') + '|'
     Write-Host $divider -ForegroundColor Gray
 
+    # Sort servers: maintenance mode Yes first (zero alerting), then No, both A-Z by name
+    $sortedServers = $Result.Servers |
+        Sort-Object @{Expression = { if ($_.maintenance_mode -eq 'Yes') { 0 } else { 1 } }; Ascending = $true },
+                    @{Expression = { $_.name }; Ascending = $true }
+
     # Index of the MaintMode column in $cols (for per-cell colouring). Maintenance
     # mode is the one field where the "wrong" state suppresses alerting, so it gets
     # its own colour: Red = IN maintenance (zero alerting - should not be left),
     # Green = NOT in maintenance (normal).
     $maintIdx = if ($cols -contains 'maintmode') { $cols.IndexOf('maintmode') } else { -1 }
 
-    foreach ($srv in $Result.Servers) {
+    foreach ($srv in $sortedServers) {
         $powerColor = switch ($srv.power_state) {
             'On'  { 'Green' }
             'Off' { 'Red' }
@@ -558,9 +563,13 @@ function _Format-OneViewServerListResult {
             $padLen   = [math]::Max(0, $widths[$i] - "$cellText".Length)
             ' ' + $cellText + (' ' * $padLen)
         }
-        $rowText = "| $($rowParts -join '| ')|"
-        $rowColor = if ($maintIdx -ge 0 -and $srv.maintenance_mode -eq 'Yes') { 'Red' } else { $healthColor }
-        Write-Host $rowText -ForegroundColor $rowColor
+        # Write each cell with its own color
+        Write-Host -NoNewline "|"
+        for ($i = 0; $i -lt $rowParts.Count; $i++) {
+            Write-Host -NoNewline $rowParts[$i] -ForegroundColor $cellColors[$i]
+            if ($i -lt $rowParts.Count - 1) { Write-Host -NoNewline "| " }
+        }
+        Write-Host "|"
     }
 
     Write-Host ""
