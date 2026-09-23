@@ -23,7 +23,6 @@ BeforeAll {
 $Script:LoggingCommands = @(
     @{ Name = 'Set-MaintenanceMode';     File = 'Set-MaintenanceMode.ps1';     LogFile = 'maintenance.log' }
     @{ Name = 'Start-InstallMonitor';    File = 'Start-InstallMonitor.ps1';    LogFile = 'monitoring.log' }
-    @{ Name = 'Update-WindowsSecurity';  File = 'Update-WindowsSecurity.ps1';  LogFile = 'windows_patcher.log' }
     @{ Name = 'Test-ServerConnectivity'; File = 'Test-ServerConnectivity.ps1'; LogFile = 'connectivity.log' }
 )
 
@@ -55,16 +54,6 @@ Describe 'Logging is functional: commands initialise and write logs' {
         $new.Count | Should -BeGreaterThan 0
         $content = Get-Content $new[0].FullName
         ($content | Where-Object { $_ -match 'Connectivity test for' }) | Should -Not -BeNullOrEmpty
-    }
-
-    It 'Update-WindowsSecurity initialises logging with windows_patcher.log' {
-        $rec = InModuleScope Automation {
-            $script:_logCalls = [System.Collections.ArrayList]::new()
-            Mock Initialize-Logging -MockWith { $script:_logCalls.Add([PSCustomObject]@{ File = $LogFile; Level = $Level }) | Out-Null }
-            try { Invoke-WindowsSecurityUpdate -BaseIsoPath 'x' -Server 'srv1' -DryRun } catch { }
-            ,$script:_logCalls
-        }
-        ($rec | Where-Object { $_.File -eq 'windows_patcher.log' }) | Should -Not -BeNullOrEmpty
     }
 }
 

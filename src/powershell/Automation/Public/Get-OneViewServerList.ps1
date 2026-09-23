@@ -517,32 +517,16 @@ function _Format-OneViewServerListResult {
     # Green = NOT in maintenance (normal).
     $maintIdx = if ($cols -contains 'maintmode') { $cols.IndexOf('maintmode') } else { -1 }
 
+    # ANSI color codes for single Write-Host per row (preserves InformationVariable capture)
+    $ansi = @{
+        Red     = "`e[31m"
+        Green   = "`e[32m"
+        Yellow  = "`e[33m"
+        Gray    = "`e[90m"
+        Reset   = "`e[0m"
+    }
+
     foreach ($srv in $sortedServers) {
-        $powerColor = switch ($srv.power_state) {
-            'On'  { 'Green' }
-            'Off' { 'Red' }
-            default { 'Yellow' }
-        }
-        $healthColor = switch -Wildcard ($srv.health_status) {
-            '*OK*'       { 'Green' }
-            '*Warning*'  { 'Yellow' }
-            '*Critical*' { 'Red' }
-            default      { 'Gray' }
-        }
-
-        # Per-cell colour overrides. The row's base colour is the health colour
-        # (as before); the MaintMode cell overrides it so the zero-alerting state
-        # is unmistakable regardless of the server's health.
-        $cellColors = [System.Collections.Generic.List[string]]::new()
-        for ($i = 0; $i -lt $cols.Count; $i++) {
-            if ($i -eq $maintIdx) {
-                $maintColor = if ($srv.maintenance_mode -eq 'Yes') { 'Red' } else { 'Green' }
-                $cellColors.Add($maintColor) | Out-Null
-            } else {
-                $cellColors.Add($healthColor)
-            }
-        }
-
         $cells = for ($i = 0; $i -lt $cols.Count; $i++) {
             $def = $colDefs[$cols[$i]]
             $val = $srv.$($def.Prop)
@@ -553,23 +537,23 @@ function _Format-OneViewServerListResult {
                 $val
             }
         }
-        # Build the row as a single pipe-delimited string with the same
-        # structure as the header (the column-count assertion in the test suite
-        # relies on one Information record per data line). The MaintMode cell
-        # overrides the row colour: Red = IN maintenance (zero alerting - do not
-        # leave a server here), Green = NOT in maintenance (normal).
+
         $rowParts = for ($i = 0; $i -lt $cells.Count; $i++) {
             $cellText = $cells[$i]
             $padLen   = [math]::Max(0, $widths[$i] - "$cellText".Length)
-            ' ' + $cellText + (' ' * $padLen)
+            $padded   = ' ' + $cellText + (' ' * $padLen)
+
+            # Only color the MaintMode column: Red = IN maintenance (zero alerting), Green = NOT in maintenance
+            if ($i -eq $maintIdx) {
+                $maintColor = if ($srv.maintenance_mode -eq 'Yes') { $ansi.Red } else { $ansi.Green }
+                $maintColor + $padded + $ansi.Reset
+            } else {
+                $padded
+            }
         }
-        # Write each cell with its own color
-        Write-Host -NoNewline "|"
-        for ($i = 0; $i -lt $rowParts.Count; $i++) {
-            Write-Host -NoNewline $rowParts[$i] -ForegroundColor $cellColors[$i]
-            if ($i -lt $rowParts.Count - 1) { Write-Host -NoNewline "| " }
-        }
-        Write-Host "|"
+
+        $row = '|' + ($rowParts -join '| ') + '|'
+        Write-Host $row
     }
 
     Write-Host ""
