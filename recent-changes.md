@@ -1710,3 +1710,58 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 | Firmware update post-OS | ✅ New `-FirmwareFolders` param |
 | Audit trail | ✅ Audit log in `$finally` block |
 | Rollback procedure | ⚠️ iLO eject on failure (partial) |
+
+
+
+
+
+
+
+
+
+
+
+  ╚════════════════════════════════════════════════════════╝
+
+  Type APPROVE to authorize the ISO + firmware deploy to 'omg-qlikview-03ilo', or anything else to cancel: APPROVE 
+
+  ✓ APPROVED — deploying ISO + firmware to 'omg-qlikview-03ilo' (via Invoke-PhysicalServerBuild).
+
+========================================
+  External ISO Deployment Mode 
+========================================
+ISO Source: Y:\WIN2019Auto.iso
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WIN2019Auto.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+========================================
+
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WIN2019Auto.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+[OK] resolve_iso
+2026-09-23 10:38:48 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=Off, health=OK
+             maint=Yes, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025) 
+
+  Resolved By:  Serial
+
+==============================================
+
+Start-PhysicalServerBuild: C:\Users\adm_98253\products\repos\image-build-automation\src\powershell\Automation\Public\Configure-PhysicalBuild.ps1:261:17 
+Line | 
+ 261 |  …     return (Start-PhysicalServerBuild -ServerIdentifier $ServerIdenti …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process argument transformation on parameter 'r'. Cannot convert the "System.Object[]" value of type "System.Object[]" to type "System.Collections.Hashtable".
+   image-build-automation  main                                                                                                                                                                    1  12m 20s 942ms  11:38:49 
