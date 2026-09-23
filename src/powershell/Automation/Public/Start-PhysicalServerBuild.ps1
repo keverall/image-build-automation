@@ -417,9 +417,13 @@ function Start-PhysicalServerBuild {
     $overall['start_time'] = Get-UtcTimestamp
     $overall['steps'] = [ordered]@{}
 
-    function _Step([string]$name, [hashtable]$r) {
+    function _Step([string]$name, [object]$r) {
+        # Some upstream -PassThru calls can emit an array (System.Object[])
+        # instead of a single result hashtable; unwrap the first element so the
+        # step record stays a single object. Only real arrays are unwrapped.
+        if ($r -is [System.Array]) { $r = $r[0] }
         $overall['steps'][$name] = $r
-        $ok = if ($r) { [bool]$r.Success } else { $false }
+        $ok = [bool]($r.Success)
         Write-Host "[$(if($ok){'OK'}else{'FAIL'})] $name"
         if (-not $ok) { $overall['success'] = $false }
     }

@@ -32,6 +32,12 @@
 #>
 
 $ErrorActionPreference = 'Stop'
+
+# Run non-interactively. Every automation command gates its interactive
+# Read-Host credential/confirmation prompts on the AUTOMATED_MODE env var;
+# setting it makes the suite skip those prompts so it runs unattended in
+# CI/pipelines (and as a mock-only, simulated run) instead of hanging for input.
+$env:AUTOMATED_MODE = 'true'
 $PROJECT_ROOT = (Get-Item (Join-Path $PSScriptRoot '..')).FullName
 
 # Ensure a working Pester 6.0.1 (with Pester.dll) is available, then import it.
