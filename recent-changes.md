@@ -1719,16 +1719,161 @@ Added to both `Update-Firmware` and `Start-PhysicalServerBuild`:
 
 
 
+  Get-OneViewServerList  -Filter 'name:qlikview-03ilo'                                                                                                                    0  4s 22ms  10:25:34 
+============================================== 
+  OneView Server List (2 servers)
+  Appliance: va-oneviewt-01
+==============================================
 
+| Server Name        | Serial          | MaintMode | State          | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     |
+|--------------------|-----------------|-----------|----------------|------------|----------|-----------------|------------------------|---------------|---------------------------|
+| alp-qlikview-03ilo|  CZ22420JCM     |  Yes      |  ProfileApplied|  OK        |  Off     |  10.30.14.15    |  U46 v2.42 (06/13/2025)|               |  ProLiant DL360 Gen10 Plus| 
+| omg-qlikview-03ilo|  CZ22420JCN     |  Yes      |  ProfileApplied|  OK        |  Off     |  10.30.54.22    |  U46 v2.42 (06/13/2025)|               |  ProLiant DL360 Gen10 Plus|
 
+KEY
+  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
+               Colour: Red = Yes (zero alerting - do not leave a server here); Green = No (normal).
+  State     : server lifecycle state from OneView:
+               Monitored        = normal / being monitored (not in maintenance)
+               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
+               NoProfileApplied = no server profile assigned 
+               ProfileApplying  = a server profile is being applied
+               ProfileApplied   = a server profile has been applied
+               ConfigureHardware = hardware configuration in progress
+               ProfileError     = profile apply failed (NOT maintenance)
+               Deleting         = server being removed
+  State Reason : additional context for the State value (blank when 'NotApplicable'):
+               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
+               UserInitiated  = state change triggered by a user action 
+               Unmanaged      = hardware not managed by this OneView appliance
+               Removed        = hardware has been removed from the appliance
+
+==============================================
+ 
+   image-build-automation  main  Configure-PhysicalBuild -ServerIdentifier 'CZ22420JCN' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'omg-qlikview-03ilo' -ExternalIsoPath 'Y:\WIN2019Auto.iso' -GuardRail  'qlikview-03ilo'
+
+========================================
+  Physical Build Configuration Review
+========================================
+
+[1/4] Resolving server identity from OneView...
+2026-09-24 09:26:21 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=Off, health=OK 
+             maint=Yes, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+  [OK] Server resolved
+
+========================================
+  GUARD RAIL MATCH - DESTRUCTIVE ACTION
+======================================== 
+  Guard pattern : qlikview-03ilo
+  Target server : omg-qlikview-03ilo
+  Serial number : CZ22420JCN
+  Appliance     : va-oneviewt-01
+2026-09-24 09:26:21 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with build plan review for 'omg-qlikview-03ilo'.
+
+[2/4] Resolving ISO...
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WIN2019Auto.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+  [OK] Resolved to: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+
+[3/4] Running pre-build validation...
+2026-09-24 09:26:22 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=Off, health=OK
+             maint=Yes, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial 
+
+==============================================
+
+  [OK] All pre-build checks passed 
+
+[4/4] Deployment Summary
+══════════════════════════════════════════════════════════════
+
+  ─ SERVER IDENTITY ─
+  Target:          omg-qlikview-03ilo
+  Identifier:      CZ22420JCN
+  Serial:          CZ22420JCN
+  Model:           ProLiant DL360 Gen10 Plus
+  iLO IP:          10.30.54.22
+  OneView URI:     /rest/server-hardware/39383250-3834-5A43-3232-3432304A434E
+  Rack/Position:   unknown
+  Server Group:    unknown
+  Maintenance Mode:Yes
+  Power State:     Off
+  Health:          OK 
+ 
+  ─ ISO DETAILS ─
+  Source:          External ISO: Y:\WIN2019Auto.iso
+  URL:             cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+  Contents:        Windows Server boot media + ConfigMgr task sequence
+
+  ─ DESTRUCTIVE ACTIONS (will be executed by Start-PhysicalBuild) ─
+  1. Disk partitioning & formatting (ALL data will be erased)
+  2. Windows OS installation from ISO
+  3. Server reboot into installed OS 
+  4. Post-build validation (hostname, domain join, drivers)
+
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  �🔇  ONEVIEW MAINTENANCE MODE (automatic)                            ║
+  ╠══════════════════════════════════════════════════════════════════════╣
+  ║  This server will be put into HPE OneView maintenance mode           ║
+  ║  BEFORE the build starts. This stops unnecessary alerting            ║
+  ║  and avoids on-call callouts during the deployment.                  ║
+  ║                                                                      ║
+  ║  Maintenance mode will be automatically removed when the             ║
+  ║  build completes (or if it fails).                                   ║
+  ║                                                                      ║
+  ║  To skip this, use -NoMaintenanceMode.                               ║ 
+  ╚══════════════════════════════════════════════════════════════════════╝
+
+  ─ PRE-BUILD VALIDATION RESULTS ─
+  [PASS] oneview_target : Server: CZ22420JCN, Details: ilo_ip: 10.30.54.22, health_status: OK, maintenance_mode: Yes, enclosure_name: , rom_version: U46 v2.42 (06/13/2025), serial_number: CZ22420JCN, model: ProLiant DL360 Gen10 Plus, name: omg-qlikview-03ilo, power_state: Off, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434E, enclosure_bay: 0, Success: True
+  [PASS] iso_url_format : CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+  [SKIP] ilo_credentials : skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
+  [PASS] audit_recorded : logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCN_2026-09-24T09-26-22Z.json
+
+  Maintenance window: NOT acknowledged (-InMaintenanceWindow not set)
+  This build will reboot a running server if it is On.
+
+══════════════════════════════════════════════════════════════
+ 
+  ╔════════════════════════════════════════════════════════╗
+  ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║ 
+  ║  You are authorizing a destructive deploy to this     ║
+  ║  server. It will be REFORMATTED / REPARTITIONED per    ║
+  ║  the ISO, firmware REINSTALLED, and hostname/serial    ║
+  ║  allocated as confirmed above. Re-check, then type     ║
+  ║  APPROVE to proceed. Anything else cancels.            ║
   ╚════════════════════════════════════════════════════════╝
-
+ 
   Type APPROVE to authorize the ISO + firmware deploy to 'omg-qlikview-03ilo', or anything else to cancel: APPROVE 
 
   ✓ APPROVED — deploying ISO + firmware to 'omg-qlikview-03ilo' (via Invoke-PhysicalServerBuild).
 
 ========================================
-  External ISO Deployment Mode 
+  External ISO Deployment Mode
 ========================================
 ISO Source: Y:\WIN2019Auto.iso
   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
@@ -1746,7 +1891,7 @@ ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
   [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
 /WIN2019Auto.iso
 [OK] resolve_iso
-2026-09-23 10:38:48 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
+2026-09-24 09:26:35 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
 
 ==============================================
   OneView Server Target
@@ -1759,9 +1904,56 @@ ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
 
 ==============================================
 
-Start-PhysicalServerBuild: C:\Users\adm_98253\products\repos\image-build-automation\src\powershell\Automation\Public\Configure-PhysicalBuild.ps1:261:17 
-Line | 
- 261 |  …     return (Start-PhysicalServerBuild -ServerIdentifier $ServerIdenti …
-     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot process argument transformation on parameter 'r'. Cannot convert the "System.Object[]" value of type "System.Object[]" to type "System.Collections.Hashtable".
-   image-build-automation  main                                                                                                                                                                    1  12m 20s 942ms  11:38:49 
+[FAIL] pre_build_validation 
+2026-09-24 09:26:36 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCN (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target 
+==============================================
+ 
+  Details:   name=omg-qlikview-03ilo, serial=CZ22420JCN, model=ProLiant DL360 Gen10 Plus, power=Off, health=OK 
+             maint=Yes, ilo=10.30.54.22, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+[OK] oneview_target
+
+  [OneView] Enabling maintenance mode for server 'omg-qlikview-03ilo'...
+Enter OneView username: 
+adm_98253 
+Enter OneView password: *************** 
+  [OneView] ERROR enabling maintenance mode for 'omg-qlikview-03ilo': Cannot convert argument "Tags", with value: "01/01/0001 00:00:00", for "SendMetric" to type "System.Collections.Hashtable": "Cannot convert value "01/01/0001 00:00:00" to type "System.Collections.Hashtable". Error: "Invalid cast from 'System.DateTime' to 'System.Collections.Hashtable'.""
+[FAIL] oneview_maintenance_enable 
+Server: CZ22420JCN
+Start_Time: 2026-09-24T09:26:34.1443378Z
+Steps:
+  Resolve_Iso:
+    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WIN2019Auto.iso
+    Success: True 
+  Pre_Build_Validation: C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit
+  Oneview_Target:
+    Details: 
+      Ilo_Ip: 10.30.54.22
+      Health_Status: OK
+      Maintenance_Mode: Yes
+      Enclosure_Name: (none)
+      Rom_Version: U46 v2.42 (06/13/2025) 
+      Serial_Number: CZ22420JCN
+      Model: ProLiant DL360 Gen10 Plus
+      Name: omg-qlikview-03ilo
+      Power_State: Off
+      Oneview_Uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434E
+      Enclosure_Bay: 0 
+    Success: True
+    Server: CZ22420JCN
+    Resolved By: Serial
+  Oneview_Maintenance_Enable:
+    Error: Cannot convert argument "Tags", with value: "01/01/0001 00:00:00", for "SendMetric" to type "System.Collections.Hashtable": "Cannot convert value "01/01/0001 00:00:00" to type "System.Collections.Hashtable". Error: 
+"Invalid cast from 'System.DateTime' to 'System.Collections.Hashtable'.""
+    Success: False 
+Success: False
+Error: OneView maintenance mode enable failed: Cannot convert argument "Tags", with value: "01/01/0001 00:00:00", for "SendMetric" to type "System.Collections.Hashtable": "Cannot convert value "01/01/0001 00:00:00" to type "System.Collections.Hashtable". Error: "Invalid cast from 'System.DateTime' to 'System.Collections.Hashtable'.""
+   image-build-automation  main                                                                                                                                                                        0  52s 775ms  10:27:13 
