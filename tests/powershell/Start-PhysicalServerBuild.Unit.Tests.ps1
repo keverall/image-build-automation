@@ -116,3 +116,48 @@ Describe 'Start-PhysicalServerBuild - tolerates array return from -PassThru upst
         $r.steps.oneview_target.Success | Should -Be $true
     }
 }
+
+Describe 'Start-PhysicalServerBuild - skips maintenance-mode enable when already in maintenance' {
+    # Regression test for Fix 3: when OneView resolution returns maintenance_mode='Yes',
+    # the orchestrator must NOT call _Enable-OneViewMaintenanceMode again (no redundant API call).
+    BeforeAll {
+        InModuleScope Automation {
+            $Script:EnableCalled = $false
+            Mock Resolve-ExternalIsoPath { return 'cifs://host/share/win.iso' }
+            Mock Test-PreBuildValidation { return @{ Success = $true; Server = 'srv01'; Checks = @{} } }
+            Mock Get-OneViewServerTarget {
+                return @{
+                    Success = $true
+                    Server  = 'omg-qlikview-03ilo'
+                    Details = [hashtable]@{
+                        name            = 'omg-qlikview-03ilo'
+                        serial_number   = 'CZ22420JCN'
+                        ilo_ip          = '1.2.3.4'
+                        maintenance_mode = 'Yes'   # <-- already in maintenance mode
+                    }
+                }
+            }
+            Mock Assert-GuardRail { return $true }
+            Mock Invoke-IloRedfish { return [hashtable]@{ Success = $true } }
+            Mock _Enable-OneViewMaintenanceMode {
+                $Script:EnableCalled = $true
+                throw 'should not reach _Enable-OneViewMaintenanceMode when already in maintenance mode'
+            }
+            Mock _Disable-OneViewMaintenanceMode { return [hashtable]@{ Success = $true } }
+            Mock Set-MaintenanceMode { return [hashtable]@{ Success = $true } }
+        }
+    }
+
+    It 'Does not call _Enable-OneViewMaintenanceMode when server is already in maintenance mode' {
+        $r = Start-PhysicalServerBuild -SrvrId 'omg-qlikview-03ilo' -OneViewHost 'h' -IloIp '1.2.3.4' -GuardRail '.*' -PassThru -Quiet `
+            -ExternalIsoPath 'cifs://host/share/win.iso' `
+            -SkipMount -SkipMonitor -SkipPostBuild -SkipConfirmation
+
+        $r.Success | Should -Be $true
+        # Verify _Enable-OneViewMaintenanceMode was never called
+        $enableCalled = InModuleScope Automation { $Script:EnableCalled }
+        $enableCalled | Should -Be $false
+        # Verify the step was recorded as successful
+        $r.steps.oneview_maintenance_enable.Success | Should -Be $true
+    }
+}

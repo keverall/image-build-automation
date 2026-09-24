@@ -94,3 +94,76 @@ Describe 'Set-MaintenanceMode - OneView SerialNumber mode' {
         $result.ServerCount | Should -Be 1
     }
 }
+
+Describe 'Set-MaintenanceMode - OpsRamp_SendMetric argument order' {
+    # Regression test for Fix 1: SendMetric on the OpsRamp_Client class expects
+    # ([string]$ResourceId, [string]$MetricName, [double]$Value, [hashtable]$Tags, [datetime]$Timestamp).
+    # The bug was that Timestamp and Tags were swapped at the two call sites, causing a
+    # terminating cast exception ("Cannot convert argument 'Tags' ... to type 'Hashtable'").
+    # This test verifies the correct argument order by inspecting the method signature.
+    It 'SendMetric method signature has Tags (4th) and Timestamp (5th) in the correct order' {
+        InModuleScope Automation {
+            $method = [OpsRamp_Client].GetMethod('SendMetric', [System.Reflection.BindingFlags]::Instance -bor [System.Reflection.BindingFlags]::Public)
+            $method | Should -Not -Be $null
+            $params = $method.GetParameters()
+            $params.Length | Should -Be 5
+            $params[3].Name | Should -Be 'Tags'
+            $params[3].ParameterType | Should -Be ([hashtable])
+            $params[4].Name | Should -Be 'Timestamp'
+            $params[4].ParameterType | Should -Be ([datetime])
+        }
+    }
+}
+
+Describe 'Set-MaintenanceMode - OneView: checks for active session before credential resolution' {
+    # Regression test for Fix 2: when in OneView mode (non-DryRun), Set-MaintenanceMode
+    # must call Test-OneViewSessionActive to check for an existing session. If a session
+    # is active, credential resolution is skipped (no interactive prompt, no Test-OneViewConnection).
+    BeforeAll {
+        InModuleScope Automation {
+            $Script:SessionActiveCalled = $false
+            $Script:ConnectionTestCalled = $false
+            Mock Test-OneViewSessionActive {
+                $Script:SessionActiveCalled = $true
+                return $true
+            }
+            Mock Test-OneViewConnection {
+                $Script:ConnectionTestCalled = $true
+                return $false
+            }
+        }
+    }
+
+    It 'Calls Test-OneViewSessionActive and skips Test-OneViewConnection when session is active' {
+        # In non-DryRun OneView mode, the session check should fire. Since the
+        # OneViewClient creation will fail (no real appliance), the function returns
+        # success=$false, but the credential-resolution path is bypassed.
+        $prevAuto = $env:AUTOMATED_MODE
+        $env:AUTOMATED_MODE = 'true'
+        try {
+            Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' `
+                -ConfigDir $Script:ConfigDir -Start 'now' -End '+1hour' -OneViewHost 'oneview.example.com' `
+                -ErrorAction SilentlyContinue | Out-Null
+        } finally {
+            if ($prevAuto) { $env:AUTOMATED_MODE = $prevAuto } else { $env:AUTOMATED_MODE = $null }
+        }
+
+        # Test-OneViewSessionActive must have been called
+        $sessionChecked = InModuleScope Automation { $Script:SessionActiveCalled }
+        $sessionChecked | Should -Be $true
+
+        # Test-OneViewConnection must NOT have been called (session was active, so
+        # credential resolution was skipped and connection test was bypassed)
+        $connTestCalled = InModuleScope Automation { $Script:ConnectionTestCalled }
+        $connTestCalled | Should -Be $false
+    }
+
+    It 'Does not call Test-OneViewSessionActive in DryRun mode (no connection needed)' {
+        InModuleScope Automation { $Script:SessionActiveCalled = $false }
+        $result = Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber 'ABC123XYZ' `
+            -ConfigDir $Script:ConfigDir -DryRun -Start 'now' -End '+1hour'
+
+        $sessionChecked = InModuleScope Automation { $Script:SessionActiveCalled }
+        $sessionChecked | Should -Be $false
+    }
+}

@@ -481,20 +481,30 @@ function Start-PhysicalServerBuild {
         # Put the server into OneView maintenance mode before any destructive action
         # (ISO mount, reboot) so OneView stops pulling alerts / applying firmware
         # compliance checks during the build. Skipped when OneView is unavailable,
-        # resolution failed, or -OneViewMaintenanceMode is $false.
+        # resolution failed, -OneViewMaintenanceMode is $false, or the server is
+        # already in maintenance mode (the OneView resolution above already
+        # retrieved maintenance_mode — reuse it instead of making a redundant API
+        # call to re-check).
         $maintenanceModeEnabled = $false
         $maintenanceSerial = if ($oneview -and $oneview.Details -and $oneview.Details.serial_number) { $oneview.Details.serial_number } else { $null }
         $maintenanceServerName = if ($oneview -and $oneview.Details -and $oneview.Details.name) { $oneview.Details.name } else { $ServerIdentifier }
         if ($OneViewMaintenanceMode -and $OneViewHost -and $maintenanceSerial) {
-            $maintResult = _Enable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
-                -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
-                -DryRun:$DryRun
-            _Step 'oneview_maintenance_enable' $maintResult
-            $maintenanceModeEnabled = $maintResult.Success
-            if (-not $maintResult.Success -and -not $DryRun) {
-                $overall['success'] = $false
-                $overall['error'] = "OneView maintenance mode enable failed: $($maintResult.Error)"
-                return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+            $serverAlreadyInMaintenance = $oneview.Details.maintenance_mode -eq 'Yes'
+            if ($serverAlreadyInMaintenance -and -not $DryRun) {
+                Write-Host "`n  [OneView] Server '$maintenanceServerName' is already in maintenance mode — skipping enable." -ForegroundColor Green
+                _Step 'oneview_maintenance_enable' @{ Success = $true; Skipped = $true; Reason = 'Server already in maintenance mode' }
+                $maintenanceModeEnabled = $true
+            } else {
+                $maintResult = _Enable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
+                    -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
+                    -DryRun:$DryRun
+                _Step 'oneview_maintenance_enable' $maintResult
+                $maintenanceModeEnabled = $maintResult.Success
+                if (-not $maintResult.Success -and -not $DryRun) {
+                    $overall['success'] = $false
+                    $overall['error'] = "OneView maintenance mode enable failed: $($maintResult.Error)"
+                    return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+                }
             }
         } elseif ($OneViewMaintenanceMode -and $OneViewHost) {
             _Step 'oneview_maintenance_enable' @{ Success = $false; Error = 'OneView resolved target but no serial number available for maintenance mode' }
