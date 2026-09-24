@@ -174,17 +174,29 @@ foreach ($mdFile in $mdFiles) {
                 $newRelative = Get-RelativeLink -SourceFile $mdFile.FullName -TargetPath $newPath
                 $replacement = "[$linkText]($newRelative$lineSuffix)"
                 
- if ($WhatIf) {
-     Write-Status $Yellow "  WOULD REPLACE: '$fullMatch' -> '$replacement'"
-     $results.WouldFix++
- } else {
-     $content = $content.Replace($fullMatch, $replacement)
-     $fileModified = $true
-     $results.Fixed++
-     Write-Status $Green "  FIXED: '$originalPath' -> '$newRelative$lineSuffix'"
- }
+                if ($WhatIf) {
+                    Write-Status $Yellow "  WOULD REPLACE: '$fullMatch' -> '$replacement'"
+                    $results.WouldFix++
+                } else {
+                    $content = $content.Replace($fullMatch, $replacement)
+                    $fileModified = $true
+                    $results.Fixed++
+                    Write-Status $Green "  FIXED: '$originalPath' -> '$newRelative$lineSuffix'"
+                }
             } else {
-                Write-Status $Red "  MISSING: $targetFilename not found in repository"
+                # Target file has been deleted from the repo — replace the broken
+                # markdown link with plain text so the reference is preserved
+                # but the dead link is removed.
+                $replacement = $linkText
+                if ($WhatIf) {
+                    Write-Status $Yellow "  WOULD UNLINK: '$fullMatch' -> '$replacement'"
+                    $results.WouldFix++
+                } else {
+                    $content = $content.Replace($fullMatch, $replacement)
+                    $fileModified = $true
+                    $results.Fixed++
+                    Write-Status $Green "  UNLINKED: '$originalPath' -> '$replacement'"
+                }
                 $results.Unresolved += @{
                     SourceFile = $mdFile.FullName
                     LinkPath = $originalPath

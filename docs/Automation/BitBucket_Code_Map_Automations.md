@@ -942,7 +942,7 @@ All configs loaded from `configs/` directory:
 | [`Test-PreBuildValidation.Unit.Tests.ps1`](../../tests/powershell/Test-PreBuildValidation.Unit.Tests.ps1) | Pre-build validation checks |
 | [`Test-ServerConnectivity.Tests.ps1`](../../tests/powershell/Test-ServerConnectivity.Tests.ps1) | OneView connectivity |
 | [`Start-PhysicalServerBuild.Unit.Tests.ps1`](../../tests/powershell/Start-PhysicalServerBuild.Unit.Tests.ps1) | Firmware ISO builder |
-| [`Update-WindowsSecurity.Unit.Tests.ps1`](../../tests/powershell/Update-WindowsSecurity.Unit.Tests.ps1) | Windows patcher |
+| `Update-WindowsSecurity.Unit.Tests.ps1` | Windows patcher |
 
 <a id="192-test-execution-scripts"></a>
 

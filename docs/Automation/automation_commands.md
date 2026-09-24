@@ -623,7 +623,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 > **Build mode vs External ISO mode:** When you supply `-ExternalIsoPath`, the ConfigMgr parameters (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-SiteServer`) are **not required** because the ISO build/publish steps are skipped.
 
-**Automatic OneView maintenance mode:** By default, `Configure-PhysicalBuild` automatically places the target server into HPE OneView maintenance mode **before** any destructive action (ISO mount, reboot) and remove it **after** the build completes. This stops unnecessary alerting and avoids on-call callouts during deployment. A highlighted notice appears in the deployment summary:
+**Automatic OneView maintenance mode:** By default, `Configure-PhysicalBuild` automatically places the target server into HPE OneView maintenance mode **before** any destructive action (ISO mount, reboot) and removes it **after** the build completes. This stops unnecessary alerting and avoids on-call callouts during deployment. If the server is **already** in maintenance mode (as reported by OneView), the enable step is skipped and the post-build disable still runs so the original state is restored. A highlighted notice appears in the deployment summary:
 
 ```text
 > ╔══════════════════════════════════════════════════════════════════════╗
@@ -1109,7 +1109,7 @@ Set-MaintenanceMode -Action enable -Mode oneview -SerialNumber ABC123XYZ -Enviro
 
 ### Enable OneView maintenance mode
 
-`Enable-OneViewMaintenanceMode` places a single HPE OneView server (or scope) into maintenance mode. It is the standalone OneView equivalent of `Set-MaintenanceMode -Mode oneview -Action enable` — use this when you only need to touch OneView. The appliance host is taken from `-OneViewHost` or from `oneview_config.json` (`appliance`); credentials are read from the env vars named in that config.
+`Enable-OneViewMaintenanceMode` places a single HPE OneView server (or scope) into maintenance mode. It is the standalone OneView equivalent of `Set-MaintenanceMode -Mode oneview -Action enable` — use this when you only need to touch OneView. The appliance host is taken from `-OneViewHost` or from `oneview_config.json` (`appliance`); credentials are read from the env vars named in that config, or reused from an active `Connect-OneView` session (no prompt when already connected).
 
 | Parameter | Type | Mandatory | Notes |
 | --- | --- | --- | --- |

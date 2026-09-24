@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/validate-maintenance-config.ps1
-generated: 2026-09-22
+generated: 2026-09-24
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
