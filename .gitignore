@@ -42,7 +42,7 @@ node_modules/
 
 # === Logs, Reports & Linters ===
 htmlcov/
-*.log
+# *.log
 build_reports/
 .ruff_cache/
 
@@ -105,7 +105,8 @@ scripts/modules/
 # Block interactive history and transcripts
 .ps_history
 *_transcript.*
-*.log
+# *.log
+*check.log
 
 # ---- TESTING & COVERAGE ----
 # Block Pester testing framework artifacts
