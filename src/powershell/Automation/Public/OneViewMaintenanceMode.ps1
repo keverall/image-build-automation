@@ -457,16 +457,16 @@ if (-not `$existingSession) {
 `$success = 0
 `$failed = 0
 `$notInMaintenance = 0
-if ('$TargetType' -eq 'ServerHardware') {
+if ("$TargetType" -eq 'ServerHardware') {
     `$obj = @{
-        Name = '$Target'
-        Type = '$TargetType'
+        Name = "$Target"
+        Type = "$TargetType"
         Status = 'unknown'
         Message = ''
     }
     try {
-        if (-not '$Target') { throw "Server target name is empty" }
-        `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+        if (-not "$Target") { throw "Server target name is empty" }
+        `$server = Get-OVServer -Name "$Target" -ErrorAction Stop
         if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
         `$obj.Name = `$server.Name
         `$obj.Type = `$server.Type
@@ -478,7 +478,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         } else {
             `$serverUri = `$server.uri
             if (-not `$serverUri) {
-                `$serverUri = "/rest/server-hardware/$(`$Target)"
+                `$serverUri = "/rest/server-hardware/$($Target)"
             }
             `$pair = "$(`$OVUser):$(`$OVPwd)"
             `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
@@ -488,7 +488,7 @@ if ('$TargetType' -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode disabled'
             `$success++
@@ -499,15 +499,15 @@ if ('$TargetType' -eq 'ServerHardware') {
         `$failed++
     }
     `$objects += `$obj
-} elseif ('$TargetType' -eq 'Scope') {
+} elseif ("$TargetType" -eq 'Scope') {
     `$obj = @{
-        Name = '$Target'
-        Type = '$TargetType'
+        Name = "$Target"
+        Type = "$TargetType"
         Status = 'unknown'
         Message = ''
     }
     try {
-        `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
+        `$scope = Get-OVScope -Name "$Target" -ErrorAction Stop
         `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
         foreach (`$member in `$servers) {
             `$server = Get-OVServer -Name `$member.Name -ErrorAction Stop
@@ -520,20 +520,20 @@ if ('$TargetType' -eq 'ServerHardware') {
                     `$obj.Status = 'already_not_in_maintenance'
                     `$obj.Message = 'Already not in maintenance mode'
                     `$notInMaintenance++
-                } else {
-                    `$serverUri = `$server.uri
-                    if (-not `$serverUri) {
-                        `$serverUri = "/rest/server-hardware/$(`$Target)"
-                    }
-                    `$pair = "$(`$OVUser):$(`$OVPwd)"
-                    `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
-                    `$base64 = [System.Convert]::ToBase64String(`$bytes)
-                    `$headers = @{
-                        'X-API-Version' = '1200'
-                        'Content-Type' = 'application/json'
-                        'Authorization' = "Basic `$base64"
-                    }
-                    Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+        } else {
+            `$serverUri = `$server.uri
+            if (-not `$serverUri) {
+                `$serverUri = "/rest/server-hardware/$($Target)"
+            }
+            `$pair = "$(`$OVUser):$(`$OVPwd)"
+            `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
+            `$base64 = [System.Convert]::ToBase64String(`$bytes)
+            `$headers = @{
+                'X-API-Version' = '1200'
+                'Content-Type' = 'application/json'
+                'Authorization' = "Basic `$base64"
+            }
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
                     `$obj.Status = 'success'
                     `$obj.Message = 'Maintenance mode disabled'
                     `$success++
@@ -561,8 +561,8 @@ if ('$TargetType' -eq 'ServerHardware') {
     NotInCount     = `$notInMaintenance
     Appliance      = '$ovAppliance'
     Module         = '$ovModule'
-    TargetType     = '$TargetType'
-    Target         = '$Target'
+    TargetType     = "$TargetType"
+    Target         = "$Target"
     DryRun         = $DryRun
     Message        = "OneView maintenance mode disabled: `$success succeeded, `$failed failed, `$notInMaintenance already not in maintenance (total `$(`$objects.Count))"
 }
@@ -640,8 +640,8 @@ if (-not `$existingSession) {
 `$success = 0
 `$failed = 0
 `$notInMaintenance = 0
-if ('$TargetType' -eq 'ServerHardware') {
-    `$server = Get-OVServer -Name '$Target' -ErrorAction Stop
+if ("$TargetType" -eq 'ServerHardware') {
+    `$server = Get-OVServer -Name "$Target" -ErrorAction Stop
     if (-not `$server) { throw "Server hardware '$Target' not found in OneView. Pass the server name, or the serial number via -SerialNumber/-Srl." }
     `$obj = @{ Name = `$server.Name; Type = `$server.Type; Status = 'unknown'; Message = '' }
     try {
@@ -653,7 +653,7 @@ if ('$TargetType' -eq 'ServerHardware') {
         } else {
             `$serverUri = `$server.uri
             if (-not `$serverUri) {
-                `$serverUri = "/rest/server-hardware/$(`$Target)"
+                `$serverUri = "/rest/server-hardware/$($Target)"
             }
             `$pair = "$(`$OVUser):$(`$OVPwd)"
             `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
@@ -663,7 +663,7 @@ if ('$TargetType' -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode disabled'
             `$success++
@@ -674,8 +674,8 @@ if ('$TargetType' -eq 'ServerHardware') {
         `$failed++
     }
     `$objects += `$obj
-} elseif ('$TargetType' -eq 'Scope') {
-    `$scope = Get-OVScope -Name '$Target' -ErrorAction Stop
+} elseif ("$TargetType" -eq 'Scope') {
+    `$scope = Get-OVScope -Name "$Target" -ErrorAction Stop
     `$servers = `$scope.Members | Where-Object { `$_.Type -eq 'ServerHardware' }
     foreach (`$member in `$servers) {
         `$server = Get-OVServer -Name `$member.Name -ErrorAction SilentlyContinue
@@ -687,10 +687,10 @@ if ('$TargetType' -eq 'ServerHardware') {
                 `$obj.Status = 'already_not_in_maintenance'
                 `$obj.Message = 'Already not in maintenance mode'
                 `$notInMaintenance++
-            } else {
-                `$serverUri = `$server.uri
+        } else {
+            `$serverUri = `$server.uri
             if (-not `$serverUri) {
-                `$serverUri = "/rest/server-hardware/$(`$Target)"
+                `$serverUri = "/rest/server-hardware/$($Target)"
             }
             `$pair = "$(`$OVUser):$(`$OVPwd)"
             `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
@@ -700,7 +700,7 @@ if ('$TargetType' -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
                 `$obj.Status = 'success'
                 `$obj.Message = 'Maintenance mode disabled'
                 `$success++
@@ -722,8 +722,8 @@ if ('$TargetType' -eq 'ServerHardware') {
     NotInCount     = `$notInMaintenance
     Appliance      = '$ovAppliance'
     Module         = '$ovModule'
-    TargetType     = '$TargetType'
-    Target         = '$Target'
+    TargetType     = "$TargetType"
+    Target         = "$Target"
     DryRun         = $DryRun
     Message        = "OneView maintenance mode disabled: `$success succeeded, `$failed failed, `$notInMaintenance already not in maintenance (total `$(`$objects.Count))"
 }

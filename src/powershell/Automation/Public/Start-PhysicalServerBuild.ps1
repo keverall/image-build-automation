@@ -495,7 +495,7 @@ function Start-PhysicalServerBuild {
             if ($serverAlreadyInMaintenance -and -not $DryRun) {
                 Write-Host "`n  [OneView] Server '$maintenanceServerName' is already in maintenance mode — skipping enable." -ForegroundColor Green
                 _Step 'oneview_maintenance_enable' @{ Success = $true; Skipped = $true; Reason = 'Server already in maintenance mode' }
-                $maintenanceModeEnabled = $true
+                $maintenanceModeEnabled = $false
             } else {
                 $maintResult = _Enable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
                     -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
@@ -545,7 +545,22 @@ function Start-PhysicalServerBuild {
             }
 
             if (-not $DryRun) {
-                $status = Invoke-IloRedfish -Action Status -IloIp $IloIp -DryRun:$DryRun
+                $iloStatusUser = $null
+                $iloStatusPassword = $null
+                if ($IloCredential) {
+                    $iloStatusUser = $IloCredential.UserName
+                    $iloStatusPassword = $IloCredential.GetNetworkCredential().Password
+                } elseif ($OneViewCredential) {
+                    $iloStatusUser = $OneViewCredential.UserName
+                    $iloStatusPassword = $OneViewCredential.GetNetworkCredential().Password
+                } elseif (Test-OneViewSessionActive) {
+                    $ovCred = Get-OneViewCredentials
+                    if ($ovCred[0] -and $ovCred[1]) {
+                        $iloStatusUser = $ovCred[0]
+                        $iloStatusPassword = $ovCred[1]
+                    }
+                }
+                $status = Invoke-IloRedfish -Action Status -IloIp $IloIp -IloUser $iloStatusUser -IloPassword $iloStatusPassword -DryRun:$DryRun
                 if (-not $status.Success) {
                     _Step 'ilo_maintenance_guard' @{
                         Success = $false
@@ -575,6 +590,15 @@ function Start-PhysicalServerBuild {
             if ($IloCredential) {
                 $iloUser = $IloCredential.UserName
                 $iloPassword = $IloCredential.GetNetworkCredential().Password
+            } elseif ($OneViewCredential) {
+                $iloUser = $OneViewCredential.UserName
+                $iloPassword = $OneViewCredential.GetNetworkCredential().Password
+            } elseif (Test-OneViewSessionActive) {
+                $ovCred = Get-OneViewCredentials
+                if ($ovCred[0] -and $ovCred[1]) {
+                    $iloUser = $ovCred[0]
+                    $iloPassword = $ovCred[1]
+                }
             }
             $r = Invoke-IloRedfish -Action MountAndBoot -IloIp $IloIp -IloUser $iloUser -IloPassword $iloPassword -IsoUrl $isoUrl `
                 -DryRun:$DryRun -Force:($Force -or $DryRun)
@@ -638,26 +662,11 @@ function Start-PhysicalServerBuild {
                 $overall['iso_eject_error'] = $_.Exception.Message
             }
         }
-        # ── OneView Maintenance Mode (post-build cleanup) ──────────────────────
-        # Take the server out of maintenance mode after the build completes (or
-        # fails). Only runs if we successfully enabled it earlier. Errors here are
-        # logged but do not fail the build — the build result is already determined.
-        if ($maintenanceModeEnabled -and $OneViewHost -and $maintenanceSerial -and -not $DryRun) {
-            try {
-                $disableResult = _Disable-OneViewMaintenanceMode -OneViewHost $OneViewHost `
-                    -SerialNumber $maintenanceSerial -ServerName $maintenanceServerName `
-                    -DryRun:$DryRun
-                $overall['oneview_maintenance_disable'] = $disableResult.Success
-                if (-not $disableResult.Success) {
-                    $overall['oneview_maintenance_disable_error'] = $disableResult.Error
-                    Write-Host "Failed to disable OneView maintenance mode for '$maintenanceSerial': $($disableResult.Error)" -ForegroundColor Red
-                }
-            } catch {
-                $overall['oneview_maintenance_disable'] = $false
-                $overall['oneview_maintenance_disable_error'] = $_.Exception.Message
-                Write-Host "Error disabling OneView maintenance mode: $($_.Exception.Message)" -ForegroundColor Red
-            }
-        }
+        # NOTE: OneView maintenance mode is intentionally NOT disabled here.
+        # The operator is responsible for managing the maintenance mode lifecycle.
+        # If the server was already in maintenance mode before the build, it stays enabled.
+        # If we enabled it for the build, the operator should disable it manually after
+        # the build completes (or use a separate scheduled task for auto-disable).
         try {
             $auditDir = Join-Path (Get-ProjectRoot) 'generated/logs/audit'
             $null = Ensure-DirectoryExists -Path $auditDir

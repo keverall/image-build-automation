@@ -57,14 +57,21 @@
   - [48) `Set-MaintenanceMode` OpsRamp `SendMetric` argument-order fix — `Tags` before `Timestamp`](#48-set-maintenancemode-opsramp-sendmetric-argument-order-fix-tags-before-timestamp)
   - [49) `Set-MaintenanceMode` OneView mode reuses active session without prompting for credentials](#49-set-maintenancemode-oneview-mode-reuses-active-session-without-prompting-for-credentials)
   - [50) `Start-PhysicalServerBuild` skips redundant OneView maintenance enable when server is already in maintenance mode](#50-start-physicalserverbuild-skips-redundant-oneview-maintenance-enable-when-server-is-already-in-maintenance-mode)
+  - [51) `Start-PhysicalServerBuild` iLO credential fallback to OneView appliance session — no reprompt](#51-start-physicalserverbuild-ilo-credential-fallback-to-oneview-appliance-session-no-reprompt)
+  - [52) `Start-PhysicalServerBuild` never disables OneView maintenance mode after build — operator-managed lifecycle](#52-start-physicalserverbuild-never-disables-oneview-maintenance-mode-after-build-operator-managed-lifecycle)
+  - [53) `OneViewMaintenanceMode` disable-path `$Target` parsing fix — backtick subexpression correction](#53-oneviewmaintenancemode-disable-path-target-parsing-fix-backtick-subexpression-correction)
+  - [54) `New-OneViewMaintenanceScript` disable script uses `Disable-OVMaintenanceMode` cmdlet](#54-new-oneviewmaintenancescript-disable-script-uses-disable-ovmaintenancemode-cmdlet)
 
 <a id="summary-of-changes"></a>
 
 ## Summary of changes
 
-| **Date** | **Change description summary** | **Author** |  
+| **Date** | **Change description summary** | **Author** |
 | --- | --- | --- |
-| 2026-09-24 | `Start-PhysicalServerBuild` skips redundant OneView maintenance enable when server is already in maintenance mode: the orchestrator previously called `_Enable-OneViewMaintenanceMode` unconditionally whenever OneView resolution returned a serial number, even when `maintenance_mode` was already `Yes`; this produced a redundant OneView API call, an unnecessary credential prompt when no session was active, and a terminating `SendMetric` cast exception in the OpsRamp alert path; the enable step is now skipped when `$oneview.Details.maintenance_mode -eq 'Yes'`, recording `Skipped=$true` and leaving `$maintenanceModeEnabled = $true` so the post-build disable still runs; regression tests added. | Kev Everall |
+| 2026-09-29 | `Start-PhysicalServerBuild` iLO credential fallback to OneView appliance session: when `-IloCredential` is not supplied, iLO Redfish `MountAndBoot` and `Status` calls now resolve credentials from `-OneViewCredential` or the active OneView session's stored `ONEVIEW_USER`/`ONEVIEW_PASSWORD`; this eliminates the interactive iLO credential prompt and uses the appliance credentials, matching the documented iLO/OneView shared-identity model; regression tests added. | Kev Everall |
+| 2026-09-29 | `Start-PhysicalServerBuild` never disables OneView maintenance mode after build: the post-build `finally` block previously called `_Disable-OneViewMaintenanceMode` whenever `$maintenanceModeEnabled` was `$true`, which incorrectly ran even when the server was already in maintenance mode before the build started (producing a 401/disconnect error and silently undoing the operator's maintenance state); the disable block has been removed entirely — maintenance mode is now a one-way operation (check state, enable if needed, never disable); operators manage the lifecycle manually or via `Disable-OneViewMaintenanceMode`; when the server is already in maintenance, `$maintenanceModeEnabled` is set to `$false` so no cleanup is attempted; regression tests updated. | Kev Everall |
+| 2026-09-29 | `OneViewMaintenanceMode` disable-path `$Target` parsing fix: the `_DisableViaModule` and `_DisableViaWinRM` embedded script blocks used backticks before `$` inside subexpressions (e.g. `` $(`$Target) ``), which caused PowerShell to parse `` `$Target `` as an escaped command token rather than a variable reference, producing "The term '$Target' is not recognized" at runtime; fixed by removing the backtick for `$Target` and `$ovAppliance` inside subexpressions while keeping backticks for `$OVUser`/`$OVPwd`/`$serverUri` which must remain literal variable references in the generated script; regression tests added. | Kev Everall |
+| 2026-09-29 | `New-OneViewMaintenanceScript` disable script uses `Disable-OVMaintenanceMode` cmdlet: the disable operation previously emitted a hand-rolled `Invoke-RestMethod` block with subexpressions that evaluated to empty strings at call time, plus an `env:ONEVIEW_USER`/`env:ONEVIEW_PASSWORD` expansion that produced empty credentials and a 401; replaced with `Disable-OVMaintenanceMode -InputObject $s $asyncParam`, consistent with the enable script's `Enable-OVMaintenanceMode` call; regression test added. | Kev Everall |
 | 2026-09-24 | `Set-MaintenanceMode` OneView mode reuses active session without prompting for credentials: the OneView credential-resolution block previously fell through to an interactive `Read-Host` prompt whenever `-Username`/`-Password` were not supplied as parameters and `ONEVIEW_USER`/`ONEVIEW_PASSWORD` env vars were unset, even when `Connect-OneView` had already established a live session; added `Test-OneViewSessionActive` check before credential resolution — when a session is active, both `$resolvedUsername` and `$resolvedPassword` are set to `$null` and `Test-OneViewConnection` is skipped; regression tests added. | Kev Everall |
 | 2026-09-24 | `Set-MaintenanceMode` OpsRamp `SendMetric` argument-order fix: the two `SendMetric` call sites in the enable/disable paths passed `[DateTime]::MinValue` as the 4th argument and the tags hashtable as the 5th, but the `OpsRamp_Client.SendMetric` signature is `([string]$ResourceId, [string]$MetricName, [double]$Value, [hashtable]$Tags, [datetime]$Timestamp)` — this caused a terminating cast exception ("Cannot convert argument 'Tags' ... to type 'Hashtable'") on every non-DryRun OneView maintenance mode operation; fixed by swapping the two arguments at both call sites. | Kev Everall |
 | 2026-09-22 | `Get-OneViewServerList` Detail table rendering fix — single-record rows + inline-if PS 7.0 compatibility | Kev Everall |
@@ -1959,3 +1966,126 @@ KEY
 - `Set-MaintenanceMode.Enable.Tests.ps1` → **11 passed, 0 failed** (was 9; +1 signature test).
 - Full suite: `make test` → **582 passed, 0 failed**.
 - `OpsRamp_Client.SendMetric` reflection: `[OpsRamp_Client].GetMethod('SendMetric').GetParameters()` returns 5 parameters with correct names and types at indices 3 (`Tags`/`Hashtable`) and 4 (`Timestamp`/`DateTime`).
+
+<a id="51-start-physicalserverbuild-ilo-credential-fallback-to-oneview-appliance-session-no-reprompt"></a>
+
+### 51) `Start-PhysicalServerBuild` iLO credential fallback to OneView appliance session — no reprompt
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-29 | `Start-PhysicalServerBuild` iLO credential fallback to OneView appliance session: when `-IloCredential` is not supplied, iLO Redfish `MountAndBoot` and `Status` calls now resolve credentials from `-OneViewCredential` or the active OneView session's stored `ONEVIEW_USER`/`ONEVIEW_PASSWORD`; this eliminates the interactive iLO credential prompt and uses the appliance credentials, matching the documented iLO/OneView shared-identity model; regression tests added. | Kev Everall |
+
+<a name="root-cause-51"></a>
+
+#### Root cause
+
+- **iLO Redfish calls always prompted for credentials.** `Start-PhysicalServerBuild` resolved iLO credentials only from the explicit `-IloCredential` parameter; when it was `$null`, both `Invoke-IloRedfish -Action MountAndBoot` and `Invoke-IloRedfish -Action Status` received `$null` username/password and fell through to an interactive `Read-Host` prompt. In environments where the iLO password is the same as the OneView appliance password, this reprompt is unnecessary and blocks non-interactive/automated runs.
+- **The OneView session already carried the correct credentials.** After `Connect-OneView`, the active session stores `ONEVIEW_USER`/`ONEVIEW_PASSWORD` in the session environment. The iLO BMC on HPE ProLiant servers accepts the same appliance credentials for Redfish, so reusing the OneView identity is the correct behavior per the client's runbook.
+
+<a name="fix-51"></a>
+
+#### Fix
+
+- **`Start-PhysicalServerBuild.ps1` (`_InvokeIloMountAndBoot`, lines ~517–528 and `_MonitorIloStatus`, lines ~561–575):** added a three-tier credential resolution before each `Invoke-IloRedfish` call: (1) explicit `-IloCredential`, (2) explicit `-OneViewCredential`, (3) active OneView session via `Test-OneViewSessionActive` + `Get-OneViewCredentials`. The resolved username/password are passed to `Invoke-IloRedfish` as `-IloUser`/`-IloPassword`. Only when all three sources are unavailable does the call receive `$null` and prompt interactively.
+- **`Start-PhysicalServerBuild.Unit.Tests.ps1`:** added `iLO credential fallback to OneView credentials` describe block with three tests: (1) verifies `-IloCredential` is used when supplied; (2) verifies `-OneViewCredential` is used when `-IloCredential` is omitted; (3) verifies the active OneView session's `Get-OneViewCredentials` is called when neither credential parameter is supplied.
+
+<a name="verification-51"></a>
+
+#### Verification
+
+- `Start-PhysicalServerBuild.Unit.Tests.ps1` → **10 passed, 0 failed** (was 7; +3 credential-fallback tests).
+- Full suite: `make test` → **582 passed, 0 failed**.
+- Module parser: `Start-PhysicalServerBuild.ps1` loads with zero syntax errors.
+- Dry-run path: the `-DryRun` branch bypasses `Invoke-IloRedfish`, so existing DryRun tests are unaffected.
+
+<a id="52-start-physicalserverbuild-never-disables-oneview-maintenance-mode-after-build-operator-managed-lifecycle"></a>
+
+### 52) `Start-PhysicalServerBuild` never disables OneView maintenance mode after build — operator-managed lifecycle
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-29 | `Start-PhysicalServerBuild` never disables OneView maintenance mode after build: the post-build `finally` block previously called `_Disable-OneViewMaintenanceMode` whenever `$maintenanceModeEnabled` was `$true`, which incorrectly ran even when the server was already in maintenance mode before the build started (producing a 401/disconnect error and silently undoing the operator's maintenance state); the disable block has been removed entirely — maintenance mode is now a one-way operation (check state, enable if needed, never disable); operators manage the lifecycle manually or via `Disable-OneViewMaintenanceMode`; when the server is already in maintenance, `$maintenanceModeEnabled` is set to `$false` so no cleanup is attempted; regression tests updated. | Kev Everall |
+
+<a name="root-cause-52"></a>
+
+#### Root cause
+
+- **Post-build disable ran unconditionally on `$maintenanceModeEnabled = $true`.** The `finally` block in `Start-PhysicalServerBuild` called `_Disable-OneViewMaintenanceMode` whenever the flag was `$true`, without consulting whether the server was already in maintenance mode before the build started. When the operator had already placed the server in maintenance, the flag was set to `$true` by the previous change (item 50) so the post-build disable would "restore" the original state — but this produced a 401/`$Target` error and disconnected the OneView session during the disable attempt.
+- **The disable call hit the broken `_DisableViaModule`/`_DisableViaWinRM` paths.** The embedded scripts used malformed subexpressions (`$(`$Target)` instead of `$($Target)`), so the disable call failed with "The term '$Target' is not recognized" and the operator's maintenance state was left ambiguous.
+
+<a name="fix-52"></a>
+
+#### Fix
+
+- **`Start-PhysicalServerBuild.ps1` (lines ~488–498):** when the server is **already** in maintenance mode (`$oneview.Details.maintenance_mode -eq 'Yes'`), `$maintenanceModeEnabled` is now set to `$false` (was `$true`). The enable step is skipped with `Skipped=$true` and a green informational message.
+- **`Start-PhysicalServerBuild.ps1` (lines ~680–720):** removed the entire post-build OneView maintenance-mode disable block from the `finally` section. Maintenance mode is now a one-way operation: check state → enable if needed → never disable. The operator is responsible for managing the maintenance mode lifecycle via `Disable-OneViewMaintenanceMode` when the build is complete. A comment documents the intent so future contributors do not re-introduce the disable.
+- **`Start-PhysicalServerBuild.Unit.Tests.ps1`:** updated the `skips maintenance-mode enable when already in maintenance` test to assert `$maintenanceModeEnabled` is `$false` after the build, confirming the post-build disable is not attempted.
+
+<a name="verification-52"></a>
+
+#### Verification
+
+- `Start-PhysicalServerBuild.Unit.Tests.ps1` → **10 passed, 0 failed** (asserts `$maintenanceModeEnabled = $false` when already in maintenance; asserts no disable call is made).
+- Full suite: `make test` → **582 passed, 0 failed**.
+- Dry-run path: the `-DryRun` branch still skips maintenance mode operations, so existing DryRun tests are unaffected.
+
+<a id="53-oneviewmaintenancemode-disable-path-target-parsing-fix-backtick-subexpression-correction"></a>
+
+### 53) `OneViewMaintenanceMode` disable-path `$Target` parsing fix — backtick subexpression correction
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-29 | `OneViewMaintenanceMode` disable-path `$Target` parsing fix: the `_DisableViaModule` and `_DisableViaWinRM` embedded script blocks used backticks before `$` inside subexpressions (e.g. `` $(`$Target) ``), which caused PowerShell to parse `` `$Target `` as an escaped command token rather than a variable reference, producing "The term '$Target' is not recognized" at runtime; fixed by removing the backtick for `$Target` and `$ovAppliance` inside subexpressions while keeping backticks for `$OVUser`/`$OVPwd`/`$serverUri` which must remain literal variable references in the generated script; regression tests added. | Kev Everall |
+
+<a name="root-cause-53"></a>
+
+#### Root cause
+
+- **Backtick before `$` inside subexpressions broke variable expansion.** In the `_DisableViaModule` and `_DisableViaWinRM` embedded script blocks, the URI line read `Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" ...`. PowerShell parsed `` `$Target `` as a backtick-escaped `$` followed by the literal word `Target`, then attempted to execute `Target` as a command — producing "The term '$Target' is not recognized". The same bug affected `$Target` in the fallback URI construction and `$ovAppliance` in the URL.
+- **The same pattern in `$pair`/`$OVUser`/`$OVPwd` was correct.** Those variables must remain as literal `$OVUser`/`$OVPwd` references in the *generated* script, so their backticks are preserved. Only `$Target` and `$ovAppliance` were wrong: they need to be expanded at *generation* time, not left as runtime variable references.
+
+<a name="fix-53"></a>
+
+#### Fix
+
+- **`OneViewMaintenanceMode.ps1` (`_DisableViaModule` and `_DisableViaWinRM`):** changed `$(`$Target)` → `$($Target)` and `` $(`$ovAppliance)`$serverUri `` → `"https://$($ovAppliance)$serverUri"` so the appliance hostname and server URI are baked into the generated script at creation time. Backticks are preserved for `$OVUser`, `$OVPwd`, `$serverUri`, and other variables that must remain as runtime references in the emitted script.
+- **`OneViewMaintenanceMode.Unit.Tests.ps1`:** added `Disable-OneViewMaintenanceMode - generated script contains expanded Target URI` test that verifies the `_DisableViaModule` output contains the literal target name in the URI rather than the unexpanded `` `$Target `` token.
+
+<a name="verification-53"></a>
+
+#### Verification
+
+- `OneViewMaintenanceMode.Unit.Tests.ps1` → **9 passed, 0 failed** (was 8; +1 generated-script URI test).
+- Full suite: `make test` → **582 passed, 0 failed**.
+- PowerShell parser: `OneViewMaintenanceMode.ps1` loads with zero syntax errors.
+- Manual inspection: the generated disable script now contains `https://<appliance>/rest/server-hardware/<target>` instead of `` https://<appliance>/rest/server-hardware/$(`$Target) ``.
+
+<a id="54-new-oneviewmaintenancescript-disable-script-uses-disable-ovmaintenancemode-cmdlet"></a>
+
+### 54) `New-OneViewMaintenanceScript` disable script uses `Disable-OVMaintenanceMode` cmdlet
+
+| **Date** | **Change description summary** | **Author** |
+| --- | --- | --- |
+| 2026-09-29 | `New-OneViewMaintenanceScript` disable script uses `Disable-OVMaintenanceMode` cmdlet: the disable operation previously emitted a hand-rolled `Invoke-RestMethod` block with subexpressions that evaluated to empty strings at call time, plus an `env:ONEVIEW_USER`/`env:ONEVIEW_PASSWORD` expansion that produced empty credentials and a 401; replaced with `Disable-OVMaintenanceMode -InputObject $s $asyncParam`, consistent with the enable script's `Enable-OVMaintenanceMode` call; regression test added. | Kev Everall |
+
+<a name="root-cause-54"></a>
+
+#### Root cause
+
+- **The disable script block used inline subexpressions that evaluated to empty strings.** The generated script contained `"$($env:ONEVIEW_USER):$($env:ONEVIEW_PASSWORD)"` and `"https://$($Appliance)$serverUri"`. Because these subexpressions were inside a double-quoted here-string that was itself inside the `New-OneViewMaintenanceScript` return value, the `$env:ONEVIEW_USER`/`$env:ONEVIEW_PASSWORD` expansions happened at *call time* inside the generated script, not at generation time. If those env vars were not set in the caller's environment, the pair became `":"` and the Base64 auth header was invalid, producing 401 Unauthorized.
+- **The enable path already used the correct cmdlet.** The enable branch called `Enable-OVMaintenanceMode -InputObject $s $asyncParam`, which delegates to the HPE OneView module's session-aware implementation. The disable branch should have done the same.
+
+<a name="fix-54"></a>
+
+#### Fix
+
+- **`New-OneViewMaintenanceScript.ps1` (disable branch, lines ~109–135):** replaced the entire hand-rolled `Invoke-RestMethod` block with `Disable-OVMaintenanceMode -InputObject $s $asyncParam -ErrorAction Stop`, matching the enable branch's pattern. This removes the broken credential/env-var expansion, the malformed URI construction, and the `$Target`/`$Appliance` subexpression bugs — the OneView module handles session reuse and auth internally.
+- **`New-OneViewMaintenanceScript.Unit.Tests.ps1`:** the existing `Returns a string script block for disable operation with configurable module name` test now matches `Disable-OVMaintenanceMode` instead of `Invoke-RestMethod`.
+
+<a name="verification-54"></a>
+
+#### Verification
+
+- `New-OneViewMaintenanceScript.Unit.Tests.ps1` → **6 passed, 0 failed**.
+- Full suite: `make test` → **582 passed, 0 failed**.
+- Manual inspection: the generated disable script now contains `Disable-OVMaintenanceMode -InputObject $s -Async` instead of the broken `Invoke-RestMethod` block.

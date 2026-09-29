@@ -137,7 +137,7 @@ The module has a lot of commands because each one has a single, well-defined job
 - "Show me what the deploy would do" → `Configure-PhysicalBuild`
 - "Actually deploy to the server" → `Configure-PhysicalBuild -Deploy` (or `-Execute`) after review
 
-> **Single public build command:** `Configure-PhysicalBuild` is the only build command you run from the terminal. When you type `APPROVE` (or pass `-Deploy`), it internally executes the build pipeline — OneView resolution, maintenance mode enable, iLO mount, OS install, post-build validation, and maintenance mode disable. 
+> **Single public build command:** `Configure-PhysicalBuild` is the only build command you run from the terminal. When you type `APPROVE` (or pass `-Deploy`), it internally executes the build pipeline — OneView resolution, maintenance mode enable (if not already enabled), iLO mount, OS install, post-build validation. Maintenance mode disable is a manual operator action after the build. 
 
 > ### ⚠ Safe vs destructive commands (read this first)
 > On a live, regulated banking appliance you must never lose a client server, its data, or impact a workload. Run the **non-destructive** commands first to identify and validate the exact target and media; the **destructive** ones are gated by a mandatory `-GuardRail` regex (the *resolved* server name must match) and prompt for confirmation.
@@ -145,7 +145,7 @@ The module has a lot of commands because each one has a single, well-defined job
 > | Safety | Commands | Effect |
 > |--------|----------|--------|
 > | ✅ **Non-destructive / safe** | `Test-ServerConnectivity`, `Get-OneViewConnectionStatus`, `Get-OneViewServerList`, `Get-OneViewServerTarget`, `Test-BuildParams`, `Test-PreBuildValidation`, `Start-InstallMonitor`, `Invoke-IloRedfish -Action Status\|Eject`, `Invoke-OpsRampClient`, `Disconnect-OneView` | Read-only lookups, path/validation checks, or status monitoring. No reboot, mount, or change to any server. Safe on the live appliance. |
-> | ⚠ **Destructive** | `Configure-PhysicalBuild` (APPROVE confirmation gate) | `Configure-PhysicalBuild` reviews the plan and, on typing `APPROVE` or passing `-Deploy`/`-Execute`, **executes the destructive build** internally — OneView resolution, maintenance mode enable, ISO mount + reboot (wipe/reinstall), post-build validation, and maintenance mode disable. Gated by `-GuardRail`; `-DryRun` prints the plan without acting. **Automatically places the server into OneView maintenance mode before destructive operations** (use `-NoMaintenanceMode` to skip). |
+> | ⚠ **Destructive** | `Configure-PhysicalBuild` (APPROVE confirmation gate) | `Configure-PhysicalBuild` reviews the plan and, on typing `APPROVE` or passing `-Deploy`/`-Execute`, **executes the destructive build** internally — OneView resolution, maintenance mode enable (if not already enabled), ISO mount + reboot (wipe/reinstall), post-build validation. Gated by `-GuardRail`; `-DryRun` prints the plan without acting. **Automatically places the server into OneView maintenance mode before destructive operations** (use `-NoMaintenanceMode` to skip). Maintenance mode disable is a manual operator action after the build completes. |
 >
 > **Recommended pre-flight review (no change is made until you type `APPROVE` on `Configure-PhysicalBuild`, or pass `-Deploy`/`-Execute`):** `Get-OneViewServerTarget` → `Test-BuildParams` (ISO path) → `Test-PreBuildValidation` → `Configure-PhysicalBuild -GuardRail '<server>'` (review, then type `APPROVE` or pass `-Deploy` to authorize the real run).
 
@@ -593,7 +593,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-ServerIdentifier` | Yes | Target server identifier (hostname, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` | No | OneView appliance hostname/IP for server resolution. |
 | `-IloIp` | No | iLO IPv4 address / hostname for the target server. |
-| `-IloCredential` | No | PSCredential for iLO Redfish check (prompted if omitted). |
+| `-IloCredential` | No | `PSCredential` for iLO Redfish check. Falls back to `-OneViewCredential` or the active `Connect-OneView` session credentials (appliance/iLO shared identity). Prompts interactively only when no explicit credential and no active OneView session are available. |
 | `-ExpectedHostname` | No | Hostname expected after build. Defaults to `-ServerIdentifier`. Only needed if the post-build hostname will differ from the identifier. |
 | `-Domain` | No | AD domain to verify in post-build validation. |
 | `-SiteCode` | No | ConfigMgr site code (for ISO build / pre-build validation). |
@@ -623,7 +623,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 > **Build mode vs External ISO mode:** When you supply `-ExternalIsoPath`, the ConfigMgr parameters (`-SiteCode`, `-ManagementPoint`, `-DistributionPoint`, `-BootImageName`, `-TaskSequenceName`, `-SiteServer`) are **not required** because the ISO build/publish steps are skipped.
 
-**Automatic OneView maintenance mode:** By default, `Configure-PhysicalBuild` automatically places the target server into HPE OneView maintenance mode **before** any destructive action (ISO mount, reboot) and removes it **after** the build completes. This stops unnecessary alerting and avoids on-call callouts during deployment. If the server is **already** in maintenance mode (as reported by OneView), the enable step is skipped and the post-build disable still runs so the original state is restored. A highlighted notice appears in the deployment summary:
+**Automatic OneView maintenance mode:** By default, `Configure-PhysicalBuild` automatically places the target server into HPE OneView maintenance mode **before** any destructive action (ISO mount, reboot). This stops unnecessary alerting and avoids on-call callouts during deployment. If the server is **already** in maintenance mode (as reported by OneView), the enable step is skipped. Maintenance mode is **not** automatically removed after the build — the operator is responsible for managing the maintenance mode lifecycle via `Disable-OneViewMaintenanceMode` when the deployment is complete. A highlighted notice appears in the deployment summary:
 
 ```text
 > ╔══════════════════════════════════════════════════════════════════════╗
@@ -633,13 +633,14 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 > ║  BEFORE the build starts. This stops unnecessary alerting            ║
 > ║  and avoids on-call callouts during the deployment.                  ║
 > ║                                                                      ║
-> ║  Maintenance mode will be automatically removed when the             ║
-> ║  build completes (or if it fails).                                   ║
+> ║  Maintenance mode is NOT automatically removed after the build.      ║
+> ║  Disable it manually when the server is stable:                      ║
+> ║  Disable-OneViewMaintenanceMode -TargetId <server> -Environment Prod ║
 > ║                                                                      ║
-> ║  To skip this, use -NoMaintenanceMode.                               ║
+> ║  To skip the enable step entirely, use -NoMaintenanceMode.           ║
 > ╚══════════════════════════════════════════════════════════════════════╝
-> ```
-> Use `-NoMaintenanceMode` (or `-OneViewMaintenanceMode:$false`) to disable this behavior when OneView is unavailable or the server is not managed by OneView.
+```
+> Use `-NoMaintenanceMode` (or `-OneViewMaintenanceMode:$false`) to disable the automatic enable step when OneView is unavailable or the server is not managed by OneView. Maintenance mode disable is always a manual operator action.
 
 ---
 
@@ -655,7 +656,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
     -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' -InMaintenanceWindow -Deploy -GuardRail 'srv01'
 ```
 
-> **Automatic OneView maintenance mode:** `Configure-PhysicalBuild` automatically places the server into HPE OneView maintenance mode before destructive operations and removes it after the build completes. Use `-NoMaintenanceMode` to skip this behavior.
+> **Automatic OneView maintenance mode:** `Configure-PhysicalBuild` automatically places the server into HPE OneView maintenance mode before destructive operations. Maintenance mode is **not** automatically removed after the build completes — the operator is responsible for disabling it via `Disable-OneViewMaintenanceMode` when the server is stable. Use `-NoMaintenanceMode` to skip the enable step entirely.
 
 <a id="iso-firmware-parameter-options"></a>
 

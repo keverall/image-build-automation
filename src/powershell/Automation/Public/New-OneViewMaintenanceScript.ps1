@@ -115,19 +115,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
     if (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$'))) {
-        `$serverUri = `$s.uri
-        if (-not `$serverUri) {
-            `$serverUri = "/rest/server-hardware/$(`$s.Name)"
-        }
-        `$pair = "$($env:ONEVIEW_USER):$($env:ONEVIEW_PASSWORD)"
-        `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
-        `$base64 = [System.Convert]::ToBase64String(`$bytes)
-        `$headers = @{
-            'X-API-Version' = '1200'
-            'Content-Type' = 'application/json'
-            'Authorization' = "Basic `$base64"
-        }
-        Invoke-RestMethod -Uri "https://$($Appliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+        Disable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
         Write-Output "Maintenance disabled: `$(`$s.Name)"
     }
 }
