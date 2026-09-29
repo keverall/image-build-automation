@@ -299,6 +299,8 @@ function Start-PhysicalServerBuild {
         [string] $OneViewHost,
         [Alias('Ilo')]
         [string] $IloIp,
+        [Alias('IloCred')]
+        [System.Management.Automation.PSCredential] $IloCredential,
         [Alias('OVCred')]
         [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $ExpectedHostname = $null,
@@ -544,6 +546,14 @@ function Start-PhysicalServerBuild {
 
             if (-not $DryRun) {
                 $status = Invoke-IloRedfish -Action Status -IloIp $IloIp -DryRun:$DryRun
+                if (-not $status.Success) {
+                    _Step 'ilo_maintenance_guard' @{
+                        Success = $false
+                        Error   = "iLO status check failed: $($status.Error)"
+                    }
+                    $overall['success'] = $false
+                    return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+                }
                 $powerState = $status.Details.system.PowerState
                 if ($powerState -eq 'On' -and -not $Force -and -not $InMaintenanceWindow) {
                     _Step 'ilo_maintenance_guard' @{
@@ -560,7 +570,13 @@ function Start-PhysicalServerBuild {
                 }
             }
 
-            $r = Invoke-IloRedfish -Action MountAndBoot -IloIp $IloIp -IsoUrl $isoUrl `
+            $iloUser = $null
+            $iloPassword = $null
+            if ($IloCredential) {
+                $iloUser = $IloCredential.UserName
+                $iloPassword = $IloCredential.GetNetworkCredential().Password
+            }
+            $r = Invoke-IloRedfish -Action MountAndBoot -IloIp $IloIp -IloUser $iloUser -IloPassword $iloPassword -IsoUrl $isoUrl `
                 -DryRun:$DryRun -Force:($Force -or $DryRun)
             _Step 'ilo_mount_and_boot' $r
             if ($r.Success -and -not $DryRun) { $isoMounted = $true }

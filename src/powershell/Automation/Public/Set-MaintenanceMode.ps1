@@ -3095,7 +3095,19 @@ if ('$TargetType' -eq 'ServerHardware') {
             `$obj.Message = 'Not in maintenance mode'
             `$notInMaintenance++
         } else {
-            Disable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+            `$serverUri = `$server.uri
+            if (-not `$serverUri) {
+                `$serverUri = "/rest/server-hardware/$(`$Target)"
+            }
+            `$pair = "$(`$OVUser):$(`$OVPwd)"
+            `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
+            `$base64 = [System.Convert]::ToBase64String(`$bytes)
+            `$headers = @{
+                'X-API-Version' = '1200'
+                'Content-Type' = 'application/json'
+                'Authorization' = "Basic `$base64"
+            }
+            Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode disabled'
             `$success++
@@ -3127,7 +3139,19 @@ if ('$TargetType' -eq 'ServerHardware') {
                 `$obj.Message = 'Not in maintenance mode'
                 `$notInMaintenance++
             } else {
-                Disable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+                `$serverUri = `$server.uri
+                if (-not `$serverUri) {
+                    `$serverUri = "/rest/server-hardware/$(`$Target)"
+                }
+                `$pair = "$(`$OVUser):$(`$OVPwd)"
+                `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
+                `$base64 = [System.Convert]::ToBase64String(`$bytes)
+                `$headers = @{
+                    'X-API-Version' = '1200'
+                    'Content-Type' = 'application/json'
+                    'Authorization' = "Basic `$base64"
+                }
+                Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
                 `$obj.Status = 'success'
                 `$obj.Message = 'Maintenance mode disabled'
                 `$success++

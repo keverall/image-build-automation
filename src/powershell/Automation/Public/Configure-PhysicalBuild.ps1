@@ -259,7 +259,7 @@ function Configure-PhysicalBuild {
         # or explicit -Deploy), so we pass -SkipConfirmation to bypass the guard-rail
         # confirmation inside Start-PhysicalServerBuild.
         return (Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
-            -IloIp $IloIp -ExpectedHostname $ExpectedHostname `
+            -IloIp $IloIp -IloCredential $IloCredential -ExpectedHostname $ExpectedHostname `
             -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
