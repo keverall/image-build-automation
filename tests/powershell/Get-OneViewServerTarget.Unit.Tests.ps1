@@ -221,10 +221,6 @@ Describe 'Get-OneViewServerTarget - maintenance mode not in maintenance' {
         InModuleScope Automation {
             Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
             Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
-                param($Uri)
-                if ($Uri -match "maintenanceMode='true'") {
-                    return @{ count = 0; members = @() }
-                }
                 return @{ count = 1; members = @(
                     [pscustomobject]@{ name = 'srv-norm'; serialNumber = 'N1'; model = 'DL380'; powerState = 'On'; status = 'OK'; mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; maintenanceMode = 'Off' }
                 )}

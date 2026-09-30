@@ -120,12 +120,6 @@ Describe 'Get-OneViewServerList - maintenance mode (mocked REST)' {
         InModuleScope Automation {
             Mock Get-OneViewActiveSession { [pscustomobject]@{ Name = 'h'; SessionID = 'tok'; Connected = $true } }
             Mock Invoke-RestMethod -ParameterFilter { $Uri -like '*/rest/server-hardware*' } -MockWith {
-                param($Uri)
-                if ($Uri -match "maintenanceMode='true'") {
-                    return @{ total = 1; members = @(
-                        [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; maintenanceMode = 'On'; state = 'MaintenanceMode'; stateReason = 'Scheduled firmware update' }
-                    ) }
-                }
                 return @{ total = 3; members = @(
                     [pscustomobject]@{ name = 's1'; serialNumber = 'A'; model = 'DL380'; powerState = 'On';  status = 'OK';       mpIpAddresses = @('10.0.0.1'); enclosureName = 'Enc1'; position = 'Bay 1'; uri = '/rest/x'; romVersion = '1.0'; maintenanceMode = 'On'; state = 'MaintenanceMode'; stateReason = 'Scheduled firmware update' },
                     [pscustomobject]@{ name = 's2'; serialNumber = 'B'; model = 'DL380'; powerState = 'Off'; status = 'Critical'; mpIpAddresses = @('10.0.0.2'); enclosureName = 'Enc1'; position = 'Bay 2'; uri = '/rest/y'; romVersion = '1.0'; maintenanceMode = 'Off'; state = 'ProfileError';     stateReason = 'Profile apply failed' },
