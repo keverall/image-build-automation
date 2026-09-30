@@ -170,6 +170,19 @@ word-docs: ## Convert Markdown docs to Word DOCX with clickable bookmarks/links
 word-docs-clean: ## Remove generated Word DOCX help docs
 	rm -rf docx/
 
+# ─── Maintenance Mode Guard ────────────────────────────────────────────────────
+# Scans for forbidden REST-only replacement of the Get-OVServer-based maintenance
+# mode detection. The HPE OneView REST API does not return maintenanceMode on
+# list/get responses; it is write-only. Do not replace _Get-OneViewServerMaintenanceLookup
+# with a REST query filter or direct REST field checks.
+guard-maint-mode: ## Verify OneView maintenance mode detection still uses Get-OVServer
+	@echo "$(CYAN)[guard-maint-mode]$(NC) Checking for forbidden REST-only maintenance mode replacement..."
+	@if grep -R -n "maintenanceMode='true'" src/powershell/Automation/Public/Get-OneViewServerList.ps1 src/powershell/Automation/Public/Get-OneViewServerTarget.ps1; then \
+		echo "$(RED)[guard-maint-mode]$(NC) FORBIDDEN: REST-only maintenanceMode='true' filter found in maintenance mode lookup. Restore Get-OVServer-based detection."; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)[guard-maint-mode]$(NC) OK: Get-OVServer-based maintenance mode detection is intact."
+
 # ─── Default Target ──────────────────────────────────────────────────────────
 help: ## Show this help message
 	@pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/Show-Help.ps1
@@ -192,7 +205,7 @@ prune-logs: ## Prune log files older than 30 days
 all: lint test ## Run linting and tests
 
 # CI pipeline target
-ci: lint sec-scan coverage ## Run full CI pipeline
+ci: lint guard-maint-mode sec-scan coverage ## Run full CI pipeline
 
 # ─── Test Progress Updates ───────────────────────────────────────────────────
 test-progress-update: ## Update test plans with today's test execution progress (interactive)
