@@ -333,6 +333,9 @@ function Configure-PhysicalBuild {
             -Credential $OneViewCredential -PassThru
         if ($ov.Success) {
             $serverIdentity = $ov.Details
+            if ($serverIdentity.ilo_ip -and -not $IloIp) {
+                $IloIp = $serverIdentity.ilo_ip
+            }
             Write-Host "  [OK] Server resolved" -ForegroundColor Green
         } else {
             # A failed OneView resolution is fatal for a build plan: without a

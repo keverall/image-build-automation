@@ -253,7 +253,7 @@ function Test-PreBuildValidation {
             timestamp = Get-UtcTimestamp
             server    = $ServerIdentifier
             event     = 'prebuild_validation'
-            success   = $overallSuccess
+            success   = $script:overallSuccess
             checks    = $checks
         }
         Save-Json -Data $entry -Path $auditPath
@@ -261,7 +261,7 @@ function Test-PreBuildValidation {
     } catch { _Set 'audit_recorded' $false $_.Exception.Message }
 
     return @{
-        Success   = $overallSuccess
+        Success   = $script:overallSuccess
         Server    = $ServerIdentifier
         Timestamp = Get-UtcTimestamp
         Checks    = $checks
