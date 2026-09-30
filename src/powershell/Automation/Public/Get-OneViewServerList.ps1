@@ -230,11 +230,10 @@ function Get-OneViewServerList {
 
     # Maintenance-mode detection: the REST GET /rest/server-hardware LIST endpoint
     # does not reliably expose the maintenanceMode field, so servers already in
-    # maintenance mode render as "No". The HPEOneView module's Get-OVServer cmdlet
-    # fetches the individual server object and DOES carry the accurate maintenance
-    # state, so it is the preferred source. Falls back to the REST payload when the
-    # module is unavailable (e.g. off-Windows test hosts).
-    $maintLookup = _Get-OneViewServerMaintenanceLookup
+    # maintenance mode render as "No". Uses the OneView REST query filter
+    # (?filter="maintenanceMode='true'") to fetch only servers currently in
+    # maintenance mode, keyed by serial number.
+    $maintLookup = _Get-OneViewServerMaintenanceLookup -OneViewHost $OneViewHost -SessionToken $sessionToken -Port $Port -SkipCertificateCheck:$SkipCertificateCheck
 
     try {
         $servers = [System.Collections.Generic.List[hashtable]]::new()
@@ -314,43 +313,45 @@ function _Get-OneViewServerMaintenanceLookup {
     .DESCRIPTION
         The REST GET /rest/server-hardware LIST endpoint does not reliably expose the
         maintenanceMode field, so servers already in maintenance mode render as "No".
-        The HPEOneView module's Get-OVServer cmdlet fetches the individual server
-        object and DOES carry the accurate maintenance state, so it is the preferred
-        source. This helper queries the module once and returns a hashtable keyed by
-        serialNumber -> 'Yes'/'No' so the list loop can look each server up by its
-        serial rather than re-querying per server.
+        Uses the OneView REST query filter (?filter="maintenanceMode='true'") to
+        fetch only servers currently in maintenance mode, then returns a hashtable
+        keyed by serialNumber -> 'Yes'/'No'. This avoids depending on the
+        HPEOneView module's Get-OVServer (which is Windows-only) and is more
+        efficient than fetching every server and checking each one.
 
-        Falls back to an empty hashtable when the HPEOneView module is unavailable
-        (e.g. off-Windows test hosts, or no active session) - in that case the REST
-        payload's own maintenance fields are used per-server instead.
+        Returns an empty hashtable when the REST query fails (e.g. no active
+        session) - in that case the caller's per-server fallback is used.
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
-    param()
+    param(
+        [Parameter(Mandatory)][string] $OneViewHost,
+        [Parameter(Mandatory)][string] $SessionToken,
+        [int] $Port = 443,
+        [switch] $SkipCertificateCheck
+    )
 
     $lookup = [System.Collections.Generic.Dictionary[string,string]]::new()
 
+    if (-not $OneViewHost -or -not $SessionToken) {
+        return $lookup
+    }
+
     try {
-        $isWindows = ($PSVersionTable.PSVersion.Major -le 5) -or $IsWindows
-        if (-not $isWindows) { return $lookup }
+        $baseUrl = "https://$OneViewHost`:$Port"
+        $url = "$baseUrl/rest/server-hardware?filter=`"maintenanceMode='true'`""
+        $resp = Invoke-RestMethod -Uri $url -Method Get `
+            -Headers @{ auth = $SessionToken } `
+            -SkipCertificateCheck:$SkipCertificateCheck `
+            -TimeoutSec 30 -ErrorAction Stop
 
-        $mod = Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-        if (-not $mod) { return $lookup }
-
-        $servers = Get-OVServer -ErrorAction SilentlyContinue
-        if (-not $servers) { return $lookup }
-
-        foreach ($s in $servers) {
-            if (-not $s.serialNumber) { continue }
-            $lookup[$s.serialNumber] = if (
-                ($s.state -match 'MaintenanceMode') -or
-                ($s.maintenanceModeEnabled -eq $true) -or
-                ($s.maintenanceMode -and $s.maintenanceMode -notin @('Off', 'False', $false, $null, 0))
-            ) { 'Yes' } else { 'No' }
+        foreach ($srv in $resp.members) {
+            if ($srv.serialNumber) {
+                $lookup[$srv.serialNumber] = 'Yes'
+            }
         }
     } catch {
-        Write-Verbose "_Get-OneViewServerMaintenanceLookup: module query failed: $($_.Exception.Message)"
+        Write-Verbose "_Get-OneViewServerMaintenanceLookup: query failed: $($_.Exception.Message)"
     }
 
     return $lookup
@@ -362,10 +363,10 @@ function _Get-OneViewMaintenanceMode {
         Resolve the maintenance mode (Yes/No) for a single server-hardware object.
 
     .DESCRIPTION
-        Prefers the HPEOneView module's Get-OVServer lookup (keyed by serial number,
-        fetched once by _Get-OneViewServerMaintenanceLookup) because the REST list
-        endpoint does not reliably expose maintenance mode. Falls back to the REST
-        payload's own maintenance fields when the module lookup is unavailable.
+        Prefers the REST query-filter lookup (keyed by serial number, fetched once
+        by _Get-OneViewServerMaintenanceLookup) because the REST list endpoint does
+        not reliably expose maintenance mode. Falls back to the REST payload's own
+        maintenance fields when the lookup is unavailable.
     #>
     [CmdletBinding()]
     [OutputType([string])]

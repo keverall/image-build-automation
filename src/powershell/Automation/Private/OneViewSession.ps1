@@ -173,7 +173,8 @@ function Remove-OtherOneViewModules {
     }
     if ($others.Count -gt 0) {
         $global:ConnectedSessions = @()
-        $script:ActiveOneViewSession = $null
+$script:ActiveOneViewSession = $null
+$script:ActiveOneViewCredential = $null
         $script:ActiveOneViewModuleName = $null
     }
 }
@@ -357,6 +358,22 @@ function Test-OneViewSessionActive {
     return ($null -ne (Get-OneViewActiveSession))
 }
 
+function Get-OneViewActiveCredential {
+    <#
+    .SYNOPSIS
+        Return the PSCredential used for the active OneView session, if available.
+
+    .DESCRIPTION
+        Connect-OneViewSession stores the credential it used to establish (or reuse)
+        the active session so downstream commands can reuse it without re-prompting.
+        Returns $null when no session is active or no credential was captured.
+    #>
+    [CmdletBinding()]
+    param()
+
+    return $script:ActiveOneViewCredential
+}
+
 function Connect-OneViewSession {
     <#
     .SYNOPSIS
@@ -459,6 +476,9 @@ function Connect-OneViewSession {
             $result.SessionId = $existing.SessionID
             $script:ActiveOneViewSession = $existing
             $script:ActiveOneViewModuleName = $pinned
+            if ($Credential) {
+                $script:ActiveOneViewCredential = $Credential
+            }
             return $result
         }
         # An active session to a DIFFERENT appliance exists. Reconnecting to a new
@@ -513,6 +533,7 @@ function Connect-OneViewSession {
             $result.SessionId = $session.SessionID
             $script:ActiveOneViewSession = $session
             $script:ActiveOneViewModuleName = $pinned
+            $script:ActiveOneViewCredential = $Credential
         } else {
             $result.Error = 'Connect-OVMgmt succeeded but no active session found'
         }

@@ -213,6 +213,14 @@ function Configure-PhysicalBuild {
         $OneViewMaintenanceMode = $false
     }
 
+    # Reuse the active OneView session's credential for iLO fallback when the
+    # operator did not explicitly supply -OneViewCredential. The session stores
+    # the credential used to connect (or the most-recently supplied one) so
+    # downstream iLO/Redfish calls can attempt the same username/password.
+    if (-not $OneViewCredential) {
+        $OneViewCredential = Get-OneViewActiveCredential
+    }
+
     # Emit results through the shared _Publish-Result helper so the operator never
     # sees a raw hashtable/JSON dump in the terminal. By default nothing is returned
     # on the success stream (clean report only). -PassThru returns the structured
@@ -573,7 +581,7 @@ function Configure-PhysicalBuild {
         } catch {
             $response = $null
         }
-        if ($null -eq $response -or $response.Trim() -ne 'APPROVE') {
+        if ($null -eq $response -or $response.Trim().ToUpper() -ne 'APPROVE') {
             Write-Host "  Build CANCELLED by operator." -ForegroundColor Yellow
             return (_Emit @{
                     Success          = $false
