@@ -420,18 +420,22 @@ function Configure-PhysicalBuild {
     }
 
     # ── 3. Run pre-build validation ──────────────────────────────────────────
+    # Configure-PhysicalBuild is the 4-eye review / approval gate. The live
+    # iLO Redfish credential check is an in-build pre-destructive validation
+    # that belongs to Start-PhysicalServerBuild (after APPROVE). Skipping it
+    # here keeps the review phase focused on target resolution, ISO/firmware
+    # reachability, and the guard-rail/APPROVE prompt.
     Write-Host "`n[3/4] Running pre-build validation..." -ForegroundColor Yellow
     $preBuildResult = $null
     if (-not $SkipPreBuild) {
         $preBuildResult = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
             -OneViewHost $OneViewHost -IloIp $IloIp `
-            -IloCredential $IloCredential `
             -OneViewCredential $OneViewCredential `
             -IsoUrl $isoUrl `
             -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
             -SkipOneView:([bool]$SkipOneView) `
-            -SkipIlo:([bool]$SkipIlo) `
+            -SkipIlo `
             -SkipDpMp:([bool]$SkipDpMp) `
             -SkipIsoUrl:([bool]$SkipIsoUrl -or [string]::IsNullOrEmpty($isoUrl) -or [bool]$AllowUnknownIsoUrl)
         if ($preBuildResult.Success) {

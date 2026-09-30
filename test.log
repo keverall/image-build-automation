@@ -217,3 +217,14 @@ Steps:
     Success: False 
     Error: iLO status check failed: iLO authentication failed (401 Unauthorized). The OneView/session credentials were rejected by iLO. iLO and OneView use separate auth domains — supply -IloCredential with valid iLO credentials. Detail: Response status code does not indicate success: 401 (Unauthorized).
 Success: False 
+
+
+# Create the credential object in YOUR session scope
+$iloCred = Get-Credential -Message "iLO credentials for 10.30.54.22"
+
+# Pass it to Configure-PhysicalBuild
+Configure-PhysicalBuild -ServerIdentifier 'CZ22420JCN' `
+    -OneViewHost 'va-oneviewt-01' `
+    -IloCredential $iloCred `
+    -ExternalIsoPath 'Y:\WIN2019Auto.iso' `
+    -GuardRail 'qlikview-03ilo'
