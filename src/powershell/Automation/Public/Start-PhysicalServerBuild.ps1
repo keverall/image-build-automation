@@ -562,9 +562,17 @@ function Start-PhysicalServerBuild {
                 }
                 $status = Invoke-IloRedfish -Action Status -IloIp $IloIp -IloUser $iloStatusUser -IloPassword $iloStatusPassword -DryRun:$DryRun
                 if (-not $status.Success) {
+                    $statusError = $status.Error
+                    if ($statusError -match '401') {
+                        if ($IloCredential) {
+                            $statusError = "iLO authentication failed (401 Unauthorized). The supplied -IloCredential was rejected by iLO. Verify the iLO username and password. Detail: $statusError"
+                        } else {
+                            $statusError = "iLO authentication failed (401 Unauthorized). The OneView/session credentials were rejected by iLO. iLO and OneView use separate auth domains — supply -IloCredential with valid iLO credentials. Detail: $statusError"
+                        }
+                    }
                     _Step 'ilo_maintenance_guard' @{
                         Success = $false
-                        Error   = "iLO status check failed: $($status.Error)"
+                        Error   = "iLO status check failed: $statusError"
                     }
                     $overall['success'] = $false
                     return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)

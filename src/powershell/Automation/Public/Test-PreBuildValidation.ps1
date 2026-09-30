@@ -201,9 +201,18 @@ function Test-PreBuildValidation {
             }
 
             if (-not $iloCred) {
-                # TERMINAL COMMAND: iLO credentials come ONLY from -IloCredential, -OneViewCredential,
-                # or a direct interactive prompt. Never from config/env (see AGENTS.md).
-                _Set 'ilo_credentials' $false "iLO credentials required. Supply -IloCredential or -OneViewCredential, or run interactively. Terminal commands never read credentials from config or environment."
+                if ($PSBoundParameters.ContainsKey('IloCredential') -or $PSBoundParameters.ContainsKey('OneViewCredential')) {
+                    # An explicit credential was supplied but nothing usable resulted
+                    # (invalid credential, or empty after a failed prompt). Fail loudly.
+                    _Set 'ilo_credentials' $false "iLO credentials required. Supply -IloCredential, or run interactively. Terminal commands never read credentials from config or environment."
+                } else {
+                    # No explicit credential was supplied and we cannot prompt (automated
+                    # mode / non-interactive / prompt removed). Skip rather than fail: the
+                    # iLO check is a pre-flight, not a hard requirement for producing the
+                    # build plan. Start-PhysicalServerBuild will still verify iLO reachability
+                    # before any destructive mount/reboot.
+                    _Skip 'ilo_credentials' 'skipped (no -IloCredential or -OneViewCredential supplied; supply explicit iLO credentials for a live Redfish check)'
+                }
             } elseif ($checks['ilo_credentials'].status -ne 'PASS') {
                 try {
                     $url = "https://$IloIp/redfish/v1/Systems/1"
