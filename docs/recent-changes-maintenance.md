@@ -21,7 +21,7 @@ ordered, contiguous, and link-valid, and how to regenerate its Word DOCX.
 
 ## Numbering convention
 
-- Sections are numbered **contiguously `1..N` and stored in reverse-chronological order**: the **newest** change is `§N` (highest number, at the top) and the **oldest** is `§1` (at the bottom).
+- Sections are numbered **contiguously `1..N` and stored in reverse-chronological order**: the **newest** change is `§N` (highest number, at the top) and the **oldest** is `§1` (at the bottom). A change log is not an ascending history list.
 - The **date** in each section's `| Date | … | Author |` row is the source of truth for ordering. Numbers must follow that order — i.e. strictly descending in the file.
 - If a section is ever deleted, **renumber** the remaining ones so the sequence stays `NN, NN-1, …, 2, 1` with no gaps. A gap is what makes the PO ask "where's §15?".
 
@@ -29,8 +29,8 @@ ordered, contiguous, and link-valid, and how to regenerate its Word DOCX.
 
 ## Adding a new entry
 
-1. Insert the new section as the **first** block under `## Change details` (newest first).
-2. Number it **current max + 1** (e.g. after §38 → §39).
+1. Insert the new section as the **first** block under `## Change details` (newest first); never append it after the oldest section.
+2. Number it **current max + 1** (e.g. after §54 → §55).
 3. Date it today and add its row **first** in the `## Summary of changes` table. The `## Table of Contents` is generated from the headings — run `make fix-docs` to regenerate it (see below).
 4. Update any narrative `§N` cross-references in older entries if their numbers shifted.
 
@@ -126,7 +126,7 @@ make word-docs-clean    # rm -rf docx/
 
 ## Sorting discipline
 
-- **Newest first = highest number first.** The `## Change details` body, the `## Table of Contents`, and the `## Summary of changes` table must **all** read `NN, NN-1, …, 2, 1` top-to-bottom (currently `38, 37, …, 1`). The number is the sequence — date each entry, but order by number.
+- **Newest first = highest number first.** The `## Change details` body, the `## Table of Contents`, and the `## Summary of changes` table must **all** read `NN, NN-1, …, 2, 1` top-to-bottom (currently `55, 54, …, 1`). The number is the sequence — date each entry, but order by number.
 - **Keep the body physically in that order.** The TOC is generated from the headings and normalised by `Sort-NumberedTocRuns`, so a scrambled body would still produce a sorted TOC — but the document has to read in order top-to-bottom, so fix the **body**, not just the TOC.
-- **Contiguous numbers** follow that order: after sorting, numbers read `38, 37, 36, …, 2, 1` with no gaps. If they don't, renumber.
+- **Contiguous numbers** follow that order: after sorting, numbers read `55, 54, 53, …, 2, 1` with no gaps. If they don't, renumber.
 - If you can't run `make word-docs` (pandoc not installed), the source of truth is `wip/SSO.md` + the `<a id>`/`<a name>` scheme above; the DOCX is regenerated from that.

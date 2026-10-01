@@ -423,7 +423,16 @@ function Start-PhysicalServerBuild {
         # Some upstream -PassThru calls can emit an array (System.Object[])
         # instead of a single result hashtable; unwrap the first element so the
         # step record stays a single object. Only real arrays are unwrapped.
-        if ($r -is [System.Array]) { $r = $r[0] }
+        if ($r -is [System.Array]) {
+            # PowerShell commands can emit informational objects before their
+            # structured -PassThru result. Prefer the object carrying Success;
+            # taking element zero can turn a successful validation into a false
+            # aggregate result.
+            $structured = @($r | Where-Object {
+                $_ -is [System.Collections.IDictionary] -and $_.Contains('Success')
+            })
+            $r = if ($structured.Count -gt 0) { $structured[-1] } else { $r[-1] }
+        }
         $overall['steps'][$name] = $r
         $ok = [bool]($r.Success)
         Write-Host "[$(if($ok){'OK'}else{'FAIL'})] $name"

@@ -116,18 +116,14 @@ function Invoke-IloRedfish {
             }
         }
 
-        # OneView-managed servers must use OneView iLO SSO. OneView creates and
-        # manages a separate iLO account; the operator's OneView password is not
-        # an iLO-local password. Direct iLO credentials are only a fallback when
-        # no OneView target is supplied.
-        if ($OneViewHost -and $OneViewServerName) {
-            if (-not (Get-Command Get-HPOVServer -ErrorAction SilentlyContinue) -or
-                -not (Get-Command Get-HPOVIloSso -ErrorAction SilentlyContinue)) {
-                return @{
-                    Success = $false; Action = $Action; IloIp = $IloIp
-                    Error = 'OneView iLO SSO requires the HPE OneView PowerShell module (Get-HPOVServer/Get-HPOVIloSso). Direct OneView-user-to-iLO login is not supported.'
-                }
-            }
+        # OneView-managed servers normally use OneView iLO SSO. If the HPE
+        # OneView module is unavailable, an explicitly supplied direct iLO
+        # credential is a supported fallback. Never silently reuse a OneView
+        # credential as an iLO credential because they are separate auth domains.
+        $hasOneViewSso = $OneViewHost -and $OneViewServerName -and
+            (Get-Command Get-HPOVServer -ErrorAction SilentlyContinue) -and
+            (Get-Command Get-HPOVIloSso -ErrorAction SilentlyContinue)
+        if ($hasOneViewSso -and -not $IloCredential) {
             try {
                 $iloSso = Get-HPOVServer -Name $OneViewServerName -ErrorAction Stop |
                     Get-HPOVIloSso -IloSsoSession -ErrorAction Stop
@@ -138,16 +134,23 @@ function Invoke-IloRedfish {
                     Error = "OneView iLO SSO acquisition failed for '$OneViewServerName': $($_.Exception.Message)"
                 }
             }
+        } elseif ($IloCredential) {
+            $baseUrl = "https://$IloIp/redfish/v1"
+            $session = [IloRedfishSession]::new($baseUrl, $IloCredential.UserName,
+                $IloCredential.GetNetworkCredential().Password, $SkipCertificateCheck, $TimeoutSec)
         } else {
+            if ($OneViewHost -and $OneViewServerName) {
+                return @{
+                    Success = $false; Action = $Action; IloIp = $IloIp
+                    Error = 'OneView iLO SSO is unavailable because the HPE OneView PowerShell module is not loaded. Supply an explicit -IloCredential for direct iLO access, or load Get-HPOVServer/Get-HPOVIloSso.'
+                }
+            }
             if (-not $IloCredential) {
                 return @{
                     Success = $false; Action = $Action; IloIp = $IloIp
                     Error = 'Direct iLO credentials are required only when OneView iLO SSO is unavailable. Supply -IloCredential; never pass an iLO password on the command line.'
                 }
             }
-            $baseUrl = "https://$IloIp/redfish/v1"
-            $session = [IloRedfishSession]::new($baseUrl, $IloCredential.UserName,
-                $IloCredential.GetNetworkCredential().Password, $SkipCertificateCheck, $TimeoutSec)
         }
 
         try {
