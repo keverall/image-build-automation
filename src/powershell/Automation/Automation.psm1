@@ -383,6 +383,22 @@ class IloRedfishSession {
     [string] $AuthToken
     [string] $SessionUri
 
+    IloRedfishSession([object]$SsoSession, [bool]$SkipCert, [int]$TimeoutSec) {
+        $root = [string]$SsoSession.RootUri
+        $token = [string]$SsoSession.Token
+        if ([string]::IsNullOrWhiteSpace($root) -or [string]::IsNullOrWhiteSpace($token)) {
+            throw 'OneView returned an invalid iLO SSO session (RootUri or Token missing).'
+        }
+        $schemeRoot = if ($root -match '^https?://') { $root } else { "https://$root" }
+        $this.BaseUrl = ("$schemeRoot/redfish/v1").TrimEnd('/')
+        $this.User = $null
+        $this.Password = $null
+        $this.SkipCert = $SkipCert
+        $this.TimeoutSec = $TimeoutSec
+        $this.AuthToken = $token
+        $this.SessionUri = $null
+    }
+
     IloRedfishSession([string]$BaseUrl, [string]$User, [string]$Password,
         [bool]$SkipCert, [int]$TimeoutSec) {
         $this.BaseUrl = $BaseUrl.TrimEnd('/')

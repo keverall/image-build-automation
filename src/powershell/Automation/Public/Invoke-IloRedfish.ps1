@@ -4,9 +4,10 @@
 # Provides full Redfish implementation for virtual media mount + one-time boot
 # + system reset, replacing the iLO REST scaffold that lived in Invoke-IsoDeploy.
 #
-# All Redfish calls reuse:
-#   - -IloUser/-IloPassword parameters or interactive prompt (never config/env)
-#   - Invoke-RestMethod -SkipCertificateCheck  (iLO ships with self-signed cert)
+# OneView-managed servers use the OneView-generated iLO SSO token. Direct iLO
+# PSCredential is supported only for unmanaged-server fallback; no password prompt
+# or plain-text password parameters are used.
+# All Redfish calls reuse Invoke-RestMethod -SkipCertificateCheck.
 #
 # Redfish vs iLO REST:
 #   Redfish:   POST /redfish/v1/SessionService/Sessions  (basic auth → X-Auth-Token)
@@ -37,13 +38,15 @@ function Invoke-IloRedfish {
     .PARAMETER IloIp
         iLO IPv4 address or hostname. Required.
 
-    .PARAMETER IloUser
-        iLO username. If omitted on a live run, prompted interactively. Never
-        read from config or environment.
+    .PARAMETER IloCredential
+        Direct iLO PSCredential fallback for unmanaged servers only. Managed
+        OneView servers use OneView iLO SSO instead.
 
-    .PARAMETER IloPassword
-        iLO password. If omitted on a live run, prompted interactively (secure
-        input). Never read from config or environment.
+    .PARAMETER OneViewHost
+        OneView appliance associated with the active OneView session.
+
+    .PARAMETER OneViewServerName
+        Resolved OneView server-hardware name used to obtain the iLO SSO token.
 
     .PARAMETER IsoUrl
         HTTPS URL to the ISO file (required for Mount / MountAndBoot).
@@ -77,10 +80,9 @@ function Invoke-IloRedfish {
         [Parameter(Mandatory, ParameterSetName = 'Run')][ValidateSet('Mount','MountAndBoot','Boot','Reset','Eject','Status')][string] $Action,
         [Alias('Ilo')]
         [Parameter(Mandatory, ParameterSetName = 'Run')][string] $IloIp,
-        [Alias('IloU')]
-        [string] $IloUser  = $null,
-        [Alias('IloP')]
-        [Object]  $IloPassword = $null,
+        [System.Management.Automation.PSCredential] $IloCredential,
+        [string] $OneViewHost,
+        [string] $OneViewServerName,
         [Alias('Iso')]
         [string] $IsoUrl = $null,
         [int]    $CdDeviceId = 1,
@@ -114,25 +116,39 @@ function Invoke-IloRedfish {
             }
         }
 
-        # TERMINAL COMMAND: iLO credentials come ONLY from -IloUser/-IloPassword.
-        # Never from config, environment, or CyberArk (pipeline-only; see AGENTS.md).
-        # Callers (Start-PhysicalServerBuild / Configure-PhysicalBuild) are responsible
-        # for collecting credentials during the interactive review phase; this function
-        # must never prompt during a live Redfish call.
-        if (-not $IloUser -or -not $IloPassword) {
-            return @{
-                Success = $false; Action = $Action; IloIp = $IloIp
-                Error   = "iLO credentials required. Supply -IloUser and -IloPassword (plain text or SecureString), or use -IloCredential. Terminal commands never read credentials from config or environment."
+        # OneView-managed servers must use OneView iLO SSO. OneView creates and
+        # manages a separate iLO account; the operator's OneView password is not
+        # an iLO-local password. Direct iLO credentials are only a fallback when
+        # no OneView target is supplied.
+        if ($OneViewHost -and $OneViewServerName) {
+            if (-not (Get-Command Get-HPOVServer -ErrorAction SilentlyContinue) -or
+                -not (Get-Command Get-HPOVIloSso -ErrorAction SilentlyContinue)) {
+                return @{
+                    Success = $false; Action = $Action; IloIp = $IloIp
+                    Error = 'OneView iLO SSO requires the HPE OneView PowerShell module (Get-HPOVServer/Get-HPOVIloSso). Direct OneView-user-to-iLO login is not supported.'
+                }
             }
-        }
-
-        $baseUrl = "https://$IloIp/redfish/v1"
-        $iloPasswordPlain = if ($IloPassword -is [System.Security.SecureString]) {
-            [System.Net.NetworkCredential]::new('', $IloPassword).Password
+            try {
+                $iloSso = Get-HPOVServer -Name $OneViewServerName -ErrorAction Stop |
+                    Get-HPOVIloSso -IloSsoSession -ErrorAction Stop
+                $session = [IloRedfishSession]::new($iloSso, $SkipCertificateCheck, $TimeoutSec)
+            } catch {
+                return @{
+                    Success = $false; Action = $Action; IloIp = $IloIp
+                    Error = "OneView iLO SSO acquisition failed for '$OneViewServerName': $($_.Exception.Message)"
+                }
+            }
         } else {
-            $IloPassword
+            if (-not $IloCredential) {
+                return @{
+                    Success = $false; Action = $Action; IloIp = $IloIp
+                    Error = 'Direct iLO credentials are required only when OneView iLO SSO is unavailable. Supply -IloCredential; never pass an iLO password on the command line.'
+                }
+            }
+            $baseUrl = "https://$IloIp/redfish/v1"
+            $session = [IloRedfishSession]::new($baseUrl, $IloCredential.UserName,
+                $IloCredential.GetNetworkCredential().Password, $SkipCertificateCheck, $TimeoutSec)
         }
-        $session = [IloRedfishSession]::new($baseUrl, $IloUser, $iloPasswordPlain, $SkipCertificateCheck, $TimeoutSec)
 
         try {
             switch ($Action) {

@@ -56,23 +56,9 @@ function Configure-PhysicalBuild {
         If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS.
 
     .PARAMETER IloCredential
-        PSCredential for the iLO Redfish check. If omitted, prompted interactively.
-        NOTE: Configure-PhysicalBuild does not perform the live iLO check itself
-        (the iLO check is an in-build validation run by Start-PhysicalServerBuild
-        after APPROVE). This parameter is forwarded to Start-PhysicalServerBuild
-        so the operator is not re-prompted after approval. If PSCredential
-        serialization causes the password to be lost in your environment, use
-        -IloUser and -IloPassword instead.
-
-    .PARAMETER IloUser
-        iLO username as a plain string. Used as a fallback when -IloCredential
-        is not supplied or its password is empty. Forwarded to
-        Start-PhysicalServerBuild and then to Invoke-IloRedfish.
-
-    .PARAMETER IloPassword
-        iLO password as a plain string. Used as a fallback when -IloCredential
-        is not supplied or its password is empty. Forwarded to
-        Start-PhysicalServerBuild and then to Invoke-IloRedfish.
+        Optional direct iLO PSCredential for unmanaged-server fallback.
+        For OneView-managed servers, the build uses OneView iLO SSO and does not
+        use this credential.
 
     .PARAMETER ExpectedHostname
         Hostname that should result from the build (defaults to SrvrId).
@@ -181,10 +167,6 @@ function Configure-PhysicalBuild {
         [Alias('Ilo')]
         [string] $IloIp,
         [System.Management.Automation.PSCredential] $IloCredential,
-        [Alias('IloU')]
-        [string] $IloUser = $null,
-        [Alias('IloP')]
-        [Object]  $IloPassword = $null,
         [Alias('OVCred')]
         [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $ExpectedHostname = $null,
@@ -287,7 +269,7 @@ function Configure-PhysicalBuild {
         # or explicit -Deploy), so we pass -SkipConfirmation to bypass the guard-rail
         # confirmation inside Start-PhysicalServerBuild.
         return (Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
-            -IloIp $IloIp -IloCredential $IloCredential -IloUser $IloUser -IloPassword $IloPassword -ExpectedHostname $ExpectedHostname `
+            -IloIp $IloIp -IloCredential $IloCredential -ExpectedHostname $ExpectedHostname `
             -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
@@ -462,11 +444,9 @@ function Configure-PhysicalBuild {
             SkipDpMp          = [bool]$SkipDpMp
             SkipIsoUrl        = [bool]$SkipIsoUrl -or [string]::IsNullOrEmpty($isoUrl) -or [bool]$AllowUnknownIsoUrl
         }
-        if ($IloCredential) {
-            $pbParams['IloCredential'] = $IloCredential
-        } else {
-            $pbParams['SkipIlo'] = $true
-        }
+        # The review gate never opens an iLO session. The post-approval
+        # orchestrator uses OneView iLO SSO for managed servers.
+        $pbParams['SkipIlo'] = $true
         if ($OneViewCredential) {
             $pbParams['OneViewCredential'] = $OneViewCredential
         }
