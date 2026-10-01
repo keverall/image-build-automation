@@ -57,6 +57,22 @@ function Configure-PhysicalBuild {
 
     .PARAMETER IloCredential
         PSCredential for the iLO Redfish check. If omitted, prompted interactively.
+        NOTE: Configure-PhysicalBuild does not perform the live iLO check itself
+        (the iLO check is an in-build validation run by Start-PhysicalServerBuild
+        after APPROVE). This parameter is forwarded to Start-PhysicalServerBuild
+        so the operator is not re-prompted after approval. If PSCredential
+        serialization causes the password to be lost in your environment, use
+        -IloUser and -IloPassword instead.
+
+    .PARAMETER IloUser
+        iLO username as a plain string. Used as a fallback when -IloCredential
+        is not supplied or its password is empty. Forwarded to
+        Start-PhysicalServerBuild and then to Invoke-IloRedfish.
+
+    .PARAMETER IloPassword
+        iLO password as a plain string. Used as a fallback when -IloCredential
+        is not supplied or its password is empty. Forwarded to
+        Start-PhysicalServerBuild and then to Invoke-IloRedfish.
 
     .PARAMETER ExpectedHostname
         Hostname that should result from the build (defaults to SrvrId).
@@ -165,6 +181,10 @@ function Configure-PhysicalBuild {
         [Alias('Ilo')]
         [string] $IloIp,
         [System.Management.Automation.PSCredential] $IloCredential,
+        [Alias('IloU')]
+        [string] $IloUser = $null,
+        [Alias('IloP')]
+        [Object]  $IloPassword = $null,
         [Alias('OVCred')]
         [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $ExpectedHostname = $null,
@@ -267,7 +287,7 @@ function Configure-PhysicalBuild {
         # or explicit -Deploy), so we pass -SkipConfirmation to bypass the guard-rail
         # confirmation inside Start-PhysicalServerBuild.
         return (Start-PhysicalServerBuild -ServerIdentifier $ServerIdentifier -OneViewHost $OneViewHost `
-            -IloIp $IloIp -IloCredential $IloCredential -ExpectedHostname $ExpectedHostname `
+            -IloIp $IloIp -IloCredential $IloCredential -IloUser $IloUser -IloPassword $IloPassword -ExpectedHostname $ExpectedHostname `
             -Domain $Domain -SiteCode $SiteCode -ManagementPoint $ManagementPoint `
             -DistributionPoint $DistributionPoint -SiteServer $SiteServer `
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
@@ -422,22 +442,35 @@ function Configure-PhysicalBuild {
     # ── 3. Run pre-build validation ──────────────────────────────────────────
     # Configure-PhysicalBuild is the 4-eye review / approval gate. The live
     # iLO Redfish credential check is an in-build pre-destructive validation
-    # that belongs to Start-PhysicalServerBuild (after APPROVE). Skipping it
-    # here keeps the review phase focused on target resolution, ISO/firmware
-    # reachability, and the guard-rail/APPROVE prompt.
+    # that belongs to Start-PhysicalServerBuild (after APPROVE). When an
+    # explicit iLO credential is supplied, forward it so the review-phase
+    # check can verify reachability early; otherwise skip iLO here and let
+    # Start-PhysicalServerBuild handle it after approval.
     Write-Host "`n[3/4] Running pre-build validation..." -ForegroundColor Yellow
     $preBuildResult = $null
     if (-not $SkipPreBuild) {
-        $preBuildResult = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
-            -OneViewHost $OneViewHost -IloIp $IloIp `
-            -OneViewCredential $OneViewCredential `
-            -IsoUrl $isoUrl `
-            -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
-            -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
-            -SkipOneView:([bool]$SkipOneView) `
-            -SkipIlo `
-            -SkipDpMp:([bool]$SkipDpMp) `
-            -SkipIsoUrl:([bool]$SkipIsoUrl -or [string]::IsNullOrEmpty($isoUrl) -or [bool]$AllowUnknownIsoUrl)
+        $pbParams = @{
+            ServerIdentifier  = $ServerIdentifier
+            OneViewHost       = $OneViewHost
+            IloIp             = $IloIp
+            IsoUrl            = $isoUrl
+            ManagementPoint   = $ManagementPoint
+            DistributionPoint = $DistributionPoint
+            BootImageName     = $BootImageName
+            TaskSequenceName  = $TaskSequenceName
+            SkipOneView       = [bool]$SkipOneView
+            SkipDpMp          = [bool]$SkipDpMp
+            SkipIsoUrl        = [bool]$SkipIsoUrl -or [string]::IsNullOrEmpty($isoUrl) -or [bool]$AllowUnknownIsoUrl
+        }
+        if ($IloCredential) {
+            $pbParams['IloCredential'] = $IloCredential
+        } else {
+            $pbParams['SkipIlo'] = $true
+        }
+        if ($OneViewCredential) {
+            $pbParams['OneViewCredential'] = $OneViewCredential
+        }
+        $preBuildResult = Test-PreBuildValidation @pbParams
         if ($preBuildResult.Success) {
             Write-Host "  [OK] All pre-build checks passed" -ForegroundColor Green
         } else {

@@ -301,6 +301,10 @@ function Start-PhysicalServerBuild {
         [string] $IloIp,
         [Alias('IloCred')]
         [System.Management.Automation.PSCredential] $IloCredential,
+        [Alias('IloU')]
+        [string] $IloUser = $null,
+        [Alias('IloP')]
+        [Object]  $IloPassword = $null,
         [Alias('OVCred')]
         [System.Management.Automation.PSCredential] $OneViewCredential,
         [string] $ExpectedHostname = $null,
@@ -450,12 +454,14 @@ function Start-PhysicalServerBuild {
         if (-not $SkipPreBuild) {
             $r = Test-PreBuildValidation -ServerIdentifier $ServerIdentifier `
                 -OneViewHost $OneViewHost -IloIp $IloIp `
+                -IloCredential $IloCredential `
                 -OneViewCredential $OneViewCredential `
                 -IsoUrl $isoUrl `
                 -ManagementPoint $ManagementPoint -DistributionPoint $DistributionPoint `
                 -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
-                -SkipIsoUrl:([string]::IsNullOrEmpty($isoUrl) -or $AllowUnknownIsoUrl) `
-                -DryRun:$DryRun
+                -SkipOneView:([bool]$SkipOneView) `
+                -SkipDpMp:([bool]$SkipDpMp) `
+                -SkipIsoUrl:([string]::IsNullOrEmpty($isoUrl) -or [bool]$AllowUnknownIsoUrl)
             _Step 'pre_build_validation' $r
             if (-not $r.Success -and -not $DryRun) { return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet) }
         }
@@ -547,7 +553,14 @@ function Start-PhysicalServerBuild {
             if (-not $DryRun) {
                 $iloStatusUser = $null
                 $iloStatusPassword = $null
-                if ($IloCredential) {
+                if ($IloUser -and $IloPassword) {
+                    $iloStatusUser = $IloUser
+                    $iloStatusPassword = if ($IloPassword -is [System.Security.SecureString]) {
+                        [System.Net.NetworkCredential]::new('', $IloPassword).Password
+                    } else {
+                        $IloPassword
+                    }
+                } elseif ($IloCredential) {
                     $iloStatusUser = $IloCredential.UserName
                     $iloStatusPassword = $IloCredential.GetNetworkCredential().Password
                 } elseif ($OneViewCredential) {
@@ -560,14 +573,22 @@ function Start-PhysicalServerBuild {
                         $iloStatusPassword = $ovCred[1]
                     }
                 }
+                if (-not $iloStatusUser -or -not $iloStatusPassword) {
+                    _Step 'ilo_maintenance_guard' @{
+                        Success = $false
+                        Error   = "iLO credentials required. Supply -IloCredential, -IloUser/-IloPassword, or ensure an active OneView session with credentials. iLO and OneView use separate auth domains."
+                    }
+                    $overall['success'] = $false
+                    return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
+                }
                 $status = Invoke-IloRedfish -Action Status -IloIp $IloIp -IloUser $iloStatusUser -IloPassword $iloStatusPassword -DryRun:$DryRun
                 if (-not $status.Success) {
                     $statusError = $status.Error
                     if ($statusError -match '401') {
-                        if ($IloCredential) {
-                            $statusError = "iLO authentication failed (401 Unauthorized). The supplied -IloCredential was rejected by iLO. Verify the iLO username and password. Detail: $statusError"
+                        if ($IloCredential -or $IloUser) {
+                            $statusError = "iLO authentication failed (401 Unauthorized). The supplied iLO credential was rejected by iLO. Verify the iLO username and password. Detail: $statusError"
                         } else {
-                            $statusError = "iLO authentication failed (401 Unauthorized). The OneView/session credentials were rejected by iLO. iLO and OneView use separate auth domains — supply -IloCredential with valid iLO credentials. Detail: $statusError"
+                            $statusError = "iLO authentication failed (401 Unauthorized). The OneView/session credentials were rejected by iLO. iLO and OneView use separate auth domains — supply -IloCredential (or -IloUser/-IloPassword) with valid iLO credentials. Detail: $statusError"
                         }
                     }
                     _Step 'ilo_maintenance_guard' @{
@@ -595,7 +616,14 @@ function Start-PhysicalServerBuild {
 
             $iloUser = $null
             $iloPassword = $null
-            if ($IloCredential) {
+            if ($IloUser -and $IloPassword) {
+                $iloUser = $IloUser
+                $iloPassword = if ($IloPassword -is [System.Security.SecureString]) {
+                    [System.Net.NetworkCredential]::new('', $IloPassword).Password
+                } else {
+                    $IloPassword
+                }
+            } elseif ($IloCredential) {
                 $iloUser = $IloCredential.UserName
                 $iloPassword = $IloCredential.GetNetworkCredential().Password
             } elseif ($OneViewCredential) {

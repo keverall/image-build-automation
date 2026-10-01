@@ -80,7 +80,7 @@ function Invoke-IloRedfish {
         [Alias('IloU')]
         [string] $IloUser  = $null,
         [Alias('IloP')]
-        [string] $IloPassword = $null,
+        [Object]  $IloPassword = $null,
         [Alias('Iso')]
         [string] $IsoUrl = $null,
         [int]    $CdDeviceId = 1,
@@ -114,32 +114,25 @@ function Invoke-IloRedfish {
             }
         }
 
-        # TERMINAL COMMAND: iLO credentials come ONLY from -IloUser/-IloPassword
-        # or a direct interactive prompt. Never from config, environment, or
-        # CyberArk (pipeline-only; see AGENTS.md).
+        # TERMINAL COMMAND: iLO credentials come ONLY from -IloUser/-IloPassword.
+        # Never from config, environment, or CyberArk (pipeline-only; see AGENTS.md).
+        # Callers (Start-PhysicalServerBuild / Configure-PhysicalBuild) are responsible
+        # for collecting credentials during the interactive review phase; this function
+        # must never prompt during a live Redfish call.
         if (-not $IloUser -or -not $IloPassword) {
-            $canPrompt = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
-                [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
-            if ($canPrompt) {
-                if (-not $IloUser) {
-                    Write-Host "Enter iLO username for '$IloIp': " -ForegroundColor Yellow -NoNewline
-                    $IloUser = Read-Host
-                }
-                if ($IloUser -and -not $IloPassword) {
-                    $securePass = Read-Host "Enter iLO password for '$IloIp': " -AsSecureString
-                    $IloPassword = [System.Net.NetworkCredential]::new('', $securePass).Password
-                }
-            }
-            if (-not $IloUser -or -not $IloPassword) {
-                return @{
-                    Success = $false; Action = $Action; IloIp = $IloIp
-                    Error   = "iLO credentials required. Supply -IloUser and -IloPassword, or run interactively to be prompted. Terminal commands never read credentials from config or environment."
-                }
+            return @{
+                Success = $false; Action = $Action; IloIp = $IloIp
+                Error   = "iLO credentials required. Supply -IloUser and -IloPassword (plain text or SecureString), or use -IloCredential. Terminal commands never read credentials from config or environment."
             }
         }
 
         $baseUrl = "https://$IloIp/redfish/v1"
-        $session = [IloRedfishSession]::new($baseUrl, $IloUser, $IloPassword, $SkipCertificateCheck, $TimeoutSec)
+        $iloPasswordPlain = if ($IloPassword -is [System.Security.SecureString]) {
+            [System.Net.NetworkCredential]::new('', $IloPassword).Password
+        } else {
+            $IloPassword
+        }
+        $session = [IloRedfishSession]::new($baseUrl, $IloUser, $iloPasswordPlain, $SkipCertificateCheck, $TimeoutSec)
 
         try {
             switch ($Action) {
