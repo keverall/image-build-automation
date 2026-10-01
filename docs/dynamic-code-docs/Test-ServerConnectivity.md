@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Test-ServerConnectivity.ps1
-generated: 2026-09-29
+generated: 2026-10-01
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

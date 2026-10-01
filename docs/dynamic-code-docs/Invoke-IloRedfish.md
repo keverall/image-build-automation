@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Invoke-IloRedfish.ps1
-generated: 2026-09-29
+generated: 2026-10-01
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -30,8 +30,9 @@ Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â
 |-----------|-------------|
 | `-Action` | Operation to perform. One of: Mount, MountAndBoot, Boot, Reset, Eject, Status. |
 | `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address or hostname. Required. |
-| `-IloUser` _(Aliases: -IloU)_ | iLO username. If omitted on a live run, prompted interactively. Never read from config or environment. |
-| `-IloPassword` _(Aliases: -IloP)_ | iLO password. If omitted on a live run, prompted interactively (secure input). Never read from config or environment. |
+| `-IloCredential` | Direct iLO PSCredential fallback for unmanaged servers only. Managed OneView servers use OneView iLO SSO instead. |
+| `-OneViewHost` | OneView appliance associated with the active OneView session. |
+| `-OneViewServerName` | Resolved OneView server-hardware name used to obtain the iLO SSO token. |
 | `-IsoUrl` _(Aliases: -Iso)_ | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
 | `-CdDeviceId` | VirtualMedia device id (default 1). Enumerate via /redfish/v1/Managers/1/VirtualMedia. |
 | `-Force` | Required for destructive actions (MountAndBoot, Boot, Reset) to confirm intent. Read-only actions (Status, Eject without -Force) do not require this switch. |
@@ -75,13 +76,15 @@ Invoke-IloRedfish -Action MountAndBoot -IloIp 192.168.1.101 ` -IsoUrl 'https://a
     .PARAMETER IloIp
         iLO IPv4 address or hostname. Required.
 
-    .PARAMETER IloUser
-        iLO username. If omitted on a live run, prompted interactively. Never
-        read from config or environment.
+    .PARAMETER IloCredential
+        Direct iLO PSCredential fallback for unmanaged servers only. Managed
+        OneView servers use OneView iLO SSO instead.
 
-    .PARAMETER IloPassword
-        iLO password. If omitted on a live run, prompted interactively (secure
-        input). Never read from config or environment.
+    .PARAMETER OneViewHost
+        OneView appliance associated with the active OneView session.
+
+    .PARAMETER OneViewServerName
+        Resolved OneView server-hardware name used to obtain the iLO SSO token.
 
     .PARAMETER IsoUrl
         HTTPS URL to the ISO file (required for Mount / MountAndBoot).

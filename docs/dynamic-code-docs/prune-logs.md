@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/prune-logs.ps1
-generated: 2026-09-29
+generated: 2026-10-01
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

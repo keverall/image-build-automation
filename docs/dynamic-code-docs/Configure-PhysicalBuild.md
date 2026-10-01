@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/Configure-PhysicalBuild.ps1
-generated: 2026-09-29
+generated: 2026-10-01
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -32,7 +32,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 | `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (hostname, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
 | `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. OPTIONAL but strongly recommended as a pre-flight: when supplied (with -IloCredential, or an interactive prompt), the pre-build validation performs a LIVE iLO Redfish GET that confirms the iLO is reachable and the credentials are valid BEFORE any destructive step. This matters because Start-PhysicalBuild mounts the Windows ISO and reboots the server through this exact iLO channel — verifying it first prevents a failed/partial build (e.g. after the disk is already being wiped) caused by a wrong or unreachable iLO. DISTINCT ROLES: -ServerIdentifier (name/serial) is the IDENTITY unique constraint OneView uses to select the single target; -IloIp is the separate CONNECTIVITY/CREDENTIAL pre-flight for the mount/reboot path. If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS. |
-| `-IloCredential` | PSCredential for the iLO Redfish check. If omitted, prompted interactively. |
+| `-IloCredential` | Optional direct iLO PSCredential for unmanaged-server fallback. For OneView-managed servers, the build uses OneView iLO SSO and does not use this credential. |
 | `-ExpectedHostname` | Hostname that should result from the build (defaults to SrvrId). |
 | `-Domain` | AD domain to verify in post-build validation. |
 | `-SiteCode` | ConfigMgr site code (for ISO build / pre-build validation). |
@@ -114,7 +114,9 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
         If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS.
 
     .PARAMETER IloCredential
-        PSCredential for the iLO Redfish check. If omitted, prompted interactively.
+        Optional direct iLO PSCredential for unmanaged-server fallback.
+        For OneView-managed servers, the build uses OneView iLO SSO and does not
+        use this credential.
 
     .PARAMETER ExpectedHostname
         Hostname that should result from the build (defaults to SrvrId).
