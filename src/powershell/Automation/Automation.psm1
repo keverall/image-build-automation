@@ -13,6 +13,17 @@ Set-StrictMode -Off   # allow $null comparisons, unset variables in classes
 
 $global:__Automation_Loading = $true
 
+# Make the offline-bundled HPE OneView module discoverable before any runtime
+# Connect-OneViewSession call. The regulated client host has no internet and
+# therefore cannot rely on PSGallery or a machine-wide module installation.
+$bundledOneViewRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../scripts/modules'))
+if ((($PSVersionTable.PSVersion.Major -le 5) -or $IsWindows) -and (Test-Path $bundledOneViewRoot -PathType Container)) {
+    $modulePathEntries = @($env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ })
+    if ($modulePathEntries -notcontains $bundledOneViewRoot) {
+        $env:PSModulePath = $bundledOneViewRoot + [System.IO.Path]::PathSeparator + ($modulePathEntries -join [System.IO.Path]::PathSeparator)
+    }
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Shared value type: CommandResult 
 # ──────────────────────────────────────────────────────────────────────────────

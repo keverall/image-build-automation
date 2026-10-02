@@ -121,12 +121,12 @@ function Invoke-IloRedfish {
         # credential is a supported fallback. Never silently reuse a OneView
         # credential as an iLO credential because they are separate auth domains.
         $hasOneViewSso = $OneViewHost -and $OneViewServerName -and
-            (Get-Command Get-HPOVServer -ErrorAction SilentlyContinue) -and
-            (Get-Command Get-HPOVIloSso -ErrorAction SilentlyContinue)
+            (Get-Command Get-OVServer -ErrorAction SilentlyContinue) -and
+            (Get-Command Get-OVIloSso -ErrorAction SilentlyContinue)
         if ($hasOneViewSso -and -not $IloCredential) {
             try {
-                $iloSso = Get-HPOVServer -Name $OneViewServerName -ErrorAction Stop |
-                    Get-HPOVIloSso -IloSsoSession -ErrorAction Stop
+                $iloSso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop |
+                    Get-OVIloSso -IloSsoSession -ErrorAction Stop
                 $session = [IloRedfishSession]::new($iloSso, $SkipCertificateCheck, $TimeoutSec)
             } catch {
                 return @{
@@ -142,7 +142,7 @@ function Invoke-IloRedfish {
             if ($OneViewHost -and $OneViewServerName) {
                 return @{
                     Success = $false; Action = $Action; IloIp = $IloIp
-                    Error = 'OneView iLO SSO is unavailable because the HPE OneView PowerShell module is not loaded. Supply an explicit -IloCredential for direct iLO access, or load Get-HPOVServer/Get-HPOVIloSso.'
+                    Error = 'OneView iLO SSO is unavailable because the HPE OneView PowerShell module is not loaded. Supply an explicit -IloCredential for direct iLO access, or load Get-OVServer/Get-OVIloSso.'
                 }
             }
             if (-not $IloCredential) {
