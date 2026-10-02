@@ -38,21 +38,31 @@ Set-Location 'C:\path\to\image-build-automation'
 
 Replace the path with the actual repository path on the client server.
 
-## 2. Prepare the offline module
+## 2. Prepare the offline module automatically
 
-Run the offline-first setup script:
-
-```powershell
-pwsh -File .\scripts\setup-runner.ps1
-```
-
-If already running inside PowerShell and `pwsh` is not available, run:
+Run the repository setup target once on the client server:
 
 ```powershell
-.\scripts\setup-runner.ps1
+make setup
 ```
 
-The bundled HPE OneView module is used. The script must not require PowerShell Gallery access when the repository bundle is present.
+`make setup` automatically:
+
+- Uses the bundled modules under `scripts/modules/`
+- Adds `scripts/modules` to the current `PSModulePath`
+- Persists `scripts/modules` to the Windows user `PSModulePath`
+- Imports `HPEOneView.1000`
+- Verifies `Get-OVServer` and `Get-OVIloSso`
+- Configures the PowerShell profile for future sessions
+
+No manual module import is required for later PowerShell sessions. The setup remains offline-first and does not require PowerShell Gallery access when the repository bundle is present.
+
+If `make` is unavailable, the equivalent setup command is:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-runner.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-Profile.ps1
+```
 
 ## 3. Confirm the bundled HPE OneView module is discoverable
 

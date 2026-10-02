@@ -95,6 +95,46 @@ function Get-UserModulePath {
 }
 
 # ── Utility: add directory to session + persistent user PATH ─────────────────
+function Ensure-OfflineModulePath {
+    <#
+    .SYNOPSIS
+        Makes the repository's bundled PowerShell modules available automatically.
+
+    .DESCRIPTION
+        Adds scripts/modules to the current and persistent user PSModulePath. This
+        is required on regulated/offline Windows hosts where PSGallery is unavailable.
+        The HPE OneView module is Windows-only; Linux test runners retain their
+        existing behavior and do not attempt to import it.
+    #>
+    $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
+        $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
+    $moduleRoot = (Resolve-Path $VENDOR_MODULES_DIR).Path
+    $separator = [IO.Path]::PathSeparator
+    $entries = @($env:PSModulePath -split [regex]::Escape($separator) | Where-Object { $_ })
+    if ($entries -notcontains $moduleRoot) {
+        $env:PSModulePath = $moduleRoot + $separator + ($entries -join $separator)
+        Write-OK "Added offline module path for this session: $moduleRoot"
+    }
+    if ($isWin) {
+        $userPath = [Environment]::GetEnvironmentVariable('PSModulePath', 'User')
+        $userEntries = @($userPath -split [regex]::Escape($separator) | Where-Object { $_ })
+        if ($userEntries -notcontains $moduleRoot) {
+            $newUserPath = $moduleRoot + $separator + ($userEntries -join $separator)
+            [Environment]::SetEnvironmentVariable('PSModulePath', $newUserPath, 'User')
+            Write-OK "Persisted offline module path for future sessions: $moduleRoot"
+        }
+        Import-Module HPEOneView.1000 -Force -ErrorAction Stop
+        foreach ($cmdName in @('Get-OVServer', 'Get-OVIloSso')) {
+            if (-not (Get-Command $cmdName -ErrorAction SilentlyContinue)) {
+                throw "Bundled HPEOneView.1000 loaded but '$cmdName' is unavailable."
+            }
+        }
+        Write-OK 'HPEOneView.1000 loaded with Get-OVServer and Get-OVIloSso available'
+    } else {
+        Write-Log 'Non-Windows platform - HPEOneView module discovery configured but import skipped'
+    }
+}
+
 function Add-BinToPath {
     <#
     .SYNOPSIS
@@ -529,6 +569,7 @@ function Main {
     Test-PowerShellVersion
     Repair-TempModulesDirectory
     Install-RequiredModules
+    Ensure-OfflineModulePath
     Install-OhMyPosh
     Install-Make
     Install-Checkmake
