@@ -147,7 +147,7 @@ Run this read-only verification:
 
 ```powershell
 $server = Get-OVServer -Name 'omg-qlikview-03ilo' -ErrorAction Stop
-$iloSso = $server | Get-OVIloSso -IloSsoSession -ErrorAction Stop
+$iloSso = $server | Get-OVIloSso -IloRestSession -ErrorAction Stop
 
 $iloSso | Select-Object *
 ```
@@ -252,7 +252,7 @@ Instead verify the SSO path:
 
 ```powershell
 $server = Get-OVServer -Name 'omg-qlikview-03ilo' -ErrorAction Stop
-$server | Get-OVIloSso -IloSsoSession -ErrorAction Stop
+$server | Get-OVIloSso -IloRestSession -ErrorAction Stop
 ```
 
 If that fails, engage the OneView administrator. The OneView-managed iLO account is appliance-managed and should not be manually replaced.

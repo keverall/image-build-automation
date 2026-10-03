@@ -126,7 +126,7 @@ function Invoke-IloRedfish {
         if ($hasOneViewSso -and -not $IloCredential) {
             try {
                 $iloSso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop |
-                    Get-OVIloSso -IloSsoSession -ErrorAction Stop
+                    Get-OVIloSso -IloRestSession -ErrorAction Stop
                 $session = [IloRedfishSession]::new($iloSso, $SkipCertificateCheck, $TimeoutSec)
             } catch {
                 return @{
