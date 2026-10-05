@@ -562,7 +562,9 @@ function Start-PhysicalServerBuild {
                 if (-not $status.Success) {
                     $statusError = $status.Error
                     if ($statusError -match '401') {
-                        if ($IloCredential -and -not $OneViewHost) {
+                        if ($OneViewHost) {
+                            $statusError = "iLO authentication failed (401 Unauthorized) using the OneView-issued iLO SSO session. Verify the OneView server-hardware SSO operation and appliance-managed iLO account. Detail: $statusError"
+                        } elseif ($IloCredential) {
                             $statusError = "iLO authentication failed (401 Unauthorized). The supplied direct iLO credential was rejected by iLO. Verify the iLO account and permissions. Detail: $statusError"
                         } else {
                             $statusError = "iLO authentication failed (401 Unauthorized). The OneView/session credentials were rejected by iLO. iLO and OneView use separate auth domains — use OneView iLO SSO or supply -IloCredential for an unmanaged server. Detail: $statusError"

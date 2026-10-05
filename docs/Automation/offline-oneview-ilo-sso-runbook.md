@@ -149,10 +149,12 @@ Run this read-only verification:
 $server = Get-OVServer -Name 'omg-qlikview-03ilo' -ErrorAction Stop
 $iloSso = $server | Get-OVIloSso -IloRestSession -ErrorAction Stop
 
-$iloSso | Select-Object *
+$iloSso | Select-Object mpAddress, @{Name='HasSessionId'; Expression = {
+    -not [string]::IsNullOrWhiteSpace([string]$_.sessionID)
+}}
 ```
 
-The result must contain a OneView-issued iLO SSO connection object, including a root address and token/session value. Do not print or save the token in logs or tickets.
+The result must contain a OneView-issued iLO SSO connection object, including `mpAddress` and `sessionID` properties. Do not print or save the session value in logs or tickets.
 
 If this command fails, capture only the error message and command/module versions. Do not disclose the token.
 
