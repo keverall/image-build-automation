@@ -271,6 +271,30 @@ function Copy-ModuleToUserPath {
     Write-OK "$actualName $Version installed"
 }
 
+function Test-ModuleImportIsolated {
+    <#
+    .SYNOPSIS
+        Tests a module import in a short-lived PowerShell process.
+
+    .DESCRIPTION
+        Some Windows PowerShell modules load native/.NET assemblies during
+        Import-Module.  Those assemblies can remain locked for the lifetime of
+        the process, making it impossible for this setup process to replace a
+        failed module import.  The child process exits before the caller tries
+        to remove or overwrite the module directory.
+    #>
+
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][version]$Version)
+
+    $pwsh = Join-Path $PSHOME 'pwsh.exe'
+    if (-not (Test-Path $pwsh)) { $pwsh = (Get-Command pwsh -ErrorAction Stop).Source }
+
+    # Module names and versions are internal, trusted values from the manifest.
+    $command = "Import-Module -Name '$Name' -RequiredVersion '$Version' -ErrorAction Stop"
+    & $pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $command *> $null
+    return ($LASTEXITCODE -eq 0)
+}
+
 function Install-RequiredModule {
     <#
     .SYNOPSIS
@@ -284,7 +308,15 @@ function Install-RequiredModule {
         Sort-Object Version -Descending | Select-Object -First 1
     if ($existing -and $existing.Version -ge [version]$Version) {
         try {
-            Import-Module $Name -RequiredVersion $existing.Version -ErrorAction Stop -WarningAction SilentlyContinue
+            if ($Name -eq 'OperationsManager') {
+                # Do not load the SCOM DLL into this process: a failed import
+                # would leave it locked while the repair path copies the bundle.
+                if (-not (Test-ModuleImportIsolated -Name $Name -Version $existing.Version)) {
+                    throw "Isolated import failed"
+                }
+            } else {
+                Import-Module $Name -RequiredVersion $existing.Version -ErrorAction Stop -WarningAction SilentlyContinue
+            }
             if ($Name -eq 'Pester') {   # well-known silent corruption
                 $dll = Join-Path (Split-Path $existing.Path) 'bin\net8.0\Pester.dll'
                 if (-not (Test-Path $dll)) { throw "Pester.dll missing" }
@@ -300,7 +332,10 @@ function Install-RequiredModule {
             $containsPsd1 = Get-ChildItem -Path $versionDir -Filter "*.psd1" -ErrorAction SilentlyContinue
             if ($containsPsd1 -and (Test-Path $moduleDir -PathType Container)) {
                 Write-Log "Removing corrupt module directory: $moduleDir"
-                Remove-Item -Recurse -Force $moduleDir -ErrorAction SilentlyContinue
+                Remove-Item -Recurse -Force $moduleDir -ErrorAction Stop
+                if (Test-Path $moduleDir -PathType Container) {
+                    throw "Module directory still exists after removal: $moduleDir"
+                }
             } else {
                 Write-Warn "Cannot verify module directory structure, skipping removal: $moduleDir"
             }
