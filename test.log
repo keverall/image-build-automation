@@ -1,53 +1,23 @@
+ make setup                                                                                                                                                               0  09:16:02 [setup] Setting up PowerShell environment...
 
-  archive. This is DESTRUCTIVE.
-2026-10-06 14:28:16 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with physical server build for 'omg-qlikview-03ilo'.
-[FAIL] ilo_maintenance_guard 
-Server: CZ22420JCN 
-Start_Time: 2026-10-06T14:28:14.0936071Z 
-Steps:
-  Resolve_Iso:
-    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
-/WIN2019Auto.iso
-    Success: True
-  Pre_Build_Validation:
-    Timestamp: 2026-10-06T14:28:15.3072018Z 
-    Success: True
-    Server: CZ22420JCN
-    Checks:
-      Oneview_Target:
-        Details: Server: CZ22420JCN, Details: oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434E, health_status: OK, enclosure_name: , ilo_ip: 10.30.54.22, rom_version: U46 v2.42 (06/13/2025), serial_number: CZ22420JCN, model: ProLiant DL360 Gen10 Plus, power_state: On, maintenance_mode: Yes, enclosure_bay: 0, name: omg-qlikview-03ilo, Success: True
-        Status: PASS 
-      Iso_Url_Format:
-        Details: CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
-/WIN2019Auto.iso
-        Status: PASS
-      Ilo_Credentials: 
-        Details: skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot) 
-        Status: SKIP 
-      Audit_Recorded: 
-        Details: logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCN_2026-10-06T14-28-15Z.json 
-        Status: PASS
-  Oneview_Target:
-    Success: True 
-    Details:
-      Oneview_Uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434E 
-      Health_Status: OK
-      Enclosure_Name: (none) 
-      Ilo_Ip: 10.30.54.22 
-      Rom_Version: U46 v2.42 (06/13/2025)
-      Serial_Number: CZ22420JCN 
-      Model: ProLiant DL360 Gen10 Plus 
-      Power_State: On 
-      Maintenance_Mode: Yes 
-      Enclosure_Bay: 0 
-      Name: omg-qlikview-03ilo
-    Server: CZ22420JCN
-    Resolved By: Serial 
-  Oneview_Maintenance_Enable:
-    Success: True
-    Reason: Server already in maintenance mode
-    Skipped: True
-  Ilo_Maintenance_Guard:
-    Error: iLO status check failed: OneView iLO SSO acquisition failed for 'omg-qlikview-03ilo': OneView returned an invalid iLO SSO session (mpAddress or sessionID missing). 
-    Success: False 
-Success: False 
+╔══════════════════════════════════════════════════════╗
+║  HPE ProLiant ISO Automation - PowerShell Setup     ║
+╚══════════════════════════════════════════════════════╝
+
+[OK] PowerShell 7.4.6
+[INFO] Installing PowerShell modules…
+[OK] Pester 6.0.1 already verified
+[OK] PSScriptAnalyzer 1.21.0 already verified
+[OK] PlatyPS 0.14.0 already verified
+[OK] HPEOneView.1000 10.0.4265.2221 already verified
+[WARN] OperationsManager 1.0 corrupt - removing and reinstalling
+[INFO] Removing corrupt module directory: C:\Users\adm_98253\Documents\PowerShell\Modules\OperationsManager
+[INFO] Installing OperationsManager 1.0 from bundle
+Copy-Item: C:\Users\adm_98253\products\repos\image-build-automation\scripts\setup-runner.ps1:269:9
+Line |
+ 269 |          Copy-Item -Path $_.FullName -Destination $dest -Recurse -Forc …
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | The process cannot access the file 'C:\Users\adm_98253\Documents\PowerShell\Modules\OperationsManager\1.0\OM10.Commands\Microsoft.SystemCenter.OperationsManagerV10.Commands.dll' because it is being used by another   
+     | process.
+make: *** [Makefile:57: setup] Error 1
+   image-build-automation  main  make setup                                                                                                                                                      1  1m 51s 266ms  09:17:54 [setup] Setting up PowerShell environment...
