@@ -397,3 +397,88 @@ Steps:
     Error: iLO status check failed: iLO authentication failed (401 Unauthorized) using the OneView-issued iLO SSO session. Verify the OneView server-hardware SSO operation and appliance-managed iLO account. Detail: Response status code does not indicate success: 401 (Unauthorized).                                                                                          erify the OneView server-hardware SSO operation and appliance-managed iLO account. Detail: Response
     Success: False
 Success: False
+
+
+
+
+
+
+
+
+
+
+The remaining client-side test should be performed with the client-provided direct iLO credential:
+
+$iloCred = Get-Credential -Message 'Direct iLO credentials for 10.30.54.22'
+
+Invoke-IloRedfish `
+    -Action Status `
+    -IloIp '10.30.54.22' `
+    -IloCredential $iloCred
+If this direct status test succeeds but the OneView SSO path still returns 401, then the client’s iLO SSO trust/configuration is the problem, not the iLO account password. If the direct status test also returns 401, the client-provided “master” account is not valid for that server’s iLO 5 Redfish interface or lacks the required iLO permissions.
+
+
+The latest log is different and identifies the remaining issue precisely.
+
+OneView SSO acquisition is now succeeding. The failure is occurring on the first authenticated Redfish request:
+
+```text
+OneView iLO SSO session acquired
+GET /redfish/v1/Systems/1
+401 Unauthorized
+```
+
+So the previous object-property defect is fixed. This is no longer a OneView username/password failure.
+
+I found one remaining HPE Redfish compatibility issue: authenticated iLO requests were missing the required Redfish protocol header:
+
+```http
+OData-Version: 4.0
+```
+
+Added it to every authenticated Redfish request alongside:
+
+```http
+X-Auth-Token: <OneView-issued-token>
+Accept: application/json
+```
+
+The request headers are now:
+
+```powershell
+@{
+    'X-Auth-Token'  = $this.AuthToken
+    'OData-Version' = '4.0'
+    'Accept'        = 'application/json'
+}
+```
+
+Validation:
+
+```text
+Automation-mode tests: 171 passed
+Module import: passed
+```
+
+The current log confirms that this is the correct execution path:
+
+```text
+iLO status check failed:
+iLO authentication failed (401 Unauthorized)
+using the OneView-issued iLO SSO session
+```
+
+That means the code is now using OneView SSO rather than trying your OneView password as an iLO password.
+
+The remaining client-side test should be performed with the client-provided direct iLO credential:
+
+```powershell
+$iloCred = Get-Credential -Message 'Direct iLO credentials for 10.30.54.22'
+
+Invoke-IloRedfish `
+    -Action Status `
+    -IloIp '10.30.54.22' `
+    -IloCredential $iloCred
+```
+
+If this direct status test succeeds but the OneView SSO path still returns 401, then the client’s iLO SSO trust/configuration is the problem, not the iLO account password. If the direct status test also returns 401, the client-provided “master” account is not valid for that server’s iLO 5 Redfish interface or lacks the required iLO permissions.

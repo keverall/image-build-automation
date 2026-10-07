@@ -436,7 +436,13 @@ class IloRedfishSession {
     }
 
     [hashtable] _Headers() {
-        return @{ 'X-Auth-Token' = $this.AuthToken; 'Accept' = 'application/json' }
+        # HPE iLO requires the Redfish protocol version header on authenticated
+        # operations. Keep the SSO token in the standard Redfish header.
+        return @{
+            'X-Auth-Token'  = $this.AuthToken
+            'OData-Version' = '4.0'
+            'Accept'        = 'application/json'
+        }
     }
 
     [void] _Patch([string]$Uri, [object]$Body) {
