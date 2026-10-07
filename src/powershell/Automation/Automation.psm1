@@ -395,12 +395,10 @@ class IloRedfishSession {
     [string] $SessionUri
 
     IloRedfishSession([object]$SsoSession, [bool]$SkipCert, [int]$TimeoutSec) {
-        # HPEOneView.1000 Get-OVIloSso -IloRestSession returns an
-        # HPEOneView.Servers.IloRestSession-shaped object with mpAddress and
-        # sessionID properties. It does not return RootUri/X-Auth-Token.
-        $root = [string]$SsoSession.mpAddress
-        $token = [string]$SsoSession.sessionID
-        $token = $token -replace '^sessionKey=', ''
+        # HPEOneView.1000 Get-OVIloSso -IloRestSession normalizes the raw
+        # mpAddress/sessionId response into RootUri and X-Auth-Token.
+        $root = [string]$SsoSession.RootUri
+        $token = [string]$SsoSession.'X-Auth-Token'
         if ([string]::IsNullOrWhiteSpace($root) -or [string]::IsNullOrWhiteSpace($token)) {
             throw 'OneView returned an invalid iLO SSO session (mpAddress or sessionID missing).'
         }

@@ -149,12 +149,12 @@ Run this read-only verification:
 $server = Get-OVServer -Name 'omg-qlikview-03ilo' -ErrorAction Stop
 $iloSso = $server | Get-OVIloSso -IloRestSession -ErrorAction Stop
 
-$iloSso | Select-Object mpAddress, @{Name='HasSessionId'; Expression = {
-    -not [string]::IsNullOrWhiteSpace([string]$_.sessionID)
+$iloSso | Select-Object RootUri, @{Name='HasAuthToken'; Expression = {
+    -not [string]::IsNullOrWhiteSpace([string]$_.'X-Auth-Token')
 }}
 ```
 
-The result must contain a OneView-issued iLO SSO connection object, including `mpAddress` and `sessionID` properties. Do not print or save the session value in logs or tickets.
+The result must contain a OneView-issued iLO SSO connection object, including `RootUri` and `X-Auth-Token` properties. Do not print or save the token in logs or tickets.
 
 If this command fails, capture only the error message and command/module versions. Do not disclose the token.
 
@@ -280,3 +280,30 @@ Do not record:
 - SSO tokens
 - Session cookies
 - Full request headers
+
+
+
+## todays
+
+    -IloCredential $iloCred
+If that succeeds, use the same credential for the build:
+
+Configure-PhysicalBuild `
+    -ServerIdentifier 'CZ22420JCN' `
+    -OneViewHost 'va-oneviewt-01' `
+    -IloCredential $iloCred `
+    -ExternalIsoPath 'Y:\WIN2019Auto.iso' `
+    -GuardRail 'qlikview-03ilo'
+The execution path is now:
+
+Configure-PhysicalBuild performs the review and waits for APPROVE
+After approval, Start-PhysicalServerBuild receives $iloCred
+Because -IloCredential is present, the direct iLO credential path is used instead of OneView iLO SSO
+No -IloUser or -IloPassword parameters are required
+This tests the client engineer's claim directly against:
+
+https://10.30.54.22/redfish/v1
+A successful OneView connection does not prove that the same account is a valid local iLO account. The read-only Invoke-IloRedfish -Action Status result is the clean evidence to provide to the client.
+
+104.9 t/s
+
