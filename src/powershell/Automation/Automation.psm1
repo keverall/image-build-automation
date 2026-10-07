@@ -398,11 +398,16 @@ class IloRedfishSession {
         # HPEOneView.1000 Get-OVIloSso -IloRestSession normalizes the raw
         # mpAddress/sessionId response into RootUri and X-Auth-Token.
         $root = [string]$SsoSession.RootUri
+        if ([string]::IsNullOrWhiteSpace($root)) { $root = [string]$SsoSession.mpAddress }
         $token = [string]$SsoSession.'X-Auth-Token'
+        if ([string]::IsNullOrWhiteSpace($token)) { $token = [string]$SsoSession.sessionId }
         if ([string]::IsNullOrWhiteSpace($root) -or [string]::IsNullOrWhiteSpace($token)) {
             throw 'OneView returned an invalid iLO SSO session (mpAddress or sessionID missing).'
         }
         $schemeRoot = if ($root -match '^https?://') { $root } else { "https://$root" }
+        if ($schemeRoot -notmatch '/(redfish|rest)/v1/?$') {
+            $schemeRoot = "$($schemeRoot.TrimEnd('/'))/redfish/v1"
+        }
         $this.BaseUrl = $schemeRoot.TrimEnd('/')
         $this.User = $null
         $this.Password = $null
@@ -427,10 +432,17 @@ class IloRedfishSession {
     [void] _Login() {
         $url = "$($this.BaseUrl)/SessionService/Sessions"
         $body = @{ UserName = $this.User; Password = $this.Password } | ConvertTo-Json
-        $resp = Invoke-RestMethod -Uri $url -Method Post -Body $body `
-            -ContentType 'application/json;charset=utf-8' `
-            -SkipCertificateCheck:$this.SkipCert `
-            -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+        try {
+            $resp = Invoke-RestMethod -Uri $url -Method Post -Body $body `
+                -ContentType 'application/json;charset=utf-8' `
+                -SkipCertificateCheck:$this.SkipCert `
+                -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+        } catch {
+            throw (New-IloAuthException -Stage 'redfish_session_login' -Uri $url -ErrorRecord $_)
+        }
+        if (-not $resp.token) {
+            throw (New-IloAuthException -Stage 'redfish_session_login' -Uri $url -Message 'iLO did not return a Redfish session token.')
+        }
         $this.AuthToken = $resp.token
         $this.SessionUri = $resp.'@odata.id'
     }
@@ -464,10 +476,14 @@ class IloRedfishSession {
     }
 
     [object] _Get([string]$Uri) {
-        return Invoke-RestMethod -Uri $Uri -Method Get `
-            -Headers $this._Headers() `
-            -SkipCertificateCheck:$this.SkipCert `
-            -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+        try {
+            return Invoke-RestMethod -Uri $Uri -Method Get `
+                -Headers $this._Headers() `
+                -SkipCertificateCheck:$this.SkipCert `
+                -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+        } catch {
+            throw (New-IloAuthException -Stage 'redfish_authenticated_get' -Uri $Uri -ErrorRecord $_)
+        }
     }
 
     [hashtable] GetSystem() {
@@ -688,6 +704,7 @@ Export-ModuleMember -Function @(
     'Get-OneViewServerList'
     'Get-OneViewVersion'
     'Invoke-IloRedfish'
+    'Test-IloAuthentication'
     'Test-PreBuildValidation'
     'Test-PostBuildValidation'
     'Update-Firmware'

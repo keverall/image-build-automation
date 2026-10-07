@@ -96,6 +96,7 @@
         'Get-OneViewServerList'
         'Get-OneViewVersion'
         'Invoke-IloRedfish'
+        'Test-IloAuthentication'
         'Test-PreBuildValidation'
         'Test-PostBuildValidation'
         'Update-Firmware'

@@ -42,6 +42,26 @@ Describe 'Invoke-IloRedfish - basic invocation and parameter validation' {
     }
 }
 
+Describe 'Test-IloAuthentication - non-destructive diagnostics' {
+    It 'is exported and accepts diagnostic parameters' {
+        $cmd = Get-Command Test-IloAuthentication
+        $cmd | Should -Not -BeNullOrEmpty
+        $cmd.Parameters.Keys | Should -Contain 'IloIp'
+        $cmd.Parameters.Keys | Should -Contain 'IloCredential'
+        $cmd.Parameters.Keys | Should -Contain 'OneViewServerName'
+    }
+
+    It 'reports each endpoint failure without throwing' {
+        InModuleScope Automation {
+            Mock Invoke-WebRequest { throw [System.Net.WebException]::new('401 Unauthorized') }
+            $r = Test-IloAuthentication -IloIp '127.0.0.1' -Quiet
+            $r.Success | Should -BeFalse
+            @($r.Results).Count | Should -Be 2
+            @($r.Results | Where-Object { $_.name -eq 'tcp_tls_redfish' }).Count | Should -Be 1
+        }
+    }
+}
+
 Describe 'Invoke-IloRedfish - IloRedfishSession class' {
     # The IloRedfishSession class is module-scoped (declared in Automation.psm1) so
     # it cannot be referenced as a type accelerator from outside the module.  Its

@@ -17,6 +17,104 @@
 #   iLO REST:  POST /rest/v1/sessions  (X-Redfish-Session header)
 #
 
+function New-IloAuthException {
+    param(
+        [string] $Stage,
+        [string] $Uri,
+        [System.Management.Automation.ErrorRecord] $ErrorRecord,
+        [string] $Message
+    )
+    $status = $null
+    if ($ErrorRecord -and $ErrorRecord.Exception.Response) {
+        try { $status = [int]$ErrorRecord.Exception.Response.StatusCode } catch { }
+    }
+    $detail = if ($Message) { $Message } elseif ($ErrorRecord) { $ErrorRecord.Exception.Message } else { 'request failed' }
+    $suffix = if ($status) { " HTTP $status" } else { '' }
+    return [System.InvalidOperationException]::new("iLO authentication/request failure at $Stage ($Uri):$suffix $detail")
+}
+
+function Test-IloAuthentication {
+    <#
+    .SYNOPSIS
+        Non-destructive iLO/OneView authentication and API path diagnostic.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)][string] $IloIp,
+        [System.Management.Automation.PSCredential] $IloCredential,
+        [string] $OneViewHost,
+        [string] $OneViewServerName,
+        [Alias('SkipCert')][bool] $SkipCertificateCheck = $true,
+        [int] $TimeoutSec = 10,
+        [switch] $Json,
+        [switch] $Quiet
+    )
+
+    $results = [System.Collections.ArrayList]::new()
+    $add = {
+        param([string]$Name, [string]$Method, [string]$Uri, [bool]$Success, [string]$Detail, [int]$Status = 0)
+        $null = $results.Add([ordered]@{ name=$Name; method=$Method; uri=$Uri; success=$Success; status=if ($Status) {$Status} else {$null}; detail=$Detail })
+    }
+    $probe = {
+        param([string]$Name, [string]$Method, [string]$Uri, [hashtable]$Headers, [object]$Body, [System.Management.Automation.PSCredential]$Credential)
+        try {
+            $p = @{ Uri=$Uri; Method=$Method; SkipCertificateCheck=$SkipCertificateCheck; TimeoutSec=$TimeoutSec; ErrorAction='Stop' }
+            if ($Headers) { $p.Headers = $Headers }
+            if ($Body) { $p.Body = ($Body | ConvertTo-Json -Depth 10); $p.ContentType='application/json;charset=utf-8' }
+            if ($Credential) { $p.Credential = $Credential }
+            $response = Invoke-WebRequest @p
+            & $add $Name $Method $Uri $true "HTTP $($response.StatusCode)" ([int]$response.StatusCode)
+            return $response
+        } catch {
+            $status = 0
+            if ($_.Exception.Response) { try { $status = [int]$_.Exception.Response.StatusCode } catch {} }
+            & $add $Name $Method $Uri $false $_.Exception.Message $status
+            return $null
+        }
+    }
+
+    & $probe 'tcp_tls_redfish' 'GET' "https://$IloIp/redfish/v1/" $null $null $null | Out-Null
+    & $probe 'tcp_tls_ilo_rest' 'GET' "https://$IloIp/rest/v1/" $null $null $null | Out-Null
+
+    if ($IloCredential) {
+        $body = @{ UserName=$IloCredential.UserName; Password=$IloCredential.GetNetworkCredential().Password }
+        $direct = & $probe 'direct_redfish_session' 'POST' "https://$IloIp/redfish/v1/SessionService/Sessions" $null $body $null
+        if ($direct) {
+            $token = $direct.Content | ConvertFrom-Json
+            if ($token.token) {
+                & $probe 'direct_redfish_authenticated_get' 'GET' "https://$IloIp/redfish/v1/Systems/1" @{ 'X-Auth-Token'=$token.token; Accept='application/json' } $null $null | Out-Null
+                if ($direct.Headers.Location) { & $probe 'direct_redfish_logout' 'DELETE' ([string]$direct.Headers.Location) @{ 'X-Auth-Token'=$token.token } $null $null | Out-Null }
+            }
+        }
+        & $probe 'direct_ilo_rest_session' 'POST' "https://$IloIp/rest/v1/sessions" $null $body $null | Out-Null
+        & $probe 'direct_basic_redfish_get' 'GET' "https://$IloIp/redfish/v1/Systems/1" $null $null $IloCredential | Out-Null
+    }
+
+    if ($OneViewHost -and $OneViewServerName) {
+        $cmds = (Get-Command Get-OVServer, Get-OVIloSso -ErrorAction SilentlyContinue)
+        if ($cmds.Count -lt 2) {
+            & $add 'oneview_sso_cmdlets' 'N/A' $OneViewHost $false 'Get-OVServer and/or Get-OVIloSso is unavailable.' 0
+        } else {
+            try {
+                $sso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop | Get-OVIloSso -IloRestSession -ErrorAction Stop
+                $root = [string]$sso.RootUri
+                $hasToken = -not [string]::IsNullOrWhiteSpace([string]$sso.'X-Auth-Token')
+                & $add 'oneview_sso_acquisition' 'OneView' $OneViewServerName ($hasToken -and $root) ("RootUri present=$([bool]$root); token present=$hasToken") 0
+                if ($hasToken -and $root) {
+                    & $probe 'oneview_sso_redfish_get' 'GET' ("$($root.TrimEnd('/'))/Systems/1") @{ 'X-Auth-Token'=[string]$sso.'X-Auth-Token'; Accept='application/json'; 'OData-Version'='4.0' } $null $null | Out-Null
+                    & $probe 'oneview_sso_redfish_root' 'GET' ("$($root.TrimEnd('/'))/") @{ 'X-Auth-Token'=[string]$sso.'X-Auth-Token'; Accept='application/json' } $null $null | Out-Null
+                }
+            } catch { & $add 'oneview_sso_acquisition' 'OneView' $OneViewServerName $false $_.Exception.Message 0 }
+        }
+    }
+
+    $success = @($results | Where-Object { $_.name -match 'authenticated_get|sso_redfish_get' -and $_.success }).Count -gt 0
+    $result = [ordered]@{ Success=$success; IloIp=$IloIp; Results=@($results); Recommendation=if ($success) {'At least one authenticated Redfish path works.'} else {'No authenticated Redfish path succeeded. Use the failing stage/status to correct the iLO account, SSO token, endpoint, or iLO policy before deployment.'} }
+    if ($Json) { $result | ConvertTo-Json -Depth 10 } elseif (-not $Quiet) { $results | Format-Table name,method,status,success,detail -AutoSize; Write-Host $result.Recommendation }
+    return $result
+}
+
 function Invoke-IloRedfish {
     <#
     .SYNOPSIS

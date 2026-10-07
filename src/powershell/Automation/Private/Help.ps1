@@ -75,6 +75,7 @@ function Get-CommandHelp {
         'Configure-PhysicalBuild'      = 'configure-build-4-eye-review'
         'Start-InstallMonitor'         = 'monitor-installation-progress'
         'Invoke-IloRedfish'            = 'ilo-redfish-operations'
+        'Test-IloAuthentication'      = 'ilo-authentication-diagnostics'
         'Get-OneViewServerTarget'      = 'resolve-server-target-via-oneview'
         'Test-PreBuildValidation'      = 'pre-build-validation'
         'Test-PostBuildValidation'     = 'post-build-validation'
