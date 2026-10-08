@@ -1,106 +1,241 @@
-Correct.
+ Configure-PhysicalBuild -ServerIdentifier 'CZ22420JCM' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPil  'qlikview-03ilo'
 
-`Configure-PhysicalBuild` should be the only command required for the normal managed-server workflow:
+======================================== 
+  Physical Build Configuration Review
+========================================        
 
-1. It connects to or reuses the OneView session.
-2. It resolves `CZ22420JCN` to `omg-qlikview-03ilo`.
-3. It obtains the iLO SSO session automatically after approval.
-4. It performs the iLO Redfish status check.
-5. It mounts the ISO, sets one-time boot, and resets the server.
+[1/4] Resolving server identity from OneView... 
+2026-10-08 10:30:20 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
-No `Test-IloAuthentication`, `Invoke-IloRedfish -Action Status`, generated username, generated password, or `-IloCredential` should be required.
+============================================== 
+  OneView Server Target
+============================================== 
 
-The current flow intentionally skips the live iLO check during the review screen:
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
 
-```text
-Configure-PhysicalBuild
-  -> review and safety checks
-  -> APPROVE
-  -> Start-PhysicalServerBuild
-  -> Get-OVIloSso
-  -> iLO Redfish authentication
-  -> status
-  -> ISO mount and reboot
-```
+  Resolved By:  Serial 
 
-That means the expected command remains:
+==============================================
 
-```powershell
-Configure-PhysicalBuild `
-    -ServerIdentifier 'CZ22420JCN' `
-    -OneViewHost 'va-oneviewt-01' `
-    -ExpectedHostname 'omg-qlikview-03ilo' `
-    -ExternalIsoPath 'Y:\WindowsServer2025.iso' `
-    -GuardRail 'qlikview-03ilo'
-```
+  [OK] Server resolved
 
-After entering `APPROVE`, the implementation now forces the managed-server SSO path even if an `-IloCredential` was accidentally supplied.
+========================================
+  GUARD RAIL MATCH - DESTRUCTIVE ACTION 
+========================================
+  Guard pattern : qlikview-03ilo
+  Target server : alp-qlikview-03ilo
+  Serial number : CZ22420JCM
+  Appliance     : va-oneviewt-01
+2026-10-08 10:30:20 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with build plan review for 'alp-qlikview-03ilo'.
 
-The diagnostic command is only a troubleshooting tool. It does not establish or repair authentication. If the normal `Configure-PhysicalBuild` run still receives `401`, the SSO path itself is being rejected by the target iLO or the OneView-issued session is invalid for that server. In that case, the diagnostic identifies the failed request, but it should not be needed for a healthy deployment.
+[2/4] Resolving ISO...
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WindowsServer2025.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WindowsServer2025.iso
+  [OK] Resolved to: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WindowsServer2025.iso
 
+[3/4] Running pre-build validation...
+2026-10-08 10:30:41 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
+==============================================
+  OneView Server Target
+==============================================
 
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025) 
 
+  Resolved By:  Serial
 
+==============================================
 
+  [OK] All pre-build checks passed 
 
-The intended managed-server flow does **not** require you to know a generated iLO username or password.
+[4/4] Deployment Summary
+══════════════════════════════════════════════════════════════
 
-The repository history shows:
+  ─ SERVER IDENTITY ─
+  Target:          alp-qlikview-03ilo
+  Identifier:      CZ22420JCM
+  Serial:          CZ22420JCM
+  Model:           ProLiant DL360 Gen10 Plus
+  iLO IP:          10.30.14.15
+  OneView URI:     /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
+  Rack/Position:   unknown 
+  Server Group:    unknown
+  Maintenance Mode:No
+  Power State:     On
+  Health:          OK
+ 
+  ─ ISO DETAILS ─
+  Source:          External ISO: Y:\WindowsServer2025.iso
+  URL:             cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WindowsServer2025.iso
+  Contents:        Windows Server boot media + ConfigMgr task sequence
 
-- The old `-IloUser/-IloPassword` code only accepted manually supplied credentials. It did not generate per-server credentials.
-- The intended OneView-managed flow is:
-  1. Authenticate to OneView once.
-  2. Resolve the server.
-  3. Call `Get-OVIloSso -IloRestSession`.
-  4. Use the appliance-issued token against the server iLO Redfish API.
-- The OneView appliance-managed local iLO account is deliberately opaque. The automation should never need its username or password.
+  ─ DESTRUCTIVE ACTIONS (will be executed by Start-PhysicalBuild) ─
+  1. Disk partitioning & formatting (ALL data will be erased)
+  2. Windows OS installation from ISO
+  3. Server reboot into installed OS
+  4. Post-build validation (hostname, domain join, drivers)
 
-I corrected the implementation so that when both `-OneViewHost` and `-OneViewServerName` are provided:
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  �🔇  ONEVIEW MAINTENANCE MODE (automatic)                            ║
+  ╠══════════════════════════════════════════════════════════════════════╣
+  ║  This server will be put into HPE OneView maintenance mode           ║
+  ║  BEFORE the build starts. This stops unnecessary alerting            ║
+  ║  and avoids on-call callouts during the deployment.                  ║ 
+  ║                                                                      ║
+  ║  Maintenance mode will be automatically removed when the             ║
+  ║  build completes (or if it fails).                                   ║
+  ║                                                                      ║
+  ║  To skip this, use -NoMaintenanceMode.                               ║
+  ╚══════════════════════════════════════════════════════════════════════╝
 
-- OneView SSO always takes precedence.
-- A supplied `-IloCredential` can no longer accidentally bypass SSO.
-- Raw `sessionKey=` token prefixes are removed before sending the token.
-- Direct iLO credentials are used only when OneView SSO is unavailable, such as an unmanaged server.
+  ─ PRE-BUILD VALIDATION RESULTS ─
+  [PASS] oneview_target : Server: CZ22420JCM, Details: ilo_ip: 10.30.14.15, rom_version: U46 v2.42 (06/13/2025), model: ProLiant DL360 Gen10 Plus, enclosure_bay: 0, serial_nneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, maintenance_mode: No, name: alp-qlikview-03ilo, enclosure_name: , Success: True
+  [PASS] iso_url_format : CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WindowsServer2025.iso
+  [SKIP] ilo_credentials : skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
+  [PASS] audit_recorded : logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCM_2026-10-08T10-30-41Z.json
 
-Run the managed-server test without any iLO credential:
+  Maintenance window: NOT acknowledged (-InMaintenanceWindow not set)
+  This build will reboot a running server if it is On.
 
-```powershell
-Invoke-IloRedfish `
-    -Action Status `
-    -IloIp '10.30.54.22' `
-    -OneViewHost 'va-oneviewt-01' `
-    -OneViewServerName 'omg-qlikview-03ilo'
-```
+══════════════════════════════════════════════════════════════
+ 
+  ╔════════════════════════════════════════════════════════╗ 
+  ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║
+  ║  You are authorizing a destructive deploy to this     ║
+  ║  server. It will be REFORMATTED / REPARTITIONED per    ║
+  ║  the ISO, firmware REINSTALLED, and hostname/serial    ║
+  ║  allocated as confirmed above. Re-check, then type     ║
+  ║  APPROVE to proceed. Anything else cancels.            ║
+  ╚════════════════════════════════════════════════════════╝
 
-Or run the complete non-destructive diagnostic:
+  Type APPROVE to authorize the ISO + firmware deploy to 'alp-qlikview-03ilo', or anything else to cancel: APPROVE 
 
-```powershell
-Test-IloAuthentication `
-    -IloIp '10.30.54.22' `
-    -OneViewHost 'va-oneviewt-01' `
-    -OneViewServerName 'omg-qlikview-03ilo'
-```
+  ✓ APPROVED — deploying ISO + firmware to 'alp-qlikview-03ilo' (via Invoke-PhysicalServerBuild).
+ 
+========================================
+  External ISO Deployment Mode 
+========================================
+ISO Source: Y:\WindowsServer2025.iso
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WindowsServer2025.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WindowsServer2025.iso
+ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WindowsServer2025.iso
+======================================== 
 
-Do not pass:
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+\WindowsServer2025.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+/WindowsServer2025.iso
+[OK] resolve_iso 
+2026-10-08 10:32:24 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
-```powershell
--IloCredential
-```
+==============================================
+  OneView Server Target
+==============================================
 
-for this managed-server test.
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK 
+             maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
 
-The same rule now applies to the build path:
+  Resolved By:  Serial
 
-```powershell
-Configure-PhysicalBuild `
-    -ServerIdentifier 'CZ22420JCN' `
-    -OneViewHost 'va-oneviewt-01' `
-    -ExpectedHostname 'omg-qlikview-03ilo' `
-    -ExternalIsoPath 'Y:\WindowsServer2025.iso' `
-    -GuardRail 'qlikview-03ilo'
-```
+==============================================
 
-The code changes pass the Redfish test suite: `12/12` tests passed.
+[OK] pre_build_validation 
+2026-10-08 10:32:25 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
-If the corrected SSO path still returns `401`, the failure is no longer caused by requesting a missing generated username/password. It means OneView issued an SSO token that the target iLO rejected, which points to the OneView server-hardware SSO configuration, iLO trust/configuration, target association, or the appliance/iLO API compatibility. The diagnostic output will identify whether the failure occurs during SSO acquisition, the Redfish root request, or the authenticated `/Systems/1` request.
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK 
+             maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+[OK] oneview_target
+
+  [OneView] Enabling maintenance mode for server 'alp-qlikview-03ilo'...
+  [OneView] ERROR enabling maintenance mode for 'alp-qlikview-03ilo': Cannot find an overload for "_MakeRequest" and the argument count: "3". 
+    Success: True
+    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+                                       /WindowsServer2025.iso
+  Pre_Build_Validation:
+    Success: True
+    Checks:
+      Oneview_Target:
+        Status: PASS
+        Details: Server: CZ22420JCM, Details: ilo_ip: 10.30.14.15, rom_version: U46 v2.42 (06/13/2025), model: ProLiant DL360 Gen10 Plus, enclosure_bay: 0, serial_number: CZ22420JCM, health_status: OK, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, maintenance_mode: No, name: alp-qlikview-03ilo, enclosure_name: , Success: True
+      Iso_Url_Format:
+        Status: PASS
+        Details: CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE
+                                       /WindowsServer2025.iso
+      Ilo_Credentials:
+        Status: SKIP
+        Details: skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
+      Audit_Recorded:
+        Status: PASS
+        Details: logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCM_2026-10-08T10-32-24Z.json
+    Server: CZ22420JCM
+    Timestamp: 2026-10-08T10:32:24.4425480Z
+  Oneview_Target:
+    Success: True
+    Resolved By: Serial
+    Server: CZ22420JCM
+    Details:
+      Ilo_Ip: 10.30.14.15
+      Rom_Version: U46 v2.42 (06/13/2025)
+      Model: ProLiant DL360 Gen10 Plus
+      Enclosure_Bay: 0
+      Serial_Number: CZ22420JCM
+      Health_Status: OK
+      Oneview_Uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
+      Power_State: On
+      Maintenance_Mode: No
+      Name: alp-qlikview-03ilo
+      Enclosure_Name: (none)
+  Oneview_Maintenance_Enable:
+    Success: False
+    Error: Cannot find an overload for "_MakeRequest" and the argument count: "3".
+Success: False
+Error: OneView maintenance mode enable failed: Cannot find an overload for "_MakeRequest" and the argument count: "3".
+   image-build-automation  main 
+             0  2m 8s 711ms  11:32:2Invoke-IloRedfish `
+>     -Action Status `
+>     -IloIp '10.30.54.22' `
+>     -OneViewHost 'va-oneviewt-01' `
+>     -OneViewServerName 'omg-qlikview-03ilo' 
+                                                                                                                         
+Name                           Value
+----                           -----
+Success                        False
+Action                         Status
+Error                          iLO authentication/request failure at redfish_authenticated_get (https://10.30.54.22/redfish/v1/Systems/1): HTTP 401 Response status code do… 
+IloIp                          10.30.54.22
+
+   image-build-automation  main  Invoke-IloRedfish `                                                                                               0  1s 376ms  11:35:51 >     -Action Status `
+>     -IloIp '10.30.54.15' `
+>     -OneViewHost 'va-oneviewt-01' `
+>     -OneViewServerName 'alp-qlikview-03ilo' 
+
+Name                           Value
+----                           -----
+Success                        False
+Action                         Status
+Error                          iLO authentication/request failure at redfish_authenticated_get (https://10.30.14.15/redfish/v1/Systems/1): HTTP 401 Response status code do… 
+IloIp                          10.30.54.15
+
+   image-build-automation  main                                                                                                                     0  1s 58ms  11:37:27 
