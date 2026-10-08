@@ -235,6 +235,11 @@ class OpsRamp_Client {
         }
     }
 
+    # NOTE: PowerShell class methods do NOT honour default parameter values during
+    # overload resolution. Every caller must pass all four arguments explicitly.
+    # Calling this with 2 or 3 arguments throws:
+    #   'Cannot find an overload for "_MakeRequest" and the argument count: "N"'
+    # This reproduces on Windows PowerShell 5.1 and PowerShell 7.x alike.
     [hashtable] _MakeRequest([string] $Method, [string] $Endpoint, [object] $Data = $null, [hashtable] $QueryParams = $null) {
         if (-not $this.EnsureToken()) {
             return $null 
@@ -287,7 +292,7 @@ class OpsRamp_Client {
             $metric['metric']['tags'] = $Tags 
         }
         $url = [OpsRamp_Client]::MetricsUrlSuffix
-        $resp = $this._MakeRequest('POST', $url, @($metric))
+        $resp = $this._MakeRequest('POST', $url, @($metric), $null)
         return ($null -ne $resp)
     }
 
@@ -303,7 +308,7 @@ class OpsRamp_Client {
         if ($Details) {
             $alert['details'] = $Details 
         }
-        $resp = $this._MakeRequest('POST', [OpsRamp_Client]::AlertsUrlSuffix, $alert)
+        $resp = $this._MakeRequest('POST', [OpsRamp_Client]::AlertsUrlSuffix, $alert, $null)
         return ($null -ne $resp)
     }
 
@@ -318,20 +323,20 @@ class OpsRamp_Client {
         if ($Properties) {
             $evt['properties'] = $Properties 
         }
-        $resp = $this._MakeRequest('POST', [OpsRamp_Client]::EventsUrlSuffix, $evt)
+        $resp = $this._MakeRequest('POST', [OpsRamp_Client]::EventsUrlSuffix, $evt, $null)
         return ($null -ne $resp)
     }
 
     [bool] BatchSendMetrics([hashtable[]]$Metrics) {
-        $resp = $this._MakeRequest('POST', [OpsRamp_Client]::MetricsUrlSuffix, $Metrics)
+        $resp = $this._MakeRequest('POST', [OpsRamp_Client]::MetricsUrlSuffix, $Metrics, $null)
         return ($null -ne $resp)
     }
 
     [bool] ReportBuildStatus([string]$ServerName, [hashtable]$BuildData) {
         $uuid = $BuildData.Get_Item('uuid') ?? $ServerName
         $ok = [int]($BuildData.Get_Item('success') ?? $false)
-        $this.SendMetric($uuid, 'build.status', $ok, @{ server = $ServerName; type = 'hpe_iso_build' })
-        $this.SendMetric($uuid, 'build.timestamp', [DateTimeOffset]::UtcNow.ToUnixTimeSeconds(), @{ server = $ServerName })
+        $this.SendMetric($uuid, 'build.status', $ok, @{ server = $ServerName; type = 'hpe_iso_build' }, [DateTime]::MinValue)
+        $this.SendMetric($uuid, 'build.timestamp', [DateTimeOffset]::UtcNow.ToUnixTimeSeconds(), @{ server = $ServerName }, [DateTime]::MinValue)
         if (-not $BuildData.Get_Item('success')) {
             $this.SendAlert($uuid, 'build.failure', 'CRITICAL',
                 "Build failed for $ServerName : $($BuildData.Get_Item('error'))", $BuildData)
@@ -343,7 +348,7 @@ class OpsRamp_Client {
         $uuid = $DeployData.Get_Item('uuid') ?? $ServerName
         $ok = [int]($DeployData.Get_Item('success') ?? $false)
         $this.SendMetric($uuid, 'deployment.status', $ok,
-            @{ server = $ServerName; method = $DeployData.Get_Item('method') })
+            @{ server = $ServerName; method = $DeployData.Get_Item('method') }, [DateTime]::MinValue)
         if (-not $DeployData.Get_Item('success')) {
             $this.SendAlert($uuid, 'deployment.failure', 'WARNING',
                 "Deployment failed for $ServerName", $DeployData)
@@ -359,8 +364,8 @@ class OpsRamp_Client {
             $ServerName 
         }
         $tags = @{ server = $ServerName; phase = $Phase }
-        $this.SendMetric($rid, 'install.progress.percent', $ProgressPercent, $tags)
-        $this.SendMetric($rid, 'install.elapsed_seconds', $ElapsedSeconds, $tags)
+        $this.SendMetric($rid, 'install.progress.percent', $ProgressPercent, $tags, [DateTime]::MinValue)
+        $this.SendMetric($rid, 'install.elapsed_seconds', $ElapsedSeconds, $tags, [DateTime]::MinValue)
         return $true
     }
 
@@ -372,8 +377,8 @@ class OpsRamp_Client {
         }
         $vulnCount = $ScanResults.Get_Item('vulnerability_count') ?? 0
         $critCount = $ScanResults.Get_Item('critical_count') ?? 0
-        $this.SendMetric($rid, 'security.vulnerabilities.total', $vulnCount, @{ server = $ServerName })
-        $this.SendMetric($rid, 'security.vulnerabilities.critical', $critCount, @{ server = $ServerName })
+        $this.SendMetric($rid, 'security.vulnerabilities.total', $vulnCount, @{ server = $ServerName }, [DateTime]::MinValue)
+        $this.SendMetric($rid, 'security.vulnerabilities.critical', $critCount, @{ server = $ServerName }, [DateTime]::MinValue)
         if ($critCount -gt 0) {
             $this.SendAlert($rid, 'security.vulnerability', 'CRITICAL',
                 "$critCount critical vulnerabilities found on $ServerName", $ScanResults)
