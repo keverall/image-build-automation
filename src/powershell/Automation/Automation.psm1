@@ -401,6 +401,7 @@ class IloRedfishSession {
         if ([string]::IsNullOrWhiteSpace($root)) { $root = [string]$SsoSession.mpAddress }
         $token = [string]$SsoSession.'X-Auth-Token'
         if ([string]::IsNullOrWhiteSpace($token)) { $token = [string]$SsoSession.sessionId }
+        $token = $token -replace '^sessionKey=', ''
         if ([string]::IsNullOrWhiteSpace($root) -or [string]::IsNullOrWhiteSpace($token)) {
             throw 'OneView returned an invalid iLO SSO session (mpAddress or sessionID missing).'
         }

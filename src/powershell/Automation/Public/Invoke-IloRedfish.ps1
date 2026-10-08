@@ -43,6 +43,8 @@ function Test-IloAuthentication {
     param(
         [Parameter(Mandatory)][string] $IloIp,
         [System.Management.Automation.PSCredential] $IloCredential,
+        [string] $IloUsername,
+        [switch] $UseGeneratedIloAccount,
         [string] $OneViewHost,
         [string] $OneViewServerName,
         [Alias('SkipCert')][bool] $SkipCertificateCheck = $true,
@@ -50,6 +52,18 @@ function Test-IloAuthentication {
         [switch] $Json,
         [switch] $Quiet
     )
+
+    if ($UseGeneratedIloAccount -and $IloCredential) {
+        throw 'Use either -IloCredential or -UseGeneratedIloAccount, not both.'
+    }
+    if ($UseGeneratedIloAccount -and [string]::IsNullOrWhiteSpace($OneViewServerName)) {
+        throw '-OneViewServerName is required with -UseGeneratedIloAccount.'
+    }
+    if ($UseGeneratedIloAccount -or $IloUsername) {
+        if (-not $IloUsername) { $IloUsername = $OneViewServerName }
+        $generatedPassword = Read-Host "Password for generated iLO account '$IloUsername'" -AsSecureString
+        $IloCredential = [System.Management.Automation.PSCredential]::new($IloUsername, $generatedPassword)
+    }
 
     $results = [System.Collections.ArrayList]::new()
     $add = {
@@ -110,7 +124,7 @@ function Test-IloAuthentication {
     }
 
     $success = @($results | Where-Object { $_.name -match 'authenticated_get|sso_redfish_get' -and $_.success }).Count -gt 0
-    $result = [ordered]@{ Success=$success; IloIp=$IloIp; Results=@($results); Recommendation=if ($success) {'At least one authenticated Redfish path works.'} else {'No authenticated Redfish path succeeded. Use the failing stage/status to correct the iLO account, SSO token, endpoint, or iLO policy before deployment.'} }
+    $result = [ordered]@{ Success=$success; IloIp=$IloIp; TestedIloUsername=if ($IloCredential) {$IloCredential.UserName} else {$null}; Results=@($results); Recommendation=if ($success) {'At least one authenticated Redfish path works.'} else {'No authenticated Redfish path succeeded. Use the failing stage/status to correct the iLO account, SSO token, endpoint, or iLO policy before deployment.'} }
     if ($Json) { $result | ConvertTo-Json -Depth 10 } elseif (-not $Quiet) { $results | Format-Table name,method,status,success,detail -AutoSize; Write-Host $result.Recommendation }
     return $result
 }
@@ -214,14 +228,15 @@ function Invoke-IloRedfish {
             }
         }
 
-        # OneView-managed servers normally use OneView iLO SSO. If the HPE
-        # OneView module is unavailable, an explicitly supplied direct iLO
-        # credential is a supported fallback. Never silently reuse a OneView
-        # credential as an iLO credential because they are separate auth domains.
+        # OneView-managed servers always use OneView iLO SSO. An explicitly
+        # supplied direct credential must not override SSO: the HPE OneView UI
+        # uses the appliance-issued token and the appliance-managed iLO account.
+        # Direct credentials are only a fallback when no usable OneView SSO path
+        # is available (for example, an unmanaged server).
         $hasOneViewSso = $OneViewHost -and $OneViewServerName -and
             (Get-Command Get-OVServer -ErrorAction SilentlyContinue) -and
             (Get-Command Get-OVIloSso -ErrorAction SilentlyContinue)
-        if ($hasOneViewSso -and -not $IloCredential) {
+        if ($hasOneViewSso) {
             try {
                 $iloSso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop |
                     Get-OVIloSso -IloRestSession -ErrorAction Stop

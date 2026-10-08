@@ -60,6 +60,16 @@ Describe 'Test-IloAuthentication - non-destructive diagnostics' {
             @($r.Results | Where-Object { $_.name -eq 'tcp_tls_redfish' }).Count | Should -Be 1
         }
     }
+
+    It 'uses the OneView server name as the generated iLO username' {
+        InModuleScope Automation {
+            Mock Read-Host { ConvertTo-SecureString 'secret' -AsPlainText -Force }
+            Mock Invoke-WebRequest { throw [System.Net.WebException]::new('401 Unauthorized') }
+            $r = Test-IloAuthentication -IloIp '127.0.0.1' -OneViewServerName 'omg-qlikview-03ilo' -UseGeneratedIloAccount -Quiet
+            $r.TestedIloUsername | Should -Be 'omg-qlikview-03ilo'
+            Should -Invoke Read-Host -Exactly 1 -ParameterFilter { $AsSecureString }
+        }
+    }
 }
 
 Describe 'Invoke-IloRedfish - IloRedfishSession class' {
