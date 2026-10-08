@@ -1,72 +1,106 @@
-Implemented the Redfish authentication diagnostics and session handling improvements.
+Correct.
 
-**What the log proves**
+`Configure-PhysicalBuild` should be the only command required for the normal managed-server workflow:
 
-- OneView connectivity succeeds.
-- `Get-OVServer` resolves `omg-qlikview-03ilo`.
-- OneView maintenance mode succeeds.
-- Direct iLO credentials consistently receive `401 Unauthorized`.
-- OneView SSO token acquisition completes, but the first authenticated iLO Redfish request also receives `401`.
-- The previous code reported only the generic HTTP error, so it could not distinguish session-login failure, token failure, endpoint mismatch, or credential rejection.
+1. It connects to or reuses the OneView session.
+2. It resolves `CZ22420JCN` to `omg-qlikview-03ilo`.
+3. It obtains the iLO SSO session automatically after approval.
+4. It performs the iLO Redfish status check.
+5. It mounts the ISO, sets one-time boot, and resets the server.
 
-**Changes**
+No `Test-IloAuthentication`, `Invoke-IloRedfish -Action Status`, generated username, generated password, or `-IloCredential` should be required.
 
-- Added exported `Test-IloAuthentication`.
-- Diagnostic probes are read-only and test:
-  - TLS/reachability for `/redfish/v1/`
-  - TLS/reachability for `/rest/v1/`
-  - Direct Redfish session login
-  - Direct Redfish authenticated system GET
-  - Direct iLO REST session login
-  - Direct Basic-auth Redfish GET
-  - OneView SSO acquisition
-  - OneView SSO authenticated Redfish GET
-  - OneView SSO Redfish root GET
-- Results include:
-  - Auth method
-  - HTTP method
-  - Endpoint
-  - HTTP status
-  - Success/failure
-  - Failure detail
-- Passwords and SSO tokens are not emitted.
-- Redfish session failures now identify the failing stage:
-  - `redfish_session_login`
-  - `redfish_authenticated_get`
-- SSO session handling now accepts both:
-  - `RootUri` / `X-Auth-Token`
-  - `mpAddress` / `sessionId`
-- SSO roots are normalized to `/redfish/v1` when the returned object omits the API path.
-- Added module manifest export, help registration, and unit coverage.
+The current flow intentionally skips the live iLO check during the review screen:
 
-**Run this on the client test server**
+```text
+Configure-PhysicalBuild
+  -> review and safety checks
+  -> APPROVE
+  -> Start-PhysicalServerBuild
+  -> Get-OVIloSso
+  -> iLO Redfish authentication
+  -> status
+  -> ISO mount and reboot
+```
+
+That means the expected command remains:
 
 ```powershell
-$iloCred = Get-Credential -Message 'Direct iLO credentials for 10.30.54.22'
+Configure-PhysicalBuild `
+    -ServerIdentifier 'CZ22420JCN' `
+    -OneViewHost 'va-oneviewt-01' `
+    -ExpectedHostname 'omg-qlikview-03ilo' `
+    -ExternalIsoPath 'Y:\WindowsServer2025.iso' `
+    -GuardRail 'qlikview-03ilo'
+```
 
-Test-IloAuthentication `
+After entering `APPROVE`, the implementation now forces the managed-server SSO path even if an `-IloCredential` was accidentally supplied.
+
+The diagnostic command is only a troubleshooting tool. It does not establish or repair authentication. If the normal `Configure-PhysicalBuild` run still receives `401`, the SSO path itself is being rejected by the target iLO or the OneView-issued session is invalid for that server. In that case, the diagnostic identifies the failed request, but it should not be needed for a healthy deployment.
+
+
+
+
+
+
+
+The intended managed-server flow does **not** require you to know a generated iLO username or password.
+
+The repository history shows:
+
+- The old `-IloUser/-IloPassword` code only accepted manually supplied credentials. It did not generate per-server credentials.
+- The intended OneView-managed flow is:
+  1. Authenticate to OneView once.
+  2. Resolve the server.
+  3. Call `Get-OVIloSso -IloRestSession`.
+  4. Use the appliance-issued token against the server iLO Redfish API.
+- The OneView appliance-managed local iLO account is deliberately opaque. The automation should never need its username or password.
+
+I corrected the implementation so that when both `-OneViewHost` and `-OneViewServerName` are provided:
+
+- OneView SSO always takes precedence.
+- A supplied `-IloCredential` can no longer accidentally bypass SSO.
+- Raw `sessionKey=` token prefixes are removed before sending the token.
+- Direct iLO credentials are used only when OneView SSO is unavailable, such as an unmanaged server.
+
+Run the managed-server test without any iLO credential:
+
+```powershell
+Invoke-IloRedfish `
+    -Action Status `
     -IloIp '10.30.54.22' `
-    -IloCredential $iloCred `
     -OneViewHost 'va-oneviewt-01' `
     -OneViewServerName 'omg-qlikview-03ilo'
 ```
 
-For machine-readable output:
+Or run the complete non-destructive diagnostic:
 
 ```powershell
 Test-IloAuthentication `
     -IloIp '10.30.54.22' `
-    -IloCredential $iloCred `
     -OneViewHost 'va-oneviewt-01' `
-    -OneViewServerName 'omg-qlikview-03ilo' `
-    -Json
+    -OneViewServerName 'omg-qlikview-03ilo'
 ```
 
-Do not run the deployment again until at least one authenticated Redfish probe reports success.
+Do not pass:
 
-**Validation**
+```powershell
+-IloCredential
+```
 
-- Redfish Pester tests: `11 passed, 0 failed`
-- `git diff --check`: passed
-- PSScriptAnalyzer: no errors in the changed public diagnostic script
-- The existing analyzer warning in `Automation.psm1` concerns the pre-existing class constructor using username/password parameters; it is unrelated to the new diagnostic implementation.
+for this managed-server test.
+
+The same rule now applies to the build path:
+
+```powershell
+Configure-PhysicalBuild `
+    -ServerIdentifier 'CZ22420JCN' `
+    -OneViewHost 'va-oneviewt-01' `
+    -ExpectedHostname 'omg-qlikview-03ilo' `
+    -ExternalIsoPath 'Y:\WindowsServer2025.iso' `
+    -GuardRail 'qlikview-03ilo'
+```
+
+The code changes pass the Redfish test suite: `12/12` tests passed.
+
+If the corrected SSO path still returns `401`, the failure is no longer caused by requesting a missing generated username/password. It means OneView issued an SSO token that the target iLO rejected, which points to the OneView server-hardware SSO configuration, iLO trust/configuration, target association, or the appliance/iLO API compatibility. The diagnostic output will identify whether the failure occurs during SSO acquisition, the Redfish root request, or the authenticated `/Systems/1` request.
