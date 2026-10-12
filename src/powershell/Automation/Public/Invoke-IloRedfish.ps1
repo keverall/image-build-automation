@@ -111,7 +111,8 @@ function Test-IloAuthentication {
             & $add 'oneview_sso_cmdlets' 'N/A' $OneViewHost $false 'Get-OVServer and/or Get-OVIloSso is unavailable.' 0
         } else {
             try {
-                $sso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop | Get-OVIloSso -IloRestSession -ErrorAction Stop
+                $sso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop |
+                    Get-OVIloSso -IloRestSession -SkipCertificateCheck -ErrorAction Stop
                 $root = [string]$sso.RootUri
                 $hasToken = -not [string]::IsNullOrWhiteSpace([string]$sso.'X-Auth-Token')
                 & $add 'oneview_sso_acquisition' 'OneView' $OneViewServerName ($hasToken -and $root) ("RootUri present=$([bool]$root); token present=$hasToken") 0
@@ -239,7 +240,7 @@ function Invoke-IloRedfish {
         if ($hasOneViewSso) {
             try {
                 $iloSso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop |
-                    Get-OVIloSso -IloRestSession -ErrorAction Stop
+                    Get-OVIloSso -IloRestSession -SkipCertificateCheck -ErrorAction Stop
                 $session = [IloRedfishSession]::new($iloSso, $SkipCertificateCheck, $TimeoutSec)
             } catch {
                 return @{

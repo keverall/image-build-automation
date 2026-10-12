@@ -80,6 +80,12 @@ Describe 'Invoke-IloRedfish - IloRedfishSession class' {
         $psm1 = Get-Content (Join-Path $Script:ModuleRoot 'Automation\Automation.psm1') -Raw
         $psm1 | Should -Match 'class\s+IloRedfishSession\b'
     }
+
+    It 'requests OneView SSO with certificate validation disabled for internal iLO certificates' {
+        $source = Get-Content (Join-Path $Script:ModuleRoot 'Automation\Public\Invoke-IloRedfish.ps1') -Raw
+        ([regex]::Matches($source, 'Get-OVIloSso\s+-IloRestSession\s+-SkipCertificateCheck')).Count |
+            Should -Be 2
+    }
 }
 
 Describe 'Invoke-IloRedfish - Action validation' {
