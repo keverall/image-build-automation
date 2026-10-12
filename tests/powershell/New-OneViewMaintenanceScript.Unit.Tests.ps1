@@ -30,7 +30,11 @@ Describe 'New-OneViewMaintenanceScript - basic invocation and parameter validati
         # Maintenance mode is written via the REST API: the HPEOneView
         # Enable-OVMaintenanceMode cmdlet fails with an _MakeRequest overload error.
         $result | Should -Match 'Invoke-RestMethod'
-        $result | Should -Match 'maintenanceModeEnabled": true'
+        $result | Should -Match 'Method Patch'
+        $result | Should -Match 'application/json-patch\+json'
+        $result | Should -Match 'If-Match'
+        $result | Should -Match '"path":"/maintenanceMode"'
+        $result | Should -Match '"value":true'
         $result | Should -Not -Match 'Enable-OVMaintenanceMode'
     }
 
@@ -44,7 +48,11 @@ Describe 'New-OneViewMaintenanceScript - basic invocation and parameter validati
         $result | Should -BeOfType [string]
         $result | Should -Match 'Import-Module HPEOneView.1000'
         $result | Should -Match 'Invoke-RestMethod'
-        $result | Should -Match 'maintenanceModeEnabled": false'
+        $result | Should -Match 'Method Patch'
+        $result | Should -Match 'application/json-patch\+json'
+        $result | Should -Match 'If-Match'
+        $result | Should -Match '"path":"/maintenanceMode"'
+        $result | Should -Match '"value":false'
         $result | Should -Not -Match 'Disable-OVMaintenanceMode'
     }
 

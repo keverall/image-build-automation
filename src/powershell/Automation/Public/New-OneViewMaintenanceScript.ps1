@@ -111,10 +111,11 @@ foreach (`$s in `$servers) {
         `$base64 = [System.Convert]::ToBase64String(`$bytes)
         `$headers = @{
             'X-API-Version'  = '1200'
-            'Content-Type'   = 'application/json'
+            'Content-Type'   = 'application/json-patch+json'
             'Authorization'  = "Basic `$base64"
         }
-        Invoke-RestMethod -Uri "https://$Appliance`$srvUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
+        `$headers['If-Match'] = [string]`$s.eTag
+        Invoke-RestMethod -Uri "https://$Appliance`$srvUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":true}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
         Write-Output "Maintenance enabled: `$(`$s.Name)"
     }
 }
@@ -140,10 +141,11 @@ foreach (`$s in `$servers) {
         `$base64 = [System.Convert]::ToBase64String(`$bytes)
         `$headers = @{
             'X-API-Version'  = '1200'
-            'Content-Type'   = 'application/json'
+            'Content-Type'   = 'application/json-patch+json'
             'Authorization'  = "Basic `$base64"
         }
-        Invoke-RestMethod -Uri "https://$Appliance`$srvUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
+        `$headers['If-Match'] = [string]`$s.eTag
+        Invoke-RestMethod -Uri "https://$Appliance`$srvUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":false}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
         Write-Output "Maintenance disabled: `$(`$s.Name)"
     }
 }

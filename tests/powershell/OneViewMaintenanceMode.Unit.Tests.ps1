@@ -93,3 +93,27 @@ Describe 'Enable/Disable-OneViewMaintenanceMode - serial number accepted as -Tar
         $result.SerialNumber   | Should -Be 'CZ22420JCM'
     }
 }
+
+Describe 'OneView maintenance REST write contract' {
+    It 'uses JSON Patch with ETag for the Set-MaintenanceMode implementation' {
+        $path = Join-Path $Script:ModuleRoot 'src/powershell/Automation/Public/Set-MaintenanceMode.ps1'
+        $source = Get-Content -LiteralPath $path -Raw
+
+        $source | Should -Match "Method Patch"
+        $source | Should -Match "application/json-patch\+json"
+        $source | Should -Match "If-Match"
+        $source | Should -Match 'path.*?/maintenanceMode'
+        $source | Should -Not -Match 'Method Put[^\r\n]+maintenanceModeEnabled.*true'
+    }
+
+    It 'uses JSON Patch with ETag for the standalone OneView implementation' {
+        $path = Join-Path $Script:ModuleRoot 'src/powershell/Automation/Public/OneViewMaintenanceMode.ps1'
+        $source = Get-Content -LiteralPath $path -Raw
+
+        $source | Should -Match "Method Patch"
+        $source | Should -Match "application/json-patch\+json"
+        $source | Should -Match "If-Match"
+        $source | Should -Match 'path.*?/maintenanceMode'
+        $source | Should -Not -Match 'Method Put[^\r\n]+maintenanceModeEnabled.*true'
+    }
+}

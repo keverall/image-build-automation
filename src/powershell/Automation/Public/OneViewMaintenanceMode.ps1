@@ -173,7 +173,7 @@ if ('$TargetType' -eq 'ServerHardware') {
             }
             `$headers = @{
                 'X-API-Version' = '1200'
-                'Content-Type'  = 'application/json'
+                'Content-Type'  = 'application/json-patch+json'
             }
             `$sessionId = `$null
             if (`$existingSession -and `$existingSession.SessionID) { `$sessionId = `$existingSession.SessionID }
@@ -185,7 +185,8 @@ if ('$TargetType' -eq 'ServerHardware') {
                 `$base64 = [System.Convert]::ToBase64String(`$bytes)
                 `$headers['Authorization'] = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
+            `$headers['If-Match'] = [string]`$server.eTag
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":true}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode enabled'
             `$success++
@@ -231,7 +232,7 @@ if ('$TargetType' -eq 'ServerHardware') {
                     }
                     `$headers = @{
                         'X-API-Version' = '1200'
-                        'Content-Type'  = 'application/json'
+                        'Content-Type'  = 'application/json-patch+json'
                     }
                     `$sessionId = `$null
                     if (`$existingSession -and `$existingSession.SessionID) { `$sessionId = `$existingSession.SessionID }
@@ -243,7 +244,8 @@ if ('$TargetType' -eq 'ServerHardware') {
                         `$base64 = [System.Convert]::ToBase64String(`$bytes)
                         `$headers['Authorization'] = "Basic `$base64"
                     }
-                    Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
+                    `$headers['If-Match'] = [string]`$server.eTag
+                    Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":true}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
                     `$obj.Status = 'success'
                     `$obj.Message = 'Maintenance mode enabled'
                     `$success++
@@ -382,7 +384,7 @@ if ('$TargetType' -eq 'ServerHardware') {
             }
             `$headers = @{
                 'X-API-Version' = '1200'
-                'Content-Type'  = 'application/json'
+                'Content-Type'  = 'application/json-patch+json'
             }
             `$sessionId = `$null
             if (`$existingSession -and `$existingSession.SessionID) { `$sessionId = `$existingSession.SessionID }
@@ -394,7 +396,8 @@ if ('$TargetType' -eq 'ServerHardware') {
                 `$base64 = [System.Convert]::ToBase64String(`$bytes)
                 `$headers['Authorization'] = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
+            `$headers['If-Match'] = [string]`$server.eTag
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":true}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode enabled'
             `$success++
@@ -432,7 +435,7 @@ if ('$TargetType' -eq 'ServerHardware') {
                 }
                 `$headers = @{
                     'X-API-Version' = '1200'
-                    'Content-Type'  = 'application/json'
+                    'Content-Type'  = 'application/json-patch+json'
                 }
                 `$sessionId = `$null
                 if (`$existingSession -and `$existingSession.SessionID) { `$sessionId = `$existingSession.SessionID }
@@ -444,7 +447,8 @@ if ('$TargetType' -eq 'ServerHardware') {
                     `$base64 = [System.Convert]::ToBase64String(`$bytes)
                     `$headers['Authorization'] = "Basic `$base64"
                 }
-                Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
+                `$headers['If-Match'] = [string]`$server.eTag
+                Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":true}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
                 `$obj.Status = 'success'
                 `$obj.Message = 'Maintenance mode enabled'
                 `$success++
@@ -580,7 +584,9 @@ if ("$TargetType" -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+            `$headers['If-Match'] = [string]`$server.eTag
+            `$headers['Content-Type'] = 'application/json-patch+json'
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":false}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode disabled'
             `$success++
@@ -625,7 +631,9 @@ if ("$TargetType" -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+                    `$headers['If-Match'] = [string]`$server.eTag
+                    `$headers['Content-Type'] = 'application/json-patch+json'
+                    Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":false}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
                     `$obj.Status = 'success'
                     `$obj.Message = 'Maintenance mode disabled'
                     `$success++
@@ -755,7 +763,9 @@ if ("$TargetType" -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+            `$headers['If-Match'] = [string]`$server.eTag
+            `$headers['Content-Type'] = 'application/json-patch+json'
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":false}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode disabled'
             `$success++
@@ -792,7 +802,9 @@ if ("$TargetType" -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+                    `$headers['If-Match'] = [string]`$server.eTag
+                    `$headers['Content-Type'] = 'application/json-patch+json'
+                    Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Patch -Headers `$headers -Body '[{"op":"replace","path":"/maintenanceMode","value":false}]' -ContentType 'application/json-patch+json' -ErrorAction Stop | Out-Null
                 `$obj.Status = 'success'
                 `$obj.Message = 'Maintenance mode disabled'
                 `$success++
