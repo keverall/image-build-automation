@@ -380,10 +380,10 @@ function Install-RequiredModules {
     #>
 
     Write-Log "Installing PowerShell modules…"
-    $isWindows = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
+    $onWindows = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
         $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
     foreach ($m in $REQUIRED_MODULES) {
-        if ($m.WindowsOnly -and -not $isWindows) {
+        if ($m.WindowsOnly -and -not $onWindows) {
             Write-Log "Skipping Windows-only module $($m.Name) on this platform"
             continue
         }
