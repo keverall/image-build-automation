@@ -130,7 +130,7 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
     if (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$')) {
-        # HPEOneView's Disable-OVMaintenanceMode cmdlet fails with:
+        # HPEOneView's maintenance-mode cmdlet fails with:
         #   Cannot find an overload for _MakeRequest and the argument count: 3
         # so the state change is written directly via the OneView REST API.
         `$srvUri = `$s.uri
