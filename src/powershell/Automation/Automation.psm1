@@ -397,6 +397,8 @@ class IloRedfishSession {
     [bool]   $SkipCert
     [int]    $TimeoutSec
     [string] $AuthToken
+    [string] $RawAuthToken
+    [bool]   $UseRawAuthToken
     [string] $SessionUri
 
     IloRedfishSession([object]$SsoSession, [bool]$SkipCert, [int]$TimeoutSec) {
@@ -404,9 +406,9 @@ class IloRedfishSession {
         # mpAddress/sessionId response into RootUri and X-Auth-Token.
         $root = [string]$SsoSession.RootUri
         if ([string]::IsNullOrWhiteSpace($root)) { $root = [string]$SsoSession.mpAddress }
-        $token = [string]$SsoSession.'X-Auth-Token'
-        if ([string]::IsNullOrWhiteSpace($token)) { $token = [string]$SsoSession.sessionId }
-        $token = $token -replace '^sessionKey=', ''
+        $rawToken = [string]$SsoSession.'X-Auth-Token'
+        if ([string]::IsNullOrWhiteSpace($rawToken)) { $rawToken = [string]$SsoSession.sessionId }
+        $token = $rawToken -replace '^sessionKey=', ''
         if ([string]::IsNullOrWhiteSpace($root) -or [string]::IsNullOrWhiteSpace($token)) {
             throw 'OneView returned an invalid iLO SSO session (mpAddress or sessionID missing).'
         }
@@ -420,6 +422,8 @@ class IloRedfishSession {
         $this.SkipCert = $SkipCert
         $this.TimeoutSec = $TimeoutSec
         $this.AuthToken = $token
+        $this.RawAuthToken = $rawToken
+        $this.UseRawAuthToken = $false
         $this.SessionUri = $null
     }
 
@@ -431,6 +435,8 @@ class IloRedfishSession {
         $this.SkipCert = $SkipCert
         $this.TimeoutSec = $TimeoutSec
         $this.AuthToken = $null
+        $this.RawAuthToken = $null
+        $this.UseRawAuthToken = $false
         $this.SessionUri = $null
         $this._Login()
     }
@@ -457,7 +463,7 @@ class IloRedfishSession {
         # HPE iLO requires the Redfish protocol version header on authenticated
         # operations. Keep the SSO token in the standard Redfish header.
         return @{
-            'X-Auth-Token'  = $this.AuthToken
+            'X-Auth-Token'  = if ($this.UseRawAuthToken -and $this.RawAuthToken) { $this.RawAuthToken } else { $this.AuthToken }
             'OData-Version' = '4.0'
             'Accept'        = 'application/json'
         }
@@ -482,12 +488,32 @@ class IloRedfishSession {
     }
 
     [object] _Get([string]$Uri) {
+        $headers = $this._Headers()
         try {
             return Invoke-RestMethod -Uri $Uri -Method Get `
-                -Headers $this._Headers() `
+                -Headers $headers `
                 -SkipCertificateCheck:$this.SkipCert `
                 -TimeoutSec $this.TimeoutSec -ErrorAction Stop
         } catch {
+            # HPE iLO firmware differs in whether the OneView SSO token must
+            # retain its sessionKey= prefix. The HPE module returns that raw
+            # form, while newer iLO firmware commonly accepts the stripped form.
+            # Retry once with the raw form only after an authentication failure;
+            # never retry arbitrary Redfish errors.
+            $message = $_.Exception.Message
+            if ($message -match '(?i)(401|unauthorized)' -and
+                $this.RawAuthToken -and $this.RawAuthToken -ne $this.AuthToken -and
+                -not $this.UseRawAuthToken) {
+                try {
+                    $this.UseRawAuthToken = $true
+                    return Invoke-RestMethod -Uri $Uri -Method Get `
+                        -Headers $this._Headers() `
+                        -SkipCertificateCheck:$this.SkipCert `
+                        -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+                } catch {
+                    $this.UseRawAuthToken = $false
+                }
+            }
             throw (New-IloAuthException -Stage 'redfish_authenticated_get' -Uri $Uri -ErrorRecord $_)
         }
     }
