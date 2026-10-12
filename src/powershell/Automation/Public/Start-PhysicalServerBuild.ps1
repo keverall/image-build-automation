@@ -559,28 +559,6 @@ function Start-PhysicalServerBuild {
                 $status = Invoke-IloRedfish -Action Status -IloIp $IloIp `
                     -IloCredential $IloCredential -OneViewHost $OneViewHost `
                     -OneViewServerName $maintenanceServerName -DryRun:$DryRun
-                # OneView iLO SSO can be rejected by the appliance/iLO trust or
-                # role mapping even though the OneView session itself is healthy.
-                # In an interactive run, offer a direct iLO credential fallback
-                # before aborting. Keep the credential in this invocation so the
-                # subsequent mount/reboot uses the same authenticated path.
-                if (-not $status.Success -and $status.Error -match '(?i)(401|unauthorized)' -and
-                    $OneViewHost -and -not $IloCredential) {
-                    $canPromptForIlo = ([System.Environment]::GetEnvironmentVariable('AUTOMATED_MODE') -ne 'true') -and
-                        [Environment]::UserInteractive -and -not [System.Console]::IsInputRedirected
-                    if ($canPromptForIlo) {
-                        try {
-                            $IloCredential = Get-Credential -Message "OneView iLO SSO was rejected. Enter direct iLO credentials for '$IloIp'"
-                        } catch {
-                            $IloCredential = $null
-                        }
-                        if ($IloCredential) {
-                            $status = Invoke-IloRedfish -Action Status -IloIp $IloIp `
-                                -IloCredential $IloCredential -OneViewHost $null `
-                                -OneViewServerName $null -DryRun:$DryRun
-                        }
-                    }
-                }
                 if (-not $status.Success) {
                     $statusError = $status.Error
                     if ($statusError -match '401') {
