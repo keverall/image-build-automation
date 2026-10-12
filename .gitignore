@@ -152,6 +152,9 @@ Thumbs.db
 /generated/
 # Local scratch workspace: purged from git history (see docs/compliance/SECRET_SCANNING.md).
 /wip/
+!/wip/
+/wip/*
+!/wip/testing-issue.md
 # Generated Word/RTF mirrors of wip/ scratch (same content, binary). Kept out
 # of git so scratch material - including any embedded SSH keys - cannot be
 # re-committed via `make word-docs`.
@@ -170,5 +173,3 @@ Thumbs.db
 # ---- AGENT ENGINES (Re-add this before push) ----
 .kilo/
 .env
-
-!wip/testing-issue.md
