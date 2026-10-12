@@ -462,11 +462,18 @@ class IloRedfishSession {
     [hashtable] _Headers() {
         # HPE iLO requires the Redfish protocol version header on authenticated
         # operations. Keep the SSO token in the standard Redfish header.
-        return @{
+        $headers = @{
             'X-Auth-Token'  = if ($this.UseRawAuthToken -and $this.RawAuthToken) { $this.RawAuthToken } else { $this.AuthToken }
             'OData-Version' = '4.0'
             'Accept'        = 'application/json'
         }
+        # OneView-issued SSO sessions use the legacy iLO SSO header. Keep the
+        # standard Redfish header as well so normal SessionService logins are
+        # unaffected; iLO firmware chooses the supported authentication path.
+        if ($this.RawAuthToken) {
+            $headers['X-Redfish-Session'] = $this.RawAuthToken
+        }
+        return $headers
     }
 
     [void] _Patch([string]$Uri, [object]$Body) {

@@ -12,7 +12,7 @@ Describe 'IloRedfishSession - OneView SSO token compatibility' {
             $script:headersSeen = @()
             Mock Invoke-RestMethod {
                 param($Headers)
-                $script:headersSeen += $Headers['X-Auth-Token']
+                $script:headersSeen += "$($Headers['X-Auth-Token'])|$($Headers['X-Redfish-Session'])"
                 if ($Headers['X-Auth-Token'] -eq 'abc123') {
                     throw 'Response status code does not indicate success: 401 (Unauthorized).'
                 }
@@ -36,7 +36,7 @@ Describe 'IloRedfishSession - OneView SSO token compatibility' {
             $result = $session.GetSystem()
 
             $result.power_state | Should -Be 'On'
-            $script:headersSeen | Should -Be @('abc123', 'sessionKey=abc123')
+            $script:headersSeen | Should -Be @('abc123|sessionKey=abc123', 'sessionKey=abc123|sessionKey=abc123')
             Should -Invoke Invoke-RestMethod -Times 2 -Exactly
         }
     }
