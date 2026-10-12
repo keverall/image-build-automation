@@ -525,7 +525,7 @@ class IloRedfishSession {
         # OneView-issued SSO sessions use the legacy iLO SSO header. Keep the
         # standard Redfish header as well so normal SessionService logins are
         # unaffected; iLO firmware chooses the supported authentication path.
-        if ($this.RawAuthToken) {
+        if ($this.RawAuthToken -and ($this.RawAuthToken -match '^sessionKey=' -or $this.UseRawAuthToken)) {
             $headers['X-Redfish-Session'] = $this.RawAuthToken
         }
         return $headers
