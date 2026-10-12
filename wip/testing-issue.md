@@ -16,10 +16,10 @@ After the next run, send all of these audit files from the Windows client (the
 serial-specific files are required to correlate OneView, build, and iLO steps):
 
 ```text
-generated/logs/audit/prebuild_CZ22420JCM_*.json
-generated/logs/audit/enable_CZ22420JCM_*.json
-generated/logs/audit/build_CZ22420JCM_*.json
-generated/logs/audit/disable_CZ22420JCM_*.json
+generated/logs/audit/*_prebuild_CZ22420JCM.json
+generated/logs/audit/*_enable_CZ22420JCM.json
+generated/logs/audit/*_build_CZ22420JCM.json
+generated/logs/audit/*_disable_CZ22420JCM.json
 ```
 
 The most important one will be the audit file containing:
@@ -108,3 +108,33 @@ src/powershell/Automation/Automation.psm1
 src/powershell/Automation/Public/Invoke-IloRedfish.ps1
 src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
 ```
+
+
+PowerShell, using the file’s modified date:
+
+```powershell
+Get-ChildItem .\generated\logs\audit -File |
+    Where-Object { $_.LastWriteTime -ge (Get-Date).Date } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object Name, Length, LastWriteTime
+```
+
+Short form:
+
+```powershell
+ls .\generated\logs\audit -File |
+    ? LastWriteTime -ge (Get-Date).Date |
+    sort LastWriteTime -Descending
+```
+
+Because the new filenames begin with a UTC timestamp, you can also filter by today’s UTC prefix:
+
+```powershell
+$today = [DateTime]::UtcNow.ToString('yyyy-MM-dd')
+
+Get-ChildItem .\generated\logs\audit -File |
+    Where-Object Name -like "${today}*" |
+    Sort-Object Name -Descending
+```
+
+The `LastWriteTime` version is safer because it also finds files created with the older filename format.

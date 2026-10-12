@@ -951,7 +951,8 @@ function Set-MaintenanceMode {
             }
             success             = $true
         }
-        _Save-AuditRecord $audit (Join-Path $Script:MaintLogDir "validate_${validateAuditId}_$(Get-UtcFileTimestamp).json")
+        _Save-AuditRecord $audit (Get-TimestampedLogPath -Directory $Script:MaintLogDir `
+            -BaseName "validate_${validateAuditId}" -Extension '.json')
 
         Write-Host $message
         Write-Host "Servers: $($servers -join ', ')"
@@ -1311,7 +1312,8 @@ function Set-MaintenanceMode {
             $audit.success = $false
             $audit.message = $msg
             $audit.timestamp_end = Get-UtcTimestamp
-            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$(Get-UtcFileTimestamp).json"
+            $auditFile = Get-TimestampedLogPath -Directory $Script:MaintLogDir `
+                -BaseName "$Action`_$auditTargetId" -Extension '.json'
             _Save-AuditRecord $audit $auditFile
             return @{
                 Success   = $false
@@ -1565,7 +1567,8 @@ function Set-MaintenanceMode {
             $audit.success = $false
             $audit.message = $msg
             $audit.timestamp_end = Get-UtcTimestamp
-            $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$(Get-UtcFileTimestamp).json"
+            $auditFile = Get-TimestampedLogPath -Directory $Script:MaintLogDir `
+                -BaseName "$Action`_$auditTargetId" -Extension '.json'
             _Save-AuditRecord $audit $auditFile
             return @{
                 Success   = $false
@@ -1690,7 +1693,8 @@ function Set-MaintenanceMode {
     } else {
         $audit.timestamp_end = Get-UtcTimestamp
     }
-    $auditFile = Join-Path $Script:MaintLogDir "$($Action)_$($auditTargetId)_$(Get-UtcFileTimestamp).json"
+    $auditFile = Get-TimestampedLogPath -Directory $Script:MaintLogDir `
+        -BaseName "$Action`_$auditTargetId" -Extension '.json'
 
     # Build detailed completion message
     $serverCount = ($servers | Measure-Object).Count
@@ -2079,8 +2083,8 @@ function _Save-AuditRecord([hashtable]$Audit, [string]$Path) {
     
     $Audit | ConvertTo-Json -Depth 64 | Set-Content -Path $Path -Encoding UTF8 -Force
     # Append to master log
-    $ts = Get-UtcFileTimestamp
-    $master = Join-Path $Script:MaintLogDir "maintenance_audit_${ts}_INFO.log"
+    $master = Get-TimestampedLogPath -Directory $Script:MaintLogDir `
+        -BaseName 'maintenance_audit_INFO' -Extension '.log'
     $Audit | ConvertTo-Json -Depth 64 | Add-Content $master -Encoding UTF8
 }
 

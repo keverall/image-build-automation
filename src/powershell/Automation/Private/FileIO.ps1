@@ -66,12 +66,35 @@ function Save-JsonResult {
     if (-not $OutputDir) {
         $OutputDir = Get-LogDirectory -Category $Category
     }
-    $ts  = Get-UtcFileTimestamp
     $dir = $OutputDir
     Ensure-DirectoryExists $dir | Out-Null
-    $fp  = [System.IO.Path]::Combine($dir, "$BaseName`_$ts.json")
+    $fp  = Get-TimestampedLogPath -Directory $dir -BaseName $BaseName -Extension '.json'
     Save-Json -Data $Data -Path $fp | Out-Null
     return $fp
+}
+
+function Get-TimestampedLogPath {
+    <#
+    .SYNOPSIS
+        Builds a timestamp-first path for any generated log or audit artifact.
+
+    .DESCRIPTION
+        Centralizes generated filename formatting so every module writes files as:
+        yyyy-MM-ddTHH-mm-ssZ_<base-name><extension>
+
+        The timestamp is UTC and sortable lexically. Use the VS Code name sort in
+        descending order to show the newest artifact first.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)][string] $Directory,
+        [Parameter(Mandatory, Position = 1)][string] $BaseName,
+        [string] $Extension = '.log'
+    )
+    if ([string]::IsNullOrWhiteSpace($Extension)) { $Extension = '.log' }
+    if (-not $Extension.StartsWith('.')) { $Extension = ".$Extension" }
+    Ensure-DirectoryExists -Path $Directory | Out-Null
+    return Join-Path $Directory "$(Get-UtcFileTimestamp)_${BaseName}${Extension}"
 }
 
 function Test-PathEx {

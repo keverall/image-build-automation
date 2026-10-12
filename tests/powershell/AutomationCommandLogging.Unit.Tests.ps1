@@ -44,11 +44,11 @@ Describe 'Logging is functional: commands initialise and write logs' {
             (Join-Path $Script:RepoRoot 'generated/logs/commands/Test-ServerConnectivity')
         )
         $before = foreach ($d in $logDirs) {
-            if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
+            if (Test-Path $d) { Get-ChildItem $d -Filter '*Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
         Test-ServerConnectivity -OneViewHost 'test-ov.local' -DryRun
         $after = foreach ($d in $logDirs) {
-            if (Test-Path $d) { Get-ChildItem $d -Filter 'Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
+            if (Test-Path $d) { Get-ChildItem $d -Filter '*Test-ServerConnectivity*.log' -ErrorAction SilentlyContinue }
         }
         $new = $after | Where-Object { $_.FullName -notin ($before.FullName) }
         $new.Count | Should -BeGreaterThan 0
@@ -56,4 +56,3 @@ Describe 'Logging is functional: commands initialise and write logs' {
         ($content | Where-Object { $_ -match 'Connectivity test for' }) | Should -Not -BeNullOrEmpty
     }
 }
-

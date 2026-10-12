@@ -248,7 +248,8 @@ function Test-PreBuildValidation {
     try {
         $auditDir = Join-Path (Get-ProjectRoot) 'generated/logs/audit'
         Ensure-DirectoryExists -Path $auditDir
-        $auditPath = Join-Path $auditDir "prebuild_$($ServerIdentifier)_$(Get-UtcFileTimestamp).json"
+        $auditPath = Get-TimestampedLogPath -Directory $auditDir `
+            -BaseName "prebuild_$ServerIdentifier" -Extension '.json'
         $entry = @{
             timestamp = Get-UtcTimestamp
             server    = $ServerIdentifier

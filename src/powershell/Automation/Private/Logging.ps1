@@ -130,14 +130,13 @@ function Initialize-Logging {
         if (-not (Test-Path $dir -PathType Container)) { Ensure-DirectoryExists -Path $dir }
 
         $ext = [System.IO.Path]::GetExtension($LogFile)
-        $timestamp = Get-UtcFileTimestamp
         $levelStr = $Level.ToUpper()
 
         if ($levelStr -eq 'INFORMATION') { $levelStr = 'INFO' }
         if ($levelStr -eq 'VERBOSE') { $levelStr = 'DEBUG' }
 
-        $realLogFile = "${baseName}_${timestamp}_${levelStr}${ext}"
-        $global:__AutomationLogPath = Join-Path $dir $realLogFile
+        $global:__AutomationLogPath = Get-TimestampedLogPath -Directory $dir `
+            -BaseName "${baseName}_${levelStr}" -Extension $ext
     }
     $global:__AutomationLogLevel = $Level
 }

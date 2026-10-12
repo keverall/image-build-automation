@@ -207,7 +207,8 @@ $rdp  = Get-Service -Name TermService -ErrorAction SilentlyContinue
             success   = $overall
             checks    = $checks
         }
-        $auditFile = Join-Path $auditDir "postbuild_$($Hostname)_$(Get-UtcFileTimestamp).json"
+        $auditFile = Get-TimestampedLogPath -Directory $auditDir `
+            -BaseName "postbuild_$Hostname" -Extension '.json'
         Save-Json -Data $entry -Path $auditFile
         _Set 'audit_recorded' $true "postbuild_$Hostname logged"
     } catch { _Set 'audit_recorded' $false $_.Exception.Message }

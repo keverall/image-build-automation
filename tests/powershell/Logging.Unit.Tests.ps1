@@ -31,7 +31,7 @@ Describe 'Initialize-Logging - file creation and path resolution' {
         $logger.Info('seed entry')
         Test-Path $global:__AutomationLogPath | Should -Be $true
         $global:__AutomationLogPath | Should -Match 'generated[\\/]logs[\\/]testing'
-        Split-Path $global:__AutomationLogPath -Leaf | Should -Match '^test_log_a_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z_INFO\.log$'
+        Split-Path $global:__AutomationLogPath -Leaf | Should -Match '^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z_test_log_a_INFO\.log$'
     }
 
     It 'Sets the global log level used for Debug filtering' {

@@ -468,7 +468,8 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
             $result['duration_seconds'] = ([DateTime]::UtcNow - $startTime).TotalSeconds
             $sessDir = Join-Path $Script:MonitorLogDir 'monitoring_sessions'
             Ensure-DirectoryExists -Path $sessDir
-            $sessFile = Join-Path $sessDir "monitor_${hn}_$([int][double]::Parse(([DateTime]::UtcNow - [DateTime]'1970-01-01').TotalSeconds)).json"
+            $sessFile = Get-TimestampedLogPath -Directory $sessDir `
+                -BaseName "monitor_$hn" -Extension '.json'
             Save-Json -Data $result -Path $sessFile
             Write-Output "Monitoring session saved: $sessFile"
         }
@@ -487,7 +488,8 @@ if($events){Write-Output "LastSetupEvent=$($events[0].Id)"}
         $timedOut   = ($results | Where-Object { $_.status -eq 'timeout' }).Count
         $summary    = @{ timestamp=Get-UtcTimestamp; total=$results.Count; completed=$completed;
             failed=$failed; timeout=$timedOut; details=$results }
-        $summaryFile = Join-Path $Script:MonitorLogDir "monitor_summary_$(Get-FileTimestamp).json"
+        $summaryFile = Get-TimestampedLogPath -Directory $Script:MonitorLogDir `
+            -BaseName 'monitor_summary' -Extension '.json'
         Save-Json -Data $summary -Path $summaryFile
         Write-Output "`nMonitoring Summary: Completed=$completed Failed=$failed Timeout=$timedOut Total=$($results.Count)"
         Write-Output "Saved: $summaryFile"
