@@ -406,8 +406,18 @@ class IloRedfishSession {
         # mpAddress/sessionId response into RootUri and X-Auth-Token.
         $root = [string]$SsoSession.RootUri
         if ([string]::IsNullOrWhiteSpace($root)) { $root = [string]$SsoSession.mpAddress }
-        $rawToken = [string]$SsoSession.'X-Auth-Token'
-        if ([string]::IsNullOrWhiteSpace($rawToken)) { $rawToken = [string]$SsoSession.sessionId }
+        # HPEOneView module releases expose the same SSO token under different
+        # property names: SecurityToken/XAuthToken in documented objects and
+        # X-Auth-Token/sessionId in older IloRestSession objects. Prefer the
+        # documented SecurityToken but accept every known representation.
+        $rawToken = $null
+        foreach ($tokenProperty in @('SecurityToken', 'XAuthToken', 'X-Auth-Token', 'sessionId', 'SessionID')) {
+            $candidate = [string]$SsoSession.$tokenProperty
+            if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+                $rawToken = $candidate
+                break
+            }
+        }
         $token = $rawToken -replace '^sessionKey=', ''
         if ([string]::IsNullOrWhiteSpace($root) -or [string]::IsNullOrWhiteSpace($token)) {
             throw 'OneView returned an invalid iLO SSO session (mpAddress or sessionID missing).'

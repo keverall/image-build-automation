@@ -40,4 +40,35 @@ Describe 'IloRedfishSession - OneView SSO token compatibility' {
             Should -Invoke Invoke-RestMethod -Times 2 -Exactly
         }
     }
+
+    It 'accepts the SecurityToken property used by current HPE SSO objects' {
+        InModuleScope Automation {
+            Mock Invoke-RestMethod {
+                param($Headers)
+                if ($Headers['X-Auth-Token'] -ne 'security-token-123') {
+                    throw 'unexpected token property selection'
+                }
+                [pscustomobject]@{
+                    PowerState = 'On'
+                    Boot = @{ BootSourceOverrideTarget = 'None'; BootSourceOverrideEnabled = 'Disabled' }
+                    Manufacturer = 'HPE'
+                    Model = 'DL360'
+                    SerialNumber = 'CZ22420JCM'
+                }
+            }
+
+            $session = [IloRedfishSession]::new(
+                [pscustomobject]@{
+                    RootUri = 'https://10.30.14.15/redfish/v1'
+                    SecurityToken = 'security-token-123'
+                },
+                $true,
+                30)
+
+            $result = $session.GetSystem()
+
+            $result.power_state | Should -Be 'On'
+            Should -Invoke Invoke-RestMethod -Times 1 -Exactly
+        }
+    }
 }
