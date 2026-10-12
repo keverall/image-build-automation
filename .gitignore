@@ -98,8 +98,10 @@ Thumbs.db
 # === AI Workspace Configs ===
 # .kilo/
 AGENTS.md
+!/scripts/modules/HPRESTCmdlets/
 scripts/modules/OperationsManager/
 scripts/modules/
+
 
 # ---- POWERSHELL RUNTIME & LOGGING ----
 # Block interactive history and transcripts
