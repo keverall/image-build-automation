@@ -27,7 +27,11 @@ Describe 'New-OneViewMaintenanceScript - basic invocation and parameter validati
         $result | Should -Match 'Import-Module HPEOneView.1000'
         $result | Should -Match 'Connect-OVMgmt'
         $result | Should -Match 'Get-OVScope'
-        $result | Should -Match 'Enable-OVMaintenanceMode'
+        # Maintenance mode is written via the REST API: the HPEOneView
+        # Enable-OVMaintenanceMode cmdlet fails with an _MakeRequest overload error.
+        $result | Should -Match 'Invoke-RestMethod'
+        $result | Should -Match 'maintenanceModeEnabled": true'
+        $result | Should -Not -Match 'Enable-OVMaintenanceMode'
     }
 
     It 'Accepts ModuleName parameter with custom value' {
@@ -39,12 +43,15 @@ Describe 'New-OneViewMaintenanceScript - basic invocation and parameter validati
         $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'disable' -ModuleName 'HPEOneView.1000'
         $result | Should -BeOfType [string]
         $result | Should -Match 'Import-Module HPEOneView.1000'
-        $result | Should -Match 'Disable-OVMaintenanceMode'
+        $result | Should -Match 'Invoke-RestMethod'
+        $result | Should -Match 'maintenanceModeEnabled": false'
+        $result | Should -Not -Match 'Disable-OVMaintenanceMode'
     }
 
-    It 'Includes Async parameter when Async is true' {
+    It 'Ignores the deprecated Async switch (REST writes are synchronous)' {
         $result = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName 'TestScope' -Operation 'enable' -Async $true -ModuleName 'HPEOneView.1000'
-        $result | Should -Match '\-Async'
+        $result | Should -Match 'Invoke-RestMethod'
+        $result | Should -Not -Match '\-Async'
     }
 
     It 'Rejects unknown parameters (strict mode)' {

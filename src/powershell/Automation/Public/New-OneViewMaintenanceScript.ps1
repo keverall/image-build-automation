@@ -17,7 +17,10 @@ function New-OneViewMaintenanceScript {
         'enable' or 'disable' maintenance mode.
 
     .PARAMETER Async
-        Use -Async parameter for bulk operations (default: true).
+        Deprecated and ignored. Maintenance mode is now written directly through the
+        OneView REST API (the HPEOneView Enable-/Disable-OVMaintenanceMode cmdlets fail
+        with 'Cannot find an overload for "_MakeRequest" and the argument count: "3"'),
+        which is always synchronous. The parameter is retained for backwards compatibility.
 
     .PARAMETER ModuleName
         PowerShell module name for HPE OneView (required).
@@ -89,8 +92,6 @@ function New-OneViewMaintenanceScript {
         }
     }
     
-    $asyncParam = if ($Async) { '-Async' } else { '' }
-    
     if ($Operation -eq 'enable') {
         return @"
 Get-Module -Name 'HPEOneView.*','HPOneView.*' -ErrorAction SilentlyContinue | Where-Object { `$_.Name -ne '$ModuleName' } | Remove-Module -Force -ErrorAction SilentlyContinue
@@ -99,10 +100,24 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
-    if (-not (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$')))) {
-        Enable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
+    if (-not (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$'))) {
+        # HPEOneView's maintenance-mode cmdlet fails with:
+        #   Cannot find an overload for _MakeRequest and the argument count: 3
+        # so the state change is written directly via the OneView REST API.
+        `$srvUri = `$s.uri
+        if (-not `$srvUri) { `$srvUri = "/rest/server-hardware/`$(`$s.Name)" }
+        `$pair = "`$(`$cred.UserName):`$(`$cred.GetNetworkCredential().Password)"
+        `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
+        `$base64 = [System.Convert]::ToBase64String(`$bytes)
+        `$headers = @{
+            'X-API-Version'  = '1200'
+            'Content-Type'   = 'application/json'
+            'Authorization'  = "Basic `$base64"
+        }
+        Invoke-RestMethod -Uri "https://$Appliance`$srvUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
         Write-Output "Maintenance enabled: `$(`$s.Name)"
     }
+}
 }
 "@
     }
@@ -114,10 +129,24 @@ Connect-OVMgmt -Appliance "$Appliance" -Credential `$cred -ErrorAction Stop
 `$scope = Get-OVScope -Name "$ScopeName" -ErrorAction Stop
 `$servers = `$scope.Members | Where-Object { `$_.Type -eq "ServerHardware" } | ForEach-Object { Get-OVServer -Name `$_.Name }
 foreach (`$s in `$servers) {
-    if (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$'))) {
-        Disable-OVMaintenanceMode -InputObject `$s $asyncParam -ErrorAction Stop
+    if (`$s.state -match 'MaintenanceMode' -or `$s.maintenanceModeEnabled -eq `$true -or (`$s.maintenanceMode -and "`$s.maintenanceMode" -notmatch '(?i)^(off|false|0|null)$')) {
+        # HPEOneView's Disable-OVMaintenanceMode cmdlet fails with:
+        #   Cannot find an overload for _MakeRequest and the argument count: 3
+        # so the state change is written directly via the OneView REST API.
+        `$srvUri = `$s.uri
+        if (-not `$srvUri) { `$srvUri = "/rest/server-hardware/`$(`$s.Name)" }
+        `$pair = "`$(`$cred.UserName):`$(`$cred.GetNetworkCredential().Password)"
+        `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
+        `$base64 = [System.Convert]::ToBase64String(`$bytes)
+        `$headers = @{
+            'X-API-Version'  = '1200'
+            'Content-Type'   = 'application/json'
+            'Authorization'  = "Basic `$base64"
+        }
+        Invoke-RestMethod -Uri "https://$Appliance`$srvUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
         Write-Output "Maintenance disabled: `$(`$s.Name)"
     }
+}
 }
 "@
     }

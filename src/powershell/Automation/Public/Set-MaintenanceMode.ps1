@@ -1156,6 +1156,17 @@ function Set-MaintenanceMode {
                     }
                     $resolvedServerName = $serialLookupResult.ServerName
                     $clusterName = $serialLookupResult.ServerName
+                    # Callers that only supply a serial number never provide a TargetId,
+                    # so populate the resolution result here. Without it the maintenance
+                    # script falls back to TargetType 'Scope' with an empty target name and
+                    # nothing is ever put into maintenance mode.
+                    $resolveResult = @{
+                        Success      = $true
+                        TargetName   = $serialLookupResult.ServerName
+                        TargetType   = 'ServerHardware'
+                        SerialNumber = $SerialNumber
+                        Message      = $serialLookupResult.Message
+                    }
                 } elseif ($TargetId) {
                     $resolveResult = $oneviewMgr.ResolveTarget($TargetId, [bool]$DryRun)
                     if (-not $resolveResult.Success) {
@@ -2954,7 +2965,30 @@ if ('$TargetType' -eq 'ServerHardware') {
             `$obj.Message = 'Already in maintenance mode'
             `$alreadyInMaintenance++
         } else {
-            Enable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+            # HPEOneView's Enable-OVMaintenanceMode cmdlet fails with:
+            #   Cannot find an overload for _MakeRequest and the argument count: 3
+            # (the same library defect that broke Disable-OVMaintenanceMode), so the
+            # state change is written directly via the OneView REST API. Get-OVServer
+            # above remains the source of truth for maintenance-mode detection.
+            `$serverUri = `$server.uri
+            if (-not `$serverUri) {
+                `$serverUri = "/rest/server-hardware/$Target"
+            }
+            `$headers = @{
+                'X-API-Version' = '1200'
+                'Content-Type'  = 'application/json'
+            }
+            `$sessionId = `$null
+            if (`$existingSession -and `$existingSession.SessionID) { `$sessionId = `$existingSession.SessionID }
+            if (`$sessionId) {
+                `$headers['auth'] = `$sessionId
+            } else {
+                `$pair = `$OVUser + ':' + `$OVPwd
+                `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
+                `$base64 = [System.Convert]::ToBase64String(`$bytes)
+                `$headers['Authorization'] = "Basic `$base64"
+            }
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode enabled'
             `$success++
@@ -2986,7 +3020,30 @@ if ('$TargetType' -eq 'ServerHardware') {
                 `$obj.Message = 'Already in maintenance mode'
                 `$alreadyInMaintenance++
             } else {
-                Enable-OVMaintenanceMode -InputObject `$server -ErrorAction Stop | Out-Null
+                # HPEOneView's Enable-OVMaintenanceMode cmdlet fails with:
+                #   Cannot find an overload for _MakeRequest and the argument count: 3
+                # (the same library defect that broke Disable-OVMaintenanceMode), so the
+                # state change is written directly via the OneView REST API. Get-OVServer
+                # above remains the source of truth for maintenance-mode detection.
+                `$serverUri = `$server.uri
+                if (-not `$serverUri) {
+                    `$serverUri = "/rest/server-hardware/$Target"
+                }
+                `$headers = @{
+                    'X-API-Version' = '1200'
+                    'Content-Type'  = 'application/json'
+                }
+                `$sessionId = `$null
+                if (`$existingSession -and `$existingSession.SessionID) { `$sessionId = `$existingSession.SessionID }
+                if (`$sessionId) {
+                    `$headers['auth'] = `$sessionId
+                } else {
+                    `$pair = `$OVUser + ':' + `$OVPwd
+                    `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
+                    `$base64 = [System.Convert]::ToBase64String(`$bytes)
+                    `$headers['Authorization'] = "Basic `$base64"
+                }
+                Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": true}' -ContentType 'application/json' -ErrorAction Stop | Out-Null
                 `$obj.Status = 'success'
                 `$obj.Message = 'Maintenance mode enabled'
                 `$success++
@@ -3097,9 +3154,9 @@ if ('$TargetType' -eq 'ServerHardware') {
         } else {
             `$serverUri = `$server.uri
             if (-not `$serverUri) {
-                `$serverUri = "/rest/server-hardware/$(`$Target)"
+                `$serverUri = "/rest/server-hardware/$Target"
             }
-            `$pair = "$(`$OVUser):$(`$OVPwd)"
+            `$pair = `$OVUser + ':' + `$OVPwd
             `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
             `$base64 = [System.Convert]::ToBase64String(`$bytes)
             `$headers = @{
@@ -3107,7 +3164,7 @@ if ('$TargetType' -eq 'ServerHardware') {
                 'Content-Type' = 'application/json'
                 'Authorization' = "Basic `$base64"
             }
-            Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+            Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
             `$obj.Status = 'success'
             `$obj.Message = 'Maintenance mode disabled'
             `$success++
@@ -3141,9 +3198,9 @@ if ('$TargetType' -eq 'ServerHardware') {
             } else {
                 `$serverUri = `$server.uri
                 if (-not `$serverUri) {
-                    `$serverUri = "/rest/server-hardware/$(`$Target)"
+                    `$serverUri = "/rest/server-hardware/$Target"
                 }
-                `$pair = "$(`$OVUser):$(`$OVPwd)"
+                `$pair = `$OVUser + ':' + `$OVPwd
                 `$bytes = [System.Text.Encoding]::ASCII.GetBytes(`$pair)
                 `$base64 = [System.Convert]::ToBase64String(`$bytes)
                 `$headers = @{
@@ -3151,7 +3208,7 @@ if ('$TargetType' -eq 'ServerHardware') {
                     'Content-Type' = 'application/json'
                     'Authorization' = "Basic `$base64"
                 }
-                Invoke-RestMethod -Uri "https://$(`$ovAppliance)`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
+                Invoke-RestMethod -Uri "https://$ovAppliance`$serverUri" -Method Put -Headers `$headers -Body '{"maintenanceModeEnabled": false}' -ContentType 'application/json' | Out-Null
                 `$obj.Status = 'success'
                 `$obj.Message = 'Maintenance mode disabled'
                 `$success++
