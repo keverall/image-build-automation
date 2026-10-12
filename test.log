@@ -1,13 +1,16 @@
 Identity added: C:\Users\adm_98253\.ssh\id_ed25519 (Kevin.X.Everall@aib.ie)
-   image-build-automation  main  Connect-OneView -OneViewHost va-oneviewt-01                                                           0  16:52:54 2026-10-12 15:53:14 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-01' DryRun=False PassThru=False Json=False 
+   image-build-automation  main  git log -1 --oneline                                                                                  0  17:05:58 7962371a (HEAD -> main, origin/main, origin/HEAD) Enhance iLO authentication logic to include a non-interactive fallback using OneView credentials for 
+improved reliability
+   image-build-automation  main  Connect-OneView -OneViewHost va-oneviewt-01 
+2026-10-12 16:06:09 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-01' DryRun=False PassThru=False Json=False 
 Enter OneView username for 'va-oneviewt-01': adm_98253 
 Enter OneView password for 'va-oneviewt-01': : **************** 
-2026-10-12 15:53:34 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
-2026-10-12 15:53:34 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 11ms) 
+2026-10-12 16:06:23 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-10-12 16:06:23 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 9ms) 
 This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective action including termination, civil and/or criminal penalties.
 
-2026-10-12 15:53:38 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True) 
-2026-10-12 15:53:38 - Connect-OneView - INFO - Connect-OneView result: Available=True Message='Connected to OneView appliance 'va-oneviewt-01'.' 
+2026-10-12 16:06:57 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True) 
+2026-10-12 16:06:57 - Connect-OneView - INFO - Connect-OneView result: Available=True Message='Connected to OneView appliance 'va-oneviewt-01'.' 
 
 ============================================== 
   OneView Connectivity Test
@@ -17,12 +20,12 @@ This management appliance is a company owned asset and provided for the exclusiv
   Mode:       oneview
   Host:       va-oneviewt-01
   Environment:Prod
-  Timestamp:  2026-10-12T15:53:38.4321073Z 
+  Timestamp:  2026-10-12T16:06:57.8291552Z 
 
   --- Phase 1: Network Ping ---
     DNS:       Resolved
     IP:        10.239.124.79
-    TCP:       Open (port 443, 11ms)
+    TCP:       Open (port 443, 9ms)
 
   --- Phase 2: Auth Connect ---
     Module:    Loaded
@@ -58,12 +61,12 @@ KEY
   MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
                Colour: Red = Yes (zero alerting - do not leave a server here); Green = No (normal).
   State     : server lifecycle state from OneView:
-               Monitored        = normal / being monitored (not in maintenance) 
+               Monitored        = normal / being monitored (not in maintenance)
                MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
                NoProfileApplied = no server profile assigned
                ProfileApplying  = a server profile is being applied
                ProfileApplied   = a server profile has been applied
-               ConfigureHardware = hardware configuration in progress
+               ConfigureHardware = hardware configuration in progress 
                ProfileError     = profile apply failed (NOT maintenance)
                Deleting         = server being removed
   State Reason : additional context for the State value (blank when 'NotApplicable'):
@@ -81,7 +84,7 @@ KEY
 ========================================
 
 [1/4] Resolving server identity from OneView...
-2026-10-12 15:53:52 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+2026-10-12 16:07:20 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
 ==============================================
   OneView Server Target 
@@ -97,13 +100,13 @@ KEY
   [OK] Server resolved 
 
 ========================================
-  GUARD RAIL MATCH - DESTRUCTIVE ACTION
+  GUARD RAIL MATCH - DESTRUCTIVE ACTION 
 ========================================
   Guard pattern : qlikview-03ilo
   Target server : alp-qlikview-03ilo
   Serial number : CZ22420JCM
-  Appliance     : va-oneviewt-01 
-2026-10-12 15:53:52 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with build plan review for 'alp-qlikview-03ilo'.
+  Appliance     : va-oneviewt-01
+2026-10-12 16:07:20 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with build plan review for 'alp-qlikview-03ilo'.
 [2/4] Resolving ISO...
   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE 
   [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso 
@@ -111,7 +114,7 @@ KEY
   [OK] Resolved to: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
 
 [3/4] Running pre-build validation...
-2026-10-12 15:54:13 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+2026-10-12 16:07:41 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
 ==============================================
   OneView Server Target
@@ -136,10 +139,10 @@ KEY
   Model:           ProLiant DL360 Gen10 Plus
   iLO IP:          10.30.14.15
   OneView URI:     /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
-  Rack/Position:   unknown 
-  Server Group:    unknown 
+  Rack/Position:   unknown
+  Server Group:    unknown
   Maintenance Mode:Yes
-  Power State:     On
+  Power State:     On 
   Health:          OK
 
   ─ ISO DETAILS ─
@@ -157,22 +160,20 @@ KEY
   ║  �🔇  ONEVIEW MAINTENANCE MODE (automatic)                            ║
   ╠══════════════════════════════════════════════════════════════════════╣
   ║  This server will be put into HPE OneView maintenance mode           ║
-  ║  BEFORE the build starts. This stops unnecessary alerting            ║
-  ║  and avoids on-call callouts during the deployment.                  ║ 
+  ║  BEFORE the build starts. This stops unnecessary alerting            ║ 
+  ║  and avoids on-call callouts during the deployment.                  ║
   ║                                                                      ║
   ║  Maintenance mode will be automatically removed when the             ║
   ║  build completes (or if it fails).                                   ║
   ║                                                                      ║
   ║  To skip this, use -NoMaintenanceMode.                               ║
-  ╚══════════════════════════════════════════════════════════════════════╝ 
-
+  ╚══════════════════════════════════════════════════════════════════════╝
+ 
   ─ PRE-BUILD VALIDATION RESULTS ─
-  [PASS] oneview_target : Server: CZ22420JCM, Details: rom_version: U46 v2.42 (06/13/2025), serial_number: CZ22420JCM, health_status: OK, oneview_uri: 
-/rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, ilo_ip: 10.30.14.15, enclosure_bay: 0, model: ProLiant DL360 Gen10 Plus, enclosure_name: , 
-name: alp-qlikview-03ilo, power_state: On, maintenance_mode: Yes, Success: True
+  [PASS] oneview_target : Server: CZ22420JCM, Details: power_state: On, name: alp-qlikview-03ilo, ilo_ip: 10.30.14.15, enclosure_name: , oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, serial_number: CZ22420JCM, health_status: OK, rom_version: U46 v2.42 (06/13/2025), enclosure_bay: 0, maintenance_mode: Yes, model: ProLiant DL360 Gen10 Plus, Success: True
   [PASS] iso_url_format : CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso   
   [SKIP] ilo_credentials : skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
-  [PASS] audit_recorded : logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\2026-10-12T15-54-13Z_prebuild_CZ22420JCM.json
+  [PASS] audit_recorded : logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\2026-10-12T16-07-41Z_prebuild_CZ22420JCM.json
  
   Maintenance window: NOT acknowledged (-InMaintenanceWindow not set)
   This build will reboot a running server if it is On.
@@ -183,7 +184,7 @@ name: alp-qlikview-03ilo, power_state: On, maintenance_mode: Yes, Success: True
   ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║
   ║  You are authorizing a destructive deploy to this     ║
   ║  server. It will be REFORMATTED / REPARTITIONED per    ║
-  ║  the ISO, firmware REINSTALLED, and hostname/serial    ║
+  ║  the ISO, firmware REINSTALLED, and hostname/serial    ║ 
   ║  allocated as confirmed above. Re-check, then type     ║
   ║  APPROVE to proceed. Anything else cancels.            ║
   ╚════════════════════════════════════════════════════════╝
@@ -193,34 +194,20 @@ name: alp-qlikview-03ilo, power_state: On, maintenance_mode: Yes, Success: True
   ✓ APPROVED — deploying ISO + firmware to 'alp-qlikview-03ilo' (via Invoke-PhysicalServerBuild).
 
 ========================================
-  External ISO Deployment Mode 
+  External ISO Deployment Mode
 ========================================
-ISO Source: Y:\WindowsServer2025.iso
+ISO Source: Y:\WindowsServer2025.iso 
   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
   [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso
   [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
 ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
-======================================== 
+========================================
 
   [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE 
-  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso 
   [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
-[OK] resolve_iso 
-2026-10-12 15:54:20 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
-
-==============================================
-  OneView Server Target
-==============================================
-
-  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
-             maint=Yes, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
-
-  Resolved By:  Serial 
-
-==============================================
-
-[OK] pre_build_validation 
-2026-10-12 15:54:21 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+[OK] resolve_iso
+2026-10-12 16:07:47 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
 
 ==============================================
   OneView Server Target
@@ -231,7 +218,21 @@ ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.is
 
   Resolved By:  Serial
 
-============================================== 
+==============================================
+
+[OK] pre_build_validation 
+2026-10-12 16:07:47 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=Yes, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
 
 [OK] oneview_target
 
@@ -243,129 +244,127 @@ ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.is
 ========================================
   Guard pattern : qlikview-03ilo
   Target server : alp-qlikview-03ilo
-  Serial number : CZ22420JCM 
-  Appliance     : va-oneviewt-01
+  Serial number : CZ22420JCM
+  Appliance     : va-oneviewt-01 
 
   WARNING: this will OVERWRITE 'alp-qlikview-03ilo' with a Windows ISO image,
   partition layout, Windows setup, and firmware from the supplied
   archive. This is DESTRUCTIVE.
-2026-10-12 15:54:21 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with physical server build for 'alp-qlikview-03ilo'.
+2026-10-12 16:07:47 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with physical server build for 'alp-qlikview-03ilo'.
 WARNING: Parameter 'SkipCertificateCheck' is obsolete.  
-[FAIL] ilo_maintenance_guard 
+[FAIL] ilo_maintenance_guard
 Server: CZ22420JCM 
-Start_Time: 2026-10-12T15:54:20.4276251Z 
+Start_Time: 2026-10-12T16:07:46.5642091Z 
 Steps:
   Resolve_Iso:
-    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
-    Success: True 
+    Success: True
+    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso 
   Pre_Build_Validation:
-    Timestamp: 2026-10-12T15:54:20.9906414Z
+    Server: CZ22420JCM
+    Timestamp: 2026-10-12T16:07:47.1263021Z
     Checks:
       Oneview_Target:
-        Details: Server: CZ22420JCM, Details: rom_version: U46 v2.42 (06/13/2025), serial_number: CZ22420JCM, health_status: OK, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, ilo_ip: 10.30.14.15, enclosure_bay: 0, model: ProLiant DL360 Gen10 Plus, enclosure_name: , name: alp-qlikview-03ilo, power_state: On, maintenance_mode: Yes, Success: True
-        Status: PASS
-      Iso_Url_Format:
-        Details: CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso 
+        Details: Server: CZ22420JCM, Details: power_state: On, name: alp-qlikview-03ilo, ilo_ip: 10.30.14.15, enclosure_name: , oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, serial_number: CZ22420JCM, health_status: OK, rom_version: U46 v2.42 (06/13/2025), enclosure_bay: 0, 
+maintenance_mode: Yes, model: ProLiant DL360 Gen10 Plus, Success: True
         Status: PASS 
+      Iso_Url_Format:
+        Details: CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+        Status: PASS
       Ilo_Credentials:
         Details: skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
-        Status: SKIP 
+        Status: SKIP
       Audit_Recorded:
-        Details: logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\2026-10-12T15-54-20Z_prebuild_CZ22420JCM.json 
+        Details: logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\2026-10-12T16-07-47Z_prebuild_CZ22420JCM.json 
         Status: PASS
     Success: True
-    Server: CZ22420JCM
   Oneview_Target:
+    Server: CZ22420JCM
     Details:
-      Rom_Version: U46 v2.42 (06/13/2025) 
+      Power_State: On
+      Name: alp-qlikview-03ilo
+      Ilo_Ip: 10.30.14.15
+      Enclosure_Name: (none)
+      Oneview_Uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
       Serial_Number: CZ22420JCM
       Health_Status: OK
-      Oneview_Uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
-      Ilo_Ip: 10.30.14.15 
-      Enclosure_Bay: 0
-      Model: ProLiant DL360 Gen10 Plus
-      Enclosure_Name: (none)
-      Name: alp-qlikview-03ilo 
-      Power_State: On 
+      Rom_Version: U46 v2.42 (06/13/2025)
+      Enclosure_Bay: 0 
       Maintenance_Mode: Yes
-    Success: True
+      Model: ProLiant DL360 Gen10 Plus
     Resolved By: Serial
-    Server: CZ22420JCM
-  Oneview_Maintenance_Enable:
-    Skipped: True
     Success: True
+  Oneview_Maintenance_Enable:
     Reason: Server already in maintenance mode
+    Skipped: True
+    Success: True 
   Ilo_Maintenance_Guard:
-    Success: False 
-    Error: iLO status check failed: iLO authentication failed (401 Unauthorized) using the OneView-issued iLO SSO session. Verify the OneView server-hardware SSO operation and appliance-managed iLO account. Detail: iLO authentication/request failure at redfish_authenticated_get (https://10.30.14.15/redfish/v1/Systems/1): HTTP 401 Response status code does not indicate success: 401 (Unauthorized).
+    Error: iLO status check failed: SSO and direct OneView-credential iLO authentication failed. SSO: iLO authentication/request failure at redfish_authenticated_get (https://10.30.14.15/redfish/v1/Systems/1): HTTP 401 Response status code does not indicate success: 401 (Unauthorized). Direct: iLO authentication/request failure at redfish_session_login (https://10.30.14.15/redfish/v1/SessionService/Sessions): HTTP 401 Response status code does not indicate success: 401 (Unauthorized).
     Auth Diagnostics:
+      Token_Present: True
       Base_Url: https://10.30.14.15/redfish/v1
-      Attempt_Modes: 
+      Raw_Token_Length: 31
+      Use_Raw_Token: False
+      Raw_Token_Present: True 
+      Raw_Token_Has_Session Key: False
+      Skip_Certificate_Check: True
+      Attempt_Modes:
         Length   
         -------- 
         32
-      Last_Request_Uri: https://10.30.14.15/redfish/v1/Systems/1
-      Skip_Certificate_Check: True
-      Raw_Token_Length: 31 
-      Auth_Attempts: 1 
-      Raw_Token_Present: True 
-      Token_Source: X-Auth-Token
       Token_Length: 31
       Auth_Mode: oneview_sso
+      Token_Source: X-Auth-Token 
       Last_Error: Response status code does not indicate success: 401 (Unauthorized).
-      Token_Present: True
-      Use_Raw_Token: False
-      Raw_Token_Has_Session Key: False 
+      Auth_Attempts: 1
+      Last_Request_Uri: https://10.30.14.15/redfish/v1/Systems/1
+    Success: False
 Success: False
 
 {
+  "server": "CZ22420JCM",
   "success": true,
   "checks": {
     "oneview_target": {
-      "status": "PASS",
-      "details": "Server: CZ22420JCM, Details: enclosure_bay: 0, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, maintenance_mode: Yes, health_status: OK, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, serial_number: CZ22420JCM, ilo_ip: 10.30.14.15, enclosure_name: , rom_version: U46 v2.42 (06/13/2025), Success: True"
+      "details": "Server: CZ22420JCM, Details: power_state: On, name: alp-qlikview-03ilo, ilo_ip: 10.30.14.15, enclosure_name: , oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, serial_number: CZ22420JCM, health_status: OK, rom_version: U46 v2.42 (06/13/2025), enclosure_bay: 0, maintenance_mode: Yes, model: ProLiant DL360 Gen10 Plus, Success: True",
+      "status": "PASS"
     },
     "iso_url_format": {
-      "status": "PASS",
-      "details": "CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso"
+      "details": "CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso",
+      "status": "PASS"
     },
     "ilo_credentials": {
-      "status": "SKIP",
-      "details": "skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)"
+      "details": "skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)",
+      "status": "SKIP"
     }
   },
-  "server": "CZ22420JCM",
-  "timestamp": "2026-10-12T15:41:15.3213219Z",
-  "event": "prebuild_validation"
+  "event": "prebuild_validation",
+  "timestamp": "2026-10-12T16:07:41.1303683Z"
 }
 
-
-
 {
+  "server": "CZ22420JCM",
   "success": true,
   "checks": {
     "oneview_target": {
-      "status": "PASS",
-      "details": "Server: CZ22420JCM, Details: enclosure_bay: 0, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, maintenance_mode: Yes, health_status: OK, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, serial_number: CZ22420JCM, ilo_ip: 10.30.14.15, enclosure_name: , rom_version: U46 v2.42 (06/13/2025), Success: True"
+      "details": "Server: CZ22420JCM, Details: power_state: On, name: alp-qlikview-03ilo, ilo_ip: 10.30.14.15, enclosure_name: , oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, serial_number: CZ22420JCM, health_status: OK, rom_version: U46 v2.42 (06/13/2025), enclosure_bay: 0, maintenance_mode: Yes, model: ProLiant DL360 Gen10 Plus, Success: True",
+      "status": "PASS"
     },
     "iso_url_format": {
-      "status": "PASS",
-      "details": "CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso"
+      "details": "CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso",
+      "status": "PASS"
     },
     "ilo_credentials": {
-      "status": "SKIP",
-      "details": "skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)"
+      "details": "skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)",
+      "status": "SKIP"
     }
   },
-  "server": "CZ22420JCM",
-  "timestamp": "2026-10-12T15:41:21.7597311Z",
-  "event": "prebuild_validation"
+  "event": "prebuild_validation",
+  "timestamp": "2026-10-12T16:07:47.1233521Z"
 }
-
 
 {
   "server": "CZ22420JCM",
-  "start_time": "2026-10-12T15:41:21.2119893Z",
+  "start_time": "2026-10-12T16:07:46.5642091Z",
   "steps": {
     "resolve_iso": {
       "Success": true,
@@ -373,74 +372,76 @@ Success: False
     },
     "pre_build_validation": {
       "Server": "CZ22420JCM",
-      "Success": true,
-      "Timestamp": "2026-10-12T15:41:21.7628339Z",
+      "Timestamp": "2026-10-12T16:07:47.1263021Z",
       "Checks": {
         "oneview_target": {
-          "status": "PASS",
-          "details": "Server: CZ22420JCM, Details: enclosure_bay: 0, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, maintenance_mode: Yes, health_status: OK, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, serial_number: CZ22420JCM, ilo_ip: 10.30.14.15, enclosure_name: , rom_version: U46 v2.42 (06/13/2025), Success: True"
+          "details": "Server: CZ22420JCM, Details: power_state: On, name: alp-qlikview-03ilo, ilo_ip: 10.30.14.15, enclosure_name: , oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, serial_number: CZ22420JCM, health_status: OK, rom_version: U46 v2.42 (06/13/2025), enclosure_bay: 0, maintenance_mode: Yes, model: ProLiant DL360 Gen10 Plus, Success: True",
+          "status": "PASS"
         },
         "iso_url_format": {
-          "status": "PASS",
-          "details": "CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso"
+          "details": "CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso",
+          "status": "PASS"
         },
         "ilo_credentials": {
-          "status": "SKIP",
-          "details": "skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)"
+          "details": "skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)",
+          "status": "SKIP"
         },
         "audit_recorded": {
-          "status": "PASS",
-          "details": "logged to C:\\Users\\adm_98253\\products\\repos\\image-build-automation\\generated\\logs\\audit\\2026-10-12T15-41-21Z_prebuild_CZ22420JCM.json"
+          "details": "logged to C:\\Users\\adm_98253\\products\\repos\\image-build-automation\\generated\\logs\\audit\\2026-10-12T16-07-47Z_prebuild_CZ22420JCM.json",
+          "status": "PASS"
         }
-      }
+      },
+      "Success": true
     },
     "oneview_target": {
-      "ResolvedBy": "Serial",
       "Server": "CZ22420JCM",
-      "Success": true,
       "Details": {
-        "enclosure_bay": 0,
-        "name": "alp-qlikview-03ilo",
-        "model": "ProLiant DL360 Gen10 Plus",
-        "maintenance_mode": "Yes",
-        "health_status": "OK",
-        "oneview_uri": "/rest/server-hardware/39383250-3834-5A43-3232-3432304A434D",
         "power_state": "On",
-        "serial_number": "CZ22420JCM",
+        "name": "alp-qlikview-03ilo",
         "ilo_ip": "10.30.14.15",
         "enclosure_name": null,
-        "rom_version": "U46 v2.42 (06/13/2025)"
-      }
+        "oneview_uri": "/rest/server-hardware/39383250-3834-5A43-3232-3432304A434D",
+        "serial_number": "CZ22420JCM",
+        "health_status": "OK",
+        "rom_version": "U46 v2.42 (06/13/2025)",
+        "enclosure_bay": 0,
+        "maintenance_mode": "Yes",
+        "model": "ProLiant DL360 Gen10 Plus"
+      },
+      "ResolvedBy": "Serial",
+      "Success": true
     },
     "oneview_maintenance_enable": {
-      "Success": true,
       "Reason": "Server already in maintenance mode",
-      "Skipped": true
+      "Skipped": true,
+      "Success": true
     },
     "ilo_maintenance_guard": {
+      "Error": "iLO status check failed: SSO and direct OneView-credential iLO authentication failed. SSO: iLO authentication/request failure at redfish_authenticated_get (https://10.30.14.15/redfish/v1/Systems/1): HTTP 401 Response status code does not indicate success: 401 (Unauthorized). Direct: iLO authentication/request failure at redfish_session_login (https://10.30.14.15/redfish/v1/SessionService/Sessions): HTTP 401 Response status code does not indicate success: 401 (Unauthorized).",
       "AuthDiagnostics": {
-        "token_length": 31,
-        "auth_attempts": 1,
-        "raw_token_present": true,
         "token_present": true,
+        "base_url": "https://10.30.14.15/redfish/v1",
+        "raw_token_length": 31,
+        "use_raw_token": false,
+        "raw_token_present": true,
         "raw_token_has_sessionKey": false,
-        "last_request_uri": "https://10.30.14.15/redfish/v1/Systems/1",
+        "skip_certificate_check": true,
         "attempt_modes": [
           "normalized_xauth+redfish_session"
         ],
+        "token_length": 31,
         "auth_mode": "oneview_sso",
-        "raw_token_length": 31,
-        "base_url": "https://10.30.14.15/redfish/v1",
+        "token_source": "X-Auth-Token",
         "last_error": "Response status code does not indicate success: 401 (Unauthorized).",
-        "skip_certificate_check": true,
-        "use_raw_token": false,
-        "token_source": "X-Auth-Token"
+        "auth_attempts": 1,
+        "last_request_uri": "https://10.30.14.15/redfish/v1/Systems/1"
       },
-      "Success": false,
-      "Error": "iLO status check failed: iLO authentication failed (401 Unauthorized) using the OneView-issued iLO SSO session. Verify the OneView server-hardware SSO operation and appliance-managed iLO account. Detail: iLO authentication/request failure at redfish_authenticated_get (https://10.30.14.15/redfish/v1/Systems/1): HTTP 401 Response status code does not indicate success: 401 (Unauthorized)."
+      "Success": false
     }
   },
   "success": false,
-  "end_time": "2026-10-12T15:41:23.6966702Z",
-  "audit_file": "C:\\Users\\adm_98253\\products\\repos\\image-build-automation\\generated\\logs\\audit\\2026-10-12T15-41-23Z_build_CZ22420JCM.json"
+  "end_time": "2026-10-12T16:07:49.3364168Z",
+  "audit_file": "C:\\Users\\adm_98253\\products\\repos\\image-build-automation\\generated\\logs\\audit\\2026-10-12T16-07-49Z_build_CZ22420JCM.json"
 }
+
+
