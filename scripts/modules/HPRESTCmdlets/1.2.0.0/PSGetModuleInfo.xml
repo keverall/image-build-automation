@@ -44,49 +44,8 @@
         </TN>
         <DCT>
           <En>
-            <S N="Key">RoleCapability</S>
-            <Obj N="Value" RefId="3">
-              <TNRef RefId="1" />
-              <LST />
-            </Obj>
-          </En>
-          <En>
-            <S N="Key">Function</S>
-            <Obj N="Value" RefId="4">
-              <TNRef RefId="1" />
-              <LST>
-                <S>Connect-HPREST</S>
-                <S>Disconnect-HPREST</S>
-                <S>Edit-HPRESTData</S>
-                <S>Find-HPREST</S>
-                <S>Format-HPRESTDir</S>
-                <S>Get-HPRESTData</S>
-                <S>Get-HPRESTDataRaw</S>
-                <S>Get-HPRESTDir</S>
-                <S>Get-HPRESTMessage</S>
-                <S>Get-HPRESTHttpData</S>
-                <S>Get-HPRESTModuleVersion</S>
-                <S>Get-HPRESTIndex</S>
-                <S>Get-HPRESTSchema</S>
-                <S>Get-HPRESTSchemaExtref</S>
-                <S>Get-HPRESTUriFromHref</S>
-                <S>Invoke-HPRESTAction</S>
-                <S>Remove-HPRESTData</S>
-                <S>Set-HPRESTData</S>
-              </LST>
-            </Obj>
-          </En>
-          <En>
-            <S N="Key">Workflow</S>
-            <Ref N="Value" RefId="3" />
-          </En>
-          <En>
-            <S N="Key">DscResource</S>
-            <Ref N="Value" RefId="3" />
-          </En>
-          <En>
             <S N="Key">Command</S>
-            <Obj N="Value" RefId="5">
+            <Obj N="Value" RefId="3">
               <TNRef RefId="1" />
               <LST>
                 <S>Connect-HPREST</S>
@@ -112,7 +71,48 @@
           </En>
           <En>
             <S N="Key">Cmdlet</S>
-            <Ref N="Value" RefId="3" />
+            <Obj N="Value" RefId="4">
+              <TNRef RefId="1" />
+              <LST />
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">RoleCapability</S>
+            <Ref N="Value" RefId="4" />
+          </En>
+          <En>
+            <S N="Key">Function</S>
+            <Obj N="Value" RefId="5">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Connect-HPREST</S>
+                <S>Disconnect-HPREST</S>
+                <S>Edit-HPRESTData</S>
+                <S>Find-HPREST</S>
+                <S>Format-HPRESTDir</S>
+                <S>Get-HPRESTData</S>
+                <S>Get-HPRESTDataRaw</S>
+                <S>Get-HPRESTDir</S>
+                <S>Get-HPRESTMessage</S>
+                <S>Get-HPRESTHttpData</S>
+                <S>Get-HPRESTModuleVersion</S>
+                <S>Get-HPRESTIndex</S>
+                <S>Get-HPRESTSchema</S>
+                <S>Get-HPRESTSchemaExtref</S>
+                <S>Get-HPRESTUriFromHref</S>
+                <S>Invoke-HPRESTAction</S>
+                <S>Remove-HPRESTData</S>
+                <S>Set-HPRESTData</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Workflow</S>
+            <Ref N="Value" RefId="4" />
+          </En>
+          <En>
+            <S N="Key">DscResource</S>
+            <Ref N="Value" RefId="4" />
           </En>
         </DCT>
       </Obj>
@@ -137,20 +137,21 @@
           <S N="releaseNotes">HPRESTCmdlets - Version 1.2.0.0_x000D__x000A_October 26, 2017_x000D__x000A__x000D__x000A_Enhancements and fixes:_x000D__x000A_  - Allow the user to enter the IP address in Connect-HPREST and not get iLO certificate authentication error when a valid certificate is installed on the iLO._x000D__x000A_  - Removed Enable-HPRESTCertificateAuthentication, Disable-HPRESTCertificateAuthentication and Test-HPRESTCertficateAuthentication cmdlets and added DisableCertificateAuthentication parameter to Connect-HPREST cmdlet._x000D__x000A_  - Added Timeout parameter to Connect-HPREST._x000D__x000A_  - Fixed Edit-HPRESTData issue where the cmdlet was sending invalid JSON to iLO for updating the settings._x000D__x000A_  - For all the cmdlets that have the Session parameter, it is made the first parameter in the cmdlets and support for ValueFromPipeline is removed for all parameters in such cmdlets._x000D__x000A_  - Updated Disconnect-HPREST to use Location header values stored in session and then clear the session object on successful disconnect._x000D__x000A_  - Find-HPREST supports Hostname input to Range parameter._x000D__x000A_  - Improved efficiency of Find-HPREST by removing the initial ping to the targets specified by the Range parameter._x000D__x000A_  - Added a feature to use the Settings href to execute a PUT using Edit-HPRESTData. This href change occurs in the code if the current href resource does not allow HTTP PUT method and if the Settings href is available._x000D__x000A_  - Updated Get-HPRESTModuleVersion to include PSVersion, OSVersion and DotNetVersion properties._x000D__x000A_  - Added Language parameter to Get-HPRESTData._x000D__x000A__x000D__x000A_Known Issues:_x000D__x000A_  - Schema for HpMessageExt.1.0.0 does not exist in the iLO REST interface and retrieval of this schema fails._x000D__x000A_  - When using HPRESTCmdlets with Powershell version 3.0, usage of the special characters &amp;, ', ", /, &lt; and &gt; in payload or username/password will fail._x000D__x000A__x000D__x000A_HPE PowerShell Information:_x000D__x000A_https://www.hpe.com/servers/powershell</S>
           <S N="isLatestVersion">True</S>
           <S N="isAbsoluteLatestVersion">True</S>
-          <S N="versionDownloadCount">5966</S>
+          <S N="versionDownloadCount">5967</S>
           <S N="downloadCount">7473</S>
           <S N="packageSize">106104</S>
           <S N="published">26/10/2017 20:59:15 +01:00</S>
           <S N="created">26/10/2017 20:59:15 +01:00</S>
-          <S N="lastUpdated">12/10/2026 03:20:51 +01:00</S>
-          <S N="tags">Hewlett Packard Enterprise HPE REST RESTful iLO Moonshot PSModule PSFunction_Connect-HPREST PSCommand_Connect-HPREST PSFunction_Disconnect-HPREST PSCommand_Disconnect-HPREST PSFunction_Edit-HPRESTData PSCommand_Edit-HPRESTData PSFunction_Find-HPREST PSCommand_Find-HPREST PSFunction_Format-HPRESTDir PSCommand_Format-HPRESTDir PSFunction_Get-HPRESTData PSCommand_Get-HPRESTData PSFunction_Get-HPRESTDataRaw PSCommand_Get-HPRESTDataRaw PSFunction_Get-HPRESTDir PSCommand_Get-HPRESTDir PSFunction_Get-HPRESTMessage PSCommand_Get-HPRESTMessage PSFunction_Get-HPRESTHttpData PSCommand_Get-HPRESTHttpData PSFunction_Get-HPRESTModuleVersion PSCommand_Get-HPRESTModuleVersion PSFunction_Get-HPRESTIndex PSCommand_Get-HPRESTIndex PSFunction_Get-HPRESTSchema PSCommand_Get-HPRESTSchema PSFunction_Get-HPRESTSchemaExtref PSCommand_Get-HPRESTSchemaExtref PSFunction_Get-HPRESTUriFromHref PSCommand_Get-HPRESTUriFromHref PSFunction_Invoke-HPRESTAction PSCommand_Invoke-HPRESTAction PSFunction_Remove-HPRESTData PSCommand_Remove-HPRESTData PSFunction_Set-HPRESTData PSCommand_Set-HPRESTData PSIncludes_Function</S>
+          <S N="lastUpdated">12/10/2026 17:00:01 +01:00</S>
+          <S N="tags">Hewlett Packard Enterprise HPE REST RESTful iLO Moonshot PSModule</S>
           <S N="developmentDependency">False</S>
-          <S N="updated">2026-10-12T03:20:51Z</S>
+          <S N="updated">2026-10-12T17:00:01Z</S>
           <S N="NormalizedVersion">1.2.0</S>
           <S N="Authors">Hewlett Packard Enterprise</S>
           <S N="IsPrerelease">false</S>
           <S N="ItemType">Module</S>
           <S N="FileList">HPRESTCmdlets.nuspec|HPRESTCmdlets.psd1|HPRESTCmdlets.psm1|HPRESTCmdletsLicense.rtf|HPRESTCmdlets_2f9b1ca0-2031-45c0-9d82-a432014abfdf_ModuleInfo.xml|HPRESTExamples.ps1|ShowLicense.ps1</S>
+          <S N="Functions">Connect-HPREST Disconnect-HPREST Edit-HPRESTData Find-HPREST Format-HPRESTDir Get-HPRESTData Get-HPRESTDataRaw Get-HPRESTDir Get-HPRESTMessage Get-HPRESTHttpData Get-HPRESTModuleVersion Get-HPRESTIndex Get-HPRESTSchema Get-HPRESTSchemaExtref Get-HPRESTUriFromHref Invoke-HPRESTAction Remove-HPRESTData Set-HPRESTData</S>
           <S N="GUID">2f9b1ca0-2031-45c0-9d82-a432014abfdf</S>
           <S N="PowerShellVersion">3.0</S>
           <S N="DotNetFrameworkVersion">4.5</S>
@@ -158,7 +159,7 @@
           <S N="CompanyName">Hewlett Packard Enterprise</S>
         </MS>
       </Obj>
-      <S N="InstalledLocation">/tmp/kilo/hprest-modules/HPRESTCmdlets/1.2.0.0</S>
+      <S N="InstalledLocation">C:\Users\98253\repos\image-build-automation\scripts\modules\HPRESTCmdlets\1.2.0.0</S>
     </MS>
   </Obj>
 </Objs>
