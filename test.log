@@ -1,13 +1,203 @@
 
-  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso 
+   image-build-automation  main  Connect-OneView -OneViewHost va-oneviewt-01                                                                                                                                                     0  11:23:59 2026-10-12 10:31:27 - Connect-OneView - INFO - Connect-OneView invoked: OneViewHost='va-oneviewt-01' DryRun=False PassThru=False Json=False 
+Enter OneView username for 'va-oneviewt-01': adm_98253 
+Enter OneView password for 'va-oneviewt-01': : **************** 
+2026-10-12 10:31:50 - Connectivity - INFO - DNS resolution for 'va-oneviewt-01': Resolved -> 10.239.124.79 
+2026-10-12 10:31:50 - Connectivity - INFO - TCP probe for 'va-oneviewt-01': Open (port 443, 9ms) 
+This management appliance is a company owned asset and provided for the exclusive use of authorized personnel. Unauthorized use or abuse of this system may lead to corrective action including termination, civil and/or criminal penalties. 
+
+2026-10-12 10:32:08 - Connectivity - INFO - Connectivity test for 'va-oneviewt-01' completed: Available=True (DNS=True, TCP=True, Auth=True) 
+2026-10-12 10:32:08 - Connect-OneView - INFO - Connect-OneView result: Available=True Message='Connected to OneView appliance 'va-oneviewt-01'.' 
+
+============================================== 
+  OneView Connectivity Test
+============================================== 
+
+  Status:     AVAILABLE
+  Mode:       oneview
+  Host:       va-oneviewt-01
+  Environment:Prod
+  Timestamp:  2026-10-12T10:32:08.9570630Z     
+
+  --- Phase 1: Network Ping ---
+    DNS:       Resolved
+    IP:        10.239.124.79
+    TCP:       Open (port 443, 9ms)
+
+  --- Phase 2: Auth Connect ---
+    Module:    Loaded
+    OneView PS module: HPEOneView.1000  v10.0.4265.2221 (module used for all OneView calls on this server) 
+    Appliance OneView version: 8200
+    Connected: Yes (session active)
+
+============================================== 
+ 
+   image-build-automation  main  Get-OneViewServerList  -Filter 'name:03ilo'                                                                                                                                          0  41s 759ms  11:32:09 
+============================================== 
+  OneView Server List (6 servers)
+  Appliance: va-oneviewt-01
+============================================== 
+
+| Server Name                     | Serial          | MaintMode | State            | Health     | Power    | iLO IP          | ROM                    | State Reason  | Model                     | 
+|---------------------------------|-----------------|-----------|------------------|------------|----------|-----------------|------------------------|---------------|---------------------------| 
+| omg-qlikview-03ilo             |  CZ22420JCN     |  Yes      |  ProfileApplied  |  OK        |  On      |  10.30.54.22    |  U46 v2.42 (06/13/2025)|               |  ProLiant DL360 Gen10 Plus| 
+| alp-qlikview-03ilo             |  CZ22420JCM     |  No       |  ProfileApplied  |  OK        |  On      |  10.30.14.15    |  U46 v2.42 (06/13/2025)|               |  ProLiant DL360 Gen10 Plus| 
+| gam-isechost-02-03ilo.ad.ad.pri|  CZ29350B60     |  No       |  NoProfileApplied|  OK        |  On      |  10.30.14.83    |  U30 v3.42 (02/21/2025)|               |  ProLiant DL380 Gen10     | 
+| gamdmzhost-01-03ilo.AD.AIB.PRI |  CZ29350B5Y     |  No       |  NoProfileApplied|  OK        |  On      |  10.30.14.80    |  U30 v3.42 (02/21/2025)|               |  ProLiant DL380 Gen10     | 
+| gamdmzhost-02-03ilo            |  CZ29350B5Z     |  No       |  NoProfileApplied|  OK        |  On      |  10.30.14.81    |  U30 v3.42 (02/21/2025)|               |  ProLiant DL380 Gen10     | 
+| gamisechost-01-03ilo.AD.AIB.PRI|  CZ29350B61     |  No       |  NoProfileApplied|  OK        |  On      |  10.30.14.82    |  U30 v3.42 (02/21/2025)|               |  ProLiant DL380 Gen10     |
+
+KEY
+  MaintMode : HPE OneView maintenance mode.  Yes = server is IN maintenance mode;  No = NOT in maintenance mode.
+               Colour: Red = Yes (zero alerting - do not leave a server here); Green = No (normal).
+  State     : server lifecycle state from OneView:
+               Monitored        = normal / being monitored (not in maintenance)
+               MaintenanceMode  = same as MaintMode=Yes (server placed in maintenance)
+               NoProfileApplied = no server profile assigned
+               ProfileApplying  = a server profile is being applied
+               ProfileApplied   = a server profile has been applied
+               ConfigureHardware = hardware configuration in progress
+               ProfileError     = profile apply failed (NOT maintenance)
+               Deleting         = server being removed
+  State Reason : additional context for the State value (blank when 'NotApplicable'):
+               NotApplicable  = no special reason; state is self-explanatory (shown as blank)
+               UserInitiated  = state change triggered by a user action
+               Unmanaged      = hardware not managed by this OneView appliance
+               Removed        = hardware has been removed from the appliance
+
+==============================================
+
+   image-build-automation  main  Configure-PhysicalBuild -ServerIdentifier 'CZ22420JCM' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'Y:\WindowsServer2025.iso' -GuardRail  'qlikview-03ilo'1:33:02 
+========================================        
+  Physical Build Configuration Review
+========================================        
+
+[1/4] Resolving server identity from OneView... 
+2026-10-12 10:33:11 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+============================================== 
+  OneView Server Target
+============================================== 
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK 
+             maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+  [OK] Server resolved
+
+========================================
+  GUARD RAIL MATCH - DESTRUCTIVE ACTION
+========================================
+  Guard pattern : qlikview-03ilo
+  Target server : alp-qlikview-03ilo
+  Serial number : CZ22420JCM
+  Appliance     : va-oneviewt-01
+2026-10-12 10:33:11 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with build plan review for 'alp-qlikview-03ilo'.
+
+[2/4] Resolving ISO...
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE 
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso 
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  [OK] Resolved to: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+
+[3/4] Running pre-build validation...
+2026-10-12 10:33:31 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+============================================== 
+
+  [OK] All pre-build checks passed 
+
+[4/4] Deployment Summary
+══════════════════════════════════════════════════════════════
+
+  ─ SERVER IDENTITY ─
+  Target:          alp-qlikview-03ilo
+  Identifier:      CZ22420JCM
+  Serial:          CZ22420JCM
+  Model:           ProLiant DL360 Gen10 Plus
+  iLO IP:          10.30.14.15
+  OneView URI:     /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
+  Rack/Position:   unknown
+  Server Group:    unknown
+  Maintenance Mode:No 
+  Power State:     On
+  Health:          OK
+
+  ─ ISO DETAILS ─
+  Source:          External ISO: Y:\WindowsServer2025.iso
+  URL:             cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  Contents:        Windows Server boot media + ConfigMgr task sequence
+
+  ─ DESTRUCTIVE ACTIONS (will be executed by Start-PhysicalBuild) ─
+  1. Disk partitioning & formatting (ALL data will be erased)
+  2. Windows OS installation from ISO
+  3. Server reboot into installed OS
+  4. Post-build validation (hostname, domain join, drivers)
+
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  �🔇  ONEVIEW MAINTENANCE MODE (automatic)                            ║
+  ╠══════════════════════════════════════════════════════════════════════╣
+  ║  This server will be put into HPE OneView maintenance mode           ║ 
+  ║  BEFORE the build starts. This stops unnecessary alerting            ║
+  ║  and avoids on-call callouts during the deployment.                  ║
+  ║                                                                      ║
+  ║  Maintenance mode will be automatically removed when the             ║
+  ║  build completes (or if it fails).                                   ║
+  ║                                                                      ║
+  ║  To skip this, use -NoMaintenanceMode.                               ║
+  ╚══════════════════════════════════════════════════════════════════════╝
+
+  ─ PRE-BUILD VALIDATION RESULTS ─
+  [PASS] oneview_target : Server: CZ22420JCM, Details: maintenance_mode: No, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, rom_version: U46 v2.42 (06/13/2025), serial_number: CZ22420JCM, enclosure_name: , enclosure_bay: 0, health_status: OK, ilo_ip: 10.30.14.15, Success: True
+  [PASS] iso_url_format : CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  [SKIP] ilo_credentials : skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
+  [PASS] audit_recorded : logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCM_2026-10-12T10-33-31Z.json
+ 
+  Maintenance window: NOT acknowledged (-InMaintenanceWindow not set)
+  This build will reboot a running server if it is On.
+
+══════════════════════════════════════════════════════════════
+
+  ╔════════════════════════════════════════════════════════╗
+  ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║
+  ║  You are authorizing a destructive deploy to this     ║
+  ║  server. It will be REFORMATTED / REPARTITIONED per    ║ 
+  ║  the ISO, firmware REINSTALLED, and hostname/serial    ║
+  ║  allocated as confirmed above. Re-check, then type     ║
+  ║  APPROVE to proceed. Anything else cancels.            ║
+  ╚════════════════════════════════════════════════════════╝
+
+  Type APPROVE to authorize the ISO + firmware deploy to 'alp-qlikview-03ilo', or anything else to cancel: APPROVE 
+
+  ✓ APPROVED — deploying ISO + firmware to 'alp-qlikview-03ilo' (via Invoke-PhysicalServerBuild).
+
+========================================
+  External ISO Deployment Mode
+========================================
+ISO Source: Y:\WindowsServer2025.iso
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
 ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
 ========================================
 
-  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE 
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
   [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso
   [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
 [OK] resolve_iso
-2026-10-12 09:14:33 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+2026-10-12 10:33:38 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial)
 
 ==============================================
   OneView Server Target
@@ -20,8 +210,8 @@ ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.is
 
 ==============================================
 
-[OK] pre_build_validation 
-2026-10-12 09:14:34 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+[OK] pre_build_validation
+2026-10-12 10:33:39 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial)
 
 ==============================================
   OneView Server Target
@@ -37,49 +227,348 @@ ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.is
 [OK] oneview_target
 
   [OneView] Enabling maintenance mode for server 'alp-qlikview-03ilo'...
-  [OneView] ERROR enabling maintenance mode for 'alp-qlikview-03ilo': Cannot find an overload for "_MakeRequest" and the argument count: "3". 
-[FAIL] oneview_maintenance_enable 
+WARNING: Maintenance enable finished with errors for server with Serial Number 'CZ22420JCM' [OneView mode]. Check audit: C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\enable_CZ22420JCM_2026-10-12T10-33-40Z.json
+  [OneView] FAILED to enable maintenance mode for 'alp-qlikview-03ilo':  
+[FAIL] oneview_maintenance_enable
 Server: CZ22420JCM 
-Start_Time: 2026-10-12T09:14:33.4533045Z
+Start_Time: 2026-10-12T10:33:38.1940620Z 
 Steps:
-  Resolve_Iso: 
-    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  Resolve_Iso:
     Success: True
-  Pre_Build_Validation:
-    Server: CZ22420JCM 
-    Timestamp: 2026-10-12T09:14:34.0109007Z
+    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  Pre_Build_Validation: 
     Checks:
       Oneview_Target:
+        Details: Server: CZ22420JCM, Details: maintenance_mode: No, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, rom_version: U46 v2.42 
+(06/13/2025), serial_number: CZ22420JCM, enclosure_name: , enclosure_bay: 0, health_status: OK, ilo_ip: 10.30.14.15, Success: True
         Status: PASS
-        Details: Server: CZ22420JCM, Details: rom_version: U46 v2.42 (06/13/2025), maintenance_mode: No, power_state: On, serial_number: CZ22420JCM, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, ilo_ip: 10.30.14.15, enclosure_bay: 0, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, enclosure_name: , health_status: OK, Success: True
       Iso_Url_Format:
-        Status: PASS
         Details: CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso 
-      Ilo_Credentials:
-        Status: SKIP
-        Details: skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
-      Audit_Recorded:
         Status: PASS
-        Details: logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCM_2026-10-12T09-14-34Z.json
+      Ilo_Credentials:
+        Details: skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
+        Status: SKIP
+      Audit_Recorded:
+        Details: logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCM_2026-10-12T10-33-38Z.json
+        Status: PASS
+    Server: CZ22420JCM
+    Timestamp: 2026-10-12T10:33:38.7546891Z 
     Success: True
   Oneview_Target:
-    Details: 
-      Rom_Version: U46 v2.42 (06/13/2025)
+    Details:
       Maintenance_Mode: No
+      Name: alp-qlikview-03ilo
+      Model: ProLiant DL360 Gen10 Plus
+      Oneview_Uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
       Power_State: On
-      Serial_Number: CZ22420JCM
+      Rom_Version: U46 v2.42 (06/13/2025)
+      Serial_Number: CZ22420JCM 
+      Enclosure_Name: (none)
+      Enclosure_Bay: 0
+      Health_Status: OK
+      Ilo_Ip: 10.30.14.15
+    Server: CZ22420JCM
+    Resolved By: Serial
+    Success: True
+  Oneview_Maintenance_Enable: 
+    Failed Objects:
+      Status    Name                NackReason                              Message                                 Type                Resolution
+      --------  ------------------  --------------------------------------  --------------------------------------  ------------------  -------------------------------------- 
+      Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...
+    Environment: (none)
+    Serial Number: CZ22420JCM
+    Target ID: CZ22420JCM
+    Action: enable
+    Message: Maintenance enable finished with errors for server with Serial Number 'CZ22420JCM' [OneView mode]. Check audit: C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\enable_CZ22420JCM_2026-10-12T10-33-40Z.json
+    One View Objects:
+      Status    Name                NackReason                              Message                                 Type                Resolution
+      --------  ------------------  --------------------------------------  --------------------------------------  ------------------  --------------------------------------
+      Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...  Check OneView appliance logs and pe...
+    End Time UTC: 2026-10-12T14:33:39.4070093Z
+    Mode: oneview
+    Audit File: C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\enable_CZ22420JCM_2026-10-12T10-33-40Z.json
+    Start Time UTC: 2026-10-12T10:33:39.4016596Z
+    One View Summary:
+      Total: 1
+      Failed: 1
+      Already In Maintenance: 0
+      Success: 0
+    Success: False
+    Server Count: 1
+    Server Name: alp-qlikview-03ilo
+    Dry Run: False
+Success: False
+Error: OneView maintenance mode enable failed:
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCM                                                                                                                                 0  29s 712ms  11:33:40 2026-10-12 10:34:19 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial)
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=No, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+   image-build-automation  main  Enable-OneViewMaintenanceMode -TargetId 'CZ22420JCM'                                                                                                                                     0  559ms  11:34:19 
+Name                           Value
+----                           -----
+TargetType                     ServerHardware     
+ResolvedBy                     Serial
+SerialNumber
+AlreadyCount                   0
+Target                         alp-qlikview-03ilo 
+Total                          1
+FailedCount                    1
+ResolvedTarget                 alp-qlikview-03ilo 
+SuccessCount                   0
+Message                        OneView maintenance mode enabled: 0 succeeded, 1 failed, 0 already in maintenance (total 1)
+ResolvedType                   ServerHardware
+StartTime                      12/10/2026 10:34:29
+Objects                        {@{Status=failed; Name=alp-qlikview-03ilo; NackReason=OneView API error: Response status code does not indicate success: 400 (Bad Request).; Message=Response status code does not indicate success: 400 (Bad Re… 
+Module                         HPEOneView.1000
+TargetId                       CZ22420JCM
+Appliance                      va-oneviewt-01
+EndTime                        12/10/2026 14:34:29
+DryRun                         False
+Success                        False
+
+   image-build-automation  main  Get-OneViewServerTarget -ServerIdentifier CZ22420JCM                                                                                                                                     0  629ms  11:34:30 2026-10-12 10:36:23 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=Yes, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial 
+
+==============================================
+
+   image-build-automation  main  Configure-PhysicalBuild -ServerIdentifier 'CZ22420JCM' -OneViewHost 'va-oneviewt-01' -ExpectedHostname 'alp-qlikview-03ilo' -ExternalIsoPath 'Y:\WindowsServer2025.iso' -GuardRail  'qlikview-03ilo'1:36:23 
+========================================
+  Physical Build Configuration Review
+========================================
+
+[1/4] Resolving server identity from OneView...
+2026-10-12 10:36:30 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=Yes, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+  [OK] Server resolved
+
+========================================
+  GUARD RAIL MATCH - DESTRUCTIVE ACTION
+========================================
+  Guard pattern : qlikview-03ilo
+  Target server : alp-qlikview-03ilo
+  Serial number : CZ22420JCM
+  Appliance     : va-oneviewt-01
+2026-10-12 10:36:30 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with build plan review for 'alp-qlikview-03ilo'.
+
+[2/4] Resolving ISO...
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  [OK] Resolved to: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+
+[3/4] Running pre-build validation...
+2026-10-12 10:36:30 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=Yes, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+============================================== 
+
+  [OK] All pre-build checks passed 
+
+[4/4] Deployment Summary
+══════════════════════════════════════════════════════════════
+
+  ─ SERVER IDENTITY ─
+  Target:          alp-qlikview-03ilo
+  Identifier:      CZ22420JCM
+  Serial:          CZ22420JCM
+  Model:           ProLiant DL360 Gen10 Plus
+  iLO IP:          10.30.14.15
+  OneView URI:     /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
+  Rack/Position:   unknown
+  Server Group:    unknown
+  Maintenance Mode:Yes
+  Power State:     On
+  Health:          OK 
+
+  ─ ISO DETAILS ─
+  Source:          External ISO: Y:\WindowsServer2025.iso
+  URL:             cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  Contents:        Windows Server boot media + ConfigMgr task sequence
+
+  ─ DESTRUCTIVE ACTIONS (will be executed by Start-PhysicalBuild) ─
+  1. Disk partitioning & formatting (ALL data will be erased)
+  2. Windows OS installation from ISO
+  3. Server reboot into installed OS
+  4. Post-build validation (hostname, domain join, drivers)
+
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  �🔇  ONEVIEW MAINTENANCE MODE (automatic)                            ║
+  ╠══════════════════════════════════════════════════════════════════════╣
+  ║  This server will be put into HPE OneView maintenance mode           ║
+  ║  BEFORE the build starts. This stops unnecessary alerting            ║
+  ║  and avoids on-call callouts during the deployment.                  ║
+  ║                                                                      ║ 
+  ║  Maintenance mode will be automatically removed when the             ║
+  ║  build completes (or if it fails).                                   ║
+  ║                                                                      ║
+  ║  To skip this, use -NoMaintenanceMode.                               ║
+  ╚══════════════════════════════════════════════════════════════════════╝
+
+  ─ PRE-BUILD VALIDATION RESULTS ─
+  [PASS] oneview_target : Server: CZ22420JCM, Details: maintenance_mode: Yes, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, rom_version: 
+U46 v2.42 (06/13/2025), serial_number: CZ22420JCM, enclosure_name: , enclosure_bay: 0, health_status: OK, ilo_ip: 10.30.14.15, Success: True
+  [PASS] iso_url_format : CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  [SKIP] ilo_credentials : skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
+  [PASS] audit_recorded : logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCM_2026-10-12T10-36-30Z.json
+ 
+  Maintenance window: NOT acknowledged (-InMaintenanceWindow not set)
+  This build will reboot a running server if it is On.
+
+══════════════════════════════════════════════════════════════
+
+  ╔════════════════════════════════════════════════════════╗
+  ║  ⚠  DESTRUCTIVE ACTION WARNING                       ║
+  ║  You are authorizing a destructive deploy to this     ║ 
+  ║  server. It will be REFORMATTED / REPARTITIONED per    ║
+  ║  the ISO, firmware REINSTALLED, and hostname/serial    ║
+  ║  allocated as confirmed above. Re-check, then type     ║
+  ║  APPROVE to proceed. Anything else cancels.            ║
+  ╚════════════════════════════════════════════════════════╝
+
+  Type APPROVE to authorize the ISO + firmware deploy to 'alp-qlikview-03ilo', or anything else to cancel: APPROVE 
+
+  ✓ APPROVED — deploying ISO + firmware to 'alp-qlikview-03ilo' (via Invoke-PhysicalServerBuild).
+
+========================================
+  External ISO Deployment Mode
+========================================
+ISO Source: Y:\WindowsServer2025.iso
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE 
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+ISO URL for iLO: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+========================================
+
+  [INFO] Detected mapped drive: Y: -> \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE
+  [INFO] Resolved UNC path: \\Hnascifsprd6\roi1\BKCWISAPPS\KevinE\WindowsServer2025.iso
+  [OK] Mapped drive converted to CIFS URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+[OK] resolve_iso 
+2026-10-12 10:36:38 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=Yes, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+==============================================
+
+[OK] pre_build_validation 
+2026-10-12 10:36:39 - Get-OneViewServerTarget - INFO - Get-OneViewServerTarget resolved Id=CZ22420JCM (ResolvedBy=Serial) 
+
+==============================================
+  OneView Server Target
+==============================================
+
+  Details:   name=alp-qlikview-03ilo, serial=CZ22420JCM, model=ProLiant DL360 Gen10 Plus, power=On, health=OK
+             maint=Yes, ilo=10.30.14.15, enclosure=/0, rom=U46 v2.42 (06/13/2025)
+
+  Resolved By:  Serial
+
+============================================== 
+
+[OK] oneview_target
+
+  [OneView] Server 'alp-qlikview-03ilo' is already in maintenance mode — skipping enable.
+[OK] oneview_maintenance_enable
+
+========================================
+  GUARD RAIL MATCH - DESTRUCTIVE ACTION
+========================================
+  Guard pattern : qlikview-03ilo
+  Target server : alp-qlikview-03ilo
+  Serial number : CZ22420JCM
+  Appliance     : va-oneviewt-01
+
+  WARNING: this will OVERWRITE 'alp-qlikview-03ilo' with a Windows ISO image,
+  partition layout, Windows setup, and firmware from the supplied
+  archive. This is DESTRUCTIVE.
+2026-10-12 10:36:39 - GuardRail - INFO - Guard rail matched and -SkipConfirmation supplied; proceeding with physical server build for 'alp-qlikview-03ilo'.
+[FAIL] ilo_maintenance_guard
+Server: CZ22420JCM
+Start_Time: 2026-10-12T10:36:37.9813479Z 
+Steps:
+  Resolve_Iso:
+    Success: True
+    Iso URL: cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+  Pre_Build_Validation:
+    Checks:
+      Oneview_Target:
+        Details: Server: CZ22420JCM, Details: maintenance_mode: Yes, name: alp-qlikview-03ilo, model: ProLiant DL360 Gen10 Plus, oneview_uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D, power_state: On, rom_version: U46 v2.42 (06/13/2025), serial_number: CZ22420JCM, enclosure_name: , enclosure_bay: 0, health_status: OK, ilo_ip: 10.30.14.15, Success: True
+        Status: PASS
+      Iso_Url_Format:
+        Details: CIFS/SMB share URL (verified by Resolve-ExternalIsoPath): cifs://Hnascifsprd6/roi1/BKCWISAPPS/KevinE/WindowsServer2025.iso
+        Status: PASS
+      Ilo_Credentials:
+        Details: skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)
+        Status: SKIP
+      Audit_Recorded:
+        Details: logged to C:\Users\adm_98253\products\repos\image-build-automation\generated\logs\audit\prebuild_CZ22420JCM_2026-10-12T10-36-38Z.json 
+        Status: PASS
+    Server: CZ22420JCM
+    Timestamp: 2026-10-12T10:36:38.5228755Z
+    Success: True
+  Oneview_Target:
+    Details:
+      Maintenance_Mode: Yes
       Name: alp-qlikview-03ilo
       Model: ProLiant DL360 Gen10 Plus 
-      Ilo_Ip: 10.30.14.15
-      Enclosure_Bay: 0
       Oneview_Uri: /rest/server-hardware/39383250-3834-5A43-3232-3432304A434D
+      Power_State: On
+      Rom_Version: U46 v2.42 (06/13/2025)
+      Serial_Number: CZ22420JCM
       Enclosure_Name: (none)
+      Enclosure_Bay: 0
       Health_Status: OK
+      Ilo_Ip: 10.30.14.15 
     Server: CZ22420JCM
-    Resolved By: Serial 
+    Resolved By: Serial
     Success: True
   Oneview_Maintenance_Enable:
-    Error: Cannot find an overload for "_MakeRequest" and the argument count: "3".
+    Reason: Server already in maintenance mode
+    Success: True
+    Skipped: True
+  Ilo_Maintenance_Guard:
     Success: False
+    Error: iLO status check failed: iLO authentication failed (401 Unauthorized) using the OneView-issued iLO SSO session. Verify the OneView server-hardware SSO operation and appliance-managed iLO account. Detail: iLO authentication/request failure at redfish_authenticated_get (https://10.30.14.15/redfish/v1/Systems/1): HTTP 401 Response status code does not indicate success: 401 (Unauthorized).
 Success: False
-Error: OneView maintenance mode enable failed: Cannot find an overload for "_MakeRequest" and the argument count: "3".
+   image-build-automation  main                                                                                                                                                                                       0  10s 409ms  11:36:40 
