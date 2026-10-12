@@ -400,6 +400,12 @@ class IloRedfishSession {
     [string] $RawAuthToken
     [bool]   $UseRawAuthToken
     [string] $SessionUri
+    [string] $AuthMode
+    [string] $TokenSource
+    [int]    $AuthAttempts
+    [string[]] $AttemptModes
+    [string] $LastRequestUri
+    [string] $LastError
 
     IloRedfishSession([object]$SsoSession, [bool]$SkipCert, [int]$TimeoutSec) {
         # HPEOneView.1000 Get-OVIloSso -IloRestSession normalizes the raw
@@ -411,10 +417,12 @@ class IloRedfishSession {
         # X-Auth-Token/sessionId in older IloRestSession objects. Prefer the
         # documented SecurityToken but accept every known representation.
         $rawToken = $null
+        $selectedTokenProperty = $null
         foreach ($tokenProperty in @('SecurityToken', 'XAuthToken', 'X-Auth-Token', 'sessionId', 'SessionID')) {
             $candidate = [string]$SsoSession.$tokenProperty
             if (-not [string]::IsNullOrWhiteSpace($candidate)) {
                 $rawToken = $candidate
+                $selectedTokenProperty = $tokenProperty
                 break
             }
         }
@@ -435,6 +443,12 @@ class IloRedfishSession {
         $this.RawAuthToken = $rawToken
         $this.UseRawAuthToken = $false
         $this.SessionUri = $null
+        $this.AuthMode = 'oneview_sso'
+        $this.TokenSource = $selectedTokenProperty
+        $this.AuthAttempts = 0
+        $this.AttemptModes = @()
+        $this.LastRequestUri = $null
+        $this.LastError = $null
     }
 
     IloRedfishSession([string]$BaseUrl, [string]$User, [string]$Password,
@@ -448,7 +462,38 @@ class IloRedfishSession {
         $this.RawAuthToken = $null
         $this.UseRawAuthToken = $false
         $this.SessionUri = $null
+        $this.AuthMode = 'direct_ilo'
+        $this.TokenSource = 'redfish_session_login'
+        $this.AuthAttempts = 0
+        $this.AttemptModes = @()
+        $this.LastRequestUri = $null
+        $this.LastError = $null
         $this._Login()
+    }
+
+    [void] _RecordAttempt([string]$Mode, [string]$Uri) {
+        $this.AuthAttempts++
+        $this.AttemptModes += $Mode
+        $this.LastRequestUri = $Uri
+    }
+
+    [hashtable] GetDiagnostics() {
+        return @{
+            auth_mode                 = $this.AuthMode
+            token_source              = $this.TokenSource
+            token_present             = -not [string]::IsNullOrWhiteSpace($this.AuthToken)
+            token_length              = if ($this.AuthToken) { $this.AuthToken.Length } else { 0 }
+            raw_token_present         = -not [string]::IsNullOrWhiteSpace($this.RawAuthToken)
+            raw_token_length          = if ($this.RawAuthToken) { $this.RawAuthToken.Length } else { 0 }
+            raw_token_has_sessionKey  = if ($this.RawAuthToken) { $this.RawAuthToken -match '^sessionKey=' } else { $false }
+            use_raw_token             = $this.UseRawAuthToken
+            skip_certificate_check    = $this.SkipCert
+            base_url                  = $this.BaseUrl
+            auth_attempts             = $this.AuthAttempts
+            attempt_modes             = @($this.AttemptModes)
+            last_request_uri          = $this.LastRequestUri
+            last_error                = $this.LastError
+        }
     }
 
     [void] _Login() {
@@ -488,6 +533,7 @@ class IloRedfishSession {
 
     [void] _Patch([string]$Uri, [object]$Body) {
         $json = $Body | ConvertTo-Json -Depth 10
+        $this._RecordAttempt('patch', $Uri)
         Invoke-RestMethod -Uri $Uri -Method Patch -Body $json `
             -Headers $this._Headers() `
             -ContentType 'application/json;charset=utf-8' `
@@ -497,6 +543,7 @@ class IloRedfishSession {
 
     [void] _Post([string]$Uri, [object]$Body) {
         $json = $Body | ConvertTo-Json -Depth 10
+        $this._RecordAttempt('post', $Uri)
         Invoke-RestMethod -Uri $Uri -Method Post -Body $json `
             -Headers $this._Headers() `
             -ContentType 'application/json;charset=utf-8' `
@@ -506,6 +553,8 @@ class IloRedfishSession {
 
     [object] _Get([string]$Uri) {
         $headers = $this._Headers()
+        $firstMode = if ($this.UseRawAuthToken) { 'raw_xauth+redfish_session' } else { 'normalized_xauth+redfish_session' }
+        $this._RecordAttempt($firstMode, $Uri)
         try {
             return Invoke-RestMethod -Uri $Uri -Method Get `
                 -Headers $headers `
@@ -518,16 +567,19 @@ class IloRedfishSession {
             # Retry once with the raw form only after an authentication failure;
             # never retry arbitrary Redfish errors.
             $message = $_.Exception.Message
+            $this.LastError = $message
             if ($message -match '(?i)(401|unauthorized)' -and
                 $this.RawAuthToken -and $this.RawAuthToken -ne $this.AuthToken -and
                 -not $this.UseRawAuthToken) {
                 try {
                     $this.UseRawAuthToken = $true
+                    $this._RecordAttempt('raw_xauth+redfish_session_retry', $Uri)
                     return Invoke-RestMethod -Uri $Uri -Method Get `
                         -Headers $this._Headers() `
                         -SkipCertificateCheck:$this.SkipCert `
                         -TimeoutSec $this.TimeoutSec -ErrorAction Stop
                 } catch {
+                    $this.LastError = $_.Exception.Message
                     $this.UseRawAuthToken = $false
                 }
             }

@@ -243,9 +243,17 @@ function Invoke-IloRedfish {
                     Get-OVIloSso -IloRestSession -SkipCertificateCheck -ErrorAction Stop
                 $session = [IloRedfishSession]::new($iloSso, $SkipCertificateCheck, $TimeoutSec)
             } catch {
+                $ssoProperties = if ($iloSso) { @($iloSso.PSObject.Properties.Name) } else { @() }
                 return @{
                     Success = $false; Action = $Action; IloIp = $IloIp
                     Error = "OneView iLO SSO acquisition failed for '$OneViewServerName': $($_.Exception.Message)"
+                    AuthDiagnostics = @{
+                        auth_mode = 'oneview_sso_acquisition'
+                        oneview_server = $OneViewServerName
+                        sso_object_type = if ($iloSso) { $iloSso.GetType().FullName } else { $null }
+                        sso_properties = $ssoProperties
+                        skip_certificate_check = $SkipCertificateCheck
+                    }
                 }
             }
         } elseif ($IloCredential) {
@@ -272,27 +280,27 @@ function Invoke-IloRedfish {
                 'Mount' {
                     if (-not $IsoUrl) { throw "Mount requires -IsoUrl" }
                     $r = $session.InsertMedia($CdDeviceId, $IsoUrl)
-                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = $r }
+                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = $r; AuthDiagnostics = $session.GetDiagnostics() }
                 }
                 'MountAndBoot' {
                     if (-not $IsoUrl) { throw "MountAndBoot requires -IsoUrl" }
                     $null = $session.InsertMedia($CdDeviceId, $IsoUrl)
                     $null = $session.SetOneTimeBootCd()
                     $null = $session.ResetSystem('ForceRestart')
-                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = 'Media inserted, one-time boot CD set, ForceRestart issued' }
+                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = 'Media inserted, one-time boot CD set, ForceRestart issued'; AuthDiagnostics = $session.GetDiagnostics() }
                 }
                 'Boot' {
                     $null = $session.SetOneTimeBootCd()
                     $null = $session.ResetSystem('ForceRestart')
-                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = 'One-time boot CD set, ForceRestart issued' }
+                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = 'One-time boot CD set, ForceRestart issued'; AuthDiagnostics = $session.GetDiagnostics() }
                 }
                 'Reset' {
                     $null = $session.ResetSystem('ForceRestart')
-                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = 'ForceRestart issued' }
+                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = 'ForceRestart issued'; AuthDiagnostics = $session.GetDiagnostics() }
                 }
                 'Eject' {
                     $r = $session.EjectMedia($CdDeviceId)
-                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = $r }
+                    return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = $r; AuthDiagnostics = $session.GetDiagnostics() }
                 }
                 'Status' {
                     $sys = $session.GetSystem()
@@ -301,7 +309,7 @@ function Invoke-IloRedfish {
                         Success = $true
                         Action  = $Action
                         IloIp   = $IloIp
-                        Details = @{ system = $sys; virtual_media = $vm }
+                        Details = @{ system = $sys; virtual_media = $vm; auth_diagnostics = $session.GetDiagnostics() }
                     }
                     _Format-IloRedfishResult -Result $result
                     return $result
@@ -313,7 +321,8 @@ function Invoke-IloRedfish {
         }
     }
     catch {
-        return @{ Success = $false; Action = $Action; IloIp = $IloIp; Error = $_.Exception.Message }
+        $diagnostics = if ($session) { $session.GetDiagnostics() } else { $null }
+        return @{ Success = $false; Action = $Action; IloIp = $IloIp; Error = $_.Exception.Message; AuthDiagnostics = $diagnostics }
     }
 }
 
@@ -333,6 +342,13 @@ function _Format-IloRedfishResult {
 
     if ($Result.Error) {
         Write-Host "  Error:     $($Result.Error)" -ForegroundColor Red
+    }
+
+    if ($Result.AuthDiagnostics) {
+        $diag = $Result.AuthDiagnostics
+        Write-Host "  Auth:      mode=$($diag.auth_mode); source=$($diag.token_source); attempts=$($diag.auth_attempts); skipCert=$($diag.skip_certificate_check)" -ForegroundColor DarkYellow
+        if ($diag.attempt_modes) { Write-Host "  Attempts:   $([string]::Join(', ', [string[]]$diag.attempt_modes))" -ForegroundColor DarkYellow }
+        if ($diag.last_request_uri) { Write-Host "  Last URI:   $($diag.last_request_uri)" -ForegroundColor DarkYellow }
     }
 
     if ($Result.Details -is [hashtable] -and $Result.Details.system) {

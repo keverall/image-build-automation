@@ -595,6 +595,7 @@ function Start-PhysicalServerBuild {
                     _Step 'ilo_maintenance_guard' @{
                         Success = $false
                         Error   = "iLO status check failed: $statusError"
+                        AuthDiagnostics = $status.AuthDiagnostics
                     }
                     $overall['success'] = $false
                     return (_Publish-Result -Result $overall -Json:$Json -PassThru:$PassThru -Quiet:$Quiet)
