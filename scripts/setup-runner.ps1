@@ -37,6 +37,10 @@ $REQUIRED_MODULES = @(
     @{ Name = 'PSScriptAnalyzer'; Version = '1.21.0' },
     @{ Name = 'PlatyPS';          Version = '0.14.0' },
     @{ Name = 'HPEOneView.1000';   Version = '10.00' },
+    # HPE's Get-OVIloSso -IloRestSession object is designed for this module.
+    # The official OneView virtual-media automation uses HPRESTCmdlets for
+    # iLO REST/SSO operations rather than reimplementing the session client.
+    @{ Name = 'HPRESTCmdlets';     Version = '1.2.0.0'; WindowsOnly = $true; OfflineOnly = $true },
     @{ Name = 'OperationsManager';Version = '1.0' }   # floor only; real SCOM versions are 10.x
 )
 
@@ -376,7 +380,18 @@ function Install-RequiredModules {
     #>
 
     Write-Log "Installing PowerShell modules…"
-    foreach ($m in $REQUIRED_MODULES) { Install-RequiredModule -Name $m.Name -Version $m.Version }
+    $isWindows = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
+        $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
+    foreach ($m in $REQUIRED_MODULES) {
+        if ($m.WindowsOnly -and -not $isWindows) {
+            Write-Log "Skipping Windows-only module $($m.Name) on this platform"
+            continue
+        }
+        if ($m.OfflineOnly -and -not (Get-BundledModulePath -Name $m.Name -Version $m.Version)) {
+            throw "Offline-required module $($m.Name) $($m.Version) is missing from scripts/modules/$($m.Name)/$($m.Version). Copy the approved package into the repository before running setup."
+        }
+        Install-RequiredModule -Name $m.Name -Version $m.Version
+    }
 }
 
 # =============================================================================

@@ -59,6 +59,16 @@ if ($ovModules) {
     Write-Warning "  See: https://github.com/HewlettPackard/POSH-HPEOneView"
 }
 
+# HPRESTCmdlets is the supported companion module for the IloRestSession object
+# returned by Get-OVIloSso -IloRestSession and is required by HPE's virtual-media
+# automation examples. It is installed by make setup/setup-runner.ps1.
+$hpRest = Get-Module -ListAvailable -Name 'HPRESTCmdlets' | Select-Object -First 1
+if ($hpRest) {
+    Write-Host "[OK] HPRESTCmdlets found: $($hpRest.Version)" -ForegroundColor Green
+} elseif ($IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or $null -eq $PSVersionTable.Platform) {
+    Write-Warning '[MISSING] HPRESTCmdlets not found. Run make setup before iLO SSO virtual-media operations.'
+}
+
 # Test OneView credentials are available
 $ovUser = [System.Environment]::GetEnvironmentVariable('ONEVIEW_USER')
 $ovPass = [System.Environment]::GetEnvironmentVariable('ONEVIEW_PASSWORD')

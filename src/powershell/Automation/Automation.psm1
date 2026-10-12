@@ -569,6 +569,26 @@ class IloRedfishSession {
             $message = $_.Exception.Message
             $this.LastError = $message
             if ($message -match '(?i)(401|unauthorized)' -and
+                $this.AuthMode -eq 'oneview_sso' -and
+                $Uri -match '/redfish/v1/') {
+                # Older iLO/HPREST deployments expose the same OneView SSO
+                # session through /rest/v1 even when the appliance advertises a
+                # Redfish root. Try that compatibility root before changing
+                # token formats; if it succeeds all later operations use it.
+                $legacyUri = $Uri -replace '/redfish/v1/', '/rest/v1/'
+                try {
+                    $this._RecordAttempt('normalized_xauth+legacy_rest', $legacyUri)
+                    $legacyResult = Invoke-RestMethod -Uri $legacyUri -Method Get `
+                        -Headers $headers `
+                        -SkipCertificateCheck:$this.SkipCert `
+                        -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+                    $this.BaseUrl = ($this.BaseUrl -replace '/redfish/v1$', '/rest/v1')
+                    return $legacyResult
+                } catch {
+                    $this.LastError = $_.Exception.Message
+                }
+            }
+            if ($message -match '(?i)(401|unauthorized)' -and
                 $this.RawAuthToken -and $this.RawAuthToken -ne $this.AuthToken -and
                 -not $this.UseRawAuthToken) {
                 try {

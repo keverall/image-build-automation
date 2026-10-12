@@ -36,8 +36,12 @@ Describe 'IloRedfishSession - OneView SSO token compatibility' {
             $result = $session.GetSystem()
 
             $result.power_state | Should -Be 'On'
-            $script:headersSeen | Should -Be @('abc123|sessionKey=abc123', 'sessionKey=abc123|sessionKey=abc123')
-            Should -Invoke Invoke-RestMethod -Times 2 -Exactly
+            $script:headersSeen | Should -Be @(
+                'abc123|sessionKey=abc123'
+                'abc123|sessionKey=abc123'
+                'sessionKey=abc123|sessionKey=abc123'
+            )
+            Should -Invoke Invoke-RestMethod -Times 3 -Exactly
         }
     }
 
@@ -69,6 +73,42 @@ Describe 'IloRedfishSession - OneView SSO token compatibility' {
 
             $result.power_state | Should -Be 'On'
             Should -Invoke Invoke-RestMethod -Times 1 -Exactly
+        }
+    }
+
+    It 'tries the legacy REST root after a Redfish SSO 401' {
+        InModuleScope Automation {
+            $script:urisSeen = @()
+            Mock Invoke-RestMethod {
+                param($Uri)
+                $script:urisSeen += $Uri
+                if ($Uri -like '*/redfish/v1/*') {
+                    throw 'Response status code does not indicate success: 401 (Unauthorized).'
+                }
+                [pscustomobject]@{
+                    PowerState = 'On'
+                    Boot = @{ BootSourceOverrideTarget = 'None'; BootSourceOverrideEnabled = 'Disabled' }
+                    Manufacturer = 'HPE'
+                    Model = 'DL360'
+                    SerialNumber = 'CZ22420JCM'
+                }
+            }
+
+            $session = [IloRedfishSession]::new(
+                [pscustomobject]@{
+                    RootUri = 'https://10.30.14.15/redfish/v1'
+                    'X-Auth-Token' = 'token-123'
+                },
+                $true,
+                30)
+
+            $result = $session.GetSystem()
+
+            $result.power_state | Should -Be 'On'
+            $script:urisSeen | Should -Be @(
+                'https://10.30.14.15/redfish/v1/Systems/1',
+                'https://10.30.14.15/rest/v1/Systems/1'
+            )
         }
     }
 }
