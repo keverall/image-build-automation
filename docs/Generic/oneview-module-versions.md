@@ -18,6 +18,7 @@
 | Module Name | PowerShell | .NET Standard | OneView Appliance Min | Notes |
 |-------------|------------|---------------|----------------------|-------|
 | `HPEOneView.1000` | 7.0+ | 2.1 | 10.00 | Latest. Requires PowerShell 7+, .NET Standard 2.1 |
+| `HPRESTCmdlets` | 5.1, 7.0+ | N/A | 1.0+ | HPE iLO REST/Sso. **Windows-only.** Used for virtual media and power operations. Vendored offline in `scripts/modules/`. |
 | `HPEOneView.910` | 7.0+ | 2.0 | 9.10 | PowerShell Core support |
 | `HPEOneView.900` | 7.0+ | 2.0 | 9.00 | PowerShell Core support |
 | `HPEOneView.860` | 7.0+ | 2.0 | 8.60 | PowerShell Core support |

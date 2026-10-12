@@ -42,6 +42,8 @@ Get-Command Configure-PhysicalBuild   # physical HPE server build (client-suppli
 ## What Gets Installed
 
 - **Automation module** auto-import (provides `Set-MaintenanceMode`, `Connect-OneView`, `Test-ServerConnectivity`, `Disconnect-OneView`, etc.)
+- **`HPEOneView.1000`** module — HPE OneView API integration (session management, server inventory, maintenance mode)
+- **`HPRESTCmdlets`** module (v1.2.0.0, Windows-only) — HPE iLO REST/SSO operations for virtual media mounting and power control
 - **oh-my-posh** theme and **posh-git** for an enhanced terminal UX
 - Convenience wrapper `scripts/Setup-Profile.ps1` that wires the above into `$PROFILE`
 

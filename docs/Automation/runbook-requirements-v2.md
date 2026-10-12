@@ -120,7 +120,8 @@ The automation pattern uses HPE OneView to identify the target physical host, HP
 - The client-supplied Windows Server ISO is bootable and embeds a valid `autounattend.xml` answer file (disk clean/format, partition layout, locale, keyboard, and any required OS defaults).
 - The client-supplied firmware folders/packages (latest HPE firmware for the target platform) are available on a network share reachable from the installed OS.
 - HPE OneView API credentials with rights to query server-hardware objects and toggle maintenance mode.
-- HPE iLO credentials with rights to perform virtual media and power operations.
+- HPE OneView credentials **also** serve as the iLO authentication source: the OneView-issued iLO SSO session token is used for virtual media and power operations via `HPRESTCmdlets`; **no separate iLO credentials are required**.
+- `HPRESTCmdlets` PowerShell module (v1.2.0.0, Windows-only, installed by `make setup` from the bundled copy in `scripts/modules/`). This module performs the iLO REST/Sso session negotiation and virtual-media operations per HPE's reference flow.
 - Secure network location to host the ISO and firmware (SMB preferred; HTTPS/NFS also supported by iLO virtual media).
 - The target network permits iLO virtual media access to the ISO share, and (post-install) OS access to the firmware repository.
 
@@ -129,7 +130,7 @@ The automation pattern uses HPE OneView to identify the target physical host, HP
 ### Access prerequisites
 
 - Change approval for production builds (if required by local process).
-- Approved service accounts for OneView API and iLO access.
+- Approved service account for OneView API (the OneView credential is reused for iLO SSO). **No separate iLO service account** is needed — iLO access is derived from the OneView session.
 - Administrative access on the system used to run the automation (no ConfigMgr site access required).
 
 <a id="media-strategy"></a>

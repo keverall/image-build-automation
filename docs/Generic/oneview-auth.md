@@ -119,6 +119,25 @@ The session is also automatically closed when the PowerShell session ends.
 }
 ```
 
+<a id="required-modules-and-ilo-sso"></a>
+
+## Required Modules & iLO SSO Flow
+
+The OneView-managed iLO authentication flow requires two PowerShell modules:
+
+| Module | Version | Purpose | Platform |
+|--------|---------|---------|----------|
+| `HPEOneView.1000` | 10.00+ | OneView API session management, server inventory, maintenance mode | PowerShell 7+ |
+| `HPRESTCmdlets` | 1.2.0.0 | iLO REST/SSO operations, virtual media, power control | Windows-only |
+
+The iLO SSO flow works as follows:
+1. `Connect-OneView` establishes a session with the OneView appliance.
+2. `Get-OVIloSso` (from `HPEOneView.1000`) retrieves an iLO SSO token for the target server.
+3. `HPRESTCmdlets` (`Connect-HPREST`, `Get-HPRESTDataRaw`, `Set-HPRESTData`, `Invoke-HPRESTAction`) performs the actual iLO REST operations using the SSO token.
+4. **No separate iLO credentials are required** — the OneView credential is reused for iLO SSO authentication.
+
+> **Note:** `HPRESTCmdlets` is Windows-only and is installed as an offline-only bundled module via `make setup` (see `scripts/setup-runner.ps1`). It is not available on Linux/macOS.
+
 <a id="gitlab-ci-integration"></a>
 
 ## GitLab CI Integration
