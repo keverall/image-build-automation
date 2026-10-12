@@ -1,140 +1,81 @@
-# Testing Issues
-The latest failure is still isolated to the iLO authentication guard. OneView is working:
+The latest run finally isolates this outside the automation code.
+
+### What the log proves
+
+The client is running the fallback commit:
 
 ```text
-Oneview_Maintenance_Enable:
-  Success: True
-  Skipped: True
-  Reason: Server already in maintenance mode
+7962371a
 ```
 
-I enhanced the diagnostics.
-
-## Logs to send back
-
-After the next run, send all of these audit files from the Windows client (the
-serial-specific files are required to correlate OneView, build, and iLO steps):
+Both authentication paths fail against the same iLO:
 
 ```text
-generated/logs/audit/*_prebuild_CZ22420JCM.json
-generated/logs/audit/*_enable_CZ22420JCM.json
-generated/logs/audit/*_build_CZ22420JCM.json
-generated/logs/audit/*_disable_CZ22420JCM.json
+SSO:
+GET https://10.30.14.15/redfish/v1/Systems/1
+401 Unauthorized
+
+Direct OneView credential:
+POST https://10.30.14.15/redfish/v1/SessionService/Sessions
+401 Unauthorized
 ```
 
-The most important one will be the audit file containing:
+The OneView side is healthy:
 
 ```text
-Ilo_Maintenance_Guard
+Connected: Yes
+Server resolution: successful
+Maintenance mode: detected
+OneView maintenance step: successful/skipped
 ```
 
-You can list the newest audit files with:
+The code now mirrors HPE’s documented SSO flow:
 
 ```powershell
-Get-ChildItem .\generated\logs\audit -File |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object -First 10 Name, Length, LastWriteTime
+Get-OVIloSso -IloRestSession -SkipCertificateCheck
+X-Auth-Token: <token>
+GET /redfish/v1/Systems/1
 ```
 
-Also send the relevant `test.log` section from:
+The direct login also fails, so changing the token header again will not resolve this.
 
-```text
-[OneView] Server ...
-```
+## Actual fault
 
-through:
+The iLO is rejecting both:
 
-```text
-Ilo_Maintenance_Guard
-```
+1. The OneView-issued SSO token.
+2. The OneView account as a direct iLO Redfish login.
 
-Do **not** send passwords, full SSO tokens, credential objects, or complete unredacted SSO objects.
+This indicates an iLO/OneView SSO configuration or authorization problem, such as:
 
-## New safe diagnostics
+- HPE SSO disabled or misconfigured in iLO.
+- OneView appliance certificate/trust relationship rejected by iLO.
+- The `adm_98253` OneView role has no mapped iLO privilege.
+- iLO SSO role mapping is missing or invalid.
+- iLO firmware/OneView SSO compatibility issue.
+- Existing iLO authentication/session policy rejecting both token and account.
 
-The audit result now records only metadata:
+The HPE UI can still work because it uses the browser SSO URL flow; that does not prove the Redfish SSO token endpoint is authorized.
 
-```text
-AuthMode
-TokenSource
-TokenPresent
-TokenLength
-RawTokenPresent
-RawTokenLength
-RawTokenHasSessionKey
-SkipCertificateCheck
-BaseUrl
-AuthAttempts
-AttemptModes
-LastRequestUri
-LastError
-```
+## Direct proof command
 
-The actual token values are never logged.
-
-Example diagnostic output will look like:
-
-```text
-auth_mode: oneview_sso
-token_source: SecurityToken
-token_present: True
-token_length: 64
-raw_token_present: True
-raw_token_has_sessionKey: True
-skip_certificate_check: True
-attempt_modes:
-  - normalized_xauth+redfish_session
-  - raw_xauth+redfish_session_retry
-last_request_uri: https://10.30.14.15/redfish/v1/Systems/1
-last_error: ...
-```
-
-## Additional behavior
-
-If OneView SSO still returns 401 during an interactive run, the build now prompts once for direct iLO credentials and retries the status check. If that succeeds, the same credential is retained for the later ISO mount/reboot. Automated runs still fail closed.
-
-Validation after the diagnostic changes:
-
-```text
-590 tests passed
-0 failed
-153 PowerShell files linted successfully
-```
-
-The diagnostic changes are currently uncommitted in:
-
-```text
-src/powershell/Automation/Automation.psm1
-src/powershell/Automation/Public/Invoke-IloRedfish.ps1
-src/powershell/Automation/Public/Start-PhysicalServerBuild.ps1
-```
-
-
-PowerShell, using the file’s modified date:
+Run this on the Windows client using the same connected session:
 
 ```powershell
-Get-ChildItem .\generated\logs\audit -File |
-    Where-Object { $_.LastWriteTime -ge (Get-Date).Date } |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object Name, Length, LastWriteTime
+$server = Get-OVServer -Name 'alp-qlikview-03ilo'
+$sso = $server | Get-OVIloSso -IloRestSession -SkipCertificateCheck
+
+$headers = @{
+    'X-Auth-Token' = $sso.'X-Auth-Token'
+}
+
+Invoke-RestMethod `
+    -Uri "$($sso.RootUri)/redfish/v1/Systems/1" `
+    -Headers $headers `
+    -SkipCertificateCheck `
+    -ErrorAction Stop
 ```
 
-Short form:
+If this returns 401, it independently proves the failure is between OneView SSO and iLO, outside `Configure-PhysicalBuild`.
 
-```powershell
-ls .\generated\logs\audit -File |
-    ? LastWriteTime -ge (Get-Date).Date |
-    sort LastWriteTime -Descending
-```
-
-Because the new filenames begin with a UTC timestamp, you can also filter by today’s UTC prefix:
-
-```powershell
-$today = [DateTime]::UtcNow.ToString('yyyy-MM-dd')
-
-Get-ChildItem .\generated\logs\audit -File |
-    Where-Object Name -like "${today}*" |
-    Sort-Object Name -Descending
-```
-
-The `LastWriteTime` version is safer because it also finds files created with the older filename format.
+The iLO administrator needs to check the iLO HPE SSO configuration and role mapping for the `adm_98253` OneView role. The automation now records both SSO and direct-auth failures and is correctly failing closed instead of bypassing iLO authentication.
