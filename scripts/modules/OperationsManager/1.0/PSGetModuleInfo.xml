@@ -1,0 +1,190 @@
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>Microsoft.PowerShell.Commands.PSRepositoryItemInfo</T>
+      <T>System.Management.Automation.PSCustomObject</T>
+      <T>System.Object</T>
+    </TN>
+    <MS>
+      <S N="Name">OperationsManager</S>
+      <S N="Version">1.0</S>
+      <S N="Type">Module</S>
+      <S N="Description">Operations Manager OperationsManagerV10 Module</S>
+      <S N="Author">Microsoft Corporation</S>
+      <S N="CompanyName">vESNik</S>
+      <S N="Copyright">Microsoft Corporation. All rights reserved.</S>
+      <DT N="PublishedDate">2019-04-05T14:00:55+01:00</DT>
+      <Nil N="InstalledDate" />
+      <Nil N="UpdatedDate" />
+      <Nil N="LicenseUri" />
+      <Nil N="ProjectUri" />
+      <Nil N="IconUri" />
+      <Obj N="Tags" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+          <S>PSModule</S>
+        </LST>
+      </Obj>
+      <Obj N="Includes" RefId="2">
+        <TN RefId="2">
+          <T>System.Collections.Hashtable</T>
+          <T>System.Object</T>
+        </TN>
+        <DCT>
+          <En>
+            <S N="Key">Cmdlet</S>
+            <Obj N="Value" RefId="3">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Export-SCManagementPack</S>
+                <S>Get-SCClass</S>
+                <S>Get-SCDiscovery</S>
+                <S>Get-SCManagementPack</S>
+                <S>Get-SCRelationship</S>
+                <S>Get-SCRelationshipInstance</S>
+                <S>Import-SCManagementPack</S>
+                <S>Remove-SCManagementPack</S>
+                <S>Get-SCManagementGroupConnection</S>
+                <S>New-SCManagementGroupConnection</S>
+                <S>Remove-SCManagementGroupConnection</S>
+                <S>Set-SCManagementGroupConnection</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Workflow</S>
+            <Obj N="Value" RefId="4">
+              <TNRef RefId="1" />
+              <LST />
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Function</S>
+            <Obj N="Value" RefId="5">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Get-SCOMCommand</S>
+                <S>Write-SCOMCommand</S>
+                <S>Add-SCOMRunAsAccount</S>
+                <S>Update-SCOMRunAsAccount</S>
+                <S>Get-SCOMRunAsAccount</S>
+                <S>Remove-SCOMRunAsAccount</S>
+                <S>Get-SCOMRunAsDistribution</S>
+                <S>Set-SCOMRunAsDistribution</S>
+                <S>Get-SCOMTieredManagementGroup</S>
+                <S>Add-SCOMTieredManagementGroup</S>
+                <S>Remove-SCOMTieredManagementGroup</S>
+                <S>Get-SCOMTierConnector</S>
+                <S>Add-SCOMTierConnector</S>
+                <S>Remove-SCOMTierConnector</S>
+                <S>Import-OperationsManager</S>
+                <S>New-DefaultManagementGroupConnection</S>
+                <S>Get-ErrorInfo</S>
+                <S>Out-StringNoWrap</S>
+                <S>Write-OperationsManagerClientShellBanner</S>
+                <S>Write-WarningMessage</S>
+                <S>Start-OperationsManagerClientShell</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">RoleCapability</S>
+            <Ref N="Value" RefId="4" />
+          </En>
+          <En>
+            <S N="Key">DscResource</S>
+            <Ref N="Value" RefId="4" />
+          </En>
+          <En>
+            <S N="Key">Command</S>
+            <Obj N="Value" RefId="6">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Export-SCManagementPack</S>
+                <S>Get-SCClass</S>
+                <S>Get-SCDiscovery</S>
+                <S>Get-SCManagementPack</S>
+                <S>Get-SCRelationship</S>
+                <S>Get-SCRelationshipInstance</S>
+                <S>Import-SCManagementPack</S>
+                <S>Remove-SCManagementPack</S>
+                <S>Get-SCManagementGroupConnection</S>
+                <S>New-SCManagementGroupConnection</S>
+                <S>Remove-SCManagementGroupConnection</S>
+                <S>Set-SCManagementGroupConnection</S>
+                <S>Get-SCOMCommand</S>
+                <S>Write-SCOMCommand</S>
+                <S>Add-SCOMRunAsAccount</S>
+                <S>Update-SCOMRunAsAccount</S>
+                <S>Get-SCOMRunAsAccount</S>
+                <S>Remove-SCOMRunAsAccount</S>
+                <S>Get-SCOMRunAsDistribution</S>
+                <S>Set-SCOMRunAsDistribution</S>
+                <S>Get-SCOMTieredManagementGroup</S>
+                <S>Add-SCOMTieredManagementGroup</S>
+                <S>Remove-SCOMTieredManagementGroup</S>
+                <S>Get-SCOMTierConnector</S>
+                <S>Add-SCOMTierConnector</S>
+                <S>Remove-SCOMTierConnector</S>
+                <S>Import-OperationsManager</S>
+                <S>New-DefaultManagementGroupConnection</S>
+                <S>Get-ErrorInfo</S>
+                <S>Out-StringNoWrap</S>
+                <S>Write-OperationsManagerClientShellBanner</S>
+                <S>Write-WarningMessage</S>
+                <S>Start-OperationsManagerClientShell</S>
+              </LST>
+            </Obj>
+          </En>
+        </DCT>
+      </Obj>
+      <Nil N="PowerShellGetFormatVersion" />
+      <Nil N="ReleaseNotes" />
+      <Obj N="Dependencies" RefId="7">
+        <TNRef RefId="1" />
+        <LST />
+      </Obj>
+      <S N="RepositorySourceLocation">https://www.powershellgallery.com/api/v2</S>
+      <S N="Repository">PSGallery</S>
+      <S N="PackageManagementProvider">NuGet</S>
+      <Obj N="AdditionalMetadata" RefId="8">
+        <TN RefId="3">
+          <T>System.Management.Automation.PSCustomObject</T>
+          <T>System.Object</T>
+        </TN>
+        <MS>
+          <S N="copyright">Microsoft Corporation. All rights reserved.</S>
+          <S N="description">Operations Manager OperationsManagerV10 Module</S>
+          <S N="requireLicenseAcceptance">False</S>
+          <S N="isLatestVersion">True</S>
+          <S N="isAbsoluteLatestVersion">True</S>
+          <S N="versionDownloadCount">33121</S>
+          <S N="downloadCount">33055</S>
+          <S N="packageSize">2888472</S>
+          <S N="published">05/04/2019 14:00:55 +01:00</S>
+          <S N="created">05/04/2019 14:00:55 +01:00</S>
+          <S N="lastUpdated">14/07/2026 23:20:02 +01:00</S>
+          <S N="tags">PSModule</S>
+          <S N="developmentDependency">False</S>
+          <S N="updated">2026-07-14T23:20:02Z</S>
+          <S N="NormalizedVersion">1.0.0</S>
+          <S N="Authors">Microsoft Corporation</S>
+          <S N="IsPrerelease">false</S>
+          <S N="ItemType">Module</S>
+          <S N="FileList">OperationsManager.nuspec|Functions.ps1|Microsoft.EnterpriseManagement.Core.dll|Microsoft.EnterpriseManagement.OperationsManager.dll|Microsoft.EnterpriseManagement.Runtime.dll|OM10.CrossPlatform.Start.ps1|OperationsManager.psd1|OperationsManager.psm1|PSGetModuleInfo.xml|Startup.ps1|DE\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|en\about_OpsMgr_Cmdlet_Names.help.txt|en\about_OpsMgr_Connections.help.txt|en\about_OpsMgr_RunAsAccount.help.txt|en\about_OpsMgr_WhatsNew.help.txt|en\Microsoft.EnterpriseManagement.Core.Cmdlets.dll-Help.xml|en\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|en\Microsoft.SystemCenter.OperationsManagerV10.Commands.dll-Help.xml|ES\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|FR\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|IT\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|JA\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|KO\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|OM10.Commands\CALicensingWizard.dll|OM10.Commands\Microsoft.SystemCenter.OperationsManagerV10.Commands.dll|OM10.Commands\Microsoft.SystemCenter.OperationsManagerV10.format.ps1xml|OM10.Commands\MomBidLdr.dll|OM10.Commands\OM10.Commands.psd1|OM10.Commands\OperationsManagerV10.Types.ps1xml|OM10.Commands\PKConfig-2011-05-17-01-24-18-2418.xml|OM10.CoreCommands\Microsoft.EnterpriseManagement.Core.Cmdlets.dll|OM10.CoreCommands\Microsoft.EnterpriseManagement.Core.Cmdlets.Format.ps1xml|OM10.CoreCommands\Microsoft.EnterpriseManagement.Core.Cmdlets.Types.ps1xml|OM10.CoreCommands\Microsoft.EnterpriseManagement.Core.SdkUtilities.dll|OM10.CoreCommands\Microsoft.EnterpriseManagement.CSVImport.dll|OM10.CoreCommands\Microsoft.EnterpriseManagement.SqmBase.dll|OM10.CoreCommands\Microsoft.EnterpriseManagement.SqmBase.dll.config|OM10.CoreCommands\MomBidLdr.dll|OM10.CoreCommands\OM10.CoreCommands.psd1|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.ClientActions.dll|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.dll|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.dll|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.dll|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.dll|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.dll|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Workflows.dll|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.format.ps1xml|OM10.CrossPlatform\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll|OM10.CrossPlatform\OM10.CrossPlatform.psd1|OM10.CrossPlatform\OM10.CrossplatformInvalidPSVersion.ps1|OM10.CrossPlatform\DE\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\DE\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\DE\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\DE\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\DE\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\DE\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\DE\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\EN\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\EN\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\EN\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\EN\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\EN\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\EN\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\EN\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\ES\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\ES\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\ES\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\ES\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\ES\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\ES\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\ES\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\FR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\FR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\FR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\FR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\FR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\FR\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\FR\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\IT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\IT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\IT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\IT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\IT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\IT\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\IT\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\JA\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\JA\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\JA\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\JA\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\JA\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\JA\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\JA\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\KO\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\KO\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\KO\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\KO\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\KO\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\KO\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\KO\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\pt-BR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\pt-BR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\pt-BR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\pt-BR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\pt-BR\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\pt-BR\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\pt-BR\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\RU\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\RU\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\RU\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\RU\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\RU\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\RU\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\RU\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\zh-CHS\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\zh-CHS\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\zh-CHS\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\zh-CHS\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\zh-CHS\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\zh-CHS\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\zh-CHS\OM10.CrossplatformInvalidPSVersion.psd1|OM10.CrossPlatform\zh-CHT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.ClientTasks.resources.dll|OM10.CrossPlatform\zh-CHT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.Common.resources.dll|OM10.CrossPlatform\zh-CHT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.CredentialManagement.resources.dll|OM10.CrossPlatform\zh-CHT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.MPAbstractions.resources.dll|OM10.CrossPlatform\zh-CHT\Microsoft.SystemCenter.CrossPlatform.ClientLibrary.WorkflowActivities.resources.dll|OM10.CrossPlatform\zh-CHT\Microsoft.SystemCenter.CrossPlatform.PowerShell.resources.dll|OM10.CrossPlatform\zh-CHT\OM10.CrossplatformInvalidPSVersion.psd1|pt-BR\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|RU\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|zh-CHS\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml|zh-CHT\Microsoft.SystemCenter.CrossPlatform.PowerShell.dll-Help.xml</S>
+          <S N="Cmdlets">Export-SCManagementPack Get-SCClass Get-SCDiscovery Get-SCManagementPack Get-SCRelationship Get-SCRelationshipInstance Import-SCManagementPack Remove-SCManagementPack Get-SCManagementGroupConnection New-SCManagementGroupConnection Remove-SCManagementGroupConnection Set-SCManagementGroupConnection</S>
+          <S N="Functions">Get-SCOMCommand Write-SCOMCommand Add-SCOMRunAsAccount Update-SCOMRunAsAccount Get-SCOMRunAsAccount Remove-SCOMRunAsAccount Get-SCOMRunAsDistribution Set-SCOMRunAsDistribution Get-SCOMTieredManagementGroup Add-SCOMTieredManagementGroup Remove-SCOMTieredManagementGroup Get-SCOMTierConnector Add-SCOMTierConnector Remove-SCOMTierConnector Import-OperationsManager New-DefaultManagementGroupConnection Get-ErrorInfo Out-StringNoWrap Write-OperationsManagerClientShellBanner Write-WarningMessage Start-OperationsManagerClientShell</S>
+          <S N="GUID">5551ea86-919d-499b-948f-87305e4f2348</S>
+          <S N="PowerShellVersion">2.0</S>
+          <S N="CLRVersion">2.0</S>
+          <S N="CompanyName">Microsoft</S>
+        </MS>
+      </Obj>
+      <S N="InstalledLocation">C:\Users\98253\repos\image-build-automation\scripts\modules\OperationsManager\1.0</S>
+    </MS>
+  </Obj>
+</Objs>
