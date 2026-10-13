@@ -100,17 +100,17 @@ Thumbs.db
 AGENTS.md
 /scripts/modules/OperationsManager/
 
-/scripts/modules/
-/scripts/modules/*
+# /scripts/modules/
+# /scripts/modules/*
 
 # Keep the vendored HPRESTCmdlets package trackable while ignoring other local
 # PowerShell module installations. Every ignored parent must be re-included so
 # Git can descend to the files below it.
-!/scripts/modules/
-!/scripts/modules/HPRESTCmdlets/
-/scripts/modules/HPRESTCmdlets/*
-!/scripts/modules/HPRESTCmdlets/1.2.0.0/
-!/scripts/modules/HPRESTCmdlets/1.2.0.0/**
+# !/scripts/modules/
+# !/scripts/modules/HPRESTCmdlets/
+# /scripts/modules/HPRESTCmdlets/*
+# !/scripts/modules/HPRESTCmdlets/1.2.0.0/
+# !/scripts/modules/HPRESTCmdlets/1.2.0.0/**
 
 # ---- POWERSHELL RUNTIME & LOGGING ----
 # Block interactive history and transcripts
@@ -126,7 +126,7 @@ AGENTS.md
 
 # ---- MODULES & VENDOR DEPENDENCIES ----
 # Block modules installed locally during development
-/Modules/
+# /Modules/
 /packages/
 
 # ---- SECRETS & SCRIPTS ----
