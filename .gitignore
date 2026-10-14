@@ -20,7 +20,6 @@ wheels/
 .installed.cfg
 *.egg
 .python-version
-.venv
 
 # === Virtual Environments & Rust Tooling (uv) ===
 .venv/
@@ -42,38 +41,16 @@ node_modules/
 
 # === Logs, Reports & Linters ===
 htmlcov/
-# *.log
 build_reports/
 .ruff_cache/
 
 # === Generated Output (build artifacts) ===
-# Note: docs/dynamic-code-docs/ is tracked in git (auto-generated docs that are reviewed)
-# .gitkeep files are tracked to preserve directory structure
-!generated/.gitkeep
-!generated/base_iso/.gitkeep
-!generated/output/.gitkeep
-!generated/output/patched/.gitkeep
-!generated/output/firmware/.gitkeep
-!generated/output/combined/.gitkeep
-!generated/patched_iso/.gitkeep
-!generated/logs/.gitkeep
-!generated/logs/testing/.gitkeep
-!generated/logs/production/.gitkeep
-!generated/logs/audit/.gitkeep
-!generated/scheduled_jobs/.gitkeep
-!generated/htmlcov/.gitkeep
-generated/*.iso
-generated/base_iso/*
-generated/output/*
-generated/patched_iso/*
-generated/logs/testing/*
-generated/logs/production/*
-generated/logs/audit/*
-generated/logs/build_reports/*
-!generated/logs/build_reports/.gitkeep
-generated/logs/deployment/*
-!generated/logs/deployment/.gitkeep
-generated/logs/testing build_reports/*
+# Keep directory placeholders, not runtime audit data, logs, reports or images.
+# Re-include directories so Git can reach nested .gitkeep files.
+# Reviewed documentation under docs/ remains trackable.
+/generated/**
+!/generated/**/
+!/generated/**/.gitkeep
 
 # === Configuration Secrets ===
 configs/opsramp_config.json
@@ -86,7 +63,7 @@ tools/dism.exe
 *.tmp
 *.bak
 
-# Generated ISO archives - keep only .gitignore'd ones
+# ISO images are distributed through the approved artifact channel, not Git.
 *.iso
 
 # === OS Generated Files ===
@@ -96,15 +73,28 @@ Thumbs.db
 
 
 # === AI Workspace Configs ===
-# .kilo/
+.kilo/
 AGENTS.md
 
+# === Offline PowerShell Dependencies ===
+# Only approved, version-pinned packages are distributed through Git.
+# These exceptions must follow generic dependency rules such as lib/ above.
+# Preserve vendor manifests, DLLs, format/type XML, help, examples and licenses.
+/scripts/modules/*
+!/scripts/modules/HPRESTCmdlets/
+/scripts/modules/HPRESTCmdlets/*
+!/scripts/modules/HPRESTCmdlets/1.2.0.0/
+!/scripts/modules/HPRESTCmdlets/1.2.0.0/**
+!/scripts/modules/HPEOneView.1000/
+/scripts/modules/HPEOneView.1000/*
+!/scripts/modules/HPEOneView.1000/10.0.4265.2221/
+!/scripts/modules/HPEOneView.1000/10.0.4265.2221/**
+
 # ---- POWERSHELL RUNTIME & LOGGING ----
-# Block interactive history and transcripts
-.ps_history
+# Also exclude operational files accidentally placed inside vendor packages.
+*.log
 *_transcript.*
-# *.log
-*check.log
+.ps_history
 
 # ---- TESTING & COVERAGE ----
 # Block Pester testing framework artifacts
@@ -114,10 +104,13 @@ AGENTS.md
 /packages/
 
 # ---- SECRETS & SCRIPTS ----
+# Keep security exclusions AFTER the vendor allowlist so secrets stay blocked.
 # Block private configurations or local profiles
 secret.*
 config.private.*
-*.ps1xml
+.env
+.env.*
+secrets.env
 
 # ---- CRYPTOGRAPHIC MATERIAL (never commit) ----
 # Private keys and certificate stores. Gitleaks + scripts/secret-scan.ps1
@@ -137,17 +130,7 @@ secret-scan-report.json
 secret-scan-code-quality.json
 *.secret-scan.bak
 
-# ---- IDE WORKSPACES & SYSTEM ----
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# ---- BUILD OUT, LOGS & GENERATED CORES ----
-/generated/
 # Local scratch workspace: purged from git history (see docs/compliance/SECRET_SCANNING.md).
-/wip/
-!/wip/
 /wip/*
 !/wip/testing-issue.md
 # Generated Word/RTF mirrors of wip/ scratch (same content, binary). Kept out
@@ -156,15 +139,3 @@ Thumbs.db
 /docx/wip/
 /docs/rtf/wip/
 /doc/windows/help/rtf/wip/
-.env
-secrets.env
-
-# ---- UNIVERSAL LOCAL DATA STACKS ----
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# ---- AGENT ENGINES (Re-add this before push) ----
-.kilo/
-.env

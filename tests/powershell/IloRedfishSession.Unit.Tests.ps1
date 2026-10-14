@@ -47,9 +47,11 @@ Describe 'IloRedfishSession - OneView SSO token compatibility' {
 
     It 'accepts the SecurityToken property used by current HPE SSO objects' {
         InModuleScope Automation {
+            # Generate a synthetic token instead of embedding a secret-shaped literal.
+            $script:expectedSecurityToken = [guid]::NewGuid().ToString('N')
             Mock Invoke-RestMethod {
                 param($Headers)
-                if ($Headers['X-Auth-Token'] -ne 'security-token-123') {
+                if ($Headers['X-Auth-Token'] -ne $script:expectedSecurityToken) {
                     throw 'unexpected token property selection'
                 }
                 [pscustomobject]@{
@@ -64,7 +66,7 @@ Describe 'IloRedfishSession - OneView SSO token compatibility' {
             $session = [IloRedfishSession]::new(
                 [pscustomobject]@{
                     RootUri = 'https://10.30.14.15/redfish/v1'
-                    SecurityToken = 'security-token-123'
+                    SecurityToken = $script:expectedSecurityToken
                 },
                 $true,
                 30)
