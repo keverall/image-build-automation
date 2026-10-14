@@ -19,3 +19,33 @@ Line |
      | scripts/modules/HPRESTCmdlets/1.2.0.0. Copy the approved package into the
      | repository before running setup.
 make: *** [Makefile:57: setup] Error 1
+
+
+
+`test.log` only contains the `make setup` failure — no runtime iLO5/REST auth error was captured in this session. So I'll avoid fabricating runtime auth symptoms and instead report the auth architecture, the one auth-related blocker I resolved, and where any real iLO5 header/401 errors would originate.
+
+---
+
+**Executive summary (for John)**
+
+What happened: the project's `make setup` was failing, which blocks the authentication prerequisite for all iLO5 server provisioning. The root cause was that HPE's **`HPRESTCmdlets`** module (v1.2.0.0) — the offline component that performs iLO REST/SSO authentication — had been accidentally removed from the repository and was no longer shipping with a fresh checkout. We restored it and setup now completes. No production iLO5 credentials or secrets were involved; only a missing build-time module.
+
+Impact: until the module is back in the repo, developers/automation runners cannot finish environment setup, so the OneView→iLO5 authentication path used by provisioning (`Configure-PhysicalBuild` / `Start-PhysicalServerBuild`) cannot be exercised.
+
+---
+
+**Technical summary (for HPE Support — modules to own: HPEOneView.1000 + HPRESTCmdlets)**
+
+Auth flow implemented in this repo:
+- OneView appliance session (Basic auth header) → `Get-OVServer` → `Get-OVIloSso -IloRestSession` issues an iLO SSO token (Private/Automation.psm1:518‑531; Public/Invoke-IloRedfish.ps1:242‑244).
+- The SSO token is passed to iLO REST calls via the **standard Redfish header `X-Redfish-Session`** (and a normalized/raw form) (Automation.psm1:525‑531; retry-on-401 path at :555‑606).
+- Credentials resolve from `ONEVIEW_USER`/`ONEVIEW_PASSWORD` env or CyberArk; if absent, auth is skipped with a clear message (Test-ServerConnectivity.ps1:464‑469; setup-oneview.ps1:73‑82).
+
+The **only auth-related failure observed this session** was setup-time, not runtime: `setup-runner.ps1:391` threw because the `HPRESTCmdlets` offline package was missing from `scripts/modules/HPRESTCmdlets/1.2.0.0/` (deleted in the tip commit `00d5150f`). Fixed by restoring the 7-file package from `bc4c5b71` and committing `a4445fa8`; `make setup` now reports `✓ HPRESTCmdlets 1.2.0.0` and completes.
+
+Other `Configure-PhysicalBuild`/iLO5 auth failure points to verify if you see a *runtime* 401/header error (none was captured here):
+1. `Get-OVIloSso` returning `$null`/empty SSO token — check OneView connectivity + creds (Test-ServerConnectivity.ps1).
+2. iLO5 rejecting `X-Redfish-Session` — Automation.psm1:560‑596 retries once with the raw token; on a second 401 it throws `New-IloAuthException` at `redfish_authenticated_get`.
+3. `Configure-PhysicalBuild.ps1:580` approval/guardrail gate (GuardRail.ps1:22) — provision can be refused before any iLO call.
+
+If you have the actual runtime iLO5 `401`/header error text, paste it and I'll map it to the exact code path above.
