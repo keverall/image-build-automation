@@ -19,6 +19,7 @@
   - [ISO path requirements (no local drives)](#iso-path-requirements-no-local-drives)
 - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
   - [Configure build (4-eye review)](#configure-build-4-eye-review)
+  - [Create manual iLO credentials (Get-Credential)](#create-manual-ilo-credentials)
   - [Full build (most common)](#full-build-most-common)
   - [ISO & Firmware parameter options](#iso-firmware-parameter-options)
   - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
@@ -593,7 +594,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 | `-ServerIdentifier` | Yes | Target server identifier (hostname, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` | No | OneView appliance hostname/IP for server resolution. |
 | `-IloIp` | No | iLO IPv4 address / hostname for the target server. |
-| `-IloCredential` | No | `PSCredential` for iLO Redfish check. Falls back to `-OneViewCredential` or the active `Connect-OneView` session credentials (appliance/iLO shared identity). Prompts interactively only when no explicit credential and no active OneView session are available. |
+| `-IloCredential` | No | Explicit iLO `PSCredential` object, for example `$IloCreds` created with `Get-Credential`. The parameter name is singular. OneView-managed requests prefer OneView SSO; the build status check can try this credential after an SSO HTTP 401. OneView and iLO credentials are not inherently interchangeable. See [manual credential examples](#create-manual-ilo-credentials). |
 | `-ExpectedHostname` | No | Hostname expected after build. Defaults to `-ServerIdentifier`. Only needed if the post-build hostname will differ from the identifier. |
 | `-Domain` | No | AD domain to verify in post-build validation. |
 | `-SiteCode` | No | ConfigMgr site code (for ISO build / pre-build validation). |
@@ -643,6 +644,69 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 > Use `-NoMaintenanceMode` (or `-OneViewMaintenanceMode:$false`) to disable the automatic enable step when OneView is unavailable or the server is not managed by OneView. Maintenance mode disable is always a manual operator action.
 
 ---
+
+<a id="create-manual-ilo-credentials"></a>
+
+### Create manual iLO credentials (Get-Credential)
+
+**Use `Get-Credential` to create `$IloCreds`.** A `PSCredential` contains both an iLO username and a password held as a `SecureString`. Assigning `$IloCreds = "password"` creates only a string, which is not a credential object. PowerShell deliberately does not display the password as plain text when you inspect the object.
+
+The command exported by this project is **`Configure-PhysicalBuild`**, and its parameter is **`-IloCredential`** (singular), not `-IloCredentials`. `$IloCreds` is just your variable name; it does not have to match the parameter name.
+
+```powershell
+# Prompts for the password without putting it in command history.
+# Replace Administrator with an account that actually exists in this iLO.
+$IloCreds = Get-Credential -UserName 'Administrator' -Message 'Enter the iLO 5 account password'
+
+# Inspect the username and object types, not the password.
+$IloCreds.UserName
+$IloCreds.GetType().FullName       # System.Management.Automation.PSCredential
+$IloCreds.Password.GetType().Name # SecureString
+```
+
+If you prefer separate username and password prompts, create the same object explicitly:
+
+```powershell
+$IloUser = Read-Host 'iLO username'
+$IloPassword = Read-Host 'iLO password' -AsSecureString
+$IloCreds = [System.Management.Automation.PSCredential]::new($IloUser, $IloPassword)
+Remove-Variable IloPassword
+```
+
+**Test direct iLO authentication without deploying anything:** omit the OneView parameters from this status-only call so it tests the supplied iLO credential rather than selecting OneView SSO.
+
+```powershell
+Invoke-IloRedfish -Action Status -IloIp '10.0.1.50' -IloCredential $IloCreds
+```
+
+An authentication failure here still needs investigation; creating a correctly typed object does not repair an HTTP 401 or an API session-handling defect. Do not bypass the build's authentication or maintenance guard to continue.
+
+**Pass the object to the build review:** this example does not pass `-Deploy`. Review the target carefully; typing `APPROVE` at the prompt authorizes the destructive deployment.
+
+```powershell
+Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.corp.local' `
+    -IloIp '10.0.1.50' -IloCredential $IloCreds `
+    -ExternalIsoPath '\\fileserver\isos\WinSrv2025.iso' `
+    -InMaintenanceWindow -GuardRail '^srv01$'
+```
+
+**Current OneView SSO behavior:** supplying `-IloCredential` does not force direct authentication when OneView SSO is available. The build's status guard can attempt a direct-credential fallback after an SSO HTTP 401, but the later mount/boot call still selects SSO when OneView parameters are present. Consequently, supplying a manual password is not a guaranteed workaround for the reported SSO failure. Do not remove OneView safety checks merely to force a deployment.
+
+#### Get-IloCredentials is a different helper
+
+The exported project helper `Get-IloCredentials` (plural) resolves `ILO_USER` and `ILO_PASSWORD` through environment/CyberArk/default lookup and returns **two values: username and password**, not a `PSCredential`. Its defaults are username `Administrator` and an empty password if nothing is resolved. It is not an interactive password prompt, and its return value should not be printed or passed directly to `-IloCredential`.
+
+For a manually entered iLO password, use **`Get-Credential`**, as shown above, rather than setting environment variables or putting a password literal in a script. To replace the password in `$IloCreds`, run `Get-Credential` again and assign the newly returned object to the same variable. When finished:
+
+```powershell
+Remove-Variable IloCreds
+# Also remove the username variable if you used the separate-prompt example.
+Remove-Variable IloUser -ErrorAction SilentlyContinue
+```
+
+Removing a variable does not revoke an iLO session or guarantee that process memory has been erased. Never log, export, or reveal the password with `GetNetworkCredential().Password` for troubleshooting.
+
+Reference: [Microsoft Get-Credential documentation](https://learn.microsoft.com/powershell/module/microsoft.powershell.security/get-credential).
 
 <a id="full-build-most-common"></a>
 
