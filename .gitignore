@@ -75,6 +75,19 @@ Thumbs.db
 # === AI Workspace Configs ===
 .kilo/
 AGENTS.md
+/scripts/modules/OperationsManager/
+
+/scripts/modules/
+/scripts/modules/*
+
+# Keep the vendored HPRESTCmdlets package trackable while ignoring other local
+# PowerShell module installations. Every ignored parent must be re-included so
+# Git can descend to the files below it.
+!/scripts/modules/
+!/scripts/modules/HPRESTCmdlets/
+/scripts/modules/HPRESTCmdlets/*
+!/scripts/modules/HPRESTCmdlets/1.2.0.0/
+!/scripts/modules/HPRESTCmdlets/1.2.0.0/**
 
 # === Offline PowerShell Dependencies ===
 # Only approved, version-pinned packages are distributed through Git.
