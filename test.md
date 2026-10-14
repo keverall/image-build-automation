@@ -278,3 +278,33 @@ Get-Command Get-OVServer, Get-OVIloSso, Connect-HPREST, Get-HPRESTDataRaw
 Windows HPREST import and live iLO authentication remain unverified here. This fixes setup destroying the dependency; it does not yet establish that the runtime 401 is resolved. Any remaining import error will now be retained and visible rather than followed by deletion.
 
 Four setup/test files are modified. No commit or push was made.
+
+
+
+
+
+  Import-Module .\scripts\modules\HPEOneView.1000\10.0.4265.2221\HPEOneView.1000.psd1 -ErrorAction Stop                                                                                                                                                                             0  17:37:21 CRITICAL:  Another HPE OneView module is already loaded:
+  |
+  |--> HPEOneView.1000 (10.0.4265.2221)
+
+Import-Module: Another HPE OneView module is already loaded.  The HPE OneView PowerShell library does not support loading multiple versions of libraries within the same console.
+   image-build-automation  main  Import-Module .\scripts\modules\HPRESTCmdlets\1.2.0.0\HPRESTCmdlets.psd1 -ErrorAction Stop                                                                                                                                                                             1  21s 125ms  17:38:22        
+Add-Type: Cannot add type. The type name 'AsyncPipeline' already exists.
+Add-Type: Cannot add type. Compilation errors occurred.
+   image-build-automation  main  make setup                                                                                                                                                                                                                                                                     0  22s 44ms  17:38:50 [setup] Setting up PowerShell environment...
+
+╔══════════════════════════════════════════════════════╗
+║  HPE ProLiant ISO Automation - PowerShell Setup     ║
+╚══════════════════════════════════════════════════════╝
+
+[OK] PowerShell 7.6.6
+[OK] Added offline module path for this session: C:\Users\adm_98253\products\repos\image-build-automation\scripts\modules
+[INFO] Verifying local PowerShell modules (offline; files are preserved)…
+Exception: C:\Users\adm_98253\products\repos\image-build-automation\scripts\setup-runner.ps1:272:9 
+Line |
+ 272 |          throw "Local import failed for $Name $Version from '$Manifest …
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Local import failed for Pester 6.0.1 from 'C:\Users\adm_98253\products\repos\image-build-automation\scripts\modules\Pester\6.0.1\Pester.psd1'. Files were preserved. Import error: Import-Module: The member 'FormatsToProcess' in the module manifest is not valid: Cannot find path
+     | 'C:\Users\adm_98253\products\repos\image-build-automation\scripts\modules\Pester\6.0.1\Pester.Format.ps1xml' because it does not exist.. Verify that a valid value is specified for this field in the 'C:\Users\adm_98253\products\repos\image-build-automation\scripts\modules\Pester\6.0.1\Pester.psd1' file. 
+make: *** [Makefile:57: setup] Error 1 
+   image-build-automation  main                                                                             
