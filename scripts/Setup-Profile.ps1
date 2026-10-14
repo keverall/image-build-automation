@@ -83,6 +83,7 @@ $RepoRoot = Split-Path $ScriptDir -Parent
 $AutomationPath = Join-Path $RepoRoot 'src/powershell/Automation'
 $AutomationModule = Join-Path $AutomationPath 'Automation.psd1'
 $OfflineModuleRoot = Join-Path $RepoRoot 'scripts/modules'
+$OfflineHpeImporter = (Join-Path $RepoRoot 'scripts/Import-OfflineHpeModules.ps1').Replace("'", "''")
 
 # The block to add to profiles (defined early since it's used in Set-ContentProfilePair)
 # NOTE: This block intentionally does NOT define a prompt function. The
@@ -111,7 +112,11 @@ if (Test-Path `$automationModulePath) {
 # versions (.820/.860) are rejected by Connect-OneViewSession's module guard.
 # Skipped on Linux/macOS where the HPEOneView module cannot load.
 if (`$IsWindows) {
-    Import-Module HPEOneView.1000 -ErrorAction SilentlyContinue
+    try {
+        & '$OfflineHpeImporter' -Name HPEOneView.1000 -ErrorAction Stop
+    } catch {
+        Write-Warning `$_.Exception.Message
+    }
 }
 # End Image Build Automation module
 "@

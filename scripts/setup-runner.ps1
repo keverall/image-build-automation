@@ -267,6 +267,11 @@ function Test-ModuleImportIsolated {
     foreach ($requiredCommand in $requiredCommands) {
         $command += "; Get-Command '$requiredCommand' -Module '$Name' -ErrorAction Stop | Out-Null"
     }
+    if ($Name -in @('HPEOneView.1000', 'HPRESTCmdlets')) {
+        $importer = (Join-Path $PSScriptRoot 'Import-OfflineHpeModules.ps1').Replace("'", "''")
+        $commandList = ($requiredCommands | ForEach-Object { "'$_'" }) -join ', '
+        $command = "`$ErrorActionPreference = 'Stop'; . '$importer' -Name @(); Import-OfflineHpeModule -ModuleName '$Name' -ManifestPath '$quotedPath' -ExpectedVersion '$Version' -RequiredCommands @($commandList)"
+    }
     $details = & $pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $command 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Local import failed for $Name $Version from '$ManifestPath'. Files were preserved. Import error: $($details -join [Environment]::NewLine)"

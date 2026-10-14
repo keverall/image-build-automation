@@ -7,6 +7,7 @@
 - [Built-in command help (`-Help`)](#built-in-command-help-help)
 - [How the commands fit together](#how-the-commands-fit-together)
 - [Setup (One-Time)](#setup-one-time)
+  - [Load offline HPE modules safely](#load-offline-hpe-modules-safely)
 - [Connectivity, Connection & Server Lookup](#connectivity-connection-server-lookup)
   - [Test OneView connectivity](#test-oneview-connectivity)
   - [Connect to OneView](#connect-to-oneview)
@@ -175,6 +176,31 @@ Verify all commands are loaded:
 ```powershell
 Get-Command -Module Automation
 ```
+
+<a id="load-offline-hpe-modules-safely"></a>
+
+### Load offline HPE modules safely
+
+From the repository root, use the guarded importer rather than repeatedly importing the HPE manifests directly:
+
+```powershell
+.\scripts\Import-OfflineHpeModules.ps1
+Get-Command Get-OVServer, Get-OVIloSso, Connect-HPREST, Get-HPRESTDataRaw
+```
+
+This loads the pinned local OneView and HPREST packages, or reuses an already-loaded module with the matching name, version and GUID. It does not force a reload, unload modules, disconnect OneView, delete packages, download dependencies, or bypass HPE's license script. The generated Windows profile uses this importer for OneView only; HPREST is loaded explicitly when needed.
+
+If a previous import failed with **`AsyncPipeline already exists`**, the shell can retain the .NET type even though HPREST did not finish loading. `Remove-Module` cannot remove that type. Open a new shell once, return to the repository root, and run the guarded importer there:
+
+```powershell
+pwsh -NoProfile
+# In the new shell, from the repository root:
+.\scripts\Import-OfflineHpeModules.ps1
+```
+
+Opening a new shell does not migrate an existing OneView connection; reconnect explicitly if needed. A successfully loaded matching module is reused on subsequent calls. A conflicting version or incomplete module produces an actionable error rather than disturbing the active session. Any required HPE license acceptance must still be completed through HPE's normal mechanism.
+
+**Offline Pester package:** `scripts/modules/Pester/6.0.1/` must include both `Pester.Format.ps1xml` and `PesterConfiguration.Format.ps1xml`, as well as its manifest, script module and binaries. These format files must be committed and transferred with the package—not merely present on the development workstation. Setup remains offline and preserves the package if import fails. Successful module loading is a prerequisite, not proof that the later live iLO SSO HTTP 401 is resolved.
 
 ---
 

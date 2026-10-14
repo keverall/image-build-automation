@@ -89,6 +89,10 @@ AGENTS.md
 /scripts/modules/HPEOneView.1000/*
 !/scripts/modules/HPEOneView.1000/10.0.4265.2221/
 !/scripts/modules/HPEOneView.1000/10.0.4265.2221/**
+!/scripts/modules/Pester/
+/scripts/modules/Pester/*
+!/scripts/modules/Pester/6.0.1/
+!/scripts/modules/Pester/6.0.1/**
 
 # ---- POWERSHELL RUNTIME & LOGGING ----
 # Also exclude operational files accidentally placed inside vendor packages.

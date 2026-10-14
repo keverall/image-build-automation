@@ -29,6 +29,11 @@ Describe 'Git ignore policy for offline PowerShell delivery' {
         @{ Path = 'scripts/modules/HPEOneView.1000/10.0.4265.2221/Appliance.format.ps1xml' }
         @{ Path = 'scripts/modules/HPEOneView.1000/10.0.4265.2221/en-US/about_HPEOneView.1000.help.txt' }
         @{ Path = 'src/powershell/Automation/Automation.types.ps1xml' }
+        @{ Path = 'scripts/modules/Pester/6.0.1/Pester.psd1' }
+        @{ Path = 'scripts/modules/Pester/6.0.1/Pester.Format.ps1xml' }
+        @{ Path = 'scripts/modules/Pester/6.0.1/PesterConfiguration.Format.ps1xml' }
+        @{ Path = 'scripts/modules/Pester/6.0.1/bin/net8.0/Pester.dll' }
+        @{ Path = 'scripts/modules/Pester/6.0.1/en-US/about_Pester.help.txt' }
     ) {
         Test-FixtureIgnored -RelativePath $Path | Should -BeFalse
     }
@@ -37,6 +42,7 @@ Describe 'Git ignore policy for offline PowerShell delivery' {
         @{ Path = 'scripts/modules/HPRESTCmdlets/9.9.9/HPRESTCmdlets.psm1' }
         @{ Path = 'scripts/modules/HPEOneView.1000/99.0.0.0/HPEOneView.1000.psm1' }
         @{ Path = 'scripts/modules/OperationsManager/1.0/OperationsManager.psd1' }
+        @{ Path = 'scripts/modules/Pester/5.0.0/Pester.psm1' }
         @{ Path = 'scripts/modules/Unapproved/1.0/Unapproved.psd1' }
     ) {
         Test-FixtureIgnored -RelativePath $Path | Should -BeTrue
@@ -57,6 +63,7 @@ Describe 'Git ignore policy for offline PowerShell delivery' {
     ) {
         Test-FixtureIgnored -RelativePath "scripts/modules/HPRESTCmdlets/1.2.0.0/$File" | Should -BeTrue
         Test-FixtureIgnored -RelativePath "scripts/modules/HPEOneView.1000/10.0.4265.2221/$File" | Should -BeTrue
+        Test-FixtureIgnored -RelativePath "scripts/modules/Pester/6.0.1/$File" | Should -BeTrue
     }
 
     It 'excludes generated files and keeps nested placeholders' {
@@ -69,6 +76,7 @@ Describe 'Git ignore policy for offline PowerShell delivery' {
     It 'keeps all manifest-listed files present and trackable for <Module>' -ForEach @(
         @{ Module = 'HPRESTCmdlets'; Version = '1.2.0.0' }
         @{ Module = 'HPEOneView.1000'; Version = '10.0.4265.2221' }
+        @{ Module = 'Pester'; Version = '6.0.1' }
     ) {
         $relativeRoot = "scripts/modules/$Module/$Version"
         $manifestPath = Join-Path $script:RepoRoot "$relativeRoot/$Module.psd1"
