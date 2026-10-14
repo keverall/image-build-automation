@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/setup-runner.ps1
-generated: 2026-10-01
+generated: 2026-10-14
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -19,7 +19,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Fully offline-capable setup script that installs required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS) and binary tools (Oh My Posh, GNU make, checkmake). Bundled copies live in scripts/modules/; if absent it attempts a PSGallery download via Save-Module with no admin rights needed.
+Offline-only, non-destructive setup script that verifies required PowerShell modules (Pester, PSScriptAnalyzer, PlatyPS) and binary tools (Oh My Posh, GNU make, checkmake). Bundled copies live in scripts/modules/ and are imported by explicit manifest path. Missing or unusable dependencies are reported without deleting packages or attempting Internet downloads.
 
 <a id="examples"></a>
 
@@ -42,10 +42,11 @@ pwsh -File scripts/setup-runner.ps1
     Setup-Runner.ps1 - PowerShell runner environment setup.
 
 .DESCRIPTION
-    Fully offline-capable setup script that installs required PowerShell modules
+    Offline-only, non-destructive setup script that verifies required PowerShell modules
     (Pester, PSScriptAnalyzer, PlatyPS) and binary tools (Oh My Posh, GNU make,
-    checkmake). Bundled copies live in scripts/modules/; if absent it attempts
-    a PSGallery download via Save-Module with no admin rights needed.
+    checkmake). Bundled copies live in scripts/modules/ and are imported by
+    explicit manifest path. Missing or unusable dependencies are reported without
+    deleting packages or attempting Internet downloads.
 
 .EXAMPLE
     pwsh -File scripts/setup-runner.ps1

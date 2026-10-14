@@ -42,6 +42,9 @@ Describe 'Setup-Profile - injects the Automation module import (regression for p
         $content | Should -Match '# Image Build Automation module'
         $content | Should -Match 'Automation\.psd1'
         $content | Should -Match 'Import-Module'
+        $content | Should -Match '\$env:PSModulePath\s*='
+        $managedBlock = $content.Substring($content.IndexOf('# Image Build Automation module'))
+        $managedBlock.IndexOf('$env:PSModulePath =') | Should -BeLessThan $managedBlock.IndexOf('Import-Module')
     }
 
     It 'Should pre-load HPEOneView.1000 only on Windows (guarded by $IsWindows)' {
@@ -57,6 +60,12 @@ Describe 'Setup-Profile - injects the Automation module import (regression for p
         $content | Should -Match 'HPEOneView\.1000'
         # Must be guarded so it never runs on Linux/macOS where the module cannot load.
         $content | Should -Match 'if\s*\(\s*\$IsWindows'
+        ([regex]::Matches($content, '(?m)^# Image Build Automation module')).Count | Should -Be 1
+        ([regex]::Matches($content, '(?m)^# End Image Build Automation module')).Count | Should -Be 1
+        $tokens = $null
+        $parseErrors = $null
+        $null = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$tokens, [ref]$parseErrors)
+        $parseErrors | Should -BeNullOrEmpty
     }
 }
 
@@ -82,6 +91,13 @@ Describe 'Setup-Profile - a fresh shell that sources the profile can resolve Con
         $checker = Join-Path $env:SETUPPROFILE_TEMP 'check.ps1'
         @"
 . '$($profile)'
+. '$($profile)'
+`$moduleRoot = Join-Path '$($env:SETUPPROFILE_REPOROOT)' 'scripts/modules'
+`$modulePaths = @(`$env:PSModulePath -split [regex]::Escape([IO.Path]::PathSeparator))
+if (`$modulePaths[0] -ne `$moduleRoot -or @(`$modulePaths | Where-Object { `$_ -eq `$moduleRoot }).Count -ne 1) {
+    Write-Output 'OFFLINE_PATH_FAILED'; exit 3
+}
+Write-Output 'OFFLINE_PATH_OK'
 `$env:AUTOMATED_MODE = 'true'
 `$cmd = Get-Command Connect-OneView -ErrorAction SilentlyContinue
 if (-not `$cmd) { Write-Output 'MISSING'; exit 2 }
@@ -98,6 +114,6 @@ Write-Output 'DRYRUN_OK'
         $result = Receive-Job $job
         $result | Should -Contain 'RESOLVED'
         $result | Should -Contain 'DRYRUN_OK'
+        $result | Should -Contain 'OFFLINE_PATH_OK'
     }
 }
-

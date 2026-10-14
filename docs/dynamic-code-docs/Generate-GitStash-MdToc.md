@@ -1,6 +1,6 @@
 ---
 source:  ./scripts/Generate-GitStash-MdToc.ps1
-generated: 2026-10-01
+generated: 2026-10-14
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 

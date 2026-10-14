@@ -1,10 +1,36 @@
 # Offline HPE OneView iLO SSO Deployment Runbook
 
+<a id="top"></a>
+
+## Table of Contents
+
+- [Purpose](#purpose)
+- [Important command names](#important-command-names)
+- [1. Open PowerShell on the client test server](#1-open-powershell-on-the-client-test-server)
+- [2. Prepare the offline module automatically](#2-prepare-the-offline-module-automatically)
+- [3. Confirm the bundled HPE OneView module is discoverable](#3-confirm-the-bundled-hpe-oneview-module-is-discoverable)
+- [4. Import the automation module](#4-import-the-automation-module)
+- [5. Connect to HPE OneView](#5-connect-to-hpe-oneview)
+- [6. Confirm the OneView iLO SSO command path](#6-confirm-the-oneview-ilo-sso-command-path)
+- [7. Run Configure-PhysicalBuild](#7-run-configure-physicalbuild)
+- [8. Do not use these unsafe forms](#8-do-not-use-these-unsafe-forms)
+- [9. Troubleshooting](#9-troubleshooting)
+  - [`Get-OVServer` or `Get-OVIloSso` is not recognized](#get-ovserver-or-get-ovilosso-is-not-recognized)
+  - [`OneView iLO SSO is unavailable`](#oneview-ilo-sso-is-unavailable)
+  - [`401 Unauthorized`](#401-unauthorized)
+  - [No Internet access](#no-internet-access)
+- [10. Evidence to capture without exposing secrets](#10-evidence-to-capture-without-exposing-secrets)
+- [todays](#todays)
+
+<a id="purpose"></a>
+
 ## Purpose
 
 Use this procedure on the regulated client test server where the host has no Internet access.
 
 The workflow uses the bundled offline HPE OneView module and OneView-issued iLO SSO. It does **not** use the OneView username/password as a local iLO account and does **not** place an iLO password on the command line.
+
+<a id="important-command-names"></a>
 
 ## Important command names
 
@@ -28,6 +54,8 @@ The repository copy is located at:
 scripts/modules/HPEOneView.1000/10.0.4265.2221/
 ```
 
+<a id="1-open-powershell-on-the-client-test-server"></a>
+
 ## 1. Open PowerShell on the client test server
 
 Use Windows PowerShell 5.1 or PowerShell 7 running on the Windows automation host. Run from the repository root:
@@ -37,6 +65,8 @@ Set-Location 'C:\path\to\image-build-automation'
 ```
 
 Replace the path with the actual repository path on the client server.
+
+<a id="2-prepare-the-offline-module-automatically"></a>
 
 ## 2. Prepare the offline module automatically
 
@@ -64,6 +94,8 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-runner.ps1
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-Profile.ps1
 ```
 
+<a id="3-confirm-the-bundled-hpe-oneview-module-is-discoverable"></a>
+
 ## 3. Confirm the bundled HPE OneView module is discoverable
 
 Run:
@@ -80,6 +112,8 @@ scripts\modules\HPEOneView.1000\10.0.4265.2221
 ```
 
 If no module is returned, stop and correct the repository/module path before attempting a build.
+
+<a id="4-import-the-automation-module"></a>
 
 ## 4. Import the automation module
 
@@ -103,6 +137,8 @@ Source: HPEOneView.1000
 ```
 
 If either command is missing, do not continue. The iLO SSO step cannot work until the correct HPE module is loaded.
+
+<a id="5-connect-to-hpe-oneview"></a>
 
 ## 5. Connect to HPE OneView
 
@@ -141,6 +177,8 @@ Get-OVServer |
     Select-Object Name, SerialNumber, State, PowerState, Status
 ```
 
+<a id="6-confirm-the-oneview-ilo-sso-command-path"></a>
+
 ## 6. Confirm the OneView iLO SSO command path
 
 Run this read-only verification:
@@ -157,6 +195,8 @@ $iloSso | Select-Object RootUri, @{Name='HasAuthToken'; Expression = {
 The result must contain a OneView-issued iLO SSO connection object, including `RootUri` and `X-Auth-Token` properties. Do not print or save the token in logs or tickets.
 
 If this command fails, capture only the error message and command/module versions. Do not disclose the token.
+
+<a id="7-run-configure-physicalbuild"></a>
 
 ## 7. Run Configure-PhysicalBuild
 
@@ -188,6 +228,8 @@ APPROVE
 7. After approval, the build obtains the OneView iLO SSO session using `Get-OVServer` and `Get-OVIloSso`.
 8. The build performs iLO status, virtual-media, one-time-boot, reset, and eject operations using the SSO token.
 
+<a id="8-do-not-use-these-unsafe-forms"></a>
+
 ## 8. Do not use these unsafe forms
 
 Do not run:
@@ -207,7 +249,11 @@ Do not place passwords in:
 
 For a OneView-managed server, the preferred authentication is the OneView SSO flow. A direct iLO `PSCredential` should only be used for an unmanaged server or if the client explicitly approves that fallback.
 
+<a id="9-troubleshooting"></a>
+
 ## 9. Troubleshooting
+
+<a id="get-ovserver-or-get-ovilosso-is-not-recognized"></a>
 
 ### `Get-OVServer` or `Get-OVIloSso` is not recognized
 
@@ -235,6 +281,8 @@ Import-Module HPEOneView.1000 -Force
 Get-Command Get-OVServer, Get-OVIloSso
 ```
 
+<a id="oneview-ilo-sso-is-unavailable"></a>
+
 ### `OneView iLO SSO is unavailable`
 
 Check:
@@ -245,6 +293,8 @@ Get-Module HPEOneView.1000
 ```
 
 The module must be loaded in the same PowerShell process running `Configure-PhysicalBuild`.
+
+<a id="401-unauthorized"></a>
 
 ### `401 Unauthorized`
 
@@ -259,9 +309,13 @@ $server | Get-OVIloSso -IloRestSession -ErrorAction Stop
 
 If that fails, engage the OneView administrator. The OneView-managed iLO account is appliance-managed and should not be manually replaced.
 
+<a id="no-internet-access"></a>
+
 ### No Internet access
 
 No Internet connection is required for the bundled module. Do not run `Install-Module` or `Save-Module` on the regulated client. Confirm that the repository bundle is present and that the local module path points to `scripts/modules`.
+
+<a id="10-evidence-to-capture-without-exposing-secrets"></a>
 
 ## 10. Evidence to capture without exposing secrets
 
@@ -281,7 +335,7 @@ Do not record:
 - Session cookies
 - Full request headers
 
-
+<a id="todays"></a>
 
 ## todays
 
@@ -306,4 +360,3 @@ https://10.30.54.22/redfish/v1
 A successful OneView connection does not prove that the same account is a valid local iLO account. The read-only Invoke-IloRedfish -Action Status result is the clean evidence to provide to the client.
 
 104.9 t/s
-

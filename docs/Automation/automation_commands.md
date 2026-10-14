@@ -19,7 +19,7 @@
   - [ISO path requirements (no local drives)](#iso-path-requirements-no-local-drives)
 - [Physical Server Build (End-to-End)](#physical-server-build-end-to-end)
   - [Configure build (4-eye review)](#configure-build-4-eye-review)
-  - [Create manual iLO credentials (Get-Credential)](#create-manual-ilo-credentials)
+  - [Create manual iLO credentials (Get-Credential)](#create-manual-ilo-credentials-get-credential)
   - [Full build (most common)](#full-build-most-common)
   - [ISO & Firmware parameter options](#iso-firmware-parameter-options)
   - [Dry run (validate without changing anything)](#dry-run-validate-without-changing-anything)
@@ -645,7 +645,7 @@ Configure-PhysicalBuild -ServerIdentifier srv01 -OneViewHost oneview.corp.local 
 
 ---
 
-<a id="create-manual-ilo-credentials"></a>
+<a id="create-manual-ilo-credentials-get-credential"></a>
 
 ### Create manual iLO credentials (Get-Credential)
 

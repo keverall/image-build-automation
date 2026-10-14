@@ -1,10 +1,10 @@
 ---
-source:  ./scripts/setup-runner.ps1
-generated: 2026-10-01
+source:  ./src/powershell/Automation/Public/Invoke-IloRedfish.ps1
+generated: 2026-10-14
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
-# Copy-ModuleToUserPath
+# Test-IloAuthentication
 
 <a id="top"></a>
 
@@ -17,7 +17,7 @@ auto_generated_by: scripts/Generate-PSDocs.ps1
 
 ## Description
 
-Copies module to user path.
+Non-destructive iLO/OneView authentication and API path diagnostic.
 
 <a id="original-comment-based-help"></a>
 
@@ -25,7 +25,7 @@ Copies module to user path.
 
 ```powershell
 .SYNOPSIS
-        Copies module to user path.
+        Non-destructive iLO/OneView authentication and API path diagnostic.
 ```
 
 ---

@@ -1,3 +1,5 @@
+## Table of Contents
+
 Run this on the Windows client after:
 
 ```powershell

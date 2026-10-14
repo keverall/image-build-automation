@@ -82,6 +82,7 @@ $ScriptDir = $PSScriptRoot
 $RepoRoot = Split-Path $ScriptDir -Parent
 $AutomationPath = Join-Path $RepoRoot 'src/powershell/Automation'
 $AutomationModule = Join-Path $AutomationPath 'Automation.psd1'
+$OfflineModuleRoot = Join-Path $RepoRoot 'scripts/modules'
 
 # The block to add to profiles (defined early since it's used in Set-ContentProfilePair)
 # NOTE: This block intentionally does NOT define a prompt function. The
@@ -93,6 +94,12 @@ $AutomationModule = Join-Path $AutomationPath 'Automation.psd1'
 $ProfileBlock = @"
 
 # Image Build Automation module
+`$offlineModuleRoot = '$OfflineModuleRoot'
+if (Test-Path `$offlineModuleRoot -PathType Container) {
+    `$modulePathSeparator = [IO.Path]::PathSeparator
+    `$otherModulePaths = @(`$env:PSModulePath -split [regex]::Escape(`$modulePathSeparator) | Where-Object { `$_ -and `$_ -ne `$offlineModuleRoot })
+    `$env:PSModulePath = (@(`$offlineModuleRoot) + `$otherModulePaths) -join `$modulePathSeparator
+}
 `$automationModulePath = '$AutomationModule'
 if (Test-Path `$automationModulePath) {
     Import-Module `$automationModulePath -WarningAction SilentlyContinue
@@ -106,7 +113,13 @@ if (Test-Path `$automationModulePath) {
 if (`$IsWindows) {
     Import-Module HPEOneView.1000 -ErrorAction SilentlyContinue
 }
+# End Image Build Automation module
 "@
+
+# Match the entire managed block on later updates, or a legacy unmarked block.
+# A match evaluator inserts PowerShell literally: replacement strings interpret
+# $_ as the entire input and would corrupt a profile containing a pipeline.
+$ProfileBlockPattern = '(?ms)^# Image Build Automation module(?:.*?^# End Image Build Automation module[^\r\n]*(?:\r?\n|$)|.*?(?=\r?\n\r?\n#|\r?\n\z|\z))'
 
 if (-not (Test-Path $AutomationModule)) {
     Write-Color $Red "ERROR: Automation module not found at: $AutomationModule"
@@ -243,7 +256,7 @@ function Set-ContentProfilePair {
     # Check if live profile already has the Automation block - just update if so
     if ($liveContent -match '# Image Build Automation module') {
         Write-Color $Yellow "[setup] Profile already has Automation module - updating path..."
-        $NewContent = $liveContent -replace '(?s)# Image Build Automation module.*?(?=\n\n#|\n$|$)', $ProfileBlock.Trim()
+        $NewContent = [regex]::Replace($liveContent, $ProfileBlockPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $ProfileBlock.Trim() + "`n" })
         $NewContent | Set-Content $LivePath -Encoding UTF8
         Write-Color $Green "[setup] ✓ Updated Automation module path"
         return
@@ -252,12 +265,7 @@ function Set-ContentProfilePair {
     # Merge mode: append Automation block to existing profile (preserve user customizations)
     if ($Merge) {
         Write-Color $Cyan "[setup] Merging Automation module into existing profile..."
-        $merged = $liveContent.TrimEnd() + "`n`n# Image Build Automation module`n"
-        $merged += " `$automationModulePath = '$AutomationModule'`n"
-        $merged += " if (Test-Path `$automationModulePath) {`n"
-        $merged += "     Import-Module `$automationModulePath -WarningAction SilentlyContinue`n"
-        $merged += " }`n"
-        $merged += " if (`$IsWindows) { Import-Module HPEOneView.1000 -ErrorAction SilentlyContinue }`n"
+        $merged = $liveContent.TrimEnd() + "`n`n" + $ProfileBlock.Trim()
         $merged | Set-Content $LivePath -Encoding UTF8
         Write-Color $Green "[setup] ✓ Added Automation module (existing customizations preserved)"
     } elseif ($ForceOverwrite) {
@@ -319,7 +327,7 @@ if (-not $Uninstall -and -not $SkipTemplateCopy) {
             $vscContent = if (Test-Path $dest) { Get-Content $dest -Raw } else { $null }
             if ($vscContent -match '# Image Build Automation module') {
                 Write-Color $Yellow "[setup] VS Code profile already has Automation module - updating path..."
-                $NewContent = $vscContent -replace '(?s)# Image Build Automation module.*?(?=\n\n#|\n$|$)', $ProfileBlock.Trim()
+                $NewContent = [regex]::Replace($vscContent, $ProfileBlockPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $ProfileBlock.Trim() + "`n" })
                 $NewContent | Set-Content $dest -Encoding UTF8
                 Write-Color $Green "[setup] ✓ Updated VS Code profile"
             } else {
@@ -376,7 +384,7 @@ foreach ($ProfilePath in $ProfilePaths) {
             $Content = Get-Content $ProfilePath -Raw
             if ($Content -match '# Image Build Automation module') {
                 if (-not $DryRun) {
-                    $NewContent = $Content -replace '(?s)# Image Build Automation module.*?(?=\n\n#|\n$|$)', ''
+                    $NewContent = [regex]::Replace($Content, $ProfileBlockPattern, '')
                     $NewContent | Set-Content $ProfilePath -Encoding UTF8
                     Write-Color $Green "[setup] ✓ Removed from $ProfileName"
                 } else {
@@ -398,7 +406,7 @@ foreach ($ProfilePath in $ProfilePaths) {
             Write-Color $Yellow "[setup] Updating Automation module path in $ProfileName..."
             if (-not $DryRun) {
                 # Replace the old block with the new one to ensure paths are updated if the repo was moved
-                $NewContent = $Content -replace '(?s)# Image Build Automation module.*?(?=\n\n#|\n$|$)', $ProfileBlock.Trim()
+                $NewContent = [regex]::Replace($Content, $ProfileBlockPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $ProfileBlock.Trim() + "`n" })
                 $NewContent | Set-Content $ProfilePath -Encoding UTF8
                 Write-Color $Green "[setup] ✓ Updated in $ProfileName"
             } else {

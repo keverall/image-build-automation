@@ -3,10 +3,11 @@
     Setup-Runner.ps1 - PowerShell runner environment setup.
 
 .DESCRIPTION
-    Fully offline-capable setup script that installs required PowerShell modules
+    Offline-only, non-destructive setup script that verifies required PowerShell modules
     (Pester, PSScriptAnalyzer, PlatyPS) and binary tools (Oh My Posh, GNU make,
-    checkmake). Bundled copies live in scripts/modules/; if absent it attempts
-    a PSGallery download via Save-Module with no admin rights needed.
+    checkmake). Bundled copies live in scripts/modules/ and are imported by
+    explicit manifest path. Missing or unusable dependencies are reported without
+    deleting packages or attempting Internet downloads.
 
 .EXAMPLE
     pwsh -File scripts/setup-runner.ps1
@@ -15,8 +16,7 @@
 # =============================================================================
 # HPE ProLiant Windows Server ISO Automation - PowerShell Runner Setup
 # =============================================================================
-# Fully offline-capable.  Bundled copies live in scripts/modules/; if absent we
-# attempt a PSGallery download via Save-Module (no admin rights needed).
+# Offline-only. Never delete a dependency or attempt an Internet download.
 # =============================================================================
 
 using namespace System
@@ -41,7 +41,7 @@ $REQUIRED_MODULES = @(
     # The official OneView virtual-media automation uses HPRESTCmdlets for
     # iLO REST/SSO operations rather than reimplementing the session client.
     @{ Name = 'HPRESTCmdlets';     Version = '1.2.0.0'; WindowsOnly = $true; OfflineOnly = $true },
-    @{ Name = 'OperationsManager';Version = '1.0' }   # floor only; real SCOM versions are 10.x
+    @{ Name = 'OperationsManager';Version = '1.0'; WindowsOnly = $true }   # installed with SCOM; real versions are 10.x
 )
 
 # Colours (ANSI - works in all hosts that support colour)
@@ -107,35 +107,25 @@ function Ensure-OfflineModulePath {
     .DESCRIPTION
         Adds scripts/modules to the current and persistent user PSModulePath. This
         is required on regulated/offline Windows hosts where PSGallery is unavailable.
-        The HPE OneView module is Windows-only; Linux test runners retain their
-        existing behavior and do not attempt to import it.
+        Import verification is performed separately, using explicit manifest paths.
     #>
     $isWin = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
         $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
     $moduleRoot = (Resolve-Path $VENDOR_MODULES_DIR).Path
     $separator = [IO.Path]::PathSeparator
     $entries = @($env:PSModulePath -split [regex]::Escape($separator) | Where-Object { $_ })
-    if ($entries -notcontains $moduleRoot) {
-        $env:PSModulePath = $moduleRoot + $separator + ($entries -join $separator)
+    if ($entries.Count -eq 0 -or $entries[0] -ne $moduleRoot) {
+        $env:PSModulePath = (@($moduleRoot) + @($entries | Where-Object { $_ -ne $moduleRoot })) -join $separator
         Write-OK "Added offline module path for this session: $moduleRoot"
     }
     if ($isWin) {
         $userPath = [Environment]::GetEnvironmentVariable('PSModulePath', 'User')
         $userEntries = @($userPath -split [regex]::Escape($separator) | Where-Object { $_ })
-        if ($userEntries -notcontains $moduleRoot) {
-            $newUserPath = $moduleRoot + $separator + ($userEntries -join $separator)
+        if ($userEntries.Count -eq 0 -or $userEntries[0] -ne $moduleRoot) {
+            $newUserPath = (@($moduleRoot) + @($userEntries | Where-Object { $_ -ne $moduleRoot })) -join $separator
             [Environment]::SetEnvironmentVariable('PSModulePath', $newUserPath, 'User')
             Write-OK "Persisted offline module path for future sessions: $moduleRoot"
         }
-        Import-Module HPEOneView.1000 -Force -ErrorAction Stop
-        foreach ($cmdName in @('Get-OVServer', 'Get-OVIloSso')) {
-            if (-not (Get-Command $cmdName -ErrorAction SilentlyContinue)) {
-                throw "Bundled HPEOneView.1000 loaded but '$cmdName' is unavailable."
-            }
-        }
-        Write-OK 'HPEOneView.1000 loaded with Get-OVServer and Get-OVIloSso available'
-    } else {
-        Write-Log 'Non-Windows platform - HPEOneView module discovery configured but import skipped'
     }
 }
 
@@ -174,7 +164,7 @@ function Test-PowerShellVersion {
 }
 
 # =============================================================================
-# MODULE INSTALLATION (offline-first, PSGallery fallback via Save-Module)
+# MODULE VERIFICATION (local manifests only; no removal or downloads)
 # =============================================================================
 
 function Get-BundledModulePath {
@@ -231,48 +221,19 @@ function Repair-TempModulesDirectory {
 
     if (-not (Test-Path $TEMP_MODULES_DIR -PathType Container)) { return }
 
-    Write-Warn "Found legacy temp-modules directory; moving contents into scripts/modules"
+    Write-Warn "Found legacy temp-modules directory; preserving originals and copying only absent module directories"
     New-Item -ItemType Directory -Force -Path $VENDOR_MODULES_DIR | Out-Null
 
     foreach ($module in Get-ChildItem -Path $TEMP_MODULES_DIR -Directory -ErrorAction SilentlyContinue) {
         $dest = Join-Path $VENDOR_MODULES_DIR $module.Name
         if (Test-Path $dest) {
-            Write-Warn "Existing $dest found; removing stale temp copy $module.FullName"
-            Remove-Item -Recurse -Force $module.FullName -ErrorAction SilentlyContinue
+            Write-Log "Existing $dest retained; legacy copy $($module.FullName) also retained"
             continue
         }
 
-        Write-Log "Moving $module.FullName -> $dest"
-        Move-Item -Path $module.FullName -Destination $dest -Force
+        Write-Log "Copying $($module.FullName) -> $dest (source retained)"
+        Copy-Item -LiteralPath $module.FullName -Destination $dest -Recurse -ErrorAction Stop
     }
-
-    if (-not (Get-ChildItem -Path $TEMP_MODULES_DIR -Force -ErrorAction SilentlyContinue)) {
-        Remove-Item -Recurse -Force $TEMP_MODULES_DIR -ErrorAction SilentlyContinue
-        Write-OK "Removed legacy temp-modules directory"
-    }
-}
-
-function Copy-ModuleToUserPath {
-    <#
-    .SYNOPSIS
-        Copies module to user path.
-    #>
-
-    param([string]$Name, [string]$Version, [string]$SrcDir)
-    
-    # Extract the actual module name from the .psd1 file in the source
-    # This ensures the directory name matches the manifest (case-sensitive on Linux)
-    $psd1File = Get-ChildItem -Path $SrcDir -Filter "*.psd1" -ErrorAction SilentlyContinue | Select-Object -First 1
-    $actualName = if ($psd1File) { $psd1File.BaseName } else { $Name }
-    
-    $dest = Join-Path (Get-UserModulePath) "$actualName/$Version"
-    New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
-    
-    # Copy CONTENTS of source directory, not the directory itself
-    Get-ChildItem -Path $SrcDir | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
-    }
-    Write-OK "$actualName $Version installed"
 }
 
 function Test-ModuleImportIsolated {
@@ -282,21 +243,35 @@ function Test-ModuleImportIsolated {
 
     .DESCRIPTION
         Some Windows PowerShell modules load native/.NET assemblies during
-        Import-Module.  Those assemblies can remain locked for the lifetime of
-        the process, making it impossible for this setup process to replace a
-        failed module import.  The child process exits before the caller tries
-        to remove or overwrite the module directory.
+        Import-Module. Verify in a child process without locking assemblies in
+        setup or misclassifying runtime/permission/license errors as corruption.
+        No module directory is removed or overwritten when an import fails.
     #>
 
-    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][version]$Version)
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][version]$Version,
+        [Parameter(Mandatory)][string]$ManifestPath
+    )
 
     $pwsh = Join-Path $PSHOME 'pwsh.exe'
     if (-not (Test-Path $pwsh)) { $pwsh = (Get-Command pwsh -ErrorAction Stop).Source }
 
-    # Module names and versions are internal, trusted values from the manifest.
-    $command = "Import-Module -Name '$Name' -RequiredVersion '$Version' -ErrorAction Stop"
-    & $pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $command *> $null
-    return ($LASTEXITCODE -eq 0)
+    $quotedPath = $ManifestPath.Replace("'", "''")
+    $command = "`$ErrorActionPreference = 'Stop'; Import-Module -Name '$quotedPath' -ErrorAction Stop -WarningAction SilentlyContinue"
+    $requiredCommands = switch ($Name) {
+        'HPEOneView.1000' { @('Get-OVServer', 'Get-OVIloSso') }
+        'HPRESTCmdlets' { @('Connect-HPREST', 'Get-HPRESTDataRaw') }
+        default { @() }
+    }
+    foreach ($requiredCommand in $requiredCommands) {
+        $command += "; Get-Command '$requiredCommand' -Module '$Name' -ErrorAction Stop | Out-Null"
+    }
+    $details = & $pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $command 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Local import failed for $Name $Version from '$ManifestPath'. Files were preserved. Import error: $($details -join [Environment]::NewLine)"
+    }
+    return $true
 }
 
 function Install-RequiredModule {
@@ -307,70 +282,33 @@ function Install-RequiredModule {
 
     param([string]$Name, [string]$Version)
 
-    # 1. Already installed and importable?
-    $existing = Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue |
-        Sort-Object Version -Descending | Select-Object -First 1
-    if ($existing -and $existing.Version -ge [version]$Version) {
-        try {
-            if ($Name -eq 'OperationsManager') {
-                # Do not load the SCOM DLL into this process: a failed import
-                # would leave it locked while the repair path copies the bundle.
-                if (-not (Test-ModuleImportIsolated -Name $Name -Version $existing.Version)) {
-                    throw "Isolated import failed"
-                }
-            } else {
-                Import-Module $Name -RequiredVersion $existing.Version -ErrorAction Stop -WarningAction SilentlyContinue
-            }
-            if ($Name -eq 'Pester') {   # well-known silent corruption
-                $dll = Join-Path (Split-Path $existing.Path) 'bin\net8.0\Pester.dll'
-                if (-not (Test-Path $dll)) { throw "Pester.dll missing" }
-            }
-            Write-OK "$Name $($existing.Version) already verified"
-            return
-        } catch {
-            Write-Warn "$Name $($existing.Version) corrupt - removing and reinstalling"
-            # Safely calculate the module directory (2 levels up from .psd1)
-            $versionDir = Split-Path $existing.Path -Parent
-            $moduleDir = Split-Path $versionDir -Parent
-            # Verify this is actually a module directory before deleting
-            $containsPsd1 = Get-ChildItem -Path $versionDir -Filter "*.psd1" -ErrorAction SilentlyContinue
-            if ($containsPsd1 -and (Test-Path $moduleDir -PathType Container)) {
-                Write-Log "Removing corrupt module directory: $moduleDir"
-                Remove-Item -Recurse -Force $moduleDir -ErrorAction Stop
-                if (Test-Path $moduleDir -PathType Container) {
-                    throw "Module directory still exists after removal: $moduleDir"
-                }
-            } else {
-                Write-Warn "Cannot verify module directory structure, skipping removal: $moduleDir"
-            }
-        }
-    }
-
-    # 2. Bundled copy in scripts/modules/ ?
+    # Always select the approved repository copy before any stale user installation.
     $bundled = Get-BundledModulePath -Name $Name -Version $Version
     if ($bundled) {
-        Write-Log "Installing $Name $($bundled.ActualVersion) from bundle"
-        Copy-ModuleToUserPath -Name $Name -Version $bundled.ActualVersion -SrcDir $bundled.Path
+        $manifest = Get-ChildItem -LiteralPath $bundled.Path -Filter '*.psd1' -File -ErrorAction Stop |
+            Where-Object { $_.BaseName -ieq $Name } | Select-Object -First 1
+        if (-not $manifest) {
+            throw "Bundled $Name at '$($bundled.Path)' has no matching module manifest. Files were preserved; restore the complete approved package through Git. No download was attempted."
+        }
+        $metadata = Import-PowerShellDataFile -LiteralPath $manifest.FullName -ErrorAction Stop
+        if ([version]$metadata.ModuleVersion -lt [version]$Version) {
+            throw "Bundled $Name version $($metadata.ModuleVersion) is older than required $Version. Files were preserved; supply the approved package offline."
+        }
+        $null = Test-ModuleImportIsolated -Name $Name -Version $metadata.ModuleVersion -ManifestPath $manifest.FullName
+        Write-OK "$Name $($metadata.ModuleVersion) verified from local manifest: $($manifest.FullName)"
         return
     }
 
-    # 3. PSGallery fallback (Save-Module → no admin rights required)
-    Write-Log "No bundled $Name $Version. Downloading from PSGallery…"
-    try {
-        Save-Module -Name $Name -MinimumVersion $Version -Path $VENDOR_MODULES_DIR `
-            -Force -Repository PSGallery -ErrorAction Stop
-        Repair-TempModulesDirectory
-        Write-OK "$Name saved to scripts/modules/$Name/"
-        $bundled = Get-BundledModulePath -Name $Name -Version $Version
-        if ($bundled) {
-            Copy-ModuleToUserPath -Name $Name -Version $bundled.ActualVersion -SrcDir $bundled.Path
-            return
-        }
-    } catch {
-        Repair-TempModulesDirectory
-        Write-Err "PSGallery download failed: $($_.Exception.Message)"
+    # An existing local installation (for example SCOM) is acceptable, but must
+    # never be removed merely because Import-Module fails in this runtime.
+    $existing = Get-Module $Name -ListAvailable -ErrorAction SilentlyContinue |
+        Sort-Object Version -Descending | Select-Object -First 1
+    if ($existing -and $existing.Version -ge [version]$Version) {
+        $null = Test-ModuleImportIsolated -Name $Name -Version $existing.Version -ManifestPath $existing.Path
+        Write-OK "$Name $($existing.Version) verified from existing local installation"
+        return
     }
-    Write-Err "To fix: copy '$Name' from a SCOM server / connected machine to scripts/modules/$Name/<version>/"
+    throw "Offline setup cannot find $Name $Version or newer. Supply the complete approved package in scripts/modules/$Name/<version>/ through Git or install it through your approved offline process. No files were deleted and no download was attempted."
 }
 
 function Install-RequiredModules {
@@ -379,7 +317,7 @@ function Install-RequiredModules {
         Installs required modules.
     #>
 
-    Write-Log "Installing PowerShell modules…"
+    Write-Log "Verifying local PowerShell modules (offline; files are preserved)…"
     $onWindows = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
         $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
     foreach ($m in $REQUIRED_MODULES) {
@@ -514,62 +452,15 @@ function Install-Checkmake {
     $dest  = Join-Path $BIN_DIR $exe
 
     if (Find-LocalBinary -BinaryName $exe) {
-        if (Test-ValidExecutable -Path $dest) {
+        $candidate = if (Test-Path -LiteralPath $dest) { $dest } else { (Get-Command $exe -ErrorAction Stop).Source }
+        if (Test-ValidExecutable -Path $candidate) {
             Write-OK "checkmake found"
             return
         }
-        Write-Warn "checkmake at $dest appears corrupt - re-downloading"
-        Remove-Item $dest -Force -ErrorAction SilentlyContinue
+        Write-Warn "checkmake at '$candidate' is not valid for this platform. File retained; supply an approved executable offline."
+        return
     }
-
-    $os    = if ($isWin)         { 'windows' }
-             elseif ($IsLinux)   { 'linux' }
-             elseif ($IsMacOS)   { 'darwin' } else { 'windows' }
-    $arch  = if ($isWin) {
-        if ($env:PROCESSOR_ARCHITECTURE -match 'ARM64') { 'arm64' }
-        elseif ($env:PROCESSOR_ARCHITECTURE -match 'X86') { '386' } else { 'amd64' }
-    } else {
-        try { if ((& uname -m 2>$null) -match 'aarch64|arm64') { 'arm64' } else { 'amd64' } } catch { 'amd64' }
-    }
-    $ver = '0.2.2'
-
-    $urls = @(
-        "https://github.com/mrtazz/checkmake/releases/download/$ver/checkmake-$ver.$os.$arch"
-    )
-    try {
-        $apiResp = Invoke-RestMethod -Uri 'https://api.github.com/repos/mrtazz/checkmake/releases/latest' -UseBasicParsing -TimeoutSec 10 -ErrorAction SilentlyContinue
-        if ($apiResp.tag_name) {
-            $latestVer = $apiResp.tag_name.TrimStart('v')
-            if ($latestVer -ne $ver) {
-                $urls += "https://github.com/mrtazz/checkmake/releases/download/$latestVer/checkmake-$latestVer.$os.$arch"
-            }
-        }
-    } catch { Write-Log "Could not query latest checkmake release - using pinned v$ver" }
-
-    New-Item -ItemType Directory -Force -Path $BIN_DIR | Out-Null
-    $downloaded = $false
-    foreach ($url in $urls) {
-        try {
-            Write-Log "Downloading checkmake from $url …"
-            Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -ErrorAction Stop
-            if (Test-ValidExecutable -Path $dest) {
-                if ($os -ne 'windows') { & chmod +x $dest 2>$null }
-                Add-BinToPath -Dir $BIN_DIR
-                Write-OK "checkmake downloaded"
-                $downloaded = $true
-                break
-            }
-            Write-Warn "Downloaded file is not a valid executable - trying next URL"
-            Remove-Item $dest -Force -ErrorAction SilentlyContinue
-        } catch {
-            Write-Warn "Download failed: $($_.Exception.Message)"
-        }
-    }
-
-    if (-not $downloaded) {
-        Write-Warn "checkmake download failed. Install manually to $dest"
-        Write-Warn "  Manual download: https://github.com/mrtazz/checkmake/releases"
-    }
+    Write-Warn "Optional checkmake not found. Supply an approved executable at '$dest' offline. No download was attempted."
 }
 
 # =============================================================================
@@ -582,10 +473,16 @@ function Show-Summary {
         Shows summary.
     #>
 
+    $onWindows = $IsWindows -or $PSVersionTable.Platform -eq 'Win32NT' -or
+        $PSVersionTable.PSVersion.Major -le 5 -or $null -eq $PSVersionTable.Platform
     $ok = ($REQUIRED_MODULES | ForEach-Object {
+        if ($_.WindowsOnly -and -not $onWindows) {
+            [pscustomobject]@{ Name = $_.Name; Version = 'SKIPPED (Windows-only)'; Skipped = $true }
+            return
+        }
         $m = Get-Module $_.Name -ListAvailable -ErrorAction SilentlyContinue |
              Sort-Object Version -Descending | Select-Object -First 1
-        [pscustomobject]@{ Name = $_.Name; Version = if ($m) { $m.Version } else { '- MISSING' } }
+        [pscustomobject]@{ Name = $_.Name; Version = if ($m) { $m.Version } else { '- MISSING' }; Skipped = $false }
     })
     Write-Output ""
     Write-Output "${C_GREEN}╔══════════════════════════════════════════════════════╗${C_RESET}"
@@ -593,7 +490,7 @@ function Show-Summary {
     Write-Output "${C_GREEN}╚══════════════════════════════════════════════════════╝${C_RESET}"
     Write-Output ""
     foreach ($item in $ok) {
-        $icon = if ($item.Version -eq '- MISSING') { "${C_RED}✗${C_RESET}" } else { "${C_GREEN}✓${C_RESET}" }
+        $icon = if ($item.Skipped) { "${C_YELLOW}-${C_RESET}" } elseif ($item.Version -eq '- MISSING') { "${C_RED}✗${C_RESET}" } else { "${C_GREEN}✓${C_RESET}" }
         Write-Output "  $icon $($item.Name) $($item.Version)"
     }
     Write-Output ""
@@ -618,8 +515,8 @@ function Main {
     Write-Output ""
     Test-PowerShellVersion
     Repair-TempModulesDirectory
-    Install-RequiredModules
     Ensure-OfflineModulePath
+    Install-RequiredModules
     Install-OhMyPosh
     Install-Make
     Install-Checkmake

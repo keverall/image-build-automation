@@ -11,6 +11,7 @@
 - [Configuration Files](#configuration-files)
   - [`configs/oneview_config.json`](#configsoneview_configjson)
   - [`configs/servers_catalogue.oneview.json`](#configsservers_catalogueoneviewjson)
+- [Required Modules & iLO SSO Flow](#required-modules-ilo-sso-flow)
 - [GitLab CI Integration](#gitlab-ci-integration)
   - [Required GitLab CI/CD Variables (Masked)](#required-gitlab-cicd-variables-masked)
   - [How it works](#how-it-works)
@@ -119,7 +120,7 @@ The session is also automatically closed when the PowerShell session ends.
 }
 ```
 
-<a id="required-modules-and-ilo-sso"></a>
+<a id="required-modules-ilo-sso-flow"></a>
 
 ## Required Modules & iLO SSO Flow
 

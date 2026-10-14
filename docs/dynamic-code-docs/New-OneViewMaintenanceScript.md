@@ -1,6 +1,6 @@
 ---
 source:  ./src/powershell/Automation/Public/New-OneViewMaintenanceScript.ps1
-generated: 2026-10-01
+generated: 2026-10-14
 auto_generated_by: scripts/Generate-PSDocs.ps1
 ---
 
@@ -31,7 +31,7 @@ Build a PowerShell script for HPE OneView maintenance mode operations.
 | `-Appliance` _(Aliases: -Appl)_ | OneView appliance hostname or IP. |
 | `-ScopeName` _(Aliases: -Scope)_ | OneView scope name containing server hardware resources. |
 | `-Operation` _(Aliases: -Op)_ | 'enable' or 'disable' maintenance mode. |
-| `-Async` | Use -Async parameter for bulk operations (default: true). |
+| `-Async` | Deprecated and ignored. Maintenance mode is now written directly through the OneView REST API (the HPEOneView Enable-/Disable-OVMaintenanceMode cmdlets fail with 'Cannot find an overload for "_MakeRequest" and the argument count: "3"'), which is always synchronous. The parameter is retained for backwards compatibility. |
 | `-ModuleName` | PowerShell module name for HPE OneView (required). Format: HPEOneView.<major><minor> for OneView <major>.<minor> library (e.g., HPEOneView.1000 for OneView 10.00). See https://github.com/HewlettPackard/POSH-HPEOneView |
 
 <a id="examples"></a>
@@ -64,7 +64,10 @@ $ps = New-OneViewMaintenanceScript -Appliance 'oneview.example.com' -ScopeName '
         'enable' or 'disable' maintenance mode.
 
     .PARAMETER Async
-        Use -Async parameter for bulk operations (default: true).
+        Deprecated and ignored. Maintenance mode is now written directly through the
+        OneView REST API (the HPEOneView Enable-/Disable-OVMaintenanceMode cmdlets fail
+        with 'Cannot find an overload for "_MakeRequest" and the argument count: "3"'),
+        which is always synchronous. The parameter is retained for backwards compatibility.
 
     .PARAMETER ModuleName
         PowerShell module name for HPE OneView (required).
