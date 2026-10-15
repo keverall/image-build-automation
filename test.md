@@ -72,3 +72,21 @@ $null -ne ('AsyncPipeline' -as [type])               # True = ShowLicense.ps1 ac
 If `AsyncPipeline` is `False` while `HPRESTCmdlets` is loaded, the module was imported by `.psm1` rather than `.psd1` — that's the failure mode to avoid.
 
 One accurate detail for your auth work: `Configure-PhysicalServer`'s SSO path needs **`Get-OVServer` + `Get-OVIloSso`** (`HPEOneView.1000`) and passes the token to `[IloRedfishSession]` which sends `X-Auth-Token`. `HPRESTCmdlets` is the vendor-declared iLO REST dependency that `make setup` requires. Run `Invoke-IloRedfish -Action Status -IloIp <ip> -OneViewHost <host> -OneViewServerName <name>` and read its `Auth_Diagnostics` to see `Token_Source`, `Token_Length`, and `Last_Error`.
+
+
+I confirmed the guard is in HEAD and your working tree is clean — so your server just needs git pull to get it. The run you pasted was against 38045b3e, which predates that fix.
+
+What to do on eiswmgt-19
+git pull
+make setup
+
+# make setup verifies in a child process; do this in YOUR shell:
+Import-Module '.\scripts\modules\HPEOneView.1000\10.0.4265.2221\HPEOneView.1000.psd1' -ErrorAction Stop
+Import-Module '.\scripts\modules\HPRESTCmdlets\1.2.0.0\HPRESTCmdlets.psd1' -ErrorAction Stop
+
+Get-Command Get-OVServer, Get-OVIloSso, Connect-HPREST | Format-Table Name,Module,Version
+$null -ne ('AsyncPipeline' -as [type])    # must be True
+If it breaks again, capture the exact error line — the three above are distinguishable by their first line alone, and that determines which fix applies.
+
+127.2 t/s
+
