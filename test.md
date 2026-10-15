@@ -27,3 +27,48 @@ Line |
      | type name 'AsyncPipeline' already exists.
 make: *** [Makefile:57: setup] Error 1 
    image-build-automation  main                                                                                  
+
+
+No — and it should **not** be imported. Here's the definitive breakdown from the manifest itself.
+
+## What `HPRESTCmdlets.psd1` actually loads
+
+The manifest declares only three relevant keys (no `NestedModules`, no `RequiredAssemblies`, no `FormatsToProcess`, no `TypesToProcess`):
+
+| Manifest key | File | Role |
+|---|---|---|
+| `RootModule = 'HPRESTCmdlets.psm1'` | HPRESTCmdlets.psm1 | The cmdlets |
+| `ScriptsToProcess = @('ShowLicense.ps1')` | ShowLicense.ps1 | Runs **before** RootModule — HPE license acceptance + the `AsyncPipeline` type |
+| `FileList = @(...,'HPRESTExamples.ps1',...)` | — | **Packaging metadata only** |
+
+**PowerShell never executes `FileList` entries.** `HPRESTExamples.ps1` is only listed there (and mentioned in the `Description`) as shipped documentation. Its own content confirms it: 2,510 lines of comment blocks listing cmdlets, plus sample scripts that call `Connect-HPREST` against live devices. It is never loaded, and dot-sourcing it would execute example code that tries to connect to hardware.
+
+## Import the `.psd1`, never the `.psm1`
+
+```powershell
+Import-Module '.\scripts\modules\HPRESTCmdlets\1.2.0.0\HPRESTCmdlets.psd1' -ErrorAction Stop
+```
+
+Importing the `.psm1` directly would:
+- **Bypass HPE's license acceptance** (`ShowLicense.ps1`) — the license file states the module must not be used until accepted;
+- Export *every* function in the file, including internal helpers like `Get-Message` and `Create-ThreadPool`, risking name collisions;
+- Lose version/GUID identity that `make setup` and `Get-CommandHelp` rely on.
+
+`Import-Module HPRESTCmdlets` by name works too once `scripts/modules` is on `$env:PSModulePath` (which `make setup` now does).
+
+## Verify all four layers are resident and usable
+
+```powershell
+Get-Module HPRESTCmdlets, HPEOneView.1000 | Format-Table Name,Version,Path
+
+Get-Command Get-OVServer, Get-OVIloSso `            # auth source (from HPEOneView.1000)
+  | Format-Table Name,Module,Version
+Get-Command Connect-HPREST, Get-HPRESTDataRaw `      # confirms the psd1 loaded fully
+  | Format-Table Name,Module,Version
+
+$null -ne ('AsyncPipeline' -as [type])               # True = ShowLicense.ps1 actually ran
+```
+
+If `AsyncPipeline` is `False` while `HPRESTCmdlets` is loaded, the module was imported by `.psm1` rather than `.psd1` — that's the failure mode to avoid.
+
+One accurate detail for your auth work: `Configure-PhysicalServer`'s SSO path needs **`Get-OVServer` + `Get-OVIloSso`** (`HPEOneView.1000`) and passes the token to `[IloRedfishSession]` which sends `X-Auth-Token`. `HPRESTCmdlets` is the vendor-declared iLO REST dependency that `make setup` requires. Run `Invoke-IloRedfish -Action Status -IloIp <ip> -OneViewHost <host> -OneViewServerName <name>` and read its `Auth_Diagnostics` to see `Token_Source`, `Token_Length`, and `Last_Error`.
