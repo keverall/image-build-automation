@@ -332,3 +332,5 @@ The tracked path still works: `scripts/Setup-Profile.ps1` regenerates the live p
 - Lint passed on 157 files; security gate passed with 0 active code/config findings.
 
 **Not verified:** Windows HPREST import against real hardware, and the live runtime iLO SSO 401. Your `test.log` failure was an import-blocking prerequisite, not proof the 401 is resolved.
+
+jll
