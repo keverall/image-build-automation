@@ -308,3 +308,27 @@ Line |
      | 'C:\Users\adm_98253\products\repos\image-build-automation\scripts\modules\Pester\6.0.1\Pester.Format.ps1xml' because it does not exist.. Verify that a valid value is specified for this field in the 'C:\Users\adm_98253\products\repos\image-build-automation\scripts\modules\Pester\6.0.1\Pester.psd1' file. 
 make: *** [Makefile:57: setup] Error 1 
    image-build-automation  main                                                                             
+The tracked profile generator is correct and already routes through the guarded importer. Work complete.
+
+## Summary
+
+**Fixed the three blockers behind your `eiswmgt-19` failures.**
+
+**1. `make setup` failed on missing `Pester.Format.ps1xml`** — the tracked `scripts/modules/Pester/6.0.1/` package was incomplete. It's now tracked with both format files (byte-identical to the approved vendor copies) and allowlisted in `.gitignore` alongside HPRESTCmdlets and HPEOneView.1000. Previously committed as `cc471374`.
+
+**2. `Another HPE OneView module is already loaded`** — root-caused to the vendor library itself (`HPEOneView.1000.psm1:58-73` throws when any second library loads). I removed the bypasses:
+- **`Connect-OneViewSession`** (`OneViewSession.ps1`) now reuses a loaded module with matching name and version instead of re-importing, and refuses a conflicting library with an actionable message. The decision is extracted into `Resolve-OneViewModuleLoadAction` so all three branches are testable.
+- **Five profile templates** (`wip/eis19profile.ps1`, `wip/techvdi-profile.ps1`, `wip/windowspsprofilecurrentvdi.ps1`, `wip/prodtechvdi.ps1`, `prodvdicurrent.ps1`) now call the guarded importer instead of a bare `Import-Module`.
+
+**3. HPREST `AsyncPipeline already exists`** — a vendor dual-`Add-Type` defect (`ShowLicense.ps1` + `HPRESTCmdlets.psm1`). The guard detects the orphaned .NET type and requires a fresh `pwsh -NoProfile` shell rather than retrying or bypassing the license script. No vendor files were modified.
+
+### One delivery caveat you need to know
+`.gitignore:138` (`/wip/*`) ignores the `wip/` directory. Of the five templates I fixed, only `wip/prodtechvdi.ps1` and `prodvdicurrent.ps1` are tracked. **`wip/eis19profile.ps1`, `wip/techvdi-profile.ps1`, and `wip/windowspsprofilecurrentvdi.ps1` are untracked, so those fixes will not reach `eiswmgt-19` via `git pull`.**
+
+The tracked path still works: `scripts/Setup-Profile.ps1` regenerates the live profile with the guarded importer, and re-running setup overwrites the stale managed block. So after pulling, run `.\scripts\Setup-Profile.ps1` on the server, or edit the live profile line to match the importer.
+
+### Validation
+- **673 tests passed, 0 failed** (100.10s), including new tests for all three module-load decision branches and profile-guard coverage.
+- Lint passed on 157 files; security gate passed with 0 active code/config findings.
+
+**Not verified:** Windows HPREST import against real hardware, and the live runtime iLO SSO 401. Your `test.log` failure was an import-blocking prerequisite, not proof the 401 is resolved.

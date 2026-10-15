@@ -249,4 +249,12 @@ if ($ibaRepo)
     if (Test-Path $automationModulePath) { Import-Module $automationModulePath -WarningAction SilentlyContinue }
 }
 
-if ($IsWindows) { Import-Module HPEOneView.1000 -ErrorAction SilentlyContinue }
+# HPEOneView.1000 only — stray versions (.820/.860) are rejected by
+# Connect-OneViewSession's module guard. No-op where the module isn't installed.
+# The HPE library refuses to load a second library into one console, so an
+# already-loaded matching module is reused instead of re-imported.
+$ibaHpeImporter = if ($ibaRepo) { Join-Path $ibaRepo 'scripts/Import-OfflineHpeModules.ps1' } else { $null }
+if ($IsWindows -and $ibaHpeImporter -and (Test-Path -LiteralPath $ibaHpeImporter)) {
+    try { & $ibaHpeImporter -Name HPEOneView.1000 -ErrorAction Stop }
+    catch { Write-Warning "HPE OneView import skipped: $($_.Exception.Message)" }
+}

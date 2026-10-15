@@ -117,3 +117,64 @@ Write-Output 'DRYRUN_OK'
         $result | Should -Contain 'OFFLINE_PATH_OK'
     }
 }
+
+Describe 'WIP HPE profile templates - duplicate-import guard (regression)' {
+    # Discovery evaluates -ForEach before BeforeAll runs, so resolve the template
+    # list in BeforeDiscovery.
+    BeforeDiscovery {
+        $templateRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../')).Path
+        $templates = @(
+            'wip/eis19profile.ps1'
+            'wip/techvdi-profile.ps1'
+            'wip/prodtechvdi.ps1'
+            'wip/windowspsprofilecurrentvdi.ps1'
+            'wip/windowspsprofile.ps1'
+            'wip/vscodeprofile.ps1'
+            'wip/psprofile.ps1'
+            'prodvdicurrent.ps1'
+        ) | Where-Object { Test-Path -LiteralPath (Join-Path $templateRoot $_) }
+    }
+
+    BeforeAll {
+        $script:templateRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../')).Path
+        $script:expectedTemplates = @(
+            'wip/eis19profile.ps1'
+            'wip/techvdi-profile.ps1'
+            'wip/prodtechvdi.ps1'
+            'wip/windowspsprofilecurrentvdi.ps1'
+            'prodvdicurrent.ps1'
+        )
+        # eiswmgt-19 loads its OneView module from the profile; the template there
+        # must route through the guarded importer or every later HPE import in the
+        # same console fails with 'Another HPE OneView module is already loaded'.
+        $eisPath = Join-Path $script:templateRoot 'wip/eis19profile.ps1'
+        $script:eisContent = if (Test-Path -LiteralPath $eisPath) { Get-Content -LiteralPath $eisPath -Raw } else { '' }
+    }
+
+    It 'finds the expected profile templates that must be guarded' {
+        $missing = @($script:expectedTemplates | Where-Object {
+            -not (Test-Path -LiteralPath (Join-Path $script:templateRoot $_))
+        })
+        $missing | Should -BeNullOrEmpty
+        $script:eisContent | Should -Not -BeNullOrEmpty
+    }
+
+    It 'routes the OneView import through the guarded importer on the eis19 profile' {
+        $script:eisContent | Should -Match 'Import-OfflineHpeModules\.ps1'
+        $script:eisContent | Should -Match 'Import-OfflineHpeModule|-Name\s+HPEOneView\.1000'
+        $script:eisContent | Should -Not -Match 'Import-Module\s+HPEOneView\.1000\s+-ErrorAction'
+    }
+
+    It 'has no unguarded OneView import in any profile template: <_>' -ForEach $templates {
+        $content = Get-Content -LiteralPath (Join-Path $templateRoot $_) -Raw
+        ([regex]::Matches($content, '(?m)^\s*if\s*\(\s*\$IsWindows[^)]*\)\s*\{\s*Import-Module\s+HPEOneView')).Count | Should -Be 0
+    }
+
+    It 'parses as valid PowerShell: <_>' -ForEach $templates {
+        $tokens = $null
+        $parseErrors = $null
+        $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $templateRoot $_), [ref]$tokens, [ref]$parseErrors)
+        $parseErrors | Should -BeNullOrEmpty
+    }
+}

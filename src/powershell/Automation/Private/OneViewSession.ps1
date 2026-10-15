@@ -374,6 +374,50 @@ function Get-OneViewActiveCredential {
     return $script:ActiveOneViewCredential
 }
 
+function Resolve-OneViewModuleLoadAction {
+    <#
+    .SYNOPSIS
+        Decides whether to reuse, import, or refuse an HPE OneView module load.
+
+    .DESCRIPTION
+        The HPE OneView library refuses to load a second library into one console
+        (HPEOneView.1000.psm1 throws 'CannotLoadMultipleLibraries'). Centralising the
+        decision keeps the rule in one audited place: a loaded module that matches the
+        pinned name (and version, when known) is reused, a conflicting library is
+        refused with an actionable error, and nothing is re-imported blindly.
+
+    .OUTPUTS
+        [hashtable] Action ('Reuse' | 'Import' | 'Error'), Module, Error.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)][string]$Pinned,
+        [AllowNull()][version]$InstalledVersion,
+        [AllowNull()][object[]]$LoadedModules
+    )
+
+    # HPEOneView.830 is the legacy library and is not treated as a conflict here;
+    # it is handled by the separate module-compliance guard.
+    $usable = @($LoadedModules | Where-Object { $_ -and $_.Name -ne 'HPEOneView.830' })
+    $matching = @($usable | Where-Object { $_.Name -eq $Pinned } | Sort-Object Version -Descending | Select-Object -First 1)
+
+    if ($matching.Count -eq 1 -and (-not $InstalledVersion -or $matching[0].Version -eq $InstalledVersion)) {
+        return @{ Action = 'Reuse'; Module = $matching[0]; Error = $null }
+    }
+
+    if ($usable.Count -gt 0) {
+        $names = (@($usable | ForEach-Object { "$($_.Name) $($_.Version)" }) -join ', ')
+        return @{
+            Action = 'Error'
+            Module = $null
+            Error  = "HPE OneView module(s) already loaded in this console: $names. The HPE library cannot load a second library ($Pinned). Start a new PowerShell session, or unload the loaded module(s) with Remove-Module, before connecting."
+        }
+    }
+
+    return @{ Action = 'Import'; Module = $null; Error = $null }
+}
+
 function Connect-OneViewSession {
     <#
     .SYNOPSIS
@@ -508,11 +552,33 @@ function Connect-OneViewSession {
     if ($isWindows) {
         $mod = Get-Module -ListAvailable -Name $pinned -ErrorAction SilentlyContinue | Select-Object -First 1
     }
+    # The HPE OneView library refuses to load a second library into one console
+    # (HPEOneView.1000.psm1 throws 'CannotLoadMultipleLibraries'), so re-importing a
+    # module that is already loaded - for example one loaded by the profile through
+    # scripts/Import-OfflineHpeModules.ps1 - fails with 'Another HPE OneView module
+    # is already loaded'. Reuse a compatible loaded module instead of re-importing.
+    # Inspect an already-loaded module (not -ListAvailable): that reads only this
+    # session's loaded modules and does not touch the HPE native layer, so it is
+    # safe on every platform.
+    $loadedOneView = @(Get-Module -Name 'HPEOneView.*' -ErrorAction SilentlyContinue)
+    $requiredVersion = if ($mod -and $mod.Version) { [version]$mod.Version } else { $null }
+    $loadDecision = Resolve-OneViewModuleLoadAction -Pinned $pinned -InstalledVersion $requiredVersion -LoadedModules $loadedOneView
     try {
-        if ($mod -and $mod.Version) {
-            Import-Module $pinned -RequiredVersion $mod.Version -ErrorAction Stop
-        } else {
-            Import-Module $pinned -ErrorAction Stop
+        switch ($loadDecision.Action) {
+            'Reuse' {
+                Write-Verbose "Connect-OneViewSession: reusing already-loaded $($loadDecision.Module.Name) $($loadDecision.Module.Version)"
+            }
+            'Error' {
+                $result.Error = $loadDecision.Error
+                return $result
+            }
+            'Import' {
+                if ($mod -and $mod.Version) {
+                    Import-Module $pinned -RequiredVersion $mod.Version -ErrorAction Stop
+                } else {
+                    Import-Module $pinned -ErrorAction Stop
+                }
+            }
         }
     } catch {
         $result.Error = "Failed to import $pinned`: $($_.Exception.Message)"
