@@ -2,13 +2,20 @@
 
 <# NOTE: See typical usage examples in the HPRESTExamples.ps1 file installed with this module. #>
 
-Add-Type @'
+# ShowLicense.ps1 is listed in ScriptsToProcess, and PowerShell runs those files
+# BEFORE this root module. It already defines AsyncPipeline, so an unconditional
+# Add-Type here failed with "Cannot add type. The type name 'AsyncPipeline' already
+# exists" and aborted every import of the module. Guard the duplicate and keep the
+# licensee's license acceptance flow (ShowLicense.ps1) unchanged.
+if (-not ('AsyncPipeline' -as [type])) {
+    Add-Type @'
 public class AsyncPipeline
 {
     public System.Management.Automation.PowerShell Pipeline ;
     public System.IAsyncResult AsyncResult ;
 }
 '@
+}
 
 Add-Type -TypeDefinition @"
    public enum AddressType

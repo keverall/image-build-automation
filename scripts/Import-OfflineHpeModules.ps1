@@ -47,13 +47,16 @@ function Import-OfflineHpeModule {
     }
 
     if ($loadedModules.Count -eq 0) {
+        # A leftover AsyncPipeline type from an older failed HPREST import is no
+        # longer a blocker: the vendored root module guards its duplicate Add-Type,
+        # so the import succeeds whether or not the type is already present.
         if ($ModuleName -eq 'HPRESTCmdlets' -and (Test-HprestImportResidue)) {
-            throw "HPRESTCmdlets is not loaded, but its AsyncPipeline type remains from an earlier import. .NET types cannot be unloaded with Remove-Module. Open a fresh 'pwsh -NoProfile' shell and run scripts/Import-OfflineHpeModules.ps1 once. No files were changed and the license script was not bypassed."
+            Write-Verbose "HPRESTCmdlets: AsyncPipeline type already present from an earlier import; the guarded root module handles it."
         }
         try {
             Import-Module -Name $ManifestPath -Global -ErrorAction Stop
         } catch {
-            throw "Unable to import local $ModuleName from '$ManifestPath'. Files were preserved. After a previous failed HPE import, start a fresh 'pwsh -NoProfile' shell rather than forcing a reload. Original error: $($_.Exception.Message)"
+            throw "Unable to import local $ModuleName from '$ManifestPath'. Files were preserved. Original error: $($_.Exception.Message)"
         }
     }
 

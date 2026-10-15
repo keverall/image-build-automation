@@ -68,12 +68,15 @@ Describe 'Idempotent offline HPE module loading' {
         Should -Invoke Test-HprestImportResidue -Times 0
     }
 
-    It 'detects an orphaned AsyncPipeline type and requires a fresh shell without retrying' {
+    It 'imports HPREST after a previous failed import left the AsyncPipeline type behind' {
         Set-Content -LiteralPath $script:fixtureManifest -Value "@{ModuleVersion='1.2.0.0';GUID='$script:fixtureGuid'}"
         Mock Get-Module { return $null }
         Mock Test-HprestImportResidue { return $true }
-        { Import-OfflineHpeModule -ModuleName HPRESTCmdlets -ManifestPath $script:fixtureManifest -ExpectedVersion '1.2.0.0' -RequiredCommands @('Connect-HPREST') } | Should -Throw '*AsyncPipeline*types cannot be unloaded*license script was not bypassed*'
-        Should -Invoke Import-Module -Times 0
+        Mock Import-Module { }
+        Import-OfflineHpeModule -ModuleName HPRESTCmdlets -ManifestPath $script:fixtureManifest -ExpectedVersion '1.2.0.0' -RequiredCommands @('Connect-HPREST')
+        # The guarded root module makes the leftover type harmless, so no fresh shell
+        # is demanded and the import proceeds.
+        Should -Invoke Import-Module -Times 1 -Exactly
     }
 
     It 'preserves and reports a fresh import failure rather than modifying the vendor package' {
