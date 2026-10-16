@@ -156,8 +156,9 @@ Describe 'Configure-PhysicalBuild - APPROVE prompt flow' {
                 @{ Success = $true; Details = @{ name = 'srv01'; ilo_ip = '10.0.1.50' } }
             }
             Mock Start-PhysicalServerBuild {
-                param($IloCredential)
+                param($IloCredential, $Force)
                 $IloCredential.UserName | Should -Be 'ilo-operator'
+                $Force | Should -BeTrue
                 $IloCredential.GetNetworkCredential().Password | Should -Be 'synthetic-password'
                 @{ Success = $true; audit_file = 'synthetic-audit.json' }
             }

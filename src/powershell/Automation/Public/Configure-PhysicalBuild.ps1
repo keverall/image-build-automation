@@ -268,7 +268,7 @@ function Configure-PhysicalBuild {
             -InMaintenanceWindow:$InMaintenanceWindow -AllowUnknownIsoUrl:$AllowUnknownIsoUrl `
             -OneViewMaintenanceMode:$OneViewMaintenanceMode `
             -OneViewCredential $OneViewCredential `
-            -GuardRail $GuardRail -Force:$Force -SkipConfirmation `
+            -GuardRail $GuardRail -Force:($Force -or $doDeploy) -SkipConfirmation `
             -DryRun:$DryRun -Json:$Json -Quiet:$Quiet -PassThru:$PassThru)
     }
 
