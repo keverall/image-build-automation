@@ -563,13 +563,28 @@ function Start-PhysicalServerBuild {
                     $statusError = $status.Error
                     if ($statusError -match '401') {
                         if ($OneViewHost) {
+                            # An explicit direct credential can fail while the
+                            # OneView-issued SSO session remains valid. Try SSO
+                            # once before considering a separate direct fallback.
+                            if ($IloCredential) {
+                                $ssoStatus = Invoke-IloRedfish -Action Status -IloIp $IloIp `
+                                    -IloCredential $null -OneViewHost $OneViewHost `
+                                    -OneViewServerName $maintenanceServerName -DryRun:$DryRun
+                                if ($ssoStatus.Success) {
+                                    $status = $ssoStatus
+                                    $statusError = $null
+                                } else {
+                                    $statusError = "Direct iLO credential rejected; OneView SSO retry failed: $($ssoStatus.Error)"
+                                }
+                            }
+                            if (-not $status.Success) {
                             # SSO is the preferred path, but older deployments
                             # previously used the authenticated OneView account
                             # directly against iLO. Preserve that non-interactive
                             # fallback for appliances whose SSO role mapping or
                             # trust relationship rejects the generated token.
-                            $fallbackCredential = $IloCredential
-                            if (-not $fallbackCredential -and $OneViewCredential) {
+                            $fallbackCredential = $null
+                            if ($OneViewCredential) {
                                 $fallbackCredential = $OneViewCredential
                             }
                             if (-not $fallbackCredential) {
@@ -594,10 +609,11 @@ function Start-PhysicalServerBuild {
                                     $status = $directStatus
                                     $statusError = $null
                                 } else {
-                                    $statusError = "SSO and direct OneView-credential iLO authentication failed. SSO: $statusError Direct: $($directStatus.Error)"
+                                    $statusError = "OneView SSO and configured direct fallback failed. SSO: $statusError Direct: $($directStatus.Error)"
                                 }
                             } else {
                                 $statusError = "iLO authentication failed (401 Unauthorized) using OneView SSO, and no configured OneView credential was available for the non-interactive direct-iLO fallback. Detail: $statusError"
+                            }
                             }
                         } elseif ($IloCredential) {
                             $statusError = "iLO authentication failed (401 Unauthorized). The supplied direct iLO credential was rejected by iLO. Verify the iLO account and permissions. Detail: $statusError"

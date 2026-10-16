@@ -41,24 +41,12 @@ function Configure-PhysicalBuild {
     .PARAMETER OneViewHost
         OneView appliance hostname or IP.
 
-    .PARAMETER IloIp
-        iLO IPv4 address / hostname for the target server. OPTIONAL but strongly
-        recommended as a pre-flight: when supplied (with -IloCredential, or an
-        interactive prompt), the pre-build validation performs a LIVE iLO Redfish
-        GET that confirms the iLO is reachable and the credentials are valid
-        BEFORE any destructive step. This matters because Start-PhysicalBuild
-        mounts the Windows ISO and reboots the server through this exact iLO
-        channel — verifying it first prevents a failed/partial build (e.g. after
-        the disk is already being wiped) caused by a wrong or unreachable iLO.
-        DISTINCT ROLES: -ServerIdentifier (name/serial) is the IDENTITY unique
-        constraint OneView uses to select the single target; -IloIp is the
-        separate CONNECTIVITY/CREDENTIAL pre-flight for the mount/reboot path.
-        If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS.
-
     .PARAMETER IloCredential
         Optional direct iLO PSCredential. When supplied, the approved build uses
         this account instead of OneView iLO SSO, including on managed servers.
-        Without it, managed servers use a fresh OneView iLO SSO session.
+        When omitted, Configure-PhysicalBuild resolves the iLO address from
+        OneView and prompts for the iLO username and password, then uses those
+        credentials directly.
 
     .PARAMETER ExpectedHostname
         Hostname that should result from the build (defaults to SrvrId).
@@ -115,7 +103,9 @@ function Configure-PhysicalBuild {
         Skip OneView target resolution.
 
     .PARAMETER SkipIlo
-        Skip iLO credential / Redfish check.
+        Skip the read-only iLO credential / Redfish check during review. This
+        does not prompt for credentials or suppress the approved build's iLO
+        mount, boot, or reset.
 
     .PARAMETER SkipDpMp
         Skip Management Point / Distribution Point reachability check.
@@ -125,7 +115,7 @@ function Configure-PhysicalBuild {
 
     .PARAMETER Force
         Acknowledge server power state is On (informational only — this command
-        does not perform any reboot; included for parity with Invoke-PhysicalServerBuild).
+         does not perform any reboot; included for parity with Start-PhysicalServerBuild).
 
     .PARAMETER DryRun
         Validate inputs and print the plan without performing any destructive action.
@@ -141,14 +131,13 @@ function Configure-PhysicalBuild {
 
     .RETURNS
         [hashtable] with Success, ServerIdentity, IsoDetails, ValidationChecks,
-        and Server. On -Deploy / -Execute or APPROVE, Invoke-PhysicalServerBuild
+         and Server. On -Deploy / -Execute or APPROVE, Start-PhysicalServerBuild
         is executed internally and the build result is returned.
 
     .EXAMPLE
         Configure-PhysicalBuild `
             -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
-            -IloIp '192.168.1.101' `
             -SiteCode 'P01' `
             -ManagementPoint 'mp01.ad.example.com' `
             -DistributionPoint 'dp01.ad.example.com' `
@@ -275,7 +264,7 @@ function Configure-PhysicalBuild {
             -BootImageName $BootImageName -TaskSequenceName $TaskSequenceName `
             -ExternalIsoPath $ExternalIsoPath `
             -FirmwareFolders $FirmwareFolders -ServerCredential $ServerCredential -SkipFirmware:$SkipFirmware `
-            -SkipPreBuild:$SkipPreBuild -SkipOneView:$SkipOneView -SkipMount:$SkipIlo -SkipMonitor -SkipPostBuild `
+            -SkipPreBuild:$SkipPreBuild -SkipOneView:$SkipOneView -SkipMonitor -SkipPostBuild `
             -InMaintenanceWindow:$InMaintenanceWindow -AllowUnknownIsoUrl:$AllowUnknownIsoUrl `
             -OneViewMaintenanceMode:$OneViewMaintenanceMode `
             -OneViewCredential $OneViewCredential `
@@ -335,9 +324,7 @@ function Configure-PhysicalBuild {
             -Credential $OneViewCredential -PassThru
         if ($ov.Success) {
             $serverIdentity = $ov.Details
-            if ($serverIdentity.ilo_ip -and -not $IloIp) {
-                $IloIp = $serverIdentity.ilo_ip
-            }
+            $IloIp = [string]$serverIdentity.ilo_ip
             Write-Host "  [OK] Server resolved" -ForegroundColor Green
         } else {
             # A failed OneView resolution is fatal for a build plan: without a
@@ -357,18 +344,34 @@ function Configure-PhysicalBuild {
                     }
                 })
         }
-    } elseif ($IloIp) {
-        Write-Host "`n[1/4] OneView skipped — using iLO IP directly" -ForegroundColor Yellow
-        $serverIdentity = @{ ilo_ip = $IloIp; name = $ExpectedHostname; identifier = $ServerIdentifier }
     } else {
-        Write-Host "`n[1/4] No OneViewHost or IloIp supplied" -ForegroundColor Yellow
+        Write-Host "`n[1/4] OneView resolution skipped" -ForegroundColor Yellow
         $serverIdentity = @{ name = $ExpectedHostname; identifier = $ServerIdentifier }
+    }
+
+    # OneView is the source of truth for the target iLO address. Prompt only
+    # after resolution so callers need to provide only a server name or serial.
+    if (-not $IloCredential -and $IloIp -and -not $SkipIlo -and -not $DryRun) {
+        try {
+            $iloUsername = Read-Host "iLO username for '$IloIp'"
+            if ([string]::IsNullOrWhiteSpace($iloUsername)) {
+                throw 'An iLO username is required for the resolved target.'
+            }
+            $iloPassword = Read-Host "iLO password for '$iloUsername'" -AsSecureString
+            if (-not $iloPassword) {
+                throw 'An iLO password is required for the resolved target.'
+            }
+            $IloCredential = [System.Management.Automation.PSCredential]::new(
+                $iloUsername.Trim(), $iloPassword)
+        } catch {
+            throw "Unable to collect direct iLO credentials: $($_.Exception.Message)"
+        }
     }
 
     # ── Guard rail (build/deploy safety gate, review-only) ────────────────────
     # When -GuardRail is supplied, the resolved target name MUST match before we
     # even show the deployment plan. -NonDestructive suppresses the destructive
-    # confirmation prompt (this command only reviews; Invoke-PhysicalServerBuild
+    # confirmation prompt (this command only reviews; Start-PhysicalServerBuild
     # performs the actual overwrite).
     if ($GuardRail) {
         $guardName = if ($serverIdentity -and $serverIdentity.name) {
@@ -579,7 +582,7 @@ function Configure-PhysicalBuild {
 
     # ── Authorization (APPROVE) and optional deploy ────────────────────────────
     # APPROVE (interactive) or -Deploy (automation) runs the build via the
-    # Invoke-PhysicalServerBuild code, reusing the parameters already supplied here —
+    # Start-PhysicalServerBuild code, reusing the parameters already supplied here —
     # the operator never re-types them. Without explicit approval the command only
     # reviews and returns the plan; it never deploys.
     $doDeploy = [bool]$Deploy
@@ -617,7 +620,7 @@ function Configure-PhysicalBuild {
                     }
                 })
         }
-        Write-Host "`n  ✓ APPROVED — deploying ISO + firmware to '$ExpectedHostname' (via Invoke-PhysicalServerBuild)." -ForegroundColor Green
+        Write-Host "`n  ✓ APPROVED — deploying ISO + firmware to '$ExpectedHostname' (via Start-PhysicalServerBuild)." -ForegroundColor Green
         $doDeploy = $true
     }
 

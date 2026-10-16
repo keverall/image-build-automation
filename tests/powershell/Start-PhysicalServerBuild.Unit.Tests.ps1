@@ -115,6 +115,20 @@ Describe 'Start-PhysicalServerBuild - tolerates array return from -PassThru upst
         $r.steps.oneview_target       | Should -Not -BeOfType ([System.Array])
         $r.steps.oneview_target.Success | Should -Be $true
     }
+
+    It 'forwards the explicit iLO credential to status, mount, and eject calls' {
+        InModuleScope Automation {
+            $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
+            $r = Start-PhysicalServerBuild -SrvrId 'srv01' -OneViewHost 'h' -IloIp '1.2.3.4' `
+                -IloCredential $cred -GuardRail '.*' -PassThru -Quiet `
+                -ExternalIsoPath 'cifs://host/share/win.iso' -SkipMonitor -SkipPostBuild -SkipConfirmation
+
+            $r.Success | Should -BeTrue
+            Should -Invoke Invoke-IloRedfish -Times 3 -Exactly -ParameterFilter {
+                $IloCredential.UserName -eq 'ilo-operator'
+            }
+        }
+    }
 }
 
 Describe 'Start-PhysicalServerBuild - skips maintenance-mode enable when already in maintenance' {

@@ -124,4 +124,51 @@ Describe 'Configure-PhysicalBuild - APPROVE prompt flow' {
         $r.Success | Should -Be $true
         $r.audit_file | Should -Not -BeNullOrEmpty
     }
+
+    It 'forwards an explicit iLO credential after approval without disabling the mount step' {
+        InModuleScope Automation {
+            $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
+            Mock Start-PhysicalServerBuild {
+                param($IloCredential, $SkipMount)
+                $IloCredential.UserName | Should -Be 'ilo-operator'
+                $SkipMount | Should -BeFalse
+                @{ Success = $true; audit_file = 'synthetic-audit.json' }
+            }
+            $r = Configure-PhysicalBuild -SrvrId 'srv01' -GuardRail '.*' `
+                -ExternalIsoPath 'https://artifacts/isos/win.iso' -IloCredential $cred `
+                -SkipIlo -SkipPreBuild -SkipOneView -Deploy -PassThru
+            $r.Success | Should -BeTrue
+            Should -Invoke Start-PhysicalServerBuild -Times 1 -Exactly
+        }
+    }
+
+    It 'prompts for direct iLO credentials using the OneView-resolved iLO address' {
+        InModuleScope Automation {
+            Mock Read-Host {
+                param($AsSecureString)
+                if ($AsSecureString) {
+                    ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force
+                } else {
+                    'ilo-operator'
+                }
+            }
+            Mock Get-OneViewServerTarget {
+                @{ Success = $true; Details = @{ name = 'srv01'; ilo_ip = '10.0.1.50' } }
+            }
+            Mock Start-PhysicalServerBuild {
+                param($IloCredential)
+                $IloCredential.UserName | Should -Be 'ilo-operator'
+                $IloCredential.GetNetworkCredential().Password | Should -Be 'synthetic-password'
+                @{ Success = $true; audit_file = 'synthetic-audit.json' }
+            }
+            $r = Configure-PhysicalBuild -SrvrId 'srv01' `
+                -OneViewHost 'oneview.corp.local' -GuardRail '.*' `
+                -ExternalIsoPath 'https://artifacts/isos/win.iso' `
+                -SkipPreBuild -Deploy -PassThru
+            $r.Success | Should -BeTrue
+            Should -Invoke Read-Host -Times 2 -Exactly
+            Should -Invoke Read-Host -Times 1 -Exactly -ParameterFilter { $AsSecureString }
+            Should -Invoke Start-PhysicalServerBuild -Times 1 -Exactly
+        }
+    }
 }
