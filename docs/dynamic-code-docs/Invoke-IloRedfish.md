@@ -30,7 +30,7 @@ Implements the iLO Redfish virtual-media workflow: * Session login (basic auth â
 |-----------|-------------|
 | `-Action` | Operation to perform. One of: Mount, MountAndBoot, Boot, Reset, Eject, Status. |
 | `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address or hostname. Required. |
-| `-IloCredential` | Direct iLO PSCredential fallback for unmanaged servers only. Managed OneView servers use OneView iLO SSO instead. |
+| `-IloCredential` | Direct iLO PSCredential. When supplied, takes precedence over OneView SSO so the same explicit account is used for validation and deployment. |
 | `-OneViewHost` | OneView appliance associated with the active OneView session. |
 | `-OneViewServerName` | Resolved OneView server-hardware name used to obtain the iLO SSO token. |
 | `-IsoUrl` _(Aliases: -Iso)_ | HTTPS URL to the ISO file (required for Mount / MountAndBoot). |
@@ -77,8 +77,8 @@ Invoke-IloRedfish -Action MountAndBoot -IloIp 192.168.1.101 ` -IsoUrl 'https://a
         iLO IPv4 address or hostname. Required.
 
     .PARAMETER IloCredential
-        Direct iLO PSCredential fallback for unmanaged servers only. Managed
-        OneView servers use OneView iLO SSO instead.
+        Direct iLO PSCredential. When supplied, takes precedence over OneView
+        SSO so the same explicit account is used for validation and deployment.
 
     .PARAMETER OneViewHost
         OneView appliance associated with the active OneView session.

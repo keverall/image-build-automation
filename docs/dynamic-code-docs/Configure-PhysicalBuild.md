@@ -31,8 +31,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 |-----------|-------------|
 | `-ServerIdentifier` _(Aliases: -SrvrId)_ | Target server identifier (hostname, serial, OneView name, iLO IP, bay). |
 | `-OneViewHost` _(Aliases: -OVHost)_ | OneView appliance hostname or IP. |
-| `-IloIp` _(Aliases: -Ilo)_ | iLO IPv4 address / hostname for the target server. OPTIONAL but strongly recommended as a pre-flight: when supplied (with -IloCredential, or an interactive prompt), the pre-build validation performs a LIVE iLO Redfish GET that confirms the iLO is reachable and the credentials are valid BEFORE any destructive step. This matters because Start-PhysicalBuild mounts the Windows ISO and reboots the server through this exact iLO channel — verifying it first prevents a failed/partial build (e.g. after the disk is already being wiped) caused by a wrong or unreachable iLO. DISTINCT ROLES: -ServerIdentifier (name/serial) is the IDENTITY unique constraint OneView uses to select the single target; -IloIp is the separate CONNECTIVITY/CREDENTIAL pre-flight for the mount/reboot path. If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS. |
-| `-IloCredential` | Optional direct iLO PSCredential for unmanaged-server fallback. For OneView-managed servers, the build uses OneView iLO SSO and does not use this credential. |
+| `-IloCredential` | Optional direct iLO PSCredential. When supplied, the approved build uses this account instead of OneView iLO SSO, including on managed servers. When omitted, Configure-PhysicalBuild resolves the iLO address from OneView and prompts for the iLO username and password, then uses those credentials directly. |
 | `-ExpectedHostname` | Hostname that should result from the build (defaults to SrvrId). |
 | `-Domain` | AD domain to verify in post-build validation. |
 | `-SiteCode` | ConfigMgr site code (for ISO build / pre-build validation). |
@@ -48,10 +47,10 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 | `-NoMaintenanceMode` | Convenience switch to disable OneView maintenance mode. Equivalent to -OneViewMaintenanceMode:$false. Use this when OneView is unavailable or the server is not managed by OneView. |
 | `-SkipPreBuild` | Skip pre-build validation checks. |
 | `-SkipOneView` | Skip OneView target resolution. |
-| `-SkipIlo` | Skip iLO credential / Redfish check. |
+| `-SkipIlo` | Skip the read-only iLO credential / Redfish check during review. This does not prompt for credentials or suppress the approved build's iLO mount, boot, or reset. |
 | `-SkipDpMp` | Skip Management Point / Distribution Point reachability check. |
 | `-SkipIsoUrl` | Skip ISO URL reachability check. |
-| `-Force` | Acknowledge server power state is On (informational only — this command does not perform any reboot; included for parity with Invoke-PhysicalServerBuild). |
+| `-Force` | Acknowledge server power state is On (informational only — this command does not perform any reboot; included for parity with Start-PhysicalServerBuild). |
 | `-DryRun` _(Aliases: -Dry)_ | Validate inputs and print the plan without performing any destructive action. Skips network probes and the confirmation prompt. |
 | `-GuardRail` | MANDATORY safety gate for shared/production networks. A CASE-INSENSITIVE REGULAR EXPRESSION the resolved target server name must match before the build plan is even produced. If it is OMITTED the review is aborted early with an expressive, logged error. If it does NOT match, the review is aborted. Example (regex): -GuardRail 'quickview\.ilo0' matches server 'quickview.ilo03.alp'. |
 
@@ -64,7 +63,7 @@ Gathers full server identity from OneView, resolves the ISO URL, runs pre-build 
 ### Example 1
 
 ```powershell
-Configure-PhysicalBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -IloIp '192.168.1.101' ` -SiteCode 'P01' ` -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' ` -Domain 'ad.example.com'
+Configure-PhysicalBuild ` -ServerIdentifier 'PROD-SERVER-01' ` -OneViewHost 'oneview.ad.example.com' ` -SiteCode 'P01' ` -ManagementPoint 'mp01.ad.example.com' ` -DistributionPoint 'dp01.ad.example.com' ` -Domain 'ad.example.com'
 ```
 
 <a id="example-2"></a>
@@ -99,24 +98,12 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
     .PARAMETER OneViewHost
         OneView appliance hostname or IP.
 
-    .PARAMETER IloIp
-        iLO IPv4 address / hostname for the target server. OPTIONAL but strongly
-        recommended as a pre-flight: when supplied (with -IloCredential, or an
-        interactive prompt), the pre-build validation performs a LIVE iLO Redfish
-        GET that confirms the iLO is reachable and the credentials are valid
-        BEFORE any destructive step. This matters because Start-PhysicalBuild
-        mounts the Windows ISO and reboots the server through this exact iLO
-        channel — verifying it first prevents a failed/partial build (e.g. after
-        the disk is already being wiped) caused by a wrong or unreachable iLO.
-        DISTINCT ROLES: -ServerIdentifier (name/serial) is the IDENTITY unique
-        constraint OneView uses to select the single target; -IloIp is the
-        separate CONNECTIVITY/CREDENTIAL pre-flight for the mount/reboot path.
-        If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS.
-
     .PARAMETER IloCredential
-        Optional direct iLO PSCredential for unmanaged-server fallback.
-        For OneView-managed servers, the build uses OneView iLO SSO and does not
-        use this credential.
+        Optional direct iLO PSCredential. When supplied, the approved build uses
+        this account instead of OneView iLO SSO, including on managed servers.
+        When omitted, Configure-PhysicalBuild resolves the iLO address from
+        OneView and prompts for the iLO username and password, then uses those
+        credentials directly.
 
     .PARAMETER ExpectedHostname
         Hostname that should result from the build (defaults to SrvrId).
@@ -173,7 +160,9 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
         Skip OneView target resolution.
 
     .PARAMETER SkipIlo
-        Skip iLO credential / Redfish check.
+        Skip the read-only iLO credential / Redfish check during review. This
+        does not prompt for credentials or suppress the approved build's iLO
+        mount, boot, or reset.
 
     .PARAMETER SkipDpMp
         Skip Management Point / Distribution Point reachability check.
@@ -183,7 +172,7 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
 
     .PARAMETER Force
         Acknowledge server power state is On (informational only — this command
-        does not perform any reboot; included for parity with Invoke-PhysicalServerBuild).
+         does not perform any reboot; included for parity with Start-PhysicalServerBuild).
 
     .PARAMETER DryRun
         Validate inputs and print the plan without performing any destructive action.
@@ -199,14 +188,13 @@ Configure-PhysicalBuild -ServerIdentifier 'srv01' -OneViewHost 'oneview.ad.examp
 
     .RETURNS
         [hashtable] with Success, ServerIdentity, IsoDetails, ValidationChecks,
-        and Server. On -Deploy / -Execute or APPROVE, Invoke-PhysicalServerBuild
+         and Server. On -Deploy / -Execute or APPROVE, Start-PhysicalServerBuild
         is executed internally and the build result is returned.
 
     .EXAMPLE
         Configure-PhysicalBuild `
             -ServerIdentifier 'PROD-SERVER-01' `
             -OneViewHost 'oneview.ad.example.com' `
-            -IloIp '192.168.1.101' `
             -SiteCode 'P01' `
             -ManagementPoint 'mp01.ad.example.com' `
             -DistributionPoint 'dp01.ad.example.com' `
