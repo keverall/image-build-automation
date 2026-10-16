@@ -83,7 +83,7 @@ Describe 'Test-IloAuthentication - non-destructive diagnostics' {
                 @{ StatusCode = 200; Content = '{}' }
             }
             $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
-            $r = Test-IloAuthentication -IloIp '10.30.14.15' -IloCredential $cred -Quiet
+            $r = Test-IloAuthentication -IloIp '10.30.14.15' -IloCredential $cred
             $r.Success | Should -BeTrue
             Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
                 $Method -eq 'DELETE' -and $Uri -eq 'https://10.30.14.15/redfish/v1/SessionService/Sessions/42/'
@@ -102,7 +102,7 @@ Describe 'Test-IloAuthentication - non-destructive diagnostics' {
                 @{ StatusCode = 200; Content = '{}' }
             }
             $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
-            $r = Test-IloAuthentication -IloIp '10.30.14.15' -IloCredential $cred -Quiet
+            $r = Test-IloAuthentication -IloIp '10.30.14.15' -IloCredential $cred
             ($r.Results | Where-Object name -eq 'direct_redfish_logout').success | Should -BeFalse
             Should -Invoke Invoke-WebRequest -Times 0 -Exactly -ParameterFilter { $Method -eq 'DELETE' }
         }
@@ -122,6 +122,28 @@ Describe 'Invoke-IloRedfish - IloRedfishSession class' {
         $source = Get-Content (Join-Path $Script:ModuleRoot 'Automation\Public\Invoke-IloRedfish.ps1') -Raw
         ([regex]::Matches($source, 'Get-OVIloSso\s+-IloRestSession\s+-SkipCertificateCheck')).Count |
             Should -Be 3
+    }
+}
+
+Describe 'Invoke-IloRedfish - PSRedfish direct status adapter' {
+    It 'uses PSRedfish for direct credential inventory when the bundled module is imported' {
+        InModuleScope Automation {
+            Import-Module (Join-Path $PSScriptRoot '../../scripts/modules/PSRedfish/0.1.4/PSRedfish.psd1') -Force
+            Mock New-RedfishSession { [pscustomobject]@{ PSTypeNames = @('PSRedfish.Session'); BaseUri = 'https://10.30.14.15' } }
+            Mock Invoke-IloStatusWithPSRedfish { @{ System = @{ PowerState = 'On'; Manufacturer = 'HPE'; Model = 'ProLiant'; SerialNumber = 'CZ22420JCM' }; VirtualMedia = @(); AuthDiagnostics = @{ auth_mode = 'psredfish' } } }
+            Mock Invoke-RedfishRequest {
+                param($Uri)
+                if ($Uri -like '*Systems/1') { return @{ PowerState = 'On'; Manufacturer = 'HPE'; Model = 'ProLiant'; SerialNumber = 'CZ22420JCM'; Boot = @{} } }
+                if ($Uri -like '*VirtualMedia' -and $Uri -notlike '*VirtualMedia/*') { return @{ Members = @(@{ '@odata.id' = '/redfish/v1/Managers/1/VirtualMedia/2' }) } }
+                @{ '@odata.id' = '/redfish/v1/Managers/1/VirtualMedia/2'; Name = 'CD/DVD'; Inserted = $false; Image = $null }
+            }
+            Mock Remove-RedfishSession {}
+            $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
+            $result = Invoke-IloRedfish -Action Status -IloIp '10.30.14.15' -IloCredential $cred
+            $result.Success | Should -BeTrue
+            $result.Details.auth_diagnostics.auth_mode | Should -Be 'psredfish'
+            Should -Invoke Invoke-IloStatusWithPSRedfish -Times 1 -Exactly
+        }
     }
 }
 

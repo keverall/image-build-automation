@@ -130,3 +130,38 @@ secret-scan-code-quality.json
 /docx/wip/
 /docs/rtf/wip/
 /doc/windows/help/rtf/wip/
+
+# Vendored PowerShell packages: ignore unapproved versioned installs, then allow
+# only the audited offline packages shipped by this repository.
+/scripts/modules/*/*/
+!/scripts/modules/HPRESTCmdlets/
+!/scripts/modules/HPRESTCmdlets/1.2.0.0/
+!/scripts/modules/HPRESTCmdlets/1.2.0.0/**
+!/scripts/modules/HPEOneView.1000/
+!/scripts/modules/HPEOneView.1000/10.0.4265.2221/
+!/scripts/modules/HPEOneView.1000/10.0.4265.2221/**
+!/scripts/modules/PSRedfish/
+!/scripts/modules/PSRedfish/0.1.4/
+!/scripts/modules/PSRedfish/0.1.4/**
+!/scripts/modules/Pester/
+!/scripts/modules/Pester/6.0.1/
+!/scripts/modules/Pester/6.0.1/**
+
+# Re-apply sensitive/runtime exclusions inside approved packages.
+/scripts/modules/*/*/**/*.log
+/scripts/modules/*/*/**/*_transcript.*
+/scripts/modules/*/*/**/.ps_history
+/scripts/modules/*/*/**/.env
+/scripts/modules/*/*/**/.env.*
+/scripts/modules/*/*/**/secrets.env
+/scripts/modules/*/*/**/secret.*
+/scripts/modules/*/*/**/config.private.*
+/scripts/modules/*/*/**/*.pem
+/scripts/modules/*/*/**/*.key
+/scripts/modules/*/*/**/*.pfx
+/scripts/modules/*/*/**/*.p12
+/scripts/modules/*/*/**/*.ppk
+/scripts/modules/*/*/**/id_rsa
+/scripts/modules/*/*/**/id_rsa.*
+/scripts/modules/*/*/**/id_ed25519
+/scripts/modules/*/*/**/id_ed25519.*

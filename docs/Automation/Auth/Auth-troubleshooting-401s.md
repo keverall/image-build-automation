@@ -43,7 +43,17 @@ authentication guide. It documents authentication to the OneView appliance.
 
 ## Direct iLO REST authentication
 
-The canonical implementation is:
+The project supports two direct iLO clients. `PSRedfish` is used for direct-credential status/inventory when available; the native session implementation remains the write-path fallback.
+
+The bundled PSRedfish module is:
+
+```text
+scripts/modules/PSRedfish/0.1.4/PSRedfish.psd1
+```
+
+Its primary commands are `New-RedfishSession`, `Invoke-RedfishRequest`, and `Remove-RedfishSession`.
+
+The legacy HPREST implementation is:
 
 ```text
 scripts/modules/HPRESTCmdlets/1.2.0.0/HPRESTCmdlets.psm1
@@ -280,7 +290,8 @@ Do not capture:
 
 ## Authoritative bundled references
 
-- `scripts/modules/HPRESTCmdlets/1.2.0.0/HPRESTCmdlets.psm1` — direct iLO session implementation and help
+- `scripts/modules/PSRedfish/0.1.4/PSRedfish.psd1` — bundled direct iLO status/inventory client
+- `scripts/modules/HPRESTCmdlets/1.2.0.0/HPRESTCmdlets.psm1` — native/legacy direct iLO session implementation and help
 - `scripts/modules/HPRESTCmdlets/1.2.0.0/HPRESTExamples.ps1` — direct iLO operation examples
 - `scripts/modules/HPEOneView.1000/10.0.4265.2221/HPEOneView.1000.psm1` — `Get-OVIloSso` implementation
 - `scripts/modules/HPEOneView.1000/10.0.4265.2221/en-US/HPEOneView.1000.psm1-help.xml` — `Get-OVIloSso` help and examples

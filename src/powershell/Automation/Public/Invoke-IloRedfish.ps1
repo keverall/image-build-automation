@@ -142,6 +142,52 @@ function Test-IloAuthentication {
     return $result
 }
 
+function Invoke-IloStatusWithPSRedfish {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string] $IloIp,
+        [Parameter(Mandatory)][System.Management.Automation.PSCredential] $IloCredential,
+        [bool] $SkipCertificateCheck = $true,
+        [int] $TimeoutSec = 30
+    )
+
+    $session = $null
+    try {
+        $session = New-RedfishSession -BaseUri "https://$IloIp" `
+            -Credential $IloCredential -SkipCertificateCheck:$SkipCertificateCheck `
+            -TimeoutSeconds $TimeoutSec -ErrorAction Stop
+        $system = Invoke-RedfishRequest -Session $session `
+            -Uri '/redfish/v1/Systems/1' -Method GET -ErrorAction Stop
+        $collection = Invoke-RedfishRequest -Session $session `
+            -Uri '/redfish/v1/Managers/1/VirtualMedia' -Method GET -ErrorAction Stop
+        $media = foreach ($member in @($collection.Members)) {
+            try {
+                $detail = Invoke-RedfishRequest -Session $session `
+                    -Uri ([string]$member.'@odata.id') -Method GET -ErrorAction Stop
+                @{ Id = Split-Path ([string]$detail.'@odata.id') -Leaf
+                   Name = $detail.Name
+                   MediaTypes = $detail.MediaTypes
+                   Inserted = $detail.Inserted
+                   Image = $detail.Image }
+            } catch {
+                @{ Id = Split-Path ([string]$member.'@odata.id') -Leaf
+                   Error = $_.Exception.Message }
+            }
+        }
+        return @{
+            Success = $true
+            System = @{ PowerState = $system.PowerState; Manufacturer = $system.Manufacturer
+                        Model = $system.Model; SerialNumber = $system.SerialNumber
+                        Boot = $system.Boot; Status = $system.Status }
+            VirtualMedia = @($media)
+            AuthDiagnostics = @{ auth_mode = 'psredfish'; token_source = 'PSRedfish.New-RedfishSession'
+                                 base_url = "https://$IloIp"; skip_certificate_check = $SkipCertificateCheck }
+        }
+    } finally {
+        if ($session) { $null = Remove-RedfishSession -Session $session -ErrorAction SilentlyContinue }
+    }
+}
+
 function Invoke-IloRedfish {
     <#
     .SYNOPSIS
@@ -243,6 +289,25 @@ function Invoke-IloRedfish {
 
         # An explicit credential selects direct iLO authentication, even for a
         # managed server. OneView and iLO credentials/tokens are independent.
+        # Direct status/inventory uses the bundled PSRedfish client when available.
+        if ($Action -eq 'Status' -and $IloCredential) {
+            if (-not (Get-Module -Name PSRedfish -ErrorAction SilentlyContinue)) {
+                Import-Module PSRedfish -ErrorAction SilentlyContinue
+            }
+            if (Get-Module -Name PSRedfish -ErrorAction SilentlyContinue) {
+                try {
+                    $psStatus = Invoke-IloStatusWithPSRedfish -IloIp $IloIp -IloCredential $IloCredential `
+                        -SkipCertificateCheck $SkipCertificateCheck -TimeoutSec $TimeoutSec
+                    $result = @{ Success = $true; Action = $Action; IloIp = $IloIp
+                        Details = @{ system = $psStatus.System; virtual_media = $psStatus.VirtualMedia
+                                     auth_diagnostics = $psStatus.AuthDiagnostics } }
+                    _Format-IloRedfishResult -Result $result
+                    return $result
+                } catch {
+                    Write-Verbose "PSRedfish status failed; falling back to native Redfish session: $($_.Exception.Message)"
+                }
+            }
+        }
         $hasOneViewSso = -not $IloCredential -and $OneViewHost -and $OneViewServerName -and
             (Get-Command Get-OVServer -ErrorAction SilentlyContinue) -and
             (Get-Command Get-OVIloSso -ErrorAction SilentlyContinue)
