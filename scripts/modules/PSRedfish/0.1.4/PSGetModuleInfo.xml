@@ -1,0 +1,125 @@
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>Microsoft.PowerShell.Commands.PSRepositoryItemInfo</T>
+      <T>System.Management.Automation.PSCustomObject</T>
+      <T>System.Object</T>
+    </TN>
+    <MS>
+      <S N="Name">PSRedfish</S>
+      <S N="Version">0.1.4</S>
+      <S N="Type">Module</S>
+      <S N="Description">PSRedfish is a production-ready PowerShell module for interacting with hardware management interfaces that implement the DMTF Redfish® standard. The module provides a clean, consistent, and PowerShell-native API for managing servers and chassis across vendors such as HPE iLO, Dell iDRAC, Lenovo XClarity, and other Redfish-compliant platforms.</S>
+      <S N="Author">WarehouseFinds</S>
+      <S N="CompanyName">mstanojevic</S>
+      <S N="Copyright">(c) WarehouseFinds. All rights reserved.</S>
+      <DT N="PublishedDate">2026-01-27T21:15:41+00:00</DT>
+      <Nil N="InstalledDate" />
+      <Nil N="UpdatedDate" />
+      <URI N="LicenseUri">https://github.com/WarehouseFinds/PSRedfish/blob/main/LICENSE</URI>
+      <URI N="ProjectUri">https://github.com/WarehouseFinds/PSRedfish</URI>
+      <Nil N="IconUri" />
+      <Obj N="Tags" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+          <S>PSModule</S>
+        </LST>
+      </Obj>
+      <Obj N="Includes" RefId="2">
+        <TN RefId="2">
+          <T>System.Collections.Hashtable</T>
+          <T>System.Object</T>
+        </TN>
+        <DCT>
+          <En>
+            <S N="Key">RoleCapability</S>
+            <Obj N="Value" RefId="3">
+              <TNRef RefId="1" />
+              <LST />
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Cmdlet</S>
+            <Ref N="Value" RefId="3" />
+          </En>
+          <En>
+            <S N="Key">Workflow</S>
+            <Ref N="Value" RefId="3" />
+          </En>
+          <En>
+            <S N="Key">Command</S>
+            <Obj N="Value" RefId="4">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Get-RedfishSession</S>
+                <S>Invoke-RedfishRequest</S>
+                <S>New-RedfishSession</S>
+                <S>Remove-RedfishSession</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Function</S>
+            <Obj N="Value" RefId="5">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Get-RedfishSession</S>
+                <S>Invoke-RedfishRequest</S>
+                <S>New-RedfishSession</S>
+                <S>Remove-RedfishSession</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">DscResource</S>
+            <Ref N="Value" RefId="3" />
+          </En>
+        </DCT>
+      </Obj>
+      <Nil N="PowerShellGetFormatVersion" />
+      <S N="ReleaseNotes">https://github.com/WarehouseFinds/PSRedfish/releases</S>
+      <Obj N="Dependencies" RefId="6">
+        <TNRef RefId="1" />
+        <LST />
+      </Obj>
+      <S N="RepositorySourceLocation">https://www.powershellgallery.com/api/v2</S>
+      <S N="Repository">PSGallery</S>
+      <S N="PackageManagementProvider">NuGet</S>
+      <Obj N="AdditionalMetadata" RefId="7">
+        <TN RefId="3">
+          <T>System.Management.Automation.PSCustomObject</T>
+          <T>System.Object</T>
+        </TN>
+        <MS>
+          <S N="copyright">(c) WarehouseFinds. All rights reserved.</S>
+          <S N="description">PSRedfish is a production-ready PowerShell module for interacting with hardware management interfaces that implement the DMTF Redfish® standard. The module provides a clean, consistent, and PowerShell-native API for managing servers and chassis across vendors such as HPE iLO, Dell iDRAC, Lenovo XClarity, and other Redfish-compliant platforms.</S>
+          <S N="requireLicenseAcceptance">False</S>
+          <S N="releaseNotes">https://github.com/WarehouseFinds/PSRedfish/releases</S>
+          <S N="isLatestVersion">True</S>
+          <S N="isAbsoluteLatestVersion">True</S>
+          <S N="versionDownloadCount">154</S>
+          <S N="downloadCount">61</S>
+          <S N="packageSize">16990</S>
+          <S N="published">27/01/2026 21:15:41 +00:00</S>
+          <S N="created">27/01/2026 21:15:41 +00:00</S>
+          <S N="lastUpdated">15/10/2026 04:00:41 +01:00</S>
+          <S N="tags">PSModule PSFunction_Get-RedfishSession PSCommand_Get-RedfishSession PSFunction_Invoke-RedfishRequest PSCommand_Invoke-RedfishRequest PSFunction_New-RedfishSession PSCommand_New-RedfishSession PSFunction_Remove-RedfishSession PSCommand_Remove-RedfishSession PSIncludes_Function</S>
+          <S N="developmentDependency">False</S>
+          <S N="updated">2026-10-15T04:00:41Z</S>
+          <S N="NormalizedVersion">0.1.4</S>
+          <S N="Authors">WarehouseFinds</S>
+          <S N="IsPrerelease">false</S>
+          <S N="ItemType">Module</S>
+          <S N="FileList">PSRedfish.nuspec|PSRedfish.psm1|PSRedfish.psd1|en-US\PSRedfish\PSRedfish-Help.xml</S>
+          <S N="GUID">4ef41df1-9714-4fa9-85ce-e02bded4743a</S>
+          <S N="CompanyName">WarehouseFinds</S>
+        </MS>
+      </Obj>
+      <S N="InstalledLocation">C:\Users\98253\repos\image-build-automation\scripts\modules\PSRedfish\0.1.4</S>
+    </MS>
+  </Obj>
+</Objs>

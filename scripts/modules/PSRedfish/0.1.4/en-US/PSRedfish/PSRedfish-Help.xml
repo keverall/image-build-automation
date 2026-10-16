@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<helpItems xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" schema="maml" xmlns="http://msh">
+  <command:command>
+    <command:details>
+      <command:name>Remove-RedfishSession</command:name>
+      <maml:description>
+        <maml:para>Removes a Redfish session and disposes of associated resources.</maml:para>
+      </maml:description>
+      <command:verb>Remove</command:verb>
+      <command:noun>RedfishSession</command:noun>
+    </command:details>
+    <maml:description>
+      <maml:para>Properly disposes of a Redfish session by cleaning up the HttpClient and removing the session from the session cache. This ensures proper resource cleanup and prevents memory leaks.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <command:syntaxItem>
+        <maml:name>Remove-RedfishSession</maml:name>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>Confirm</maml:name>
+          <maml:description>
+            <maml:para>Prompts you for confirmation before running the cmdlet.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="0" aliases="none">
+          <maml:name>Session</maml:name>
+          <maml:description>
+            <maml:para>The Redfish session object to remove.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true" variableLength="true">System.Management.Automation.PSObject</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>WhatIf</maml:name>
+          <maml:description>
+            <maml:para>Runs the command in a mode that only reports what would happen without performing the actions.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>Confirm</maml:name>
+        <maml:description>
+          <maml:para>Prompts you for confirmation before running the cmdlet.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="0" aliases="none">
+        <maml:name>Session</maml:name>
+        <maml:description>
+          <maml:para>The Redfish session object to remove.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true" variableLength="true">System.Management.Automation.PSObject</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>WhatIf</maml:name>
+        <maml:description>
+          <maml:para>Runs the command in a mode that only reports what would happen without performing the actions.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <dev:name>System.Management.Automation.PSObject</dev:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>{{ Fill in the Description }}</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+    <maml:alertSet>
+      <maml:alert>
+        <maml:para>Always call this function when done with a Redfish session to ensure proper cleanup.
+Disposing the HttpClient will close any open connections.</maml:para>
+      </maml:alert>
+    </maml:alertSet>
+    <command:examples>
+      <command:example>
+        <maml:title>--------- EXAMPLE 1 ---------</maml:title>
+        <maml:introduction>
+          <maml:para>Remove-RedfishSession -Session $session
+Removes the specified Redfish session and cleans up resources.</maml:para>
+        </maml:introduction>
+        <dev:code />
+        <dev:remarks />
+      </command:example>
+      <command:example>
+        <maml:title>--------- EXAMPLE 2 ---------</maml:title>
+        <maml:introduction>
+          <maml:para>$session | Remove-RedfishSession
+Removes the Redfish session from the pipeline.</maml:para>
+        </maml:introduction>
+        <dev:code />
+        <dev:remarks />
+      </command:example>
+    </command:examples>
+    <command:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Online Version</maml:linkText>
+        <command:uri />
+      </maml:navigationLink>
+    </command:relatedLinks>
+  </command:command>
+</helpItems>ne">
+          <maml:name>TimeoutSeconds</maml:name>
+          <maml:description>
+            <maml:para>The timeout in seconds for HTTP requests.
+Default is 30 seconds.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>WhatIf</maml:name>
+          <maml:description>
+            <maml:para>Runs the command in a mode that only reports what would happen without performing the actions.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>AuthMethod</maml:name>
+        <maml:description>
+          <maml:para>Authentication method to use.
+Valid values are 'Session' (default) and 'Basic'.
+Session authentication creates a Redfish session and uses X-Auth-Token.
+Basic authentication uses HTTP Basic Auth for each request.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.String</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="0" aliases="none">
+        <maml:name>BaseUri</maml:name>
+        <maml:description>
+          <maml:para>The base URI of the Redfish API endpoint (e.g., https://redfish.example.com).</maml:para>
+        </maml:description>
+        <command:parameterValue required="true" variableLength="true">System.String</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>Confirm</maml:name>
+        <maml:description>
+          <maml:para>Prompts you for confirmation before running the cmdlet.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>ConnectionLifetimeMinutes</maml:name>
+        <maml:description>
+          <maml:para>How long to keep connections alive in the pool.
+Default is 5 minutes.
+Helps with load balancer scenarios.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="1" aliases="none">
+        <maml:name>Credential</maml:name>
+        <maml:description>
+          <maml:para>PSCredential object containing the username and password for authentication.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true" variableLength="true">System.Management.Automation.PSCredential</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>EnableMetrics</maml:name>
+        <maml:description>
+          <maml:para>Enable collection of performance metrics for this session.
+Access metrics via $session.Metrics.GetStatistics()</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>MaxConnectionsPerServer</maml:name>
+        <maml:description>
+          <maml:para>Maximum number of concurrent connections to the server.
+Default is 10.
+Increase for high-throughput scenarios.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>SkipCertificateCheck</maml:name>
+        <maml:description>
+          <maml:para>If specified, skips SSL certificate validation.
+Use with caution in production environments.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>TimeoutSeconds</maml:name>
+        <maml:description>
+          <maml:para>The timeout in seconds for HTTP requests.
+Default is 30 seconds.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>WhatIf</maml:name>
+        <maml:description>
+          <maml:para>Runs the command in a mode that only reports what would happen without performing the actions.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes />
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <dev:name>PSCustomObject representing the Redfish session with HttpClient and session details.</dev:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>{{ Fill in the Description }}</maml:para>
+        </maml:description>
+      </command:returnValue>
+      <command:returnValue>
+        <dev:type>
+          <dev:name>System.Management.Automation.PSObject</dev:name>
+        </dev:type>
+        <maml:description>
+          <maml:para>{{ Fill in the Description }}</maml:para>
+        </maml:description>
+      </command:returnValue>
+    </command:returnValues>
+    <maml:alertSet>
+      <maml:alert>
+        <maml:para>The session object contains an HttpClient instance that should be disposed when no longer needed.
+Use Remove-RedfishSession to properly clean up the session.
+Connection pooling is automatically enabled for better performance.</maml:para>
+      </maml:alert>
+    </maml:alertSet>
+    <command:examples>
+      <command:example>
+        <maml:title>--------- EXAMPLE 1 ---------</maml:title>
+        <maml:introduction>
+          <maml:para>$cred = Get-Credential
+$session = New-RedfishSession -BaseUri 'https://redfish.example.com' -Credential $cred
+Creates a new Redfish session using session-based authentication (default).</maml:para>
+        </maml:introduction>
+        <dev:code />
+        <dev:remarks />
+      </command:example>
+      <command:example>
+        <maml:title>--------- EXAMPLE 2 ---------</maml:title>
+        <maml:introduction>
+          <maml:para>$session = New-RedfishSession -BaseUri 'https://redfish.example.com' -Credential $cred -EnableMetrics
+$session.Metrics.GetStatistics()
+Creates a session with performance metrics enabled.</maml:para>
+        </maml:introduction>
+        <dev:code />
+        <dev:remarks />
+      </command:example>
+      <command:example>
+        <maml:title>--------- EXAMPLE 3 ---------</maml:title>
+        <maml:introduction>
+          <maml:para>$session = New-RedfishSession -BaseUri 'https://192.168.1.100' -Credential $cred -SkipCertificateCheck -MaxConnectionsPerServer 20
+Creates a high-performance session with 20 concurrent connections allowed.</maml:para>
+        </maml:introduction>
+        <dev:code />
+        <dev:remarks />
+      </command:example>
+    </command:examples>
+    <command:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Online Version</maml:linkText>
+        <command:uri />
+      </maml:navigationLink>
+    </command:relatedLinks>
+  </command:command>
+</helpItems>   <maml:introduction>
+          <maml:para>$result = Invoke-RedfishRequest -Session $session -Uri '/redfish/v1/Systems/1' -NoRetry
+Gets system information without retry logic.</maml:para>
+        </maml:introduction>
+        <dev:code />
+        <dev:remarks />
+      </command:example>
+    </command:examples>
+    <command:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Online Version</maml:linkText>
+        <command:uri />
+      </maml:navigationLink>
+    </command:relatedLinks>
+  </command:command>
+</helpItems>

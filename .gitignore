@@ -80,19 +80,6 @@ AGENTS.md
 # Only approved, version-pinned packages are distributed through Git.
 # These exceptions must follow generic dependency rules such as lib/ above.
 # Preserve vendor manifests, DLLs, format/type XML, help, examples and licenses.
-/scripts/modules/*
-!/scripts/modules/HPRESTCmdlets/
-/scripts/modules/HPRESTCmdlets/*
-!/scripts/modules/HPRESTCmdlets/1.2.0.0/
-!/scripts/modules/HPRESTCmdlets/1.2.0.0/**
-!/scripts/modules/HPEOneView.1000/
-/scripts/modules/HPEOneView.1000/*
-!/scripts/modules/HPEOneView.1000/10.0.4265.2221/
-!/scripts/modules/HPEOneView.1000/10.0.4265.2221/**
-!/scripts/modules/Pester/
-/scripts/modules/Pester/*
-!/scripts/modules/Pester/6.0.1/
-!/scripts/modules/Pester/6.0.1/**
 
 # ---- POWERSHELL RUNTIME & LOGGING ----
 # Also exclude operational files accidentally placed inside vendor packages.
