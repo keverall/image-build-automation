@@ -4,8 +4,8 @@
 # Provides full Redfish implementation for virtual media mount + one-time boot
 # + system reset, replacing the iLO REST scaffold that lived in Invoke-IsoDeploy.
 #
-# OneView-managed servers use the OneView-generated iLO SSO token. Direct iLO
-# PSCredential is supported only for unmanaged-server fallback; no password prompt
+# Explicit iLO credentials use a direct session; otherwise OneView-managed
+# servers use the OneView-generated iLO SSO token. No password prompt
 # or plain-text password parameters are used.
 # All Redfish calls reuse Invoke-RestMethod -SkipCertificateCheck.
 #
@@ -73,9 +73,9 @@ function Test-IloAuthentication {
     $probe = {
         param([string]$Name, [string]$Method, [string]$Uri, [hashtable]$Headers, [object]$Body, [System.Management.Automation.PSCredential]$Credential)
         try {
-            $p = @{ Uri=$Uri; Method=$Method; SkipCertificateCheck=$SkipCertificateCheck; TimeoutSec=$TimeoutSec; ErrorAction='Stop' }
+            $p = @{ Uri=$Uri; Method=$Method; SkipCertificateCheck=$SkipCertificateCheck; TimeoutSec=$TimeoutSec; UseBasicParsing=$true; ErrorAction='Stop' }
             if ($Headers) { $p.Headers = $Headers }
-            if ($Body) { $p.Body = ($Body | ConvertTo-Json -Depth 10); $p.ContentType='application/json;charset=utf-8' }
+            if ($Body) { $p.Body = [System.Text.Encoding]::UTF8.GetBytes(($Body | ConvertTo-Json -Depth 10)); $p.ContentType='application/json;charset=utf-8' }
             if ($Credential) { $p.Credential = $Credential }
             $response = Invoke-WebRequest @p
             & $add $Name $Method $Uri $true "HTTP $($response.StatusCode)" ([int]$response.StatusCode)
@@ -93,16 +93,28 @@ function Test-IloAuthentication {
 
     if ($IloCredential) {
         $body = @{ UserName=$IloCredential.UserName; Password=$IloCredential.GetNetworkCredential().Password }
-        $direct = & $probe 'direct_redfish_session' 'POST' "https://$IloIp/redfish/v1/SessionService/Sessions" $null $body $null
+        $direct = & $probe 'direct_redfish_session' 'POST' "https://$IloIp/redfish/v1/SessionService/Sessions/" @{ 'OData-Version'='4.0'; Accept='application/json' } $body $null
         if ($direct) {
-            $token = $direct.Content | ConvertFrom-Json
-            if ($token.token) {
-                & $probe 'direct_redfish_authenticated_get' 'GET' "https://$IloIp/redfish/v1/Systems/1" @{ 'X-Auth-Token'=$token.token; Accept='application/json' } $null $null | Out-Null
-                if ($direct.Headers.Location) { & $probe 'direct_redfish_logout' 'DELETE' ([string]$direct.Headers.Location) @{ 'X-Auth-Token'=$token.token } $null $null | Out-Null }
+            $token = [string](@($direct.Headers['X-Auth-Token'])[0])
+            $location = [string](@($direct.Headers['Location'])[0])
+            if ($token) {
+                try {
+                    & $probe 'direct_redfish_authenticated_get' 'GET' "https://$IloIp/redfish/v1/Systems/1" @{ 'X-Auth-Token'=$token; Accept='application/json' } $null $null | Out-Null
+                } finally {
+                    if ($location) {
+                        $loginUri = [uri]"https://$IloIp/redfish/v1/SessionService/Sessions/"
+                        $sessionUri = [uri]::new($loginUri, $location)
+                        if ($sessionUri.Scheme -eq $loginUri.Scheme -and $sessionUri.Authority -eq $loginUri.Authority) {
+                            & $probe 'direct_redfish_logout' 'DELETE' $sessionUri.AbsoluteUri @{ 'X-Auth-Token'=$token } $null $null | Out-Null
+                        } else {
+                            & $add 'direct_redfish_logout' 'DELETE' $loginUri.AbsoluteUri $false 'Rejected session location outside the target iLO origin.' 0
+                        }
+                    }
+                }
+            } else {
+                & $add 'direct_redfish_authenticated_get' 'GET' "https://$IloIp/redfish/v1/Systems/1" $false 'iLO did not return an X-Auth-Token response header.' 0
             }
         }
-        & $probe 'direct_ilo_rest_session' 'POST' "https://$IloIp/rest/v1/sessions" $null $body $null | Out-Null
-        & $probe 'direct_basic_redfish_get' 'GET' "https://$IloIp/redfish/v1/Systems/1" $null $null $IloCredential | Out-Null
     }
 
     if ($OneViewHost -and $OneViewServerName) {
@@ -152,8 +164,8 @@ function Invoke-IloRedfish {
         iLO IPv4 address or hostname. Required.
 
     .PARAMETER IloCredential
-        Direct iLO PSCredential fallback for unmanaged servers only. Managed
-        OneView servers use OneView iLO SSO instead.
+        Direct iLO PSCredential. When supplied, takes precedence over OneView
+        SSO so the same explicit account is used for validation and deployment.
 
     .PARAMETER OneViewHost
         OneView appliance associated with the active OneView session.
@@ -229,15 +241,16 @@ function Invoke-IloRedfish {
             }
         }
 
-        # OneView-managed servers always use OneView iLO SSO. An explicitly
-        # supplied direct credential must not override SSO: the HPE OneView UI
-        # uses the appliance-issued token and the appliance-managed iLO account.
-        # Direct credentials are only a fallback when no usable OneView SSO path
-        # is available (for example, an unmanaged server).
-        $hasOneViewSso = $OneViewHost -and $OneViewServerName -and
+        # An explicit credential selects direct iLO authentication, even for a
+        # managed server. OneView and iLO credentials/tokens are independent.
+        $hasOneViewSso = -not $IloCredential -and $OneViewHost -and $OneViewServerName -and
             (Get-Command Get-OVServer -ErrorAction SilentlyContinue) -and
             (Get-Command Get-OVIloSso -ErrorAction SilentlyContinue)
-        if ($hasOneViewSso) {
+        if ($IloCredential) {
+            $baseUrl = "https://$IloIp/redfish/v1"
+            $session = [IloRedfishSession]::new($baseUrl, $IloCredential.UserName,
+                $IloCredential.GetNetworkCredential().Password, $SkipCertificateCheck, $TimeoutSec)
+        } elseif ($hasOneViewSso) {
             try {
                 $iloSso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop |
                     Get-OVIloSso -IloRestSession -SkipCertificateCheck -ErrorAction Stop
@@ -256,10 +269,6 @@ function Invoke-IloRedfish {
                     }
                 }
             }
-        } elseif ($IloCredential) {
-            $baseUrl = "https://$IloIp/redfish/v1"
-            $session = [IloRedfishSession]::new($baseUrl, $IloCredential.UserName,
-                $IloCredential.GetNetworkCredential().Password, $SkipCertificateCheck, $TimeoutSec)
         } else {
             if ($OneViewHost -and $OneViewServerName) {
                 return @{
@@ -276,6 +285,20 @@ function Invoke-IloRedfish {
         }
 
         try {
+            # Validate and negotiate authentication on the session that will also
+            # perform the writes. A separate Status call logs its session out.
+            try {
+                $sys = $session.GetSystem()
+            } catch {
+                if ($session.AuthMode -ne 'oneview_sso' -or $_.Exception.Message -notmatch '(?i)(401|unauthorized)') {
+                    throw
+                }
+                # Refresh SSO once before any mutation; never replay mount/reset.
+                $iloSso = Get-OVServer -Name $OneViewServerName -ErrorAction Stop |
+                    Get-OVIloSso -IloRestSession -SkipCertificateCheck -ErrorAction Stop
+                $session = [IloRedfishSession]::new($iloSso, $SkipCertificateCheck, $TimeoutSec)
+                $sys = $session.GetSystem()
+            }
             switch ($Action) {
                 'Mount' {
                     if (-not $IsoUrl) { throw "Mount requires -IsoUrl" }
@@ -303,7 +326,6 @@ function Invoke-IloRedfish {
                     return @{ Success = $true; Action = $Action; IloIp = $IloIp; Details = $r; AuthDiagnostics = $session.GetDiagnostics() }
                 }
                 'Status' {
-                    $sys = $session.GetSystem()
                     $vm  = $session.ListVirtualMedia()
                     $result = @{
                         Success = $true

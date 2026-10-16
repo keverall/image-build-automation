@@ -70,6 +70,43 @@ Describe 'Test-IloAuthentication - non-destructive diagnostics' {
             Should -Invoke Read-Host -Exactly 1 -ParameterFilter { $AsSecureString }
         }
     }
+
+    It 'validates and deletes the session using response headers rather than a JSON token' {
+        InModuleScope Automation {
+            $script:diagnosticToken = [guid]::NewGuid().ToString('N')
+            Mock Invoke-WebRequest {
+                param($Method, $Headers)
+                if ($Method -eq 'POST') {
+                    return @{ Headers = @{ 'X-Auth-Token' = @($script:diagnosticToken); Location = @('/redfish/v1/SessionService/Sessions/42/') }; Content = '{}'; StatusCode = 201 }
+                }
+                if ($Method -eq 'DELETE' -or $Headers) { $Headers['X-Auth-Token'] | Should -Be $script:diagnosticToken }
+                @{ StatusCode = 200; Content = '{}' }
+            }
+            $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
+            $r = Test-IloAuthentication -IloIp '10.30.14.15' -IloCredential $cred -Quiet
+            $r.Success | Should -BeTrue
+            Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+                $Method -eq 'DELETE' -and $Uri -eq 'https://10.30.14.15/redfish/v1/SessionService/Sessions/42/'
+            }
+            Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter { $Method -eq 'POST' }
+        }
+    }
+
+    It 'does not send a diagnostic token to a different logout origin' {
+        InModuleScope Automation {
+            Mock Invoke-WebRequest {
+                param($Method)
+                if ($Method -eq 'POST') {
+                    return @{ Headers = @{ 'X-Auth-Token' = 'synthetic-session'; Location = 'https://other.example.test/session/42/' }; Content = '{}'; StatusCode = 201 }
+                }
+                @{ StatusCode = 200; Content = '{}' }
+            }
+            $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
+            $r = Test-IloAuthentication -IloIp '10.30.14.15' -IloCredential $cred -Quiet
+            ($r.Results | Where-Object name -eq 'direct_redfish_logout').success | Should -BeFalse
+            Should -Invoke Invoke-WebRequest -Times 0 -Exactly -ParameterFilter { $Method -eq 'DELETE' }
+        }
+    }
 }
 
 Describe 'Invoke-IloRedfish - IloRedfishSession class' {
@@ -84,7 +121,97 @@ Describe 'Invoke-IloRedfish - IloRedfishSession class' {
     It 'requests OneView SSO with certificate validation disabled for internal iLO certificates' {
         $source = Get-Content (Join-Path $Script:ModuleRoot 'Automation\Public\Invoke-IloRedfish.ps1') -Raw
         ([regex]::Matches($source, 'Get-OVIloSso\s+-IloRestSession\s+-SkipCertificateCheck')).Count |
-            Should -Be 2
+            Should -Be 3
+    }
+}
+
+Describe 'Invoke-IloRedfish - authentication selection and session synchronization' {
+    BeforeAll {
+        InModuleScope Automation {
+            function script:Get-OVServer { param($Name) }
+            function script:Get-OVIloSso { param([Parameter(ValueFromPipeline)]$InputObject, [switch]$IloRestSession, [switch]$SkipCertificateCheck) }
+        }
+    }
+
+    It 'uses an explicit credential even when OneView SSO is available' {
+        InModuleScope Automation {
+            Mock Get-OVServer { throw 'SSO must not be used' }
+            Mock Get-OVIloSso { throw 'SSO must not be used' }
+            Mock Invoke-WebRequest {
+                param($Body)
+                ([System.Text.Encoding]::UTF8.GetString($Body) | ConvertFrom-Json).UserName | Should -Be 'ilo-operator'
+                @{ Headers = @{ 'X-Auth-Token' = 'synthetic-direct'; Location = '/redfish/v1/SessionService/Sessions/42/' } }
+            }
+            Mock Invoke-RestMethod { @{ PowerState = 'On'; Boot = @{}; Members = @() } }
+            $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
+            $r = Invoke-IloRedfish -Action MountAndBoot -Force -IloIp '10.30.14.15' -IloCredential $cred -OneViewHost 'ov.example.test' -OneViewServerName 'server01' -IsoUrl 'https://iso.example.test/windows.iso'
+            $r.Success | Should -BeTrue
+            $r.AuthDiagnostics.auth_mode | Should -Be 'direct_ilo'
+            Should -Invoke Get-OVIloSso -Times 0 -Exactly
+            Should -Invoke Invoke-RestMethod -Times 5 -Exactly -ParameterFilter { $Headers['X-Auth-Token'] -eq 'synthetic-direct' }
+        }
+    }
+
+    It 'does not retry rejected credentials or perform any mutation' {
+        InModuleScope Automation {
+            Mock Invoke-WebRequest { throw '401 Unauthorized' }
+            Mock Invoke-RestMethod { throw 'requests must not run after login failure' }
+            $cred = [pscredential]::new('ilo-operator', (ConvertTo-SecureString 'synthetic-password' -AsPlainText -Force))
+            $r = Invoke-IloRedfish -Action Reset -Force -IloIp '10.30.14.15' -IloCredential $cred
+            $r.Success | Should -BeFalse
+            $r.Error | Should -Match 'redfish_session_login.*401'
+            Should -Invoke Invoke-WebRequest -Times 1 -Exactly
+            Should -Invoke Invoke-RestMethod -Times 0 -Exactly
+        }
+    }
+
+    It 'refreshes rejected SSO before writes and uses the refreshed token for every write' {
+        InModuleScope Automation {
+            $script:ssoNumber = 0
+            Mock Get-OVServer { @{ name = 'server01' } }
+            Mock Get-OVIloSso {
+                $script:ssoNumber++
+                @{ RootUri = 'https://10.30.14.15/redfish/v1'; 'X-Auth-Token' = "synthetic-sso-$script:ssoNumber" }
+            }
+            Mock Invoke-WebRequest { throw 'direct credentials must not be used' }
+            Mock Invoke-RestMethod {
+                param($Headers)
+                if ($Headers['X-Auth-Token'] -eq 'synthetic-sso-1') { throw '401 Unauthorized' }
+                @{ PowerState = 'On'; Boot = @{} }
+            }
+            $r = Invoke-IloRedfish -Action MountAndBoot -Force -IloIp '10.30.14.15' -OneViewHost 'ov.example.test' -OneViewServerName 'server01' -IsoUrl 'https://iso.example.test/windows.iso'
+            $r.Success | Should -BeTrue
+            Should -Invoke Get-OVIloSso -Times 2 -Exactly
+            Should -Invoke Invoke-RestMethod -Times 3 -Exactly -ParameterFilter { $Method -in @('Post', 'Patch') -and $Headers['X-Auth-Token'] -eq 'synthetic-sso-2' }
+        }
+    }
+
+    It 'blocks mutations when refreshed SSO is also rejected' {
+        InModuleScope Automation {
+            Mock Get-OVServer { @{ name = 'server01' } }
+            Mock Get-OVIloSso { @{ RootUri = 'https://10.30.14.15/redfish/v1'; 'X-Auth-Token' = 'synthetic-sso' } }
+            Mock Invoke-RestMethod { throw '401 Unauthorized' }
+            $r = Invoke-IloRedfish -Action MountAndBoot -Force -IloIp '10.30.14.15' -OneViewHost 'ov.example.test' -OneViewServerName 'server01' -IsoUrl 'https://iso.example.test/windows.iso'
+            $r.Success | Should -BeFalse
+            Should -Invoke Get-OVIloSso -Times 2 -Exactly
+            Should -Invoke Invoke-RestMethod -Times 0 -Exactly -ParameterFilter { $Method -in @('Post', 'Patch') }
+        }
+    }
+
+    It 'does not replay a destructive request after a 401' {
+        InModuleScope Automation {
+            Mock Get-OVServer { @{ name = 'server01' } }
+            Mock Get-OVIloSso { @{ RootUri = 'https://10.30.14.15/redfish/v1'; 'X-Auth-Token' = 'synthetic-sso' } }
+            Mock Invoke-RestMethod {
+                param($Method)
+                if ($Method -eq 'Post') { throw '401 Unauthorized' }
+                @{ PowerState = 'On'; Boot = @{} }
+            }
+            $r = Invoke-IloRedfish -Action MountAndBoot -Force -IloIp '10.30.14.15' -OneViewHost 'ov.example.test' -OneViewServerName 'server01' -IsoUrl 'https://iso.example.test/windows.iso'
+            $r.Success | Should -BeFalse
+            Should -Invoke Get-OVIloSso -Times 1 -Exactly
+            Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter { $Method -eq 'Post' }
+        }
     }
 }
 

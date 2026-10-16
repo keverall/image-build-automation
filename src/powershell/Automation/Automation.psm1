@@ -497,21 +497,41 @@ class IloRedfishSession {
     }
 
     [void] _Login() {
-        $url = "$($this.BaseUrl)/SessionService/Sessions"
+        $url = "$($this.BaseUrl)/SessionService/Sessions/"
         $body = @{ UserName = $this.User; Password = $this.Password } | ConvertTo-Json
+        $this.AuthToken = $null
+        $this.RawAuthToken = $null
+        $this.UseRawAuthToken = $false
+        $this.SessionUri = $null
         try {
-            $resp = Invoke-RestMethod -Uri $url -Method Post -Body $body `
+            # iLO returns the token and session location in HTTP headers, not JSON.
+            $resp = Invoke-WebRequest -Uri $url -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) `
                 -ContentType 'application/json;charset=utf-8' `
+                -Headers @{ 'OData-Version' = '4.0'; Accept = 'application/json' } -UseBasicParsing `
                 -SkipCertificateCheck:$this.SkipCert `
                 -TimeoutSec $this.TimeoutSec -ErrorAction Stop
         } catch {
             throw (New-IloAuthException -Stage 'redfish_session_login' -Uri $url -ErrorRecord $_)
         }
-        if (-not $resp.token) {
+        $token = [string](@($resp.Headers['X-Auth-Token'])[0])
+        $location = [string](@($resp.Headers['Location'])[0])
+        if ([string]::IsNullOrWhiteSpace($token)) {
             throw (New-IloAuthException -Stage 'redfish_session_login' -Uri $url -Message 'iLO did not return a Redfish session token.')
         }
-        $this.AuthToken = $resp.token
-        $this.SessionUri = $resp.'@odata.id'
+        if ([string]::IsNullOrWhiteSpace($location)) {
+            $sessionResource = $resp.Content | ConvertFrom-Json
+            $location = [string]$sessionResource.'@odata.id'
+        }
+        if ([string]::IsNullOrWhiteSpace($location)) {
+            throw (New-IloAuthException -Stage 'redfish_session_login' -Uri $url -Message 'iLO did not return a Redfish session location.')
+        }
+        $loginUri = [uri]$url
+        $logoutUri = [uri]::new($loginUri, $location)
+        if ($logoutUri.Scheme -ne $loginUri.Scheme -or $logoutUri.Authority -ne $loginUri.Authority) {
+            throw (New-IloAuthException -Stage 'redfish_session_login' -Uri $url -Message 'iLO returned a session location outside the target iLO origin.')
+        }
+        $this.SessionUri = $logoutUri.AbsoluteUri
+        $this.AuthToken = $token
     }
 
     [hashtable] _Headers() {
@@ -568,6 +588,15 @@ class IloRedfishSession {
             # never retry arbitrary Redfish errors.
             $message = $_.Exception.Message
             $this.LastError = $message
+            if ($message -match '(?i)(401|unauthorized)' -and $this.AuthMode -eq 'direct_ilo') {
+                # Renew an expired direct session once, and only replay this read.
+                $this._Login()
+                $this._RecordAttempt('renewed_direct_session', $Uri)
+                return Invoke-RestMethod -Uri $Uri -Method Get `
+                    -Headers $this._Headers() `
+                    -SkipCertificateCheck:$this.SkipCert `
+                    -TimeoutSec $this.TimeoutSec -ErrorAction Stop
+            }
             if ($message -match '(?i)(401|unauthorized)' -and
                 $this.AuthMode -eq 'oneview_sso' -and
                 $Uri -match '/redfish/v1/') {
@@ -677,6 +706,10 @@ class IloRedfishSession {
                 -TimeoutSec $this.TimeoutSec -ErrorAction Stop | Out-Null
         } catch {
             Write-Debug "Redfish session logout failed: $($_.Exception.Message)"
+        } finally {
+            $this.AuthToken = $null
+            $this.RawAuthToken = $null
+            $this.SessionUri = $null
         }
     }
 }

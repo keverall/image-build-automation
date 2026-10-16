@@ -56,9 +56,9 @@ function Configure-PhysicalBuild {
         If omitted (or -SkipIlo), ilo_credentials is recorded as SKIP, not PASS.
 
     .PARAMETER IloCredential
-        Optional direct iLO PSCredential for unmanaged-server fallback.
-        For OneView-managed servers, the build uses OneView iLO SSO and does not
-        use this credential.
+        Optional direct iLO PSCredential. When supplied, the approved build uses
+        this account instead of OneView iLO SSO, including on managed servers.
+        Without it, managed servers use a fresh OneView iLO SSO session.
 
     .PARAMETER ExpectedHostname
         Hostname that should result from the build (defaults to SrvrId).

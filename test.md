@@ -1,4 +1,3 @@
-
 Already up to date.
    image-build-automation  main  git log -1 --oneline                                                                                                                                             0  971ms  11:20:54 38045b3e (HEAD -> main, origin/main, origin/HEAD) Remove unnecessary text from test.md and ensure linting passes
    image-build-automation  main  make setup                                                                                                                                                              0  11:21:03 [setup] Setting up PowerShell environment...
@@ -28,8 +27,9 @@ Line |
 make: *** [Makefile:57: setup] Error 1 
    image-build-automation  main                                                                                  
 
-
 No — and it should **not** be imported. Here's the definitive breakdown from the manifest itself.
+
+<a id="what-hprestcmdletspsd1-actually-loads"></a>
 
 ## What `HPRESTCmdlets.psd1` actually loads
 
@@ -43,6 +43,8 @@ The manifest declares only three relevant keys (no `NestedModules`, no `Required
 
 **PowerShell never executes `FileList` entries.** `HPRESTExamples.ps1` is only listed there (and mentioned in the `Description`) as shipped documentation. Its own content confirms it: 2,510 lines of comment blocks listing cmdlets, plus sample scripts that call `Connect-HPREST` against live devices. It is never loaded, and dot-sourcing it would execute example code that tries to connect to hardware.
 
+<a id="import-the-psd1-never-the-psm1"></a>
+
 ## Import the `.psd1`, never the `.psm1`
 
 ```powershell
@@ -55,6 +57,8 @@ Importing the `.psm1` directly would:
 - Lose version/GUID identity that `make setup` and `Get-CommandHelp` rely on.
 
 `Import-Module HPRESTCmdlets` by name works too once `scripts/modules` is on `$env:PSModulePath` (which `make setup` now does).
+
+<a id="verify-all-four-layers-are-resident-and-usable"></a>
 
 ## Verify all four layers are resident and usable
 
@@ -73,7 +77,6 @@ If `AsyncPipeline` is `False` while `HPRESTCmdlets` is loaded, the module was im
 
 One accurate detail for your auth work: `Configure-PhysicalServer`'s SSO path needs **`Get-OVServer` + `Get-OVIloSso`** (`HPEOneView.1000`) and passes the token to `[IloRedfishSession]` which sends `X-Auth-Token`. `HPRESTCmdlets` is the vendor-declared iLO REST dependency that `make setup` requires. Run `Invoke-IloRedfish -Action Status -IloIp <ip> -OneViewHost <host> -OneViewServerName <name>` and read its `Auth_Diagnostics` to see `Token_Source`, `Token_Length`, and `Last_Error`.
 
-
 I confirmed the guard is in HEAD and your working tree is clean — so your server just needs git pull to get it. The run you pasted was against 38045b3e, which predates that fix.
 
 What to do on eiswmgt-19
@@ -81,6 +84,15 @@ git pull
 make setup
 
 # make setup verifies in a child process; do this in YOUR shell:
+
+<a id="top"></a>
+
+## Table of Contents
+
+- [What `HPRESTCmdlets.psd1` actually loads](#what-hprestcmdletspsd1-actually-loads)
+- [Import the `.psd1`, never the `.psm1`](#import-the-psd1-never-the-psm1)
+- [Verify all four layers are resident and usable](#verify-all-four-layers-are-resident-and-usable)
+
 Import-Module '.\scripts\modules\HPEOneView.1000\10.0.4265.2221\HPEOneView.1000.psd1' -ErrorAction Stop
 Import-Module '.\scripts\modules\HPRESTCmdlets\1.2.0.0\HPRESTCmdlets.psd1' -ErrorAction Stop
 
@@ -89,4 +101,3 @@ $null -ne ('AsyncPipeline' -as [type])    # must be True
 If it breaks again, capture the exact error line — the three above are distinguishable by their first line alone, and that determines which fix applies.
 
 127.2 t/s
-
