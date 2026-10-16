@@ -572,11 +572,18 @@ class IloRedfishSession {
     }
 
     [object] _Get([string]$Uri) {
+        # Redfish collection members commonly return root-relative @odata.id
+        # links. Invoke-RestMethod requires an absolute URI.
+        $requestUri = $Uri
+        if ($Uri -match '^/') {
+            $baseUri = [uri]$this.BaseUrl
+            $requestUri = [uri]::new($baseUri, $Uri).AbsoluteUri
+        }
         $headers = $this._Headers()
         $firstMode = if ($this.UseRawAuthToken) { 'raw_xauth+redfish_session' } else { 'normalized_xauth+redfish_session' }
-        $this._RecordAttempt($firstMode, $Uri)
+        $this._RecordAttempt($firstMode, $requestUri)
         try {
-            return Invoke-RestMethod -Uri $Uri -Method Get `
+            return Invoke-RestMethod -Uri $requestUri -Method Get `
                 -Headers $headers `
                 -SkipCertificateCheck:$this.SkipCert `
                 -TimeoutSec $this.TimeoutSec -ErrorAction Stop
@@ -591,20 +598,20 @@ class IloRedfishSession {
             if ($message -match '(?i)(401|unauthorized)' -and $this.AuthMode -eq 'direct_ilo') {
                 # Renew an expired direct session once, and only replay this read.
                 $this._Login()
-                $this._RecordAttempt('renewed_direct_session', $Uri)
-                return Invoke-RestMethod -Uri $Uri -Method Get `
+                $this._RecordAttempt('renewed_direct_session', $requestUri)
+                return Invoke-RestMethod -Uri $requestUri -Method Get `
                     -Headers $this._Headers() `
                     -SkipCertificateCheck:$this.SkipCert `
                     -TimeoutSec $this.TimeoutSec -ErrorAction Stop
             }
             if ($message -match '(?i)(401|unauthorized)' -and
                 $this.AuthMode -eq 'oneview_sso' -and
-                $Uri -match '/redfish/v1/') {
+                $requestUri -match '/redfish/v1/') {
                 # Older iLO/HPREST deployments expose the same OneView SSO
                 # session through /rest/v1 even when the appliance advertises a
                 # Redfish root. Try that compatibility root before changing
                 # token formats; if it succeeds all later operations use it.
-                $legacyUri = $Uri -replace '/redfish/v1/', '/rest/v1/'
+                $legacyUri = $requestUri -replace '/redfish/v1/', '/rest/v1/'
                 try {
                     $this._RecordAttempt('normalized_xauth+legacy_rest', $legacyUri)
                     $legacyResult = Invoke-RestMethod -Uri $legacyUri -Method Get `
@@ -622,8 +629,8 @@ class IloRedfishSession {
                 -not $this.UseRawAuthToken) {
                 try {
                     $this.UseRawAuthToken = $true
-                    $this._RecordAttempt('raw_xauth+redfish_session_retry', $Uri)
-                    return Invoke-RestMethod -Uri $Uri -Method Get `
+                    $this._RecordAttempt('raw_xauth+redfish_session_retry', $requestUri)
+                    return Invoke-RestMethod -Uri $requestUri -Method Get `
                         -Headers $this._Headers() `
                         -SkipCertificateCheck:$this.SkipCert `
                         -TimeoutSec $this.TimeoutSec -ErrorAction Stop
@@ -632,7 +639,7 @@ class IloRedfishSession {
                     $this.UseRawAuthToken = $false
                 }
             }
-            throw (New-IloAuthException -Stage 'redfish_authenticated_get' -Uri $Uri -ErrorRecord $_)
+            throw (New-IloAuthException -Stage 'redfish_authenticated_get' -Uri $requestUri -ErrorRecord $_)
         }
     }
 
@@ -648,7 +655,7 @@ class IloRedfishSession {
         }
     }
 
-    [hashtable] ListVirtualMedia() {
+    [object[]] ListVirtualMedia() {
         $coll = $this._Get("$($this.BaseUrl)/Managers/1/VirtualMedia")
         $members = @()
         foreach ($m in $coll.Members) {

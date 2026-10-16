@@ -52,6 +52,30 @@ Describe 'IloRedfishSession - direct iLO 5 sessions' {
         }
     }
 
+    It 'resolves relative Redfish member links and returns virtual media as an array' {
+        InModuleScope Automation {
+            Mock Invoke-WebRequest { @{ Headers = @{ 'X-Auth-Token' = 'synthetic-session'; Location = '/redfish/v1/SessionService/Sessions/42/' } } }
+            Mock Invoke-RestMethod {
+                param($Uri, $Method)
+                if ($Uri -like '*/Managers/1/VirtualMedia' -and $Uri -notlike '*/2') {
+                    return @{ Members = @(@{ '@odata.id' = '/redfish/v1/Managers/1/VirtualMedia/2' }) }
+                }
+                if ($Uri -like '*/Managers/1/VirtualMedia/2') {
+                    return @{ '@odata.id' = '/redfish/v1/Managers/1/VirtualMedia/2'; Name = 'CD/DVD'; MediaTypes = @('DVD'); Inserted = $false; Image = $null }
+                }
+                @{ PowerState = 'On'; Boot = @{} }
+            }
+            $session = [IloRedfishSession]::new('https://10.30.14.15/redfish/v1', 'operator', 'synthetic-password', $true, 30)
+            $media = $session.ListVirtualMedia()
+            $media | Should -HaveCount 1
+            $media[0].id | Should -Be '2'
+            Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter {
+                $Uri -eq 'https://10.30.14.15/redfish/v1/Managers/1/VirtualMedia/2'
+            }
+            $session.Logout()
+        }
+    }
+
     It 'renews a rejected token once and uses the new token and location thereafter' {
         InModuleScope Automation {
             $script:loginNumber = 0

@@ -211,7 +211,7 @@ function Test-PreBuildValidation {
                     # iLO check is a pre-flight, not a hard requirement for producing the
                     # build plan. Start-PhysicalServerBuild will still verify iLO reachability
                     # before any destructive mount/reboot.
-                    _Skip 'ilo_credentials' 'skipped (no -IloCredential or -OneViewCredential supplied; supply explicit iLO credentials for a live Redfish check)'
+                    _Skip 'ilo_credentials' 'deferred to Start-PhysicalServerBuild; direct iLO credentials are validated immediately before mount/reboot'
                 }
             } elseif ($checks['ilo_credentials'].status -ne 'PASS') {
                 try {
@@ -223,7 +223,7 @@ function Test-PreBuildValidation {
                 } catch { _Set 'ilo_credentials' $false $_.Exception.Message }
             }
         }
-    } else { _Skip 'ilo_credentials' 'skipped (optional — supply -IloIp for a live iLO Redfish GET that verifies reachability and credentials before the destructive mount/reboot)' }
+    } else { _Skip 'ilo_credentials' 'deferred to Start-PhysicalServerBuild; direct iLO credentials are validated immediately before mount/reboot' }
 
     if (-not $SkipDpMp) {
         foreach ($endpoint in @(@{ name = 'management_point'; value = $ManagementPoint },
